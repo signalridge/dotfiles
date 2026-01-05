@@ -213,11 +213,3 @@ symbol = " "
 
 [gradle]
 symbol = " "
-
-# Claude API usage (custom command)
-[custom.claude]
-command = "~/.custom/claude-usage.sh"
-when = "test -f ~/.claude/usage.json"
-symbol = "󰚩 "
-style = "bold purple"
-format = "[$symbol$output]($style) "
