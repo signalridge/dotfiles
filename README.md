@@ -239,7 +239,7 @@ The shell prompt is powered by **Starship**, a minimal and fast prompt written i
 
 **yazi** is a blazing-fast terminal file manager with image preview support. It's the modern replacement for ranger, written in Rust for maximum performance.
 
-**tmux** configuration includes vim-style keybindings, Dracula theme colors, and popup windows for quick access to lazygit and htop. The prefix key is set to Ctrl+A for easier access.
+**tmux** configuration includes vim-style keybindings, Dracula theme colors, and popup windows for quick access to lazygit and htop. The prefix key is set to Ctrl+B (default).
 
 | Tool                                                | Role                                              |
 | --------------------------------------------------- | ------------------------------------------------- |
@@ -410,12 +410,12 @@ chezmoi init --apply --promptBool headless=true signalridge
 
 ## ⌨️ Keyboard Shortcuts
 
-| Shortcut   | Action                         |
-| ---------- | ------------------------------ |
-| Alt + Up   | Navigate to parent directory   |
-| Alt + Down | Navigate to previous directory |
-| Ctrl + R   | Search command history (Atuin) |
-| Ctrl + A   | tmux prefix key                |
+| Shortcut   | Action                           |
+| ---------- | -------------------------------- |
+| Alt + Up   | Navigate to parent directory     |
+| Alt + Down | Go back in directory history     |
+| Ctrl + R   | Search command history (Atuin)   |
+| Ctrl + B   | tmux prefix key                  |
 
 ---
 

@@ -19,10 +19,14 @@ alias_if_cmd_exists "nvim" "view"
 
 # Modern CLI replacements
 alias_if_cmd_exists "eza" "ls"
-alias ll="ls -l --git"
 alias la="ls -a"
-alias lla="ls -la --git"
-alias lt="ls --tree"
+if command -v eza >/dev/null 2>&1; then
+    alias ll="ls -l --git"
+    alias lla="ls -la --git"
+    alias lt="ls --tree"
+else
+    alias ll="ls -l"
+fi
 
 alias_if_cmd_exists "bat" "cat"
 alias_if_cmd_exists "dust" "du"

@@ -31,15 +31,6 @@ EXCLUDE_PATTERNS=(
     "id_ed25519*"
 )
 
-# Build exclude args as array (safe, no eval needed)
-build_exclude_args() {
-    local args=()
-    for pattern in "${EXCLUDE_PATTERNS[@]}"; do
-        args+=("--exclude" "$pattern")
-    done
-    printf '%s\n' "${args[@]}"
-}
-
 backup() {
     local src="$1"
     local dest_name

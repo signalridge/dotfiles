@@ -4,18 +4,18 @@
 export TERM=xterm-256color
 export COLORTERM=truecolor
 
-# Dracula color palette for consistent theming
-export DRACULA_BG="#282a36"
-export DRACULA_FG="#f8f8f2"
-export DRACULA_SELECTION="#44475a"
-export DRACULA_COMMENT="#6272a4"
-export DRACULA_CYAN="#8be9fd"
-export DRACULA_GREEN="#50fa7b"
-export DRACULA_ORANGE="#ffb86c"
-export DRACULA_PINK="#ff79c6"
-export DRACULA_PURPLE="#bd93f9"
-export DRACULA_RED="#ff5555"
-export DRACULA_YELLOW="#f1fa8c"
+# Dracula color palette (used for FZF_DEFAULT_OPTS below)
+DRACULA_BG="#282a36"
+DRACULA_FG="#f8f8f2"
+DRACULA_SELECTION="#44475a"
+DRACULA_COMMENT="#6272a4"
+DRACULA_CYAN="#8be9fd"
+DRACULA_GREEN="#50fa7b"
+DRACULA_ORANGE="#ffb86c"
+DRACULA_PINK="#ff79c6"
+DRACULA_PURPLE="#bd93f9"
+DRACULA_RED="#ff5555"
+DRACULA_YELLOW="#f1fa8c"
 
 # fzf configuration with Dracula theme
 export FZF_DEFAULT_OPTS="
@@ -24,6 +24,7 @@ export FZF_DEFAULT_OPTS="
   --color=info:${DRACULA_ORANGE},prompt:${DRACULA_GREEN},pointer:${DRACULA_PINK}
   --color=marker:${DRACULA_CYAN},spinner:${DRACULA_PURPLE},header:${DRACULA_COMMENT}
   --color=border:${DRACULA_COMMENT}
+  --color=query:${DRACULA_YELLOW},disabled:${DRACULA_RED}
   --height=60%
   --layout=reverse
   --border=rounded
