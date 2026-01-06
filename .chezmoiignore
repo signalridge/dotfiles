@@ -45,3 +45,11 @@ private_dot_config/ghostty/
 # private_dot_config/private_karabiner/
 # private_dot_config/ghostty/
 {{- end }}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Encryption-related exclusions (skip when useEncryption is false)
+# ─────────────────────────────────────────────────────────────────────────────
+{{- if not .useEncryption }}
+.chezmoiscripts/run_once_before_01_setup-encryption-key.sh
+private_dot_ssh/encrypted_private_config.tmpl.age
+{{- end }}

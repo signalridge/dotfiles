@@ -4,6 +4,10 @@ encryption = "age"
 {{- $work := promptBoolOnce . "work" "Is this a work machine" -}}{{/* true if this machine is a work machine */}}
 {{- $private := not $work -}}{{/* true if this machine should have private configuration  */}}
 {{- $headless := false -}}{{/* true if this machine does not have a screen and keyboard */}}
+{{- $useEncryption := false -}}{{/* default false for users without encryption key */}}
+{{- if stdinIsATTY -}}
+{{-   $useEncryption = promptBoolOnce . "useEncryption" "Enable encryption & SSH config (requires ~/.ssh/main key, default: false)" -}}
+{{- end -}}
 {{- "" -}}
 
 {{- $hostname := .chezmoi.hostname -}}
@@ -63,6 +67,7 @@ gitEmail = {{ $gitEmail | quote }}
 work = {{ $work }}
 private = {{ $private }}
 headless = {{ $headless }}
+useEncryption = {{ $useEncryption }}
 osid = {{ $osID | quote }}
 timezone = {{ $timezone | quote }}
 
