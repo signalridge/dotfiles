@@ -125,6 +125,13 @@ cd dotfiles && ./init.sh
 3. 1Password から復号鍵を取得（または手動セットアップを案内）
 4. すべての dotfiles と設定を適用
 
+> [!IMPORTANT]
+> **初めて使う方へ**：`useEncryption` を聞かれたら **No**（デフォルト）を選択してください。
+> 暗号化設定はリポジトリ所有者専用です。暗号化が必要な場合は以下を修正してください：
+>
+> - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`：`KEY_FILE`、`KEY_PUB`、1Password パス（`op://Personal/main/...`）を変更
+> - `.chezmoi.toml.tmpl`：`[age]` セクションの `identity` と `recipientsFile` パスを更新
+
 インストール後、ターミナルを再起動してください。macOS では `just darwin` で nix-darwin 設定を有効化します。
 
 ---

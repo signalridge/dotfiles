@@ -142,6 +142,13 @@ This will automatically:
 3. Fetch encryption key from 1Password (or prompt for manual setup)
 4. Apply all dotfiles and configurations
 
+> [!IMPORTANT]
+> **First-time users**: When prompted for `useEncryption`, answer **No** (default).
+> The encryption setup is specific to the repo owner. If you need encryption, modify:
+>
+> - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`: Change `KEY_FILE`, `KEY_PUB`, and 1Password item path (`op://Personal/main/...`)
+> - `.chezmoi.toml.tmpl`: Update `identity` and `recipientsFile` paths in `[age]` section
+
 After installation, restart your terminal. For macOS, run `just darwin` to activate nix-darwin configuration.
 
 ---

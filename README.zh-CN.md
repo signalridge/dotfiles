@@ -125,6 +125,13 @@ cd dotfiles && ./init.sh
 3. 从 1Password 获取解密密钥（或提示手动设置）
 4. 应用所有 dotfiles 和配置
 
+> [!IMPORTANT]
+> **首次使用者**：当提示 `useEncryption` 时，请选择 **No**（默认值）。
+> 加密设置仅适用于仓库所有者。如需启用加密，请修改：
+>
+> - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`：修改 `KEY_FILE`、`KEY_PUB` 和 1Password 路径（`op://Personal/main/...`）
+> - `.chezmoi.toml.tmpl`：更新 `[age]` 部分的 `identity` 和 `recipientsFile` 路径
+
 安装完成后，重启终端。macOS 用户运行 `just darwin` 激活 nix-darwin 配置。
 
 ---
