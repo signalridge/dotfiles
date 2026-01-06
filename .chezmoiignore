@@ -40,10 +40,10 @@ private_dot_config/ghostty/
 # Headless/server exclusions (no GUI, reserved for future use)
 # ─────────────────────────────────────────────────────────────────────────────
 {{- if .headless }}
-# GUI apps (uncomment as needed)
-# private_dot_config/aerospace/
-# private_dot_config/private_karabiner/
-# private_dot_config/ghostty/
+# GUI apps (not needed on headless servers)
+private_dot_config/aerospace/
+private_dot_config/private_karabiner/
+private_dot_config/ghostty/
 {{- end }}
 
 # ─────────────────────────────────────────────────────────────────────────────

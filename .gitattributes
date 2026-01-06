@@ -5,6 +5,7 @@ dot_zshrc linguist-language=Shell
 dot_zshenv.tmpl linguist-language=Shell
 dot_zprofile.tmpl linguist-language=Shell
 *.conf linguist-language=Shell
+*.conf.tmpl linguist-language=Shell
 
 # Nix
 *.nix linguist-language=Nix

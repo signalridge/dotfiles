@@ -24,7 +24,7 @@ bind C-b send-prefix
 
 # history & timing
 set -g history-limit 50000
-set -s escape-time 0
+set -s escape-time 10  # >0 required for F-key escape sequences to work
 set -g display-time 4000
 
 # status bar length (prevent truncation, but leave room for window list)
@@ -114,7 +114,7 @@ bind X kill-window
 set -g @plugin 'tmux-plugins/tpm'
 
 # ------------------------------------------------------------------------------
-# A) Basic - low conflict, high value
+# Basic - low conflict, high value
 # ------------------------------------------------------------------------------
 
 # Sensible defaults (won't override your settings)
@@ -132,7 +132,7 @@ set -g @yank_selection_mouse 'clipboard'
 set -g @plugin 'tmux-plugins/tmux-pain-control'
 
 # ------------------------------------------------------------------------------
-# B) Session management (internal) - see also: sesh in key bindings section
+# Session management (internal) - see also: sesh in key bindings section
 # ------------------------------------------------------------------------------
 
 # sessionx - internal session management panel (pairs with sesh above)
@@ -143,7 +143,7 @@ set -g @sessionx-filter-current 'false'
 set -g @sessionx-preview-enabled 'true'
 
 # ------------------------------------------------------------------------------
-# C) Copy / Jump / Open
+# Copy / Jump / Open
 # ------------------------------------------------------------------------------
 
 # Extract text from pane with fzf (paths, URLs, hashes, etc.)
@@ -170,7 +170,7 @@ set -g @fzf-url-bind 'u'
 set -g @plugin 'tmux-plugins/tmux-open'
 
 # ------------------------------------------------------------------------------
-# D) Status bar / UI
+# Status bar / UI
 # ------------------------------------------------------------------------------
 
 # tmux2k - status bar with Dracula theme
@@ -245,7 +245,7 @@ set -g @tmux2k-window-list-colors "black blue"
 set -g @plugin 'joshmedeski/tmux-nerd-font-window-name'
 
 # ------------------------------------------------------------------------------
-# E) Mouse / Scroll experience
+# Mouse / Scroll experience
 # ------------------------------------------------------------------------------
 
 # Better mouse mode (smoother scrolling, better selection)
@@ -253,7 +253,7 @@ set -g @plugin 'NHDaly/tmux-better-mouse-mode'
 set -g @scroll-speed-num-lines-per-scroll '3'
 
 # ------------------------------------------------------------------------------
-# F) Session persistence
+# Session persistence
 # ------------------------------------------------------------------------------
 
 # Save/restore sessions across restarts
@@ -266,8 +266,25 @@ set -g @plugin 'tmux-plugins/tmux-continuum'
 set -g @continuum-restore 'on'
 set -g @continuum-save-interval '15'
 
+{{- if not .headless }}
+
 # ------------------------------------------------------------------------------
-# G) Tools
+# Nested sessions (local ↔ remote tmux)
+# ------------------------------------------------------------------------------
+
+# tmux-suspend - toggle off outer tmux when working in nested session
+# F12 - suspend/resume outer tmux (all keys pass through to inner)
+# Only enabled on non-headless machines (local desktop/laptop)
+set -g @plugin 'MunifTanjim/tmux-suspend'
+set -g @suspend_key 'F12'
+
+# Visual indicator when suspended (red session with "locked" label)
+set -g @suspend_on_suspend_command "tmux set -g @tmux2k-session-colors 'red text'; tmux set -g @tmux2k-session-format '#S 󰌾'; ~/.config/tmux/plugins/tmux2k/2k.tmux"
+set -g @suspend_on_resume_command "tmux set -g @tmux2k-session-colors 'purple text'; tmux set -g @tmux2k-session-format '#S'; ~/.config/tmux/plugins/tmux2k/2k.tmux"
+{{- end }}
+
+# ------------------------------------------------------------------------------
+# Tools
 # ------------------------------------------------------------------------------
 
 # Task completion notifications
