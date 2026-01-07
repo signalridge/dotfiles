@@ -17,6 +17,11 @@ go = "latest"
 # Rust
 rust = "latest"
 
+{{ if eq .chezmoi.os "darwin" -}}
+# Python CLI tools (via pipx) - macOS only
+"pipx:mac-cleanup" = "latest"
+{{ end -}}
+
 [settings]
 # Automatically install tools when entering directory
 auto_install = true

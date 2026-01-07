@@ -8,6 +8,7 @@ homebrew:
   brews:
     shared:
       - "macos-trash"
+      - "mole"
     work:
       - "cliclick" # macOS only - GUI automation
       - "awscli"
@@ -105,17 +106,21 @@ homepkgs:
     - fd
     - ffmpeg
     - fzf
+    - ghostscript # gs - PDF/PostScript processor (Snacks.image dependency)
+    - mermaid-cli # mmdc - Mermaid diagram renderer (render-markdown.nvim dependency)
     - gh
     - gh-dash
     - ghq
     - git-lfs
     - glow
     - hyperfine
+    - imagemagick # magick/convert - image processing (Snacks.image dependency)
     - jq
     - just # use Justfile to simplify nix-darwin's commands
     - lazygit
     - mise
     - navi
+    - tree-sitter # nvim-treesitter CLI dependency
     - pixi # fast Python/conda package manager
     - pre-commit
     - rclone # cloud storage sync

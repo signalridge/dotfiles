@@ -140,20 +140,24 @@ alias take="mkcd"  # Alternative name
 
 # ─────────────────────────────────────────────────────────────
 # aicommit - Generate commit message with AI CLI
-# Usage: aicommit [--dry-run|-n] [provider]
+# Usage: aicommit [--dry-run|-n] [provider] [type]
 # Providers: codex (default), gemini, claude, auto
+# Type: optional prefix override (wip, feat, fix, chore, etc.)
 # Config: AICOMMIT_PROVIDER env var
 # ─────────────────────────────────────────────────────────────
 aicommit() {
     local dry_run=false
     local provider="${AICOMMIT_PROVIDER:-codex}"
+    local type_override=""
 
     # Parse arguments
-    for arg in "$@"; do
-        case "$arg" in
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
             --dry-run|-n) dry_run=true ;;
-            claude|codex|gemini|auto) provider="$arg" ;;
+            claude|codex|gemini|auto) provider="$1" ;;
+            *) [[ -z "$type_override" ]] && type_override="$1" ;;
         esac
+        shift
     done
 
     # Get staged diff
@@ -173,11 +177,16 @@ aicommit() {
     fi
 
     # Prompt template
+    local type_rule="- Types: feat, fix, docs, style, refactor, perf, test, chore"
+    if [[ -n "$type_override" ]]; then
+        type_rule="- MUST use type: $type_override"
+    fi
+
     local prompt="Generate a concise git commit message following conventional commits format.
 
 Rules:
 - Use format: type(scope): description
-- Types: feat, fix, docs, style, refactor, perf, test, chore
+${type_rule}
 - Keep the first line under 72 characters
 - Focus on WHY, not WHAT
 - No period at the end

@@ -1,0 +1,11 @@
+config:
+  fallback-icon: "?"
+  show-name: false
+icons:
+  python: ""
+  python3: ""
+  python3.12: ""
+  python3.13: ""
+  Python: ""
+  ipython: ""
+  uv: ""
