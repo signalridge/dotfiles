@@ -31,6 +31,11 @@ set -g display-time 4000
 set -g status-left-length 80
 set -g status-right-length 120
 
+{{- if .headless }}
+# Headless: status bar on top (easier to distinguish from local tmux)
+set -g status-position top
+{{- end }}
+
 # mouse support
 set -g mouse on
 
