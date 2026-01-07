@@ -20,20 +20,20 @@ node_modules/
 # macOS-only exclusions (skip on Linux)
 # ─────────────────────────────────────────────────────────────────────────────
 {{- if ne .chezmoi.os "darwin" }}
-# macOS-specific nix modules
-nix-config/modules/system.nix.tmpl
-nix-config/modules/apps.nix.tmpl
+# macOS-specific nix modules (these are source paths, OK for non-script files)
+nix-config/modules/system.nix
+nix-config/modules/apps.nix
 nix-config/modules/host-users.nix
 
-# macOS-specific scripts
-.chezmoiscripts/run_onchange_after_02_init.sh.tmpl
-.chezmoiscripts/run_after_04_update_homebrew_packages.sh
-.chezmoiscripts/run_onchange_after_07_install-paperlib.sh.tmpl
+# macOS-specific scripts (target paths)
+.chezmoiscripts/02_init.sh
+.chezmoiscripts/04_update_homebrew_packages.sh
+.chezmoiscripts/07_install-paperlib.sh
 
-# macOS-only GUI apps
-private_dot_config/aerospace/
-private_dot_config/private_karabiner/
-private_dot_config/ghostty/
+# macOS-only GUI apps (target paths)
+.config/aerospace/
+.config/karabiner/
+.config/ghostty/
 {{- end }}
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -41,15 +41,15 @@ private_dot_config/ghostty/
 # ─────────────────────────────────────────────────────────────────────────────
 {{- if .headless }}
 # GUI apps (not needed on headless servers)
-private_dot_config/aerospace/
-private_dot_config/private_karabiner/
-private_dot_config/ghostty/
+.config/aerospace/
+.config/karabiner/
+.config/ghostty/
 {{- end }}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Encryption-related exclusions (skip when useEncryption is false)
 # ─────────────────────────────────────────────────────────────────────────────
 {{- if not .useEncryption }}
-.chezmoiscripts/run_once_before_01_setup-encryption-key.sh
-private_dot_ssh/encrypted_private_config.tmpl.age
+.chezmoiscripts/01_setup-encryption-key.sh
+.ssh/*
 {{- end }}

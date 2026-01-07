@@ -19,5 +19,13 @@ fi
 
 # POSIX way to get script's dir: https://stackoverflow.com/a/29834779/12156188
 script_dir="$(cd -P -- "$(dirname -- "$(command -v -- "$0")")" && pwd -P)"
-# exec: replace current process with chezmoi init
-exec "$chezmoi" init --apply "--source=$script_dir"
+
+# Check if script_dir looks valid (has .chezmoiroot or is a chezmoi source dir)
+# When piped from curl, $0 is "sh" and script_dir becomes /usr/bin which is wrong
+if [ -f "$script_dir/.chezmoiroot" ] || [ -f "$script_dir/.chezmoi.toml.tmpl" ]; then
+    # exec: replace current process with chezmoi init using local source
+    exec "$chezmoi" init --apply "--source=$script_dir"
+else
+    # Piped from curl/wget - clone from GitHub instead
+    exec "$chezmoi" init --apply signalridge
+fi
