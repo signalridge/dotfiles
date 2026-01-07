@@ -6,4 +6,12 @@ set -eufo pipefail
 # flake.lock: {{ output "sha256sum" (joinPath .chezmoi.homeDir "nix-config/flake.lock") | trim }}
 
 echo ":: [03] Switching Nix profile"
+
+# Source nix environment if not already available
+if ! command -v nix &>/dev/null; then
+    if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    fi
+fi
+
 nix run --extra-experimental-features 'nix-command flakes' ~/nix-config#{{ .hostname }}.switch

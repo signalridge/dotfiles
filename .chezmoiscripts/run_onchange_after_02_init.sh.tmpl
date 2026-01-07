@@ -11,6 +11,13 @@ set -eufo pipefail
 
 echo ":: [02] Configuring nix-darwin"
 
+# Source nix environment if not already available
+if ! command -v nix &>/dev/null; then
+    if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    fi
+fi
+
 if ! command -v darwin-version >/dev/null 2>&1; then
     echo "    Installing nix-darwin..."
     sudo nix run nix-darwin/master#darwin-rebuild --extra-experimental-features "nix-command flakes" -- switch --flake ~/nix-config#{{ .hostname }} --show-trace --verbose
