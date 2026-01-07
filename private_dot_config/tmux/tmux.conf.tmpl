@@ -283,9 +283,9 @@ set -g @continuum-save-interval '15'
 set -g @plugin 'MunifTanjim/tmux-suspend'
 set -g @suspend_key 'F12'
 
-# Visual indicator when suspended (red session with "locked" label)
-set -g @suspend_on_suspend_command "tmux set -g @tmux2k-session-colors 'red text'; tmux set -g @tmux2k-session-format '#S 󰌾'; ~/.config/tmux/plugins/tmux2k/2k.tmux"
-set -g @suspend_on_resume_command "tmux set -g @tmux2k-session-colors 'purple text'; tmux set -g @tmux2k-session-format '#S'; ~/.config/tmux/plugins/tmux2k/2k.tmux"
+# Visual indicator when suspended (lock icon next to session name)
+set -g @suspend_on_suspend_command "tmux set -g @tmux2k-session-format '#S 󰌾'; tmux refresh-client -S"
+set -g @suspend_on_resume_command "tmux set -g @tmux2k-session-format '#S'; tmux refresh-client -S"
 {{- end }}
 
 # ------------------------------------------------------------------------------
