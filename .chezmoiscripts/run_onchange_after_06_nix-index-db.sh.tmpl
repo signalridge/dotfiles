@@ -1,4 +1,4 @@
-{{- $version := output "curl" "-sfL" "https://api.github.com/repos/nix-community/nix-index-database/releases/latest" | fromJson | dig "tag_name" "" | trim -}}
+{{- $version := output "sh" "-c" "curl -fsSL --connect-timeout 5 https://api.github.com/repos/nix-community/nix-index-database/releases/latest 2>/dev/null | grep tag_name | head -1 || echo FALLBACK_2025-01-09" | trim -}}
 {{ if lookPath "nix-locate" -}}
 #!/bin/bash
 

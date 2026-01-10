@@ -1,8 +1,8 @@
 #!/bin/sh
 # shellcheck shell=dash
 # Nix installer with automatic mirror selection for chezmoi
-# installer-version: {{ output "curl" "-fsSL" "https://api.github.com/repos/DeterminateSystems/nix-installer/releases/latest" | regexFind "\"tag_name\":\\s*\"([^\"]+)\"" }}
-# nix-version: {{ output "curl" "-fsSL" "https://api.github.com/repos/DeterminateSystems/nix/releases/latest" | regexFind "\"tag_name\":\\s*\"([^\"]+)\"" }}
+# installer-version: {{ output "sh" "-c" "curl -fsSL --connect-timeout 5 https://api.github.com/repos/DeterminateSystems/nix-installer/releases/latest 2>/dev/null | grep tag_name | head -1 || echo FALLBACK_v3.15.1" | trim }}
+# nix-version: {{ output "sh" "-c" "curl -fsSL --connect-timeout 5 https://api.github.com/repos/DeterminateSystems/nix/releases/latest 2>/dev/null | grep tag_name | head -1 || echo FALLBACK_v2.33.0" | trim }}
 
 set -eu
 

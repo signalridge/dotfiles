@@ -1,6 +1,6 @@
 {{- $arch := "arm" -}}
 {{- if eq .chezmoi.arch "amd64" -}}{{- $arch = "x64" -}}{{- end -}}
-{{- $etag := output "curl" "-sIL" (printf "https://distribution.paperlib.app/electron-mac-%s/latest.dmg" $arch) | regexFind "etag: [^\r\n]+" | trim -}}
+{{- $etag := output "sh" "-c" (printf "curl -sIL --connect-timeout 5 https://distribution.paperlib.app/electron-mac-%s/latest.dmg 2>/dev/null | grep -i etag | head -1 || echo etag-fallback-ce25921d" $arch) | trim -}}
 #!/bin/bash
 
 set -eufo pipefail
