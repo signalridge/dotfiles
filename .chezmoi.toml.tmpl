@@ -37,6 +37,12 @@ encryption = "age"
 {{-   $headless = true -}}
 {{- end -}}
 
+{{/* macOS specific: install Mac App Store apps */}}
+{{- $installMasApps := false -}}
+{{- if and (eq .chezmoi.os "darwin") (stdinIsATTY) -}}
+{{-   $installMasApps = promptBoolOnce . "installMasApps" "Install Mac App Store apps (requires Apple ID login)" -}}
+{{- end -}}
+
 {{/* timezone: prefer local config, fallback to ip-api.com */}}
 {{- $timezone := "" -}}
 
@@ -68,6 +74,7 @@ work = {{ $work }}
 private = {{ $private }}
 headless = {{ $headless }}
 useEncryption = {{ $useEncryption }}
+installMasApps = {{ $installMasApps }}
 osid = {{ $osID | quote }}
 timezone = {{ $timezone | quote }}
 

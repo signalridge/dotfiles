@@ -38,6 +38,7 @@
     # otherwise Apple Store will refuse to install them.
     # For details, see https://github.com/mas-cli/mas
     # TODO Feel free to add your favorite apps here.
+    {{- if .installMasApps }}
     masApps = {
       {{- range .homebrew.masApps.shared }}
       {{ index . 0 }} = {{ index . 1 }};
@@ -53,6 +54,9 @@
       {{- end }}
       {{- end }}
     };
+    {{- else }}
+    masApps = {}; # Disabled via installMasApps = false
+    {{- end }}
 
     # `brew install`
     # TODO Feel free to add your favorite packages here.
