@@ -30,6 +30,7 @@ jobs:
           work = false
           private = false
           timezone = "UTC"
+          installMasApps = false
           EOF
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main

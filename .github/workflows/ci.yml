@@ -39,6 +39,7 @@ jobs:
           work = false
           private = false
           timezone = "UTC"
+          installMasApps = false
           EOF
       - name: Render templates
         run: |
