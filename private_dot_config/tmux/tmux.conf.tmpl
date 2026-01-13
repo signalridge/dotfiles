@@ -33,10 +33,8 @@ set -g display-time 4000
 set -g status-left-length 80
 set -g status-right-length 120
 
-{{- if .headless }}
-# Headless: status bar on top (easier to distinguish from local tmux)
+# status bar on top (consistent for nested tmux)
 set -g status-position top
-{{- end }}
 
 # mouse support
 set -g mouse on
@@ -285,9 +283,9 @@ set -g @continuum-save-interval '15'
 set -g @plugin 'MunifTanjim/tmux-suspend'
 set -g @suspend_key 'F12'
 
-# Visual indicator when suspended (lock icon next to session name)
-set -g @suspend_on_suspend_command "tmux set -g @tmux2k-session-format '#S 󰌾'; tmux refresh-client -S"
-set -g @suspend_on_resume_command "tmux set -g @tmux2k-session-format '#S'; tmux refresh-client -S"
+# When suspended: hide outer status bar (reveals inner tmux bar)
+# Format: "option:flags:value" - plugin auto-saves and restores original value
+set -g @suspend_suspended_options "status::off"
 {{- end }}
 
 # ------------------------------------------------------------------------------
