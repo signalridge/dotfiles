@@ -21,6 +21,7 @@ homebrew:
     shared:
       - "visual-studio-code"
       - "alt-tab"
+      - "dbeaver-community"
       - "thebrowsercompany-dia"
       - "keka"
       - "keyboardcleantool"
