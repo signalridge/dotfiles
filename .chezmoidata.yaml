@@ -118,6 +118,8 @@ homepkgs:
     - jq
     - just # use Justfile to simplify nix-darwin's commands
     - lazygit
+    - lua5_4 # Lua 5.4 runtime (for Hammerspoon development)
+    - lua-language-server # Lua LSP
     - mise
     - navi
     - tree-sitter # nvim-treesitter CLI dependency
@@ -135,11 +137,13 @@ homepkgs:
     - ripgrep
     - ripgrep-all
     - sd
+    - selene # Lua linter
     - sesh
     - skim
     - sheldon
     - sniffnet
     - starship
+    - stylua # Lua formatter
     - tlrc
     - tmux
     - tokei

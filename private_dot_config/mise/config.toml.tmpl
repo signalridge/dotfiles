@@ -18,12 +18,6 @@ go = "latest"
 rust = "latest"
 
 {{ if eq .chezmoi.os "darwin" -}}
-# Lua (for Hammerspoon development) - macOS only
-lua = "5.4"
-lua-language-server = "latest"
-stylua = "latest"
-selene = "latest"
-
 # Python CLI tools (via pipx) - macOS only
 "pipx:mac-cleanup" = "latest"
 {{ end -}}
@@ -52,5 +46,3 @@ always_keep_install = false
 [env]
 # Add local bin to PATH
 _.path = ["./node_modules/.bin", "./bin"]
-# Pin LuaRocks version to avoid 3.13.0 bug (duplicate tag field in rockspec)
-ASDF_LUA_LUAROCKS_VERSION = "3.11.1"
