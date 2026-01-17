@@ -22,7 +22,6 @@ homebrew:
   casks:
     shared:
       - "visual-studio-code"
-      - "dbeaver-community"
       - "hammerspoon"
       - "keka"
       - "keyboardcleantool"
@@ -41,6 +40,7 @@ homebrew:
       - "karabiner-elements"
       - "zen"
     work:
+      - "dbeaver-community"
       - "obsidian"
       - "cursor"
       - "gcloud-cli"
