@@ -10,6 +10,7 @@ default-root-container-layout = 'tiles'
 default-root-container-orientation = 'auto'
 on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 automatically-unhide-macos-hidden-apps = true
+after-startup-command = ['exec-and-forget borders']
 
 [key-mapping]
 preset = 'qwerty'
@@ -21,6 +22,151 @@ outer.left = 8
 outer.bottom = 8
 outer.top = 8
 outer.right = 8
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Window Detection Rules (auto-float specific windows)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Settings/preferences windows
+[[on-window-detected]]
+if.window-title-regex-substring = '(?i)(setting|preferences)'
+run = 'layout floating'
+
+# Picture-in-Picture
+[[on-window-detected]]
+if.window-title-regex-substring = '(?i)Picture-in-Picture'
+run = 'layout floating'
+
+# System Settings
+[[on-window-detected]]
+if.app-id = 'com.apple.systempreferences'
+run = 'layout floating'
+
+# Preview
+[[on-window-detected]]
+if.app-id = 'com.apple.Preview'
+run = 'layout floating'
+
+# Finder dialogs
+[[on-window-detected]]
+if.app-id = 'com.apple.finder'
+if.window-title-regex-substring = '(?i)(copy|move|info|delete)'
+run = 'layout floating'
+
+# 1Password
+[[on-window-detected]]
+if.app-id = 'com.1password.1password'
+run = 'layout floating'
+
+# Bitwarden
+[[on-window-detected]]
+if.app-id = 'com.bitwarden.desktop'
+run = 'layout floating'
+
+# Calculator
+[[on-window-detected]]
+if.app-id = 'com.apple.calculator'
+run = 'layout floating'
+
+# Raycast
+[[on-window-detected]]
+if.app-id = 'com.raycast.macos'
+run = 'layout floating'
+
+# CleanMyMac
+[[on-window-detected]]
+if.app-id = 'com.macpaw.CleanMyMac-setapp'
+run = 'layout floating'
+
+# Keka
+[[on-window-detected]]
+if.app-id = 'com.aone.keka'
+run = 'layout floating'
+
+# KeyboardCleanTool
+[[on-window-detected]]
+if.app-id = 'com.hegenberg.KeyboardCleanTool'
+run = 'layout floating'
+
+# Keystroke Pro
+[[on-window-detected]]
+if.app-id = 'de.ixeau.KeystrokePro2'
+run = 'layout floating'
+
+# SoundSource
+[[on-window-detected]]
+if.app-id = 'com.rogueamoeba.soundsource'
+run = 'layout floating'
+
+# Bartender
+[[on-window-detected]]
+if.app-id = 'com.surteesstudios.Bartender-setapp'
+run = 'layout floating'
+
+# CleanShot X
+[[on-window-detected]]
+if.app-id = 'com.getcleanshot.app-setapp'
+run = 'layout floating'
+
+# One Switch
+[[on-window-detected]]
+if.app-id = 'studio.fireball.OneSwitch-setapp'
+run = 'layout floating'
+
+# Paste
+[[on-window-detected]]
+if.app-id = 'com.wiheads.paste-setapp'
+run = 'layout floating'
+
+# PopClip
+[[on-window-detected]]
+if.app-id = 'com.pilotmoon.popclip-setapp'
+run = 'layout floating'
+
+# Yoink
+[[on-window-detected]]
+if.app-id = 'at.EternalStorms.Yoink-setapp'
+run = 'layout floating'
+
+# iStat Menus
+[[on-window-detected]]
+if.app-id = 'com.bjango.istatmenus-setapp'
+run = 'layout floating'
+
+# Bob (translation)
+[[on-window-detected]]
+if.app-id = 'com.ripperhe.Bob'
+run = 'layout floating'
+
+# Input Source Pro
+[[on-window-detected]]
+if.app-id = 'com.runjuu.Input-Source-Pro'
+run = 'layout floating'
+
+# Karabiner Elements
+[[on-window-detected]]
+if.app-id = 'org.pqrs.Karabiner-Elements.Settings'
+run = 'layout floating'
+
+# Karabiner EventViewer
+[[on-window-detected]]
+if.app-id = 'org.pqrs.Karabiner-EventViewer'
+run = 'layout floating'
+
+# Zoom
+[[on-window-detected]]
+if.app-id = 'us.zoom.xos'
+run = 'layout floating'
+
+# RustDesk
+[[on-window-detected]]
+if.app-id = 'com.carriez.rustdesk'
+run = 'layout floating'
+
+# CloudMounter
+[[on-window-detected]]
+if.app-id = 'com.eltima.cloudmounter-setapp'
+run = 'layout floating'
 
 # Workspace to monitor assignment (by position: 1=left, 2=center, 3=right)
 [workspace-to-monitor-force-assignment]
@@ -34,6 +180,7 @@ outer.right = 8
 8 = 2
 9 = 3
 10 = 3
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Main Mode
 # ─────────────────────────────────────────────────────────────────────────────
@@ -115,3 +262,8 @@ alt-shift-h = ['join-with left', 'mode main']
 alt-shift-j = ['join-with down', 'mode main']
 alt-shift-k = ['join-with up', 'mode main']
 alt-shift-l = ['join-with right', 'mode main']
+
+# Volume controls
+down = 'volume down'
+up = 'volume up'
+shift-down = ['volume mute-toggle', 'mode main']

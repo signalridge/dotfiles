@@ -1,8 +1,8 @@
 #!/bin/sh
 # shellcheck shell=dash
 # Nix installer with automatic mirror selection for chezmoi
-# installer-version: {{ output "sh" "-c" "curl -fsSL --connect-timeout 5 https://api.github.com/repos/DeterminateSystems/nix-installer/releases/latest 2>/dev/null | grep tag_name | head -1 || echo FALLBACK_v3.15.1" | trim }}
-# nix-version: {{ output "sh" "-c" "curl -fsSL --connect-timeout 5 https://api.github.com/repos/DeterminateSystems/nix/releases/latest 2>/dev/null | grep tag_name | head -1 || echo FALLBACK_v2.33.0" | trim }}
+# installer-version: {{ output "sh" "-c" "gh release view --repo DeterminateSystems/nix-installer --json tagName -q '.tagName' 2>/dev/null || curl -fsSL --connect-timeout 5 https://api.github.com/repos/DeterminateSystems/nix-installer/releases/latest 2>/dev/null | grep tag_name | head -1 | sed -E 's/.*\"([^\"]+)\".*/\\1/' || echo v0.32.2" | trim }}
+# nix-version: {{ output "sh" "-c" "gh release view --repo DeterminateSystems/nix --json tagName -q '.tagName' 2>/dev/null || curl -fsSL --connect-timeout 5 https://api.github.com/repos/DeterminateSystems/nix/releases/latest 2>/dev/null | grep tag_name | head -1 | sed -E 's/.*\"([^\"]+)\".*/\\1/' || echo v2.28.3" | trim }}
 
 set -eu
 
@@ -13,15 +13,22 @@ echo ":: [00] Installing Nix"
 get_latest_version() {
     local version=""
 
-    # Try curl first, then wget
-    if command -v curl >/dev/null 2>&1; then
-        version=$(curl -fsSL "https://api.github.com/repos/DeterminateSystems/nix-installer/releases/latest" 2>/dev/null | grep '"tag_name"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
-    elif command -v wget >/dev/null 2>&1; then
-        version=$(wget -qO- "https://api.github.com/repos/DeterminateSystems/nix-installer/releases/latest" 2>/dev/null | grep '"tag_name"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+    # Try gh CLI first (authenticated, no rate limit)
+    if command -v gh >/dev/null 2>&1; then
+        version=$(gh release view --repo DeterminateSystems/nix-installer --json tagName -q '.tagName' 2>/dev/null || true)
     fi
 
-    # Fallback to known version if API fails
-    echo "${version:-v3.15.1}"
+    # Fallback to API
+    if [ -z "$version" ]; then
+        if command -v curl >/dev/null 2>&1; then
+            version=$(curl -fsSL "https://api.github.com/repos/DeterminateSystems/nix-installer/releases/latest" 2>/dev/null | grep '"tag_name"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+        elif command -v wget >/dev/null 2>&1; then
+            version=$(wget -qO- "https://api.github.com/repos/DeterminateSystems/nix-installer/releases/latest" 2>/dev/null | grep '"tag_name"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+        fi
+    fi
+
+    # Fallback to known version if all methods fail
+    echo "${version:-v0.32.2}"
 }
 
 NIX_INSTALLER_VERSION="${NIX_INSTALLER_VERSION:-$(get_latest_version)}"

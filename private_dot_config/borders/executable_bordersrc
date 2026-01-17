@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Dracula theme colors
+# Purple: #bd93f9, Comment: #44475a
+options=(
+    style=round
+    width=5.0
+    hidpi=on
+    active_color=0xffbd93f9
+    inactive_color=0xff44475a
+)
+
+borders "${options[@]}"

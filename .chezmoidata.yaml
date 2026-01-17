@@ -2,6 +2,7 @@ homebrew:
   taps:
     shared:
       - "nikitabobko/tap"
+      - "FelixKratz/formulae"
     work:
       - "azure/functions"
     private:
@@ -9,6 +10,7 @@ homebrew:
     shared:
       - "macos-trash"
       - "mole"
+      - "borders"
     work:
       - "cliclick" # macOS only - GUI automation
       - "awscli"
@@ -20,9 +22,7 @@ homebrew:
   casks:
     shared:
       - "visual-studio-code"
-      - "alt-tab"
       - "dbeaver-community"
-      - "thebrowsercompany-dia"
       - "keka"
       - "keyboardcleantool"
       - "ghostty"
@@ -39,6 +39,7 @@ homebrew:
       - "slidepilot"
       - "tailscale-app"
       - "karabiner-elements"
+      - "zen"
     work:
       - "obsidian"
       - "cursor"
@@ -49,7 +50,6 @@ homebrew:
       - "balenaetcher"
       - "bob-app"
       - "chatgpt"
-      - "cleanmymac"
       - "discord"
       - "grammarly-desktop"
       - "iina" # video player
@@ -67,7 +67,6 @@ homebrew:
     private:
       - ["KeystrokePro", "1572206224"]
       - ["Messenger", "1480068668"]
-      - ["Magnet", "441258766"]
       - ["Texifier", "458866234"]
       - ["Notability", "360593530"]
       - ["Goodnotes6", "1444383602"]
