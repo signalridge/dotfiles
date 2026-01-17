@@ -23,7 +23,7 @@
 
 hs.window.animationDuration = 0
 
-local log = hs.logger.new('init', 'debug')
+local log = hs.logger.new("init", "debug")
 
 -- ==============================================================================
 -- Modifier Key Configuration
@@ -31,7 +31,7 @@ local log = hs.logger.new('init', 'debug')
 -- Using Ctrl+Cmd as prefix (simpler than Ctrl+Alt+Cmd)
 -- Alt+* is reserved for AeroSpace
 
-local hyper = {"cmd", "ctrl"}
+local hyper = { "cmd", "ctrl" }
 
 -- ==============================================================================
 -- IME Auto-Switching (replaces Input Source Pro)
@@ -39,7 +39,7 @@ local hyper = {"cmd", "ctrl"}
 -- Automatically switches input method based on active application
 -- Debug: Ctrl+Cmd+. shows current app info and IME source ID
 
-require('ime')
+require("ime")
 
 -- ==============================================================================
 -- Load Spoons
@@ -52,7 +52,7 @@ spoon.ReloadConfiguration:start()
 -- KSheet - Show keyboard shortcuts for current app
 hs.loadSpoon("KSheet")
 hs.hotkey.bind(hyper, "/", function()
-    spoon.KSheet:toggle()
+  spoon.KSheet:toggle()
 end)
 
 -- SpeedMenu - Network speed in menu bar
@@ -61,17 +61,17 @@ hs.loadSpoon("SpeedMenu")
 -- AClock - Big clock display
 hs.loadSpoon("AClock")
 spoon.AClock.format = "%H:%M:%S"
-spoon.AClock.textColor = {hex = "#1891C3"}
+spoon.AClock.textColor = { hex = "#1891C3" }
 spoon.AClock.textFont = "Impact"
 spoon.AClock.textSize = 120
 hs.hotkey.bind(hyper, "t", function()
-    spoon.AClock:toggleShow()
+  spoon.AClock:toggleShow()
 end)
 
 -- PomodoroTimer - 25min work / 5min break
 hs.loadSpoon("PomodoroTimer")
 hs.hotkey.bind(hyper, "0", function()
-    spoon.PomodoroTimer:toggle()
+  spoon.PomodoroTimer:toggle()
 end)
 
 -- ==============================================================================
@@ -83,46 +83,46 @@ micMute.menubar = nil
 micMute.muted = false
 
 function micMute.setMute(mute)
-    local device = hs.audiodevice.defaultInputDevice()
-    if device then
-        device:setInputMuted(mute)
-        micMute.muted = mute
-        micMute.updateMenubar()
-        if mute then
-            hs.alert.show("Mic MUTED", nil, nil, 1)
-        else
-            hs.alert.show("Mic UNMUTED", nil, nil, 1)
-        end
+  local device = hs.audiodevice.defaultInputDevice()
+  if device then
+    device:setInputMuted(mute)
+    micMute.muted = mute
+    micMute.updateMenubar()
+    if mute then
+      hs.alert.show("Mic MUTED", nil, nil, 1)
+    else
+      hs.alert.show("Mic UNMUTED", nil, nil, 1)
     end
+  end
 end
 
 function micMute.toggle()
-    micMute.setMute(not micMute.muted)
+  micMute.setMute(not micMute.muted)
 end
 
 function micMute.updateMenubar()
-    if micMute.menubar then
-        if micMute.muted then
-            micMute.menubar:setTitle("🔇")
-            micMute.menubar:setTooltip("Mic: Muted")
-        else
-            micMute.menubar:setTitle("🎤")
-            micMute.menubar:setTooltip("Mic: Active")
-        end
+  if micMute.menubar then
+    if micMute.muted then
+      micMute.menubar:setTitle("🔇")
+      micMute.menubar:setTooltip("Mic: Muted")
+    else
+      micMute.menubar:setTitle("🎤")
+      micMute.menubar:setTooltip("Mic: Active")
     end
+  end
 end
 
 function micMute.init()
-    local device = hs.audiodevice.defaultInputDevice()
-    if device then
-        micMute.muted = device:inputMuted()
-    end
-    micMute.menubar = hs.menubar.new()
-    if micMute.menubar then
-        micMute.menubar:setClickCallback(micMute.toggle)
-        micMute.updateMenubar()
-    end
-    hs.hotkey.bind(hyper, "m", micMute.toggle)
+  local device = hs.audiodevice.defaultInputDevice()
+  if device then
+    micMute.muted = device:inputMuted()
+  end
+  micMute.menubar = hs.menubar.new()
+  if micMute.menubar then
+    micMute.menubar:setClickCallback(micMute.toggle)
+    micMute.updateMenubar()
+  end
+  hs.hotkey.bind(hyper, "m", micMute.toggle)
 end
 
 micMute.init()
@@ -134,25 +134,27 @@ micMute.init()
 local autoMute = {}
 
 function autoMute.systemWillSleep()
-    local device = hs.audiodevice.defaultOutputDevice()
-    if device then
-        device:setOutputMuted(true)
-    end
+  local device = hs.audiodevice.defaultOutputDevice()
+  if device then
+    device:setOutputMuted(true)
+  end
 end
 
 function autoMute.systemDidWake()
-    hs.notify.new({
-        title = "System Wake",
-        informativeText = "Audio muted"
-    }):send()
+  hs.notify
+    .new({
+      title = "System Wake",
+      informativeText = "Audio muted",
+    })
+    :send()
 end
 
 autoMute.watcher = hs.caffeinate.watcher.new(function(event)
-    if event == hs.caffeinate.watcher.systemWillSleep then
-        autoMute.systemWillSleep()
-    elseif event == hs.caffeinate.watcher.systemDidWake then
-        autoMute.systemDidWake()
-    end
+  if event == hs.caffeinate.watcher.systemWillSleep then
+    autoMute.systemWillSleep()
+  elseif event == hs.caffeinate.watcher.systemDidWake then
+    autoMute.systemDidWake()
+  end
 end)
 autoMute.watcher:start()
 
@@ -165,42 +167,48 @@ local wifiWatcher = {}
 
 -- List of home WiFi SSIDs (supports multiple networks)
 -- Configured via chezmoi init prompt (comma-separated)
-wifiWatcher.homeSSIDs = {
 {{- if .homeWifiSSIDs }}
-{{- range splitList "," .homeWifiSSIDs }}
-    "{{ . | trim }}",
+wifiWatcher.homeSSIDs = { {{ range $i, $ssid := splitList "," .homeWifiSSIDs }}{{ if $i }}, {{ end }}"{{ $ssid | trim }}"{{ end }} }
+{{- else }}
+wifiWatcher.homeSSIDs = {}
 {{- end }}
-{{- end }}
-}
 wifiWatcher.lastSSID = hs.wifi.currentNetwork()
 
 -- Check if SSID is in home list
 function wifiWatcher.isHomeSSID(ssid)
-    if ssid == nil then return false end
-    for _, homeSSID in ipairs(wifiWatcher.homeSSIDs) do
-        if ssid == homeSSID then return true end
-    end
+  if ssid == nil then
     return false
+  end
+  for _, homeSSID in ipairs(wifiWatcher.homeSSIDs) do
+    if ssid == homeSSID then
+      return true
+    end
+  end
+  return false
 end
 
 function wifiWatcher.ssidChanged()
-    local newSSID = hs.wifi.currentNetwork()
-    local wasHome = wifiWatcher.isHomeSSID(wifiWatcher.lastSSID)
-    local isHome = wifiWatcher.isHomeSSID(newSSID)
+  local newSSID = hs.wifi.currentNetwork()
+  local wasHome = wifiWatcher.isHomeSSID(wifiWatcher.lastSSID)
+  local isHome = wifiWatcher.isHomeSSID(newSSID)
 
-    if isHome and not wasHome then
-        -- Connected to home WiFi
-        hs.notify.new({title = "WiFi", informativeText = "Welcome home"}):send()
-        local device = hs.audiodevice.defaultOutputDevice()
-        if device then device:setOutputVolume(25) end
-    elseif not isHome and wasHome then
-        -- Left home WiFi
-        hs.notify.new({title = "WiFi", informativeText = "Left home"}):send()
-        local device = hs.audiodevice.defaultOutputDevice()
-        if device then device:setOutputVolume(0) end
+  if isHome and not wasHome then
+    -- Connected to home WiFi
+    hs.notify.new({ title = "WiFi", informativeText = "Welcome home" }):send()
+    local device = hs.audiodevice.defaultOutputDevice()
+    if device then
+      device:setOutputVolume(25)
     end
+  elseif not isHome and wasHome then
+    -- Left home WiFi
+    hs.notify.new({ title = "WiFi", informativeText = "Left home" }):send()
+    local device = hs.audiodevice.defaultOutputDevice()
+    if device then
+      device:setOutputVolume(0)
+    end
+  end
 
-    wifiWatcher.lastSSID = newSSID
+  wifiWatcher.lastSSID = newSSID
 end
 
 wifiWatcher.watcher = hs.wifi.watcher.new(wifiWatcher.ssidChanged)
@@ -211,7 +219,7 @@ wifiWatcher.watcher:start()
 -- ==============================================================================
 
 hs.hotkey.bind(hyper, "l", function()
-    hs.caffeinate.lockScreen()
+  hs.caffeinate.lockScreen()
 end)
 
 -- ==============================================================================
@@ -220,17 +228,17 @@ end)
 
 -- Move window to next/previous monitor
 hs.hotkey.bind(hyper, "n", function()
-    local win = hs.window.focusedWindow()
-    if win then
-        win:moveToScreen(win:screen():next())
-    end
+  local win = hs.window.focusedWindow()
+  if win then
+    win:moveToScreen(win:screen():next())
+  end
 end)
 
 hs.hotkey.bind(hyper, "p", function()
-    local win = hs.window.focusedWindow()
-    if win then
-        win:moveToScreen(win:screen():previous())
-    end
+  local win = hs.window.focusedWindow()
+  if win then
+    win:moveToScreen(win:screen():previous())
+  end
 end)
 
 -- ==============================================================================
@@ -238,15 +246,12 @@ end)
 -- ==============================================================================
 
 hs.hotkey.bind(hyper, "i", function()
-    local battery = hs.battery.percentage()
-    local charging = hs.battery.isCharging() and " (Charging)" or ""
-    local wifi = hs.wifi.currentNetwork() or "Not connected"
+  local battery = hs.battery.percentage()
+  local charging = hs.battery.isCharging() and " (Charging)" or ""
+  local wifi = hs.wifi.currentNetwork() or "Not connected"
 
-    local info = string.format(
-        "Battery: %.0f%%%s\nWiFi: %s",
-        battery, charging, wifi
-    )
-    hs.alert.show(info, nil, nil, 3)
+  local info = string.format("Battery: %.0f%%%s\nWiFi: %s", battery, charging, wifi)
+  hs.alert.show(info, nil, nil, 3)
 end)
 
 -- ==============================================================================
@@ -254,16 +259,18 @@ end)
 -- ==============================================================================
 
 hs.hotkey.bind(hyper, "r", function()
-    hs.reload()
+  hs.reload()
 end)
 
 -- ==============================================================================
 -- Finalize
 -- ==============================================================================
 
-hs.notify.new({
+hs.notify
+  .new({
     title = "Hammerspoon",
-    informativeText = "Config loaded"
-}):send()
+    informativeText = "Config loaded",
+  })
+  :send()
 
 log.i("Hammerspoon config loaded")

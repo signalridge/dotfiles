@@ -8,14 +8,14 @@ obj.author = "Ein Verne"
 obj.homepage = "https://github.com/einverne/dotfiles"
 obj.license = "MIT - https://opensource.org/licenses/MIT"
 
--- 设置默认值
-obj.workDuration = 25 * 60  -- 25分钟工作时间
-obj.breakDuration = 5 * 60  -- 5分钟休息时间
+-- Default settings
+obj.workDuration = 25 * 60  -- 25 minutes work time
+obj.breakDuration = 5 * 60  -- 5 minutes break time
 obj.timer = nil
 obj.isWorking = true
 
-obj.startSound = hs.sound.getByName("Submarine")  -- 开始声音
-obj.endSound = hs.sound.getByName("Glass")  -- 结束声音
+obj.startSound = hs.sound.getByName("Submarine")  -- Start sound
+obj.endSound = hs.sound.getByName("Glass")  -- End sound
 
 function obj:toggle()
     if self.timer == nil then
@@ -29,25 +29,25 @@ end
 
 function obj:start()
     log.d("PomodoroTimer start")
-    hs.alert.show("番茄时钟已启动", 2)
-    self.startSound:play()  -- 播放开始声音
+    hs.alert.show("Pomodoro Timer started", 2)
+    self.startSound:play()  -- Play start sound
     self:startTimer()
 end
 
 function obj:startTimer()
     local duration = self.isWorking and self.workDuration or self.breakDuration
     self.timer = hs.timer.doAfter(duration, function()
-        self.endSound:play()  -- 播放结束声音
+        self.endSound:play()  -- Play end sound
         if self.isWorking then
-            hs.alert.show("工作时间结束，开始休息！", 5)
-            hs.notify.new({title="番茄时钟", informativeText="工作时间结束，开始休息！"}):send()
+            hs.alert.show("Work time ended, take a break!", 5)
+            hs.notify.new({title="Pomodoro Timer", informativeText="Work time ended, take a break!"}):send()
             self.isWorking = false
         else
-            hs.alert.show("休息时间结束，开始工作！", 5)
-            hs.notify.new({title="番茄时钟", informativeText="休息时间结束，开始工作！"}):send()
+            hs.alert.show("Break time ended, back to work!", 5)
+            hs.notify.new({title="Pomodoro Timer", informativeText="Break time ended, back to work!"}):send()
             self.isWorking = true
         end
-        self:startTimer()  -- 开始下一个计时周期
+        self:startTimer()  -- Start next timer cycle
     end)
 end
 
@@ -56,9 +56,9 @@ function obj:stop()
         self.timer:stop()
         self.timer = nil
     end
-    self.isWorking = true  -- 重置为工作状态
-    hs.alert.show("番茄时钟已停止", 2)
-    self.endSound:play()  -- 播放结束声音
+    self.isWorking = true  -- Reset to work state
+    hs.alert.show("Pomodoro Timer stopped", 2)
+    self.endSound:play()  -- Play end sound
 end
 
 return obj

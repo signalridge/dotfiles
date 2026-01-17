@@ -36,6 +36,15 @@ repos:
       - id: markdownlint
         args: [--disable, MD013, MD033, MD041, MD036, --]
         exclude: \.tmpl$
+  # Lua (render templates + check all with stylua/selene)
+  - repo: local
+    hooks:
+      - id: check-lua
+        name: Check Lua (stylua + selene)
+        entry: bash -c 'set -e; tmpdir=$(mktemp -d); trap "rm -rf $tmpdir" EXIT; cfg="$tmpdir/chezmoi.toml"; printf "[data]\nhostname = \"test\"\nwork = false\nprivate = true\nhomeWifiSSIDs = \"\"\n" > "$cfg"; cp stylua.toml selene.toml "$tmpdir/" 2>/dev/null || true; for f in $(find . -name "*.lua.tmpl" -o -name "*.lua" | grep -v -e node_modules -e Spoons); do if [[ "$f" == *.tmpl ]]; then out="$tmpdir/$(basename "${f%.tmpl}")"; chezmoi execute-template --config "$cfg" --source . < "$f" > "$out"; else cp "$f" "$tmpdir/"; fi; done; nix run nixpkgs#stylua -- --check "$tmpdir"; nix run nixpkgs#selene -- "$tmpdir"'
+        language: system
+        files: \.lua(\.tmpl)?$
+        pass_filenames: false
   # Nix (render templates + check all with alejandra/statix)
   - repo: local
     hooks:

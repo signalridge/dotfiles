@@ -1,0 +1,11 @@
+# Selene configuration
+# https://kampfkarren.github.io/selene/
+std = "lua52"
+
+[lints]
+# Allow undefined globals (hs, vim, spoon are defined at runtime)
+undefined_variable = "allow"
+# Allow mixed tables (required for lazy.nvim plugin specs)
+mixed_table = "allow"
+# Allow unscoped variables (hs, spoon, vim are Hammerspoon/Neovim globals)
+unscoped_variables = "allow"
