@@ -229,14 +229,14 @@ Shell 提示符由 **Starship** 驱动：Rust 编写、轻量且快速。使用 
 
 **yazi** 是超快的终端文件管理器，支持图片预览，是 ranger 的现代替代品，使用 Rust 编写以追求性能。
 
-本仓库的 **tmux** 配置包含 vim 风格按键、Dracula 主题色，以及用于快速打开 lazygit/htop 的弹窗窗口。前缀键为 Ctrl+B（默认）。
+本仓库的 **tmux** 配置包含 vim 风格按键、Dracula 主题色，以及浮动窗格 (floax) 实现灵活的工作区管理。前缀键为 Ctrl+B（默认）。
 
 | 工具                                                | 作用                                   |
 | --------------------------------------------------- | -------------------------------------- |
 | [mise](https://github.com/jdx/mise)                 | 多语言运行时管理器（Node/Python/Go/Rust） |
 | [lazygit](https://github.com/jesseduffield/lazygit) | 终端 git UI                            |
 | [yazi](https://github.com/sxyazi/yazi)              | 超快的终端文件管理器                   |
-| [tmux](https://github.com/tmux/tmux)                | 终端复用器（支持弹窗窗口）             |
+| [tmux](https://github.com/tmux/tmux)                | 终端复用器（支持浮动窗格 floax）       |
 | [ghq](https://github.com/x-motemen/ghq)             | 远程仓库管理                           |
 | [gh](https://github.com/cli/cli)                    | GitHub CLI（Issue、PR 等）             |
 

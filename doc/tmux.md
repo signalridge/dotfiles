@@ -22,6 +22,7 @@
 | tmux-yank | System clipboard yank integration |
 | tmux-pain-control | Pane split + vim-like nav/resize bindings |
 | tmux-sessionx | Internal session management panel |
+| **tmux-floax** | Floating pane manager (`prefix+p/P`) |
 | sesh (external) | Project/session launcher via fzf/zoxide/fd (custom binding) |
 | extrakto | Extract paths/URLs/hashes from pane via fzf (`prefix+Tab`) |
 | tmux-jump | Easymotion-like jump (`prefix+f`) |
@@ -177,12 +178,25 @@
 
 ---
 
-## Popup Windows
+## Floating Panes (tmux-floax)
+
+> floax provides persistent floating panes that can be toggled, resized, and embedded back into the workspace.
 
 | Keybinding | Description |
 | ---------- | ----------- |
-| `prefix + \`` | Popup shell (80%x80%) |
+| `prefix + p` | Toggle floating pane (open/close) |
+| `prefix + P` | Open floax menu (resize, fullscreen, embed) |
 | `prefix + g` | Popup lazygit (90%x90%) |
+
+### Floax Menu Options (inside floating pane)
+
+| Key | Description |
+| --- | ----------- |
+| `-` | Shrink pane size |
+| `+` | Grow pane size |
+| `f` | Toggle fullscreen |
+| `r` | Reset to default size |
+| `e` | Embed floating pane to workspace below |
 
 ---
 
@@ -199,9 +213,8 @@
 
 | Keybinding | Description |
 | ---------- | ----------- |
-| `prefix + P` | Toggle logging |
-| `prefix + Alt + p` | Save visible pane |
-| `prefix + Alt + P` | Save complete history |
+| `prefix + Alt + p` | Save visible pane to file |
+| `prefix + Alt + Shift + p` | Save complete history |
 | `prefix + Alt + c` | Clear pane history |
 
 ---

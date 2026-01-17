@@ -43,6 +43,12 @@ encryption = "age"
 {{-   $installMasApps = promptBoolOnce . "installMasApps" "Install Mac App Store apps (requires Apple ID login)" -}}
 {{- end -}}
 
+{{/* macOS specific: home WiFi SSIDs for auto-volume (comma-separated) */}}
+{{- $homeWifiSSIDs := "" -}}
+{{- if and (eq .chezmoi.os "darwin") (stdinIsATTY) -}}
+{{-   $homeWifiSSIDs = promptStringOnce . "homeWifiSSIDs" "Home WiFi SSIDs for auto-volume (comma-separated, e.g. Home-5G,Home-2.4G)" -}}
+{{- end -}}
+
 {{/* timezone: prefer local config, fallback to ip-api.com */}}
 {{- $timezone := "" -}}
 
@@ -75,6 +81,7 @@ private = {{ $private }}
 headless = {{ $headless }}
 useEncryption = {{ $useEncryption }}
 installMasApps = {{ $installMasApps }}
+homeWifiSSIDs = {{ $homeWifiSSIDs | quote }}
 osid = {{ $osID | quote }}
 timezone = {{ $timezone | quote }}
 

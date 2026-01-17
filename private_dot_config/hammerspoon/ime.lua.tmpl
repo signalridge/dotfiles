@@ -1,0 +1,129 @@
+-- IME Auto-Switching
+-- Automatically switch input method based on active application
+--
+-- Usage:
+--   1. Find your input source IDs by pressing Ctrl+Cmd+.
+--   2. Add app-to-IME mappings in .chezmoidata.yaml under hammerspoon.imeApps
+--
+-- Based on einverne/dotfiles
+-- Managed by chezmoi - app list from .chezmoidata.yaml
+
+local log = hs.logger.new('ime', 'debug')
+
+-- Input source IDs (find yours with Ctrl+Cmd+.)
+-- Common ones:
+--   English: com.apple.keylayout.ABC
+--   Chinese (Simplified): com.apple.inputmethod.SCIM.ITABC
+--   Chinese (Rime): im.rime.inputmethod.Squirrel.Hans
+--   Japanese: com.apple.inputmethod.Japanese.Japanese
+--   Korean: com.apple.inputmethod.Korean.HNCRomaja
+
+local function en()
+    hs.keycodes.currentSourceID("com.apple.keylayout.ABC")
+end
+
+local function zh()
+    -- Change this to your Chinese input method
+    -- Options:
+    --   com.apple.inputmethod.SCIM.ITABC (macOS built-in Pinyin)
+    --   im.rime.inputmethod.Squirrel.Hans (Rime/Squirrel)
+    hs.keycodes.currentSourceID("com.apple.inputmethod.SCIM.ITABC")
+end
+
+local function jp()
+    hs.keycodes.currentSourceID("com.apple.inputmethod.Japanese.Japanese")
+end
+
+-- App to expected IME mapping (generated from .chezmoidata.yaml)
+-- Format: { 'AppName', 'language' }
+-- language: 'en', 'zh', 'jp'
+local appName2Ime = {
+    -- Shared apps (always included)
+{{- range .hammerspoon.imeApps.shared }}
+    { '{{ .app }}', '{{ .ime }}' },
+{{- end }}
+{{- if .work }}
+
+    -- Work apps
+{{- range .hammerspoon.imeApps.work }}
+    { '{{ .app }}', '{{ .ime }}' },
+{{- end }}
+{{- end }}
+{{- if .private }}
+
+    -- Private apps
+{{- range .hammerspoon.imeApps.private }}
+    { '{{ .app }}', '{{ .ime }}' },
+{{- end }}
+{{- end }}
+}
+
+local function updateFocusAppInputMethod()
+    local focusedWindow = hs.window.frontmostWindow()
+    if focusedWindow == nil then
+        return
+    end
+
+    local app = focusedWindow:application()
+    if app == nil then
+        return
+    end
+
+    local focusAppName = app:name()
+    if focusAppName == nil then
+        return
+    end
+
+    for _, appConfig in pairs(appName2Ime) do
+        local appName = appConfig[1]
+        local expectedIme = appConfig[2]
+
+        if focusAppName == appName then
+            if expectedIme == 'en' then
+                en()
+            elseif expectedIme == 'jp' then
+                jp()
+            else
+                zh()
+            end
+            break
+        end
+    end
+end
+
+-- Debug hotkey: show current app info and IME source ID
+-- Very useful for adding new apps to the mapping
+hs.hotkey.bind({ 'ctrl', 'cmd' }, ".", function()
+    local win = hs.window.focusedWindow()
+    if win == nil then
+        hs.alert.show("No focused window")
+        return
+    end
+
+    local app = win:application()
+    if app == nil then
+        hs.alert.show("No application")
+        return
+    end
+
+    local info = "App name: " .. (app:name() or "nil") .. "\n"
+                .. "Bundle ID: " .. (app:bundleID() or "nil") .. "\n"
+                .. "IME source: " .. (hs.keycodes.currentSourceID() or "nil")
+
+    hs.alert.show(info, 5)
+
+    -- Also copy to clipboard for easy pasting
+    hs.pasteboard.setContents(info)
+end)
+
+-- Application watcher: switch IME when app is activated
+local appWatcher = hs.application.watcher.new(function(_, eventType, _)
+    if eventType == hs.application.watcher.activated or
+       eventType == hs.application.watcher.launched then
+        updateFocusAppInputMethod()
+    end
+end)
+
+appWatcher:start()
+
+log.i("IME auto-switching loaded")

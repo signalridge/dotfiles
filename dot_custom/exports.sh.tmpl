@@ -86,3 +86,11 @@ else
 fi
 export ZSH_TMUX_AUTOQUIT=false
 export ZSH_TMUX_DEFAULT_SESSION_NAME="main"
+{{- if eq .chezmoi.os "darwin" }}
+
+# ─────────────────────────────────────────────────────────────
+# Hammerspoon configuration directory (macOS only)
+# Use ~/.config/hammerspoon instead of default ~/.hammerspoon
+# ─────────────────────────────────────────────────────────────
+export HS_CONFIG_DIR="$HOME/.config/hammerspoon"
+{{- end }}

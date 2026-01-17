@@ -29,6 +29,12 @@ defer = "{{ hooks?.pre | nl }}{% for file in files %}zsh-defer source \"{{ file 
 apply = ["defer"]
 github = 'zsh-users/zsh-autosuggestions'
 use = ['{{ name }}.zsh']
+[plugins.zsh-autosuggestions.hooks]
+post = """
+# Autosuggestions keybindings
+bindkey '^e' autosuggest-accept   # Ctrl+E: accept suggestion (fill command line)
+bindkey '^w' autosuggest-execute  # Ctrl+W: execute suggestion directly
+"""
 
 [plugins.base16]
 github = 'chriskempson/base16-shell'

@@ -229,14 +229,14 @@ fork して使う場合は、鍵パスと 1Password のアイテムパスを自�
 
 **yazi** は画像プレビューにも対応した超高速ターミナルファイルマネージャで、ranger のモダンな代替です（Rust 製）。
 
-この **tmux** 設定は vim 風キーバインド、Dracula テーマ、lazygit/htop を素早く開くポップアップなどを備えます。プレフィックスキーは Ctrl+B（デフォルト）です。
+この **tmux** 設定は vim 風キーバインド、Dracula テーマ、フローティングペイン (floax) による柔軟なワークスペース管理を備えます。プレフィックスキーは Ctrl+B（デフォルト）です。
 
 | ツール                                                | 役割                                              |
 | --------------------------------------------------- | ------------------------------------------------- |
 | [mise](https://github.com/jdx/mise)                 | 多言語ランタイム管理（Node/Python/Go/Rust）        |
 | [lazygit](https://github.com/jesseduffield/lazygit) | 美しい git TUI                                    |
 | [yazi](https://github.com/sxyazi/yazi)              | 超高速ターミナルファイルマネージャ                |
-| [tmux](https://github.com/tmux/tmux)                | ポップアップ対応のターミナルマルチプレクサ        |
+| [tmux](https://github.com/tmux/tmux)                | フローティングペイン (floax) 対応ターミナルマルチプレクサ |
 | [ghq](https://github.com/x-motemen/ghq)             | リモートリポジトリ管理                            |
 | [gh](https://github.com/cli/cli)                    | GitHub CLI（Issue/PR など）                       |
 

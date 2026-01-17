@@ -98,8 +98,7 @@ bind T run-shell "sesh connect \"$(
     --preview 'sesh preview {}'
 )\""
 
-# popup windows
-bind ` display-popup -E -w 80% -h 80%
+# lazygit popup (floax handles general floating panes)
 bind g display-popup -E -w 90% -h 90% "lazygit"
 
 # toggle synchronize panes (with status display)
@@ -146,6 +145,20 @@ set -g @sessionx-bind 'O'
 set -g @sessionx-zoxide-mode 'on'
 set -g @sessionx-filter-current 'false'
 set -g @sessionx-preview-enabled 'true'
+
+# floax - floating pane manager (replaces display-popup for general use)
+# prefix + p - toggle floating pane
+# prefix + P - open floax menu (resize, fullscreen, embed)
+# Menu options: [-] shrink, [+] grow, [f]ullscreen, [r]eset, [e]mbed to workspace
+set -g @plugin 'omerxx/tmux-floax'
+set -g @floax-bind 'p'
+set -g @floax-bind-menu 'P'
+set -g @floax-width '80%'
+set -g @floax-height '80%'
+set -g @floax-border-color 'magenta'
+set -g @floax-text-color 'blue'
+set -g @floax-change-path 'true'
+set -g @floax-session-name 'float'
 
 # ------------------------------------------------------------------------------
 # Copy / Jump / Open

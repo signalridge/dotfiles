@@ -1,0 +1,269 @@
+-- Hammerspoon Configuration
+-- Managed by chezmoi
+--
+-- Note: Config path is ~/.config/hammerspoon (via HS_CONFIG_DIR in exports.sh)
+--
+-- Features & Hotkeys (Ctrl+Cmd prefix, Alt reserved for AeroSpace):
+--   Ctrl+Cmd+.  IME debug (show app name/bundle ID/input source)
+--   Ctrl+Cmd+/  KSheet (show current app's shortcuts)
+--   Ctrl+Cmd+T  AClock (big clock display)
+--   Ctrl+Cmd+0  PomodoroTimer (25min work / 5min break)
+--   Ctrl+Cmd+M  MicMute toggle
+--   Ctrl+Cmd+L  Lock screen
+--   Ctrl+Cmd+I  System info (battery/WiFi)
+--   Ctrl+Cmd+N  Window to next monitor
+--   Ctrl+Cmd+P  Window to prev monitor
+--   Ctrl+Cmd+R  Reload config
+--
+-- Auto features:
+--   - IME auto-switching based on active app
+--   - SpeedMenu (network speed in menu bar)
+--   - AutoMuteOnSleep (mute when system sleeps)
+--   - WiFi Watcher (home=25% volume, away=mute)
+
+hs.window.animationDuration = 0
+
+local log = hs.logger.new('init', 'debug')
+
+-- ==============================================================================
+-- Modifier Key Configuration
+-- ==============================================================================
+-- Using Ctrl+Cmd as prefix (simpler than Ctrl+Alt+Cmd)
+-- Alt+* is reserved for AeroSpace
+
+local hyper = {"cmd", "ctrl"}
+
+-- ==============================================================================
+-- IME Auto-Switching (replaces Input Source Pro)
+-- ==============================================================================
+-- Automatically switches input method based on active application
+-- Debug: Ctrl+Cmd+. shows current app info and IME source ID
+
+require('ime')
+
+-- ==============================================================================
+-- Load Spoons
+-- ==============================================================================
+
+-- ReloadConfiguration - Auto-reload on config changes
+hs.loadSpoon("ReloadConfiguration")
+spoon.ReloadConfiguration:start()
+
+-- KSheet - Show keyboard shortcuts for current app
+hs.loadSpoon("KSheet")
+hs.hotkey.bind(hyper, "/", function()
+    spoon.KSheet:toggle()
+end)
+
+-- SpeedMenu - Network speed in menu bar
+hs.loadSpoon("SpeedMenu")
+
+-- AClock - Big clock display
+hs.loadSpoon("AClock")
+spoon.AClock.format = "%H:%M:%S"
+spoon.AClock.textColor = {hex = "#1891C3"}
+spoon.AClock.textFont = "Impact"
+spoon.AClock.textSize = 120
+hs.hotkey.bind(hyper, "t", function()
+    spoon.AClock:toggleShow()
+end)
+
+-- PomodoroTimer - 25min work / 5min break
+hs.loadSpoon("PomodoroTimer")
+hs.hotkey.bind(hyper, "0", function()
+    spoon.PomodoroTimer:toggle()
+end)
+
+-- ==============================================================================
+-- MicMute - Toggle microphone mute (Hyper+M)
+-- ==============================================================================
+
+local micMute = {}
+micMute.menubar = nil
+micMute.muted = false
+
+function micMute.setMute(mute)
+    local device = hs.audiodevice.defaultInputDevice()
+    if device then
+        device:setInputMuted(mute)
+        micMute.muted = mute
+        micMute.updateMenubar()
+        if mute then
+            hs.alert.show("Mic MUTED", nil, nil, 1)
+        else
+            hs.alert.show("Mic UNMUTED", nil, nil, 1)
+        end
+    end
+end
+
+function micMute.toggle()
+    micMute.setMute(not micMute.muted)
+end
+
+function micMute.updateMenubar()
+    if micMute.menubar then
+        if micMute.muted then
+            micMute.menubar:setTitle("🔇")
+            micMute.menubar:setTooltip("Mic: Muted")
+        else
+            micMute.menubar:setTitle("🎤")
+            micMute.menubar:setTooltip("Mic: Active")
+        end
+    end
+end
+
+function micMute.init()
+    local device = hs.audiodevice.defaultInputDevice()
+    if device then
+        micMute.muted = device:inputMuted()
+    end
+    micMute.menubar = hs.menubar.new()
+    if micMute.menubar then
+        micMute.menubar:setClickCallback(micMute.toggle)
+        micMute.updateMenubar()
+    end
+    hs.hotkey.bind(hyper, "m", micMute.toggle)
+end
+
+micMute.init()
+
+-- ==============================================================================
+-- AutoMuteOnSleep - Mute audio when system sleeps
+-- ==============================================================================
+
+local autoMute = {}
+
+function autoMute.systemWillSleep()
+    local device = hs.audiodevice.defaultOutputDevice()
+    if device then
+        device:setOutputMuted(true)
+    end
+end
+
+function autoMute.systemDidWake()
+    hs.notify.new({
+        title = "System Wake",
+        informativeText = "Audio muted"
+    }):send()
+end
+
+autoMute.watcher = hs.caffeinate.watcher.new(function(event)
+    if event == hs.caffeinate.watcher.systemWillSleep then
+        autoMute.systemWillSleep()
+    elseif event == hs.caffeinate.watcher.systemDidWake then
+        autoMute.systemDidWake()
+    end
+end)
+autoMute.watcher:start()
+
+-- ==============================================================================
+-- WiFi Watcher - Auto adjust volume based on network (from einverne)
+-- ==============================================================================
+-- Configure homeWifiSSIDs in .chezmoidata.yaml under hammerspoon.homeWifiSSIDs
+
+local wifiWatcher = {}
+
+-- List of home WiFi SSIDs (supports multiple networks)
+-- Configured via chezmoi init prompt (comma-separated)
+wifiWatcher.homeSSIDs = {
+{{- if .homeWifiSSIDs }}
+{{- range splitList "," .homeWifiSSIDs }}
+    "{{ . | trim }}",
+{{- end }}
+{{- end }}
+}
+wifiWatcher.lastSSID = hs.wifi.currentNetwork()
+
+-- Check if SSID is in home list
+function wifiWatcher.isHomeSSID(ssid)
+    if ssid == nil then return false end
+    for _, homeSSID in ipairs(wifiWatcher.homeSSIDs) do
+        if ssid == homeSSID then return true end
+    end
+    return false
+end
+
+function wifiWatcher.ssidChanged()
+    local newSSID = hs.wifi.currentNetwork()
+    local wasHome = wifiWatcher.isHomeSSID(wifiWatcher.lastSSID)
+    local isHome = wifiWatcher.isHomeSSID(newSSID)
+
+    if isHome and not wasHome then
+        -- Connected to home WiFi
+        hs.notify.new({title = "WiFi", informativeText = "Welcome home"}):send()
+        local device = hs.audiodevice.defaultOutputDevice()
+        if device then device:setOutputVolume(25) end
+    elseif not isHome and wasHome then
+        -- Left home WiFi
+        hs.notify.new({title = "WiFi", informativeText = "Left home"}):send()
+        local device = hs.audiodevice.defaultOutputDevice()
+        if device then device:setOutputVolume(0) end
+    end
+
+    wifiWatcher.lastSSID = newSSID
+end
+
+wifiWatcher.watcher = hs.wifi.watcher.new(wifiWatcher.ssidChanged)
+wifiWatcher.watcher:start()
+
+-- ==============================================================================
+-- Lock Screen (Hyper+L)
+-- ==============================================================================
+
+hs.hotkey.bind(hyper, "l", function()
+    hs.caffeinate.lockScreen()
+end)
+
+-- ==============================================================================
+-- Window Management (supplements AeroSpace)
+-- ==============================================================================
+
+-- Move window to next/previous monitor
+hs.hotkey.bind(hyper, "n", function()
+    local win = hs.window.focusedWindow()
+    if win then
+        win:moveToScreen(win:screen():next())
+    end
+end)
+
+hs.hotkey.bind(hyper, "p", function()
+    local win = hs.window.focusedWindow()
+    if win then
+        win:moveToScreen(win:screen():previous())
+    end
+end)
+
+-- ==============================================================================
+-- System Info (Hyper+I)
+-- ==============================================================================
+
+hs.hotkey.bind(hyper, "i", function()
+    local battery = hs.battery.percentage()
+    local charging = hs.battery.isCharging() and " (Charging)" or ""
+    local wifi = hs.wifi.currentNetwork() or "Not connected"
+
+    local info = string.format(
+        "Battery: %.0f%%%s\nWiFi: %s",
+        battery, charging, wifi
+    )
+    hs.alert.show(info, nil, nil, 3)
+end)
+
+-- ==============================================================================
+-- Config Reload Hotkey (Hyper+R)
+-- ==============================================================================
+
+hs.hotkey.bind(hyper, "r", function()
+    hs.reload()
+end)
+
+-- ==============================================================================
+-- Finalize
+-- ==============================================================================
+
+hs.notify.new({
+    title = "Hammerspoon",
+    informativeText = "Config loaded"
+}):send()
+
+log.i("Hammerspoon config loaded")

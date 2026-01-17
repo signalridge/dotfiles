@@ -23,10 +23,10 @@ homebrew:
     shared:
       - "visual-studio-code"
       - "dbeaver-community"
+      - "hammerspoon"
       - "keka"
       - "keyboardcleantool"
       - "ghostty"
-      - "input-source-pro"
       # - "mactex"
       - "mockoon"
       - "notion"
@@ -159,3 +159,103 @@ homepkgs:
     - redis
     - tflint
   private:
+# ─────────────────────────────────────────────────────────────────────────────
+# Hammerspoon configuration (macOS only)
+# ─────────────────────────────────────────────────────────────────────────────
+hammerspoon:
+  # IME auto-switching: app name -> language (en/zh/jp)
+  # Only include apps that are actually installed (match homebrew casks/masApps)
+  imeApps:
+    shared:
+      # System apps -> English
+      - { app: "Finder", ime: "en" }
+      - { app: "Terminal", ime: "en" }
+      - { app: "System Settings", ime: "en" }
+      - { app: "Activity Monitor", ime: "en" }
+      # Dev tools -> English
+      - { app: "Visual Studio Code", ime: "en" }
+      - { app: "Ghostty", ime: "en" }
+      - { app: "DBeaver", ime: "en" }
+      - { app: "OrbStack", ime: "en" }
+      - { app: "Karabiner-Elements", ime: "en" }
+      - { app: "Karabiner-EventViewer", ime: "en" }
+      - { app: "AeroSpace", ime: "en" }
+      - { app: "Raycast", ime: "en" }
+    work:
+      - { app: "Cursor", ime: "en" }
+      - { app: "Obsidian", ime: "jp" }
+      # Browsers/Communication -> Japanese for work
+      - { app: "Slack", ime: "jp" }
+      - { app: "Notion", ime: "jp" }
+      - { app: "Safari", ime: "jp" }
+      - { app: "Zen", ime: "jp" }
+    private:
+      # Password -> English
+      - { app: "1Password", ime: "en" }
+      # Browsers/Communication -> Chinese for private
+      - { app: "Slack", ime: "zh" }
+      - { app: "Notion", ime: "zh" }
+      - { app: "Safari", ime: "zh" }
+      - { app: "Zen", ime: "zh" }
+      - { app: "WeChat", ime: "zh" }
+      - { app: "Telegram", ime: "zh" }
+      - { app: "Discord", ime: "zh" }
+      - { app: "Messenger", ime: "zh" }
+      # Notes -> Chinese
+      - { app: "Logseq", ime: "zh" }
+      - { app: "Notability", ime: "zh" }
+      - { app: "Goodnotes", ime: "zh" }
+      # AI -> Chinese
+      - { app: "ChatGPT", ime: "zh" }
+# ─────────────────────────────────────────────────────────────────────────────
+# AeroSpace configuration (macOS only)
+# ─────────────────────────────────────────────────────────────────────────────
+aerospace:
+  # Apps that should float (not be tiled)
+  # Only include actually installed apps (match homebrew casks)
+  floatingApps:
+    shared:
+      # System apps
+      - { id: "com.apple.systempreferences", comment: "System Settings" }
+      - { id: "com.apple.Preview", comment: "Preview" }
+      - { id: "com.apple.calculator", comment: "Calculator" }
+      # Shared casks
+      - { id: "com.aone.keka", comment: "Keka" }
+      - { id: "com.hegenberg.KeyboardCleanTool", comment: "KeyboardCleanTool" }
+      - {
+          id: "org.pqrs.Karabiner-Elements.Settings",
+          comment: "Karabiner Elements",
+        }
+      - {
+          id: "org.pqrs.Karabiner-EventViewer",
+          comment: "Karabiner EventViewer",
+        }
+      - { id: "com.carriez.rustdesk", comment: "RustDesk" }
+      - { id: "io.tailscale.ipn.macsys", comment: "Tailscale" }
+    work:
+      - { id: "com.bitwarden.desktop", comment: "Bitwarden" }
+    private:
+      # Password manager
+      - { id: "com.1password.1password", comment: "1Password" }
+      # Utilities
+      - { id: "com.raycast.macos", comment: "Raycast" }
+      - { id: "com.setapp.DesktopClient", comment: "Setapp" }
+      - { id: "com.adguard.mac.adguard", comment: "Adguard" }
+      - { id: "io.balena.etcher", comment: "balenaEtcher" }
+      - { id: "com.nssurge.surge-mac", comment: "Surge" }
+      - { id: "com.nssurge.surge-dashboard", comment: "Surge Dashboard" }
+      - { id: "us.zoom.xos", comment: "Zoom" }
+      # Setapp apps (not managed by dotfiles, installed via Setapp)
+      - { id: "com.macpaw.CleanMyMac-setapp", comment: "CleanMyMac" }
+      - { id: "com.surteesstudios.Bartender-setapp", comment: "Bartender" }
+      - { id: "com.getcleanshot.app-setapp", comment: "CleanShot X" }
+      - { id: "studio.fireball.OneSwitch-setapp", comment: "One Switch" }
+      - { id: "com.wiheads.paste-setapp", comment: "Paste" }
+      - { id: "com.pilotmoon.popclip-setapp", comment: "PopClip" }
+      - { id: "at.EternalStorms.Yoink-setapp", comment: "Yoink" }
+      - { id: "com.bjango.istatmenus-setapp", comment: "iStat Menus" }
+      - { id: "com.eltima.cloudmounter-setapp", comment: "CloudMounter" }
+      # Private apps
+      - { id: "de.ixeau.KeystrokePro2", comment: "Keystroke Pro" }
+      - { id: "com.rogueamoeba.soundsource", comment: "SoundSource" }
+      - { id: "com.ripperhe.Bob", comment: "Bob" }

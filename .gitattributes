@@ -23,6 +23,10 @@ dot_zprofile.tmpl linguist-language=Shell
 # JSON (data type, need detectable to show in stats)
 *.json linguist-language=JSON linguist-detectable=true
 
+# Lua
+*.lua linguist-language=Lua
+*.lua.tmpl linguist-language=Lua
+
 # Other
 Justfile.tmpl linguist-language=Makefile
 **/config.tmpl linguist-language=INI

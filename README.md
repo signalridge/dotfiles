@@ -246,14 +246,14 @@ The shell prompt is powered by **Starship**, a minimal and fast prompt written i
 
 **yazi** is a blazing-fast terminal file manager with image preview support. It's the modern replacement for ranger, written in Rust for maximum performance.
 
-**tmux** configuration includes vim-style keybindings, Dracula theme colors, and popup windows for quick access to lazygit and htop. The prefix key is set to Ctrl+B (default).
+**tmux** configuration includes vim-style keybindings, Dracula theme colors, and floating panes (floax) for flexible workspace management. The prefix key is set to Ctrl+B (default).
 
 | Tool                                                | Role                                              |
 | --------------------------------------------------- | ------------------------------------------------- |
 | [mise](https://github.com/jdx/mise)                 | Polyglot runtime manager (Node, Python, Go, Rust) |
 | [lazygit](https://github.com/jesseduffield/lazygit) | Beautiful terminal UI for git                     |
 | [yazi](https://github.com/sxyazi/yazi)              | Blazing fast terminal file manager                |
-| [tmux](https://github.com/tmux/tmux)                | Terminal multiplexer with popup windows           |
+| [tmux](https://github.com/tmux/tmux)                | Terminal multiplexer with floating panes (floax)  |
 | [ghq](https://github.com/x-motemen/ghq)             | Remote repository management                      |
 | [gh](https://github.com/cli/cli)                    | GitHub CLI for issues, PRs, and more              |
 
