@@ -33,7 +33,6 @@
 | tmux-better-mouse-mode | Smoother scroll/select |
 | tmux-resurrect + tmux-continuum | Save/restore + auto save/restore |
 | tmux-notify | Notify when a command finishes |
-| tmux-logging | Log pane/history to file |
 | tmux-cowboy | Fast kill hung processes |
 
 ---
@@ -208,14 +207,6 @@
 | ---------- | ----------- |
 | `prefix + m` | Monitor pane, notify when command finishes |
 | `prefix + M` | Cancel monitoring |
-
-### tmux-logging
-
-| Keybinding | Description |
-| ---------- | ----------- |
-| `prefix + Alt + p` | Save visible pane to file |
-| `prefix + Alt + Shift + p` | Save complete history |
-| `prefix + Alt + c` | Clear pane history |
 
 ---
 
