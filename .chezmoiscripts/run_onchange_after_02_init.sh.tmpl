@@ -20,7 +20,7 @@ fi
 
 if ! command -v darwin-version >/dev/null 2>&1; then
     echo "    Installing nix-darwin..."
-    sudo nix run nix-darwin/master#darwin-rebuild --extra-experimental-features "nix-command flakes" -- switch --flake ~/nix-config#{{ .hostname }} --show-trace --verbose
+    sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake ~/nix-config#{{ .hostname }} --show-trace --verbose
 else
     echo "    Switching nix-darwin configuration..."
     sudo darwin-rebuild switch --flake ~/nix-config#{{ .hostname }} --show-trace --verbose

@@ -14,4 +14,4 @@ if ! command -v nix &>/dev/null; then
     fi
 fi
 
-nix run --extra-experimental-features 'nix-command flakes' ~/nix-config#{{ .hostname }}.switch
+nix run ~/nix-config#{{ .hostname }}.switch

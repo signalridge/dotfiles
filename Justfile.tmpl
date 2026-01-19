@@ -49,15 +49,13 @@ re-add:
 # Build and switch nix-darwin configuration
 [group('darwin')]
 darwin:
-    cd "$HOME/nix-config" && nix build .#darwinConfigurations.{{ "{{hostname}}" }}.system \
-        --extra-experimental-features 'nix-command flakes'
+    cd "$HOME/nix-config" && nix build .#darwinConfigurations.{{ "{{hostname}}" }}.system
     cd "$HOME/nix-config" && sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{ "{{hostname}}" }}
 
 # Build and switch with debug output
 [group('darwin')]
 darwin-debug:
-    cd "$HOME/nix-config" && nix build .#darwinConfigurations.{{ "{{hostname}}" }}.system --show-trace --verbose \
-        --extra-experimental-features 'nix-command flakes'
+    cd "$HOME/nix-config" && nix build .#darwinConfigurations.{{ "{{hostname}}" }}.system --show-trace --verbose
     cd "$HOME/nix-config" && sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{ "{{hostname}}" }} --show-trace --verbose
 
 # Check nix-darwin configuration without building
@@ -68,8 +66,7 @@ darwin-check:
 # Build darwin configuration without switching
 [group('darwin')]
 darwin-build:
-    cd "$HOME/nix-config" && nix build .#darwinConfigurations.{{ "{{hostname}}" }}.system \
-        --extra-experimental-features 'nix-command flakes'
+    cd "$HOME/nix-config" && nix build .#darwinConfigurations.{{ "{{hostname}}" }}.system
 {{ end }}
 ############################################################################
 #
@@ -220,7 +217,7 @@ full-upgrade:
     @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     @echo "Step 2/7: Rebuilding nix-darwin..."
     @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    cd "$HOME/nix-config" && nix build .#darwinConfigurations.{{ "{{hostname}}" }}.system --extra-experimental-features 'nix-command flakes'
+    cd "$HOME/nix-config" && nix build .#darwinConfigurations.{{ "{{hostname}}" }}.system
     cd "$HOME/nix-config" && sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{ "{{hostname}}" }}
     @echo ""
     @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

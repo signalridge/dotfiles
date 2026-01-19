@@ -42,6 +42,7 @@ homebrew:
       - "karabiner-elements"
       - "zen"
     work:
+      - "stats"
       - "dbeaver-community"
       - "obsidian"
       - "cursor"
