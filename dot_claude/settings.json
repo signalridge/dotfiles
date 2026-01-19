@@ -1,9 +1,4 @@
 {
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/statusline.sh",
-    "padding": 0
-  },
   "permissions": {
     "deny": [
       "Bash(sudo rm -rf:*)",

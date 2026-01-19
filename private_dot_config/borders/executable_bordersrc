@@ -3,13 +3,11 @@
 # Dracula theme colors with alpha transparency
 # Purple: #bd93f9 (active), Comment: #44475a (inactive)
 # Alpha: 0xAA = 67%, 0xCC = 80%, 0xFF = 100%
-options=(
-    style=round
-    width=5.0
-    hidpi=on
-    active_color=0xffbd93f9    # Solid purple for active
-    inactive_color=0x6644475a  # 40% transparent gray for inactive
-    background_color=0x302c2e34  # Subtle dark background
-)
-
-borders "${options[@]}"
+borders \
+    style=round \
+    width=5.0 \
+    hidpi=on \
+    active_color=0xffbd93f9 \
+    inactive_color=0x6644475a \
+    background_color=0x302c2e34 \
+    'blacklist=CleanMyMac_5_Setapp,Stats'

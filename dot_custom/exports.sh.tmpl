@@ -85,7 +85,20 @@ else
   export ZSH_TMUX_AUTOCONNECT=true
 fi
 export ZSH_TMUX_AUTOQUIT=false
-export ZSH_TMUX_DEFAULT_SESSION_NAME="main"
+# TMux session name based on aerospace workspace
+# Each workspace gets its own session (ws-1, ws-2, etc.)
+# Falls back to "main" if aerospace unavailable or outside workspace
+if command -v aerospace >/dev/null 2>&1; then
+  _ws=$(aerospace list-workspaces --focused 2>/dev/null)
+  if [[ -n "$_ws" ]]; then
+    export ZSH_TMUX_DEFAULT_SESSION_NAME="ws-${_ws}"
+  else
+    export ZSH_TMUX_DEFAULT_SESSION_NAME="main"
+  fi
+  unset _ws
+else
+  export ZSH_TMUX_DEFAULT_SESSION_NAME="main"
+fi
 {{- if eq .chezmoi.os "darwin" }}
 
 # ─────────────────────────────────────────────────────────────

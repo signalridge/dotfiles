@@ -38,11 +38,11 @@ homebrew:
       - "rustdesk"
       - "slack"
       - "slidepilot"
+      - "stats"
       - "tailscale-app"
       - "karabiner-elements"
       - "zen"
     work:
-      - "stats"
       - "dbeaver-community"
       - "obsidian"
       - "cursor"
@@ -256,7 +256,6 @@ aerospace:
       - { id: "com.wiheads.paste-setapp", comment: "Paste" }
       - { id: "com.pilotmoon.popclip-setapp", comment: "PopClip" }
       - { id: "at.EternalStorms.Yoink-setapp", comment: "Yoink" }
-      - { id: "com.bjango.istatmenus-setapp", comment: "iStat Menus" }
       - { id: "com.eltima.cloudmounter-setapp", comment: "CloudMounter" }
       # Private apps
       - { id: "de.ixeau.KeystrokePro2", comment: "Keystroke Pro" }
