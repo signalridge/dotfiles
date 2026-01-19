@@ -99,6 +99,12 @@ if command -v aerospace >/dev/null 2>&1; then
 else
   export ZSH_TMUX_DEFAULT_SESSION_NAME="main"
 fi
+# ─────────────────────────────────────────────────────────────
+# Claude Code configuration directory
+# Move config from ~/.claude to ~/.config/claude for cleaner home
+# Codex/Gemini: no useful config to manage, keep default location
+# ─────────────────────────────────────────────────────────────
+export CLAUDE_CONFIG_DIR="$HOME/.config/claude"
 {{- if eq .chezmoi.os "darwin" }}
 
 # ─────────────────────────────────────────────────────────────
