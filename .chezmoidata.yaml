@@ -131,7 +131,6 @@ homepkgs:
     - openssl
     - ouch # a CLI tool tor compressing and decompressing for various formats
     - p7zip-rar
-    - uv
     - poppler
     - pueue
     - ripgrep
@@ -158,7 +157,6 @@ homepkgs:
   work:
     - llvmPackages.openmp # libomp replacement
     - mariadb
-    - poetry
     - postgresql
     - redis
     - tflint
