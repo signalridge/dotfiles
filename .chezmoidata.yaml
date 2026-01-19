@@ -21,6 +21,7 @@ homebrew:
       - "mas" # Required for masApps installation
   casks:
     shared:
+      - "dockdoor"
       - "visual-studio-code"
       - "hammerspoon"
       - "keka"
@@ -33,6 +34,7 @@ homebrew:
       - "obs"
       - "orbstack"
       - "pdf-expert"
+      - "raycast" # (HotKey: alt/option + space)search, caculate and run scripts(with many plugins)
       - "rustdesk"
       - "slack"
       - "slidepilot"
@@ -49,13 +51,11 @@ homebrew:
       - "adguard"
       - "balenaetcher"
       - "bob-app"
-      - "chatgpt"
       - "discord"
       - "grammarly-desktop"
       - "iina" # video player
       - "logseq"
       - "notion-calendar"
-      - "raycast" # (HotKey: alt/option + space)search, caculate and run scripts(with many plugins)
       - "setapp"
       - "soundsource"
       - "surge"
