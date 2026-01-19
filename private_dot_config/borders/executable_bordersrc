@@ -5,7 +5,7 @@
 # Alpha: 0xAA = 67%, 0xCC = 80%, 0xFF = 100%
 borders \
     style=round \
-    width=5.0 \
+    width=6.0 \
     hidpi=on \
     active_color=0xffbd93f9 \
     inactive_color=0x6644475a \

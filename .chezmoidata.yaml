@@ -24,6 +24,7 @@ homebrew:
       - "dockdoor"
       - "visual-studio-code"
       - "hammerspoon"
+      - "karabiner-elements"
       - "keka"
       - "keyboardcleantool"
       - "ghostty"
@@ -40,7 +41,6 @@ homebrew:
       - "slidepilot"
       - "stats"
       - "tailscale-app"
-      - "karabiner-elements"
       - "zen"
     work:
       - "dbeaver-community"
