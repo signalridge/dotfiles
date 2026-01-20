@@ -10,19 +10,8 @@ echo ":: [06] Downloading nix-index database"
 
 REPO="nix-community/nix-index-database"
 VERSION_FILE="$HOME/.cache/nix-index/.version"
-FALLBACK_VERSION="2025-01-12"
-
-# Get latest version using gh CLI first, then API
-get_latest_version() {
-    local version=""
-    if command -v gh &>/dev/null; then
-        version=$(gh release view --repo "$REPO" --json tagName -q '.tagName' 2>/dev/null || true)
-    fi
-    if [[ -z "$version" ]]; then
-        version=$(curl -fsSL --connect-timeout 5 "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null | grep tag_name | sed -E 's/.*"([^"]+)".*/\1/' || true)
-    fi
-    echo "${version:-$FALLBACK_VERSION}"
-}
+# Version pinned in .chezmoidata.yaml, auto-updated by GitHub Actions
+PINNED_VERSION="{{ .versions.nixIndexDb }}"
 
 arch=$(uname -m | sed 's/^arm64$/aarch64/')
 os=$(uname | tr '[:upper:]' '[:lower:]')
@@ -31,28 +20,24 @@ filename="index-${arch}-${os}"
 mkdir -p ~/.cache/nix-index
 
 # Check installed version
-LATEST_VERSION=$(get_latest_version)
 INSTALLED_VERSION=""
 [[ -f "$VERSION_FILE" ]] && INSTALLED_VERSION=$(cat "$VERSION_FILE")
 
-if [[ "$LATEST_VERSION" != "$INSTALLED_VERSION" ]] || [[ ! -f "$HOME/.cache/nix-index/files" ]]; then
-    echo "    Downloading nix-index database ($LATEST_VERSION)..."
+if [[ "$PINNED_VERSION" != "$INSTALLED_VERSION" ]] || [[ ! -f "$HOME/.cache/nix-index/files" ]]; then
+    echo "    Downloading nix-index database ($PINNED_VERSION)..."
     cd ~/.cache/nix-index
 
-    DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${LATEST_VERSION}/${filename}"
+    DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${PINNED_VERSION}/${filename}"
 
-    if command -v gh &>/dev/null; then
-        gh release download "$LATEST_VERSION" --repo "$REPO" --pattern "$filename" --clobber 2>/dev/null || \
-        curl -fsSLO "$DOWNLOAD_URL"
-    elif command -v wget &>/dev/null; then
+    if command -v wget &>/dev/null; then
         wget -q -N "$DOWNLOAD_URL"
     else
         curl -fsSLO "$DOWNLOAD_URL"
     fi
 
     ln -sf "${filename}" files
-    echo "$LATEST_VERSION" > "$VERSION_FILE"
-    echo "    Database updated to $LATEST_VERSION"
+    echo "$PINNED_VERSION" > "$VERSION_FILE"
+    echo "    Database updated to $PINNED_VERSION"
 else
     echo "    nix-index database already at $INSTALLED_VERSION"
 fi

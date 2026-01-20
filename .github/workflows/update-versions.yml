@@ -1,0 +1,63 @@
+name: Update pinned versions
+on:
+  schedule:
+    - cron: "0 5 * * 0" # Weekly on Sunday at 5:00 AM UTC
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  update:
+    name: Update versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Get latest versions
+        id: versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          nix_installer=$(gh release view --repo DeterminateSystems/nix-installer --json tagName -q '.tagName')
+          nix_version=$(gh release view --repo DeterminateSystems/nix --json tagName -q '.tagName')
+          nix_index_db=$(gh release view --repo nix-community/nix-index-database --json tagName -q '.tagName')
+          # paperlib tag format: release-electron-X.Y.Z -> extract X.Y.Z
+          paperlib=$(gh release view --repo Future-Scholars/paperlib --json tagName -q '.tagName' | sed 's/release-electron-//')
+          echo "nix_installer=$nix_installer" >> "$GITHUB_OUTPUT"
+          echo "nix_version=$nix_version" >> "$GITHUB_OUTPUT"
+          echo "nix_index_db=$nix_index_db" >> "$GITHUB_OUTPUT"
+          echo "paperlib=$paperlib" >> "$GITHUB_OUTPUT"
+      - name: Update .chezmoidata.yaml
+        run: |
+          sed -i 's/nixInstaller: ".*"/nixInstaller: "${{ steps.versions.outputs.nix_installer }}"/' .chezmoidata.yaml
+          sed -i 's/nixVersion: ".*"/nixVersion: "${{ steps.versions.outputs.nix_version }}"/' .chezmoidata.yaml
+          sed -i 's/nixIndexDb: ".*"/nixIndexDb: "${{ steps.versions.outputs.nix_index_db }}"/' .chezmoidata.yaml
+          sed -i 's/paperlib: ".*"/paperlib: "${{ steps.versions.outputs.paperlib }}"/' .chezmoidata.yaml
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet .chezmoidata.yaml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Get current date
+        if: steps.changes.outputs.changed == 'true'
+        id: date
+        run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+      - name: Create PR
+        if: steps.changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: "chore(versions): update pinned versions"
+          title: "chore(versions): update pinned versions (${{ steps.date.outputs.date }})"
+          branch: update-pinned-versions
+          labels: dependencies,automation
+          body: |
+            Automated version update for pinned dependencies.
+
+            | Package | Version |
+            |---------|---------|
+            | nix-installer | `${{ steps.versions.outputs.nix_installer }}` |
+            | nix | `${{ steps.versions.outputs.nix_version }}` |
+            | nix-index-database | `${{ steps.versions.outputs.nix_index_db }}` |
+            | paperlib | `${{ steps.versions.outputs.paperlib }}` |

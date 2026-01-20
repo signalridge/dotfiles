@@ -1,18 +1,18 @@
-{{- $arch := "arm" -}}
-{{- if eq .chezmoi.arch "amd64" -}}{{- $arch = "x64" -}}{{- end -}}
-{{- $etag := output "sh" "-c" (printf "curl -sIL --connect-timeout 5 https://distribution.paperlib.app/electron-mac-%s/latest.dmg 2>/dev/null | grep -i etag | head -1 || echo etag-fallback-ce25921d" $arch) | trim -}}
+{{- $suffix := "_arm" -}}
+{{- if eq .chezmoi.arch "amd64" -}}{{- $suffix = "" -}}{{- end -}}
 #!/bin/bash
 
 set -eufo pipefail
 
-# Paperlib version: {{ $etag }}
-
 echo ":: [07] Installing Paperlib"
 
-DMG_URL="https://distribution.paperlib.app/electron-mac-{{ $arch }}/latest.dmg"
-TEMP_DMG="/tmp/latest.dmg"
+VERSION="{{ .versions.paperlib }}"
+REPO="Future-Scholars/paperlib"
+DMG_NAME="Paperlib_${VERSION}{{ $suffix }}.dmg"
+DMG_URL="https://github.com/${REPO}/releases/download/release-electron-${VERSION}/${DMG_NAME}"
+TEMP_DMG="/tmp/${DMG_NAME}"
 
-curl -sL "$DMG_URL" -o "$TEMP_DMG"
+curl -fsSL "$DMG_URL" -o "$TEMP_DMG"
 
 VOLUME=$(hdiutil attach "$TEMP_DMG" | grep Volumes | awk '{print $3,$4,$5,$6}' | sed 's/ *$//')
 APP_NAME=$(ls "$VOLUME" | grep '\.app$' | head -n 1)
