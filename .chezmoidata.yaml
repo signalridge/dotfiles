@@ -117,6 +117,7 @@ homepkgs:
     - fzf
     - ghostscript # gs - PDF/PostScript processor (Snacks.image dependency)
     - mermaid-cli # mmdc - Mermaid diagram renderer (render-markdown.nvim dependency)
+    - mosh
     - gh
     - gh-dash
     - ghq
