@@ -69,5 +69,3 @@ github = "zsh-users/zsh-syntax-highlighting"
 # zsh-autocomplete must load AFTER zsh-syntax-highlighting
 [plugins.zsh-autocomplete]
 github = 'marlonrichert/zsh-autocomplete'
-
-# Note: zsh-fzf-history-search removed - using atuin instead

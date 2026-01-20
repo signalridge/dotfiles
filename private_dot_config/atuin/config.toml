@@ -18,7 +18,10 @@ search_mode = "fuzzy"
 filter_mode = "global"
 
 # Filter mode when pressing up arrow
-filter_mode_shell_up_key_binding = "session"
+filter_mode_shell_up_key_binding = "global"
+
+# Search mode when pressing up arrow (prefix = match what you've typed)
+search_mode_shell_up_key_binding = "prefix"
 
 # Show preview of the selected command
 show_preview = true
