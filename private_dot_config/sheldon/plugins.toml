@@ -31,9 +31,11 @@ github = 'zsh-users/zsh-autosuggestions'
 use = ['{{ name }}.zsh']
 [plugins.zsh-autosuggestions.hooks]
 post = """
+zsh-defer -c '
 # Autosuggestions keybindings
-bindkey '^e' autosuggest-accept   # Ctrl+E: accept suggestion (fill command line)
-bindkey '^w' autosuggest-execute  # Ctrl+W: execute suggestion directly
+bindkey "^e" autosuggest-accept   # Ctrl+E: accept suggestion (fill command line)
+bindkey "^w" autosuggest-execute  # Ctrl+W: execute suggestion directly
+'
 """
 
 [plugins.base16]
