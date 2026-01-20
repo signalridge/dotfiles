@@ -243,11 +243,8 @@ aerospace:
         }
       - { id: "com.carriez.rustdesk", comment: "RustDesk" }
       - { id: "io.tailscale.ipn.macsys", comment: "Tailscale" }
-    work:
-      - { id: "com.bitwarden.desktop", comment: "Bitwarden" }
-    private:
-      # Password manager
       - { id: "com.1password.1password", comment: "1Password" }
+    private:
       # Utilities
       - { id: "com.raycast.macos", comment: "Raycast" }
       - { id: "com.setapp.DesktopClient", comment: "Setapp" }
