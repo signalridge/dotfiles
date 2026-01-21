@@ -245,6 +245,7 @@ aerospace:
       - { id: "com.carriez.rustdesk", comment: "RustDesk" }
       - { id: "io.tailscale.ipn.macsys", comment: "Tailscale" }
       - { id: "com.1password.1password", comment: "1Password" }
+    work:
     private:
       # Utilities
       - { id: "com.raycast.macos", comment: "Raycast" }
