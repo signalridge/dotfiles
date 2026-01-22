@@ -8,10 +8,10 @@
 # Colored Output
 # ─────────────────────────────────────────────────────────────
 print_success() { printf "\033[32m✔ %s\033[0m\n" "$1"; }
-print_error()   { printf "\033[31m✖ %s\033[0m\n" "$1"; }
+print_error() { printf "\033[31m✖ %s\033[0m\n" "$1"; }
 print_warning() { printf "\033[33m! %s\033[0m\n" "$1"; }
-print_info()    { printf "\033[34mℹ %s\033[0m\n" "$1"; }
-print_step()    { printf "\033[35m→ %s\033[0m\n" "$1"; }
+print_info() { printf "\033[34mℹ %s\033[0m\n" "$1"; }
+print_step() { printf "\033[35m→ %s\033[0m\n" "$1"; }
 
 # ─────────────────────────────────────────────────────────────
 # Command Utilities
@@ -22,9 +22,9 @@ cmd_exists() { command -v "$1" &>/dev/null; }
 # Get current OS
 get_os() {
     case "$(uname -s)" in
-        Darwin) echo "macos" ;;
-        Linux)  echo "linux" ;;
-        *)      echo "unknown" ;;
+    Darwin) echo "macos" ;;
+    Linux) echo "linux" ;;
+    *) echo "unknown" ;;
     esac
 }
 

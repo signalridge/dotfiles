@@ -1,0 +1,101 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-server-sequential-thinking"]
+    }
+  },
+  "permissions": {
+    "deny": [
+      "Bash(sudo rm -rf:*)",
+      "Bash(rm -rf /*)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(python -m pip:*)",
+      "Bash(python3 -m pip:*)",
+      "Read(.env.local)",
+      "Read(.env.production)",
+      "Read(.env.*.local)",
+      "Read(id_rsa*)",
+      "Read(id_ed25519*)",
+      "Read(**/secrets/**)",
+      "Read(**/.secrets/**)",
+      "Write(.env*)",
+      "Write(**/credentials*)",
+      "Write(**/secrets/**)"
+    ],
+    "allow": [
+      "Bash(uv:*)",
+      "Bash(uvx:*)",
+      "Bash(ruff:*)",
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(just:*)",
+      "Bash(mise:*)",
+      "Bash(nix:*)",
+      "Bash(chezmoi:*)"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/skill-hint.sh",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/enforce-uv.sh"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/block-git-rewrites.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/block-main-edits.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/format-python.sh"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/format-code.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "INSIDE_CLAUDE_CODE": "1"
+  }
+}

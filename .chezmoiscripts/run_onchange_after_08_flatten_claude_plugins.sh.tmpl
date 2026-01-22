@@ -1,0 +1,95 @@
+#!/bin/bash
+# Flatten Claude Code external plugins (agents, commands, skills)
+# Controlled by .chezmoidata/claude.yaml -> enabledPlugins
+# Source repo managed by .chezmoiexternal.toml (refreshPeriod = 168h)
+#
+# Triggers: wshobsonAgents={{ .versions.wshobsonAgents }} enabledPlugins={{ .claude.enabledPlugins | toJson | sha256sum }}
+
+set -euo pipefail
+
+CACHE_DIR="$HOME/.cache/wshobson-agents"
+CLAUDE_DIR="$HOME/.claude"
+
+echo ":: [08] Syncing Claude Code external plugins..."
+
+# Check if cache exists (managed by chezmoi external)
+if [[ ! -d "$CACHE_DIR/plugins" ]]; then
+    echo "    Cache not found, run 'chezmoi apply -R' to fetch externals"
+    exit 0
+fi
+
+{{- if and (hasKey .claude "enabledPlugins") (gt (len .claude.enabledPlugins) 0) }}
+# Whitelist mode: only enabled plugins
+enabled_plugins=(
+{{- range .claude.enabledPlugins }}
+    "{{ . }}"
+{{- end }}
+)
+
+# Clean removed plugins (only wshobson plugins, not local)
+for type in agents commands skills; do
+    if [[ -d "$CLAUDE_DIR/$type" ]]; then
+        for dir in "$CLAUDE_DIR/$type"/*/; do
+            [[ -d "$dir" ]] || continue
+            name=$(basename "$dir")
+            # Only clean if it's a wshobson plugin (exists in cache) but not enabled
+            # shellcheck disable=SC2076 # Intentional literal match for array membership
+            if [[ -d "$CACHE_DIR/plugins/$name" ]] && [[ ! " ${enabled_plugins[*]} " =~ " ${name} " ]]; then
+                rm -rf "$dir"
+                echo "  🗑 Removed: $type/$name"
+            fi
+        done
+    fi
+done
+
+plugin_count=0
+for plugin_name in "${enabled_plugins[@]}"; do
+    plugin_dir="$CACHE_DIR/plugins/$plugin_name"
+{{- else }}
+# All plugins mode
+plugin_count=0
+for plugin_dir in "$CACHE_DIR/plugins"/*/; do
+    plugin_name=$(basename "$plugin_dir")
+{{- end }}
+
+    if [[ ! -d "$plugin_dir" ]]; then
+        echo "  ⚠ Plugin not found: $plugin_name"
+        continue
+    fi
+
+    # Sync agents (always overwrite for updates)
+    if [[ -d "$plugin_dir/agents" ]]; then
+        mkdir -p "$CLAUDE_DIR/agents/$plugin_name"
+        for f in "$plugin_dir/agents"/*.md; do
+            [[ -f "$f" ]] && cp -f "$f" "$CLAUDE_DIR/agents/$plugin_name/"
+        done
+    fi
+
+    # Sync commands
+    if [[ -d "$plugin_dir/commands" ]]; then
+        mkdir -p "$CLAUDE_DIR/commands/$plugin_name"
+        for f in "$plugin_dir/commands"/*.md; do
+            [[ -f "$f" ]] && cp -f "$f" "$CLAUDE_DIR/commands/$plugin_name/"
+        done
+    fi
+
+    # Sync skills (copy entire directories)
+    if [[ -d "$plugin_dir/skills" ]]; then
+        mkdir -p "$CLAUDE_DIR/skills/$plugin_name"
+        for skill in "$plugin_dir/skills"/*/; do
+            [[ -d "$skill" ]] || continue
+            skill_name=$(basename "$skill")
+            # Remove trailing slash for macOS cp -r compatibility
+            skill="${skill%/}"
+            # Atomic update: copy to temp, then move (prevents data loss on interrupt)
+            cp -r "$skill" "$CLAUDE_DIR/skills/$plugin_name/${skill_name}.new"
+            rm -rf "$CLAUDE_DIR/skills/$plugin_name/$skill_name"
+            mv "$CLAUDE_DIR/skills/$plugin_name/${skill_name}.new" "$CLAUDE_DIR/skills/$plugin_name/$skill_name"
+        done
+    fi
+
+    ((plugin_count++)) || true
+    echo "  ✓ $plugin_name"
+done
+
+echo "✅ Synced $plugin_count plugins"

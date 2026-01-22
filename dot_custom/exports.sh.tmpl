@@ -37,14 +37,14 @@ export FZF_DEFAULT_OPTS="
 
 # Use fd for file searching (respects .gitignore)
 if command -v fd >/dev/null 2>&1; then
-  export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
-  export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-  export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+    export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+    export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
 fi
 
 # Preview with bat for CTRL-T (file search)
 if command -v bat >/dev/null 2>&1; then
-  export FZF_CTRL_T_OPTS="
+    export FZF_CTRL_T_OPTS="
     --preview 'bat --color=always --style=numbers --line-range=:500 {}'
     --preview-window='right:60%:border-left'
     --bind 'ctrl-/:toggle-preview'
@@ -53,7 +53,7 @@ fi
 
 # Preview directories with eza for ALT-C (cd)
 if command -v eza >/dev/null 2>&1; then
-  export FZF_ALT_C_OPTS="
+    export FZF_ALT_C_OPTS="
     --preview 'eza --tree --level=2 --color=always --icons {}'
     --preview-window='right:50%:border-left'
   "
@@ -78,33 +78,34 @@ export AICOMMIT_PROVIDER="${AICOMMIT_PROVIDER:-codex}"
 export ZSH_TMUX_CONFIG="$HOME/.config/tmux/tmux.conf"
 # Disable tmux autostart in VSCode (avoids status bar stacking with Claude CLI)
 if [[ "$TERM_PROGRAM" == "vscode" ]]; then
-  export ZSH_TMUX_AUTOSTART=false
-  export ZSH_TMUX_AUTOCONNECT=false
+    export ZSH_TMUX_AUTOSTART=false
+    export ZSH_TMUX_AUTOCONNECT=false
 else
-  export ZSH_TMUX_AUTOSTART=true
-  export ZSH_TMUX_AUTOCONNECT=true
+    export ZSH_TMUX_AUTOSTART=true
+    export ZSH_TMUX_AUTOCONNECT=true
 fi
 export ZSH_TMUX_AUTOQUIT=false
 # TMux session name based on aerospace workspace
 # Each workspace gets its own session (ws-1, ws-2, etc.)
 # Falls back to "main" if aerospace unavailable or outside workspace
 if command -v aerospace >/dev/null 2>&1; then
-  _ws=$(aerospace list-workspaces --focused 2>/dev/null)
-  if [[ -n "$_ws" ]]; then
-    export ZSH_TMUX_DEFAULT_SESSION_NAME="ws-${_ws}"
-  else
-    export ZSH_TMUX_DEFAULT_SESSION_NAME="main"
-  fi
-  unset _ws
+    _ws=$(aerospace list-workspaces --focused 2>/dev/null)
+    if [[ -n "$_ws" ]]; then
+        export ZSH_TMUX_DEFAULT_SESSION_NAME="ws-${_ws}"
+    else
+        export ZSH_TMUX_DEFAULT_SESSION_NAME="main"
+    fi
+    unset _ws
 else
-  export ZSH_TMUX_DEFAULT_SESSION_NAME="main"
+    export ZSH_TMUX_DEFAULT_SESSION_NAME="main"
 fi
 # ─────────────────────────────────────────────────────────────
-# Claude Code configuration directory
-# Move config from ~/.claude to ~/.config/claude for cleaner home
-# Codex/Gemini: no useful config to manage, keep default location
+# Claude Code configuration
+# Uses default location ~/.claude (managed by chezmoi)
+# Global config includes: CLAUDE.md, commands/, skills/, hooks/
+# Project-specific config goes in each project's .claude/ directory
 # ─────────────────────────────────────────────────────────────
-export CLAUDE_CONFIG_DIR="$HOME/.config/claude"
+# Note: CLAUDE_CONFIG_DIR removed - using default ~/.claude location
 {{- if eq .chezmoi.os "darwin" }}
 
 # ─────────────────────────────────────────────────────────────

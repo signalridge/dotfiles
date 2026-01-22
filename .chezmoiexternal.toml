@@ -10,3 +10,14 @@
     type = "git-repo"
     url = "https://github.com/tmux-plugins/tpm.git"
     refreshPeriod = "168h"  # check for updates weekly
+
+# ------------------------------------------------------------------------------
+# Claude Code External Agents (wshobson/agents)
+# Downloaded as archive, then flattened by run_after script
+# Plugins are configured in .chezmoidata.yaml -> claude.externalPlugins
+# ------------------------------------------------------------------------------
+[".cache/wshobson-agents"]
+    type = "archive"
+    url = "https://github.com/wshobson/agents/archive/refs/heads/main.tar.gz"
+    stripComponents = 1
+    refreshPeriod = "168h"  # check for updates weekly

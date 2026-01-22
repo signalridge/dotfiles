@@ -1,0 +1,80 @@
+hammerspoon:
+  # IME auto-switching: app name -> language (en/zh/jp)
+  # Only include apps that are actually installed (match homebrew casks/masApps)
+  imeApps:
+    shared:
+      # System apps -> English
+      - app: Finder
+        ime: en
+      - app: Terminal
+        ime: en
+      - app: System Settings
+        ime: en
+      - app: Activity Monitor
+        ime: en
+      # Dev tools -> English
+      - app: Visual Studio Code
+        ime: en
+      - app: Ghostty
+        ime: en
+      - app: DBeaver
+        ime: en
+      - app: OrbStack
+        ime: en
+      - app: Karabiner-Elements
+        ime: en
+      - app: Karabiner-EventViewer
+        ime: en
+      - app: AeroSpace
+        ime: en
+      - app: Raycast
+        ime: en
+    work:
+      - app: Cursor
+        ime: en
+      - app: Obsidian
+        ime: jp
+      # Browsers/Communication -> Japanese for work
+      - app: Slack
+        ime: jp
+      - app: Notion
+        ime: jp
+      - app: Safari
+        ime: jp
+      - app: Zen
+        ime: jp
+    private:
+      # Password -> English
+      - app: 1Password
+        ime: en
+      # Browsers/Communication -> Chinese for private
+      - app: Slack
+        ime: zh
+      - app: Notion
+        ime: zh
+      - app: Safari
+        ime: zh
+      - app: Zen
+        ime: zh
+      - app: WeChat
+        ime: zh
+      - app: Telegram
+        ime: zh
+      - app: Discord
+        ime: zh
+      - app: Messenger
+        ime: zh
+      # Notes -> Chinese
+      - app: Logseq
+        ime: zh
+      - app: Notability
+        ime: zh
+      - app: Goodnotes
+        ime: zh
+      # AI -> Chinese
+      - app: ChatGPT
+        ime: zh
+# ─────────────────────────────────────────────────────────────────────────────
+# Claude Code external plugins (wshobson/agents)
+# Leave empty or omit to enable ALL plugins
+# ─────────────────────────────────────────────────────────────────────────────

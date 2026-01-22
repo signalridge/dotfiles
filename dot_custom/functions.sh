@@ -47,10 +47,10 @@ dev() {
 # ─────────────────────────────────────────────────────────────
 fgc() {
     local branch
-    branch=$(git branch -a --color=always | \
-        grep -v '/HEAD' | \
-        fzf --ansi --preview 'git log --oneline --graph --color=always {1}' | \
-        sed 's/^[* ]*//' | \
+    branch=$(git branch -a --color=always |
+        grep -v '/HEAD' |
+        fzf --ansi --preview 'git log --oneline --graph --color=always {1}' |
+        sed 's/^[* ]*//' |
         sed 's/remotes\/origin\///')
     if [[ -n "$branch" ]]; then
         git checkout "$branch"
@@ -62,9 +62,9 @@ fgc() {
 # Usage: fgl
 # ─────────────────────────────────────────────────────────────
 fgl() {
-    git log --oneline --color=always | \
-        fzf --ansi --preview 'git show --color=always {1}' | \
-        awk '{print $1}' | \
+    git log --oneline --color=always |
+        fzf --ansi --preview 'git show --color=always {1}' |
+        awk '{print $1}' |
         xargs -I {} git show {}
 }
 
@@ -86,7 +86,7 @@ fga() {
 # Usage: fkill [-9] (use -9 for SIGKILL, default is SIGTERM)
 # ─────────────────────────────────────────────────────────────
 fkill() {
-    local signal="-15"  # SIGTERM by default (graceful)
+    local signal="-15" # SIGTERM by default (graceful)
     [[ "$1" == "-9" ]] && signal="-9"
 
     local selection
@@ -136,7 +136,7 @@ alias dotcd="chezmoi-cd"
 mkcd() {
     mkdir -p "$1" && cd "$1" || return 1
 }
-alias take="mkcd"  # Alternative name
+alias take="mkcd" # Alternative name
 
 # ─────────────────────────────────────────────────────────────
 # aicommit - Generate commit message with AI CLI
@@ -144,8 +144,16 @@ alias take="mkcd"  # Alternative name
 # Providers: codex (default), gemini, claude, auto
 # Type: optional prefix override (wip, feat, fix, chore, etc.)
 # Config: AICOMMIT_PROVIDER env var
+# Note: For context-aware commits in Claude Code, use /commit command
 # ─────────────────────────────────────────────────────────────
 aicommit() {
+    # Show hint when running inside Claude Code session
+    if [[ -n "$INSIDE_CLAUDE_CODE" ]]; then
+        echo "Tip: Use /commit in Claude Code for context-aware commits"
+        echo "     Continuing with aicommit for quick commit..."
+        echo ""
+    fi
+
     local dry_run=false
     local provider="${AICOMMIT_PROVIDER:-codex}"
     local type_override=""
@@ -153,9 +161,9 @@ aicommit() {
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --dry-run|-n) dry_run=true ;;
-            claude|codex|gemini|auto) provider="$1" ;;
-            *) [[ -z "$type_override" ]] && type_override="$1" ;;
+        --dry-run | -n) dry_run=true ;;
+        claude | codex | gemini | auto) provider="$1" ;;
+        *) [[ -z "$type_override" ]] && type_override="$1" ;;
         esac
         shift
     done
@@ -212,30 +220,33 @@ Return ONLY the commit message, nothing else."
     for p in "${providers[@]}"; do
         [[ -n "$message" ]] && break
         case "$p" in
-            claude)
-                command -v claude &>/dev/null || continue
-                error_output=$(echo "$prompt" | claude --print 2>&1) || continue
-                [[ "$error_output" == *"error"* || "$error_output" == *"auth"* ]] && continue
-                message=$(echo "$error_output" | head -1)
-                ;;
-            codex)
-                command -v codex &>/dev/null || continue
-                local tmp_out
-                tmp_out=$(mktemp)
-                # Use codex exec for non-interactive mode, output to temp file
-                codex exec -o "$tmp_out" --skip-git-repo-check "$prompt" &>/dev/null || { rm -f "$tmp_out"; continue; }
-                message=$(head -1 "$tmp_out" 2>/dev/null)
+        claude)
+            command -v claude &>/dev/null || continue
+            error_output=$(echo "$prompt" | claude --print 2>&1) || continue
+            [[ "$error_output" == *"error"* || "$error_output" == *"auth"* ]] && continue
+            message=$(echo "$error_output" | head -1)
+            ;;
+        codex)
+            command -v codex &>/dev/null || continue
+            local tmp_out
+            tmp_out=$(mktemp)
+            # Use codex exec for non-interactive mode, output to temp file
+            codex exec -o "$tmp_out" --skip-git-repo-check "$prompt" &>/dev/null || {
                 rm -f "$tmp_out"
-                [[ -z "$message" ]] && continue
-                ;;
-            gemini)
-                command -v gemini &>/dev/null || continue
-                # gemini-2.5-flash: fast, 1M context; --sandbox disables agentic mode
-                error_output=$(gemini -m gemini-2.5-flash -o text --sandbox "$prompt" 2>&1) || continue
-                [[ "$error_output" == *"error"* || "$error_output" == *"Error"* ]] && continue
-                # Skip "Loaded cached credentials" line
-                message=$(echo "$error_output" | grep -v "^Loaded" | head -1)
-                ;;
+                continue
+            }
+            message=$(head -1 "$tmp_out" 2>/dev/null)
+            rm -f "$tmp_out"
+            [[ -z "$message" ]] && continue
+            ;;
+        gemini)
+            command -v gemini &>/dev/null || continue
+            # gemini-2.5-flash: fast, 1M context; --sandbox disables agentic mode
+            error_output=$(gemini -m gemini-2.5-flash -o text --sandbox "$prompt" 2>&1) || continue
+            [[ "$error_output" == *"error"* || "$error_output" == *"Error"* ]] && continue
+            # Skip "Loaded cached credentials" line
+            message=$(echo "$error_output" | grep -v "^Loaded" | head -1)
+            ;;
         esac
     done
 
@@ -263,21 +274,21 @@ Return ONLY the commit message, nothing else."
 # create_direnv_venv - Create Python venv with direnv
 # Usage: create_direnv_venv
 create_direnv_venv() {
-    echo 'layout python' > .envrc
+    echo 'layout python' >.envrc
     direnv allow
 }
 
 # create_direnv_nix - Create Nix flake environment with direnv
 # Usage: create_direnv_nix
 create_direnv_nix() {
-    echo 'use flake' > .envrc
+    echo 'use flake' >.envrc
     direnv allow
 }
 
 # create_direnv_mise - Create mise environment with direnv
 # Usage: create_direnv_mise
 create_direnv_mise() {
-    echo 'use mise' > .envrc
+    echo 'use mise' >.envrc
     direnv allow
 }
 
@@ -393,19 +404,19 @@ backup_dev_env() {
     # mise tools
     if command -v mise &>/dev/null; then
         echo "  - Backing up mise config..."
-        mise list --json > "$backup_dir/mise-tools.$date_str.json" 2>/dev/null || true
+        mise list --json >"$backup_dir/mise-tools.$date_str.json" 2>/dev/null || true
     fi
 
     # VS Code extensions
     if command -v code &>/dev/null; then
         echo "  - Backing up VS Code extensions..."
-        code --list-extensions > "$backup_dir/vscode-extensions.$date_str.txt"
+        code --list-extensions >"$backup_dir/vscode-extensions.$date_str.txt"
     fi
 
     # npm global packages
     if command -v npm &>/dev/null; then
         echo "  - Backing up npm global packages..."
-        npm list -g --depth=0 --json > "$backup_dir/npm-global.$date_str.json" 2>/dev/null || true
+        npm list -g --depth=0 --json >"$backup_dir/npm-global.$date_str.json" 2>/dev/null || true
     fi
 
     echo "Backup completed: $backup_dir"
@@ -531,3 +542,44 @@ if [[ "$OSTYPE" == darwin* ]] && command -v aerospace &>/dev/null; then
         aerospace move-node-to-workspace "${1:-1}"
     }
 fi
+
+# ─────────────────────────────────────────────────────────────
+# Claude Code Integration
+# ─────────────────────────────────────────────────────────────
+
+# ccc - Launch Claude Code in current directory
+# Usage: ccc [args...]
+ccc() {
+    if command -v claude &>/dev/null; then
+        claude "$@"
+    else
+        echo "Claude Code not installed. Install from: https://docs.anthropic.com/claude-code"
+        return 1
+    fi
+}
+
+# ccr - Resume last Claude Code session
+# Usage: ccr
+ccr() {
+    if command -v claude &>/dev/null; then
+        claude --resume
+    else
+        echo "Claude Code not installed"
+        return 1
+    fi
+}
+
+# ccp - Claude Code with specific prompt
+# Usage: ccp "your prompt here"
+ccp() {
+    if [[ -z "$1" ]]; then
+        echo "Usage: ccp \"your prompt\""
+        return 1
+    fi
+    if command -v claude &>/dev/null; then
+        claude -p "$1"
+    else
+        echo "Claude Code not installed"
+        return 1
+    fi
+}

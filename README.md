@@ -20,7 +20,8 @@
   <a href="https://brew.sh/"><img alt="Homebrew" src="https://img.shields.io/badge/Homebrew-FBB040?style=for-the-badge&logo=homebrew&logoColor=black"></a>
 </p>
 
-*A modern, reproducible development environment for macOS and Linux*
+_A modern, reproducible development environment for macOS and Linux_
+
 </div>
 
 This repository provides a fully declarative system configuration that can bootstrap a new machine in minutes, with all packages, settings, and dotfiles automatically applied. The entire setup is built around Rust-based CLI tools for blazing-fast performance, and supports multi-profile configurations to seamlessly switch between work and personal environments.
@@ -65,8 +66,7 @@ This repository provides a fully declarative system configuration that can boots
 
 ---
 
-> [!WARNING]
-> **Review before running!** This repository contains scripts that will modify your system configuration.
+> [!WARNING] > **Review before running!** This repository contains scripts that will modify your system configuration.
 > Do not blindly execute setup commands without understanding what they do.
 > Fork this repository and customize it for your own needs.
 
@@ -142,8 +142,7 @@ This will automatically:
 3. Fetch encryption key from 1Password (or prompt for manual setup)
 4. Apply all dotfiles and configurations
 
-> [!IMPORTANT]
-> **First-time users**: When prompted for `useEncryption`, answer **No** (default).
+> [!IMPORTANT] > **First-time users**: When prompted for `useEncryption`, answer **No** (default).
 > The encryption setup is specific to the repo owner. If you need encryption, modify:
 >
 > - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`: Change `KEY_FILE`, `KEY_PUB`, and 1Password item path (`op://Personal/main/...`)
@@ -188,13 +187,13 @@ This dotfiles setup combines powerful tools for cross-platform configuration:
 
 ### How They Work Together
 
-| Component | macOS | Linux |
-|-----------|-------|-------|
-| Dotfiles | chezmoi | chezmoi |
-| System Config | nix-darwin | N/A |
+| Component     | macOS          | Linux          |
+| ------------- | -------------- | -------------- |
+| Dotfiles      | chezmoi        | chezmoi        |
+| System Config | nix-darwin     | N/A            |
 | User Packages | flakey-profile | flakey-profile |
-| GUI Apps | Homebrew Cask | N/A |
-| Mac App Store | mas | N/A |
+| GUI Apps      | Homebrew Cask  | N/A            |
+| Mac App Store | mas            | N/A            |
 
 ---
 
@@ -336,12 +335,12 @@ create_py_project   # Quick Python project setup with uv
 
 Packages are managed through multiple sources, each with its strengths:
 
-| Source            | Platform      | Description                 | Examples                    |
-| ----------------- | ------------- | --------------------------- | --------------------------- |
-| Nix packages      | macOS, Linux  | Reproducible, rollback-able | ripgrep, bat, eza, starship |
-| Homebrew formulas | macOS only    | macOS-specific tools        | macos-trash, cliclick       |
-| Homebrew casks    | macOS only    | GUI applications            | VS Code, Ghostty, Notion    |
-| Mac App Store     | macOS only    | App Store exclusives        | Magnet, WeChat, Office      |
+| Source            | Platform     | Description                 | Examples                    |
+| ----------------- | ------------ | --------------------------- | --------------------------- |
+| Nix packages      | macOS, Linux | Reproducible, rollback-able | ripgrep, bat, eza, starship |
+| Homebrew formulas | macOS only   | macOS-specific tools        | macos-trash, cliclick       |
+| Homebrew casks    | macOS only   | GUI applications            | VS Code, Ghostty, Notion    |
+| Mac App Store     | macOS only   | App Store exclusives        | Magnet, WeChat, Office      |
 
 All package lists are defined in `.chezmoidata.yaml` with support for shared, work-only, and private-only packages.
 
@@ -417,12 +416,12 @@ chezmoi init --apply --promptBool headless=true signalridge
 
 ## ⌨️ Keyboard Shortcuts
 
-| Shortcut   | Action                           |
-| ---------- | -------------------------------- |
-| Alt + Up   | Navigate to parent directory     |
-| Alt + Down | Go back in directory history     |
-| Ctrl + R   | Search command history (Atuin)   |
-| Ctrl + B   | tmux prefix key                  |
+| Shortcut   | Action                         |
+| ---------- | ------------------------------ |
+| Alt + Up   | Navigate to parent directory   |
+| Alt + Down | Go back in directory history   |
+| Ctrl + R   | Search command history (Atuin) |
+| Ctrl + B   | tmux prefix key                |
 
 ---
 

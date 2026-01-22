@@ -94,16 +94,10 @@ history:
 repl:
     nix repl -f flake:nixpkgs
 
-# Format nix files
-[group('nix')]
+# Format chezmoi source files with treefmt
+[group('dev')]
 fmt:
-    cd "$HOME/nix-config" && nix fmt .
-
-# Check nix formatting (fails if changes needed)
-[group('nix')]
-fmt-check:
-    chezmoi apply
-    cd "$HOME/nix-config" && nix fmt -- --check .
+    cd "$HOME/.local/share/chezmoi" && nix run nixpkgs#treefmt
 {{ if eq .platform "darwin" }}
 # Remove all generations older than 7 days
 [group('nix')]

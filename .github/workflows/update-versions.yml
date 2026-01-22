@@ -22,20 +22,24 @@ jobs:
           nix_index_db=$(gh release view --repo nix-community/nix-index-database --json tagName -q '.tagName')
           # paperlib tag format: release-electron-X.Y.Z -> extract X.Y.Z
           paperlib=$(gh release view --repo Future-Scholars/paperlib --json tagName -q '.tagName' | sed 's/release-electron-//')
+          # wshobson/agents commit hash (first 8 chars)
+          wshobson_agents=$(gh api repos/wshobson/agents/commits/main --jq '.sha[:8]')
           echo "nix_installer=$nix_installer" >> "$GITHUB_OUTPUT"
           echo "nix_version=$nix_version" >> "$GITHUB_OUTPUT"
           echo "nix_index_db=$nix_index_db" >> "$GITHUB_OUTPUT"
           echo "paperlib=$paperlib" >> "$GITHUB_OUTPUT"
-      - name: Update .chezmoidata.yaml
+          echo "wshobson_agents=$wshobson_agents" >> "$GITHUB_OUTPUT"
+      - name: Update .chezmoidata/versions.yaml
         run: |
-          sed -i 's/nixInstaller: ".*"/nixInstaller: "${{ steps.versions.outputs.nix_installer }}"/' .chezmoidata.yaml
-          sed -i 's/nixVersion: ".*"/nixVersion: "${{ steps.versions.outputs.nix_version }}"/' .chezmoidata.yaml
-          sed -i 's/nixIndexDb: ".*"/nixIndexDb: "${{ steps.versions.outputs.nix_index_db }}"/' .chezmoidata.yaml
-          sed -i 's/paperlib: ".*"/paperlib: "${{ steps.versions.outputs.paperlib }}"/' .chezmoidata.yaml
+          sed -i 's/nixInstaller: .*/nixInstaller: ${{ steps.versions.outputs.nix_installer }}/' .chezmoidata/versions.yaml
+          sed -i 's/nixVersion: .*/nixVersion: ${{ steps.versions.outputs.nix_version }}/' .chezmoidata/versions.yaml
+          sed -i 's/nixIndexDb: .*/nixIndexDb: ${{ steps.versions.outputs.nix_index_db }}/' .chezmoidata/versions.yaml
+          sed -i 's/paperlib: .*/paperlib: ${{ steps.versions.outputs.paperlib }}/' .chezmoidata/versions.yaml
+          sed -i 's/wshobsonAgents: .*/wshobsonAgents: ${{ steps.versions.outputs.wshobson_agents }}/' .chezmoidata/versions.yaml
       - name: Check for changes
         id: changes
         run: |
-          if git diff --quiet .chezmoidata.yaml; then
+          if git diff --quiet .chezmoidata/versions.yaml; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -61,3 +65,4 @@ jobs:
             | nix | `${{ steps.versions.outputs.nix_version }}` |
             | nix-index-database | `${{ steps.versions.outputs.nix_index_db }}` |
             | paperlib | `${{ steps.versions.outputs.paperlib }}` |
+            | wshobson/agents | `${{ steps.versions.outputs.wshobson_agents }}` |

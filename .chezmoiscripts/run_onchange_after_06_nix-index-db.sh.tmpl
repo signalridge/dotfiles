@@ -1,4 +1,3 @@
-{{ if lookPath "nix-locate" -}}
 #!/bin/bash
 
 set -eufo pipefail
@@ -7,6 +6,12 @@ set -eufo pipefail
 # Source: https://github.com/nix-community/nix-index-database
 
 echo ":: [06] Downloading nix-index database"
+
+# Runtime check: skip if nix-locate not installed
+if ! command -v nix-locate &>/dev/null; then
+    echo "    Skipped (nix-locate not installed)"
+    exit 0
+fi
 
 REPO="nix-community/nix-index-database"
 VERSION_FILE="$HOME/.cache/nix-index/.version"
@@ -36,9 +41,8 @@ if [[ "$PINNED_VERSION" != "$INSTALLED_VERSION" ]] || [[ ! -f "$HOME/.cache/nix-
     fi
 
     ln -sf "${filename}" files
-    echo "$PINNED_VERSION" > "$VERSION_FILE"
+    echo "$PINNED_VERSION" >"$VERSION_FILE"
     echo "    Database updated to $PINNED_VERSION"
 else
     echo "    nix-index database already at $INSTALLED_VERSION"
 fi
-{{ end -}}

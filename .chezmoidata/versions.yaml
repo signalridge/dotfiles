@@ -1,0 +1,9 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Pinned versions (auto-updated by GitHub Actions)
+# ─────────────────────────────────────────────────────────────────────────────
+versions:
+  nixInstaller: v3.15.1
+  nixVersion: v2.33.0
+  nixIndexDb: 2025-12-09-080420
+  paperlib: 3.1.12
+  wshobsonAgents: 1135ac60 # wshobson/agents commit hash

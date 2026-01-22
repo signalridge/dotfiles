@@ -1,0 +1,44 @@
+# Claude Security Review - GitHub Action Template
+#
+# Copy this file to your project's .github/workflows/claude-security-review.yml
+#
+# Required secrets:
+#   - ANTHROPIC_API_KEY
+#
+# Uses Anthropic's official security review action
+
+name: Security Review
+on:
+  pull_request:
+permissions:
+  pull-requests: write # Needed for leaving PR comments
+  contents: read
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+      - name: Run Claude Security Review
+        uses: anthropics/claude-code-security-review@main
+        with:
+          # Post findings as PR comments
+          comment-pr: true
+          # Authentication
+          claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Model selection
+          claude-model: claude-opus-4-1-20250805
+          # Custom instructions specific to your codebase
+          # Examples:
+          # - "Our API uses JWT tokens stored in httpOnly cookies"
+          # - "We use SQLAlchemy ORM which handles SQL escaping"
+          # - "All user input goes through our InputValidator class"
+          custom-security-scan-instructions: |
+            Additional context for this repository:
+            - Focus on HIGH and MEDIUM severity findings only
+            - Only report issues with >80% confidence
+            - Skip DOS vulnerabilities and rate limiting concerns
+            - Check CLAUDE.md for project-specific security patterns

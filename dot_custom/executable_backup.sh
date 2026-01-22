@@ -58,7 +58,7 @@ backup() {
 }
 
 show_help() {
-    cat << 'EOF'
+    cat <<'EOF'
 Usage: backup.sh [sync|list|status]
   sync   - Sync backup directories to remote
   list   - List remote directories
@@ -72,34 +72,34 @@ EOF
 }
 
 case "${1:-sync}" in
-    sync)
-        for dir in "${BACKUP_DIRS[@]}"; do
-            if [[ -d "$dir" ]]; then
-                backup "$dir"
-            else
-                echo "Warning: $dir does not exist, skipping"
-            fi
-        done
-        echo "Backup completed at $(date)"
-        ;;
-    list)
-        if ! rclone lsd "$REMOTE:" 2>/dev/null; then
-            echo "Error: Cannot list remote. Configure rclone first: rclone config"
-            exit 1
+sync)
+    for dir in "${BACKUP_DIRS[@]}"; do
+        if [[ -d "$dir" ]]; then
+            backup "$dir"
+        else
+            echo "Warning: $dir does not exist, skipping"
         fi
-        ;;
-    status)
-        if ! rclone about "$REMOTE:" 2>/dev/null; then
-            echo "Error: Cannot get remote status. Configure rclone first: rclone config"
-            exit 1
-        fi
-        ;;
-    -h|--help|help)
-        show_help
-        ;;
-    *)
-        echo "Unknown command: $1"
-        show_help
+    done
+    echo "Backup completed at $(date)"
+    ;;
+list)
+    if ! rclone lsd "$REMOTE:" 2>/dev/null; then
+        echo "Error: Cannot list remote. Configure rclone first: rclone config"
         exit 1
-        ;;
+    fi
+    ;;
+status)
+    if ! rclone about "$REMOTE:" 2>/dev/null; then
+        echo "Error: Cannot get remote status. Configure rclone first: rclone config"
+        exit 1
+    fi
+    ;;
+-h | --help | help)
+    show_help
+    ;;
+*)
+    echo "Unknown command: $1"
+    show_help
+    exit 1
+    ;;
 esac

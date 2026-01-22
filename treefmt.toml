@@ -1,0 +1,21 @@
+[global]
+excludes = ["*.tmpl", "flake.lock", ".git/*", "node_modules/*", "**/Spoons/*"]
+
+[formatter.nix]
+command = "nixfmt"
+includes = ["*.nix"]
+
+[formatter.shell]
+command = "shfmt"
+options = ["-w", "-i", "4"]
+includes = ["*.sh"]
+
+[formatter.lua]
+command = "stylua"
+includes = ["*.lua"]
+
+[formatter.prettier]
+command = "prettier"
+options = ["--write"]
+includes = ["*.md", "*.json", "*.yaml", "*.yml"]
+excludes = ["CLAUDE.md"]

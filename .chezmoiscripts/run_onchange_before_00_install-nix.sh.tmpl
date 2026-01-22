@@ -15,10 +15,13 @@ GHPROXY_RELEASE="https://ghproxy.com/${GITHUB_RELEASE}"
 
 # --- Logging ---
 
-info()  { printf '\033[1;32minfo:\033[0m %s\n' "$1" >&2; }
-warn()  { printf '\033[1;33mwarn:\033[0m %s\n' "$1" >&2; }
+info() { printf '\033[1;32minfo:\033[0m %s\n' "$1" >&2; }
+warn() { printf '\033[1;33mwarn:\033[0m %s\n' "$1" >&2; }
 error() { printf '\033[1;31merror:\033[0m %s\n' "$1" >&2; }
-die()   { error "$1"; exit 1; }
+die() {
+    error "$1"
+    exit 1
+}
 
 # --- Architecture detection (handles Rosetta 2) ---
 
@@ -36,15 +39,15 @@ get_arch() {
     fi
 
     case "$os" in
-        Linux)  os="linux" ;;
-        Darwin) os="darwin" ;;
-        *) die "unsupported OS: $os" ;;
+    Linux) os="linux" ;;
+    Darwin) os="darwin" ;;
+    *) die "unsupported OS: $os" ;;
     esac
 
     case "$cpu" in
-        aarch64|arm64)        cpu="aarch64" ;;
-        x86_64|amd64|x86-64)  cpu="x86_64" ;;
-        *) die "unsupported CPU: $cpu" ;;
+    aarch64 | arm64) cpu="aarch64" ;;
+    x86_64 | amd64 | x86-64) cpu="x86_64" ;;
+    *) die "unsupported CPU: $cpu" ;;
     esac
 
     echo "${cpu}-${os}"
@@ -57,7 +60,8 @@ get_downloader() {
         # Avoid broken snap curl
         if command -v curl | grep -q "/snap/"; then
             if command -v wget >/dev/null 2>&1; then
-                echo "wget"; return
+                echo "wget"
+                return
             fi
             die "snap curl is broken, please install curl via apt"
         fi
@@ -111,8 +115,8 @@ select_mirror() {
 
     for source in github ghproxy; do
         case "$source" in
-            github)  url="${GITHUB_RELEASE}/nix-installer-${arch}" ;;
-            ghproxy) url="${GHPROXY_RELEASE}/nix-installer-${arch}" ;;
+        github) url="${GITHUB_RELEASE}/nix-installer-${arch}" ;;
+        ghproxy) url="${GHPROXY_RELEASE}/nix-installer-${arch}" ;;
         esac
 
         speed=$(test_speed "$url")
@@ -173,8 +177,8 @@ main() {
         url="${NIX_INSTALLER_BINARY_ROOT}/nix-installer-${arch}"
     else
         case "$(select_mirror "$arch")" in
-            ghproxy) base="$GHPROXY_RELEASE" ;;
-            *)       base="$GITHUB_RELEASE" ;;
+        ghproxy) base="$GHPROXY_RELEASE" ;;
+        *) base="$GITHUB_RELEASE" ;;
         esac
         url="${base}/nix-installer-${arch}"
     fi

@@ -2,7 +2,8 @@
 
 set -eufo pipefail
 
-# mise config: {{ output "sha256sum" (joinPath .chezmoi.homeDir ".config/mise/config.toml") | trim }}
+{{ $miseConfig := joinPath .chezmoi.homeDir ".config/mise/config.toml" -}}
+# mise config: {{ if stat $miseConfig }}{{ output "sha256sum" $miseConfig | trim }}{{ else }}n/a{{ end }}
 
 echo ":: [05] Installing mise tools"
 

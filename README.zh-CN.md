@@ -20,7 +20,8 @@
   <a href="https://brew.sh/"><img alt="Homebrew" src="https://img.shields.io/badge/Homebrew-FBB040?style=for-the-badge&logo=homebrew&logoColor=black"></a>
 </p>
 
-*基于 Nix 与 chezmoi 的现代、可复现开发环境，同时支持 macOS 与 Linux*
+_基于 Nix 与 chezmoi 的现代、可复现开发环境，同时支持 macOS 与 Linux_
+
 </div>
 
 本仓库提供一套完全声明式的系统配置：能在几分钟内把一台全新的机器引导到可用状态，并自动应用所有软件包、系统设置与 dotfiles。整套方案围绕 Rust 编写的 CLI 工具构建，追求极致性能，并支持多 Profile 配置，便于在工作与个人环境之间无缝切换。
@@ -48,8 +49,7 @@
 
 ---
 
-> [!WARNING]
-> **运行前请先阅读！** 本仓库包含会修改系统配置的脚本。
+> [!WARNING] > **运行前请先阅读！** 本仓库包含会修改系统配置的脚本。
 > 在不了解其作用前，不要盲目执行安装/初始化命令。
 > 建议先 Fork 本仓库，再按自己的需求进行定制。
 
@@ -125,8 +125,7 @@ cd dotfiles && ./init.sh
 3. 从 1Password 获取解密密钥（或提示手动设置）
 4. 应用所有 dotfiles 和配置
 
-> [!IMPORTANT]
-> **首次使用者**：当提示 `useEncryption` 时，请选择 **No**（默认值）。
+> [!IMPORTANT] > **首次使用者**：当提示 `useEncryption` 时，请选择 **No**（默认值）。
 > 加密设置仅适用于仓库所有者。如需启用加密，请修改：
 >
 > - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`：修改 `KEY_FILE`、`KEY_PUB` 和 1Password 路径（`op://Personal/main/...`）
@@ -171,13 +170,13 @@ cd dotfiles && ./init.sh
 
 ### 协同工作方式
 
-| 组件 | macOS | Linux |
-| ---- | ----- | ----- |
-| Dotfiles | chezmoi | chezmoi |
-| 系统配置 | nix-darwin | N/A |
-| 用户软件包 | flakey-profile | flakey-profile |
-| GUI 应用 | Homebrew Cask | N/A |
-| Mac App Store | mas | N/A |
+| 组件          | macOS          | Linux          |
+| ------------- | -------------- | -------------- |
+| Dotfiles      | chezmoi        | chezmoi        |
+| 系统配置      | nix-darwin     | N/A            |
+| 用户软件包    | flakey-profile | flakey-profile |
+| GUI 应用      | Homebrew Cask  | N/A            |
+| Mac App Store | mas            | N/A            |
 
 ---
 
@@ -189,17 +188,17 @@ cd dotfiles && ./init.sh
 
 ### 现代 CLI 替代方案
 
-| 传统   | 现代                                              | 说明                                 |
-| ------ | ------------------------------------------------- | ------------------------------------ |
-| `ls`   | [eza](https://github.com/eza-community/eza)       | git 集成、图标、树形视图             |
-| `cat`  | [bat](https://github.com/sharkdp/bat)             | 语法高亮、git 集成                   |
-| `grep` | [ripgrep](https://github.com/BurntSushi/ripgrep)  | 极速正则搜索                         |
-| `find` | [fd](https://github.com/sharkdp/fd)               | 更直观的语法，遵循 `.gitignore`      |
-| `du`   | [dust](https://github.com/bootandy/dust)          | 可视化磁盘占用分析                   |
-| `df`   | [duf](https://github.com/muesli/duf)              | 美观的磁盘剩余空间表格               |
-| `cd`   | [zoxide](https://github.com/ajeetdsouza/zoxide)   | 智能目录跳转                         |
-| `man`  | [tldr](https://github.com/tldr-pages/tlrc)        | 更实用的命令示例                     |
-| `time` | [hyperfine](https://github.com/sharkdp/hyperfine) | 命令基准测试                         |
+| 传统   | 现代                                              | 说明                            |
+| ------ | ------------------------------------------------- | ------------------------------- |
+| `ls`   | [eza](https://github.com/eza-community/eza)       | git 集成、图标、树形视图        |
+| `cat`  | [bat](https://github.com/sharkdp/bat)             | 语法高亮、git 集成              |
+| `grep` | [ripgrep](https://github.com/BurntSushi/ripgrep)  | 极速正则搜索                    |
+| `find` | [fd](https://github.com/sharkdp/fd)               | 更直观的语法，遵循 `.gitignore` |
+| `du`   | [dust](https://github.com/bootandy/dust)          | 可视化磁盘占用分析              |
+| `df`   | [duf](https://github.com/muesli/duf)              | 美观的磁盘剩余空间表格          |
+| `cd`   | [zoxide](https://github.com/ajeetdsouza/zoxide)   | 智能目录跳转                    |
+| `man`  | [tldr](https://github.com/tldr-pages/tlrc)        | 更实用的命令示例                |
+| `time` | [hyperfine](https://github.com/sharkdp/hyperfine) | 命令基准测试                    |
 
 ### Shell 环境
 
@@ -211,15 +210,15 @@ Shell 提示符由 **Starship** 驱动：Rust 编写、轻量且快速。使用 
 
 **Direnv** 会在进入/离开目录时自动加载/卸载环境变量。配合本仓库提供的辅助函数，可以快速为项目创建 Python virtualenv、Nix flake 开发环境，或 mise 环境。
 
-| 工具                                                                            | 作用                           |
-| ------------------------------------------------------------------------------- | ------------------------------ |
+| 工具                                                                            | 作用                              |
+| ------------------------------------------------------------------------------- | --------------------------------- |
 | [starship](https://github.com/starship/starship)                                | 极简、飞快的提示符（含 git 信息） |
-| [sheldon](https://github.com/rossmacarthur/sheldon)                             | 快速、可配置的 zsh 插件管理器  |
-| [atuin](https://github.com/atuinsh/atuin)                                       | 支持模糊搜索的增强命令历史     |
-| [direnv](https://github.com/direnv/direnv)                                      | 按目录自动加载环境变量         |
-| [fzf](https://github.com/junegunn/fzf)                                          | 文件/历史等模糊查找器          |
-| [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)         | Fish 风格命令建议              |
-| [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting) | 命令语法高亮                   |
+| [sheldon](https://github.com/rossmacarthur/sheldon)                             | 快速、可配置的 zsh 插件管理器     |
+| [atuin](https://github.com/atuinsh/atuin)                                       | 支持模糊搜索的增强命令历史        |
+| [direnv](https://github.com/direnv/direnv)                                      | 按目录自动加载环境变量            |
+| [fzf](https://github.com/junegunn/fzf)                                          | 文件/历史等模糊查找器             |
+| [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)         | Fish 风格命令建议                 |
+| [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting) | 命令语法高亮                      |
 
 ### 开发工具
 
@@ -231,14 +230,14 @@ Shell 提示符由 **Starship** 驱动：Rust 编写、轻量且快速。使用 
 
 本仓库的 **tmux** 配置包含 vim 风格按键、Dracula 主题色，以及浮动窗格 (floax) 实现灵活的工作区管理。前缀键为 Ctrl+B（默认）。
 
-| 工具                                                | 作用                                   |
-| --------------------------------------------------- | -------------------------------------- |
+| 工具                                                | 作用                                      |
+| --------------------------------------------------- | ----------------------------------------- |
 | [mise](https://github.com/jdx/mise)                 | 多语言运行时管理器（Node/Python/Go/Rust） |
-| [lazygit](https://github.com/jesseduffield/lazygit) | 终端 git UI                            |
-| [yazi](https://github.com/sxyazi/yazi)              | 超快的终端文件管理器                   |
-| [tmux](https://github.com/tmux/tmux)                | 终端复用器（支持浮动窗格 floax）       |
-| [ghq](https://github.com/x-motemen/ghq)             | 远程仓库管理                           |
-| [gh](https://github.com/cli/cli)                    | GitHub CLI（Issue、PR 等）             |
+| [lazygit](https://github.com/jesseduffield/lazygit) | 终端 git UI                               |
+| [yazi](https://github.com/sxyazi/yazi)              | 超快的终端文件管理器                      |
+| [tmux](https://github.com/tmux/tmux)                | 终端复用器（支持浮动窗格 floax）          |
+| [ghq](https://github.com/x-motemen/ghq)             | 远程仓库管理                              |
+| [gh](https://github.com/cli/cli)                    | GitHub CLI（Issue、PR 等）                |
 
 ### AI 集成
 
@@ -253,7 +252,7 @@ GUI 应用通过 Homebrew cask 管理：
 | 终端     | Ghostty, iTerm2                   |
 | 编辑器   | Neovim, VS Code, Cursor           |
 | 浏览器   | Arc (Dia)                         |
-| 窗口管理 | AeroSpace（i3 风格平铺）           |
+| 窗口管理 | AeroSpace（i3 风格平铺）          |
 | 生产力   | Notion, Obsidian, Logseq, Raycast |
 | 容器     | OrbStack（Docker 替代）           |
 
@@ -319,12 +318,12 @@ create_py_project   # 使用 uv 快速初始化 Python 项目
 
 软件包来自多个来源，各有所长：
 
-| 来源              | 平台          | 说明                   | 示例                             |
-| ----------------- | ------------- | ---------------------- | -------------------------------- |
-| Nix packages      | macOS, Linux  | 可复现、可回滚         | ripgrep, bat, eza, starship      |
-| Homebrew formulas | 仅 macOS      | macOS 特定工具         | macos-trash, cliclick            |
-| Homebrew cask     | 仅 macOS      | GUI 应用               | VS Code, Ghostty, Notion         |
-| Mac App Store     | 仅 macOS      | App Store 独占应用     | Magnet, WeChat, Office           |
+| 来源              | 平台         | 说明               | 示例                        |
+| ----------------- | ------------ | ------------------ | --------------------------- |
+| Nix packages      | macOS, Linux | 可复现、可回滚     | ripgrep, bat, eza, starship |
+| Homebrew formulas | 仅 macOS     | macOS 特定工具     | macos-trash, cliclick       |
+| Homebrew cask     | 仅 macOS     | GUI 应用           | VS Code, Ghostty, Notion    |
+| Mac App Store     | 仅 macOS     | App Store 独占应用 | Magnet, WeChat, Office      |
 
 所有软件包清单都在 `.chezmoidata.yaml` 中定义，并支持 shared / work-only / private-only 的分类管理。
 
@@ -402,12 +401,12 @@ chezmoi init --apply --promptBool headless=true signalridge
 
 ## ⌨️ 键盘快捷键
 
-| 快捷键     | 动作                     |
-| ---------- | ------------------------ |
-| Alt + Up   | 返回上级目录             |
-| Alt + Down | 回到目录历史             |
-| Ctrl + R   | 搜索命令历史（Atuin）    |
-| Ctrl + B   | tmux 前缀键              |
+| 快捷键     | 动作                  |
+| ---------- | --------------------- |
+| Alt + Up   | 返回上级目录          |
+| Alt + Down | 回到目录历史          |
+| Ctrl + R   | 搜索命令历史（Atuin） |
+| Ctrl + B   | tmux 前缀键           |
 
 ---
 

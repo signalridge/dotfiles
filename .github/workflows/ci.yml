@@ -11,9 +11,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
+          use-gha-cache: true
+      - name: Install tools
+        run: |
+          nix profile install nixpkgs#treefmt nixpkgs#shfmt nixpkgs#shellcheck nixpkgs#statix nixpkgs#nixfmt nixpkgs#stylua nixpkgs#selene nixpkgs#nodePackages.prettier
+      - name: Setup chezmoi
+        run: |
+          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b /usr/local/bin
+          mkdir -p ~/.config/chezmoi
+          cat > ~/.config/chezmoi/chezmoi.toml << EOF
+          [data]
+          hostname = "ci-host"
+          platform = "linux"
+          work = false
+          private = true
+          homeWifiSSIDs = ""
+          timezone = "UTC"
+          gitUsername = "ci"
+          gitEmail = "ci@test.com"
+          useEncryption = false
+          headless = true
+          EOF
       - uses: pre-commit/action@v3.0.1
-        env:
-          SKIP: check-nix,check-lua # Nix/Lua checks run in separate jobs
   nix:
     name: Nix (${{ matrix.platform }})
     strategy:
@@ -60,59 +83,8 @@ jobs:
         with:
           use-flakehub: false
           use-gha-cache: true
-      - name: Check Nix formatting (alejandra)
-        run: |
-          if ! nix run nixpkgs#alejandra -- --check "$WORKDIR"; then
-            echo "::group::Alejandra formatting diff"
-            for f in "$WORKDIR"/*.nix "$WORKDIR"/modules/*.nix; do
-              [ -f "$f" ] || continue
-              cp "$f" "$f.orig"
-              nix run nixpkgs#alejandra -- "$f"
-              diff "$f.orig" "$f" || true
-            done
-            exit 1
-          fi
-      - name: Lint Nix code (statix)
-        run: nix run nixpkgs#statix -- check "$WORKDIR"
       - name: Check flake
         run: nix flake check --no-build "$WORKDIR"
       - uses: DeterminateSystems/flake-checker-action@v12
         with:
           flake-lock-path: ${{ env.WORKDIR }}/flake.lock
-  lua:
-    name: Lua
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup chezmoi
-        run: |
-          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b /usr/local/bin
-          mkdir -p ~/.config/chezmoi
-          cat > ~/.config/chezmoi/chezmoi.toml << EOF
-          [data]
-          hostname = "ci-host"
-          work = false
-          private = true
-          homeWifiSSIDs = ""
-          EOF
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-        with:
-          use-flakehub: false
-          use-gha-cache: true
-      - name: Render Lua templates
-        run: |
-          workdir=$(mktemp -d)
-          echo "WORKDIR=$workdir" >> $GITHUB_ENV
-          cp stylua.toml selene.toml "$workdir/"
-          for f in $(find . -name "*.lua.tmpl" -o -name "*.lua" | grep -v -e node_modules -e Spoons); do
-            if [[ "$f" == *.tmpl ]]; then
-              chezmoi execute-template --source . < "$f" > "$workdir/$(basename "${f%.tmpl}")"
-            else
-              cp "$f" "$workdir/"
-            fi
-          done
-      - name: Check Lua formatting (stylua)
-        run: nix run nixpkgs#stylua -- --check "$WORKDIR"
-      - name: Lint Lua code (selene)
-        run: nix run nixpkgs#selene -- "$WORKDIR"

@@ -1,0 +1,97 @@
+sysPkgs:
+  - git
+  - neovim
+homepkgs:
+  shared:
+    - "(texliveFull.withPackages (ps: with ps; [ ]))"
+    - _1password-cli
+    - act
+    - age
+    - aria2
+    - asciinema
+    - atuin # shell history management
+    - bat
+    - bat-extras.prettybat
+    - bat-extras.batwatch
+    - bat-extras.batpipe
+    - bat-extras.batman
+    - bat-extras.batgrep
+    - bat-extras.batdiff
+    - claude-code
+    - codex
+    - gemini-cli
+    - certbot
+    - direnv # per-directory environment variables
+    - duf
+    - dust
+    - eza
+    - fastfetch
+    - fd
+    - ffmpeg
+    - fzf
+    - ghostscript # gs - PDF/PostScript processor (Snacks.image dependency)
+    - mermaid-cli # mmdc - Mermaid diagram renderer (render-markdown.nvim dependency)
+    - mosh
+    - gopass
+    - gh
+    - gh-dash
+    - ghq
+    - git-lfs
+    - glow
+    - hyperfine
+    - imagemagick # magick/convert - image processing (Snacks.image dependency)
+    - jq
+    - just # use Justfile to simplify nix-darwin's commands
+    - lazygit
+    - lua5_4 # Lua 5.4 runtime (for Hammerspoon development)
+    - lua-language-server # Lua LSP
+    - mise
+    - navi
+    - tree-sitter # nvim-treesitter CLI dependency
+    - pixi # fast Python/conda package manager
+    - pre-commit
+    - rclone # cloud storage sync
+    - onefetch
+    - openssh
+    - openssl
+    - ouch # a CLI tool tor compressing and decompressing for various formats
+    - p7zip-rar
+    - poppler
+    - pueue
+    - ripgrep
+    - ripgrep-all
+    - sd
+    - sesh
+    - skim
+    - sheldon
+    - sniffnet
+    - starship
+    - stylua # Lua formatter
+    - selene # Lua linter
+    - shellcheck
+    - shfmt
+    - statix # Nix linter
+    - nixfmt
+    - treefmt
+    - nodePackages.prettier
+    - tlrc
+    - tmux
+    - tokei
+    - tre-command
+    - wget
+    - yarn-berry
+    - yazi
+    - yq-go
+    - zoxide
+    - zstd
+    - k9s
+  work:
+    - llvmPackages.openmp # libomp replacement
+    - mariadb
+    - postgresql
+    - redis
+    - tflint
+  private:
+# ─────────────────────────────────────────────────────────────────────────────
+# Hammerspoon configuration (macOS only)
+# ─────────────────────────────────────────────────────────────────────────────

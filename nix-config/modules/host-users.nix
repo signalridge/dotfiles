@@ -2,7 +2,7 @@
   username,
   hostname,
   ...
-} @ args:
+}@args:
 #############################################################
 #
 #  Host & Users configuration
@@ -19,5 +19,5 @@
     description = username;
   };
 
-  nix.settings.trusted-users = [username];
+  nix.settings.trusted-users = [ username ];
 }

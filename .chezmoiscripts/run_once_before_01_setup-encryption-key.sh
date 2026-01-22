@@ -38,15 +38,17 @@ if command -v op &>/dev/null; then
     # Check: service account token or has configured accounts (not just command success)
     if [[ -n "${OP_SERVICE_ACCOUNT_TOKEN:-}" ]] || [[ -n "$(op account list 2>/dev/null)" ]]; then
         echo "Fetching key from 1Password..."
-        if op read "op://Personal/main/private key?ssh-format=openssh" 2>/dev/null | tr -d '\r' > "$KEY_FILE.tmp"; then
-            mv "$KEY_FILE.tmp" "$KEY_FILE"
-            op read "op://Personal/main/public key" > "$KEY_PUB"
+        tmpfile=$(mktemp "$HOME/.ssh/key.XXXXXX")
+        chmod 600 "$tmpfile"
+        if op read "op://Personal/main/private key?ssh-format=openssh" 2>/dev/null | tr -d '\r' >"$tmpfile"; then
+            mv "$tmpfile" "$KEY_FILE"
+            op read "op://Personal/main/public key" >"$KEY_PUB"
             chmod 600 "$KEY_FILE"
             chmod 644 "$KEY_PUB"
             echo "✓ Key imported from 1Password"
             exit 0
         else
-            rm -f "$KEY_FILE.tmp"
+            rm -f "$tmpfile"
             echo "⚠ Failed to fetch from 1Password"
         fi
     fi
@@ -67,15 +69,17 @@ if command -v op &>/dev/null; then
         echo "Signing in to 1Password..."
         if eval "$(op signin)"; then
             echo "Fetching key from 1Password..."
-            if op read "op://Personal/main/private key?ssh-format=openssh" | tr -d '\r' > "$KEY_FILE.tmp"; then
-                mv "$KEY_FILE.tmp" "$KEY_FILE"
-                op read "op://Personal/main/public key" > "$KEY_PUB"
+            tmpfile=$(mktemp "$HOME/.ssh/key.XXXXXX")
+            chmod 600 "$tmpfile"
+            if op read "op://Personal/main/private key?ssh-format=openssh" | tr -d '\r' >"$tmpfile"; then
+                mv "$tmpfile" "$KEY_FILE"
+                op read "op://Personal/main/public key" >"$KEY_PUB"
                 chmod 600 "$KEY_FILE"
                 chmod 644 "$KEY_PUB"
                 echo "✓ Key imported from 1Password"
                 exit 0
             else
-                rm -f "$KEY_FILE.tmp"
+                rm -f "$tmpfile"
                 echo "⚠ Failed to fetch from 1Password"
             fi
         else
@@ -92,9 +96,9 @@ echo "  Option 1: Copy from another machine"
 echo "    scp ~/.ssh/main ~/.ssh/main.pub $(whoami)@$(hostname):~/.ssh/"
 echo ""
 if [[ "$OSTYPE" == darwin* ]]; then
-echo "  Option 2: Enable 1Password desktop integration"
-echo "    1Password → Settings → Developer → CLI integration"
-echo ""
+    echo "  Option 2: Enable 1Password desktop integration"
+    echo "    1Password → Settings → Developer → CLI integration"
+    echo ""
 fi
 echo "Then run: chezmoi apply"
 echo ""

@@ -1,0 +1,89 @@
+# Claude Code Review - GitHub Action Template
+#
+# Copy this file to your project's .github/workflows/claude-code-review.yml
+#
+# Required secrets:
+#   - CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY
+#
+# Documentation: https://github.com/anthropics/claude-code-action
+
+name: Claude Code Review
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Authentication (use one of these)
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          # Progress tracking - creates updating comment with checkboxes
+          track_progress: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Perform a comprehensive code review using the "Pragmatic Quality" framework.
+
+            ## Review Philosophy
+            - Net Positive > Perfection: Approve if the change improves overall code health
+            - Focus on Substance: Architecture, design, business logic, security
+            - Grounded in Principles: SOLID, DRY, KISS, YAGNI
+
+            ## Review Focus Areas
+
+            ### 1. Architecture & Design (Critical)
+            - Aligns with existing patterns and system boundaries
+            - Single Responsibility Principle adherence
+            - Appropriate abstraction levels
+
+            ### 2. Functionality & Correctness (Critical)
+            - Business logic correctly implemented
+            - Edge cases and error conditions handled
+            - No race conditions or concurrency issues
+
+            ### 3. Security (Non-Negotiable)
+            - Input validation and sanitization
+            - Authentication/authorization checks
+            - No hardcoded secrets or data exposure
+
+            ### 4. Maintainability (High Priority)
+            - Code clarity and naming conventions
+            - Comments explain 'why' not 'what'
+            - No code duplication
+
+            ### 5. Testing (High Priority)
+            - Adequate test coverage
+            - Tests cover failure modes and edge cases
+
+            ### 6. Performance (Important)
+            - No N+1 queries or inefficient algorithms
+            - Bundle size and rendering performance
+
+            ## Output Format
+            Use inline comments for specific issues.
+            Use top-level comments for general observations.
+
+            Severity markers:
+            - [Critical/Blocker]: Must fix before merge
+            - [Improvement]: Strong recommendation
+            - [Nit]: Minor polish, optional
+
+            Reference the repository's CLAUDE.md for style and conventions.
+            Use `gh pr comment` to leave your review on the PR.
+          claude_args: '--model claude-opus-4-1-20250805 --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'

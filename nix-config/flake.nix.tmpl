@@ -33,82 +33,83 @@
 {{- end }}
   };
 
-  outputs = inputs @ {
-    self,
-    nixpkgs,
-    flake-utils,
-    flakey-profile,
+  outputs =
+    inputs@{
+      self,
+      nixpkgs,
+      flake-utils,
+      flakey-profile,
 {{- if eq .platform "darwin" }}
-    nix-darwin,
-    mac-app-util,
-    nix-homebrew,
-    homebrew-core,
-    homebrew-cask,
-    homebrew-bundle,
+      nix-darwin,
+      mac-app-util,
+      nix-homebrew,
+      homebrew-core,
+      homebrew-cask,
+      homebrew-bundle,
 {{- end }}
-    ...
-  }: let
-    # Architecture conversion: chezmoi arch → nix system
-    {{- $arch := .chezmoi.arch -}}
-    {{- if eq $arch "arm64" -}}
-      {{- $arch = "aarch64" -}}
-    {{- else if eq $arch "amd64" -}}
-      {{- $arch = "x86_64" -}}
-    {{- end }}
-    system = "{{ $arch }}-{{ .platform }}";
-    hostname = "{{ .hostname }}";
-    username = "{{ .chezmoi.username }}";
+      ...
+    }:
+    let
+      # Architecture conversion: chezmoi arch → nix system
+      {{- $arch := .chezmoi.arch -}}
+      {{- if eq $arch "arm64" -}}
+        {{- $arch = "aarch64" -}}
+      {{- else if eq $arch "amd64" -}}
+        {{- $arch = "x86_64" -}}
+      {{- end }}
+      system = "{{ $arch }}-{{ .platform }}";
+      hostname = "{{ .hostname }}";
+      username = "{{ .chezmoi.username }}";
 
-    pkgs = import nixpkgs {
-      inherit system;
-      config.allowUnfree = true;
-    };
+      pkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
 
-    # flakey-profile for user packages (cross-platform)
-    myProfile = import ./modules/profile.nix {
-      inherit pkgs flakey-profile;
-    };
+      # flakey-profile for user packages (cross-platform)
+      myProfile = import ./modules/profile.nix {
+        inherit pkgs flakey-profile;
+      };
 {{- if eq .platform "darwin" }}
 
-    specialArgs =
-      inputs
-      // {
+      specialArgs = inputs // {
         inherit username hostname;
       };
 {{- end }}
-  in {
+    in
+    {
 {{- if eq .platform "darwin" }}
-    # ─────────────────────────────────────────────────────────────────────────
-    # Darwin Configuration (macOS only)
-    # Usage: darwin-rebuild switch --flake .#<hostname>
-    # ─────────────────────────────────────────────────────────────────────────
-    darwinConfigurations.${hostname} = nix-darwin.lib.darwinSystem {
-      inherit system specialArgs;
-      modules = [
-        ./modules/system.nix
-        ./modules/apps.nix
-        ./modules/host-users.nix
-        mac-app-util.darwinModules.default
-        nix-homebrew.darwinModules.nix-homebrew
-        {
-          nix-homebrew = {
-            enable = true;
-            enableRosetta = system == "aarch64-darwin";
-            user = username;
-          };
-        }
-      ];
-    };
+      # ─────────────────────────────────────────────────────────────────────────
+      # Darwin Configuration (macOS only)
+      # Usage: darwin-rebuild switch --flake .#<hostname>
+      # ─────────────────────────────────────────────────────────────────────────
+      darwinConfigurations.${hostname} = nix-darwin.lib.darwinSystem {
+        inherit system specialArgs;
+        modules = [
+          ./modules/system.nix
+          ./modules/apps.nix
+          ./modules/host-users.nix
+          mac-app-util.darwinModules.default
+          nix-homebrew.darwinModules.nix-homebrew
+          {
+            nix-homebrew = {
+              enable = true;
+              enableRosetta = system == "aarch64-darwin";
+              user = username;
+            };
+          }
+        ];
+      };
 
 {{- end }}
-    # ─────────────────────────────────────────────────────────────────────────
-    # Package Profile (cross-platform)
-    # flakey-profile provides: .switch, .rollback, .pin
-    # Usage: nix run .#<hostname>.switch
-    # ─────────────────────────────────────────────────────────────────────────
-    packages.${system}.${hostname} = myProfile;
+      # ─────────────────────────────────────────────────────────────────────────
+      # Package Profile (cross-platform)
+      # flakey-profile provides: .switch, .rollback, .pin
+      # Usage: nix run .#<hostname>.switch
+      # ─────────────────────────────────────────────────────────────────────────
+      packages.${system}.${hostname} = myProfile;
 
-    # Formatter
-    formatter.${system} = pkgs.alejandra;
-  };
+      # Formatter
+      formatter.${system} = pkgs.alejandra;
+    };
 }
