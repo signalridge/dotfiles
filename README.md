@@ -2,10 +2,6 @@
 
 ![header](https://capsule-render.vercel.app/api?type=waving&color=0:282a36,100:bd93f9&height=200&section=header&text=~/.dotfiles&fontSize=48&fontColor=f8f8f2&fontAlignY=30&desc=One%20command%20%C2%B7%20Full%20environment%20%C2%B7%20Zero%20hassle&descSize=16&descColor=8be9fd&descAlignY=55&animation=fadeIn)
 
-**chezmoi + Nix · Cross-platform dev environment**
-
-[English](README.md) | [中文](README.zh-CN.md) | [日本語](README.ja.md)
-
 <p>
   <a href="https://github.com/signalridge/dotfiles/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/signalridge/dotfiles/ci.yml?style=for-the-badge&logo=github&label=CI"></a>&nbsp;
   <a href="https://opensource.org/licenses/MIT"><img alt="License" src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge"></a>&nbsp;
@@ -16,99 +12,72 @@
 <p>
   <a href="https://github.com/twpayne/chezmoi"><img alt="chezmoi" src="https://img.shields.io/badge/chezmoi-4B91E2?style=for-the-badge&logo=chezmoi&logoColor=white"></a>&nbsp;
   <a href="https://github.com/LnL7/nix-darwin"><img alt="nix-darwin" src="https://img.shields.io/badge/nix--darwin-5277C3?style=for-the-badge&logo=nixos&logoColor=white"></a>&nbsp;
-  <a href="https://www.zsh.org/"><img alt="zsh" src="https://img.shields.io/badge/zsh-F15A24?style=for-the-badge&logo=zsh&logoColor=white"></a>&nbsp;
+  <a href="https://www.anthropic.com/claude-code"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-191919?style=for-the-badge&logo=anthropic&logoColor=white"></a>&nbsp;
   <a href="https://brew.sh/"><img alt="Homebrew" src="https://img.shields.io/badge/Homebrew-FBB040?style=for-the-badge&logo=homebrew&logoColor=black"></a>
 </p>
 
-_A modern, reproducible development environment for macOS and Linux_
+[English](README.md) | [中文](README.zh-CN.md) | [日本語](README.ja.md)
+
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=1000&color=BD93F9&center=true&vCenter=true&width=600&lines=Declarative+dev+environment+with+chezmoi+%2B+Nix;Cross-platform+macOS+%2B+Linux+support;Automated+plugin+sync+for+Claude+Code;Modern+CLI+toolchain+with+Rust-based+tools)](https://git.io/typing-svg)
 
 </div>
 
-This repository provides a fully declarative system configuration that can bootstrap a new machine in minutes, with all packages, settings, and dotfiles automatically applied. The entire setup is built around Rust-based CLI tools for blazing-fast performance, and supports multi-profile configurations to seamlessly switch between work and personal environments.
-
 ---
-
-<a id="table-of-contents"></a>
-
-## 📑 Table of Contents
-
-- [📑 Table of Contents](#table-of-contents)
-- [✨ Highlights](#highlights)
-- [💡 Why This Repo](#why-this-repo)
-- [🎯 Motivation](#motivation)
-- [🚀 Quick Start](#quick-start)
-- [🔐 Security & Secrets](#security)
-- [🧩 Architecture](#architecture)
-  - [macOS Configuration](#macos-configuration)
-  - [Linux Configuration](#linux-configuration)
-  - [How They Work Together](#how-they-work-together)
-- [⚡ Tool Chains](#tool-chains)
-  - [Modern CLI Replacements](#modern-cli-replacements)
-  - [Shell Environment](#shell-environment)
-  - [Development Tools](#development-tools)
-  - [AI Integration](#ai-integration)
-  - [Desktop Applications (macOS only)](#desktop-applications-macos-only)
-- [🔧 Shell Functions](#shell-functions)
-  - [Project Navigation](#project-navigation)
-  - [Git Workflow](#git-workflow)
-  - [System Utilities](#system-utilities)
-  - [Environment Setup](#environment-setup)
-- [📦 Package Management](#package-management)
-- [🔄 Daily Operations](#daily-operations)
-  - [Cross-Platform Commands](#cross-platform-commands)
-  - [macOS-Only Commands](#macos-only-commands)
-- [👤 Multi-Profile Configuration](#multi-profile-configuration)
-- [⌨️ Keyboard Shortcuts](#keyboard-shortcuts)
-- [🌙 Theming](#theming)
-- [📈 Stats](#stats)
-- [🙏 Acknowledgements](#acknowledgements)
-- [📝 License](#license)
-
----
-
-> [!WARNING] > **Review before running!** This repository contains scripts that will modify your system configuration.
-> Do not blindly execute setup commands without understanding what they do.
-> Fork this repository and customize it for your own needs.
-
----
-
-<a id="highlights"></a>
 
 ## ✨ Highlights
 
-- **Cross-platform**: one repo for macOS + Linux (`nix-darwin` + `flakey-profile`)
-- **Bootstrap scripts**: installs Nix (Determinate), switches profiles, and keeps Homebrew updated (macOS)
-- **Secrets**: `age`-encrypted files with optional 1Password-backed key bootstrap
-- **Profiles**: `work` / `private` / `headless` switches via `chezmoi init` prompts
-- **Ergonomics**: modern CLI toolchain, consistent theming, and AI helpers
+- **Cross-platform**: One repo for macOS + Linux (`nix-darwin` + `flakey-profile`)
+- **One-command bootstrap**: From bare metal to full environment with a single `curl | sh`
+- **Claude Code integration**: 14+ plugins from marketplace with automated sync
+- **Modern CLI**: Rust-based tools (eza, bat, ripgrep, fd, zoxide) replacing Unix classics
+- **Security-first**: `age` encryption with 1Password-assisted key bootstrapping
 
 ---
-
-<a id="why-this-repo"></a>
 
 ## 💡 Why This Repo
 
-- **End-to-end bootstrap**: the Nix installer selects the fastest Determinate mirror, then chezmoi renders and applies templates in one flow
-- **Profiles everywhere**: `.chezmoidata.yaml` drives `shared` / `work` / `private` packages across Nix, Homebrew, and MAS
-- **macOS polish**: nix-darwin defaults, Homebrew + MAS integration, and post-apply update scripts
-- **Security-first secrets**: `age` encryption with 1Password-assisted key bootstrapping and fixed key paths
-- **Workflow guardrails**: pre-commit (shellcheck, markdownlint, prettier, Nix format/lint) plus Claude Code hooks for safe git ops and `uv` enforcement
-- **DX automation**: Justfile upgrade/cleanup routines, fzf navigation helpers, and AI-assisted commit messages
-- **CI parity**: template rendering and `nix flake check` run on macOS + Linux in CI
+- **Profiles everywhere**: `.chezmoidata/` drives `shared` / `work` / `private` packages across Nix, Homebrew, and MAS
+- **End-to-end bootstrap**: Nix installer auto-selects fastest Determinate mirror, chezmoi renders and applies templates in one flow
+- **macOS polish**: nix-darwin system defaults, Homebrew + MAS integration, post-apply update scripts
+- **Workflow guardrails**: pre-commit (shellcheck, markdownlint, prettier, Nix lint) + Claude Code hooks
+- **DX automation**: Justfile routines, fzf navigation helpers, AI-assisted commit messages
+- **CI parity**: Template rendering and `nix flake check` run on macOS + Linux
+- **Claude Code hooks**: Auto-format code, enforce uv over pip, block main branch edits
 
 ---
 
-<a id="motivation"></a>
-
 ## 🎯 Motivation
 
-Setting up a new development machine is tedious. You need to install dozens of packages, configure countless tools, and remember all those little tweaks you made over the years. This repository solves that problem by:
+Setting up a new development machine is tedious: dozens of packages to install, countless tools to configure, and years of tweaks to remember. This repository solves that with **fully declarative configuration** - every package, setting, and dotfile defined in code, **reproducible** across any machine with one command.
 
-- **Declarative Configuration** - Every package, setting, and configuration file is defined in code
-- **Reproducibility** - Run one command and get the exact same environment on any machine
-- **Cross-Platform** - Works on both macOS and Linux with platform-specific optimizations
-- **Version Control** - Track changes to your system configuration over time
-- **Multi-Profile Support** - Different package sets for work vs personal machines
+**Core principles:**
+
+- **Reproducibility** — Same environment on any machine, every time
+- **Declarative** — Everything defined in code, version controlled
+- **Modular** — Profile-based customization for work/personal/headless
+- **AI-augmented** — Claude Code integration for development workflows
+- **Security-first** — Encrypted secrets with 1Password integration
+
+---
+
+## 📑 Table of Contents
+
+- [🚀 Quick Start](#quick-start)
+- [🧩 Architecture](#architecture)
+- [🤖 Claude Code Integration](#claude-code-integration)
+- [⚡ Tool Chains](#tool-chains)
+- [🔧 Shell Functions](#shell-functions)
+- [📦 Package Management](#package-management)
+- [🔄 Daily Operations](#daily-operations)
+- [👤 Multi-Profile Configuration](#multi-profile-configuration)
+- [🔐 Security & Secrets](#security)
+- [🙏 Acknowledgements](#acknowledgements)
+
+---
+
+> [!WARNING]
+> **Review before running!** This repository contains scripts that will modify your system configuration.
+> Fork this repository and customize it for your own needs.
 
 ---
 
@@ -141,8 +110,10 @@ This will automatically:
 2. Install `age` and `1password-cli` for secrets decryption
 3. Fetch encryption key from 1Password (or prompt for manual setup)
 4. Apply all dotfiles and configurations
+5. Sync Claude Code plugins from marketplace
 
-> [!IMPORTANT] > **First-time users**: When prompted for `useEncryption`, answer **No** (default).
+> [!IMPORTANT]
+> **First-time users**: When prompted for `useEncryption`, answer **No** (default).
 > The encryption setup is specific to the repo owner. If you need encryption, modify:
 >
 > - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`: Change `KEY_FILE`, `KEY_PUB`, and 1Password item path (`op://Personal/main/...`)
@@ -152,40 +123,33 @@ After installation, restart your terminal. For macOS, run `just darwin` to activ
 
 ---
 
-<a id="security"></a>
-
-## 🔐 Security & Secrets
-
-This repo uses `age` encryption for private files (e.g. `private_dot_ssh/encrypted_private_config.tmpl.age`). Chezmoi is configured to decrypt using `~/.ssh/main` (private key) and `~/.ssh/main.pub` (recipient) via `.chezmoi.toml.tmpl`.
-
-On first apply, the bootstrap scripts will:
-
-1. Install Nix (`run_once_before_00_install-nix.sh`)
-2. Install `age` + `op` via nix and fetch the key from 1Password (`run_once_before_01_setup-encryption-key.sh`)
-
-If 1Password is unavailable, the script exits with manual setup instructions.
-
-If you fork this repo, update the key path and 1Password item path to match your setup.
-
----
-
 <a id="architecture"></a>
 
 ## 🧩 Architecture
 
-This dotfiles setup combines powerful tools for cross-platform configuration:
+```
+~/.dotfiles/
+├── .chezmoidata/           # Modular data configuration
+│   ├── base.yaml           # Core settings
+│   ├── claude.yaml         # Claude Code plugin configuration
+│   └── versions.yaml       # Pinned tool versions
+├── .chezmoiscripts/        # Bootstrap & sync scripts
+├── dot_claude/             # Claude Code configuration
+│   ├── agents/             # AI agent definitions
+│   ├── commands/           # Slash commands
+│   ├── skills/             # Auto-knowledge skills
+│   ├── hooks/              # Git & code hooks
+│   └── context/            # Reference documentation
+├── nix-config/             # Nix flake configuration
+│   └── modules/            # nix-darwin / flakey-profile modules
+└── dot_custom/             # Shell functions & aliases
+```
 
-**chezmoi** manages dotfiles across machines. It handles templating, secrets, and ensures your configuration files are always in sync. Files prefixed with `dot_` become dotfiles, and `.tmpl` files are processed as Go templates with platform-specific conditionals.
+**chezmoi** manages dotfiles across machines with templating, secrets, and platform-specific conditionals.
 
-### macOS Configuration
+**nix-darwin** (macOS) provides declarative system configuration through Nix, managing system packages, Homebrew, and macOS preferences.
 
-**nix-darwin** provides declarative macOS system configuration. It manages system packages through Nix, Homebrew formulas and casks, and macOS system preferences. The entire system state is defined in Nix expressions and can be rebuilt atomically.
-
-### Linux Configuration
-
-**flakey-profile** provides declarative package management for Linux. It uses the same Nix flake as macOS but without system-level configuration, focusing on user packages that work across any Linux distribution.
-
-### How They Work Together
+**flakey-profile** (Linux) provides declarative package management using the same Nix flake, focused on user packages.
 
 | Component     | macOS          | Linux          |
 | ------------- | -------------- | -------------- |
@@ -193,7 +157,53 @@ This dotfiles setup combines powerful tools for cross-platform configuration:
 | System Config | nix-darwin     | N/A            |
 | User Packages | flakey-profile | flakey-profile |
 | GUI Apps      | Homebrew Cask  | N/A            |
-| Mac App Store | mas            | N/A            |
+
+---
+
+<a id="claude-code-integration"></a>
+
+## 🤖 Claude Code Integration
+
+This dotfiles includes a comprehensive Claude Code setup with automated plugin management.
+
+### Plugin System
+
+Plugins are automatically synced from [wshobson/agents](https://github.com/wshobson/agents) marketplace:
+
+```yaml
+# .chezmoidata/claude.yaml
+claude:
+  enabledPlugins:
+    - python-development # Python best practices
+    - javascript-typescript # JS/TS development
+    - backend-development # API & backend patterns
+    - tdd-workflows # Test-driven development
+    - git # Git workflow commands
+```
+
+The `run_onchange_after_08_flatten_claude_plugins.sh` script automatically:
+
+- Downloads enabled plugins from the marketplace
+- Flattens agents, commands, and skills into `~/.claude/`
+- Updates when plugin configuration changes
+
+### Quality Protocols
+
+Built-in quality assurance inspired by SuperClaude:
+
+| Protocol             | Purpose                                         |
+| -------------------- | ----------------------------------------------- |
+| **Confidence Check** | Pre-implementation assessment (HIGH/MEDIUM/LOW) |
+| **Self-Check**       | Post-implementation verification with evidence  |
+
+### Hooks
+
+| Hook                    | Trigger          | Action                                      |
+| ----------------------- | ---------------- | ------------------------------------------- |
+| `format-code.sh`        | After Edit/Write | Auto-format Nix, JSON, YAML, Shell, Go, Lua |
+| `enforce-uv.sh`         | On pip commands  | Redirect to `uv` for Python                 |
+| `block-main-edits.sh`   | On file edit     | Prevent direct edits to main branch         |
+| `block-git-rewrites.sh` | On git commands  | Block force push and history rewrites       |
 
 ---
 
@@ -201,77 +211,36 @@ This dotfiles setup combines powerful tools for cross-platform configuration:
 
 ## ⚡ Tool Chains
 
-This setup replaces traditional Unix tools with modern, Rust-based alternatives that are faster, more user-friendly, and provide better defaults.
+This setup replaces traditional Unix tools with modern, Rust-based alternatives.
 
 ### Modern CLI Replacements
 
-| Classic | Modern                                            | Description                           |
-| ------- | ------------------------------------------------- | ------------------------------------- |
-| `ls`    | [eza](https://github.com/eza-community/eza)       | Git integration, icons, tree views    |
-| `cat`   | [bat](https://github.com/sharkdp/bat)             | Syntax highlighting, git integration  |
-| `grep`  | [ripgrep](https://github.com/BurntSushi/ripgrep)  | Lightning-fast regex search           |
-| `find`  | [fd](https://github.com/sharkdp/fd)               | Intuitive syntax, respects .gitignore |
-| `du`    | [dust](https://github.com/bootandy/dust)          | Visual disk usage analyzer            |
-| `df`    | [duf](https://github.com/muesli/duf)              | Beautiful disk free table             |
-| `cd`    | [zoxide](https://github.com/ajeetdsouza/zoxide)   | Smart directory jumping               |
-| `man`   | [tldr](https://github.com/tldr-pages/tlrc)        | Practical command examples            |
-| `time`  | [hyperfine](https://github.com/sharkdp/hyperfine) | Command benchmarking                  |
+| Classic | Modern                                           | Description                           |
+| ------- | ------------------------------------------------ | ------------------------------------- |
+| `ls`    | [eza](https://github.com/eza-community/eza)      | Git integration, icons, tree views    |
+| `cat`   | [bat](https://github.com/sharkdp/bat)            | Syntax highlighting, git integration  |
+| `grep`  | [ripgrep](https://github.com/BurntSushi/ripgrep) | Lightning-fast regex search           |
+| `find`  | [fd](https://github.com/sharkdp/fd)              | Intuitive syntax, respects .gitignore |
+| `cd`    | [zoxide](https://github.com/ajeetdsouza/zoxide)  | Smart directory jumping               |
 
 ### Shell Environment
 
-The shell prompt is powered by **Starship**, a minimal and fast prompt written in Rust. It's configured with the Dracula color palette and shows contextual information like git status, current directory, and programming language versions.
-
-**Sheldon** manages zsh plugins efficiently. Unlike oh-my-zsh or zinit, Sheldon is written in Rust and provides fast plugin loading with optional deferred execution for non-critical plugins.
-
-**Atuin** revolutionizes shell history. It stores your command history in a SQLite database and provides fuzzy search across your entire history. Press Ctrl+R and instantly find that complex command you ran three months ago.
-
-**Direnv** automatically loads and unloads environment variables when you enter and leave directories. Combined with the helper functions in this repo, you can quickly set up per-project Python virtualenvs, Nix development shells, or mise environments.
-
-| Tool                                                                            | Role                                              |
-| ------------------------------------------------------------------------------- | ------------------------------------------------- |
-| [starship](https://github.com/starship/starship)                                | Minimal, blazing-fast prompt with git integration |
-| [sheldon](https://github.com/rossmacarthur/sheldon)                             | Fast, configurable zsh plugin manager             |
-| [atuin](https://github.com/atuinsh/atuin)                                       | Magical shell history with fuzzy search           |
-| [direnv](https://github.com/direnv/direnv)                                      | Per-directory environment variables               |
-| [fzf](https://github.com/junegunn/fzf)                                          | Fuzzy finder for files, history, and more         |
-| [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)         | Fish-like command suggestions                     |
-| [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting) | Syntax highlighting for commands                  |
+| Tool                                                | Role                                      |
+| --------------------------------------------------- | ----------------------------------------- |
+| [starship](https://github.com/starship/starship)    | Minimal, blazing-fast prompt              |
+| [sheldon](https://github.com/rossmacarthur/sheldon) | Fast zsh plugin manager                   |
+| [atuin](https://github.com/atuinsh/atuin)           | Magical shell history with fuzzy search   |
+| [direnv](https://github.com/direnv/direnv)          | Per-directory environment variables       |
+| [fzf](https://github.com/junegunn/fzf)              | Fuzzy finder for files, history, and more |
 
 ### Development Tools
-
-**mise** (formerly rtx) is a polyglot runtime manager that handles Node.js, Python, Go, Rust, Terraform, and more. It's faster than nvm/pyenv/rbenv and provides a unified interface for all language runtimes.
-
-**lazygit** provides a beautiful terminal UI for git. It makes complex git operations like interactive rebasing, cherry-picking, and conflict resolution much more accessible.
-
-**yazi** is a blazing-fast terminal file manager with image preview support. It's the modern replacement for ranger, written in Rust for maximum performance.
-
-**tmux** configuration includes vim-style keybindings, Dracula theme colors, and floating panes (floax) for flexible workspace management. The prefix key is set to Ctrl+B (default).
 
 | Tool                                                | Role                                              |
 | --------------------------------------------------- | ------------------------------------------------- |
 | [mise](https://github.com/jdx/mise)                 | Polyglot runtime manager (Node, Python, Go, Rust) |
 | [lazygit](https://github.com/jesseduffield/lazygit) | Beautiful terminal UI for git                     |
 | [yazi](https://github.com/sxyazi/yazi)              | Blazing fast terminal file manager                |
-| [tmux](https://github.com/tmux/tmux)                | Terminal multiplexer with floating panes (floax)  |
-| [ghq](https://github.com/x-motemen/ghq)             | Remote repository management                      |
-| [gh](https://github.com/cli/cli)                    | GitHub CLI for issues, PRs, and more              |
-
-### AI Integration
-
-**Claude Code** is integrated directly into the shell environment. The `aicommit` function generates conventional commit messages from staged changes using AI. The Starship prompt can optionally display Claude API usage stats.
-
-### Desktop Applications (macOS only)
-
-GUI applications are managed through Homebrew casks:
-
-| Category       | Applications                      |
-| -------------- | --------------------------------- |
-| Terminal       | Ghostty, iTerm2                   |
-| Editor         | Neovim, VS Code, Cursor           |
-| Browser        | Arc (Dia)                         |
-| Window Manager | AeroSpace (i3-like tiling)        |
-| Productivity   | Notion, Obsidian, Logseq, Raycast |
-| Container      | OrbStack (Docker alternative)     |
+| [tmux](https://github.com/tmux/tmux)                | Terminal multiplexer with floating panes          |
 
 ---
 
@@ -279,24 +248,15 @@ GUI applications are managed through Homebrew casks:
 
 ## 🔧 Shell Functions
 
-Beyond aliases, this setup provides powerful shell functions for common workflows.
-
-For machine-specific tweaks you don't want to commit, put them in `~/.custom/local.sh` (it will be sourced automatically if present).
-
 ### Project Navigation
-
-The `dev` function combines **ghq** and **fzf** for project management. Type `dev`, and you get a fuzzy-searchable list of all your git repositories with a tree preview. Select one and you're instantly there, with tmux session renamed to match.
 
 ```bash
 dev                 # FZF-powered project selector (with ghq)
 mkcd <dir>          # Create directory and cd into it
 dotcd               # Jump to chezmoi source
-dotfiles            # Open dotfiles in editor
 ```
 
 ### Git Workflow
-
-`fgc` provides fuzzy branch checkout with log preview. `fgl` lets you browse commits with full diff preview. `fga` shows unstaged files and lets you selectively stage them. These functions make complex git operations feel natural.
 
 ```bash
 fgc                 # Fuzzy git checkout (branches)
@@ -305,25 +265,11 @@ fga                 # Fuzzy git add (select files)
 aicommit            # Generate commit message with AI
 ```
 
-### System Utilities
-
-`fkill` provides safe process killing with confirmation prompts - no more accidentally killing critical processes. `port` quickly shows what's using a specific network port. `backup_dev_env` exports your current Brewfile, VS Code extensions, and mise tools for backup.
-
-```bash
-fkill               # Fuzzy process killer (with confirmation)
-fenv                # Fuzzy environment variable viewer
-port <num>          # Show process using port
-backup_dev_env      # Backup dev environment configs
-```
-
 ### Environment Setup
-
-`create_direnv_venv` sets up a Python virtualenv with direnv integration in one command. `create_direnv_nix` does the same for Nix flake development environments.
 
 ```bash
 create_direnv_venv  # Create Python venv with direnv
 create_direnv_nix   # Create Nix flake with direnv
-create_direnv_mise  # Create mise environment with direnv
 create_py_project   # Quick Python project setup with uv
 ```
 
@@ -333,56 +279,33 @@ create_py_project   # Quick Python project setup with uv
 
 ## 📦 Package Management
 
-Packages are managed through multiple sources, each with its strengths:
+| Source         | Platform     | Description                 |
+| -------------- | ------------ | --------------------------- |
+| Nix packages   | macOS, Linux | Reproducible, rollback-able |
+| Homebrew casks | macOS only   | GUI applications            |
+| Mac App Store  | macOS only   | App Store exclusives        |
 
-| Source            | Platform     | Description                 | Examples                    |
-| ----------------- | ------------ | --------------------------- | --------------------------- |
-| Nix packages      | macOS, Linux | Reproducible, rollback-able | ripgrep, bat, eza, starship |
-| Homebrew formulas | macOS only   | macOS-specific tools        | macos-trash, cliclick       |
-| Homebrew casks    | macOS only   | GUI applications            | VS Code, Ghostty, Notion    |
-| Mac App Store     | macOS only   | App Store exclusives        | Magnet, WeChat, Office      |
+All package lists are defined in `.chezmoidata/` with support for shared, work-only, and private-only packages.
 
-All package lists are defined in `.chezmoidata.yaml` with support for shared, work-only, and private-only packages.
+---
 
 <a id="daily-operations"></a>
 
 ## 🔄 Daily Operations
 
-All common operations are available through the Justfile (rendered from `Justfile.tmpl` to `~/Justfile`). If you don't have `just` yet, run `nix run --extra-experimental-features 'nix-command flakes' nixpkgs#just -- <task>`:
-
-### Cross-Platform Commands
-
 ```bash
 # Chezmoi operations
 just apply          # Apply dotfile changes
 just diff           # Show pending changes
-just re-add         # Re-add modified files
 
 # Nix operations
 just up             # Update all flake inputs
 just switch         # Switch flakey-profile (rebuild packages)
-just gc             # Garbage collect unused nix store entries
-just optimize       # Optimize nix store (hard-link duplicates)
-
-# Development
-just check          # Run pre-commit checks
-
-# All-in-one
-just full-upgrade   # Complete system upgrade
-just update-all     # Update flake + chezmoi (+ homebrew on macOS)
-```
-
-### macOS-Only Commands
-
-```bash
-# Nix-darwin operations
-just darwin         # Rebuild and switch configuration
-just darwin-debug   # Build with verbose output
+just darwin         # Rebuild nix-darwin (macOS)
 
 # Maintenance
-just history        # List all generations of the system profile
-just clean          # Clean generations older than 7 days
-just clean-all      # Nix gc + brew cleanup
+just gc             # Garbage collect nix store
+just full-upgrade   # Complete system upgrade
 ```
 
 ---
@@ -391,19 +314,11 @@ just clean-all      # Nix gc + brew cleanup
 
 ## 👤 Multi-Profile Configuration
 
-The setup supports different configurations for different machines. In `.chezmoidata.yaml`, packages are organized into three categories:
-
-- **shared** - Installed on all machines
-- **work** - Only installed on work machines (Azure CLI, Cursor, etc.)
-- **private** - Only installed on personal machines (1Password, gaming, etc.)
-
-`work` is the primary switch: `private` is enabled automatically when `work=false` (default). `headless=true` skips GUI configs like AeroSpace/Karabiner. If prompted for `hostname`, use `hostname -s` (used as the flake output name).
-
 ```bash
 # For work machines
 chezmoi init --apply --promptBool work=true signalridge
 
-# For personal machines (default: work=false -> private=true)
+# For personal machines (default)
 chezmoi init --apply signalridge
 
 # For headless servers (no GUI configs)
@@ -412,38 +327,17 @@ chezmoi init --apply --promptBool headless=true signalridge
 
 ---
 
-<a id="keyboard-shortcuts"></a>
+<a id="security"></a>
 
-## ⌨️ Keyboard Shortcuts
+## 🔐 Security & Secrets
 
-| Shortcut   | Action                         |
-| ---------- | ------------------------------ |
-| Alt + Up   | Navigate to parent directory   |
-| Alt + Down | Go back in directory history   |
-| Ctrl + R   | Search command history (Atuin) |
-| Ctrl + B   | tmux prefix key                |
+This repo uses `age` encryption for private files. Chezmoi decrypts using `~/.ssh/main` (private key) and `~/.ssh/main.pub` (recipient).
 
----
+On first apply, bootstrap scripts will:
 
-<a id="theming"></a>
-
-## 🌙 Theming
-
-All tools are configured with the **Dracula** color palette for a consistent, eye-friendly dark theme:
-
-- Starship prompt colors
-- tmux status bar
-- bat syntax highlighting
-- lazygit interface
-- yazi file manager
-
----
-
-<a id="stats"></a>
-
-## 📈 Stats
-
-![Repobeats](https://repobeats.axiom.co/api/embed/b47788b120b4e3a0f049b72115d88268d5523f64.svg "Repobeats analytics")
+1. Install Nix
+2. Install `age` + `op` via nix
+3. Fetch the key from 1Password (or prompt for manual setup)
 
 ---
 
@@ -451,22 +345,20 @@ All tools are configured with the **Dracula** color palette for a consistent, ey
 
 ## 🙏 Acknowledgements
 
-This dotfiles setup is built on the shoulders of giants. Special thanks to:
-
-- [chezmoi](https://github.com/twpayne/chezmoi) by [@twpayne](https://github.com/twpayne) - The powerful dotfiles manager
-- [nix-darwin](https://github.com/LnL7/nix-darwin) by [@LnL7](https://github.com/LnL7) - Declarative macOS configuration with Nix
-- [flakey-profile](https://github.com/lf-/flakey-profile) by [@lf-](https://github.com/lf-) - Cross-platform Nix profile management
-- [Nix](https://nixos.org/) by [NixOS](https://github.com/NixOS) - The purely functional package manager
-- [Determinate Nix Installer](https://github.com/DeterminateSystems/nix-installer) by [@DeterminateSystems](https://github.com/DeterminateSystems)
-- [Sheldon](https://github.com/rossmacarthur/sheldon) by [@rossmacarthur](https://github.com/rossmacarthur) - Fast zsh plugin manager
-- [Dracula Theme](https://draculatheme.com/) by [@zenorocha](https://github.com/zenorocha) - The beautiful dark theme
-
-And all the other amazing open-source projects and their contributors that make this setup possible.
+- [chezmoi](https://github.com/twpayne/chezmoi) - Dotfiles manager
+- [nix-darwin](https://github.com/LnL7/nix-darwin) - Declarative macOS configuration
+- [flakey-profile](https://github.com/lf-/flakey-profile) - Cross-platform Nix profile management
+- [wshobson/agents](https://github.com/wshobson/agents) - Claude Code plugins marketplace
+- [Dracula Theme](https://draculatheme.com/) - Beautiful dark theme
 
 ---
 
-<a id="license"></a>
+## 📈 Stats
+
+![Repobeats](https://repobeats.axiom.co/api/embed/b47788b120b4e3a0f049b72115d88268d5523f64.svg "Repobeats analytics")
+
+---
 
 ## 📝 License
 
-This project is licensed under the MIT License.
+MIT License
