@@ -49,6 +49,14 @@ encryption = "age"
 {{-   $homeWifiSSIDs = promptStringOnce . "homeWifiSSIDs" "Home WiFi SSIDs for auto-volume (comma-separated, e.g. Home-5G,Home-2.4G)" -}}
 {{- end -}}
 
+{{/* Claude Code provider@account selection (e.g. "deepseek" or "deepseek@work") */}}
+{{- $claudeProviderAccount := "anthropic" -}}{{/* default provider, no account means "default" */}}
+{{- if hasKey . "claudeProviderAccount" -}}
+{{-   $claudeProviderAccount = .claudeProviderAccount -}}
+{{- else if hasKey . "claudeProvider" -}}
+{{-   $claudeProviderAccount = .claudeProvider -}}{{/* backward compatibility */}}
+{{- end -}}
+
 {{/* timezone: prefer local config, fallback to ip-api.com */}}
 {{- $timezone := "" -}}
 
@@ -84,6 +92,7 @@ installMasApps = {{ $installMasApps }}
 homeWifiSSIDs = {{ $homeWifiSSIDs | quote }}
 osid = {{ $osID | quote }}
 timezone = {{ $timezone | quote }}
+claudeProviderAccount = {{ $claudeProviderAccount | quote }}
 
 [edit]
 command = "code"

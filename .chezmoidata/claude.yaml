@@ -1,4 +1,77 @@
 claude:
+  # Claude Code provider configuration (used by claude-switch)
+  # Docs: https://docs.anthropic.com/zh-CN/docs/claude-code/settings
+  # Multi-account: use provider@account format (e.g., "deepseek@work")
+  # Default account is "default" when no @account is specified
+  providers:
+    # === Native Anthropic providers (no base_url, use OAuth) ===
+    anthropic:
+      base_url: ""
+      model: "claude-sonnet-4-5-20250929"
+      small_model: "claude-sonnet-4-5-20250929"
+    opus:
+      base_url: ""
+      model: "claude-opus-4-5-20251101"
+      small_model: "claude-sonnet-4-5-20250929"
+    haiku:
+      base_url: ""
+      model: "claude-haiku-4-5-20251001"
+      small_model: "claude-haiku-4-5-20251001"
+    # === Third-party providers (require base_url and API token) ===
+    # DeepSeek: https://api-docs.deepseek.com/guides/anthropic_api
+    deepseek:
+      base_url: "https://api.deepseek.com/anthropic"
+      model: "deepseek-chat"
+      small_model: "deepseek-chat"
+      timeout_ms: "600000"
+      disable_nonessential_traffic: true
+      haiku_model: "deepseek-chat"
+      sonnet_model: "deepseek-chat"
+      opus_model: "deepseek-reasoner"
+    # Kimi K2 (Moonshot): https://platform.moonshot.cn/docs/guide/agent-support
+    kimi:
+      base_url: "https://api.moonshot.cn/anthropic"
+      model: "kimi-k2-thinking-turbo"
+      small_model: "kimi-k2-thinking-turbo"
+      timeout_ms: "600000"
+      disable_nonessential_traffic: true
+      haiku_model: kimi-k2-thinking-turbo
+      sonnet_model: kimi-k2-thinking-turbo
+      opus_model: kimi-k2-thinking-turbo
+    # GLM (Zhipu AI): https://docs.bigmodel.cn/cn/coding-plan/tool/claude
+    glm:
+      base_url: "https://open.bigmodel.cn/api/anthropic"
+      model: "glm-4.7"
+      small_model: "glm-4.5-air"
+      timeout_ms: "3000000"
+      disable_nonessential_traffic: true
+      haiku_model: "glm-4.5-air"
+      sonnet_model: "glm-4.7"
+      opus_model: "glm-4.7"
+    # Qwen (Alibaba): https://help.aliyun.com/zh/model-studio/claude-code
+    qwen:
+      base_url: "https://dashscope.aliyuncs.com/apps/anthropic"
+      model: "qwen3-coder-plus"
+      small_model: "qwen-flash"
+      timeout_ms: "600000"
+      disable_nonessential_traffic: true
+    # MiniMax: https://platform.minimax.io/docs/coding-plan/claude-code
+    minimax:
+      base_url: "https://api.minimax.io/anthropic"
+      model: "MiniMax-M2.1"
+      small_model: "MiniMax-M2.1"
+      timeout_ms: "3000000"
+      disable_nonessential_traffic: true
+      haiku_model: "MiniMax-M2.1"
+      sonnet_model: "MiniMax-M2.1"
+      opus_model: "MiniMax-M2.1"
+    # Doubao (ByteDance): https://www.volcengine.com/docs/82379/1928261
+    doubao:
+      base_url: "https://ark.cn-beijing.volces.com/api/coding"
+      model: "ark-code-latest"
+      small_model: "ark-code-latest"
+      timeout_ms: "600000"
+      disable_nonessential_traffic: true
   # Local directories (protected from plugin sync)
   localDirectories:
     agents:

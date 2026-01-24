@@ -99,13 +99,6 @@ if command -v aerospace >/dev/null 2>&1; then
 else
     export ZSH_TMUX_DEFAULT_SESSION_NAME="main"
 fi
-# ─────────────────────────────────────────────────────────────
-# Claude Code configuration
-# Uses default location ~/.claude (managed by chezmoi)
-# Global config includes: CLAUDE.md, commands/, skills/, hooks/
-# Project-specific config goes in each project's .claude/ directory
-# ─────────────────────────────────────────────────────────────
-# Note: CLAUDE_CONFIG_DIR removed - using default ~/.claude location
 {{- if eq .chezmoi.os "darwin" }}
 
 # ─────────────────────────────────────────────────────────────

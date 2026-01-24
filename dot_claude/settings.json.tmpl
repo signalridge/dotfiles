@@ -1,4 +1,16 @@
+{{- /* Get provider from claudeProviderAccount (extracts provider from "provider@account" format) */ -}}
+{{- $providerAccount := "anthropic" -}}
+{{- if hasKey . "claudeProviderAccount" -}}
+{{-   $providerAccount = .claudeProviderAccount -}}
+{{- else if hasKey . "claudeProvider" -}}
+{{-   $providerAccount = .claudeProvider -}}
+{{- end -}}
+{{- $provider := (split "@" $providerAccount)._0 -}}
+{{- $config := index .claude.providers $provider -}}
 {
+{{- if and $config $config.base_url }}
+  "apiKeyHelper": "~/.local/bin/claude-get-token",
+{{- end }}
   "mcpServers": {
     "github": {
       "command": "npx",
@@ -96,6 +108,26 @@
     ]
   },
   "env": {
+{{- if and $config $config.base_url }}
+    "ANTHROPIC_BASE_URL": "{{ $config.base_url }}",
+    "ANTHROPIC_MODEL": "{{ $config.model }}",
+    "ANTHROPIC_SMALL_FAST_MODEL": "{{ $config.small_model }}",
+{{- if $config.timeout_ms }}
+    "API_TIMEOUT_MS": "{{ $config.timeout_ms }}",
+{{- end }}
+{{- if $config.disable_nonessential_traffic }}
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+{{- end }}
+{{- if $config.haiku_model }}
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "{{ $config.haiku_model }}",
+{{- end }}
+{{- if $config.sonnet_model }}
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "{{ $config.sonnet_model }}",
+{{- end }}
+{{- if $config.opus_model }}
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "{{ $config.opus_model }}",
+{{- end }}
+{{- end }}
     "INSIDE_CLAUDE_CODE": "1"
   }
 }
