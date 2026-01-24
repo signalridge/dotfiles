@@ -26,6 +26,9 @@ zstyle ':completion:*' menu no                      # Disable default menu
 # Previews (uses eza, bat from your existing setup)
 # ─────────────────────────────────────────────────────────────
 
+# Command previews (when completing command names)
+zstyle ':fzf-tab:complete:-command-:*' fzf-preview 'tldr --color always $word 2>/dev/null || whatis $word 2>/dev/null || echo "No info for: $word"'
+
 # Directory previews
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza --tree --level=2 --color=always --icons $realpath 2>/dev/null || ls -la $realpath'
 zstyle ':fzf-tab:complete:ls:*' fzf-preview 'eza -la --color=always --icons $realpath 2>/dev/null || ls -la $realpath'
