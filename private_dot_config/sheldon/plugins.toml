@@ -68,6 +68,6 @@ remote = "https://github.com/BurntSushi/ripgrep/raw/master/crates/core/flags/com
 [plugins.zsh-syntax-highlighting]
 github = "zsh-users/zsh-syntax-highlighting"
 
-# zsh-autocomplete must load AFTER zsh-syntax-highlighting
-[plugins.zsh-autocomplete]
-github = 'marlonrichert/zsh-autocomplete'
+# fzf-tab: replaces default completion menu with fzf
+[plugins.fzf-tab]
+github = 'Aloxaf/fzf-tab'

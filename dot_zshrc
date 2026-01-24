@@ -9,6 +9,7 @@ fi
 
 source $HOME/.custom/exports.sh
 source $HOME/.custom/eval.sh
+source $HOME/.custom/fzf-tab.zsh
 source $HOME/.custom/alias.sh
 source $HOME/.custom/functions.sh
 source $HOME/.custom/utils.sh

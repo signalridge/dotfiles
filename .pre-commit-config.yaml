@@ -35,7 +35,7 @@ repos:
         name: Shellcheck
         language: system
         types: [shell]
-        exclude: \.tmpl$
+        exclude: (\.tmpl$|\.zsh$)
         entry: shellcheck --severity=warning
       #####################################
       # Lint: Lua files (non-template)
