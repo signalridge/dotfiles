@@ -111,7 +111,7 @@ jobs:
           fi
       - name: Create Pull Request
         if: steps.changes.outputs.has_changes == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "chore(claude): sync plugins from upstream"
           title: "chore(claude): sync plugins (${{ steps.upstream.outputs.wshobsonAgents }}/${{ steps.upstream.outputs.superpowers }}/${{ steps.upstream.outputs.anthropicsSkills }})"
