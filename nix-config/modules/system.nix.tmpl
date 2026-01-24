@@ -203,10 +203,10 @@
     # this is required if you want to use darwin's default shell - zsh
     zsh.enable = true;
 
-    # GnuPG Agent (for GPG key management)
+    # GnuPG Agent (for GPG key management, used by gopass)
     gnupg.agent = {
       enable = true;
-      enableSSHSupport = false; # using 1Password SSH agent instead
+      enableSSHSupport = false; # SSH uses ~/.ssh/main instead
     };
 
     # Nix Index (command-not-found replacement)

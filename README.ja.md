@@ -30,7 +30,7 @@
 - **ワンコマンドブートストラップ**：ベアメタルから完全環境まで `curl | sh` 一発で
 - **Claude Code 統合**：14 以上の marketplace プラグイン、自動同期更新
 - **モダン CLI**：Rust ツールチェーン（eza、bat、ripgrep、fd、zoxide）で Unix クラシックを置き換え
-- **セキュリティ優先**：`age` 暗号化 + 1Password アシスト付きキーブートストラップ
+- **セキュリティ優先**：`age` 暗号化 + gopass アシスト付きキーブートストラップ
 
 ---
 
@@ -56,7 +56,7 @@
 - **宣言的** — すべてコードで定義、バージョン管理
 - **モジュラー** — プロファイルベースのカスタマイズ：仕事/個人/ヘッドレス
 - **AI 拡張** — Claude Code 統合で開発ワークフローを強化
-- **セキュリティ優先** — 暗号化されたシークレット、1Password 統合
+- **セキュリティ優先** — 暗号化されたシークレット、gopass 統合
 
 ---
 
@@ -107,8 +107,8 @@ cd dotfiles && ./init.sh
 上記コマンドで自動的に：
 
 1. Nix をインストール（Determinate Systems インストーラ）
-2. Nix 経由で `age` と `1password-cli` をインストール（復号用）
-3. 1Password から復号鍵を取得（または手動セットアップを案内）
+2. Nix 経由で `age` と `gopass` をインストール（復号用）
+3. gopass から復号鍵を取得（または手動セットアップを案内）
 4. すべての dotfiles と設定を適用
 5. Claude Code プラグインを同期
 
@@ -116,7 +116,7 @@ cd dotfiles && ./init.sh
 > **初めて使う方へ**：`useEncryption` を聞かれたら **No**（デフォルト）を選択してください。
 > 暗号化設定はリポジトリ所有者専用です。暗号化が必要な場合は以下を修正してください：
 >
-> - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`：`KEY_FILE`、`KEY_PUB`、1Password パスを変更
+> - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`：`KEY_FILE`、`KEY_PUB`、gopass パスを変更
 > - `.chezmoi.toml.tmpl`：`[age]` セクションの `identity` と `recipientsFile` パスを更新
 
 インストール後、ターミナルを再起動してください。macOS では `just darwin` で nix-darwin 設定を有効化します。
@@ -337,7 +337,7 @@ chezmoi init --apply --promptBool headless=true signalridge
 
 1. Nix をインストール
 2. Nix 経由で `age` + `op` をインストール
-3. 1Password から鍵を取得（または手動セットアップを案内）
+3. gopass から鍵を取得（または手動セットアップを案内）
 
 ---
 

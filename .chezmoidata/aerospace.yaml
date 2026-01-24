@@ -23,8 +23,6 @@ aerospace:
         comment: RustDesk
       - id: io.tailscale.ipn.macsys
         comment: Tailscale
-      - id: com.1password.1password
-        comment: 1Password
     work:
     private:
       # Utilities

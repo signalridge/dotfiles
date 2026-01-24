@@ -30,7 +30,7 @@
 - **One-command bootstrap**: From bare metal to full environment with a single `curl | sh`
 - **Claude Code integration**: 14+ plugins from marketplace with automated sync
 - **Modern CLI**: Rust-based tools (eza, bat, ripgrep, fd, zoxide) replacing Unix classics
-- **Security-first**: `age` encryption with 1Password-assisted key bootstrapping
+- **Security-first**: `age` encryption with gopass-assisted key bootstrapping
 
 ---
 
@@ -56,7 +56,7 @@ Setting up a new development machine is tedious: dozens of packages to install, 
 - **Declarative** — Everything defined in code, version controlled
 - **Modular** — Profile-based customization for work/personal/headless
 - **AI-augmented** — Claude Code integration for development workflows
-- **Security-first** — Encrypted secrets with 1Password integration
+- **Security-first** — Encrypted secrets with gopass integration
 
 ---
 
@@ -107,8 +107,8 @@ cd dotfiles && ./init.sh
 This will automatically:
 
 1. Install Nix (Determinate Systems installer)
-2. Install `age` and `1password-cli` for secrets decryption
-3. Fetch encryption key from 1Password (or prompt for manual setup)
+2. Install `age` and `gopass` for secrets decryption
+3. Fetch encryption key from gopass (or prompt for manual setup)
 4. Apply all dotfiles and configurations
 5. Sync Claude Code plugins from marketplace
 
@@ -116,7 +116,7 @@ This will automatically:
 > **First-time users**: When prompted for `useEncryption`, answer **No** (default).
 > The encryption setup is specific to the repo owner. If you need encryption, modify:
 >
-> - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`: Change `KEY_FILE`, `KEY_PUB`, and 1Password item path (`op://Personal/main/...`)
+> - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`: Change `KEY_FILE`, `KEY_PUB`, and gopass secret path
 > - `.chezmoi.toml.tmpl`: Update `identity` and `recipientsFile` paths in `[age]` section
 
 After installation, restart your terminal. For macOS, run `just darwin` to activate nix-darwin configuration.
@@ -336,8 +336,8 @@ This repo uses `age` encryption for private files. Chezmoi decrypts using `~/.ss
 On first apply, bootstrap scripts will:
 
 1. Install Nix
-2. Install `age` + `op` via nix
-3. Fetch the key from 1Password (or prompt for manual setup)
+2. Install `age` + `gopass` via nix
+3. Fetch the key from gopass (or prompt for manual setup)
 
 ---
 

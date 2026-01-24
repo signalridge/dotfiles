@@ -44,9 +44,6 @@ hammerspoon:
       - app: Zen
         ime: jp
     private:
-      # Password -> English
-      - app: 1Password
-        ime: en
       # Browsers/Communication -> Chinese for private
       - app: Slack
         ime: zh

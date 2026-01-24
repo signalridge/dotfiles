@@ -4,7 +4,6 @@ sysPkgs:
 homepkgs:
   shared:
     - "(texliveFull.withPackages (ps: with ps; [ ]))"
-    - _1password-cli
     - act
     - age
     - aria2

@@ -1,0 +1,70 @@
+#!/bin/bash
+# GPG Key Backup Script
+# Exports GPG keys for secure offline backup
+set -euo pipefail
+
+# Get default GPG key (first secret key with ultimate trust)
+get_default_key() {
+    gpg --list-secret-keys --keyid-format long 2>/dev/null | \
+        grep 'sec.*\[' | head -1 | grep -oE '[A-F0-9]{16}' | head -1
+}
+
+# Parse arguments
+BACKUP_DIR="$HOME/gpg-backup-$(date +%Y%m%d)"
+GPG_KEY_ID=""
+
+for arg in "$@"; do
+    if [[ "$arg" =~ ^[A-Fa-f0-9]{8,}$ ]]; then
+        GPG_KEY_ID="$arg"
+    else
+        BACKUP_DIR="$arg"
+    fi
+done
+
+# Use default key if not specified
+if [[ -z "$GPG_KEY_ID" ]]; then
+    GPG_KEY_ID=$(get_default_key)
+fi
+
+if [[ -z "$GPG_KEY_ID" ]]; then
+    echo "Usage: gpg-backup [KEY_ID] [BACKUP_DIR]"
+    echo ""
+    echo "Available secret keys:"
+    gpg --list-secret-keys --keyid-format long
+    exit 1
+fi
+
+echo "=== GPG Key Backup ==="
+echo "Key ID: $GPG_KEY_ID"
+echo "Backup dir: $BACKUP_DIR"
+echo ""
+
+# Create backup directory
+mkdir -p "$BACKUP_DIR"
+chmod 700 "$BACKUP_DIR"
+
+# Export secret key (will prompt for passphrase)
+echo "[1/3] Exporting private key..."
+gpg --armor --export-secret-keys "$GPG_KEY_ID" > "$BACKUP_DIR/private-key.asc"
+chmod 600 "$BACKUP_DIR/private-key.asc"
+
+# Export public key
+echo "[2/3] Exporting public key..."
+gpg --armor --export "$GPG_KEY_ID" > "$BACKUP_DIR/public-key.asc"
+
+# Export ownertrust
+echo "[3/3] Exporting trust database..."
+gpg --export-ownertrust > "$BACKUP_DIR/ownertrust.txt"
+
+echo ""
+echo "=== Backup Complete ==="
+echo ""
+echo "Files created:"
+ls -la "$BACKUP_DIR"
+echo ""
+echo "Next steps:"
+echo "  1. Copy $BACKUP_DIR to secure offline storage (USB, encrypted drive)"
+echo "  2. Test restore on another machine"
+echo "  3. Delete local backup: rm -rf $BACKUP_DIR"
+echo ""
+echo "To restore: gpg-restore $BACKUP_DIR"

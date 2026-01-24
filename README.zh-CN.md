@@ -30,7 +30,7 @@
 - **一键引导**：从裸机到完整环境，只需一条 `curl | sh`
 - **Claude Code 集成**：14+ marketplace 插件，自动同步更新
 - **现代 CLI**：Rust 工具链（eza、bat、ripgrep、fd、zoxide）替代传统 Unix 命令
-- **安全优先**：`age` 加密 + 1Password 辅助密钥引导
+- **安全优先**：`age` 加密 + gopass 辅助密钥引导
 
 ---
 
@@ -56,7 +56,7 @@
 - **声明式** — 一切定义在代码中，版本控制
 - **模块化** — 基于 Profile 的定制：工作/个人/无头服务器
 - **AI 增强** — Claude Code 集成，提升开发工作流
-- **安全优先** — 加密 secrets，集成 1Password
+- **安全优先** — 加密 secrets，集成 gopass
 
 ---
 
@@ -107,8 +107,8 @@ cd dotfiles && ./init.sh
 上述命令会自动完成：
 
 1. 安装 Nix（Determinate Systems 安装器）
-2. 通过 Nix 安装 `age` 和 `1password-cli` 用于解密
-3. 从 1Password 获取解密密钥（或提示手动设置）
+2. 通过 Nix 安装 `age` 和 `gopass` 用于解密
+3. 从 gopass 获取解密密钥（或提示手动设置）
 4. 应用所有 dotfiles 和配置
 5. 同步 Claude Code 插件
 
@@ -116,7 +116,7 @@ cd dotfiles && ./init.sh
 > **首次使用者**：当提示 `useEncryption` 时，请选择 **No**（默认值）。
 > 加密设置仅适用于仓库所有者。如需启用加密，请修改：
 >
-> - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`：修改 `KEY_FILE`、`KEY_PUB` 和 1Password 路径
+> - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`：修改 `KEY_FILE`、`KEY_PUB` 和 gopass 路径
 > - `.chezmoi.toml.tmpl`：更新 `[age]` 部分的 `identity` 和 `recipientsFile` 路径
 
 安装完成后，重启终端。macOS 用户运行 `just darwin` 激活 nix-darwin 配置。
@@ -337,7 +337,7 @@ chezmoi init --apply --promptBool headless=true signalridge
 
 1. 安装 Nix
 2. 通过 Nix 安装 `age` + `op`
-3. 从 1Password 获取密钥（或提示手动设置）
+3. 从 gopass 获取密钥（或提示手动设置）
 
 ---
 

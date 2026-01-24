@@ -48,7 +48,6 @@ homebrew:
       - cursor
       - gcloud-cli
     private:
-      - 1password
       - adguard
       - balenaetcher
       - bob-app

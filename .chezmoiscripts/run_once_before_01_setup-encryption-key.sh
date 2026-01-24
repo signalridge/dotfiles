@@ -15,10 +15,10 @@ if ! command -v age &>/dev/null; then
     nix --extra-experimental-features 'nix-command flakes' profile add nixpkgs#age
 fi
 
-# Install 1password-cli if not available (unfree license)
-if ! command -v op &>/dev/null; then
-    echo "📦 Installing 1password-cli..."
-    NIXPKGS_ALLOW_UNFREE=1 nix --extra-experimental-features 'nix-command flakes' profile add nixpkgs#_1password-cli --impure
+# Install gopass if not available
+if ! command -v gopass &>/dev/null; then
+    echo "📦 Installing gopass..."
+    nix --extra-experimental-features 'nix-command flakes' profile add nixpkgs#gopass
 fi
 
 KEY_FILE="$HOME/.ssh/main"
@@ -33,59 +33,39 @@ echo "Encryption key not found: $KEY_FILE"
 mkdir -p "$HOME/.ssh"
 chmod 700 "$HOME/.ssh"
 
-# Try 1Password CLI
-if command -v op &>/dev/null; then
-    # Check: service account token or has configured accounts (not just command success)
-    if [[ -n "${OP_SERVICE_ACCOUNT_TOKEN:-}" ]] || [[ -n "$(op account list 2>/dev/null)" ]]; then
-        echo "Fetching key from 1Password..."
+# Try gopass
+if command -v gopass &>/dev/null; then
+    # Check if gopass is initialized (has a store)
+    if gopass list &>/dev/null; then
+        echo "Fetching key from gopass..."
         tmpfile=$(mktemp "$HOME/.ssh/key.XXXXXX")
         chmod 600 "$tmpfile"
-        if op read "op://Personal/main/private key?ssh-format=openssh" 2>/dev/null | tr -d '\r' >"$tmpfile"; then
+        if gopass show main_keypair/private_key 2>/dev/null | tr -d '\r' >"$tmpfile"; then
             mv "$tmpfile" "$KEY_FILE"
-            op read "op://Personal/main/public key" >"$KEY_PUB"
+            gopass show main_keypair/public_key >"$KEY_PUB"
             chmod 600 "$KEY_FILE"
             chmod 644 "$KEY_PUB"
-            echo "✓ Key imported from 1Password"
+            echo "✓ Key imported from gopass"
             exit 0
         else
             rm -f "$tmpfile"
-            echo "⚠ Failed to fetch from 1Password"
+            echo "⚠ Failed to fetch from gopass"
         fi
     fi
 fi
 
-# Try interactive login if op is available
-if command -v op &>/dev/null; then
+# gopass not initialized - guide user to set it up
+if command -v gopass &>/dev/null; then
     echo ""
-    echo "No 1Password session found. Would you like to sign in interactively? [y/N]"
-    read -r response
-    if [[ "$response" =~ ^[Yy]$ ]]; then
-        # Add account if none configured
-        if [[ -z "$(op account list 2>/dev/null)" ]]; then
-            echo "No account configured. Adding account..."
-            op account add
-        fi
-
-        echo "Signing in to 1Password..."
-        if eval "$(op signin)"; then
-            echo "Fetching key from 1Password..."
-            tmpfile=$(mktemp "$HOME/.ssh/key.XXXXXX")
-            chmod 600 "$tmpfile"
-            if op read "op://Personal/main/private key?ssh-format=openssh" | tr -d '\r' >"$tmpfile"; then
-                mv "$tmpfile" "$KEY_FILE"
-                op read "op://Personal/main/public key" >"$KEY_PUB"
-                chmod 600 "$KEY_FILE"
-                chmod 644 "$KEY_PUB"
-                echo "✓ Key imported from 1Password"
-                exit 0
-            else
-                rm -f "$tmpfile"
-                echo "⚠ Failed to fetch from 1Password"
-            fi
-        else
-            echo "⚠ 1Password sign in failed"
-        fi
-    fi
+    echo "gopass is installed but not initialized or key not found."
+    echo ""
+    echo "To set up gopass:"
+    echo "  1. Import your GPG key: gpg --import <your-key>"
+    echo "  2. Clone password store: gopass clone git@github.com:signalridge/password-store.git"
+    echo ""
+    echo "After setup, run: chezmoi apply"
+    echo ""
+    exit 1
 fi
 
 # Manual setup required
@@ -95,11 +75,11 @@ echo ""
 echo "  Option 1: Copy from another machine"
 echo "    scp ~/.ssh/main ~/.ssh/main.pub $(whoami)@$(hostname):~/.ssh/"
 echo ""
-if [[ "$OSTYPE" == darwin* ]]; then
-    echo "  Option 2: Enable 1Password desktop integration"
-    echo "    1Password → Settings → Developer → CLI integration"
-    echo ""
-fi
+echo "  Option 2: Set up gopass (recommended)"
+echo "    1. Install: nix profile add nixpkgs#gopass"
+echo "    2. Import GPG key: gpg --import <your-key>"
+echo "    3. Clone: gopass clone git@github.com:signalridge/password-store.git"
+echo ""
 echo "Then run: chezmoi apply"
 echo ""
 exit 1
