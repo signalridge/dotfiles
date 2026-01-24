@@ -45,12 +45,45 @@ jobs:
         run: |
           chmod +x .github/scripts/sync-claude-plugins.sh
           .github/scripts/sync-claude-plugins.sh /tmp/wshobson-agents /tmp/superpowers
-      - name: Update plugin metadata
+      - name: Scan plugin metadata
+        id: scan
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          REPO_DIR: /tmp/wshobson-agents
+          OUTPUT: /tmp/plugins.json
         run: |
           chmod +x .github/scripts/update-plugin-metadata.sh
-          .github/scripts/update-plugin-metadata.sh /tmp/wshobson-agents /tmp/plugins.json .chezmoidata/claude.yaml
+          .github/scripts/update-plugin-metadata.sh scan
+
+          # Generate prompt and check if AI generation is needed
+          prompt=$(.github/scripts/update-plugin-metadata.sh prompt)
+          if [[ -n "$prompt" ]]; then
+            echo "needs_ai=true" >> $GITHUB_OUTPUT
+            # Use heredoc for multiline output
+            {
+              echo "prompt<<EOF"
+              echo "$prompt"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
+          else
+            echo "needs_ai=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Generate keywords with Gemini
+        if: steps.scan.outputs.needs_ai == 'true'
+        id: gemini
+        uses: google-github-actions/run-gemini-cli@v0.1.19
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          gemini_model: gemini-3-flash-preview
+          prompt: ${{ steps.scan.outputs.prompt }}
+      - name: Apply AI-generated keywords
+        if: steps.scan.outputs.needs_ai == 'true'
+        env:
+          OUTPUT: /tmp/plugins.json
+          AI_RESPONSE: ${{ steps.gemini.outputs.summary }}
+        run: |
+          echo "$AI_RESPONSE" | .github/scripts/update-plugin-metadata.sh apply
+      - name: Update claude.yaml
+        run: |
           yq -i -P '.claude.wshobson.registry = load("/tmp/plugins.json")' .chezmoidata/claude.yaml
       - name: Format files
         run: |
