@@ -51,10 +51,10 @@ When task matches keywords, **proactively use Task tool** with corresponding age
 | verify, 验证, complete | `superpowers:verification-before-completion` |
 
 ### Plugin-Based Rules (Enabled Plugins)
-{{- range .claude.wshobson.registry }}
+{{- range .claude.wshobsonAgents.registry }}
 {{- $pluginName := .name }}
 {{- $isEnabled := false }}
-{{- range $.claude.wshobson.enabled }}
+{{- range $.claude.wshobsonAgents.include }}
 {{- if eq . $pluginName }}{{ $isEnabled = true }}{{ end }}
 {{- end }}
 {{- if and $isEnabled (gt (len .keywords) 0) }}

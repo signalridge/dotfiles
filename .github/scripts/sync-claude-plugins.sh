@@ -1,14 +1,15 @@
 #!/bin/bash
 # sync-claude-plugins.sh - Sync Claude Code plugins from upstream repos
-# Usage: ./sync-claude-plugins.sh <wshobson-dir> <superpowers-dir>
+# Usage: ./sync-claude-plugins.sh <wshobson-dir> <superpowers-dir> <anthropics-dir>
 #
-# Strategy: Delete all non-local directories, then sync enabled plugins
+# Strategy: Delete all non-local directories, then sync included plugins
 # Local directories are defined in claude.yaml and protected from deletion
 
 set -euo pipefail
 
-WSHOBSON_DIR="${1:?Usage: $0 <wshobson-dir> <superpowers-dir>}"
-SUPERPOWERS_DIR="${2:?Usage: $0 <wshobson-dir> <superpowers-dir>}"
+WSHOBSON_DIR="${1:?Usage: $0 <wshobson-dir> <superpowers-dir> <anthropics-dir>}"
+SUPERPOWERS_DIR="${2:?Usage: $0 <wshobson-dir> <superpowers-dir> <anthropics-dir>}"
+ANTHROPICS_DIR="${3:?Usage: $0 <wshobson-dir> <superpowers-dir> <anthropics-dir>}"
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 DOT_CLAUDE="$REPO_ROOT/dot_claude"
@@ -26,9 +27,14 @@ log_ok() { echo -e "${GREEN}[OK]${NC} $*"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 
-# Get enabled wshobson plugins from claude.yaml
-get_enabled_plugins() {
-    yq -r '.claude.wshobson.enabled[]' "$CLAUDE_YAML" 2>/dev/null || true
+# Get included wshobsonAgents plugins from claude.yaml
+get_wshobson_include() {
+    yq -r '.claude.wshobsonAgents.include[]' "$CLAUDE_YAML" 2>/dev/null || true
+}
+
+# Get included anthropicsSkills from claude.yaml
+get_anthropics_include() {
+    yq -r '.claude.anthropicsSkills.include[]' "$CLAUDE_YAML" 2>/dev/null || true
 }
 
 # Get local directories from claude.yaml
@@ -114,6 +120,21 @@ sync_superpowers() {
     log_ok "superpowers"
 }
 
+# Sync single anthropics skill
+sync_anthropics_skill() {
+    local name=$1
+    local src="$ANTHROPICS_DIR/skills/$name"
+    [[ -d "$src" ]] || {
+        log_warn "Not found: anthropics/$name"
+        return 1
+    }
+
+    mkdir -p "$DOT_CLAUDE/skills/anthropics"
+    cp -r "$src" "$DOT_CLAUDE/skills/anthropics/"
+    log_ok "anthropics/$name"
+    return 0
+}
+
 # Main
 main() {
     log_info "Syncing Claude plugins..."
@@ -127,17 +148,28 @@ main() {
         log_error "Not found: $SUPERPOWERS_DIR"
         exit 1
     }
+    [[ -d "$ANTHROPICS_DIR" ]] || {
+        log_error "Not found: $ANTHROPICS_DIR"
+        exit 1
+    }
     [[ -f "$CLAUDE_YAML" ]] || {
         log_error "Not found: $CLAUDE_YAML"
         exit 1
     }
 
-    # Read enabled plugins
-    local -a enabled=()
+    # Read included wshobson plugins
+    local -a wshobson_include=()
     while IFS= read -r p; do
-        [[ -n "$p" ]] && enabled+=("$p")
-    done < <(get_enabled_plugins)
-    log_info "Enabled: ${#enabled[@]} plugins"
+        [[ -n "$p" ]] && wshobson_include+=("$p")
+    done < <(get_wshobson_include)
+    log_info "wshobson: ${#wshobson_include[@]} plugins"
+
+    # Read included anthropics skills
+    local -a anthropics_include=()
+    while IFS= read -r s; do
+        [[ -n "$s" ]] && anthropics_include+=("$s")
+    done < <(get_anthropics_include)
+    log_info "anthropics: ${#anthropics_include[@]} skills"
 
     # Step 1: Delete all non-local directories
     log_info "Cleaning non-local directories..."
@@ -145,15 +177,21 @@ main() {
         clean_non_local "$type"
     done
 
-    # Step 2: Sync enabled plugins
+    # Step 2: Sync wshobson plugins
     log_info "Syncing wshobson plugins..."
-    for plugin in "${enabled[@]}"; do
+    for plugin in "${wshobson_include[@]}"; do
         sync_plugin "$plugin" || true
     done
 
     # Step 3: Sync superpowers
     log_info "Syncing superpowers..."
     sync_superpowers
+
+    # Step 4: Sync anthropics skills
+    log_info "Syncing anthropics skills..."
+    for skill in "${anthropics_include[@]}"; do
+        sync_anthropics_skill "$skill" || true
+    done
 
     log_info "Done"
 }

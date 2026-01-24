@@ -11,9 +11,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-env:
-  WSHOBSON_REPO: wshobson/agents
-  SUPERPOWERS_REPO: obra/superpowers
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -28,23 +25,32 @@ jobs:
           # shfmt
           sudo wget -qO /usr/local/bin/shfmt https://github.com/mvdan/sh/releases/latest/download/shfmt_v3.8.0_linux_amd64
           sudo chmod +x /usr/local/bin/shfmt
+      - name: Read repo config
+        id: repos
+        run: |
+          echo "wshobsonAgents=$(yq -r '.claude.wshobsonAgents.repo' .chezmoidata/claude.yaml)" >> $GITHUB_OUTPUT
+          echo "superpowers=$(yq -r '.claude.superpowers.repo' .chezmoidata/claude.yaml)" >> $GITHUB_OUTPUT
+          echo "anthropicsSkills=$(yq -r '.claude.anthropicsSkills.repo' .chezmoidata/claude.yaml)" >> $GITHUB_OUTPUT
       - name: Get upstream SHAs
         id: upstream
         run: |
-          echo "wshobson=$(gh api repos/${{ env.WSHOBSON_REPO }}/commits/main --jq '.sha' | head -c 7)" >> $GITHUB_OUTPUT
-          echo "superpowers=$(gh api repos/${{ env.SUPERPOWERS_REPO }}/commits/main --jq '.sha' | head -c 7)" >> $GITHUB_OUTPUT
+          echo "wshobsonAgents=$(gh api repos/${{ steps.repos.outputs.wshobsonAgents }}/commits/main --jq '.sha' | head -c 7)" >> $GITHUB_OUTPUT
+          echo "superpowers=$(gh api repos/${{ steps.repos.outputs.superpowers }}/commits/main --jq '.sha' | head -c 7)" >> $GITHUB_OUTPUT
+          echo "anthropicsSkills=$(gh api repos/${{ steps.repos.outputs.anthropicsSkills }}/commits/main --jq '.sha' | head -c 7)" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Download upstream repos
         run: |
-          curl -sL "https://github.com/${{ env.WSHOBSON_REPO }}/archive/main.tar.gz" | tar xz
+          curl -sL "https://github.com/${{ steps.repos.outputs.wshobsonAgents }}/archive/main.tar.gz" | tar xz
           mv agents-main /tmp/wshobson-agents
-          curl -sL "https://github.com/${{ env.SUPERPOWERS_REPO }}/archive/main.tar.gz" | tar xz
+          curl -sL "https://github.com/${{ steps.repos.outputs.superpowers }}/archive/main.tar.gz" | tar xz
           mv superpowers-main /tmp/superpowers
+          curl -sL "https://github.com/${{ steps.repos.outputs.anthropicsSkills }}/archive/main.tar.gz" | tar xz
+          mv skills-main /tmp/anthropics-skills
       - name: Sync plugin files
         run: |
           chmod +x .github/scripts/sync-claude-plugins.sh
-          .github/scripts/sync-claude-plugins.sh /tmp/wshobson-agents /tmp/superpowers
+          .github/scripts/sync-claude-plugins.sh /tmp/wshobson-agents /tmp/superpowers /tmp/anthropics-skills
       - name: Scan plugin metadata
         id: scan
         env:
@@ -84,7 +90,7 @@ jobs:
           echo "$AI_RESPONSE" | .github/scripts/update-plugin-metadata.sh apply
       - name: Update claude.yaml
         run: |
-          yq -i -P '.claude.wshobson.registry = load("/tmp/plugins.json")' .chezmoidata/claude.yaml
+          yq -i -P '.claude.wshobsonAgents.registry = load("/tmp/plugins.json")' .chezmoidata/claude.yaml
       - name: Format files
         run: |
           npx prettier --write "dot_claude/**/*.{md,json,js,ts}" ".chezmoidata/*.yaml"
@@ -108,7 +114,7 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           commit-message: "chore(claude): sync plugins from upstream"
-          title: "chore(claude): sync plugins (${{ steps.upstream.outputs.wshobson }}/${{ steps.upstream.outputs.superpowers }})"
+          title: "chore(claude): sync plugins (${{ steps.upstream.outputs.wshobsonAgents }}/${{ steps.upstream.outputs.superpowers }}/${{ steps.upstream.outputs.anthropicsSkills }})"
           branch: chore/sync-claude-plugins
           delete-branch: true
           labels: dependencies,claude,automation
@@ -117,8 +123,9 @@ jobs:
 
             | Source | SHA |
             |--------|-----|
-            | [wshobson/agents](https://github.com/${{ env.WSHOBSON_REPO }}) | `${{ steps.upstream.outputs.wshobson }}` |
-            | [obra/superpowers](https://github.com/${{ env.SUPERPOWERS_REPO }}) | `${{ steps.upstream.outputs.superpowers }}` |
+            | [${{ steps.repos.outputs.wshobsonAgents }}](https://github.com/${{ steps.repos.outputs.wshobsonAgents }}) | `${{ steps.upstream.outputs.wshobsonAgents }}` |
+            | [${{ steps.repos.outputs.superpowers }}](https://github.com/${{ steps.repos.outputs.superpowers }}) | `${{ steps.upstream.outputs.superpowers }}` |
+            | [${{ steps.repos.outputs.anthropicsSkills }}](https://github.com/${{ steps.repos.outputs.anthropicsSkills }}) | `${{ steps.upstream.outputs.anthropicsSkills }}` |
 
             ### Changes
             - Added: ${{ steps.changes.outputs.added }} files
@@ -134,6 +141,7 @@ jobs:
       - name: Summary
         run: |
           echo "## Sync Results" >> $GITHUB_STEP_SUMMARY
-          echo "- wshobson SHA: \`${{ steps.upstream.outputs.wshobson }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- wshobsonAgents SHA: \`${{ steps.upstream.outputs.wshobsonAgents }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- superpowers SHA: \`${{ steps.upstream.outputs.superpowers }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- anthropicsSkills SHA: \`${{ steps.upstream.outputs.anthropicsSkills }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- Changes: ${{ steps.changes.outputs.has_changes }}" >> $GITHUB_STEP_SUMMARY

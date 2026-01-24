@@ -98,15 +98,15 @@ repos:
           useEncryption = false
           headless = false
 
-          [data.claude.wshobson]
-          enabled = ["python-development", "javascript-typescript"]
+          [data.claude.wshobsonAgents]
+          include = ["python-development", "javascript-typescript"]
 
-          [[data.claude.wshobson.registry]]
+          [[data.claude.wshobsonAgents.registry]]
           name = "python-development"
           description = "Python development"
           keywords = ["python"]
 
-          [[data.claude.wshobson.registry]]
+          [[data.claude.wshobsonAgents.registry]]
           name = "javascript-typescript"
           description = "JS/TS development"
           keywords = ["javascript", "typescript"]
