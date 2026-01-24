@@ -81,5 +81,5 @@ This document is the Single Source of Truth (SSOT) for guardrails. Referenced by
 
 - `CLAUDE.md` - Collaboration Model section
 - `coding-philosophy.md` - ALWAYS rules
-- `skill-rules.json` - security-review skill
+- `security-scanning` plugin - security review skills
 - `settings.json` - deny permissions

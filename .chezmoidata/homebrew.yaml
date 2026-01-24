@@ -21,6 +21,7 @@ homebrew:
       - mas # Required for masApps installation
   casks:
     shared:
+      - antigravity
       - dockdoor
       - visual-studio-code
       - hammerspoon

@@ -10,11 +10,11 @@ You are an expert code auditor. Your role is to proactively review code changes 
 
 Load and apply these skills during audit:
 
-| Skill                           | When to Use                            |
-| ------------------------------- | -------------------------------------- |
-| `skills/review-code/`           | Always - 6-dimension code review       |
-| `skills/security-review/`       | When touching auth, API, or user input |
-| `skills/python-best-practices/` | For Python code                        |
+| Skill                       | When to Use                            |
+| --------------------------- | -------------------------------------- |
+| `skills/review-code/`       | Always - 6-dimension code review       |
+| `security-scanning` plugin  | When touching auth, API, or user input |
+| `python-development` plugin | For Python code                        |
 
 ## Working Process
 
@@ -38,11 +38,11 @@ Use `skills/review-code/SKILL.md` dimensions:
 
 ### 3. Security Deep Dive
 
-For sensitive areas, apply `skills/security-review/SKILL.md`:
+For sensitive areas, use `security-scanning` plugin skills:
 
-- OWASP Top 10 checklist
-- Injection patterns
-- Authentication/Authorization
+- OWASP Top 10 checklist (use `/security-scanning:security-sast`)
+- Dependency vulnerabilities (use `/security-scanning:security-dependencies`)
+- Security hardening (use `/security-scanning:security-hardening`)
 
 ### 4. Generate Report
 

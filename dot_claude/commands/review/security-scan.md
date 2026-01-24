@@ -28,13 +28,13 @@ uv pip audit        # Python
 npm audit           # Node.js
 ```
 
-### 3. Apply Security Skill
+### 3. Apply Security Plugin
 
-Load `skills/security-review/SKILL.md` checklist for:
+Use `security-scanning` plugin skills for:
 
-- OWASP Top 10
-- Language-specific patterns
-- Common vulnerabilities
+- OWASP Top 10 (use `/security-scanning:security-sast`)
+- Dependency vulnerabilities (use `/security-scanning:security-dependencies`)
+- Security hardening patterns
 
 ## Output
 
@@ -56,5 +56,5 @@ Load `skills/security-review/SKILL.md` checklist for:
 ## Related
 
 - **Deep analysis:** `/security-review-deep` for thorough review
-- **Skill:** `skills/security-review/` - Full OWASP checklist
+- **Plugin:** `security-scanning` - Full OWASP checklist
 - **Tools:** `bandit`, `semgrep`, `gitleaks` for automation

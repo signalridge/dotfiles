@@ -24,11 +24,14 @@ jobs:
           paperlib=$(gh release view --repo Future-Scholars/paperlib --json tagName -q '.tagName' | sed 's/release-electron-//')
           # wshobson/agents commit hash (first 8 chars)
           wshobson_agents=$(gh api repos/wshobson/agents/commits/main --jq '.sha[:8]')
+          # obra/superpowers latest release tag
+          superpowers=$(gh release view --repo obra/superpowers --json tagName -q '.tagName')
           echo "nix_installer=$nix_installer" >> "$GITHUB_OUTPUT"
           echo "nix_version=$nix_version" >> "$GITHUB_OUTPUT"
           echo "nix_index_db=$nix_index_db" >> "$GITHUB_OUTPUT"
           echo "paperlib=$paperlib" >> "$GITHUB_OUTPUT"
           echo "wshobson_agents=$wshobson_agents" >> "$GITHUB_OUTPUT"
+          echo "superpowers=$superpowers" >> "$GITHUB_OUTPUT"
       - name: Update .chezmoidata/versions.yaml
         run: |
           sed -i 's/nixInstaller: .*/nixInstaller: ${{ steps.versions.outputs.nix_installer }}/' .chezmoidata/versions.yaml
@@ -36,6 +39,7 @@ jobs:
           sed -i 's/nixIndexDb: .*/nixIndexDb: ${{ steps.versions.outputs.nix_index_db }}/' .chezmoidata/versions.yaml
           sed -i 's/paperlib: .*/paperlib: ${{ steps.versions.outputs.paperlib }}/' .chezmoidata/versions.yaml
           sed -i 's/wshobsonAgents: .*/wshobsonAgents: ${{ steps.versions.outputs.wshobson_agents }}/' .chezmoidata/versions.yaml
+          sed -i 's/superpowers: .*/superpowers: ${{ steps.versions.outputs.superpowers }}/' .chezmoidata/versions.yaml
       - name: Check for changes
         id: changes
         run: |
@@ -66,3 +70,4 @@ jobs:
             | nix-index-database | `${{ steps.versions.outputs.nix_index_db }}` |
             | paperlib | `${{ steps.versions.outputs.paperlib }}` |
             | wshobson/agents | `${{ steps.versions.outputs.wshobson_agents }}` |
+            | superpowers | `${{ steps.versions.outputs.superpowers }}` |

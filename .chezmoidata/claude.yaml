@@ -1,1127 +1,655 @@
 claude:
-  enabledPlugins:
-    - python-development
-    - javascript-typescript
-    - systems-programming
-    - shell-scripting
-    - backend-development
-    - cloud-infrastructure
-    - llm-application-dev
-    - machine-learning-ops
-    - database-cloud-optimization
-    - tdd-workflows
-    - debugging-toolkit
-    - code-review-ai
-    - code-documentation
-    - ui-design
-  # Plugin registry (from wshobson/agents marketplace.json)
-  plugins:
-    - name: code-documentation
-      description: Documentation generation, code explanation, and technical writing with automated doc generation and tutorial creation
-      keywords:
-        - documentation
-        - code-explanation
-        - technical-writing
-        - tutorials
-      commands:
-        - ./commands/doc-generate.md
-        - ./commands/code-explain.md
-      agents:
-        - ./agents/docs-architect.md
-        - ./agents/tutorial-engineer.md
-        - ./agents/code-reviewer.md
-      skills: []
-    - name: debugging-toolkit
-      description: Interactive debugging, developer experience optimization, and smart debugging workflows
-      keywords:
-        - debugging
-        - developer-experience
-        - troubleshooting
-        - essential
-      commands:
-        - ./commands/smart-debug.md
-      agents:
-        - ./agents/debugger.md
-        - ./agents/dx-optimizer.md
-      skills: []
-    - name: git-pr-workflows
-      description: Git workflow automation, pull request enhancement, and team onboarding processes
-      keywords:
-        - git
-        - pull-request
-        - workflow
-        - onboarding
-        - essential
-      commands:
-        - ./commands/pr-enhance.md
-        - ./commands/onboard.md
-        - ./commands/git-workflow.md
-      agents:
-        - ./agents/code-reviewer.md
-      skills: []
-    - name: backend-development
-      description: Backend API design, GraphQL architecture, workflow orchestration with Temporal, and test-driven backend development
-      keywords:
-        - backend
-        - api-design
-        - graphql
-        - tdd
-        - architecture
-        - temporal
-        - workflow-orchestration
-        - distributed-systems
-      commands:
-        - ./commands/feature-development.md
-      agents:
-        - ./agents/backend-architect.md
-        - ./agents/graphql-architect.md
-        - ./agents/tdd-orchestrator.md
-        - ./agents/temporal-python-pro.md
-        - ./agents/event-sourcing-architect.md
+  # Local directories (protected from plugin sync)
+  localDirectories:
+    agents:
+      - audit
+      - development
+      - docs
+      - frontend
+      - infrastructure
+      - platform
+      - quality
+      - skill-builder
+      - workflow
+    commands:
+      - core
+      - deploy
+      - dev
+      - docs
+      - git
+      - meta
+      - orchestration
+      - performance
+      - plan
+      - pr
+      - project
+      - review
+      - setup
+      - simulation
+      - skills
+      - test
+    skills:
+      - git-workflow
+      - review-code
+  # obra/superpowers config
+  superpowers:
+    enabled: true
+    # Exclude items that require SessionStart hook (we use CLAUDE.md instead)
+    exclude:
       skills:
-        - ./skills/api-design-principles
-        - ./skills/architecture-patterns
-        - ./skills/microservices-patterns
-        - ./skills/workflow-orchestration-patterns
-        - ./skills/temporal-python-testing
-        - ./skills/event-store-design
-        - ./skills/projection-patterns
-        - ./skills/saga-orchestration
-        - ./skills/cqrs-implementation
-    - name: frontend-mobile-development
-      description: Frontend UI development and mobile application implementation across platforms
-      keywords:
-        - frontend
-        - mobile
-        - react
-        - ui
-        - cross-platform
-      commands:
-        - ./commands/component-scaffold.md
-      agents:
-        - ./agents/frontend-developer.md
-        - ./agents/mobile-developer.md
-      skills:
-        - ./skills/react-state-management
-        - ./skills/nextjs-app-router-patterns
-        - ./skills/react-native-architecture
-        - ./skills/tailwind-design-system
-    - name: full-stack-orchestration
-      description: End-to-end feature orchestration with testing, security, performance, and deployment
-      keywords:
-        - full-stack
-        - orchestration
-        - deployment
-        - security
-        - testing
-      commands:
-        - ./commands/full-stack-feature.md
-      agents:
-        - ./agents/test-automator.md
-        - ./agents/security-auditor.md
-        - ./agents/performance-engineer.md
-        - ./agents/deployment-engineer.md
-      skills: []
-    - name: unit-testing
-      description: Unit and integration test automation for Python and JavaScript with debugging support
-      keywords:
-        - testing
-        - unit-tests
-        - python
-        - javascript
-        - automation
-      commands:
-        - ./commands/test-generate.md
-      agents:
-        - ./agents/test-automator.md
-        - ./agents/debugger.md
-      skills: []
-    - name: tdd-workflows
-      description: Test-driven development methodology with red-green-refactor cycles and code review
-      keywords:
-        - tdd
-        - test-driven
-        - workflow
-        - red-green-refactor
-      commands:
-        - ./commands/tdd-cycle.md
-        - ./commands/tdd-red.md
-        - ./commands/tdd-green.md
-        - ./commands/tdd-refactor.md
-      agents:
-        - ./agents/tdd-orchestrator.md
-        - ./agents/code-reviewer.md
-      skills: []
-    - name: code-review-ai
-      description: AI-powered architectural review and code quality analysis
-      keywords:
-        - code-review
-        - architecture
-        - ai-analysis
-        - quality
-      commands:
-        - ./commands/ai-review.md
-      agents:
-        - ./agents/architect-review.md
-      skills: []
-    - name: code-refactoring
-      description: Code cleanup, refactoring automation, and technical debt management with context restoration
-      keywords:
-        - refactoring
-        - code-quality
-        - technical-debt
-        - cleanup
-      commands:
-        - ./commands/refactor-clean.md
-        - ./commands/tech-debt.md
-        - ./commands/context-restore.md
-      agents:
-        - ./agents/legacy-modernizer.md
-        - ./agents/code-reviewer.md
-      skills: []
-    - name: dependency-management
-      description: Dependency auditing, version management, and security vulnerability scanning
-      keywords:
-        - dependencies
-        - npm
-        - security
-        - auditing
-        - upgrades
-      commands:
-        - ./commands/deps-audit.md
-      agents:
-        - ./agents/legacy-modernizer.md
-      skills: []
-    - name: error-debugging
-      description: Error analysis, trace debugging, and multi-agent problem diagnosis
-      keywords:
-        - error-handling
-        - debugging
-        - diagnostics
-        - troubleshooting
-      commands:
-        - ./commands/error-analysis.md
-        - ./commands/error-trace.md
-        - ./commands/multi-agent-review.md
-      agents:
-        - ./agents/debugger.md
-        - ./agents/error-detective.md
-      skills: []
-    - name: team-collaboration
-      description: Team workflows, issue management, standup automation, and developer experience optimization
-      keywords:
-        - collaboration
-        - team
-        - standup
-        - issue-management
-      commands:
-        - ./commands/issue.md
-        - ./commands/standup-notes.md
-      agents:
-        - ./agents/dx-optimizer.md
-      skills: []
-    - name: llm-application-dev
-      description: LLM application development with LangGraph, RAG systems, vector search, and AI agent architectures for Claude 4.5 and GPT-5.2
-      keywords: []
-      commands: []
-      agents: []
-      skills: []
-    - name: agent-orchestration
-      description: Multi-agent system optimization, agent improvement workflows, and context management
-      keywords:
-        - multi-agent
-        - orchestration
-        - ai-agents
-        - optimization
-      commands:
-        - ./commands/multi-agent-optimize.md
-        - ./commands/improve-agent.md
-      agents:
-        - ./agents/context-manager.md
-      skills: []
-    - name: context-management
-      description: Context persistence, restoration, and long-running conversation management
-      keywords:
-        - context
-        - persistence
-        - conversation
-        - memory
-      commands:
-        - ./commands/context-save.md
-        - ./commands/context-restore.md
-      agents:
-        - ./agents/context-manager.md
-      skills: []
-    - name: machine-learning-ops
-      description: ML model training pipelines, hyperparameter tuning, model deployment automation, experiment tracking, and MLOps workflows
-      keywords:
-        - machine-learning
-        - mlops
-        - model-training
-        - tensorflow
-        - pytorch
-        - mlflow
-      commands:
-        - ./commands/ml-pipeline.md
-      agents:
-        - ./agents/data-scientist.md
-        - ./agents/ml-engineer.md
-        - ./agents/mlops-engineer.md
-      skills:
-        - ./skills/ml-pipeline-workflow
-    - name: data-engineering
-      description: ETL pipeline construction, data warehouse design, batch processing workflows, and data-driven feature development
-      keywords:
-        - data-engineering
-        - etl
-        - data-pipeline
-        - data-warehouse
-        - batch-processing
-      commands:
-        - ./commands/data-driven-feature.md
-        - ./commands/data-pipeline.md
-      agents:
-        - ./agents/data-engineer.md
-        - ./agents/backend-architect.md
-      skills:
-        - ./skills/dbt-transformation-patterns
-        - ./skills/airflow-dag-patterns
-        - ./skills/spark-optimization
-        - ./skills/data-quality-frameworks
-    - name: incident-response
-      description: Production incident management, triage workflows, and automated incident resolution
-      keywords:
-        - incident-response
-        - production
-        - sre
-        - troubleshooting
-      commands:
-        - ./commands/incident-response.md
-        - ./commands/smart-fix.md
-      agents:
-        - ./agents/incident-responder.md
-        - ./agents/devops-troubleshooter.md
-      skills:
-        - ./skills/incident-runbook-templates
-        - ./skills/postmortem-writing
-        - ./skills/on-call-handoff-patterns
-    - name: error-diagnostics
-      description: Error tracing, root cause analysis, and smart debugging for production systems
-      keywords:
-        - diagnostics
-        - error-tracing
-        - root-cause
-        - debugging
-      commands:
-        - ./commands/error-trace.md
-        - ./commands/error-analysis.md
-        - ./commands/smart-debug.md
-      agents:
-        - ./agents/debugger.md
-        - ./agents/error-detective.md
-      skills: []
-    - name: distributed-debugging
-      description: Distributed system tracing and debugging across microservices
-      keywords:
-        - distributed-tracing
-        - microservices
-        - debugging
-        - observability
-      commands:
-        - ./commands/debug-trace.md
-      agents:
-        - ./agents/error-detective.md
-        - ./agents/devops-troubleshooter.md
-      skills: []
-    - name: observability-monitoring
-      description: Metrics collection, logging infrastructure, distributed tracing, SLO implementation, and monitoring dashboards
-      keywords:
-        - observability
-        - monitoring
-        - metrics
-        - logging
-        - tracing
-        - slo
-        - prometheus
-        - grafana
-      commands:
-        - ./commands/monitor-setup.md
-        - ./commands/slo-implement.md
-      agents:
-        - ./agents/observability-engineer.md
-        - ./agents/performance-engineer.md
-        - ./agents/database-optimizer.md
-        - ./agents/network-engineer.md
-      skills:
-        - ./skills/distributed-tracing
-        - ./skills/grafana-dashboards
-        - ./skills/prometheus-configuration
-        - ./skills/slo-implementation
-    - name: deployment-strategies
-      description: Deployment patterns, rollback automation, and infrastructure templates
-      keywords:
-        - deployment
-        - rollout
-        - rollback
-        - canary
-        - blue-green
-      commands: []
-      agents:
-        - ./agents/deployment-engineer.md
-        - ./agents/terraform-specialist.md
-      skills: []
-    - name: deployment-validation
-      description: Pre-deployment checks, configuration validation, and deployment readiness assessment
-      keywords:
-        - validation
-        - pre-flight
-        - configuration
-        - deployment-safety
-      commands:
-        - ./commands/config-validate.md
-      agents:
-        - ./agents/cloud-architect.md
-      skills: []
-    - name: kubernetes-operations
-      description: Kubernetes manifest generation, networking configuration, security policies, observability setup, GitOps workflows, and auto-scaling
-      keywords:
-        - kubernetes
-        - k8s
-        - containers
-        - helm
-        - argocd
-        - gitops
-      commands: []
-      agents:
-        - ./agents/kubernetes-architect.md
-      skills:
-        - ./skills/gitops-workflow
-        - ./skills/helm-chart-scaffolding
-        - ./skills/k8s-manifest-generator
-        - ./skills/k8s-security-policies
-    - name: cloud-infrastructure
-      description: Cloud architecture design for AWS/Azure/GCP, Kubernetes cluster configuration, Terraform infrastructure-as-code, hybrid cloud networking, and multi-cloud cost optimization
-      keywords:
-        - cloud
-        - aws
-        - azure
-        - gcp
-        - kubernetes
-        - terraform
-        - infrastructure
-      commands: []
-      agents:
-        - ./agents/cloud-architect.md
-        - ./agents/kubernetes-architect.md
-        - ./agents/hybrid-cloud-architect.md
-        - ./agents/terraform-specialist.md
-        - ./agents/network-engineer.md
-        - ./agents/deployment-engineer.md
-        - ./agents/service-mesh-expert.md
-      skills:
-        - ./skills/cost-optimization
-        - ./skills/hybrid-cloud-networking
-        - ./skills/multi-cloud-architecture
-        - ./skills/terraform-module-library
-        - ./skills/istio-traffic-management
-        - ./skills/linkerd-patterns
-        - ./skills/mtls-configuration
-        - ./skills/service-mesh-observability
-    - name: cicd-automation
-      description: CI/CD pipeline configuration, GitHub Actions/GitLab CI workflow setup, and automated deployment pipeline orchestration
-      keywords:
-        - ci-cd
-        - automation
-        - pipeline
-        - github-actions
-        - gitlab-ci
-      commands:
-        - ./commands/workflow-automate.md
-      agents:
-        - ./agents/deployment-engineer.md
-        - ./agents/devops-troubleshooter.md
-        - ./agents/kubernetes-architect.md
-        - ./agents/cloud-architect.md
-        - ./agents/terraform-specialist.md
-      skills:
-        - ./skills/deployment-pipeline-design
-        - ./skills/github-actions-templates
-        - ./skills/gitlab-ci-patterns
-        - ./skills/secrets-management
-    - name: application-performance
-      description: Application profiling, performance optimization, and observability for frontend and backend systems
-      keywords:
-        - performance
-        - profiling
-        - optimization
-        - core-web-vitals
-      commands:
-        - ./commands/performance-optimization.md
-      agents:
-        - ./agents/performance-engineer.md
-        - ./agents/frontend-developer.md
-        - ./agents/observability-engineer.md
-      skills: []
-    - name: database-cloud-optimization
-      description: Database query optimization, cloud cost optimization, and scalability improvements
-      keywords:
-        - database-optimization
-        - cloud-cost
-        - query-tuning
-        - scalability
-      commands:
-        - ./commands/cost-optimize.md
-      agents:
-        - ./agents/database-optimizer.md
-        - ./agents/database-architect.md
-        - ./agents/backend-architect.md
-        - ./agents/cloud-architect.md
-      skills: []
-    - name: comprehensive-review
-      description: Multi-perspective code analysis covering architecture, security, and best practices
-      keywords:
-        - code-review
-        - quality
-        - architecture
-        - security
-        - best-practices
-      commands:
-        - ./commands/full-review.md
-        - ./commands/pr-enhance.md
-      agents:
-        - ./agents/code-reviewer.md
-        - ./agents/architect-review.md
-        - ./agents/security-auditor.md
-      skills: []
-    - name: performance-testing-review
-      description: Performance analysis, test coverage review, and AI-powered code quality assessment
-      keywords:
-        - performance-review
-        - test-coverage
-        - quality-analysis
-      commands:
-        - ./commands/ai-review.md
-        - ./commands/multi-agent-review.md
-      agents:
-        - ./agents/performance-engineer.md
-        - ./agents/test-automator.md
-      skills: []
-    - name: framework-migration
-      description: Framework updates, migration planning, and architectural transformation workflows
-      keywords:
-        - migration
-        - framework-upgrade
-        - modernization
-        - angular
-        - react
-      commands:
-        - ./commands/legacy-modernize.md
-        - ./commands/code-migrate.md
-        - ./commands/deps-upgrade.md
-      agents:
-        - ./agents/legacy-modernizer.md
-        - ./agents/architect-review.md
-      skills:
-        - ./skills/angular-migration
-        - ./skills/database-migration
-        - ./skills/dependency-upgrade
-        - ./skills/react-modernization
-    - name: codebase-cleanup
-      description: Technical debt reduction, dependency updates, and code refactoring automation
-      keywords:
-        - technical-debt
-        - cleanup
-        - refactoring
-        - dependencies
-      commands:
-        - ./commands/deps-audit.md
-        - ./commands/tech-debt.md
-        - ./commands/refactor-clean.md
-      agents:
-        - ./agents/test-automator.md
-        - ./agents/code-reviewer.md
-      skills: []
-    - name: database-design
-      description: Database architecture, schema design, and SQL optimization for production systems
-      keywords:
-        - database-design
-        - schema
-        - sql
-        - data-modeling
-      commands: []
-      agents:
-        - ./agents/database-architect.md
-        - ./agents/sql-pro.md
-      skills:
-        - ./skills/postgresql
-    - name: database-migrations
-      description: Database migration automation, observability, and cross-database migration strategies
-      keywords:
-        - migrations
-        - database-operations
-        - postgres
-        - mysql
-        - mongodb
-      commands:
-        - ./commands/sql-migrations.md
-        - ./commands/migration-observability.md
-      agents:
-        - ./agents/database-optimizer.md
-        - ./agents/database-admin.md
-      skills: []
-    - name: security-scanning
-      description: SAST analysis, dependency vulnerability scanning, OWASP Top 10 compliance, container security scanning, and automated security hardening
-      keywords:
-        - security
-        - sast
-        - vulnerability-scanning
-        - owasp
-        - devsecops
-      commands:
-        - ./commands/security-hardening.md
-        - ./commands/security-sast.md
-        - ./commands/security-dependencies.md
-      agents:
-        - ./agents/security-auditor.md
-        - ./agents/threat-modeling-expert.md
-      skills:
-        - ./skills/sast-configuration
-        - ./skills/stride-analysis-patterns
-        - ./skills/attack-tree-construction
-        - ./skills/security-requirement-extraction
-        - ./skills/threat-mitigation-mapping
-    - name: security-compliance
-      description: SOC2, HIPAA, and GDPR compliance validation, secrets scanning, compliance checklists, and regulatory documentation
-      keywords:
-        - compliance
-        - soc2
-        - hipaa
-        - gdpr
-        - secrets
-        - regulatory
-      commands:
-        - ./commands/compliance-check.md
-      agents:
-        - ./agents/security-auditor.md
-      skills: []
-    - name: backend-api-security
-      description: API security hardening, authentication implementation, authorization patterns, rate limiting, and input validation
-      keywords:
-        - api-security
-        - authentication
-        - authorization
-        - jwt
-        - oauth
-      commands: []
-      agents:
-        - ./agents/backend-security-coder.md
-        - ./agents/backend-architect.md
-      skills: []
-    - name: frontend-mobile-security
-      description: XSS prevention, CSRF protection, content security policies, mobile app security, and secure storage patterns
-      keywords:
-        - frontend-security
-        - mobile-security
-        - xss
-        - csrf
-        - csp
-      commands:
-        - ./commands/xss-scan.md
-      agents:
-        - ./agents/frontend-security-coder.md
-        - ./agents/mobile-security-coder.md
-        - ./agents/frontend-developer.md
-      skills: []
-    - name: data-validation-suite
-      description: Schema validation, data quality monitoring, streaming validation pipelines, and input validation for backend APIs
-      keywords:
-        - validation
-        - schema
-        - data-quality
-        - pydantic
-        - jsonschema
-      commands: []
-      agents:
-        - ./agents/backend-security-coder.md
-      skills: []
-    - name: api-scaffolding
-      description: REST and GraphQL API scaffolding, framework selection, backend architecture, and API generation
-      keywords:
-        - api
-        - rest
-        - graphql
-        - fastapi
-        - django
-        - express
-      commands: []
-      agents:
-        - ./agents/backend-architect.md
-        - ./agents/graphql-architect.md
-        - ./agents/fastapi-pro.md
-        - ./agents/django-pro.md
-      skills:
-        - ./skills/fastapi-templates
-    - name: api-testing-observability
-      description: API testing automation, request mocking, OpenAPI documentation generation, observability setup, and monitoring
-      keywords:
-        - api-testing
-        - mocking
-        - openapi
-        - swagger
-        - observability
-      commands:
-        - ./commands/api-mock.md
-      agents:
-        - ./agents/api-documenter.md
-      skills: []
-    - name: seo-content-creation
-      description: SEO content writing, planning, and quality auditing with E-E-A-T optimization
-      keywords:
-        - seo
-        - content-writing
-        - content-planning
-        - content-audit
-      commands: []
-      agents:
-        - ./agents/seo-content-writer.md
-        - ./agents/seo-content-planner.md
-        - ./agents/seo-content-auditor.md
-      skills: []
-    - name: seo-technical-optimization
-      description: Technical SEO optimization including meta tags, keywords, structure, and featured snippets
-      keywords:
-        - seo
-        - meta-optimization
-        - keywords
-        - schema-markup
-        - snippets
-      commands: []
-      agents:
-        - ./agents/seo-meta-optimizer.md
-        - ./agents/seo-keyword-strategist.md
-        - ./agents/seo-structure-architect.md
-        - ./agents/seo-snippet-hunter.md
-      skills: []
-    - name: seo-analysis-monitoring
-      description: Content freshness analysis, cannibalization detection, and authority building for SEO
-      keywords:
-        - seo
-        - content-analysis
-        - e-e-a-t
-        - authority
-        - monitoring
-      commands: []
-      agents:
-        - ./agents/seo-content-refresher.md
-        - ./agents/seo-cannibalization-detector.md
-        - ./agents/seo-authority-builder.md
-      skills: []
-    - name: documentation-generation
-      description: OpenAPI specification generation, Mermaid diagram creation, tutorial writing, API reference documentation
-      keywords:
-        - documentation
-        - api-docs
-        - diagrams
-        - openapi
-        - swagger
-        - mermaid
-      commands:
-        - ./commands/doc-generate.md
-      agents:
-        - ./agents/docs-architect.md
-        - ./agents/api-documenter.md
-        - ./agents/mermaid-expert.md
-        - ./agents/tutorial-engineer.md
-        - ./agents/reference-builder.md
-      skills:
-        - ./skills/openapi-spec-generation
-        - ./skills/architecture-decision-records
-        - ./skills/changelog-automation
-    - name: c4-architecture
-      description: Comprehensive C4 architecture documentation workflow with bottom-up code analysis, component synthesis, container mapping, and context diagram generation
-      keywords:
-        - c4
-        - architecture
-        - documentation
-        - diagrams
-        - system-design
-        - component
-        - container
-        - context
-      commands:
-        - ./commands/c4-architecture.md
-      agents:
-        - ./agents/c4-code.md
-        - ./agents/c4-component.md
-        - ./agents/c4-container.md
-        - ./agents/c4-context.md
-      skills: []
-    - name: multi-platform-apps
-      description: Cross-platform application development coordinating web, iOS, Android, and desktop implementations
-      keywords:
-        - cross-platform
-        - mobile
-        - web
-        - desktop
-        - react-native
-        - flutter
-      commands:
-        - ./commands/multi-platform.md
-      agents:
-        - ./agents/mobile-developer.md
-        - ./agents/flutter-expert.md
-        - ./agents/ios-developer.md
-        - ./agents/frontend-developer.md
-        - ./agents/backend-architect.md
-        - ./agents/ui-ux-designer.md
-      skills: []
-    - name: business-analytics
-      description: Business metrics analysis, KPI tracking, financial reporting, and data-driven decision making
-      keywords:
-        - business
-        - analytics
-        - metrics
-        - kpi
-        - reporting
-        - bi
-      commands: []
-      agents:
-        - ./agents/business-analyst.md
-      skills:
-        - ./skills/kpi-dashboard-design
-        - ./skills/data-storytelling
-    - name: startup-business-analyst
-      description: Comprehensive startup business analysis with market sizing (TAM/SAM/SOM), financial modeling, team planning, and strategic research for early-stage companies
-      keywords: []
-      commands: []
-      agents: []
-      skills: []
-    - name: hr-legal-compliance
-      description: HR policy documentation, legal compliance templates (GDPR/SOC2/HIPAA), employment contracts, and regulatory documentation
-      keywords:
-        - hr
-        - legal
-        - compliance
-        - gdpr
-        - soc2
-        - hipaa
-        - policies
-      commands: []
-      agents:
-        - ./agents/hr-pro.md
-        - ./agents/legal-advisor.md
-      skills:
-        - ./skills/gdpr-data-handling
-        - ./skills/employment-contract-templates
-    - name: customer-sales-automation
-      description: Customer support workflow automation, sales pipeline management, email campaigns, and CRM integration
-      keywords:
-        - customer-support
-        - sales
-        - crm
-        - email-campaigns
-        - automation
-      commands: []
-      agents:
-        - ./agents/customer-support.md
-        - ./agents/sales-automator.md
-      skills: []
-    - name: content-marketing
-      description: Content marketing strategy, web research, and information synthesis for marketing operations
-      keywords:
-        - content-marketing
-        - research
-        - marketing-strategy
-        - social-media
-      commands: []
-      agents:
-        - ./agents/content-marketer.md
-        - ./agents/search-specialist.md
-      skills: []
-    - name: blockchain-web3
-      description: Smart contract development with Solidity, DeFi protocol implementation, NFT platforms, and Web3 application architecture
-      keywords:
-        - blockchain
-        - web3
-        - solidity
-        - ethereum
-        - defi
-        - nft
-        - smart-contracts
-      commands: []
-      agents:
-        - ./agents/blockchain-developer.md
-      skills:
-        - ./skills/defi-protocol-templates
-        - ./skills/nft-standards
-        - ./skills/solidity-security
-        - ./skills/web3-testing
-    - name: quantitative-trading
-      description: Quantitative analysis, algorithmic trading strategies, financial modeling, portfolio risk management, and backtesting
-      keywords:
-        - fintech
-        - quant
-        - trading
-        - algorithmic-trading
-        - risk-management
-      commands: []
-      agents:
-        - ./agents/quant-analyst.md
-        - ./agents/risk-manager.md
-      skills:
-        - ./skills/backtesting-frameworks
-        - ./skills/risk-metrics-calculation
-    - name: payment-processing
-      description: Payment gateway integration with Stripe, PayPal, checkout flow implementation, subscription billing, and PCI compliance
-      keywords:
-        - payments
-        - stripe
-        - paypal
-        - checkout
-        - billing
-        - subscriptions
-        - pci
-      commands: []
-      agents:
-        - ./agents/payment-integration.md
-      skills:
-        - ./skills/billing-automation
-        - ./skills/paypal-integration
-        - ./skills/pci-compliance
-        - ./skills/stripe-integration
-    - name: game-development
-      description: Unity game development with C# scripting, Minecraft server plugin development with Bukkit/Spigot APIs
-      keywords:
-        - gaming
-        - unity
-        - minecraft
-        - game-dev
-        - bukkit
-        - spigot
-      commands: []
-      agents:
-        - ./agents/unity-developer.md
-        - ./agents/minecraft-bukkit-pro.md
-      skills:
-        - ./skills/unity-ecs-patterns
-        - ./skills/godot-gdscript-patterns
-    - name: accessibility-compliance
-      description: WCAG accessibility auditing, compliance validation, UI testing for screen readers, keyboard navigation, and inclusive design
-      keywords:
-        - accessibility
-        - wcag
-        - a11y
-        - compliance
-        - inclusive-design
-      commands:
-        - ./commands/accessibility-audit.md
-      agents:
-        - ./agents/ui-visual-validator.md
-      skills:
-        - ./skills/wcag-audit-patterns
-        - ./skills/screen-reader-testing
-    - name: python-development
-      description: Modern Python development with Python 3.12+, Django, FastAPI, async patterns, and production best practices
-      keywords:
-        - python
-        - django
-        - fastapi
-        - async
-        - backend
-      commands:
-        - ./commands/python-scaffold.md
-      agents:
-        - ./agents/python-pro.md
-        - ./agents/django-pro.md
-        - ./agents/fastapi-pro.md
-      skills:
-        - ./skills/async-python-patterns
-        - ./skills/python-testing-patterns
-        - ./skills/python-packaging
-        - ./skills/python-performance-optimization
-        - ./skills/uv-package-manager
-    - name: javascript-typescript
-      description: JavaScript and TypeScript development with ES6+, Node.js, React, and modern web frameworks
-      keywords:
-        - javascript
-        - typescript
-        - es6
-        - nodejs
-        - react
-      commands:
-        - ./commands/typescript-scaffold.md
-      agents:
-        - ./agents/javascript-pro.md
-        - ./agents/typescript-pro.md
-      skills:
-        - ./skills/typescript-advanced-types
-        - ./skills/nodejs-backend-patterns
-        - ./skills/javascript-testing-patterns
-        - ./skills/modern-javascript-patterns
-    - name: systems-programming
-      description: Systems programming with Rust, Go, C, and C++ for performance-critical and low-level development
-      keywords:
-        - rust
-        - golang
-        - c
-        - cpp
-        - systems-programming
-        - performance
-      commands:
-        - ./commands/rust-project.md
-      agents:
-        - ./agents/rust-pro.md
-        - ./agents/golang-pro.md
-        - ./agents/c-pro.md
-        - ./agents/cpp-pro.md
-      skills:
-        - ./skills/rust-async-patterns
-        - ./skills/go-concurrency-patterns
-        - ./skills/memory-safety-patterns
-    - name: jvm-languages
-      description: JVM language development including Java, Scala, and C# with enterprise patterns and frameworks
-      keywords:
-        - java
-        - scala
-        - csharp
-        - jvm
-        - enterprise
-        - dotnet
-      commands: []
-      agents:
-        - ./agents/java-pro.md
-        - ./agents/scala-pro.md
-        - ./agents/csharp-pro.md
-      skills: []
-    - name: web-scripting
-      description: Web scripting with PHP and Ruby for web applications, CMS development, and backend services
-      keywords:
-        - php
-        - ruby
-        - rails
-        - wordpress
-        - web-scripting
-      commands: []
-      agents:
-        - ./agents/php-pro.md
-        - ./agents/ruby-pro.md
-      skills: []
-    - name: functional-programming
-      description: Functional programming with Elixir, OTP patterns, Phoenix framework, and distributed systems
-      keywords:
-        - elixir
-        - functional
-        - phoenix
-        - otp
-        - distributed
-      commands: []
-      agents:
-        - ./agents/elixir-pro.md
-      skills: []
-    - name: julia-development
-      description: Modern Julia development with Julia 1.10+, package management, scientific computing, high-performance numerical code, and production best practices
-      keywords:
-        - julia
-        - scientific-computing
-        - numerical
-        - performance
-        - data-science
-        - multiple-dispatch
-      commands: []
-      agents:
-        - ./agents/julia-pro.md
-      skills: []
-    - name: arm-cortex-microcontrollers
-      description: ARM Cortex-M firmware development for Teensy, STM32, nRF52, and SAMD with peripheral drivers and memory safety patterns
-      keywords:
-        - embedded
-        - arm
-        - cortex-m
-        - firmware
-        - microcontroller
-        - teensy
-        - stm32
-      commands: []
-      agents:
-        - ./agents/arm-cortex-expert.md
-      skills: []
-    - name: shell-scripting
-      description: Production-grade Bash scripting with defensive programming, POSIX compliance, and comprehensive testing
-      keywords:
-        - bash
-        - shell
-        - scripting
-        - automation
-        - posix
-        - shellcheck
-        - testing
-      commands: []
-      agents:
-        - ./agents/bash-pro.md
-        - ./agents/posix-shell-pro.md
-      skills:
-        - ./skills/bash-defensive-patterns/SKILL.md
-        - ./skills/shellcheck-configuration/SKILL.md
-        - ./skills/bats-testing-patterns/SKILL.md
-    - name: developer-essentials
-      description: Essential developer skills including Git workflows, SQL optimization, error handling, code review, E2E testing, authentication, debugging, and monorepo management
-      keywords:
-        - git
-        - sql
-        - debugging
-        - testing
-        - authentication
-        - code-review
-        - monorepo
-        - essential
-      commands: []
-      agents:
-        - ./agents/monorepo-architect.md
-      skills:
-        - ./skills/git-advanced-workflows
-        - ./skills/sql-optimization-patterns
-        - ./skills/error-handling-patterns
-        - ./skills/code-review-excellence
-        - ./skills/e2e-testing-patterns
-        - ./skills/auth-implementation-patterns
-        - ./skills/debugging-strategies
-        - ./skills/monorepo-management
-        - ./skills/nx-workspace-patterns
-        - ./skills/turborepo-caching
-        - ./skills/bazel-build-optimization
-    - name: reverse-engineering
-      description: Binary reverse engineering, malware analysis, firmware security, and software protection research for authorized security research, CTF competitions, and defensive security
-      keywords:
-        - reverse-engineering
-        - binary-analysis
-        - malware-analysis
-        - firmware
-        - disassembly
-        - ghidra
-        - ida-pro
-        - security-research
-        - ctf
-      commands: []
-      agents:
-        - ./agents/reverse-engineer.md
-        - ./agents/malware-analyst.md
-        - ./agents/firmware-analyst.md
-      skills:
-        - ./skills/binary-analysis-patterns
-        - ./skills/memory-forensics
-        - ./skills/protocol-reverse-engineering
-        - ./skills/anti-reversing-techniques
-    - name: conductor
-      description: "Context-Driven Development plugin that transforms Claude Code into a project management tool with structured workflow: Context → Spec & Plan → Implement"
-      keywords: []
-      commands: []
-      agents: []
-      skills: []
-    - name: ui-design
-      description: Comprehensive UI/UX design plugin for mobile (iOS, Android, React Native) and web applications with design systems, accessibility, and modern patterns
-      keywords: []
-      commands: []
-      agents: []
-      skills: []
-# ─────────────────────────────────────────────────────────────────────────────
-# AeroSpace configuration (macOS only)
+        - using-superpowers
+  # wshobson/agents plugins
+  wshobson:
+    enabled:
+      - python-development
+      - javascript-typescript
+      - systems-programming
+      - shell-scripting
+      - backend-development
+      - cloud-infrastructure
+      - llm-application-dev
+      - machine-learning-ops
+      - database-cloud-optimization
+      - tdd-workflows
+      - debugging-toolkit
+      - code-review-ai
+      - code-documentation
+      - security-scanning
+      - comprehensive-review
+      - data-engineering
+      - database-design
+      - database-migrations
+      - developer-essentials
+    # Registry (auto-updated by GitHub Action from marketplace.json)
+    registry:
+      - name: code-documentation
+        description: Documentation generation, code explanation, and technical writing with automated doc generation and tutorial creation
+        keywords:
+          - documentation
+          - code-explanation
+          - technical-writing
+          - tutorials
+      - name: debugging-toolkit
+        description: Interactive debugging, developer experience optimization, and smart debugging workflows
+        keywords:
+          - debugging
+          - developer-experience
+          - troubleshooting
+          - essential
+      - name: git-pr-workflows
+        description: Git workflow automation, pull request enhancement, and team onboarding processes
+        keywords:
+          - git
+          - pull-request
+          - workflow
+          - onboarding
+          - essential
+      - name: backend-development
+        description: Backend API design, GraphQL architecture, workflow orchestration with Temporal, and test-driven backend development
+        keywords:
+          - backend
+          - api-design
+          - graphql
+          - tdd
+          - architecture
+          - temporal
+          - workflow-orchestration
+          - distributed-systems
+      - name: frontend-mobile-development
+        description: Frontend UI development and mobile application implementation across platforms
+        keywords:
+          - frontend
+          - mobile
+          - react
+          - ui
+          - cross-platform
+      - name: full-stack-orchestration
+        description: End-to-end feature orchestration with testing, security, performance, and deployment
+        keywords:
+          - full-stack
+          - orchestration
+          - deployment
+          - security
+          - testing
+      - name: unit-testing
+        description: Unit and integration test automation for Python and JavaScript with debugging support
+        keywords:
+          - testing
+          - unit-tests
+          - python
+          - javascript
+          - automation
+      - name: tdd-workflows
+        description: Test-driven development methodology with red-green-refactor cycles and code review
+        keywords:
+          - tdd
+          - test-driven
+          - workflow
+          - red-green-refactor
+      - name: code-review-ai
+        description: AI-powered architectural review and code quality analysis
+        keywords:
+          - code-review
+          - architecture
+          - ai-analysis
+          - quality
+      - name: code-refactoring
+        description: Code cleanup, refactoring automation, and technical debt management with context restoration
+        keywords:
+          - refactoring
+          - code-quality
+          - technical-debt
+          - cleanup
+      - name: dependency-management
+        description: Dependency auditing, version management, and security vulnerability scanning
+        keywords:
+          - dependencies
+          - npm
+          - security
+          - auditing
+          - upgrades
+      - name: error-debugging
+        description: Error analysis, trace debugging, and multi-agent problem diagnosis
+        keywords:
+          - error-handling
+          - debugging
+          - diagnostics
+          - troubleshooting
+      - name: team-collaboration
+        description: Team workflows, issue management, standup automation, and developer experience optimization
+        keywords:
+          - collaboration
+          - team
+          - standup
+          - issue-management
+      - name: llm-application-dev
+        description: LLM application development with LangGraph, RAG systems, vector search, and AI agent architectures for Claude 4.5 and GPT-5.2
+        keywords:
+          - llm
+          - langchain
+          - langgraph
+          - rag
+          - vector
+          - embedding
+          - ai-agent
+          - prompt
+          - chatbot
+      - name: agent-orchestration
+        description: Multi-agent system optimization, agent improvement workflows, and context management
+        keywords:
+          - multi-agent
+          - orchestration
+          - ai-agents
+          - optimization
+      - name: context-management
+        description: Context persistence, restoration, and long-running conversation management
+        keywords:
+          - context
+          - persistence
+          - conversation
+          - memory
+      - name: machine-learning-ops
+        description: ML model training pipelines, hyperparameter tuning, model deployment automation, experiment tracking, and MLOps workflows
+        keywords:
+          - machine-learning
+          - mlops
+          - model-training
+          - tensorflow
+          - pytorch
+          - mlflow
+      - name: data-engineering
+        description: ETL pipeline construction, data warehouse design, batch processing workflows, and data-driven feature development
+        keywords:
+          - data-engineering
+          - etl
+          - data-pipeline
+          - data-warehouse
+          - batch-processing
+      - name: incident-response
+        description: Production incident management, triage workflows, and automated incident resolution
+        keywords:
+          - incident-response
+          - production
+          - sre
+          - troubleshooting
+      - name: error-diagnostics
+        description: Error tracing, root cause analysis, and smart debugging for production systems
+        keywords:
+          - diagnostics
+          - error-tracing
+          - root-cause
+          - debugging
+      - name: distributed-debugging
+        description: Distributed system tracing and debugging across microservices
+        keywords:
+          - distributed-tracing
+          - microservices
+          - debugging
+          - observability
+      - name: observability-monitoring
+        description: Metrics collection, logging infrastructure, distributed tracing, SLO implementation, and monitoring dashboards
+        keywords:
+          - observability
+          - monitoring
+          - metrics
+          - logging
+          - tracing
+          - slo
+          - prometheus
+          - grafana
+      - name: deployment-strategies
+        description: Deployment patterns, rollback automation, and infrastructure templates
+        keywords:
+          - deployment
+          - rollout
+          - rollback
+          - canary
+          - blue-green
+      - name: deployment-validation
+        description: Pre-deployment checks, configuration validation, and deployment readiness assessment
+        keywords:
+          - validation
+          - pre-flight
+          - configuration
+          - deployment-safety
+      - name: kubernetes-operations
+        description: Kubernetes manifest generation, networking configuration, security policies, observability setup, GitOps workflows, and auto-scaling
+        keywords:
+          - kubernetes
+          - k8s
+          - containers
+          - helm
+          - argocd
+          - gitops
+      - name: cloud-infrastructure
+        description: Cloud architecture design for AWS/Azure/GCP, Kubernetes cluster configuration, Terraform infrastructure-as-code, hybrid cloud networking, and multi-cloud cost optimization
+        keywords:
+          - cloud
+          - aws
+          - azure
+          - gcp
+          - kubernetes
+          - terraform
+          - infrastructure
+      - name: cicd-automation
+        description: CI/CD pipeline configuration, GitHub Actions/GitLab CI workflow setup, and automated deployment pipeline orchestration
+        keywords:
+          - ci-cd
+          - automation
+          - pipeline
+          - github-actions
+          - gitlab-ci
+      - name: application-performance
+        description: Application profiling, performance optimization, and observability for frontend and backend systems
+        keywords:
+          - performance
+          - profiling
+          - optimization
+          - core-web-vitals
+      - name: database-cloud-optimization
+        description: Database query optimization, cloud cost optimization, and scalability improvements
+        keywords:
+          - database-optimization
+          - cloud-cost
+          - query-tuning
+          - scalability
+      - name: comprehensive-review
+        description: Multi-perspective code analysis covering architecture, security, and best practices
+        keywords:
+          - code-review
+          - quality
+          - architecture
+          - security
+          - best-practices
+      - name: performance-testing-review
+        description: Performance analysis, test coverage review, and AI-powered code quality assessment
+        keywords:
+          - performance-review
+          - test-coverage
+          - quality-analysis
+      - name: framework-migration
+        description: Framework updates, migration planning, and architectural transformation workflows
+        keywords:
+          - migration
+          - framework-upgrade
+          - modernization
+          - angular
+          - react
+      - name: codebase-cleanup
+        description: Technical debt reduction, dependency updates, and code refactoring automation
+        keywords:
+          - technical-debt
+          - cleanup
+          - refactoring
+          - dependencies
+      - name: database-design
+        description: Database architecture, schema design, and SQL optimization for production systems
+        keywords:
+          - database-design
+          - schema
+          - sql
+          - data-modeling
+      - name: database-migrations
+        description: Database migration automation, observability, and cross-database migration strategies
+        keywords:
+          - migrations
+          - database-operations
+          - postgres
+          - mysql
+          - mongodb
+      - name: security-scanning
+        description: SAST analysis, dependency vulnerability scanning, OWASP Top 10 compliance, container security scanning, and automated security hardening
+        keywords:
+          - security
+          - sast
+          - vulnerability-scanning
+          - owasp
+          - devsecops
+      - name: security-compliance
+        description: SOC2, HIPAA, and GDPR compliance validation, secrets scanning, compliance checklists, and regulatory documentation
+        keywords:
+          - compliance
+          - soc2
+          - hipaa
+          - gdpr
+          - secrets
+          - regulatory
+      - name: backend-api-security
+        description: API security hardening, authentication implementation, authorization patterns, rate limiting, and input validation
+        keywords:
+          - api-security
+          - authentication
+          - authorization
+          - jwt
+          - oauth
+      - name: frontend-mobile-security
+        description: XSS prevention, CSRF protection, content security policies, mobile app security, and secure storage patterns
+        keywords:
+          - frontend-security
+          - mobile-security
+          - xss
+          - csrf
+          - csp
+      - name: data-validation-suite
+        description: Schema validation, data quality monitoring, streaming validation pipelines, and input validation for backend APIs
+        keywords:
+          - validation
+          - schema
+          - data-quality
+          - pydantic
+          - jsonschema
+      - name: api-scaffolding
+        description: REST and GraphQL API scaffolding, framework selection, backend architecture, and API generation
+        keywords:
+          - api
+          - rest
+          - graphql
+          - fastapi
+          - django
+          - express
+      - name: api-testing-observability
+        description: API testing automation, request mocking, OpenAPI documentation generation, observability setup, and monitoring
+        keywords:
+          - api-testing
+          - mocking
+          - openapi
+          - swagger
+          - observability
+      - name: seo-content-creation
+        description: SEO content writing, planning, and quality auditing with E-E-A-T optimization
+        keywords:
+          - seo
+          - content-writing
+          - content-planning
+          - content-audit
+      - name: seo-technical-optimization
+        description: Technical SEO optimization including meta tags, keywords, structure, and featured snippets
+        keywords:
+          - seo
+          - meta-optimization
+          - keywords
+          - schema-markup
+          - snippets
+      - name: seo-analysis-monitoring
+        description: Content freshness analysis, cannibalization detection, and authority building for SEO
+        keywords:
+          - seo
+          - content-analysis
+          - e-e-a-t
+          - authority
+          - monitoring
+      - name: documentation-generation
+        description: OpenAPI specification generation, Mermaid diagram creation, tutorial writing, API reference documentation
+        keywords:
+          - documentation
+          - api-docs
+          - diagrams
+          - openapi
+          - swagger
+          - mermaid
+      - name: c4-architecture
+        description: Comprehensive C4 architecture documentation workflow with bottom-up code analysis, component synthesis, container mapping, and context diagram generation
+        keywords:
+          - c4
+          - architecture
+          - documentation
+          - diagrams
+          - system-design
+          - component
+          - container
+          - context
+      - name: multi-platform-apps
+        description: Cross-platform application development coordinating web, iOS, Android, and desktop implementations
+        keywords:
+          - cross-platform
+          - mobile
+          - web
+          - desktop
+          - react-native
+          - flutter
+      - name: business-analytics
+        description: Business metrics analysis, KPI tracking, financial reporting, and data-driven decision making
+        keywords:
+          - business
+          - analytics
+          - metrics
+          - kpi
+          - reporting
+          - bi
+      - name: startup-business-analyst
+        description: Comprehensive startup business analysis with market sizing (TAM/SAM/SOM), financial modeling, team planning, and strategic research for early-stage companies
+        keywords:
+          - startup
+          - business-analysis
+          - market-sizing
+          - financial-modeling
+          - tam-sam-som
+      - name: hr-legal-compliance
+        description: HR policy documentation, legal compliance templates (GDPR/SOC2/HIPAA), employment contracts, and regulatory documentation
+        keywords:
+          - hr
+          - legal
+          - compliance
+          - gdpr
+          - soc2
+          - hipaa
+          - policies
+      - name: customer-sales-automation
+        description: Customer support workflow automation, sales pipeline management, email campaigns, and CRM integration
+        keywords:
+          - customer-support
+          - sales
+          - crm
+          - email-campaigns
+          - automation
+      - name: content-marketing
+        description: Content marketing strategy, web research, and information synthesis for marketing operations
+        keywords:
+          - content-marketing
+          - research
+          - marketing-strategy
+          - social-media
+      - name: blockchain-web3
+        description: Smart contract development with Solidity, DeFi protocol implementation, NFT platforms, and Web3 application architecture
+        keywords:
+          - blockchain
+          - web3
+          - solidity
+          - ethereum
+          - defi
+          - nft
+          - smart-contracts
+      - name: quantitative-trading
+        description: Quantitative analysis, algorithmic trading strategies, financial modeling, portfolio risk management, and backtesting
+        keywords:
+          - fintech
+          - quant
+          - trading
+          - algorithmic-trading
+          - risk-management
+      - name: payment-processing
+        description: Payment gateway integration with Stripe, PayPal, checkout flow implementation, subscription billing, and PCI compliance
+        keywords:
+          - payments
+          - stripe
+          - paypal
+          - checkout
+          - billing
+          - subscriptions
+          - pci
+      - name: game-development
+        description: Unity game development with C# scripting, Minecraft server plugin development with Bukkit/Spigot APIs
+        keywords:
+          - gaming
+          - unity
+          - minecraft
+          - game-dev
+          - bukkit
+          - spigot
+      - name: accessibility-compliance
+        description: WCAG accessibility auditing, compliance validation, UI testing for screen readers, keyboard navigation, and inclusive design
+        keywords:
+          - accessibility
+          - wcag
+          - a11y
+          - compliance
+          - inclusive-design
+      - name: python-development
+        description: Modern Python development with Python 3.12+, Django, FastAPI, async patterns, and production best practices
+        keywords:
+          - python
+          - django
+          - fastapi
+          - async
+          - backend
+      - name: javascript-typescript
+        description: JavaScript and TypeScript development with ES6+, Node.js, React, and modern web frameworks
+        keywords:
+          - javascript
+          - typescript
+          - es6
+          - nodejs
+          - react
+      - name: systems-programming
+        description: Systems programming with Rust, Go, C, and C++ for performance-critical and low-level development
+        keywords:
+          - rust
+          - golang
+          - c
+          - cpp
+          - systems-programming
+          - performance
+      - name: jvm-languages
+        description: JVM language development including Java, Scala, and C# with enterprise patterns and frameworks
+        keywords:
+          - java
+          - scala
+          - csharp
+          - jvm
+          - enterprise
+          - dotnet
+      - name: web-scripting
+        description: Web scripting with PHP and Ruby for web applications, CMS development, and backend services
+        keywords:
+          - php
+          - ruby
+          - rails
+          - wordpress
+          - web-scripting
+      - name: functional-programming
+        description: Functional programming with Elixir, OTP patterns, Phoenix framework, and distributed systems
+        keywords:
+          - elixir
+          - functional
+          - phoenix
+          - otp
+          - distributed
+      - name: julia-development
+        description: Modern Julia development with Julia 1.10+, package management, scientific computing, high-performance numerical code, and production best practices
+        keywords:
+          - julia
+          - scientific-computing
+          - numerical
+          - performance
+          - data-science
+          - multiple-dispatch
+      - name: arm-cortex-microcontrollers
+        description: ARM Cortex-M firmware development for Teensy, STM32, nRF52, and SAMD with peripheral drivers and memory safety patterns
+        keywords:
+          - embedded
+          - arm
+          - cortex-m
+          - firmware
+          - microcontroller
+          - teensy
+          - stm32
+      - name: shell-scripting
+        description: Production-grade Bash scripting with defensive programming, POSIX compliance, and comprehensive testing
+        keywords:
+          - bash
+          - shell
+          - scripting
+          - automation
+          - posix
+          - shellcheck
+          - testing
+      - name: developer-essentials
+        description: Essential developer skills including Git workflows, SQL optimization, error handling, code review, E2E testing, authentication, debugging, and monorepo management
+        keywords:
+          - git
+          - sql
+          - debugging
+          - testing
+          - authentication
+          - code-review
+          - monorepo
+          - essential
+      - name: reverse-engineering
+        description: Binary reverse engineering, malware analysis, firmware security, and software protection research for authorized security research, CTF competitions, and defensive security
+        keywords:
+          - reverse-engineering
+          - binary-analysis
+          - malware-analysis
+          - firmware
+          - disassembly
+          - ghidra
+          - ida-pro
+          - security-research
+          - ctf
+      - name: conductor
+        description: "Context-Driven Development plugin that transforms Claude Code into a project management tool with structured workflow: Context → Spec & Plan → Implement"
+        keywords:
+          - conductor
+          - context-driven
+          - project-management
+          - workflow
+      - name: ui-design
+        description: Comprehensive UI/UX design plugin for mobile (iOS, Android, React Native) and web applications with design systems, accessibility, and modern patterns
+        keywords:
+          - ui
+          - ux
+          - design-system
+          - accessibility
+          - component
+          - figma
+          - prototype

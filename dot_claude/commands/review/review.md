@@ -7,7 +7,7 @@ Perform a structured code review using the review-code skill.
 ```
 /review                     # Review staged/uncommitted changes
 /review path/to/file.py     # Review specific file
-/review --security          # Focus on security (uses security-review skill)
+/review --security          # Focus on security (uses security-scanning plugin)
 /review --quick             # Quick pass, critical issues only
 ```
 
@@ -22,7 +22,7 @@ Perform a structured code review using the review-code skill.
 
 2. **Apply review skill**
    - Load `skills/review-code/` for full review
-   - Or `skills/security-review/` for `--security` flag
+   - Or use `security-scanning` plugin for `--security` flag
 
 3. **Generate report** using skill's output format
 

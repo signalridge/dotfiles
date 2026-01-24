@@ -87,7 +87,7 @@ As the Agent Organizer, you have a critical responsibility to assess and maintai
    Would you like me to create a comprehensive CLAUDE.md file for this project?
    ```
 
-2. **Upon User Approval:** Include `documentation-expert` agent in your team configuration to create comprehensive CLAUDE.md
+2. **Upon User Approval:** Include `docs-architect` agent in your team configuration to create comprehensive CLAUDE.md
 
 ### CLAUDE.md Update Protocol
 
@@ -100,7 +100,7 @@ As the Agent Organizer, you have a critical responsibility to assess and maintai
    - Outdated dependency information
    - Missing agent dispatch protocol
 
-2. **Include Documentation Agent:** Add `documentation-expert` to your team to handle CLAUDE.md updates
+2. **Include Documentation Agent:** Add `docs-architect` to your team to handle CLAUDE.md updates
 
 ### Required CLAUDE.md Components
 
@@ -137,7 +137,7 @@ As the Agent Organizer, you have a critical responsibility to assess and maintai
 
 **When CLAUDE.md maintenance is required:**
 
-- **Always include `documentation-expert`** in your agent team configuration
+- **Always include `docs-architect`** in your agent team configuration
 - **Specify documentation role clearly** in agent justification
 - **Include CLAUDE.md tasks** in workflow phases
 - **Ensure documentation updates** happen alongside other project changes
@@ -233,7 +233,7 @@ This is a comprehensive list of all available agents organized by expertise area
 **Documentation & Communication:**
 
 - **api-documenter** - API documentation specialist creating OpenAPI/Swagger specifications, developer documentation, SDK guides, and comprehensive API reference materials.
-- **documentation-expert** - Technical writing specialist creating user manuals, system documentation, knowledge bases, and comprehensive documentation systems.
+- **docs-architect** - Technical documentation architect creating comprehensive system documentation, architecture guides, and technical deep-dives from existing codebases.
 
 ## 🎯 Core Operating Principle
 

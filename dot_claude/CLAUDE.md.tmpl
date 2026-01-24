@@ -34,58 +34,40 @@ See `context/tech-stack-guidelines.md` for language-specific conventions.
 
 When task matches keywords, **proactively use Task tool** with corresponding agents:
 
-| Keywords | Agents |
+### Core Rules (Always Active)
+
+| Keywords | Action |
 |----------|--------|
-| bug, error, crash, 报错, 失败 | `debugger` |
-| review, 审查, check code | `code-reviewer` |
-| test, coverage, 测试 | `test-engineer` |
-| design, 架构, structure | `architecture-auditor` |
+| bug, error, crash, 报错, 失败 | `debugger` + `superpowers:systematic-debugging` |
+| multiple-bugs, multi-test-failures | `superpowers:dispatching-parallel-agents` + `systematic-debugging` per agent |
+| review, 审查, check code | `code-reviewer` + `superpowers:requesting-code-review` |
+| test, coverage, 测试 | `test-engineer` + `superpowers:test-driven-development` |
+| new-design, 新设计, 新架构 | `superpowers:brainstorming` first, then `architecture-auditor` |
+| audit-architecture, 审计架构 | `architecture-auditor` |
 | slow, optimize, 性能, profile | `performance-auditor` |
 | security, auth, 安全, vulnerability | `code-auditor` |
 | refactor, clean up, 重构 | `code-developer` |
-{{- range .claude.plugins }}
+| L3+, complex, 复杂任务 | `superpowers:brainstorming` first |
+| verify, 验证, complete | `superpowers:verification-before-completion` |
+
+### Plugin-Based Rules (Enabled Plugins)
+{{- range .claude.wshobson.registry }}
 {{- $pluginName := .name }}
 {{- $isEnabled := false }}
-{{- range $.claude.enabledPlugins }}
+{{- range $.claude.wshobson.enabled }}
 {{- if eq . $pluginName }}{{ $isEnabled = true }}{{ end }}
 {{- end }}
-{{- if and $isEnabled (gt (len .keywords) 0) (gt (len .agents) 0) }}
-| {{ .keywords | join ", " }} | {{ range $i, $a := .agents }}{{ if $i }}, {{ end }}`{{ base $a | trimSuffix ".md" }}`{{ end }} |
+{{- if and $isEnabled (gt (len .keywords) 0) }}
+
+**{{ .name }}**: {{ .description }}
+- Keywords: `{{ .keywords | join "`, `" }}`
 {{- end }}
 {{- end }}
 
 **Dispatch Rules:**
 - L1-L2: Direct execution, no subagent needed
-- L3-L4: Auto-dispatch based on keywords above
+- L3-L4: Auto-dispatch based on keywords above + use Superpowers workflow
 - Uncertain: Ask "需要我调用 X agent 协助吗？"
-
----
-
-## Confidence Check Protocol (L3+)
-
-Before implementing L3+ tasks, assess confidence level:
-
-| Level | Score | Action |
-|-------|-------|--------|
-| **High** | ≥90% | Proceed immediately |
-| **Medium** | 70-89% | Present alternatives to user |
-| **Low** | <70% | STOP - request clarification |
-
-**Confidence Checklist:**
-
-1. ✅ No duplicate implementations? (checked existing code)
-2. ✅ Architecture compliant? (uses existing tech stack)
-3. ✅ Official docs verified? (not guessing)
-4. ✅ Similar working examples found?
-5. ✅ Root cause identified? (for bugs)
-
-**Output format:**
-```
-Confidence: [HIGH/MEDIUM/LOW] (~XX%)
-- [checklist results]
-- [if MEDIUM: alternatives]
-- [if LOW: what's missing]
-```
 
 ---
 
@@ -105,23 +87,45 @@ Skip pre-analysis only for L1-L2 tasks or explicit user override.
 
 ---
 
-## Task Tracking Protocol
+## L3+ Superpowers Workflow
 
-**L3+ tasks MUST use TodoWrite:**
+For L3+ tasks, use Superpowers skills in order:
 
-1. Decompose into ≤10 subtasks (hard limit from catlog22 philosophy)
-2. Mark `in_progress` before starting each subtask
-3. Mark `completed` immediately after finishing
-4. If >10 subtasks needed → split into multiple independent tasks
+| Phase | Skill | When to Use |
+|-------|-------|-------------|
+| 1. Requirements | `superpowers:brainstorming` | Requirements unclear or multiple approaches |
+| 2. Workspace | `superpowers:using-git-worktrees` | Before any coding begins (parallel features) |
+| 3. Planning | `superpowers:writing-plans` | After requirements confirmed, before coding |
+| 4. Implementation | `superpowers:test-driven-development` | All production code (no exceptions) |
+| 5. Execution | `superpowers:executing-plans` or `superpowers:subagent-driven-development` | Following the written plan |
+| 6. Verification | `superpowers:verification-before-completion` | Before ANY completion claims |
+| 7. Spec Review | `superpowers:requesting-code-review` | Verify code matches spec (first review) |
+| 8. Quality Review | `superpowers:requesting-code-review` | Code quality check (second review) |
+| 9. Respond | `superpowers:receiving-code-review` | Address review feedback |
+| 10. Complete | `superpowers:finishing-a-development-branch` | Merge branch after approval |
 
-**Format:**
-```
-[IMPL-1] Analyze existing code → completed
-[IMPL-2] Design solution → in_progress
-[IMPL-3] Implement core logic → pending
-[IMPL-4] Write tests → pending
-[IMPL-5] Update docs if needed → pending
-```
+**Two-Stage Review Process:**
+1. **Spec Compliance Review** - Confirms implementation matches the original spec/requirements
+2. **Code Quality Review** - Checks code patterns, maintainability, and best practices
+
+Both reviews must pass before proceeding to completion.
+
+**Rules:**
+- L1-L2: Skills optional, direct execution OK
+- L3+: Start from Phase 1 if unclear, Phase 3 if requirements clear
+- TDD is mandatory for all production code (Phase 4)
+- Use `superpowers:systematic-debugging` for bug investigations
+
+**TDD Resources:**
+- L3+: Use `superpowers:test-driven-development` (full workflow with discipline)
+- L1-L2 quick: Use `/tdd-workflows:tdd-red`, `tdd-green`, `tdd-refactor` (granular commands)
+
+**Alternatives:**
+- `superpowers:subagent-driven-development` - Fresh subagent per task (isolation)
+- `superpowers:dispatching-parallel-agents` - Parallel independent tasks
+- `superpowers:using-git-worktrees` - Parallel feature development
+
+**Invoke:** `/superpowers:<skill-name>` or use Skill tool directly.
 
 ---
 
@@ -166,30 +170,6 @@ Otherwise: document assumption and proceed.
 
 ---
 
-## Self-Check Protocol (Post-Implementation)
-
-After completing L3+ tasks, **MUST** verify with evidence:
-
-| Check | Method |
-|-------|--------|
-| **Tests pass** | Run test suite, report results |
-| **No regressions** | Verify related features still work |
-| **Matches requirements** | Compare output with original request |
-| **Code quality** | No new warnings, lint clean |
-
-**Output format:**
-```
-## Self-Check Results
-- Tests: [PASS/FAIL] - [details]
-- Regressions: [NONE/FOUND] - [details]
-- Requirements: [MET/PARTIAL/UNMET]
-- Quality: [CLEAN/WARNINGS]
-```
-
-**Rule:** No speculation - verify with actual test runs, not assumptions.
-
----
-
 ## Stop Conditions
 
 Pause and notify when:
@@ -227,7 +207,9 @@ Sensitive areas defined in `context/guardrails.md`:
 
 ## Git Conventions
 
-**Branch:** `feat/`, `fix/`, `refactor/`, `docs/`
+**Full reference:** `skills/git-workflow/SKILL.md` (shell functions, safety rules)
+
+**Branch:** `feat/`, `fix/`, `refactor/`, `docs/`, `test/`, `chore/`
 
 **Commit (Conventional):**
 ```
@@ -236,6 +218,10 @@ type(scope): description
 feat(auth): add OAuth2 support
 fix(api): handle null response
 ```
+
+**Shell Functions:** `fgc` (fuzzy checkout), `fga` (fuzzy add), `fgl` (fuzzy log), `aicommit`
+
+**Safety:** Force push to protected branches blocked. `--amend` and `--hard` require confirmation.
 
 ---
 

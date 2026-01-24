@@ -63,4 +63,4 @@ Score = 0
 
 - **Agent:** `agents/debug/error-resolver` - For complex issues (5-phase workflow)
 - **Command:** `/test` - Run tests after fix
-- **Skill:** Use `python-best-practices` for Python-specific debugging
+- **Plugin:** Use `python-development` plugin for Python-specific debugging

@@ -98,8 +98,18 @@ repos:
           useEncryption = false
           headless = false
 
-          [data.claude]
-          enabledPlugins = ["python-development", "javascript-typescript"]
+          [data.claude.wshobson]
+          enabled = ["python-development", "javascript-typescript"]
+
+          [[data.claude.wshobson.registry]]
+          name = "python-development"
+          description = "Python development"
+          keywords = ["python"]
+
+          [[data.claude.wshobson.registry]]
+          name = "javascript-typescript"
+          description = "JS/TS development"
+          keywords = ["javascript", "typescript"]
           EOF
 
             # Render templates to tmpdir

@@ -35,14 +35,14 @@ git diff --merge-base origin/HEAD
 2. **Comparative Analysis** - Compare against established practices
 3. **Vulnerability Assessment** - Trace data flow, identify injection points
 
-### Step 3: Apply Security Skill
+### Step 3: Apply Security Plugin
 
-Load `skills/security-review/SKILL.md` for:
+Use `security-scanning` plugin skills for:
 
-- OWASP Top 10 checklist
+- OWASP Top 10 checklist (use `/security-scanning:security-sast`)
 - Injection patterns (SQL, XSS, Command)
 - Authentication/Authorization checks
-- Sensitive data handling
+- Sensitive data handling (use `/security-scanning:security-hardening`)
 
 ## Output Format
 
@@ -66,6 +66,6 @@ Reviewed X files, found Y critical, Z high issues
 
 ## Related
 
-- **Skill:** `skills/security-review/` - OWASP checklist and patterns
+- **Plugin:** `security-scanning` - OWASP checklist and patterns
 - **Quick scan:** `/security-scan` for fast checks
 - **General review:** `/review --security`
