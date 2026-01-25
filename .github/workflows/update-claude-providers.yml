@@ -30,8 +30,13 @@ jobs:
         with:
           node-version: "24"
       - name: Install dependencies
+        env:
+          YQ_VERSION: "v4.50.1"
+          YQ_SHA256: "c7a1278e6bbc4924f41b56db838086c39d13ee25dcb22089e7fbf16ac901f0d4"
         run: |
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          wget -qO /tmp/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          echo "${YQ_SHA256}  /tmp/yq" | sha256sum -c -
+          sudo mv /tmp/yq /usr/local/bin/yq
           sudo chmod +x /usr/local/bin/yq
           npm install playwright
           npx playwright install chromium --with-deps
@@ -66,6 +71,9 @@ jobs:
       - name: Apply config updates
         run: |
           cat /tmp/ai_response.txt | .github/scripts/update-claude-providers.sh apply
+      - name: Format YAML
+        run: |
+          npx prettier --write .chezmoidata/claude.yaml
       - name: Check for changes
         id: changes
         run: |

@@ -52,13 +52,13 @@ jobs:
         run: |
           gh workflow run update-versions.yml --repo ${{ github.repository }}
           echo "Triggered update-versions.yml"
-      - name: Trigger sync-claude-plugins
+      - name: Trigger update-claude-plugin-metadata
         if: steps.check.outputs.trigger_weekly == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          gh workflow run sync-claude-plugins.yml --repo ${{ github.repository }}
-          echo "Triggered sync-claude-plugins.yml"
+          gh workflow run update-claude-plugin-metadata.yml --repo ${{ github.repository }}
+          echo "Triggered update-claude-plugin-metadata.yml"
       # Monthly workflows (1st of month)
       - name: Trigger update-claude-providers
         if: steps.check.outputs.trigger_monthly == 'true'
