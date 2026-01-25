@@ -1,7 +1,5 @@
 name: Update flake.lock
 on:
-  schedule:
-    - cron: "0 4 * * 0" # Weekly on Sunday at 4:00 AM UTC
   workflow_dispatch:
 permissions:
   contents: write
@@ -63,6 +61,7 @@ jobs:
       - name: Create PR
         uses: peter-evans/create-pull-request@v8
         with:
+          token: ${{ secrets.GH_PAT }}
           commit-message: "chore(nix): update flake.lock for ${{ matrix.platform }}"
           title: "chore(nix): update flake.lock for ${{ matrix.platform }} (${{ steps.date.outputs.date }})"
           branch: update-flake-lock-${{ matrix.platform }}

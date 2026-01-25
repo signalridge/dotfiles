@@ -1,7 +1,5 @@
 name: Update Claude Provider Configs
 on:
-  schedule:
-    - cron: "0 6 1 * *" # Monthly on 1st at 06:00 UTC
   workflow_dispatch:
     inputs:
       provider:
@@ -85,6 +83,7 @@ jobs:
         if: steps.changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
+          token: ${{ secrets.GH_PAT }}
           commit-message: "chore(claude): update provider configs"
           title: "chore(claude): update provider configs"
           branch: chore/update-claude-providers

@@ -1,7 +1,5 @@
 name: Sync Claude Plugins
 on:
-  schedule:
-    - cron: "0 6 * * 0" # Weekly on Sunday at 06:00 UTC
   workflow_dispatch:
     inputs:
       force_sync:
@@ -18,12 +16,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Install tools
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # yq
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
-          # shfmt
-          sudo wget -qO /usr/local/bin/shfmt https://github.com/mvdan/sh/releases/latest/download/shfmt_v3.8.0_linux_amd64
+          # shfmt (get latest version dynamically)
+          SHFMT_VERSION=$(gh release view --repo mvdan/sh --json tagName -q '.tagName')
+          sudo wget -qO /usr/local/bin/shfmt "https://github.com/mvdan/sh/releases/download/${SHFMT_VERSION}/shfmt_${SHFMT_VERSION}_linux_amd64"
           sudo chmod +x /usr/local/bin/shfmt
       - name: Read repo config
         id: repos
@@ -113,6 +114,7 @@ jobs:
         if: steps.changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
+          token: ${{ secrets.GH_PAT }}
           commit-message: "chore(claude): sync plugins from upstream"
           title: "chore(claude): sync plugins (${{ steps.upstream.outputs.wshobsonAgents }}/${{ steps.upstream.outputs.superpowers }}/${{ steps.upstream.outputs.anthropicsSkills }})"
           branch: chore/sync-claude-plugins

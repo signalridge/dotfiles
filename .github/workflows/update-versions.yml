@@ -1,7 +1,5 @@
 name: Update pinned versions
 on:
-  schedule:
-    - cron: "0 5 * * 0" # Weekly on Sunday at 5:00 AM UTC
   workflow_dispatch:
 permissions:
   contents: write
@@ -56,6 +54,7 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
+          token: ${{ secrets.GH_PAT }}
           commit-message: "chore(versions): update pinned versions"
           title: "chore(versions): update pinned versions (${{ steps.date.outputs.date }})"
           branch: update-pinned-versions

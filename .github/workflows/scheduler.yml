@@ -1,0 +1,74 @@
+name: Scheduler
+on:
+  schedule:
+    # Run weekly on Monday at 00:00 UTC
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Force trigger all workflows regardless of schedule"
+        type: boolean
+        default: false
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine which workflows to trigger
+        id: check
+        run: |
+          DAY_OF_WEEK=$(date -u +%u)  # 1=Monday, 7=Sunday
+          DAY_OF_MONTH=$(date -u +%d)
+          FORCE="${{ github.event.inputs.force || 'false' }}"
+
+          echo "Day of week: $DAY_OF_WEEK (1=Monday)"
+          echo "Day of month: $DAY_OF_MONTH"
+          echo "Force: $FORCE"
+
+          # Monday (1) workflows
+          if [[ "$DAY_OF_WEEK" == "1" ]] || [[ "$FORCE" == "true" ]]; then
+            echo "trigger_weekly=true" >> $GITHUB_OUTPUT
+          else
+            echo "trigger_weekly=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Monthly (1st) workflows
+          if [[ "$DAY_OF_MONTH" == "01" ]] || [[ "$FORCE" == "true" ]]; then
+            echo "trigger_monthly=true" >> $GITHUB_OUTPUT
+          else
+            echo "trigger_monthly=false" >> $GITHUB_OUTPUT
+          fi
+      # Weekly workflows (Monday)
+      - name: Trigger update-flake-lock
+        if: steps.check.outputs.trigger_weekly == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run update-flake-lock.yml --repo ${{ github.repository }}
+          echo "Triggered update-flake-lock.yml"
+      - name: Trigger update-versions
+        if: steps.check.outputs.trigger_weekly == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run update-versions.yml --repo ${{ github.repository }}
+          echo "Triggered update-versions.yml"
+      - name: Trigger sync-claude-plugins
+        if: steps.check.outputs.trigger_weekly == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run sync-claude-plugins.yml --repo ${{ github.repository }}
+          echo "Triggered sync-claude-plugins.yml"
+      # Monthly workflows (1st of month)
+      - name: Trigger update-claude-providers
+        if: steps.check.outputs.trigger_monthly == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run update-claude-providers.yml --repo ${{ github.repository }}
+          echo "Triggered update-claude-providers.yml"
+      - name: Summary
+        run: |
+          echo "## Scheduler Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Weekly workflows: ${{ steps.check.outputs.trigger_weekly }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Monthly workflows: ${{ steps.check.outputs.trigger_monthly }}" >> $GITHUB_STEP_SUMMARY
