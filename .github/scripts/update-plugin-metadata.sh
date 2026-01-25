@@ -49,15 +49,19 @@ PROMPT
 apply_keywords() {
     local ai_response="$1"
 
-    # Try to extract JSON from response (handle markdown code blocks)
+    # Try to extract JSON from response (handle markdown code blocks and multiline JSON)
     local json_data
-    json_data=$(echo "$ai_response" | sed -n '/^{/,/^}/p' | head -1)
-    if [[ -z "$json_data" ]]; then
-        # Try extracting from code block
+
+    # First, try to parse the entire response as JSON directly
+    if echo "$ai_response" | jq -e 'type == "object"' &>/dev/null; then
+        json_data="$ai_response"
+    else
+        # Try extracting from markdown code block
         json_data=$(echo "$ai_response" | sed -n '/```json/,/```/p' | sed '1d;$d')
-    fi
-    if [[ -z "$json_data" ]]; then
-        json_data=$(echo "$ai_response" | grep -o '{.*}' | head -1)
+        if [[ -z "$json_data" ]] || ! echo "$json_data" | jq -e 'type == "object"' &>/dev/null; then
+            # Try extracting multiline JSON (from first { to last })
+            json_data=$(echo "$ai_response" | sed -n '/^{/,/^}/p')
+        fi
     fi
 
     if ! echo "$json_data" | jq -e 'type == "object"' &>/dev/null; then

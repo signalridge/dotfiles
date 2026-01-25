@@ -97,7 +97,7 @@ HEADER
                     echo ""
                     echo "Page content (truncated):"
                     echo '```'
-                    echo "$content" | head -150
+                    echo "$content" | head -150 || true
                     echo '```'
                 fi
             fi
