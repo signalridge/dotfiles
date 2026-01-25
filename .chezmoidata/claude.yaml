@@ -27,14 +27,14 @@ claude:
       disable_nonessential_traffic: true
       haiku_model: deepseek-chat
       sonnet_model: deepseek-chat
-      opus_model: deepseek-reasoner
+      opus_model: deepseek-chat
     # Kimi K2 (Moonshot): https://platform.moonshot.cn/docs/guide/agent-support
     kimi:
       base_url: https://api.moonshot.cn/anthropic
       model: kimi-k2-thinking-turbo
       small_model: kimi-k2-thinking-turbo
       timeout_ms: "600000"
-      disable_nonessential_traffic: true
+      disable_nonessential_traffic: false
       haiku_model: kimi-k2-thinking-turbo
       sonnet_model: kimi-k2-thinking-turbo
       opus_model: kimi-k2-thinking-turbo
@@ -54,7 +54,10 @@ claude:
       model: qwen3-coder-plus
       small_model: qwen-flash
       timeout_ms: "600000"
-      disable_nonessential_traffic: true
+      disable_nonessential_traffic: false
+      haiku_model: qwen-flash
+      sonnet_model: qwen3-coder-plus
+      opus_model: qwen3-max
     # MiniMax: https://platform.minimax.io/docs/coding-plan/claude-code
     minimax:
       base_url: https://api.minimax.io/anthropic
@@ -72,6 +75,9 @@ claude:
       small_model: ark-code-latest
       timeout_ms: "600000"
       disable_nonessential_traffic: true
+      haiku_model: ark-code-latest
+      sonnet_model: ark-code-latest
+      opus_model: ark-code-latest
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
   # ==========================================================================
