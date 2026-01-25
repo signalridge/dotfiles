@@ -59,8 +59,19 @@ apply_keywords() {
         # Try extracting from markdown code block
         json_data=$(echo "$ai_response" | sed -n '/```json/,/```/p' | sed '1d;$d')
         if [[ -z "$json_data" ]] || ! echo "$json_data" | jq -e 'type == "object"' &>/dev/null; then
-            # Try extracting multiline JSON (from first { to last })
-            json_data=$(echo "$ai_response" | sed -n '/^{/,/^}/p')
+            # Try extracting multiline JSON object (handles nested braces)
+            json_data=$(echo "$ai_response" | awk '
+                /\{/ { start=1; depth=0 }
+                start {
+                    for(i=1; i<=length($0); i++) {
+                        c = substr($0, i, 1)
+                        if(c == "{") depth++
+                        if(c == "}") depth--
+                    }
+                    print
+                    if(depth == 0 && start) exit
+                }
+            ')
         fi
     fi
 

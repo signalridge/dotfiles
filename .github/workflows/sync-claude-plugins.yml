@@ -42,12 +42,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Download upstream repos
         run: |
+          # Extract repo name from path (e.g., "wshobson/agents" -> "agents")
+          wshobson_name="${{ steps.repos.outputs.wshobsonAgents }}"
+          wshobson_name="${wshobson_name##*/}"
+          superpowers_name="${{ steps.repos.outputs.superpowers }}"
+          superpowers_name="${superpowers_name##*/}"
+          anthropics_name="${{ steps.repos.outputs.anthropicsSkills }}"
+          anthropics_name="${anthropics_name##*/}"
+
           curl -sL "https://github.com/${{ steps.repos.outputs.wshobsonAgents }}/archive/main.tar.gz" | tar xz
-          mv agents-main /tmp/wshobson-agents
+          mv "${wshobson_name}-main" /tmp/wshobson-agents
           curl -sL "https://github.com/${{ steps.repos.outputs.superpowers }}/archive/main.tar.gz" | tar xz
-          mv superpowers-main /tmp/superpowers
+          mv "${superpowers_name}-main" /tmp/superpowers
           curl -sL "https://github.com/${{ steps.repos.outputs.anthropicsSkills }}/archive/main.tar.gz" | tar xz
-          mv skills-main /tmp/anthropics-skills
+          mv "${anthropics_name}-main" /tmp/anthropics-skills
       - name: Sync plugin files
         run: |
           chmod +x .github/scripts/sync-claude-plugins.sh

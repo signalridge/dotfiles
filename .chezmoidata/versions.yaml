@@ -6,5 +6,3 @@ versions:
   nixVersion: v2.33.0
   nixIndexDb: 2025-12-09-080420
   paperlib: 3.1.12
-  wshobsonAgents: 1135ac60 # wshobson/agents commit hash
-  superpowers: 4.1.0 # obra/superpowers version

@@ -119,8 +119,20 @@ apply_response() {
     elif echo "$response" | grep -q '```'; then
         json=$(echo "$response" | sed -n '/```/,/```/p' | grep -v '```')
     else
-        # Try to extract raw JSON array (multi-line)
-        json=$(echo "$response" | sed -n '/^\[/,/^\]/p')
+        # Try to extract raw JSON array (handles both compact and multiline)
+        # Use awk to properly match balanced brackets
+        json=$(echo "$response" | awk '
+            /\[/ { start=1; depth=0 }
+            start {
+                for(i=1; i<=length($0); i++) {
+                    c = substr($0, i, 1)
+                    if(c == "[") depth++
+                    if(c == "]") depth--
+                }
+                print
+                if(depth == 0 && start) exit
+            }
+        ')
     fi
 
     # Validate JSON
