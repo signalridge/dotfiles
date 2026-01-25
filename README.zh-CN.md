@@ -28,7 +28,7 @@
 
 - **跨平台**：同一套配置支持 macOS + Linux（`nix-darwin` + `flakey-profile`）
 - **一键引导**：从裸机到完整环境，只需一条 `curl | sh`
-- **Claude Code 集成**：14+ marketplace 插件，自动同步更新
+- **Claude Code 集成**：50+ 多来源插件，自动同步更新
 - **现代 CLI**：Rust 工具链（eza、bat、ripgrep、fd、zoxide）替代传统 Unix 命令
 - **安全优先**：`age` 加密 + gopass 辅助密钥引导
 
@@ -168,23 +168,35 @@ cd dotfiles && ./init.sh
 
 ### 插件系统
 
-插件自动从 [wshobson/agents](https://github.com/wshobson/agents) marketplace 同步：
+插件通过 `.chezmoiexternal.toml.tmpl` 从多个来源自动下载：
+
+| 来源                                                      | 说明                                     |
+| --------------------------------------------------------- | ---------------------------------------- |
+| [wshobson/agents](https://github.com/wshobson/agents)     | 50+ 社区插件（agents、commands、skills） |
+| [anthropics/skills](https://github.com/anthropics/skills) | 官方文档处理（pdf、docx、pptx、xlsx）    |
+| [obra/superpowers](https://github.com/obra/superpowers)   | 高级工作流模式                           |
 
 ```yaml
 # .chezmoidata/claude.yaml
 claude:
-  enabledPlugins:
-    - python-development # Python 最佳实践
-    - javascript-typescript # JS/TS 开发
-    - backend-development # API 与后端模式
-    - tdd-workflows # 测试驱动开发
-    - git # Git 工作流命令
+  wshobsonAgents:
+    include:
+      - python-development
+      - javascript-typescript
+      - backend-development
+      - tdd-workflows
+      - cloud-infrastructure
+      # ... 共 19 个插件
+  anthropicsSkills:
+    include:
+      - pdf
+      - docx
 ```
 
-`run_onchange_after_08_flatten_claude_plugins.sh` 脚本会自动：
+chezmoi external 会自动：
 
-- 从 marketplace 下载已启用的插件
-- 将 agents、commands、skills 展平到 `~/.claude/`
+- 在 `chezmoi apply` 时下载已启用的插件
+- 将 agents、commands、skills 解压到 `~/.claude/`
 - 配置变更时自动更新
 
 ### 质量协议
@@ -349,6 +361,8 @@ chezmoi init --apply --promptBool headless=true signalridge
 - [nix-darwin](https://github.com/LnL7/nix-darwin) - 声明式 macOS 配置
 - [flakey-profile](https://github.com/lf-/flakey-profile) - 跨平台 Nix profile 管理
 - [wshobson/agents](https://github.com/wshobson/agents) - Claude Code 插件 marketplace
+- [anthropics/skills](https://github.com/anthropics/skills) - 官方 Claude Code skills
+- [obra/superpowers](https://github.com/obra/superpowers) - 高级工作流模式
 - [Dracula Theme](https://draculatheme.com/) - 漂亮的深色主题
 
 ---

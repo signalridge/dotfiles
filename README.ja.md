@@ -28,7 +28,7 @@
 
 - **クロスプラットフォーム**：macOS + Linux を 1 つの構成で管理（`nix-darwin` + `flakey-profile`）
 - **ワンコマンドブートストラップ**：ベアメタルから完全環境まで `curl | sh` 一発で
-- **Claude Code 統合**：14 以上の marketplace プラグイン、自動同期更新
+- **Claude Code 統合**：50 以上のマルチソースプラグイン、自動同期更新
 - **モダン CLI**：Rust ツールチェーン（eza、bat、ripgrep、fd、zoxide）で Unix クラシックを置き換え
 - **セキュリティ優先**：`age` 暗号化 + gopass アシスト付きキーブートストラップ
 
@@ -168,22 +168,34 @@ cd dotfiles && ./init.sh
 
 ### プラグインシステム
 
-プラグインは [wshobson/agents](https://github.com/wshobson/agents) marketplace から自動同期されます：
+プラグインは `.chezmoiexternal.toml.tmpl` を通じて複数のソースから自動ダウンロードされます：
+
+| ソース                                                    | 説明                                                   |
+| --------------------------------------------------------- | ------------------------------------------------------ |
+| [wshobson/agents](https://github.com/wshobson/agents)     | 50+ コミュニティプラグイン（agents、commands、skills） |
+| [anthropics/skills](https://github.com/anthropics/skills) | 公式ドキュメント処理（pdf、docx、pptx、xlsx）          |
+| [obra/superpowers](https://github.com/obra/superpowers)   | 高度なワークフローパターン                             |
 
 ```yaml
 # .chezmoidata/claude.yaml
 claude:
-  enabledPlugins:
-    - python-development # Python ベストプラクティス
-    - javascript-typescript # JS/TS 開発
-    - backend-development # API・バックエンドパターン
-    - tdd-workflows # テスト駆動開発
-    - git # Git ワークフローコマンド
+  wshobsonAgents:
+    include:
+      - python-development
+      - javascript-typescript
+      - backend-development
+      - tdd-workflows
+      - cloud-infrastructure
+      # ... 全19プラグイン
+  anthropicsSkills:
+    include:
+      - pdf
+      - docx
 ```
 
-`run_onchange_after_08_flatten_claude_plugins.sh` スクリプトが自動的に：
+chezmoi external が自動的に：
 
-- marketplace から有効なプラグインをダウンロード
+- `chezmoi apply` 時に有効なプラグインをダウンロード
 - agents、commands、skills を `~/.claude/` に展開
 - 設定変更時に自動更新
 
@@ -349,6 +361,8 @@ chezmoi init --apply --promptBool headless=true signalridge
 - [nix-darwin](https://github.com/LnL7/nix-darwin) - 宣言的 macOS 設定
 - [flakey-profile](https://github.com/lf-/flakey-profile) - クロスプラットフォーム Nix プロファイル管理
 - [wshobson/agents](https://github.com/wshobson/agents) - Claude Code プラグイン marketplace
+- [anthropics/skills](https://github.com/anthropics/skills) - 公式 Claude Code skills
+- [obra/superpowers](https://github.com/obra/superpowers) - 高度なワークフローパターン
 - [Dracula Theme](https://draculatheme.com/) - 美しいダークテーマ
 
 ---

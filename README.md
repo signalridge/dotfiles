@@ -28,7 +28,7 @@
 
 - **Cross-platform**: One repo for macOS + Linux (`nix-darwin` + `flakey-profile`)
 - **One-command bootstrap**: From bare metal to full environment with a single `curl | sh`
-- **Claude Code integration**: 14+ plugins from marketplace with automated sync
+- **Claude Code integration**: 50+ plugins from multiple sources with automated sync
 - **Modern CLI**: Rust-based tools (eza, bat, ripgrep, fd, zoxide) replacing Unix classics
 - **Security-first**: `age` encryption with gopass-assisted key bootstrapping
 
@@ -168,23 +168,35 @@ This dotfiles includes a comprehensive Claude Code setup with automated plugin m
 
 ### Plugin System
 
-Plugins are automatically synced from [wshobson/agents](https://github.com/wshobson/agents) marketplace:
+Plugins are automatically downloaded via `.chezmoiexternal.toml.tmpl` from multiple sources:
+
+| Source                                                    | Description                                          |
+| --------------------------------------------------------- | ---------------------------------------------------- |
+| [wshobson/agents](https://github.com/wshobson/agents)     | 50+ community plugins (agents, commands, skills)     |
+| [anthropics/skills](https://github.com/anthropics/skills) | Official document processing (pdf, docx, pptx, xlsx) |
+| [obra/superpowers](https://github.com/obra/superpowers)   | Advanced workflow patterns                           |
 
 ```yaml
 # .chezmoidata/claude.yaml
 claude:
-  enabledPlugins:
-    - python-development # Python best practices
-    - javascript-typescript # JS/TS development
-    - backend-development # API & backend patterns
-    - tdd-workflows # Test-driven development
-    - git # Git workflow commands
+  wshobsonAgents:
+    include:
+      - python-development
+      - javascript-typescript
+      - backend-development
+      - tdd-workflows
+      - cloud-infrastructure
+      # ... 19 plugins enabled
+  anthropicsSkills:
+    include:
+      - pdf
+      - docx
 ```
 
-The `run_onchange_after_08_flatten_claude_plugins.sh` script automatically:
+chezmoi external automatically:
 
-- Downloads enabled plugins from the marketplace
-- Flattens agents, commands, and skills into `~/.claude/`
+- Downloads enabled plugins on `chezmoi apply`
+- Extracts agents, commands, and skills into `~/.claude/`
 - Updates when plugin configuration changes
 
 ### Quality Protocols
@@ -349,6 +361,8 @@ On first apply, bootstrap scripts will:
 - [nix-darwin](https://github.com/LnL7/nix-darwin) - Declarative macOS configuration
 - [flakey-profile](https://github.com/lf-/flakey-profile) - Cross-platform Nix profile management
 - [wshobson/agents](https://github.com/wshobson/agents) - Claude Code plugins marketplace
+- [anthropics/skills](https://github.com/anthropics/skills) - Official Claude Code skills
+- [obra/superpowers](https://github.com/obra/superpowers) - Advanced workflow patterns
 - [Dracula Theme](https://draculatheme.com/) - Beautiful dark theme
 
 ---
