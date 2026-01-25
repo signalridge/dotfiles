@@ -48,6 +48,7 @@ homebrew:
       - cursor
       - gcloud-cli
     private:
+      - cherry-studio # Multi-model AI desktop client
       - adguard
       - balenaetcher
       - bob-app

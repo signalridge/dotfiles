@@ -30,6 +30,11 @@
       "command": "npx",
       "args": ["-y", "@anthropic/mcp-server-sequential-thinking"],
       "description": "Extended reasoning for complex problems"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"],
+      "description": "Browser automation for JS-rendered pages"
     }
   }
 }
