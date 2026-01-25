@@ -82,21 +82,20 @@ jobs:
           else
             echo "needs_ai=false" >> $GITHUB_OUTPUT
           fi
-      - name: Generate keywords with Gemini
+      - name: Generate keywords with OpenRouter
         if: steps.scan.outputs.needs_ai == 'true'
-        id: gemini
-        uses: google-github-actions/run-gemini-cli@v0.1.19
-        with:
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          gemini_model: gemini-2.5-pro
-          prompt: ${{ steps.scan.outputs.prompt }}
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_REFERER: https://github.com/${{ github.repository }}
+        run: |
+          chmod +x .github/scripts/openrouter-query.sh
+          echo '${{ steps.scan.outputs.prompt }}' | .github/scripts/openrouter-query.sh > /tmp/ai_response.txt
       - name: Apply AI-generated keywords
         if: steps.scan.outputs.needs_ai == 'true'
         env:
           OUTPUT: /tmp/plugins.json
-          AI_RESPONSE: ${{ steps.gemini.outputs.summary }}
         run: |
-          echo "$AI_RESPONSE" | .github/scripts/update-plugin-metadata.sh apply
+          cat /tmp/ai_response.txt | .github/scripts/update-plugin-metadata.sh apply
       - name: Update claude.yaml
         run: |
           yq -i -P '.claude.wshobsonAgents.registry = load("/tmp/plugins.json")' .chezmoidata/claude.yaml

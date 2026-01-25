@@ -53,18 +53,16 @@ jobs:
             echo "$prompt"
             echo "EOF"
           } >> $GITHUB_OUTPUT
-      - name: Query provider configs with Gemini
-        id: gemini
-        uses: google-github-actions/run-gemini-cli@v0.1.19
-        with:
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          gemini_model: gemini-2.5-pro
-          prompt: ${{ steps.prompt.outputs.prompt }}
-      - name: Apply config updates
+      - name: Query provider configs with OpenRouter
         env:
-          AI_RESPONSE: ${{ steps.gemini.outputs.summary }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_REFERER: https://github.com/${{ github.repository }}
         run: |
-          echo "$AI_RESPONSE" | .github/scripts/update-claude-providers.sh apply
+          chmod +x .github/scripts/openrouter-query.sh
+          echo '${{ steps.prompt.outputs.prompt }}' | .github/scripts/openrouter-query.sh > /tmp/ai_response.txt
+      - name: Apply config updates
+        run: |
+          cat /tmp/ai_response.txt | .github/scripts/update-claude-providers.sh apply
       - name: Check for changes
         id: changes
         run: |
