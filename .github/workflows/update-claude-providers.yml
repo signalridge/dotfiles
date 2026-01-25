@@ -58,7 +58,7 @@ jobs:
         uses: google-github-actions/run-gemini-cli@v0.1.19
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          gemini_model: gemini-2.5-flash
+          gemini_model: gemini-2.5-pro
           prompt: ${{ steps.prompt.outputs.prompt }}
       - name: Apply config updates
         env:
@@ -84,6 +84,7 @@ jobs:
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GH_PAT }}
+          add-paths: .chezmoidata/claude.yaml
           commit-message: "chore(claude): update provider configs"
           title: "chore(claude): update provider configs"
           branch: chore/update-claude-providers

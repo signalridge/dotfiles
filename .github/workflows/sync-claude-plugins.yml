@@ -80,7 +80,7 @@ jobs:
         uses: google-github-actions/run-gemini-cli@v0.1.19
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          gemini_model: gemini-3-flash-preview
+          gemini_model: gemini-2.5-pro
           prompt: ${{ steps.scan.outputs.prompt }}
       - name: Apply AI-generated keywords
         if: steps.scan.outputs.needs_ai == 'true'
@@ -115,6 +115,9 @@ jobs:
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GH_PAT }}
+          add-paths: |
+            dot_claude/
+            .chezmoidata/claude.yaml
           commit-message: "chore(claude): sync plugins from upstream"
           title: "chore(claude): sync plugins (${{ steps.upstream.outputs.wshobsonAgents }}/${{ steps.upstream.outputs.superpowers }}/${{ steps.upstream.outputs.anthropicsSkills }})"
           branch: chore/sync-claude-plugins
