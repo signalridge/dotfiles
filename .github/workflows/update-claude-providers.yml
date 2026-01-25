@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          ref: main
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -57,9 +59,10 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_REFERER: https://github.com/${{ github.repository }}
+          PROMPT: ${{ steps.prompt.outputs.prompt }}
         run: |
           chmod +x .github/scripts/openrouter-query.sh
-          echo '${{ steps.prompt.outputs.prompt }}' | .github/scripts/openrouter-query.sh > /tmp/ai_response.txt
+          printf '%s' "$PROMPT" | .github/scripts/openrouter-query.sh > /tmp/ai_response.txt
       - name: Apply config updates
         run: |
           cat /tmp/ai_response.txt | .github/scripts/update-claude-providers.sh apply

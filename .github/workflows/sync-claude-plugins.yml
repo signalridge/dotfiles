@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          ref: main
       - name: Install tools
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -87,9 +89,10 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_REFERER: https://github.com/${{ github.repository }}
+          PROMPT: ${{ steps.scan.outputs.prompt }}
         run: |
           chmod +x .github/scripts/openrouter-query.sh
-          echo '${{ steps.scan.outputs.prompt }}' | .github/scripts/openrouter-query.sh > /tmp/ai_response.txt
+          printf '%s' "$PROMPT" | .github/scripts/openrouter-query.sh > /tmp/ai_response.txt
       - name: Apply AI-generated keywords
         if: steps.scan.outputs.needs_ai == 'true'
         env:

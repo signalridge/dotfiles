@@ -11,9 +11,12 @@
 set -euo pipefail
 
 : "${OPENROUTER_API_KEY:?OPENROUTER_API_KEY is required}"
-: "${OPENROUTER_MODEL:=deepseek/deepseek-chat-v3-0324:free}"
+: "${OPENROUTER_MODEL:=mistralai/devstral-2512:free}"
 : "${OPENROUTER_REFERER:=https://github.com}"
 : "${MAX_RETRIES:=3}"
+
+# Debug: show model being used
+echo "Using model: $OPENROUTER_MODEL" >&2
 
 # Read prompt from stdin
 prompt=$(cat)
