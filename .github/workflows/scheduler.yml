@@ -41,21 +41,21 @@ jobs:
       - name: Trigger update-flake-lock
         if: steps.check.outputs.trigger_weekly == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           gh workflow run update-flake-lock.yml --repo ${{ github.repository }}
           echo "Triggered update-flake-lock.yml"
       - name: Trigger update-versions
         if: steps.check.outputs.trigger_weekly == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           gh workflow run update-versions.yml --repo ${{ github.repository }}
           echo "Triggered update-versions.yml"
       - name: Trigger sync-claude-plugins
         if: steps.check.outputs.trigger_weekly == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           gh workflow run sync-claude-plugins.yml --repo ${{ github.repository }}
           echo "Triggered sync-claude-plugins.yml"
@@ -63,7 +63,7 @@ jobs:
       - name: Trigger update-claude-providers
         if: steps.check.outputs.trigger_monthly == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           gh workflow run update-claude-providers.yml --repo ${{ github.repository }}
           echo "Triggered update-claude-providers.yml"
