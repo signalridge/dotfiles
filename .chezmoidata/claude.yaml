@@ -38,7 +38,7 @@ claude:
       haiku_model: kimi-k2-thinking-turbo
       sonnet_model: kimi-k2-thinking-turbo
       opus_model: kimi-k2-thinking-turbo
-    # GLM (Zhipu AI): https://docs.bigmodel.cn/cn/coding-plan/tool/claude
+    # GLM (Zhipu AI): https://docs.bigmodel.cn/cn/guide/develop/claude
     glm:
       base_url: "https://open.bigmodel.cn/api/anthropic"
       model: "glm-4.7"
