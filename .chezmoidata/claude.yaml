@@ -7,32 +7,32 @@ claude:
     # === Native Anthropic providers (no base_url, use OAuth) ===
     anthropic:
       base_url: ""
-      model: "claude-sonnet-4-5-20250929"
-      small_model: "claude-sonnet-4-5-20250929"
+      model: claude-sonnet-4-5-20250929
+      small_model: claude-sonnet-4-5-20250929
     opus:
       base_url: ""
-      model: "claude-opus-4-5-20251101"
-      small_model: "claude-sonnet-4-5-20250929"
+      model: claude-opus-4-5-20251101
+      small_model: claude-sonnet-4-5-20250929
     haiku:
       base_url: ""
-      model: "claude-haiku-4-5-20251001"
-      small_model: "claude-haiku-4-5-20251001"
+      model: claude-haiku-4-5-20251001
+      small_model: claude-haiku-4-5-20251001
     # === Third-party providers (require base_url and API token) ===
     # DeepSeek: https://api-docs.deepseek.com/guides/anthropic_api
     deepseek:
-      base_url: "https://api.deepseek.com/anthropic"
-      model: "deepseek-chat"
-      small_model: "deepseek-chat"
+      base_url: https://api.deepseek.com/anthropic
+      model: deepseek-chat
+      small_model: deepseek-chat
       timeout_ms: "600000"
       disable_nonessential_traffic: true
-      haiku_model: "deepseek-chat"
-      sonnet_model: "deepseek-chat"
-      opus_model: "deepseek-reasoner"
+      haiku_model: deepseek-chat
+      sonnet_model: deepseek-chat
+      opus_model: deepseek-reasoner
     # Kimi K2 (Moonshot): https://platform.moonshot.cn/docs/guide/agent-support
     kimi:
-      base_url: "https://api.moonshot.cn/anthropic"
-      model: "kimi-k2-thinking-turbo"
-      small_model: "kimi-k2-thinking-turbo"
+      base_url: https://api.moonshot.cn/anthropic
+      model: kimi-k2-thinking-turbo
+      small_model: kimi-k2-thinking-turbo
       timeout_ms: "600000"
       disable_nonessential_traffic: true
       haiku_model: kimi-k2-thinking-turbo
@@ -40,36 +40,36 @@ claude:
       opus_model: kimi-k2-thinking-turbo
     # GLM (Zhipu AI): https://docs.bigmodel.cn/cn/guide/develop/claude
     glm:
-      base_url: "https://open.bigmodel.cn/api/anthropic"
-      model: "glm-4.7"
-      small_model: "glm-4.5-air"
+      base_url: https://open.bigmodel.cn/api/anthropic
+      model: glm-4.7
+      small_model: glm-4.5-air
       timeout_ms: "3000000"
       disable_nonessential_traffic: true
-      haiku_model: "glm-4.5-air"
-      sonnet_model: "glm-4.7"
-      opus_model: "glm-4.7"
+      haiku_model: glm-4.5-air
+      sonnet_model: glm-4.7
+      opus_model: glm-4.7
     # Qwen (Alibaba): https://help.aliyun.com/zh/model-studio/claude-code
     qwen:
-      base_url: "https://dashscope.aliyuncs.com/apps/anthropic"
-      model: "qwen3-coder-plus"
-      small_model: "qwen-flash"
+      base_url: https://dashscope.aliyuncs.com/apps/anthropic
+      model: qwen3-coder-plus
+      small_model: qwen-flash
       timeout_ms: "600000"
       disable_nonessential_traffic: true
     # MiniMax: https://platform.minimax.io/docs/coding-plan/claude-code
     minimax:
-      base_url: "https://api.minimax.io/anthropic"
-      model: "MiniMax-M2.1"
-      small_model: "MiniMax-M2.1"
+      base_url: https://api.minimax.io/anthropic
+      model: MiniMax-M2.1
+      small_model: MiniMax-M2.1
       timeout_ms: "3000000"
       disable_nonessential_traffic: true
-      haiku_model: "MiniMax-M2.1"
-      sonnet_model: "MiniMax-M2.1"
-      opus_model: "MiniMax-M2.1"
+      haiku_model: MiniMax-M2.1
+      sonnet_model: MiniMax-M2.1
+      opus_model: MiniMax-M2.1
     # Doubao (ByteDance): https://www.volcengine.com/docs/82379/1928261
     doubao:
-      base_url: "https://ark.cn-beijing.volces.com/api/coding"
-      model: "ark-code-latest"
-      small_model: "ark-code-latest"
+      base_url: https://ark.cn-beijing.volces.com/api/coding
+      model: ark-code-latest
+      small_model: ark-code-latest
       timeout_ms: "600000"
       disable_nonessential_traffic: true
   # ==========================================================================
@@ -220,14 +220,13 @@ claude:
         description: LLM application development with LangGraph, RAG systems, vector search, and AI agent architectures for Claude 4.5 and GPT-5.2
         keywords:
           - llm
-          - langchain
           - langgraph
           - rag
-          - vector
-          - embedding
-          - ai-agent
-          - prompt
-          - chatbot
+          - vector search
+          - ai agents
+          - claude
+          - gpt
+          - application development
       - name: agent-orchestration
         description: Multi-agent system optimization, agent improvement workflows, and context management
         keywords:
@@ -514,10 +513,13 @@ claude:
         description: Comprehensive startup business analysis with market sizing (TAM/SAM/SOM), financial modeling, team planning, and strategic research for early-stage companies
         keywords:
           - startup
-          - business-analysis
-          - market-sizing
-          - financial-modeling
-          - tam-sam-som
+          - business analysis
+          - market sizing
+          - tam
+          - sam
+          - som
+          - financial modeling
+          - strategic research
       - name: hr-legal-compliance
         description: HR policy documentation, legal compliance templates (GDPR/SOC2/HIPAA), employment contracts, and regulatory documentation
         keywords:
@@ -693,17 +695,22 @@ claude:
       - name: conductor
         description: "Context-Driven Development plugin that transforms Claude Code into a project management tool with structured workflow: Context → Spec & Plan → Implement"
         keywords:
-          - conductor
+          - project management
           - context-driven
-          - project-management
           - workflow
+          - specification
+          - planning
+          - implementation
+          - claude code
+          - development
       - name: ui-design
         description: Comprehensive UI/UX design plugin for mobile (iOS, Android, React Native) and web applications with design systems, accessibility, and modern patterns
         keywords:
-          - ui
-          - ux
-          - design-system
+          - ui design
+          - ux design
+          - mobile design
+          - web design
+          - ios
+          - android
+          - react native
           - accessibility
-          - component
-          - figma
-          - prototype
