@@ -1,12 +1,16 @@
 #!/bin/bash
-# Update Claude plugin metadata from wshobson/agents
+# Update Claude plugin metadata from wshobson/agents marketplace.json
 # - Scans plugins and preserves existing keywords
 # - Generates prompt for AI to fill missing keywords
 # - Applies AI-generated keywords back to plugins.json
+#
+# Usage:
+#   MARKETPLACE=/path/to/marketplace.json ./update-plugin-metadata.sh scan
+#   ./update-plugin-metadata.sh prompt
+#   cat ai_response.txt | ./update-plugin-metadata.sh apply
 set -euo pipefail
 
-REPO_DIR="${REPO_DIR:-/tmp/wshobson-agents}"
-MARKETPLACE="$REPO_DIR/.claude-plugin/marketplace.json"
+MARKETPLACE="${MARKETPLACE:-/tmp/marketplace.json}"
 OUTPUT="${OUTPUT:-/tmp/plugins.json}"
 
 # Scan plugins and generate plugins.json (name, description, keywords)

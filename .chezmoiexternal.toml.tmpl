@@ -1,0 +1,87 @@
+# chezmoi external dependencies
+# Run `chezmoi apply` to install/update
+# Run `chezmoi -R apply` to force refresh
+
+# ==============================================================================
+# TPM (Tmux Plugin Manager)
+# After chezmoi apply, run `prefix + I` in tmux to install plugins
+# ==============================================================================
+[".config/tmux/plugins/tpm"]
+    type = "git-repo"
+    url = "https://github.com/tmux-plugins/tpm.git"
+    refreshPeriod = "168h"
+
+# ==============================================================================
+# Claude Code Plugins
+# All plugins are downloaded at apply time via chezmoi external
+# Only metadata (keywords) is committed to git in .chezmoidata/claude.yaml
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# wshobson/agents plugins
+# Each plugin may have agents/, commands/, skills/ subdirectories
+# Structure: agents-main/plugins/{plugin}/{type}/* → .claude/{type}/{plugin}/*
+# ------------------------------------------------------------------------------
+{{- $wshobsonPlugins := .claude.wshobsonAgents.include | default list }}
+{{- $types := list "agents" "commands" "skills" }}
+
+{{- range $plugin := $wshobsonPlugins }}
+{{- range $type := $types }}
+[".claude/{{ $type }}/{{ $plugin }}"]
+    type = "archive"
+    url = "https://github.com/wshobson/agents/archive/main.tar.gz"
+    exact = true
+    stripComponents = 4
+    include = ["agents-main/plugins/{{ $plugin }}/{{ $type }}/**"]
+    refreshPeriod = "168h"
+
+{{ end }}
+{{- end }}
+# ------------------------------------------------------------------------------
+# obra/superpowers
+# Structure: superpowers-main/{type}/* → .claude/{type}/superpowers/*
+# Note: using-superpowers skill is included but unused (we use CLAUDE.md instead)
+# Cannot exclude due to chezmoi bug with include+exclude on same archive URL
+# ------------------------------------------------------------------------------
+[".claude/agents/superpowers"]
+    type = "archive"
+    url = "https://github.com/obra/superpowers/archive/main.tar.gz"
+    exact = true
+    stripComponents = 2
+    include = ["superpowers-main/agents/**"]
+    refreshPeriod = "168h"
+
+[".claude/commands/superpowers"]
+    type = "archive"
+    url = "https://github.com/obra/superpowers/archive/main.tar.gz"
+    exact = true
+    stripComponents = 2
+    include = ["superpowers-main/commands/**"]
+    refreshPeriod = "168h"
+
+[".claude/skills/superpowers"]
+    type = "archive"
+    url = "https://github.com/obra/superpowers/archive/main.tar.gz"
+    exact = true
+    stripComponents = 2
+    include = ["superpowers-main/skills/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# anthropics/skills (source-available, NOT open source)
+# License: https://github.com/anthropics/skills - see LICENSE.txt in each skill
+# These are downloaded locally at apply time, NOT committed to git
+# Structure: skills-main/skills/{skill}/* → .claude/skills/anthropics/{skill}/*
+# ------------------------------------------------------------------------------
+{{- $anthropicsSkills := .claude.anthropicsSkills.include | default list }}
+
+{{- range $skill := $anthropicsSkills }}
+[".claude/skills/anthropics/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/anthropics/skills/archive/main.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["skills-main/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+
+{{ end }}
