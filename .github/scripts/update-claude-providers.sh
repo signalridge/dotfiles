@@ -158,7 +158,8 @@ apply_response() {
                 if [[ "$value" == "true" || "$value" == "false" ]]; then
                     yq -i ".claude.providers.$provider.$field = $value" "$CLAUDE_YAML"
                 else
-                    yq -i ".claude.providers.$provider.$field = \"$value\"" "$CLAUDE_YAML"
+                    # Use strenv() to avoid explicit double quotes
+                    VALUE="$value" yq -i ".claude.providers.$provider.$field = strenv(VALUE)" "$CLAUDE_YAML"
                 fi
                 echo "  $field = $value"
             fi
