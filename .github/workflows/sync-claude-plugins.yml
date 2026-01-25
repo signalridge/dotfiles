@@ -101,9 +101,9 @@ jobs:
         run: |
           if [[ -n "$(git status --porcelain)" ]]; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
-            added=$(git status --porcelain | grep -c "^?" || echo 0)
-            modified=$(git status --porcelain | grep -c "^ M\|^M" || echo 0)
-            deleted=$(git status --porcelain | grep -c "^ D\|^D" || echo 0)
+            added=$(git status --porcelain | grep "^?" | wc -l | tr -d ' ')
+            modified=$(git status --porcelain | grep -E "^ M|^M" | wc -l | tr -d ' ')
+            deleted=$(git status --porcelain | grep -E "^ D|^D" | wc -l | tr -d ' ')
             echo "added=$added" >> $GITHUB_OUTPUT
             echo "modified=$modified" >> $GITHUB_OUTPUT
             echo "deleted=$deleted" >> $GITHUB_OUTPUT
