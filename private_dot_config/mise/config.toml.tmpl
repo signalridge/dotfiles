@@ -28,6 +28,9 @@ rust = "latest"
 "pipx:mac-cleanup" = "latest"
 {{ end -}}
 
+# pre-commit (avoid Swift compilation from nixpkgs dotnet dependency)
+pre-commit = "latest"
+
 [settings]
 # Automatically install tools when entering directory
 auto_install = true

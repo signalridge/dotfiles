@@ -48,7 +48,7 @@ homepkgs:
     - navi
     - tree-sitter # nvim-treesitter CLI dependency
     - pixi # fast Python/conda package manager
-    - pre-commit
+    # pre-commit - via mise (nixpkgs version pulls Swift as dotnet dependency)
     - rclone # cloud storage sync
     - onefetch
     - openssh
