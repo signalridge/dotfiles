@@ -23,37 +23,50 @@ attempt=0
 while ((attempt < MAX_RETRIES)); do
     attempt=$((attempt + 1))
 
-    # Make API request with timeout and fail on HTTP errors
-    if response=$(curl -sf --max-time 120 https://openrouter.ai/api/v1/chat/completions \
+    # Make API request, capture both body and HTTP status
+    tmpfile=$(mktemp)
+    if http_code=$(curl -s --max-time 120 \
+        -w "%{http_code}" \
+        -o "$tmpfile" \
         -H "Authorization: Bearer $OPENROUTER_API_KEY" \
         -H "Content-Type: application/json" \
         -H "HTTP-Referer: $OPENROUTER_REFERER" \
         -d "{
           \"model\": \"$OPENROUTER_MODEL\",
           \"messages\": [{\"role\": \"user\", \"content\": $escaped_prompt}]
-        }" 2>/dev/null); then
+        }" \
+        https://openrouter.ai/api/v1/chat/completions 2>&1); then
 
-        # Extract content from response
-        content=$(echo "$response" | jq -r '.choices[0].message.content // empty')
+        body=$(cat "$tmpfile")
+        rm -f "$tmpfile"
 
-        if [[ -n "$content" ]]; then
-            echo "$content"
-            exit 0
-        fi
-
-        # Check for rate limit error
-        error=$(echo "$response" | jq -r '.error.message // empty')
-        if [[ "$error" == *"rate"* || "$error" == *"limit"* ]]; then
-            echo "Rate limited, waiting before retry ($attempt/$MAX_RETRIES)..." >&2
-            sleep $((attempt * 10))
+        # Check HTTP status
+        if [[ "$http_code" == "200" ]]; then
+            content=$(echo "$body" | jq -r '.choices[0].message.content // empty')
+            if [[ -n "$content" ]]; then
+                echo "$content"
+                exit 0
+            fi
+            echo "Error: Empty content in response" >&2
+            echo "$body" | jq . >&2
+            exit 1
+        elif [[ "$http_code" == "429" ]]; then
+            echo "Rate limited (429), waiting before retry ($attempt/$MAX_RETRIES)..." >&2
+            sleep $((attempt * 15))
             continue
+        elif [[ "$http_code" =~ ^5 ]]; then
+            echo "Server error ($http_code), retrying ($attempt/$MAX_RETRIES)..." >&2
+            sleep $((attempt * 5))
+            continue
+        else
+            echo "HTTP error $http_code:" >&2
+            echo "$body" | jq . 2>/dev/null || echo "$body" >&2
+            exit 1
         fi
-
-        echo "Error: Empty content in response" >&2
-        echo "$response" | jq . >&2
-        exit 1
     else
-        echo "Network error, retrying ($attempt/$MAX_RETRIES)..." >&2
+        curl_exit=$?
+        rm -f "$tmpfile"
+        echo "Network error (curl exit $curl_exit), retrying ($attempt/$MAX_RETRIES)..." >&2
         sleep $((attempt * 5))
     fi
 done
