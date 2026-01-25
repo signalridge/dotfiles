@@ -53,13 +53,28 @@ Provider-recommended (not official, but some providers suggest):
 |--------------|------------|-------------|
 | API_TIMEOUT_MS | timeout_ms | API timeout in milliseconds (e.g. 600000 = 10min) |
 
+## Model Tier Hierarchy (IMPORTANT)
+
+Claude Code uses three model tiers that map to different capability levels:
+
+| Tier | Purpose | Should map to |
+|------|---------|---------------|
+| haiku_model | Fast, cheap, simple tasks (syntax check, file search) | Provider's FASTEST/CHEAPEST model (e.g., flash, turbo, lite) |
+| sonnet_model | Balanced, general coding tasks | Provider's BALANCED model (e.g., plus, standard, chat) |
+| opus_model | Complex reasoning, difficult tasks | Provider's MOST POWERFUL model (e.g., max, pro, reasoner) |
+
 ## Rules
 1. Extract values for the YAML fields listed above from each provider's documentation
 2. Use exact model IDs and URLs as shown in the documentation
-3. For small_model: if not explicitly mentioned, use the same value as model
-4. For timeout_ms: include if documentation mentions timeout configuration
-5. Set disable_nonessential_traffic to true if documentation recommends disabling telemetry
-6. Return valid JSON array only
+3. For small_model: use the provider's fast/cheap model (same as haiku tier)
+4. For haiku_model/sonnet_model/opus_model: Map to appropriate tier based on model capabilities:
+   - If provider has multiple models, map them to tiers by capability
+   - If provider only has ONE model, use that model for ALL tiers
+   - NEVER use the most powerful model for haiku (it should be fast/cheap)
+5. For timeout_ms: include if documentation mentions timeout configuration
+6. Set disable_nonessential_traffic to true if documentation recommends disabling telemetry
+7. Return valid JSON array only
+8. Only include fields that are explicitly mentioned or can be reasonably inferred from documentation
 
 ## Output format
 ```json
@@ -95,9 +110,10 @@ HEADER
                 content=$(jq -r ".[\"$p\"].content // empty" "$DOCS_JSON_FILE" 2>/dev/null)
                 if [[ -n "$content" ]]; then
                     echo ""
-                    echo "Page content (truncated):"
+                    echo "Page content:"
                     echo '```'
-                    echo "$content" | head -150 || true
+                    # Devstral has 256K context, no need to truncate aggressively
+                    echo "$content" | head -2000 || true
                     echo '```'
                 fi
             fi
