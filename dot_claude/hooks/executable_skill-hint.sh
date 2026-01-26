@@ -3,7 +3,12 @@
 # Supports both English and Chinese keywords
 # Source: Optimized based on wshobson/agents and catlog22 patterns
 
-input=$(cat)
+# Handle case where stdin is unavailable or empty
+input=$(cat 2>/dev/null) || true
+if [[ -z "$input" ]]; then
+    exit 0
+fi
+
 prompt=$(echo "$input" | jq -r '.prompt // ""' 2>/dev/null | tr '[:upper:]' '[:lower:]')
 
 # Exit early if no prompt

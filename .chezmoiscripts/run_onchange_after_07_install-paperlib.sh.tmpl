@@ -12,7 +12,19 @@ DMG_NAME="Paperlib_${VERSION}{{ $suffix }}.dmg"
 DMG_URL="https://github.com/${REPO}/releases/download/release-electron-${VERSION}/${DMG_NAME}"
 TEMP_DMG="/tmp/${DMG_NAME}"
 
-curl -fsSL "$DMG_URL" -o "$TEMP_DMG"
+# Download with explicit error handling
+if ! curl -fsSL "$DMG_URL" -o "$TEMP_DMG"; then
+    echo "    Failed to download Paperlib v${VERSION}"
+    rm -f "$TEMP_DMG"
+    exit 1
+fi
+
+# Verify download is a valid DMG (not an error page)
+if ! file "$TEMP_DMG" | grep -q "zlib compressed"; then
+    echo "    Downloaded file is not a valid DMG"
+    rm -f "$TEMP_DMG"
+    exit 1
+fi
 
 VOLUME=$(hdiutil attach "$TEMP_DMG" | grep Volumes | awk '{print $3,$4,$5,$6}' | sed 's/ *$//')
 APP_NAME=$(basename "$(find "$VOLUME" -maxdepth 1 -name '*.app' -print -quit)")

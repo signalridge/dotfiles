@@ -428,7 +428,7 @@ restore_vscode_ext() {
     local backup_file="${1:-$(chezmoi source-path)/backups/vscode-extensions.txt}"
     if [[ -f "$backup_file" ]]; then
         echo "Restoring VS Code extensions from $backup_file..."
-        cat "$backup_file" | xargs -L 1 code --install-extension
+        xargs -L 1 code --install-extension <"$backup_file"
     else
         echo "Backup file not found: $backup_file"
         return 1
@@ -498,6 +498,11 @@ git-cleanup() {
 # Usage: up 3  (equivalent to cd ../../..)
 up() {
     local count="${1:-1}"
+    # Validate: must be positive integer, max 20 levels
+    if ! [[ "$count" =~ ^[0-9]+$ ]] || [[ "$count" -lt 1 ]] || [[ "$count" -gt 20 ]]; then
+        echo "Usage: up <1-20>"
+        return 1
+    fi
     local path=""
     for ((i = 0; i < count; i++)); do
         path="../$path"

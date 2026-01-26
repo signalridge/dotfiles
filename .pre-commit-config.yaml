@@ -155,4 +155,4 @@ repos:
             echo "✅ All template checks passed!"
           '
 ci:
-  autoupdate_schedule: monthly
+  autoupdate_schedule: weekly

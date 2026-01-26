@@ -45,18 +45,26 @@ is_git_repo() { git rev-parse --is-inside-work-tree &>/dev/null; }
 delete-files() {
     local pattern="${1:-*.DS_Store}"
     print_info "Searching for files matching: $pattern"
-    local files
-    files=$(find . -type f -name "$pattern" 2>/dev/null)
-    if [[ -z "$files" ]]; then
+
+    # Use temp file to avoid TOCTOU race condition
+    local tmpfile
+    tmpfile=$(mktemp)
+    trap 'rm -f "$tmpfile"' RETURN
+
+    find . -type f -name "$pattern" -print0 2>/dev/null >"$tmpfile"
+
+    if [[ ! -s "$tmpfile" ]]; then
         print_success "No files found matching: $pattern"
         return 0
     fi
-    echo "$files"
+
+    # Display files (convert null-delimited to newlines for display)
+    tr '\0' '\n' <"$tmpfile"
     echo ""
     printf "Delete these files? [y/N] "
     read -r confirm
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
-        find . -type f -name "$pattern" -delete 2>/dev/null
+        xargs -0 rm -f <"$tmpfile"
         print_success "Deleted files matching: $pattern"
     else
         print_warning "Cancelled"

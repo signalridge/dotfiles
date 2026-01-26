@@ -3,9 +3,13 @@
 # Source: Git safety best practices
 
 # Get the command from Claude's input (passed as JSON via stdin)
-INPUT=$(cat)
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
+# Handle case where stdin is unavailable or empty
+INPUT=$(cat 2>/dev/null) || true
+if [[ -z "$INPUT" ]]; then
+    exit 0
+fi
 
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 if [[ -z "$COMMAND" ]]; then
     exit 0
 fi

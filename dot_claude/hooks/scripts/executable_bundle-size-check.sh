@@ -93,7 +93,7 @@ if [[ "$hook_event" == "PostToolUse" && "$tool_name" =~ ^(Write|Edit|MultiEdit)$
     # Check absolute size
     new_kb=$((new_size / 1024))
     if [[ $new_kb -gt $MAX_BUNDLE_KB ]]; then
-        reason="Bundle size ($(format_size $new_size)) exceeds maximum allowed size (${MAX_BUNDLE_KB}KB). Consider code splitting or removing unused dependencies."
+        reason="Bundle size ($(format_size "$new_size")) exceeds maximum allowed size (${MAX_BUNDLE_KB}KB). Consider code splitting or removing unused dependencies."
         reason=$(echo "$reason" | jq -Rs '.')
         echo "{\"decision\": \"block\", \"reason\": $reason}"
         exit 0
@@ -105,17 +105,17 @@ if [[ "$hook_event" == "PostToolUse" && "$tool_name" =~ ^(Write|Edit|MultiEdit)$
         increase_kb=$((increase / 1024))
 
         if [[ $increase_kb -gt $MAX_INCREASE_KB ]]; then
-            reason="Bundle size increased by $(format_size $increase) (from $(format_size $baseline) to $(format_size $new_size)). Maximum allowed increase is ${MAX_INCREASE_KB}KB."
+            reason="Bundle size increased by $(format_size "$increase") (from $(format_size "$baseline") to $(format_size "$new_size")). Maximum allowed increase is ${MAX_INCREASE_KB}KB."
             reason=$(echo "$reason" | jq -Rs '.')
             echo "{\"decision\": \"block\", \"reason\": $reason}"
             exit 0
         elif [[ $increase_kb -gt 10 ]]; then
-            echo "[bundle] Size increased by $(format_size $increase) to $(format_size $new_size)" >&2
+            echo "[bundle] Size increased by $(format_size "$increase") to $(format_size "$new_size")" >&2
         elif [[ $increase_kb -lt -10 ]]; then
-            echo "[bundle] Size decreased by $(format_size $((-increase))) to $(format_size $new_size)" >&2
+            echo "[bundle] Size decreased by $(format_size "$((-increase))") to $(format_size "$new_size")" >&2
         fi
     else
-        echo "[bundle] Bundle size: $(format_size $new_size)" >&2
+        echo "[bundle] Bundle size: $(format_size "$new_size")" >&2
     fi
 fi
 

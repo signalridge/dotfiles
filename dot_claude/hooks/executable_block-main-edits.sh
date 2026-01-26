@@ -4,7 +4,12 @@
 
 set -euo pipefail
 
-input=$(cat)
+# Handle case where stdin is unavailable or empty
+input=$(cat 2>/dev/null) || true
+if [[ -z "$input" ]]; then
+    exit 0
+fi
+
 tool=$(echo "$input" | jq -r '.tool_name // ""' 2>/dev/null)
 
 # Only check for Write and Edit tools

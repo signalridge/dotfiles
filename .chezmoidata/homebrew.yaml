@@ -5,7 +5,7 @@ homebrew:
       - FelixKratz/formulae
     work:
       - azure/functions
-    private:
+    private: []
   brews:
     shared:
       - macos-trash
@@ -63,8 +63,8 @@ homebrew:
       - telegram
       - zoom
   masApps:
-    shared:
-    work:
+    shared: []
+    work: []
     private:
       - - KeystrokePro
         - "1572206224"

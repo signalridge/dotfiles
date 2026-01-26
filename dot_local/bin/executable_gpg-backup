@@ -44,9 +44,9 @@ mkdir -p "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"
 
 # Export secret key (will prompt for passphrase)
+# Use subshell with umask to ensure secure permissions from creation (no TOCTOU race)
 echo "[1/3] Exporting private key..."
-gpg --armor --export-secret-keys "$GPG_KEY_ID" > "$BACKUP_DIR/private-key.asc"
-chmod 600 "$BACKUP_DIR/private-key.asc"
+(umask 077 && gpg --armor --export-secret-keys "$GPG_KEY_ID" > "$BACKUP_DIR/private-key.asc")
 
 # Export public key
 echo "[2/3] Exporting public key..."

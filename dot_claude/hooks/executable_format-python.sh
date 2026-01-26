@@ -2,7 +2,11 @@
 # format-python.sh - Auto-format Python files after editing
 # Uses ruff for formatting and linting (via uvx for isolation)
 
-input=$(cat)
+# Handle case where stdin is unavailable or empty
+input=$(cat 2>/dev/null) || true
+if [[ -z "$input" ]]; then
+    exit 0
+fi
 
 # Extract file path
 file_path=$(echo "$input" | jq -r '.tool_input.file_path // .tool_input.path // ""' 2>/dev/null || echo "")

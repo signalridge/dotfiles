@@ -69,6 +69,7 @@ encryption = "age"
 {{-   end -}}
 {{- end -}}
 
+{{/* NOTE: ip-api.com free tier only supports HTTP (HTTPS requires paid plan) */}}
 {{- if eq $timezone "" -}}
 {{-   $ipApiJson := output "sh" "-c" "curl -fsS --max-time 2 http://ip-api.com/json/ 2>/dev/null || echo '{}' " -}}
 {{-   $timezone = (index (fromJson $ipApiJson) "timezone") | default "" -}}

@@ -71,7 +71,3 @@ hammerspoon:
       # AI -> Chinese
       - app: ChatGPT
         ime: zh
-# ─────────────────────────────────────────────────────────────────────────────
-# Claude Code external plugins (wshobson/agents)
-# Leave empty or omit to enable ALL plugins
-# ─────────────────────────────────────────────────────────────────────────────

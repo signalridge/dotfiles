@@ -1,7 +1,7 @@
 #!/bin/bash
 # Claude Code Provider Switcher (Declarative)
 # Modifies chezmoi state (claudeProvider) and applies changes
-set -eo pipefail
+set -euo pipefail
 
 # Colors
 RED='\033[0;31m'
@@ -263,7 +263,7 @@ add_key() {
     fi
 
     echo -e "${BLUE}Adding API key for $display_name${NC}"
-    echo -n "API Key: "
+    printf "API Key: "
     read -rs api_key
     echo ""
 

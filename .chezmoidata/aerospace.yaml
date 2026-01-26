@@ -23,7 +23,7 @@ aerospace:
         comment: RustDesk
       - id: io.tailscale.ipn.macsys
         comment: Tailscale
-    work:
+    work: []
     private:
       # Utilities
       - id: com.raycast.macos

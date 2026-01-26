@@ -4,7 +4,7 @@
 
 main() {
     local input
-    input=$(cat)
+    input=$(cat 2>/dev/null) || true
 
     # Validate input
     if [ -z "$input" ]; then
