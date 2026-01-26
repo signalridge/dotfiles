@@ -369,7 +369,7 @@ On first apply, bootstrap scripts will:
 
 ## 📈 Stats
 
-![Repobeats](https://repobeats.axiom.co/api/embed/b47788b120b4e3a0f049b72115d88268d5523f64.svg "Repobeats analytics")
+![Alt](https://repobeats.axiom.co/api/embed/81ef9a8c511918fc0eece9bd09bb46ba78eefd0c.svg "Repobeats analytics image")
 
 ---
 
