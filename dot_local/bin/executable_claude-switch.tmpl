@@ -23,9 +23,131 @@ parse_provider_account() {
     local input="$1"
     if [[ "$input" =~ ^([^@]+)@(.+)$ ]]; then
         echo "${BASH_REMATCH[1]}|${BASH_REMATCH[2]}"
+    elif [[ "$input" =~ ^([^/]+)/(.+)$ ]]; then
+        # Also accept provider/account (matches gopass folder layout)
+        echo "${BASH_REMATCH[1]}|${BASH_REMATCH[2]}"
     else
         echo "$input|default"
     fi
+}
+
+require_cmd() {
+    local cmd
+    for cmd in "$@"; do
+        if ! command -v "$cmd" &>/dev/null; then
+            echo -e "${RED}Error:${NC} required command not found: $cmd" >&2
+            return 1
+        fi
+    done
+}
+
+validate_account() {
+    local account="$1"
+    # Keep the account name path-safe and shell-friendly.
+    if [[ -z "$account" ]]; then
+        return 1
+    fi
+    if [[ "$account" =~ [/@[:space:]] ]]; then
+        return 1
+    fi
+    if [[ ! "$account" =~ ^[A-Za-z0-9._-]+$ ]]; then
+        return 1
+    fi
+    return 0
+}
+
+list_accounts() {
+    local provider="$1"
+    local prefix="claude-code/providers/$provider"
+    local matches
+    if ! matches=$(gopass list -f "$prefix" 2>/dev/null); then
+        return 1
+    fi
+    echo "$matches" \
+        | awk -F/ -v provider="$provider" '$1=="claude-code" && $2=="providers" && $3==provider && $5=="api_key" { print $4 }' \
+        | awk 'NF' \
+        | sort -u
+}
+
+prompt_select_existing_account() {
+    local provider="$1"
+    shift
+    local -a account_list=("$@")
+
+    if [[ "${#account_list[@]}" -le 0 ]]; then
+        return 1
+    fi
+
+    echo -e "${YELLOW}Multiple accounts found for '$provider'. Choose one:${NC}" >&2
+    local i=1
+    local account
+    for account in "${account_list[@]}"; do
+        echo "  $i) $account" >&2
+        i=$((i + 1))
+    done
+
+    local choice
+    while true; do
+        printf "Select account [1-%d] (or 'q' to cancel): " "${#account_list[@]}" >&2
+        read -r choice
+        if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
+            return 2
+        fi
+        if [[ "$choice" =~ ^[0-9]+$ ]] && [[ "$choice" -ge 1 ]] && [[ "$choice" -le "${#account_list[@]}" ]]; then
+            echo "${account_list[$((choice - 1))]}"
+            return 0
+        fi
+    done
+}
+
+prompt_select_account_for_add_key() {
+    local provider="$1"
+    shift
+    local -a account_list=("$@")
+
+    if [[ "${#account_list[@]}" -le 0 ]]; then
+        printf "Account name [default]: " >&2
+        local account
+        read -r account
+        account=${account:-default}
+        if ! validate_account "$account"; then
+            echo -e "${RED}Error:${NC} invalid account name '$account' (use letters/numbers/._- only)" >&2
+            return 2
+        fi
+        echo "$account"
+        return 0
+    fi
+
+    echo -e "${YELLOW}Multiple accounts found for '$provider'. Choose which one to update:${NC}" >&2
+    local i=1
+    local account
+    for account in "${account_list[@]}"; do
+        echo "  $i) $account" >&2
+        i=$((i + 1))
+    done
+
+    local choice
+    while true; do
+        printf "Select account [1-%d] (or 'n' to create new, 'q' to cancel): " "${#account_list[@]}" >&2
+        read -r choice
+        if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
+            return 2
+        fi
+        if [[ "$choice" == "n" || "$choice" == "N" ]]; then
+            printf "New account name: " >&2
+            read -r account
+            if ! validate_account "$account"; then
+                echo -e "${RED}Error:${NC} invalid account name '$account' (use letters/numbers/._- only)" >&2
+                continue
+            fi
+            echo "$account"
+            return 0
+        fi
+        if [[ "$choice" =~ ^[0-9]+$ ]] && [[ "$choice" -ge 1 ]] && [[ "$choice" -le "${#account_list[@]}" ]]; then
+            echo "${account_list[$((choice - 1))]}"
+            return 0
+        fi
+    done
 }
 
 # Get current provider@account from chezmoi data
@@ -90,24 +212,130 @@ is_third_party() {
 }
 
 # Check if token exists in gopass (supports multi-account paths)
-# Tries: provider/account/api_key first, then provider/api_key for backward compat
+# Path: claude-code/providers/<provider>/<account>/api_key
+get_token_path() {
+    local provider="$1"
+    local account="${2:-default}"
+
+    local new_path="claude-code/providers/$provider/$account/api_key"
+
+    # NOTE: use `gopass list` so we don't trigger GPG prompts just to check existence
+    if gopass list -f "$new_path" &>/dev/null; then
+        echo "$new_path"
+        return 0
+    fi
+
+    return 1
+}
+
 check_token_exists() {
     local provider="$1"
     local account="${2:-default}"
 
-    # Try new path: provider/account/api_key
-    if gopass show -o "claude-code/providers/$provider/$account/api_key" &>/dev/null; then
+    if get_token_path "$provider" "$account" &>/dev/null; then
+        return 0
+    fi
+    return 1
+}
+
+get_token() {
+    local provider="$1"
+    local account="${2:-default}"
+
+    local path
+    if ! path=$(get_token_path "$provider" "$account"); then
+        return 1
+    fi
+    gopass show -o "$path"
+}
+
+resolve_account() {
+    local provider="$1"
+    local account="${2:-default}"
+
+    if [[ "$account" != "default" ]]; then
+        echo "$account"
         return 0
     fi
 
-    # For default account, try old path: provider/api_key (backward compat)
-    if [[ "$account" == "default" ]]; then
-        if gopass show -o "claude-code/providers/$provider/api_key" &>/dev/null; then
-            return 0
+    # If default exists, use it.
+    if check_token_exists "$provider" "default"; then
+        echo "default"
+        return 0
+    fi
+
+    # Try to auto-pick if there is exactly one account under this provider.
+    # This avoids requiring users to pass @account when they only have one.
+    local accounts
+    if ! accounts=$(list_accounts "$provider"); then
+        return 1
+    fi
+
+    local -a account_list=()
+    local line
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && account_list+=("$line")
+    done <<<"$accounts"
+
+    if [[ "${#account_list[@]}" == "1" ]]; then
+        echo "${account_list[0]}"
+        return 0
+    fi
+
+    if [[ "${#account_list[@]}" -gt 1 ]]; then
+        # If interactive, prompt to choose; otherwise ask user to specify explicitly.
+        if [[ -t 0 ]]; then
+            if prompt_select_existing_account "$provider" "${account_list[@]}"; then
+                return 0
+            fi
+            return $?
         fi
+
+        echo -e "${RED}Error: Multiple accounts found for '$provider'. Please specify one:${NC}" >&2
+        printf '  - %s@%s\n' "$provider" "${account_list[@]}" >&2
+        return 2
     fi
 
     return 1
+}
+
+resolve_account_for_add_key() {
+    local provider="$1"
+    local account="${2:-default}"
+
+    if [[ "$account" != "default" ]]; then
+        echo "$account"
+        return 0
+    fi
+
+    local accounts
+    accounts=$(list_accounts "$provider" 2>/dev/null || true)
+
+    local -a account_list=()
+    local line
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && account_list+=("$line")
+    done <<<"$accounts"
+
+    if [[ "${#account_list[@]}" == "1" ]]; then
+        echo -e "${YELLOW}No account specified; updating existing account '$provider@${account_list[0]}'${NC}" >&2
+        echo "${account_list[0]}"
+        return 0
+    fi
+
+    if [[ -t 0 ]]; then
+        prompt_select_account_for_add_key "$provider" "${account_list[@]}"
+        return $?
+    fi
+
+    if [[ "${#account_list[@]}" -gt 1 ]]; then
+        echo -e "${RED}Error: Multiple accounts found for '$provider'. Please specify one:${NC}" >&2
+        printf '  - %s@%s\n' "$provider" "${account_list[@]}" >&2
+        return 2
+    fi
+
+    # Non-interactive with no existing accounts: default to "default".
+    echo "default"
 }
 
 # List available providers
@@ -165,7 +393,7 @@ switch_provider() {
 
     if [[ -z "$input" ]]; then
         echo -e "${RED}Error: Provider name required${NC}" >&2
-        echo "Usage: claude-switch use <provider[@account]>" >&2
+        echo "Usage: claude-switch use <provider[@account] | provider/account>" >&2
         echo ""
         list_providers
         return 1
@@ -193,6 +421,24 @@ switch_provider() {
         target="$provider"
     else
         target="$provider@$account"
+    fi
+
+    # For third-party providers, auto-resolve default account if needed.
+    if is_third_party "$provider" && [[ "$account" == "default" ]]; then
+        local resolved_account
+        if resolved_account=$(resolve_account "$provider" "$account"); then
+            if [[ "$resolved_account" != "default" ]]; then
+                account="$resolved_account"
+                target="$provider@$account"
+                echo -e "${YELLOW}No account specified; using '$target'${NC}"
+                echo -e "${YELLOW}Tip:${NC} pass ${YELLOW}$target${NC} to be explicit"
+            fi
+        else
+            local rc=$?
+            if [[ "$rc" == "2" ]]; then
+                return 1
+            fi
+        fi
     fi
 
     if [[ "$current" == "$target" ]]; then
@@ -234,7 +480,7 @@ add_key() {
 
     if [[ -z "$input" ]]; then
         echo -e "${RED}Error: Provider name required${NC}" >&2
-        echo "Usage: claude-switch add-key <provider[@account]>" >&2
+        echo "Usage: claude-switch add-key <provider[@account] | provider/account>" >&2
         return 1
     fi
 
@@ -252,6 +498,24 @@ add_key() {
 
     if ! command -v gopass &>/dev/null; then
         echo -e "${RED}Error: gopass not found${NC}" >&2
+        return 1
+    fi
+
+    # If user didn't specify an account, try to reuse existing one(s).
+    if [[ "$account" == "default" ]]; then
+        local resolved_account
+        if resolved_account=$(resolve_account_for_add_key "$provider" "$account"); then
+            account="$resolved_account"
+        else
+            local rc=$?
+            if [[ "$rc" == "2" ]]; then
+                return 1
+            fi
+        fi
+    fi
+
+    if ! validate_account "$account"; then
+        echo -e "${RED}Error:${NC} invalid account name '$account' (use letters/numbers/._- only)" >&2
         return 1
     fi
 
@@ -282,6 +546,7 @@ test_provider() {
     local input="${1:-}"
 
     local provider account base_url
+    local account_was_default=false
 
     if [[ -z "$input" ]]; then
         # Test current provider
@@ -293,6 +558,9 @@ test_provider() {
         parsed=$(parse_provider_account "$input")
         provider=$(echo "$parsed" | cut -d'|' -f1)
         account=$(echo "$parsed" | cut -d'|' -f2)
+    fi
+    if [[ "$account" == "default" ]]; then
+        account_was_default=true
     fi
 
     if ! is_valid_provider "$provider"; then
@@ -314,6 +582,26 @@ test_provider() {
             ;;
     esac
 
+    require_cmd curl || return 1
+
+    # Auto-resolve default account if needed.
+    if [[ "$account" == "default" ]]; then
+        local resolved_account
+        if resolved_account=$(resolve_account "$provider" "$account"); then
+            account="$resolved_account"
+        else
+            local rc=$?
+            if [[ "$rc" == "2" ]]; then
+                return 1
+            fi
+        fi
+    fi
+
+    if [[ "$account_was_default" == "true" ]] && [[ "$account" != "default" ]]; then
+        echo -e "${YELLOW}No account specified; using '$provider@$account'${NC}"
+        echo -e "${YELLOW}Tip:${NC} run ${YELLOW}claude-switch test $provider@$account${NC} to be explicit"
+    fi
+
     local display_name
     if [[ "$account" == "default" ]]; then
         display_name="$provider"
@@ -332,12 +620,16 @@ test_provider() {
     fi
     echo -e "  ${GREEN}✓ Token found in gopass${NC}"
 
-    # Get the actual token
-    local token
-    if gopass show -o "claude-code/providers/$provider/$account/api_key" &>/dev/null; then
-        token=$(gopass show -o "claude-code/providers/$provider/$account/api_key")
-    else
-        token=$(gopass show -o "claude-code/providers/$provider/api_key")
+    # Get the actual token (decrypt once)
+    local token secret_path
+    if ! token=$(get_token "$provider" "$account"); then
+        echo -e "${RED}✗ Failed to decrypt API token from gopass${NC}" >&2
+        if secret_path=$(get_token_path "$provider" "$account"); then
+            echo -e "Try: ${YELLOW}gopass show $secret_path${NC}" >&2
+        else
+            echo -e "Try: ${YELLOW}gopass show claude-code/providers/$provider/$account/api_key${NC}" >&2
+        fi
+        return 1
     fi
 
     # Test API connectivity with minimal messages request
@@ -409,15 +701,16 @@ Usage: claude-switch <command> [args]
 Commands:
   list                       List available providers
   current                    Show current provider details
-  use <provider[@account]>   Switch to a provider (with optional account)
-  add-key <provider[@account]> Add/update API key in gopass
-  test [provider[@account]]  Test API connectivity
+  use <provider[@account] | provider/account>   Switch to a provider (with optional account)
+  add-key <provider[@account] | provider/account> Add/update API key in gopass
+  test [provider[@account] | provider/account]  Test API connectivity
   help                       Show this help
 
 Examples:
   claude-switch list               # List all providers
   claude-switch use deepseek       # Switch to DeepSeek (default account)
   claude-switch use deepseek@work  # Switch to DeepSeek work account
+  claude-switch use doubao/private # Slash format is also accepted
   claude-switch add-key deepseek@work  # Add API key for work account
   claude-switch test               # Test current provider
   claude-switch test deepseek@work # Test specific provider/account
@@ -438,6 +731,8 @@ EOF
 main() {
     local cmd="${1:-help}"
     shift || true
+
+    require_cmd chezmoi jq || exit 1
 
     case "$cmd" in
         list|ls)
