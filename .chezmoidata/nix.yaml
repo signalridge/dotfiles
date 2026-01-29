@@ -71,6 +71,8 @@ homepkgs:
     - shfmt
     - statix # Nix linter
     - nixfmt
+    - actionlint # GitHub Actions linter
+    - golangci-lint # Go linter
     - treefmt
     - nodePackages.prettier
     - tlrc
