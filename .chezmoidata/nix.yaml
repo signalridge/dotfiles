@@ -73,6 +73,7 @@ homepkgs:
     - nixfmt
     - actionlint # GitHub Actions linter
     - golangci-lint # Go linter
+    - goreleaser # Go release automation
     - treefmt
     - nodePackages.prettier
     - tlrc
