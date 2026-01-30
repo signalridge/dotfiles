@@ -6,7 +6,7 @@ const { chromium } = require("playwright");
 
 const PROVIDER_DOCS = {
   deepseek: "https://api-docs.deepseek.com/guides/anthropic_api",
-  kimi: "https://platform.moonshot.cn/docs/guide/agent-support",
+  kimi: "https://github.com/MoonshotAI/kimi-cli/blob/main/docs/en/configuration/providers.md",
   glm: "https://docs.bigmodel.cn/cn/guide/develop/claude",
   qwen: "https://help.aliyun.com/zh/model-studio/claude-code",
   minimax: "https://platform.minimax.io/docs/coding-plan/claude-code",

@@ -12,7 +12,7 @@ CLAUDE_YAML="$REPO_ROOT/.chezmoidata/claude.yaml"
 # Provider documentation URLs
 declare -A PROVIDER_DOCS=(
     ["deepseek"]="https://api-docs.deepseek.com/guides/anthropic_api"
-    ["kimi"]="https://platform.moonshot.cn/docs/guide/agent-support"
+    ["kimi"]="https://github.com/MoonshotAI/kimi-cli/blob/main/docs/en/configuration/providers.md"
     ["glm"]="https://docs.bigmodel.cn/cn/guide/develop/claude"
     ["qwen"]="https://help.aliyun.com/zh/model-studio/claude-code"
     ["minimax"]="https://platform.minimax.io/docs/coding-plan/claude-code"
@@ -75,6 +75,11 @@ Claude Code uses three model tiers that map to different capability levels:
 6. Set disable_nonessential_traffic to true if documentation recommends disabling telemetry
 7. Return valid JSON array only
 8. Only include fields that are explicitly mentioned or can be reasonably inferred from documentation
+
+## URL Extraction Rules (IMPORTANT)
+When extracting base_url from documentation:
+- Remove `/v1` or `/v1/` from the path if present - the version prefix should NOT be included in base_url
+- Example: if docs show `https://api.example.com/v1/anthropic`, use `https://api.example.com/anthropic`
 
 ## Output format
 ```json

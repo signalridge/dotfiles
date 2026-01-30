@@ -28,16 +28,16 @@ claude:
       haiku_model: deepseek-chat
       sonnet_model: deepseek-chat
       opus_model: deepseek-chat
-    # Kimi K2 (Moonshot): https://platform.moonshot.cn/docs/guide/agent-support
+    # Kimi K2 (Moonshot): https://github.com/MoonshotAI/kimi-cli/blob/main/docs/en/configuration/providers.md
     kimi:
-      base_url: https://api.moonshot.cn/anthropic
-      model: kimi-k2-thinking-turbo
-      small_model: kimi-k2-thinking-turbo
+      base_url: https://api.kimi.com/coding
+      model: kimi-k2.5
+      small_model: kimi-k2.5
       timeout_ms: "600000"
       disable_nonessential_traffic: false
-      haiku_model: kimi-k2-thinking-turbo
-      sonnet_model: kimi-k2-thinking-turbo
-      opus_model: kimi-k2-thinking-turbo
+      haiku_model: kimi-k2.5
+      sonnet_model: kimi-k2.5
+      opus_model: kimi-k2.5
     # GLM (Zhipu AI): https://docs.bigmodel.cn/cn/guide/develop/claude
     glm:
       base_url: https://open.bigmodel.cn/api/anthropic
