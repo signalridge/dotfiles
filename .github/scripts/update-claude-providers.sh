@@ -152,7 +152,11 @@ apply_response() {
 
         # Update models array
         if [[ "$models" != "[]" ]]; then
-            MODELS="$models" yq -i ".claude.providers.$provider.models = env(MODELS) | .claude.providers.$provider.models |= (. | fromjson)" "$CLAUDE_YAML"
+            # yq can't parse JSON from env var directly, use temp file
+            tmpfile=$(mktemp)
+            echo "$models" | yq -p json -o yaml >"$tmpfile"
+            yq -i ".claude.providers.$provider.models = load(\"$tmpfile\")" "$CLAUDE_YAML"
+            rm -f "$tmpfile"
             echo "  models = $models"
         fi
     done
