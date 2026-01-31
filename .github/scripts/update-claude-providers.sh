@@ -1,8 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # update-claude-providers.sh - Update Claude Code provider configs from official docs
 # Usage:
-#   ./update-claude-providers.sh prompt [provider]  # Generate Gemini prompt
+#   ./update-claude-providers.sh prompt [provider]  # Generate AI prompt
 #   ./update-claude-providers.sh apply              # Apply AI response (reads stdin)
+#
+# NOTE: This script only updates the 'providers' section (base_url, models).
+#       The 'accounts' section is user-configured and should not be auto-updated.
 
 set -euo pipefail
 
@@ -19,7 +22,7 @@ declare -A PROVIDER_DOCS=(
     ["doubao"]="https://www.volcengine.com/docs/82379/1928261"
 )
 
-# Generate prompt for Gemini
+# Generate prompt for AI
 generate_prompt() {
     local provider="${1:-all}"
     local providers=()
@@ -33,69 +36,38 @@ generate_prompt() {
     cat <<'HEADER'
 You are a configuration extraction assistant. Extract Claude Code provider configuration from official documentation.
 
-## Claude Code Environment Variables
+## Task
 
-Official env vars (from https://code.claude.com/docs/en/settings):
+Extract the following information for each provider:
+1. **base_url**: The API endpoint URL (without /v1 suffix)
+2. **models**: List of available model IDs
 
-| Env Variable | YAML Field | Description |
-|--------------|------------|-------------|
-| ANTHROPIC_BASE_URL | base_url | API endpoint URL (required for third-party) |
-| ANTHROPIC_MODEL | model | Default model ID |
-| ANTHROPIC_SMALL_FAST_MODEL | small_model | Smaller/faster model for background tasks |
-| ANTHROPIC_DEFAULT_HAIKU_MODEL | haiku_model | Model for Haiku tier |
-| ANTHROPIC_DEFAULT_SONNET_MODEL | sonnet_model | Model for Sonnet tier |
-| ANTHROPIC_DEFAULT_OPUS_MODEL | opus_model | Model for Opus tier |
-| CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC | disable_nonessential_traffic | Disable telemetry (boolean) |
+## YAML Structure
 
-Provider-recommended (not official, but some providers suggest):
-
-| Env Variable | YAML Field | Description |
-|--------------|------------|-------------|
-| API_TIMEOUT_MS | timeout_ms | API timeout in milliseconds (e.g. 600000 = 10min) |
-
-## Model Tier Hierarchy (IMPORTANT)
-
-Claude Code uses three model tiers that map to different capability levels:
-
-| Tier | Purpose | Should map to |
-|------|---------|---------------|
-| haiku_model | Fast, cheap, simple tasks (syntax check, file search) | Provider's FASTEST/CHEAPEST model (e.g., flash, turbo, lite) |
-| sonnet_model | Balanced, general coding tasks | Provider's BALANCED model (e.g., plus, standard, chat) |
-| opus_model | Complex reasoning, difficult tasks | Provider's MOST POWERFUL model (e.g., max, pro, reasoner) |
+The config uses this structure:
+```yaml
+claude:
+  providers:
+    provider_name:
+      base_url: "https://api.example.com/anthropic"
+      models:
+        - model-id-1
+        - model-id-2
+```
 
 ## Rules
-1. Extract values for the YAML fields listed above from each provider's documentation
-2. Use exact model IDs and URLs as shown in the documentation
-3. For small_model: use the provider's fast/cheap model (same as haiku tier)
-4. For haiku_model/sonnet_model/opus_model: Map to appropriate tier based on model capabilities:
-   - If provider has multiple models, map them to tiers by capability
-   - If provider only has ONE model, use that model for ALL tiers
-   - NEVER use the most powerful model for haiku (it should be fast/cheap)
-5. For timeout_ms: include if documentation mentions timeout configuration
-6. Set disable_nonessential_traffic to true if documentation recommends disabling telemetry
-7. Return valid JSON array only
-8. Only include fields that are explicitly mentioned or can be reasonably inferred from documentation
-
-## URL Extraction Rules (IMPORTANT)
-When extracting base_url from documentation:
-- Remove `/v1` or `/v1/` from the path if present - the version prefix should NOT be included in base_url
-- Example: if docs show `https://api.example.com/v1/anthropic`, use `https://api.example.com/anthropic`
+1. Extract base_url exactly as documented (remove /v1 or /v1/ suffix if present)
+2. List ALL available model IDs mentioned in the documentation
+3. Order models by capability: most powerful first, fastest/cheapest last
+4. Return valid JSON array only
 
 ## Output format
 ```json
 [
   {
     "provider": "provider_name",
-    "config": {
-      "base_url": "...",
-      "model": "...",
-      "small_model": "...",
-      "timeout_ms": "600000",
-      "haiku_model": "...",
-      "sonnet_model": "...",
-      "opus_model": "...",
-      "disable_nonessential_traffic": true
-    }
+    "base_url": "https://api.example.com/anthropic",
+    "models": ["model-powerful", "model-balanced", "model-fast"]
   }
 ]
 ```
@@ -117,7 +89,6 @@ HEADER
                     echo ""
                     echo "Page content:"
                     echo '```'
-                    # Devstral has 256K context, no need to truncate aggressively
                     echo "$content" | head -2000 || true
                     echo '```'
                 fi
@@ -128,6 +99,7 @@ HEADER
 }
 
 # Apply AI response to claude.yaml
+# Only updates providers section (base_url, models), not accounts
 apply_response() {
     local response
     response=$(cat)
@@ -141,7 +113,6 @@ apply_response() {
         json=$(echo "$response" | sed -n '/```/,/```/p' | grep -v '```')
     else
         # Try to extract raw JSON array (handles both compact and multiline)
-        # Use awk to properly match balanced brackets
         json=$(echo "$response" | awk '
             /\[/ { start=1; depth=0 }
             start {
@@ -164,27 +135,26 @@ apply_response() {
         exit 1
     fi
 
-    # Apply each provider config
+    # Apply each provider config (only base_url and models)
     echo "$json" | jq -c '.[]' | while read -r item; do
-        local provider config
+        local provider base_url models
         provider=$(echo "$item" | jq -r '.provider')
-        config=$(echo "$item" | jq -c '.config')
+        base_url=$(echo "$item" | jq -r '.base_url // empty')
+        models=$(echo "$item" | jq -c '.models // []')
 
         echo "Updating: $provider"
 
-        # Dynamically iterate over ALL fields in the config
-        echo "$config" | jq -r 'to_entries[] | "\(.key)\t\(.value)"' | while IFS=$'\t' read -r field value; do
-            if [[ -n "$value" && "$value" != "null" ]]; then
-                # Handle boolean vs string values
-                if [[ "$value" == "true" || "$value" == "false" ]]; then
-                    yq -i ".claude.providers.$provider.$field = $value" "$CLAUDE_YAML"
-                else
-                    # Use strenv() to avoid explicit double quotes
-                    VALUE="$value" yq -i ".claude.providers.$provider.$field = strenv(VALUE)" "$CLAUDE_YAML"
-                fi
-                echo "  $field = $value"
-            fi
-        done
+        # Update base_url
+        if [[ -n "$base_url" ]]; then
+            BASE_URL="$base_url" yq -i ".claude.providers.$provider.base_url = strenv(BASE_URL)" "$CLAUDE_YAML"
+            echo "  base_url = $base_url"
+        fi
+
+        # Update models array
+        if [[ "$models" != "[]" ]]; then
+            MODELS="$models" yq -i ".claude.providers.$provider.models = env(MODELS) | .claude.providers.$provider.models |= (. | fromjson)" "$CLAUDE_YAML"
+            echo "  models = $models"
+        fi
     done
 
     echo "Updated: $CLAUDE_YAML"

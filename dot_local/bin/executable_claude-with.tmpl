@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# Claude Code Launcher
+# Launch claude with any account via environment variable injection
+#
+# Usage:
+#   claude-with                    # fzf interactive picker
+#   claude-with <account> [args]   # Launch with account + claude args
+#   claude-with -h                 # Show help (includes claude --help)
+
+set -euo pipefail
+
+# shellcheck source=claude-lib
+source "$(dirname "$0")/claude-lib"
+
+# FZF picker with shortcuts
+fzf_select() {
+    local current
+    current=$(get_current)
+
+    local selected
+    selected=$(build_account_list_with_token | fzf --ansi \
+        --height=50% \
+        --border=rounded \
+        --header="Launch Claude" \
+        --preview="$ACCOUNT_PREVIEW"'
+            echo ""
+            echo -e "\033[1;34m━━━ Shortcuts ━━━\033[0m"
+            echo ""
+            echo "  Enter     Launch"
+            echo "  ctrl-r    --resume"
+            echo "  ctrl-p    --dangerously-skip-permissions"
+        ' \
+        --preview-window='right:50%:wrap' \
+        --preview-label="[ Select and press Enter ]" \
+        --bind='enter:accept' \
+        --bind='ctrl-r:transform-query(echo --resume)+accept' \
+        --bind='ctrl-p:transform-query(echo --dangerously-skip-permissions)+accept' \
+        --print-query) || true
+
+    [[ -z "$selected" ]] && return 1
+
+    # Parse output: first line is query (args), second is selection
+    local query selection
+    query=$(echo "$selected" | head -1)
+    selection=$(echo "$selected" | tail -1)
+
+    [[ -z "$selection" ]] && return 1
+
+    # Extract account name
+    local account
+    account=$(echo "$selection" | sed 's/^[^ ]* //')
+
+    if [[ -n "$query" ]]; then
+        echo "$account|$query"
+    else
+        echo "$account|"
+    fi
+}
+
+# Inject environment variables and launch
+launch_claude() {
+    local account="$1"
+    shift
+
+    if ! is_configured_account "$account"; then
+        echo -e "${RED}Error: Unknown account '$account'${NC}" >&2
+        echo "Available accounts:" >&2
+        printf '  %s\n' "${ACCOUNTS[@]}" >&2
+        return 1
+    fi
+
+    # Get config via claude-token
+    local config base_url model small_model
+    config=$(claude-token --config "$account")
+    base_url=$(echo "$config" | jq -r '.base_url // empty')
+    model=$(echo "$config" | jq -r '.model // empty')
+    small_model=$(echo "$config" | jq -r '.small_model // empty')
+
+    # Set environment for third-party
+    if [[ -n "$base_url" ]]; then
+        local token
+        if ! token=$(claude-token "$account" 2>/dev/null); then
+            echo -e "${RED}Error: No API token for $account${NC}" >&2
+            echo -e "Run: ${YELLOW}claude-manage add-key $account${NC}" >&2
+            return 1
+        fi
+        export ANTHROPIC_API_KEY="$token"
+        export ANTHROPIC_BASE_URL="$base_url"
+    fi
+
+    # Common settings
+    [[ -n "$model" ]] && export ANTHROPIC_MODEL="$model"
+    [[ -n "$small_model" ]] && export ANTHROPIC_SMALL_FAST_MODEL="$small_model"
+
+    # Optional settings
+    local timeout disable_traffic haiku sonnet opus
+    timeout=$(echo "$config" | jq -r '.timeout_ms // empty')
+    disable_traffic=$(echo "$config" | jq -r '.disable_nonessential_traffic // empty')
+    haiku=$(echo "$config" | jq -r '.haiku_model // empty')
+    sonnet=$(echo "$config" | jq -r '.sonnet_model // empty')
+    opus=$(echo "$config" | jq -r '.opus_model // empty')
+
+    [[ -n "$timeout" ]] && export API_TIMEOUT_MS="$timeout"
+    [[ "$disable_traffic" == "true" ]] && export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+    [[ -n "$haiku" ]] && export ANTHROPIC_DEFAULT_HAIKU_MODEL="$haiku"
+    [[ -n "$sonnet" ]] && export ANTHROPIC_DEFAULT_SONNET_MODEL="$sonnet"
+    [[ -n "$opus" ]] && export ANTHROPIC_DEFAULT_OPUS_MODEL="$opus"
+
+    # Status
+    echo -e "${GREEN}Launching claude with ${CYAN}$account${NC}"
+    echo -e "  Model: ${model:-default}"
+    [[ -n "$base_url" ]] && echo -e "  URL:   $base_url"
+    echo ""
+
+    exec claude "$@"
+}
+
+# Show help
+show_help() {
+    cat << 'EOF'
+Claude Code Launcher
+
+Usage:
+  claude-with                    Interactive fzf picker
+  claude-with <account> [args]   Launch with account + pass args to claude
+  claude-with -h, --help         Show this help
+
+Examples:
+  claude-with                    # fzf picker with shortcuts
+  claude-with kimi               # Launch with kimi account
+  claude-with kimi --resume      # Launch and resume last session
+  claude-with deepseek -p .      # Launch in current directory
+
+FZF Shortcuts:
+  Enter     Launch claude
+  ctrl-r    Launch with --resume
+  ctrl-p    Launch with --dangerously-skip-permissions
+
+EOF
+    echo -e "${BLUE}━━━ Claude Code Help ━━━${NC}"
+    echo ""
+    claude --help 2>/dev/null || echo "(claude --help not available)"
+}
+
+# Main
+main() {
+    require_cmd chezmoi jq fzf claude || exit 1
+
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+        show_help
+        exit 0
+    fi
+
+    if [[ $# -eq 0 ]]; then
+        local result
+        result=$(fzf_select) || exit 0
+        local account="${result%%|*}"
+        local args="${result#*|}"
+        # shellcheck disable=SC2086
+        launch_claude "$account" $args
+        exit 0
+    fi
+
+    local account="$1"
+    shift
+    launch_claude "$account" "$@"
+}
+
+main "$@"

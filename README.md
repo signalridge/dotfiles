@@ -208,6 +208,19 @@ Built-in quality assurance inspired by SuperClaude:
 | **Confidence Check** | Pre-implementation assessment (HIGH/MEDIUM/LOW) |
 | **Self-Check**       | Post-implementation verification with evidence  |
 
+### Provider Management
+
+Switch between Claude providers (Anthropic, DeepSeek, Kimi, etc.) with FZF-powered tools:
+
+```bash
+claude-with                    # FZF picker → launch with selected provider
+claude-with deepseek@work      # Launch with specific provider/account
+claude-provider                # FZF manager for default provider & API keys
+claude-provider add-key kimi   # Add API key to gopass
+```
+
+See [doc/claude-provider.md](doc/claude-provider.md) for full documentation.
+
 ### Hooks
 
 | Hook                    | Trigger          | Action                                      |

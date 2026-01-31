@@ -1,83 +1,124 @@
 claude:
-  # Claude Code provider configuration (used by claude-switch)
+  # Claude Code Provider Configuration
   # Docs: https://docs.anthropic.com/zh-CN/docs/claude-code/settings
-  # Multi-account: use provider@account format (e.g., "deepseek@work")
-  # Default account is "default" when no @account is specified
+  #
+  # Structure:
+  #   - defaults: Global default settings (accounts can override)
+  #   - providers: Provider definitions (base_url + available models)
+  #   - accounts: Account configurations (model selection + settings)
+  #
+  # API keys stored in gopass: claude-code/providers/{provider}/{account}/api_key
+
+  # ===== Global Defaults =====
+  defaults:
+    timeout_ms: 600000
+    disable_nonessential_traffic: true
+  # ===== Provider Definitions =====
+  # Only base_url and available models list
   providers:
-    # === Native Anthropic providers (no base_url, use OAuth) ===
+    # Native Anthropic (OAuth, no API key needed)
     anthropic:
-      base_url: ""
-      model: claude-sonnet-4-5-20250929
-      small_model: claude-sonnet-4-5-20250929
-    opus:
-      base_url: ""
-      model: claude-opus-4-5-20251101
-      small_model: claude-sonnet-4-5-20250929
-    haiku:
-      base_url: ""
-      model: claude-haiku-4-5-20251001
-      small_model: claude-haiku-4-5-20251001
-    # === Third-party providers (require base_url and API token) ===
+      models:
+        - claude-opus-4-5-20251101
+        - claude-sonnet-4-5-20250929
+        - claude-haiku-4-5-20251001
     # DeepSeek: https://api-docs.deepseek.com/guides/anthropic_api
     deepseek:
       base_url: https://api.deepseek.com/anthropic
-      model: deepseek-chat
-      small_model: deepseek-chat
-      timeout_ms: "600000"
-      disable_nonessential_traffic: true
-      haiku_model: deepseek-chat
-      sonnet_model: deepseek-chat
-      opus_model: deepseek-chat
+      models:
+        - deepseek-chat
+        - deepseek-reasoner
     # Kimi K2 (Moonshot): https://github.com/MoonshotAI/kimi-cli/blob/main/docs/en/configuration/providers.md
     kimi:
       base_url: https://api.kimi.com/coding
-      model: kimi-k2.5
-      small_model: kimi-k2.5
-      timeout_ms: "600000"
-      disable_nonessential_traffic: false
-      haiku_model: kimi-k2.5
-      sonnet_model: kimi-k2.5
-      opus_model: kimi-k2.5
+      models:
+        - kimi-k2.5
+        - kimi-k2
     # GLM (Zhipu AI): https://docs.bigmodel.cn/cn/guide/develop/claude
     glm:
       base_url: https://open.bigmodel.cn/api/anthropic
-      model: glm-4.7
-      small_model: glm-4.5-air
-      timeout_ms: "3000000"
-      disable_nonessential_traffic: true
-      haiku_model: glm-4.5-air
-      sonnet_model: glm-4.7
-      opus_model: glm-4.7
+      models:
+        - glm-4.7
+        - glm-4.5-air
     # Qwen (Alibaba): https://help.aliyun.com/zh/model-studio/claude-code
     qwen:
       base_url: https://dashscope.aliyuncs.com/apps/anthropic
-      model: qwen3-coder-plus
-      small_model: qwen-flash
-      timeout_ms: "600000"
-      disable_nonessential_traffic: false
-      haiku_model: qwen-flash
-      sonnet_model: qwen3-coder-plus
-      opus_model: qwen3-max
+      models:
+        - qwen3-coder-plus
+        - qwen3-max
+        - qwen-flash
     # MiniMax: https://platform.minimax.io/docs/coding-plan/claude-code
     minimax:
       base_url: https://api.minimax.io/anthropic
-      model: MiniMax-M2.1
-      small_model: MiniMax-M2.1
-      timeout_ms: "3000000"
-      disable_nonessential_traffic: true
-      haiku_model: MiniMax-M2.1
-      sonnet_model: MiniMax-M2.1
-      opus_model: MiniMax-M2.1
+      models:
+        - MiniMax-M2.1
     # Doubao (ByteDance): https://www.volcengine.com/docs/82379/1928261
     doubao:
       base_url: https://ark.cn-beijing.volces.com/api/coding
+      models:
+        - ark-code-latest
+  # ===== Account Configurations =====
+  # Format: provider or provider@account
+  # Fields: model, small_model, haiku_model, sonnet_model, opus_model, timeout_ms, disable_nonessential_traffic
+  accounts:
+    # Native Anthropic accounts (use OAuth)
+    anthropic:
+      model: claude-sonnet-4-5-20250929
+      small_model: claude-sonnet-4-5-20250929
+    opus:
+      provider: anthropic
+      model: claude-opus-4-5-20251101
+      small_model: claude-sonnet-4-5-20250929
+    haiku:
+      provider: anthropic
+      model: claude-haiku-4-5-20251001
+      small_model: claude-haiku-4-5-20251001
+    # Third-party accounts
+    deepseek:
+      model: deepseek-chat
+      small_model: deepseek-chat
+      haiku_model: deepseek-chat
+      sonnet_model: deepseek-chat
+      opus_model: deepseek-chat
+    kimi:
+      model: kimi-k2.5
+      small_model: kimi-k2.5
+      haiku_model: kimi-k2.5
+      sonnet_model: kimi-k2.5
+      opus_model: kimi-k2.5
+    glm:
+      model: glm-4.7
+      small_model: glm-4.5-air
+      haiku_model: glm-4.5-air
+      sonnet_model: glm-4.7
+      opus_model: glm-4.7
+      timeout_ms: 3000000
+    qwen:
+      model: qwen3-coder-plus
+      small_model: qwen-flash
+      haiku_model: qwen-flash
+      sonnet_model: qwen3-coder-plus
+      opus_model: qwen3-max
+      disable_nonessential_traffic: false
+    minimax:
+      model: MiniMax-M2.1
+      small_model: MiniMax-M2.1
+      haiku_model: MiniMax-M2.1
+      sonnet_model: MiniMax-M2.1
+      opus_model: MiniMax-M2.1
+      timeout_ms: 3000000
+    doubao@private:
       model: ark-code-latest
       small_model: ark-code-latest
-      timeout_ms: "600000"
-      disable_nonessential_traffic: true
       haiku_model: ark-code-latest
       sonnet_model: ark-code-latest
       opus_model: ark-code-latest
+    kimi@private:
+      model: kimi-k2.5
+      small_model: kimi-k2.5
+      haiku_model: kimi-k2.5
+      sonnet_model: kimi-k2.5
+      opus_model: kimi-k2.5
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
   # ==========================================================================

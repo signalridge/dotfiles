@@ -60,14 +60,13 @@ jobs:
             echo "$prompt"
             echo "EOF"
           } >> $GITHUB_OUTPUT
-      - name: Query provider configs with OpenRouter
+      - name: Query provider configs with LLM
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OPENROUTER_REFERER: https://github.com/${{ github.repository }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           PROMPT: ${{ steps.prompt.outputs.prompt }}
         run: |
-          chmod +x .github/scripts/openrouter-query.sh
-          printf '%s' "$PROMPT" | .github/scripts/openrouter-query.sh > /tmp/ai_response.txt
+          chmod +x .github/scripts/llm-query.sh
+          printf '%s' "$PROMPT" | .github/scripts/llm-query.sh > /tmp/ai_response.txt
       - name: Apply config updates
         run: |
           cat /tmp/ai_response.txt | .github/scripts/update-claude-providers.sh apply

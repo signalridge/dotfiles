@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+# Claude Code Shared Library
+# Common functions for claude-manage and claude-with
+#
+# Usage: source claude-lib
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+# Paths
+CHEZMOI_CONFIG="${HOME}/.config/chezmoi/chezmoi.toml"
+SETTINGS_FILE="${HOME}/.claude/settings.json"
+CLAUDE_YAML="${HOME}/.local/share/chezmoi/.chezmoidata/claude.yaml"
+
+# Available providers (from chezmoi data)
+PROVIDERS=({{- range $name, $_ := .claude.providers }} "{{ $name }}"{{- end }})
+
+# Available accounts (from chezmoi data)
+ACCOUNTS=({{- range $name, $_ := .claude.accounts }} "{{ $name }}"{{- end }})
+
+# Get provider for an account
+get_provider() {
+    local account="$1"
+    case "$account" in
+{{- range $name, $config := .claude.accounts }}
+{{- if hasKey $config "provider" }}
+        "{{ $name }}") echo "{{ $config.provider }}" ;;
+{{- else }}
+        "{{ $name }}") echo "{{ (split "@" $name)._0 }}" ;;
+{{- end }}
+{{- end }}
+        *) echo "${account%%@*}" ;;
+    esac
+}
+
+# Check if provider is third-party (has base_url)
+is_third_party() {
+    local provider="$1"
+    case "$provider" in
+{{- range $name, $config := .claude.providers }}
+{{- if hasKey $config "base_url" }}
+        {{ $name }}) return 0 ;;
+{{- end }}
+{{- end }}
+        *) return 1 ;;
+    esac
+}
+
+# Check if provider is valid
+is_valid_provider() {
+    local provider="$1"
+    for p in "${PROVIDERS[@]}"; do
+        [[ "$p" == "$provider" ]] && return 0
+    done
+    return 1
+}
+
+# Check if account is configured
+is_configured_account() {
+    local account="$1"
+    for a in "${ACCOUNTS[@]}"; do
+        [[ "$a" == "$account" ]] && return 0
+    done
+    return 1
+}
+
+# Parse provider@account format
+parse_provider_account() {
+    local input="$1"
+    input=$(echo "$input" | sed 's/ ✓$//' | sed 's/^[[:space:]]*//')
+    if [[ "$input" =~ ^([^@]+)@(.+)$ ]]; then
+        echo "${BASH_REMATCH[1]}|${BASH_REMATCH[2]}"
+    elif [[ "$input" =~ ^([^/]+)/(.+)$ ]]; then
+        echo "${BASH_REMATCH[1]}|${BASH_REMATCH[2]}"
+    else
+        echo "$input|default"
+    fi
+}
+
+# Check if API key exists in gopass
+key_exists() {
+    local provider="$1"
+    local account="$2"
+    gopass list -f "claude-code/providers/$provider/$account/api_key" &>/dev/null
+}
+
+# Get current account from chezmoi
+get_current() {
+    chezmoi data --format json 2>/dev/null | jq -r '.claudeProviderAccount // .claudeProvider // "anthropic"'
+}
+
+# Require commands to exist
+require_cmd() {
+    local c
+    for c in "$@"; do
+        if ! command -v "$c" &>/dev/null; then
+            echo -e "${RED}Error:${NC} required command not found: $c" >&2
+            return 1
+        fi
+    done
+}
+
+# Build account list with status indicators
+build_account_list_with_status() {
+    local current
+    current=$(get_current)
+    for account in "${ACCOUNTS[@]}"; do
+        if [[ "$account" == "$current" ]]; then
+            echo -e "${GREEN}$account ✓${NC}"
+        else
+            echo "  $account"
+        fi
+    done
+}
+
+# Build account list with token status
+build_account_list_with_token() {
+    for account in "${ACCOUNTS[@]}"; do
+        local provider
+        provider=$(get_provider "$account")
+        if is_third_party "$provider"; then
+            if claude-token --check "$account" 2>/dev/null; then
+                echo -e "${GREEN}✓${NC} $account"
+            else
+                echo -e "${RED}✗${NC} $account"
+            fi
+        else
+            echo -e "${CYAN}○${NC} $account"
+        fi
+    done
+}
+
+# Common preview script for account selection
+ACCOUNT_PREVIEW='
+    line=$(echo {} | sed "s/^[[:space:]]*//")
+    if echo "$line" | grep -q "Back"; then
+        echo "Return to main menu"
+        exit 0
+    fi
+    # Extract account: remove ✓ suffix, then remove status icon prefix
+    account=$(echo "$line" | sed "s/ ✓$//" | sed "s/^[✓✗○] //")
+    echo -e "\033[1;34m━━━ $account ━━━\033[0m"
+    echo ""
+    claude-token --config "$account" 2>/dev/null | jq -r "
+        \"Model:     \(.model // \"default\")\",
+        \"Small:     \(.small_model // \"default\")\",
+        \"Base URL:  \(.base_url // \"Anthropic (native)\")\"
+    " 2>/dev/null || echo "Config not available"
+    echo ""
+    if claude-token --check "$account" 2>/dev/null; then
+        echo -e "\033[0;32m✓ Token ready\033[0m"
+    else
+        if claude-token --config "$account" 2>/dev/null | jq -e ".base_url // empty" >/dev/null 2>&1; then
+            echo -e "\033[0;31m✗ No token (run: claude-manage add-key)\033[0m"
+        else
+            echo -e "\033[0;36m○ Native OAuth\033[0m"
+        fi
+    fi
+'
+
+# Generic account picker with Back option
+# Usage: fzf_pick_account "Header" [list_type]
+# list_type: "status" (default, shows ✓), "token" (shows ✓/✗/○), "plain"
+fzf_pick_account() {
+    local header="$1"
+    local list_type="${2:-status}"
+    local current
+    current=$(get_current)
+
+    local result
+    result=$({
+        echo -e "${YELLOW}← Back${NC}"
+        case "$list_type" in
+            token) build_account_list_with_token ;;
+            plain) printf '%s\n' "${ACCOUNTS[@]}" ;;
+            *)     build_account_list_with_status ;;
+        esac
+    } | fzf --ansi \
+        --height=50% \
+        --border=rounded \
+        --header="$header" \
+        --preview="$ACCOUNT_PREVIEW" \
+        --preview-window='right:50%:wrap' \
+        --preview-label="[ Current: $current ]") || true
+
+    [[ -z "$result" ]] && return 1
+    [[ "$result" == *"Back"* ]] && return 1
+
+    # Extract account name: remove status icon prefix and ✓ suffix
+    # Formats: "✓ account", "✗ account", "○ account", "  account", "account ✓"
+    result=$(echo "$result" | sed 's/ ✓$//' | sed 's/^[[:space:]]*//')
+    # Remove leading status icon (✓/✗/○ followed by space)
+    result=$(echo "$result" | sed 's/^[✓✗○] //')
+    echo "$result"
+}
+

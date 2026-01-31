@@ -1,15 +1,24 @@
-{{- /* Get provider from claudeProviderAccount (extracts provider from "provider@account" format) */ -}}
-{{- $providerAccount := "anthropic" -}}
+{{- /* Get account from claudeProviderAccount */ -}}
+{{- $accountKey := "anthropic" -}}
 {{- if hasKey . "claudeProviderAccount" -}}
-{{-   $providerAccount = .claudeProviderAccount -}}
+{{-   $accountKey = .claudeProviderAccount -}}
 {{- else if hasKey . "claudeProvider" -}}
-{{-   $providerAccount = .claudeProvider -}}
+{{-   $accountKey = .claudeProvider -}}
 {{- end -}}
-{{- $provider := (split "@" $providerAccount)._0 -}}
-{{- $config := index .claude.providers $provider -}}
+{{- /* Get account config */ -}}
+{{- $account := index .claude.accounts $accountKey -}}
+{{- /* Get provider name (from account.provider or extract from accountKey) */ -}}
+{{- $providerName := (split "@" $accountKey)._0 -}}
+{{- if and $account (hasKey $account "provider") -}}
+{{-   $providerName = $account.provider -}}
+{{- end -}}
+{{- /* Get provider config for base_url */ -}}
+{{- $provider := index .claude.providers $providerName -}}
+{{- /* Get defaults */ -}}
+{{- $defaults := .claude.defaults -}}
 {
-{{- if and $config $config.base_url }}
-  "apiKeyHelper": "~/.local/bin/claude-get-token",
+{{- if and $provider (hasKey $provider "base_url") }}
+  "apiKeyHelper": "~/.local/bin/claude-token",
 {{- end }}
   "mcpServers": {
     "github": {
@@ -108,24 +117,34 @@
     ]
   },
   "env": {
-{{- if and $config $config.base_url }}
-    "ANTHROPIC_BASE_URL": "{{ $config.base_url }}",
-    "ANTHROPIC_MODEL": "{{ $config.model }}",
-    "ANTHROPIC_SMALL_FAST_MODEL": "{{ $config.small_model }}",
-{{- if $config.timeout_ms }}
-    "API_TIMEOUT_MS": "{{ $config.timeout_ms }}",
+{{- if and $provider (hasKey $provider "base_url") }}
+    "ANTHROPIC_BASE_URL": "{{ $provider.base_url }}",
+{{- if and $account (hasKey $account "model") }}
+    "ANTHROPIC_MODEL": "{{ $account.model }}",
 {{- end }}
-{{- if $config.disable_nonessential_traffic }}
+{{- if and $account (hasKey $account "small_model") }}
+    "ANTHROPIC_SMALL_FAST_MODEL": "{{ $account.small_model }}",
+{{- end }}
+{{- /* timeout_ms: account -> defaults */ -}}
+{{- $timeout := "" -}}
+{{- if and $account (hasKey $account "timeout_ms") }}{{ $timeout = $account.timeout_ms }}{{ else if hasKey $defaults "timeout_ms" }}{{ $timeout = $defaults.timeout_ms }}{{ end -}}
+{{- if $timeout }}
+    "API_TIMEOUT_MS": "{{ $timeout }}",
+{{- end }}
+{{- /* disable_nonessential_traffic: account -> defaults */ -}}
+{{- $disableTraffic := false -}}
+{{- if and $account (hasKey $account "disable_nonessential_traffic") }}{{ $disableTraffic = $account.disable_nonessential_traffic }}{{ else if hasKey $defaults "disable_nonessential_traffic" }}{{ $disableTraffic = $defaults.disable_nonessential_traffic }}{{ end -}}
+{{- if $disableTraffic }}
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
 {{- end }}
-{{- if $config.haiku_model }}
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "{{ $config.haiku_model }}",
+{{- if and $account (hasKey $account "haiku_model") }}
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "{{ $account.haiku_model }}",
 {{- end }}
-{{- if $config.sonnet_model }}
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "{{ $config.sonnet_model }}",
+{{- if and $account (hasKey $account "sonnet_model") }}
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "{{ $account.sonnet_model }}",
 {{- end }}
-{{- if $config.opus_model }}
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "{{ $config.opus_model }}",
+{{- if and $account (hasKey $account "opus_model") }}
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "{{ $account.opus_model }}",
 {{- end }}
 {{- end }}
     "INSIDE_CLAUDE_CODE": "1"

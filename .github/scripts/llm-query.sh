@@ -1,22 +1,23 @@
-#!/bin/bash
-# openrouter-query.sh - Query OpenRouter API with retry logic
+#!/usr/bin/env bash
+# llm-query.sh - Query LLM API with retry logic
 # Usage: ./openrouter-query.sh < prompt.txt > response.txt
 #
 # Environment variables:
-#   OPENROUTER_API_KEY - Required: API key for OpenRouter
-#   OPENROUTER_MODEL   - Optional: Model ID (default: deepseek/deepseek-chat-v3-0324:free)
-#   OPENROUTER_REFERER - Optional: HTTP Referer header
-#   MAX_RETRIES        - Optional: Max retry attempts (default: 3)
+#   LLM_API_KEY   - Required: API key
+#   LLM_API_URL   - Optional: API endpoint (default: https://na.wanxiaot.com/v1/chat/completions)
+#   LLM_MODEL     - Optional: Model ID (default: gemini-3-pro-preview)
+#   MAX_RETRIES   - Optional: Max retry attempts (default: 3)
 
 set -euo pipefail
 
-: "${OPENROUTER_API_KEY:?OPENROUTER_API_KEY is required}"
-: "${OPENROUTER_MODEL:=mistralai/devstral-2512:free}"
-: "${OPENROUTER_REFERER:=https://github.com}"
+: "${LLM_API_KEY:?LLM_API_KEY is required}"
+: "${LLM_API_URL:=https://na.wanxiaot.com/v1/chat/completions}"
+: "${LLM_MODEL:=gemini-3-pro-preview}"
 : "${MAX_RETRIES:=3}"
 
 # Debug: show model being used
-echo "Using model: $OPENROUTER_MODEL" >&2
+echo "Using model: $LLM_MODEL" >&2
+echo "API URL: $LLM_API_URL" >&2
 
 # Read prompt from stdin
 prompt=$(cat)
@@ -31,14 +32,13 @@ while ((attempt < MAX_RETRIES)); do
     if http_code=$(curl -s --max-time 120 \
         -w "%{http_code}" \
         -o "$tmpfile" \
-        -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+        -H "Authorization: Bearer $LLM_API_KEY" \
         -H "Content-Type: application/json" \
-        -H "HTTP-Referer: $OPENROUTER_REFERER" \
         -d "{
-          \"model\": \"$OPENROUTER_MODEL\",
+          \"model\": \"$LLM_MODEL\",
           \"messages\": [{\"role\": \"user\", \"content\": $escaped_prompt}]
         }" \
-        https://openrouter.ai/api/v1/chat/completions 2>&1); then
+        "$LLM_API_URL" 2>&1); then
 
         body=$(cat "$tmpfile")
         rm -f "$tmpfile"
