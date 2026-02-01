@@ -266,6 +266,54 @@ FILE_PREVIEW='
     fi
 '
 
+# Helper function to prompt for custom file paths (isolated from FZF)
+prompt_custom_files() {
+    local additions=""
+
+    echo ""
+    log_section "Add Custom Files"
+    echo "Enter file paths one at a time (press Enter with empty input to finish)"
+    echo ""
+
+    # Open /dev/tty directly for the entire function
+    exec 3</dev/tty
+
+    while true; do
+        local custom_path=""
+        echo -ne "${CYAN}File path${NC} (or Enter to finish): "
+
+        # Read from the terminal (fd 3)
+        if IFS= read -r custom_path <&3; then
+            # Empty input = done
+            [[ -z "$custom_path" ]] && break
+
+            # Expand tilde
+            custom_path="${custom_path/#\~/$HOME}"
+
+            # Validate file exists
+            if [[ -f "$custom_path" ]]; then
+                echo -e "  ${GREEN}✓ Added:${NC} $custom_path"
+                additions+="$custom_path"$'\n'
+            else
+                echo -e "  ${RED}✗ Not found:${NC} $custom_path"
+                echo -e "  ${YELLOW}Tip:${NC} Use absolute path or ~ for home directory"
+            fi
+            echo ""
+        else
+            # EOF or read error
+            break
+        fi
+    done
+
+    # Close the terminal fd
+    exec 3<&-
+
+    echo -e "${GRAY}Custom file input complete${NC}"
+
+    # Return additions
+    echo -n "${additions%$'\n'}"
+}
+
 # FZF file selector with status (supports custom file input)
 fzf_select_files() {
     local header="${1:-Select files to backup}"
@@ -292,45 +340,12 @@ fzf_select_files() {
 
     # Process selection
     local final_selection=""
+    local has_custom_file_option=false
+
     while IFS= read -r line; do
         # Check if it's the "Add custom file" option
         if echo "$line" | grep -q "Add custom file"; then
-            # Prompt for custom file path (can add multiple files)
-            echo ""
-            log_section "Add Custom Files"
-            echo "Enter file paths one at a time (press Enter with empty input to finish)"
-            echo ""
-
-            # Redirect stdin to terminal for user input (FZF consumed original stdin)
-            exec 3<&0  # Save original stdin
-            exec 0</dev/tty  # Redirect stdin to terminal
-
-            while true; do
-                local custom_path
-                echo -ne "${CYAN}File path${NC} (or Enter to finish): "
-                read -r -e custom_path
-
-                # Empty input = done
-                [[ -z "$custom_path" ]] && break
-
-                # Expand tilde
-                custom_path="${custom_path/#\~/$HOME}"
-
-                # Validate file exists
-                if [[ -f "$custom_path" ]]; then
-                    echo -e "  ${GREEN}✓ Added:${NC} $custom_path"
-                    final_selection+="$custom_path"$'\n'
-                else
-                    echo -e "  ${RED}✗ Not found:${NC} $custom_path"
-                    echo -e "  ${YELLOW}Tip:${NC} Use absolute path or ~ for home directory"
-                fi
-                echo ""
-            done
-
-            # Restore original stdin
-            exec 0<&3 3<&-
-
-            echo -e "${GRAY}Custom file input complete${NC}"
+            has_custom_file_option=true
         else
             # Regular file selection
             local cleaned
@@ -338,6 +353,15 @@ fzf_select_files() {
             final_selection+="$cleaned"$'\n'
         fi
     done <<< "$selected"
+
+    # If custom file option was selected, prompt for custom files
+    if [[ "$has_custom_file_option" == true ]]; then
+        local custom_files
+        custom_files=$(prompt_custom_files)
+        if [[ -n "$custom_files" ]]; then
+            final_selection+="$custom_files"$'\n'
+        fi
+    fi
 
     # Return final selection (remove trailing newline)
     echo -n "${final_selection%$'\n'}"
