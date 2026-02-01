@@ -116,7 +116,7 @@ cmd_init() {
     # Clone repository
     log_info "Cloning repository..."
     if ! git clone "$KEYS_REPO" "$REPO_DIR" 2>/dev/null; then
-        log_note Remote repository may not exist yet"
+        log_note "Remote repository may not exist yet"
         echo ""
         read -p "Create new repository? (y/n): " create_new
         if [[ "$create_new" != "y" ]]; then
@@ -173,7 +173,7 @@ cmd_init() {
         }
         log_success "Transcrypt unlocked"
     else
-        log_note Repository doesn't use transcrypt encryption"
+        log_note "Repository doesn't use transcrypt encryption"
     fi
 
     # Initialize metadata if needed
