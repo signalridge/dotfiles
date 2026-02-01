@@ -30,27 +30,51 @@ log_event() {
 
 # ===== File Discovery & Filtering =====
 
-# Discover key/certificate files from common directories
+# Discover key/certificate files from common directories AND home directory
 discover_key_files() {
-    # Common directories for keys and certificates
-    local key_dirs=(
-        "$HOME/.ssh"           # SSH keys
-        "$HOME/.gnupg"         # GPG keys
-        "$HOME/.config/age"    # Age encryption keys
-    )
+    # Use fd if available (faster), otherwise fall back to find
+    if command -v fd &>/dev/null; then
+        # fd: faster, respects .gitignore, skip large directories
+        fd --type f --hidden --follow \
+            --exclude .git \
+            --exclude node_modules \
+            --exclude .cache \
+            --exclude Library \
+            --exclude 'Application Support' \
+            --exclude Downloads \
+            . "$HOME" 2>/dev/null | \
+        grep -v '\.pub$' | \
+        grep -v 'known_hosts' | \
+        grep -v 'authorized_keys' | \
+        grep -v '\.lock$' | \
+        sort -u
+    else
+        # find: universally available fallback
+        # First: scan key directories (fast)
+        local key_dirs=(
+            "$HOME/.ssh"
+            "$HOME/.gnupg"
+            "$HOME/.config/age"
+            "$HOME/.config"
+            "$HOME/Documents"
+            "$HOME/Desktop"
+        )
 
-    for dir in "${key_dirs[@]}"; do
-        [[ ! -d "$dir" ]] && continue
+        for dir in "${key_dirs[@]}"; do
+            [[ ! -d "$dir" ]] && continue
 
-        find "$dir" -type f -print0 2>/dev/null | while IFS= read -r -d $'\0' file; do
-            # Skip public keys, known_hosts, authorized_keys
-            [[ ! "$file" =~ \.pub$ ]] && \
-            [[ ! "$file" =~ known_hosts ]] && \
-            [[ ! "$file" =~ authorized_keys ]] && \
-            [[ ! "$file" =~ \.lock$ ]] && \
-            echo "$file"
-        done
-    done | sort -u  # Remove duplicates and sort
+            find "$dir" -type f \
+                -not -path '*/.git/*' \
+                -not -path '*/node_modules/*' \
+                -not -path '*/.cache/*' \
+                -not -path '*/Library/*' \
+                -not -name '*.pub' \
+                -not -name '*known_hosts*' \
+                -not -name '*authorized_keys*' \
+                -not -name '*.lock' \
+                2>/dev/null
+        done | sort -u
+    fi
 }
 
 # Get key type from file
