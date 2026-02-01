@@ -16,8 +16,8 @@
 
 set -euo pipefail
 
-# shellcheck source=claude-lib
-source "$(dirname "$0")/claude-lib"
+# shellcheck source=lib/claude.tmpl
+source "$(dirname "$0")/lib/claude.tmpl"
 
 # Set account in chezmoi.toml
 set_chezmoi_account() {

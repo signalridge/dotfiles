@@ -11,7 +11,7 @@
 set -euo pipefail
 
 # Source common library
-source "$(dirname "$0")/common-lib"
+source "$(dirname "$0")/lib/common.tmpl"
 
 # Validate provider/account names (prevent path traversal)
 validate_name() {

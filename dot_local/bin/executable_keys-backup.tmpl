@@ -3,8 +3,8 @@
 # Backs up SSH keys to transcrypt-encrypted git repository
 set -euo pipefail
 
-# shellcheck source=keys-lib
-source "$(dirname "$0")/keys-lib"
+# shellcheck source=lib/keys.tmpl
+source "$(dirname "$0")/lib/keys.tmpl"
 
 # ===== Command Functions =====
 
