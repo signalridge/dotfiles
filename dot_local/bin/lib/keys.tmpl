@@ -301,11 +301,14 @@ fzf_select_files() {
             echo "Enter file paths one at a time (press Enter with empty input to finish)"
             echo ""
 
+            # Redirect stdin to terminal for user input (FZF consumed original stdin)
+            exec 3<&0  # Save original stdin
+            exec 0</dev/tty  # Redirect stdin to terminal
+
             while true; do
                 local custom_path
                 echo -ne "${CYAN}File path${NC} (or Enter to finish): "
-                # Read from terminal explicitly (FZF consumed stdin)
-                read -r -e custom_path < /dev/tty
+                read -r -e custom_path
 
                 # Empty input = done
                 [[ -z "$custom_path" ]] && break
@@ -323,6 +326,9 @@ fzf_select_files() {
                 fi
                 echo ""
             done
+
+            # Restore original stdin
+            exec 0<&3 3<&-
 
             echo -e "${GRAY}Custom file input complete${NC}"
         else
