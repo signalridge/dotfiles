@@ -304,7 +304,8 @@ fzf_select_files() {
             while true; do
                 local custom_path
                 echo -ne "${CYAN}File path${NC} (or Enter to finish): "
-                read -r -e custom_path
+                # Read from terminal explicitly (FZF consumed stdin)
+                read -r -e custom_path < /dev/tty
 
                 # Empty input = done
                 [[ -z "$custom_path" ]] && break
