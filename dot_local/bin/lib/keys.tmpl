@@ -275,19 +275,21 @@ fzf_select_files() {
         if echo "$line" | grep -q "Add custom file"; then
             # Prompt for custom file path
             echo ""
-            echo -e "${CYAN}Enter custom file path:${NC}"
+            echo -e "${CYAN}Enter custom file path (or press Enter to skip):${NC}"
             local custom_path
-            read -e -p "> " custom_path
+            if read -r -e -p "> " custom_path && [[ -n "$custom_path" ]]; then
+                # Expand tilde
+                custom_path="${custom_path/#\~/$HOME}"
 
-            # Expand tilde
-            custom_path="${custom_path/#\~/$HOME}"
-
-            # Validate file exists
-            if [[ -f "$custom_path" ]]; then
-                echo -e "${GREEN}✓${NC} Added: $custom_path"
-                final_selection+="$custom_path"$'\n'
+                # Validate file exists
+                if [[ -f "$custom_path" ]]; then
+                    echo -e "${GREEN}✓${NC} Added: $custom_path"
+                    final_selection+="$custom_path"$'\n'
+                else
+                    echo -e "${RED}✗${NC} File not found: $custom_path"
+                fi
             else
-                echo -e "${RED}✗${NC} File not found: $custom_path"
+                echo -e "${GRAY}Skipped${NC}"
             fi
         else
             # Regular file selection

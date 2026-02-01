@@ -114,13 +114,56 @@ cmd_init() {
     echo ""
 
     # Clone repository
-    log_info "Cloning repository..."
-    if ! git clone "$KEYS_REPO" "$REPO_DIR" 2>/dev/null; then
-        log_note "Remote repository may not exist yet"
+    log_info "Cloning keys repository..."
+    local clone_error
+    clone_error=$(mktemp)
+
+    if ! git clone "$KEYS_REPO" "$REPO_DIR" 2>"$clone_error"; then
         echo ""
-        read -r -p "Create new repository? (y/n): " create_new
+        log_warn "Failed to clone repository"
+        echo ""
+
+        # Show git error
+        if [[ -s "$clone_error" ]]; then
+            echo "Git error:"
+            sed 's/^/  /' "$clone_error"
+            echo ""
+        fi
+
+        # Determine likely cause and provide guidance
+        local error_content
+        error_content=$(cat "$clone_error" 2>/dev/null)
+        rm -f "$clone_error"
+
+        if echo "$error_content" | grep -q "not found\|does not exist"; then
+            log_note "Repository does not exist yet (first time setup)"
+        elif echo "$error_content" | grep -q "Authentication\|Permission denied\|publickey"; then
+            log_error "Authentication failed"
+            echo ""
+            echo "Possible causes:"
+            echo "  - SSH key not added to git server"
+            echo "  - Wrong repository URL"
+            echo "  - Insufficient permissions"
+            echo ""
+            echo "To fix:"
+            echo "  1. Add your SSH key: ssh-add ~/.ssh/your_key"
+            echo "  2. Test connection: ssh -T git@github.com (or your git server)"
+            echo "  3. Verify repository URL: $KEYS_REPO"
+            return 1
+        fi
+
+        echo ""
+        echo "Options:"
+        echo "  1. Create a new empty repository on your git server first, then run init again"
+        echo "  2. Or initialize a local repository now (you can push later)"
+        echo ""
+        read -r -p "Initialize local repository? (y/n): " create_new
         if [[ "$create_new" != "y" ]]; then
             echo "Initialization cancelled"
+            echo ""
+            echo "Next steps:"
+            echo "  1. Create repository on your git server: $KEYS_REPO"
+            echo "  2. Run: keys-backup init"
             return 1
         fi
 
@@ -155,6 +198,7 @@ cmd_init() {
     fi
 
     # Repository cloned successfully
+    rm -f "$clone_error"
     cd "$REPO_DIR"
     log_success "Repository cloned"
     echo ""
