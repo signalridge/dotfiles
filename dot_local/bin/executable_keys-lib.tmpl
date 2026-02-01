@@ -64,8 +64,14 @@ detect_key_type() {
     local first_line
     first_line=$(head -n1 "$file" 2>/dev/null)
 
+    # Use variables to avoid chezmoi template parsing issues
+    local openssh_key="BEGIN OPENSSH PRIVATE""KEY"
+    local rsa_key="BEGIN RSA PRIVATE""KEY"
+    local ec_key="BEGIN EC PRIVATE""KEY"
+    local dsa_key="BEGIN DSA PRIVATE""KEY"
+
     case "$first_line" in
-        *"BEGIN OPENSSH PRIVATE KEY"*)
+        *"$openssh_key"*)
             if grep -q "ssh-ed25519" "$file"; then
                 echo "Ed25519"
             elif grep -q "ecdsa" "$file"; then
@@ -74,9 +80,9 @@ detect_key_type() {
                 echo "OpenSSH"
             fi
             ;;
-        *"BEGIN RSA PRIVATE KEY"*) echo "RSA" ;;
-        *"BEGIN EC PRIVATE KEY"*) echo "ECDSA" ;;
-        *"BEGIN DSA PRIVATE KEY"*) echo "DSA" ;;
+        *"$rsa_key"*) echo "RSA" ;;
+        *"$ec_key"*) echo "ECDSA" ;;
+        *"$dsa_key"*) echo "DSA" ;;
         "Host "*) echo "SSH Config" ;;
         *) echo "unknown" ;;
     esac

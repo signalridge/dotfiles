@@ -189,7 +189,7 @@ Interactive file selection with rich preview:
 │ Backup count: 5                                                │
 │                                                                 │
 │ ━━━ Preview ━━━                                                │
-│ -----BEGIN OPENSSH PRIVATE KEY-----                            │
+│ [Private key content - first 10 lines]                         │
 │ ...                                                             │
 └────────────────────────────────────────────────────────────────┘
 ```
