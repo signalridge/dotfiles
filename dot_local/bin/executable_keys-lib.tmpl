@@ -45,15 +45,27 @@ log_event() {
 
 # ===== File Discovery & Filtering =====
 
-# Discover SSH files with smart filtering
-discover_ssh_files() {
-    find ~/.ssh -type f -print0 2>/dev/null | while IFS= read -r -d $'\0' file; do
-        # Skip public keys, known_hosts, authorized_keys
-        [[ ! "$file" =~ \.pub$ ]] && \
-        [[ ! "$file" =~ known_hosts ]] && \
-        [[ ! "$file" =~ authorized_keys ]] && \
-        echo "$file"
-    done
+# Discover key/certificate files from common directories
+discover_key_files() {
+    # Common directories for keys and certificates
+    local key_dirs=(
+        "$HOME/.ssh"           # SSH keys
+        "$HOME/.gnupg"         # GPG keys
+        "$HOME/.config/age"    # Age encryption keys
+    )
+
+    for dir in "${key_dirs[@]}"; do
+        [[ ! -d "$dir" ]] && continue
+
+        find "$dir" -type f -print0 2>/dev/null | while IFS= read -r -d $'\0' file; do
+            # Skip public keys, known_hosts, authorized_keys
+            [[ ! "$file" =~ \.pub$ ]] && \
+            [[ ! "$file" =~ known_hosts ]] && \
+            [[ ! "$file" =~ authorized_keys ]] && \
+            [[ ! "$file" =~ \.lock$ ]] && \
+            echo "$file"
+        done
+    done | sort -u  # Remove duplicates and sort
 }
 
 # Get key type from file
@@ -268,11 +280,19 @@ FILE_PREVIEW='
     fi
 '
 
-# FZF file selector with status
+# FZF file selector with status (supports custom file input)
 fzf_select_files() {
     local header="${1:-Select files to backup}"
 
-    build_file_list_with_status | fzf --ansi --multi \
+    # Build list with special "Add custom file" option at top
+    local file_list
+    file_list=$({
+        echo -e "${CYAN}⊕ Add custom file...${NC}"
+        build_file_list_with_status
+    })
+
+    local selected
+    selected=$(echo "$file_list" | fzf --ansi --multi \
         --height=80% \
         --border=rounded \
         --header="$header (Tab: multi-select, Ctrl-A: all)" \
@@ -281,9 +301,40 @@ fzf_select_files() {
         --preview-label="[File Preview]" \
         --bind='ctrl-a:select-all' \
         --bind='ctrl-d:deselect-all' \
-        --bind='ctrl-r:reload('"$(declare -f build_file_list_with_status)"'; build_file_list_with_status)' \
-        --bind='ctrl-/:toggle-preview' | \
-    sed 's/^[[:space:]]*//' | sed 's/^[✓⚠⊕⊗○] //'
+        --bind='ctrl-r:reload(echo -e "'"${CYAN}⊕ Add custom file...${NC}"'"; '"$(declare -f build_file_list_with_status)"'; build_file_list_with_status)' \
+        --bind='ctrl-/:toggle-preview') || return 1
+
+    # Process selection
+    local final_selection=""
+    while IFS= read -r line; do
+        # Check if it's the "Add custom file" option
+        if echo "$line" | grep -q "Add custom file"; then
+            # Prompt for custom file path
+            echo ""
+            echo -e "${CYAN}Enter custom file path:${NC}"
+            local custom_path
+            read -e -p "> " custom_path
+
+            # Expand tilde
+            custom_path="${custom_path/#\~/$HOME}"
+
+            # Validate file exists
+            if [[ -f "$custom_path" ]]; then
+                echo -e "${GREEN}✓${NC} Added: $custom_path"
+                final_selection+="$custom_path"$'\n'
+            else
+                echo -e "${RED}✗${NC} File not found: $custom_path"
+            fi
+        else
+            # Regular file selection
+            local cleaned
+            cleaned=$(echo "$line" | sed 's/^[[:space:]]*//' | sed 's/^[✓⚠⊕⊗○] //')
+            final_selection+="$cleaned"$'\n'
+        fi
+    done <<< "$selected"
+
+    # Return final selection (remove trailing newline)
+    echo -n "${final_selection%$'\n'}"
 }
 
 # ===== Transcrypt Operations =====

@@ -19,7 +19,6 @@ Commands:
   add                 Add files to backup list (append)
   remove              Remove files from backup list
   backup              Backup changed files (incremental)
-  backup --force      Force backup all files (complete)
   verify              Verify backup integrity
   history             Show backup history
   status              Show current backup status
@@ -32,11 +31,18 @@ Options:
 
 Examples:
   keys-backup                              # Interactive menu (default)
-  keys-backup select                       # Select files to backup
+  keys-backup select                       # Select files (scans ~/.ssh, ~/.gnupg, ~/.config/age)
+  keys-backup add                          # Add more files to backup list
+  keys-backup remove                       # Remove files from backup list
   keys-backup backup                       # Backup changed files
   keys-backup verify                       # Verify integrity
   keys-backup status                       # Show status
-  keys-backup --path ~/.gnupg/secret.key   # Add custom file
+
+Supported Directories:
+  - ~/.ssh               SSH keys
+  - ~/.gnupg             GPG keys
+  - ~/.config/age        Age encryption keys
+  - Custom paths via "⊕ Add custom file..." in FZF menu
 
 Status Indicators:
   ${GREEN}✓${NC}  Up to date (backed up, no changes)
@@ -216,7 +222,7 @@ cmd_add() {
             fi
         done
         [[ "$is_in_list" == false ]] && available_files+=("$file")
-    done < <(discover_ssh_files)
+    done < <(discover_key_files)
 
     if [[ ${#available_files[@]} -eq 0 ]]; then
         echo -e "${GREEN}✓${NC} All SSH files are already in backup list"
@@ -361,36 +367,25 @@ cmd_remove() {
     fi
 }
 
-# Command: backup - Backup files (incremental or force)
+# Command: backup - Backup changed files (always incremental)
 cmd_backup() {
     local dry_run=false
-    local force=false
 
     # Parse flags
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --dry-run) dry_run=true; shift ;;
             --verify) VERIFY_AFTER_BACKUP=true; shift ;;
-            --force|-f) force=true; shift ;;
             *) shift ;;
         esac
     done
 
     require_cmd git transcrypt jq || exit 1
 
-    if [[ "$force" == true ]]; then
-        echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        echo -e "${BLUE}SSH Keys Backup (Force Complete)${NC}"
-        echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        echo ""
-        echo -e "${YELLOW}⚠ Force mode: Will backup ALL files regardless of changes${NC}"
-        echo ""
-    else
-        echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        echo -e "${BLUE}SSH Keys Backup (Incremental)${NC}"
-        echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        echo ""
-    fi
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}Keys Backup (Incremental)${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
 
     # Initialize repo
     init_repo_if_needed || exit 1
@@ -420,12 +415,7 @@ cmd_backup() {
     echo ""
 
     # Detect changes
-    if [[ "$force" == true ]]; then
-        echo "[2/5] Selecting all files (force mode)..."
-    else
-        echo "[2/5] Detecting changes..."
-    fi
-
+    echo "[2/5] Detecting changes..."
     local changed_files=()
     local total_files=0
 
@@ -436,33 +426,19 @@ cmd_backup() {
             continue
         fi
 
-        if [[ "$force" == true ]]; then
-            # Force mode: backup all files
+        if detect_changes "$file"; then
             changed_files+=("$file")
-        else
-            # Normal mode: only backup changed files
-            if detect_changes "$file"; then
-                changed_files+=("$file")
-                echo -e "  ${YELLOW}⚠${NC} Changed: $(basename "$file")"
-            fi
+            echo -e "  ${YELLOW}⚠${NC} Changed: $(basename "$file")"
         fi
     done < "$BACKUP_LIST"
 
     if [[ ${#changed_files[@]} -eq 0 ]]; then
-        if [[ "$force" == true ]]; then
-            echo -e "${YELLOW}⚠${NC} No files to backup (check backup list)"
-        else
-            echo -e "${GREEN}✓${NC} No changes to backup (all files up to date)"
-        fi
+        echo -e "${GREEN}✓${NC} No changes to backup (all files up to date)"
         return 0
     fi
 
     echo ""
-    if [[ "$force" == true ]]; then
-        echo "Force mode: Will backup all $total_files files"
-    else
-        echo "Detected: ${#changed_files[@]} of $total_files files changed"
-    fi
+    echo "Detected: ${#changed_files[@]} of $total_files files changed"
     echo ""
 
     if [[ "$dry_run" == true ]]; then
@@ -637,13 +613,10 @@ cmd_menu() {
                     backup)
                         echo "Backup files to encrypted repository"
                         echo ""
-                        echo "Incremental mode (default):"
+                        echo "Incremental backup:"
                         echo "  • Auto-detects changes (SHA256)"
                         echo "  • Only backs up modified files"
-                        echo ""
-                        echo "Force mode (--force):"
-                        echo "  • Backups ALL files regardless of changes"
-                        echo "  • Useful for migration/verification"
+                        echo "  • First backup backs up everything"
                         ;;
                     verify)
                         echo "Verify backup integrity"
@@ -687,7 +660,6 @@ select         Select files (replace list)
 add            Add files (append to list)
 remove         Remove files from list
 backup         Backup changed files
-backup-force   Force backup all files
 verify         Verify backup integrity
 history        Show backup history
 status         Show current status
@@ -710,9 +682,6 @@ MENU
                 ;;
             backup)
                 cmd_backup
-                ;;
-            backup-force)
-                cmd_backup --force
                 ;;
             verify)
                 cmd_verify
