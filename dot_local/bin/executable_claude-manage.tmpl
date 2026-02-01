@@ -173,7 +173,7 @@ cmd_add_account() {
         full_name="${provider}@${account_name}"
     fi
 
-    yq -e ".accounts.\"$full_name\"" "$CLAUDE_YAML" &>/dev/null && {
+    yq -e ".claude.accounts.\"$full_name\"" "$CLAUDE_YAML" &>/dev/null && {
         echo -e "${RED}Error: Account '$full_name' already exists${NC}"
         return 1
     }
@@ -191,9 +191,9 @@ cmd_add_account() {
     # Add to YAML
     echo -e "\n${BLUE}Adding account...${NC}"
     if [[ "$provider" == "anthropic" ]]; then
-        yq -i ".accounts.\"$full_name\" = {\"provider\": \"anthropic\", \"model\": \"$model\", \"small_model\": \"$small_model\"}" "$CLAUDE_YAML"
+        yq -i ".claude.accounts.\"$full_name\" = {\"provider\": \"anthropic\", \"model\": \"$model\", \"small_model\": \"$small_model\"}" "$CLAUDE_YAML"
     else
-        yq -i ".accounts.\"$full_name\" = {\"model\": \"$model\", \"small_model\": \"$small_model\"}" "$CLAUDE_YAML"
+        yq -i ".claude.accounts.\"$full_name\" = {\"model\": \"$model\", \"small_model\": \"$small_model\"}" "$CLAUDE_YAML"
     fi
     echo -e "${GREEN}✓ Account '$full_name' added${NC}"
 
@@ -230,8 +230,8 @@ cmd_edit_account() {
     echo -e "${BLUE}Edit Account: $input${NC}\n"
 
     local current_model current_small
-    current_model=$(yq -r ".accounts.\"$input\".model // \"\"" "$CLAUDE_YAML")
-    current_small=$(yq -r ".accounts.\"$input\".small_model // \"\"" "$CLAUDE_YAML")
+    current_model=$(yq -r ".claude.accounts.\"$input\".model // \"\"" "$CLAUDE_YAML")
+    current_small=$(yq -r ".claude.accounts.\"$input\".small_model // \"\"" "$CLAUDE_YAML")
 
     echo "Current model: $current_model"
     printf "New model (Enter to keep): "
@@ -243,7 +243,7 @@ cmd_edit_account() {
     read -r new_small
     [[ -z "$new_small" ]] && new_small="$current_small"
 
-    yq -i ".accounts.\"$input\".model = \"$new_model\" | .accounts.\"$input\".small_model = \"$new_small\"" "$CLAUDE_YAML"
+    yq -i ".claude.accounts.\"$input\".model = \"$new_model\" | .claude.accounts.\"$input\".small_model = \"$new_small\"" "$CLAUDE_YAML"
 
     echo -e "\n${GREEN}✓ Account '$input' updated${NC}"
     echo -e "${BLUE}Applying chezmoi...${NC}"
@@ -268,7 +268,7 @@ cmd_remove_account() {
     local provider
     provider=$(get_provider "$input")
 
-    yq -i "del(.accounts.\"$input\")" "$CLAUDE_YAML"
+    yq -i "del(.claude.accounts.\"$input\")" "$CLAUDE_YAML"
     echo -e "${GREEN}✓ Account removed${NC}"
 
     if is_third_party "$provider"; then

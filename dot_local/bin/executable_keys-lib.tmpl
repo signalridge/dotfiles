@@ -4,14 +4,10 @@
 #
 # Usage: source keys-lib
 
+# Source common library
+source "$(dirname "${BASH_SOURCE[0]}")/common-lib"
+
 # ===== Constants =====
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-GRAY='\033[0;90m'
-NC='\033[0m'
 
 # Paths from chezmoi data
 KEYS_REPO="{{ .keysRepository }}"
@@ -23,17 +19,6 @@ HISTORY_LOG="$REPO_DIR/backup-history.log"
 VERSION=2
 
 # ===== Utility Functions =====
-
-# Require commands to exist
-require_cmd() {
-    local c
-    for c in "$@"; do
-        if ! command -v "$c" &>/dev/null; then
-            echo -e "${RED}Error:${NC} required command not found: $c" >&2
-            return 1
-        fi
-    done
-}
 
 # Log event to history
 log_event() {
@@ -102,18 +87,6 @@ detect_key_type() {
 
 # ===== Checksum & Change Detection =====
 
-# Calculate file checksum
-calc_checksum() {
-    local file="$1"
-    [[ ! -f "$file" ]] && return 1
-
-    if command -v sha256sum &>/dev/null; then
-        sha256sum "$file" | awk '{print $1}'
-    else
-        shasum -a 256 "$file" | awk '{print $1}'
-    fi
-}
-
 # Detect if file has changed since last backup
 detect_changes() {
     local file="$1"
@@ -180,17 +153,8 @@ update_file_metadata() {
 
     local hash size mtime now count
     hash=$(calc_checksum "$file")
-
-    # Platform-agnostic stat
-    if stat -f%z "$file" &>/dev/null; then
-        # macOS/BSD
-        size=$(stat -f%z "$file")
-        mtime=$(stat -f%m "$file")
-    else
-        # Linux/GNU
-        size=$(stat -c%s "$file")
-        mtime=$(stat -c%Y "$file")
-    fi
+    size=$(get_file_size "$file")
+    mtime=$(get_file_mtime "$file")
 
     now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     count=$(jq -r ".files[\"$file\"].backup_count // 0" "$METADATA_FILE")
