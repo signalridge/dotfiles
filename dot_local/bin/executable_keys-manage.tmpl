@@ -242,7 +242,7 @@ cmd_select() {
     require_cmd fzf || exit 1
 
     log_section "Select files to backup with FZF"
-    echo "(Tab: multi-select, Ctrl-A: all, ESC: cancel)${NC}"
+    echo -e "(Tab: multi-select, Ctrl-A: all, ESC: cancel)${NC}"
     echo ""
 
     # Show current list if exists
@@ -330,8 +330,8 @@ cmd_add() {
         return 0
     fi
 
-    echo "Available files to add: ${#available_files[@]}${NC}"
-    echo "(Tab: multi-select, ESC: cancel)${NC}"
+    echo -e "Available files to add: ${#available_files[@]}${NC}"
+    echo -e "(Tab: multi-select, ESC: cancel)${NC}"
     echo ""
 
     # FZF to select files to add
@@ -395,7 +395,7 @@ cmd_remove() {
     local current_count
     current_count=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
     log_section "Current backup list: $current_count files${NC}"
-    echo "(Tab: multi-select, ESC: cancel)${NC}"
+    echo -e "(Tab: multi-select, ESC: cancel)${NC}"
     echo ""
 
     # FZF to select files to remove
@@ -429,7 +429,7 @@ cmd_remove() {
     # Confirm removal
     local remove_count
     remove_count=$(echo "$to_remove" | wc -l | tr -d ' ')
-    echo "Will remove $remove_count files from backup list:${NC}"
+    echo -e "Will remove $remove_count files from backup list:${NC}"
     echo ""
     echo "$to_remove" | sed 's/^/  /'
     echo ""
@@ -654,10 +654,10 @@ cmd_verify() {
 
     echo ""
     if [[ $errors -eq 0 ]]; then
-        echo "✅ All $verified files verified${NC}"
+        echo -e "✅ All $verified files verified${NC}"
         return 0
     else
-        echo "❌ $errors verification failures${NC}"
+        echo -e "❌ $errors verification failures${NC}"
         return 1
     fi
 }
@@ -842,7 +842,7 @@ cmd_restore() {
 
     echo ""
     log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "✅ Restore Complete${NC}"
+    echo -e "✅ Restore Complete${NC}"
     log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     echo "Restored $restored_count files"
@@ -938,7 +938,7 @@ cmd_diff() {
         log_warn "→ Files differ from backup version"
         echo -e "${GRAY}  To restore: keys-manage restore --commit $commit_short${NC}"
     else
-        echo "→ All files match backup version${NC}"
+        echo -e "→ All files match backup version${NC}"
     fi
     echo ""
 }
@@ -969,8 +969,8 @@ cmd_versions() {
         echo ""
         git show --stat "$selected" -- ssh-keys/
         echo ""
-        echo "To restore: keys-manage restore --commit $selected${NC}"
-        echo "To preview: keys-manage diff $selected${NC}"
+        echo -e "To restore: keys-manage restore --commit $selected${NC}"
+        echo -e "To preview: keys-manage diff $selected${NC}"
     fi
 }
 
@@ -1033,7 +1033,7 @@ cmd_validate() {
     fi
 
     echo ""
-    echo "✅ Validation complete${NC}"
+    echo -e "✅ Validation complete${NC}"
     echo ""
 }
 
