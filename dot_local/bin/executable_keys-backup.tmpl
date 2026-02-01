@@ -227,7 +227,7 @@ cmd_init() {
         init_metadata
         git add backup-metadata.json
         git commit -m "Initialize metadata v2"
-        git push
+        safe_git_push || log_warn "Failed to push metadata (will retry on next backup)"
     fi
 
     echo ""
@@ -370,8 +370,11 @@ cmd_select() {
     else
         git add backup-list.txt
         git commit -m "Update backup list - $count files"
-        git push
-        log_event "Updated backup list: $count files"
+        if safe_git_push; then
+            log_event "Updated backup list: $count files"
+        else
+            log_warn "Committed locally but push failed (will retry on next backup)"
+        fi
     fi
 }
 
@@ -450,8 +453,11 @@ cmd_add() {
     else
         git add backup-list.txt
         git commit -m "Add $added_count files to backup list"
-        git push
-        log_event "Added $added_count files to backup list"
+        if safe_git_push; then
+            log_event "Added $added_count files to backup list"
+        else
+            log_warn "Committed locally but push failed (will retry on next backup)"
+        fi
     fi
 }
 
@@ -543,8 +549,11 @@ cmd_remove() {
     else
         git add backup-list.txt
         git commit -m "Remove $remove_count files from backup list"
-        git push
-        log_event "Removed $remove_count files from backup list"
+        if safe_git_push; then
+            log_event "Removed $remove_count files from backup list"
+        else
+            log_warn "Committed locally but push failed (will retry on next backup)"
+        fi
     fi
 }
 
@@ -649,8 +658,15 @@ cmd_backup() {
         git commit -m "$commit_msg"
         log_event "$commit_msg"
 
+        echo ""
         echo "[5/5] Pushing to remote..."
-        git push
+        safe_git_push || {
+            log_warn "Backup committed locally but push failed"
+            echo ""
+            echo "Your backup is saved locally in: $REPO_DIR"
+            echo "You can push manually later: cd $REPO_DIR && git push"
+            return 1
+        }
     fi
 
     echo ""

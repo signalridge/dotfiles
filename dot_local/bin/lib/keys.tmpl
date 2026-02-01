@@ -303,6 +303,145 @@ fzf_select_files() {
     echo -n "${final_selection%$'\n'}"
 }
 
+# ===== Git Operations =====
+
+# Check git sync status with remote
+# Returns: 0=in sync, 1=ahead, 2=behind, 3=diverged, 4=no remote
+check_git_sync_status() {
+    local ahead behind
+
+    # Fetch remote without pulling
+    git fetch origin --quiet 2>/dev/null || {
+        log_warn "Cannot fetch from remote (offline or no access)"
+        return 4
+    }
+
+    # Get ahead/behind counts
+    local counts
+    counts=$(git rev-list --left-right --count HEAD...origin/$(git branch --show-current) 2>/dev/null || echo "0 0")
+    ahead=$(echo "$counts" | awk '{print $1}')
+    behind=$(echo "$counts" | awk '{print $2}')
+
+    if [[ $ahead -gt 0 ]] && [[ $behind -gt 0 ]]; then
+        echo "diverged:$ahead:$behind"
+        return 3
+    elif [[ $ahead -gt 0 ]]; then
+        echo "ahead:$ahead"
+        return 1
+    elif [[ $behind -gt 0 ]]; then
+        echo "behind:$behind"
+        return 2
+    else
+        echo "in-sync"
+        return 0
+    fi
+}
+
+# Sync repository with remote (pull if needed)
+sync_with_remote() {
+    local status_info
+    status_info=$(check_git_sync_status)
+    local status_code=$?
+
+    case $status_code in
+        0)  # In sync
+            return 0
+            ;;
+        1)  # Ahead of remote
+            local ahead
+            ahead=$(echo "$status_info" | cut -d: -f2)
+            log_warn "Local repository is $ahead commit(s) ahead of remote"
+            echo "  You have unpushed changes. They will be pushed with the next backup."
+            return 0
+            ;;
+        2)  # Behind remote
+            local behind
+            behind=$(echo "$status_info" | cut -d: -f2)
+            log_info "Pulling $behind new commit(s) from remote..."
+            if git pull --quiet --ff-only 2>/dev/null; then
+                log_success "Updated from remote"
+                return 0
+            else
+                log_error "Failed to pull from remote"
+                echo "  Possible causes:"
+                echo "  - Merge conflicts"
+                echo "  - Non-fast-forward changes"
+                echo ""
+                echo "  To fix:"
+                echo "  - Run: cd $REPO_DIR && git pull"
+                echo "  - Resolve any conflicts manually"
+                return 1
+            fi
+            ;;
+        3)  # Diverged
+            local ahead behind
+            ahead=$(echo "$status_info" | cut -d: -f2)
+            behind=$(echo "$status_info" | cut -d: -f3)
+            log_error "Repository has diverged from remote"
+            echo "  Local: $ahead commit(s) ahead"
+            echo "  Remote: $behind commit(s) ahead"
+            echo ""
+            echo "  To fix (choose one):"
+            echo "  1. Merge: cd $REPO_DIR && git pull"
+            echo "  2. Rebase: cd $REPO_DIR && git pull --rebase"
+            echo "  3. Reset to remote: cd $REPO_DIR && git reset --hard origin/\$(git branch --show-current)"
+            return 1
+            ;;
+        4)  # Cannot reach remote
+            log_warn "Working offline (cannot reach remote)"
+            return 0
+            ;;
+    esac
+}
+
+# Safe git push with error handling
+safe_git_push() {
+    local push_output
+    push_output=$(mktemp)
+
+    echo -n "Pushing to remote... "
+    if git push 2>"$push_output"; then
+        echo "✓"
+        rm -f "$push_output"
+        return 0
+    fi
+
+    echo "✗"
+    echo ""
+
+    # Analyze push error
+    local error_content
+    error_content=$(cat "$push_output" 2>/dev/null)
+    rm -f "$push_output"
+
+    if echo "$error_content" | grep -q "non-fast-forward\|rejected"; then
+        log_error "Push rejected (non-fast-forward)"
+        echo ""
+        echo "  Remote has changes you don't have locally."
+        echo ""
+        echo "  To fix:"
+        echo "  1. Pull first: cd $REPO_DIR && git pull"
+        echo "  2. Resolve any conflicts"
+        echo "  3. Run backup again"
+        return 1
+    elif echo "$error_content" | grep -q "Authentication\|Permission denied"; then
+        log_error "Authentication failed"
+        echo ""
+        echo "  Cannot push to remote (permission denied)"
+        echo ""
+        echo "  To fix:"
+        echo "  - Check SSH key: ssh -T git@github.com"
+        echo "  - Verify repository access rights"
+        return 1
+    else
+        log_error "Push failed"
+        echo ""
+        echo "Git error:"
+        echo "$error_content" | sed 's/^/  /'
+        return 1
+    fi
+}
+
 # ===== Directory Management =====
 
 # Ensure local directory exists (without git initialization)
@@ -392,10 +531,13 @@ check_repo_health() {
 
 # Initialize repository if needed
 init_repo_if_needed() {
-    # If git repo already exists, update and return
+    # If git repo already exists, sync with remote and return
     if [[ -d "$REPO_DIR/.git" ]]; then
         cd "$REPO_DIR"
-        git pull --quiet 2>/dev/null || true
+        sync_with_remote || {
+            log_error "Cannot sync with remote - please resolve conflicts first"
+            return 1
+        }
         return 0
     fi
 
