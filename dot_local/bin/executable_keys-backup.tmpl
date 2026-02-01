@@ -15,6 +15,7 @@ Usage: keys-backup [command] [options]
 
 Commands:
   menu                Interactive FZF menu (default if no command)
+  init                Initialize or setup backup repository
   select              Select files to backup (replaces existing list)
   add                 Add files to backup list (append)
   remove              Remove files from backup list
@@ -31,6 +32,8 @@ Options:
 
 Examples:
   keys-backup                              # Interactive menu (default)
+  keys-backup init                         # Initialize backup repository (first time)
+  keys-backup init -p <password>           # Initialize with transcrypt password
   keys-backup select                       # Select files (scans ~/.ssh, ~/.gnupg, ~/.config/age)
   keys-backup add                          # Add more files to backup list
   keys-backup remove                       # Remove files from backup list
@@ -52,6 +55,147 @@ Status Indicators:
   ${GRAY}○${NC}  Available (not selected)
 
 EOF
+}
+
+# Command: init - Initialize backup repository
+cmd_init() {
+    require_cmd git transcrypt || exit 1
+
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}Keys Backup Repository Initialization${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    # Check if repository already exists
+    if [[ -d "$REPO_DIR/.git" ]]; then
+        echo -e "${YELLOW}Repository already initialized:${NC} $REPO_DIR"
+        echo ""
+
+        # Check transcrypt status
+        cd "$REPO_DIR"
+        if [[ -f .gitattributes ]] && grep -q "filter=crypt" .gitattributes 2>/dev/null; then
+            if [[ -f .transcrypt/cipher ]]; then
+                echo -e "${GREEN}✓${NC} Transcrypt is configured and unlocked"
+            else
+                echo -e "${YELLOW}⚠${NC} Transcrypt is configured but locked"
+                echo ""
+                echo "Unlocking transcrypt encryption..."
+                unlock_transcrypt "$TRANSCRYPT_PASSWORD" || {
+                    echo -e "${RED}Error:${NC} Failed to unlock transcrypt" >&2
+                    echo "Please provide the correct password with -p or interactively"
+                    return 1
+                }
+                echo -e "${GREEN}✓${NC} Transcrypt unlocked successfully"
+            fi
+        else
+            echo -e "${YELLOW}⚠${NC} Repository exists but transcrypt is not configured"
+            echo ""
+            read -p "Initialize transcrypt encryption? (y/n): " init_transcrypt
+            if [[ "$init_transcrypt" == "y" ]]; then
+                init_transcrypt "$TRANSCRYPT_PASSWORD"
+                echo -e "${GREEN}✓${NC} Transcrypt initialized"
+            fi
+        fi
+
+        echo ""
+        echo -e "${GREEN}✓${NC} Repository ready"
+        return 0
+    fi
+
+    # Check if remote repository is configured
+    if [[ -z "$KEYS_REPO" ]]; then
+        echo -e "${RED}Error:${NC} Repository URL not configured" >&2
+        echo ""
+        echo "Please set keysRepository in .chezmoidata/keys.yaml:"
+        echo "  keysRepository: git@github.com:username/keys-backup.git"
+        return 1
+    fi
+
+    echo "Repository URL: $KEYS_REPO"
+    echo "Local path: $REPO_DIR"
+    echo ""
+
+    # Clone repository
+    echo -e "${BLUE}Cloning repository...${NC}"
+    if ! git clone "$KEYS_REPO" "$REPO_DIR" 2>/dev/null; then
+        echo -e "${YELLOW}Note:${NC} Remote repository may not exist yet"
+        echo ""
+        read -p "Create new repository? (y/n): " create_new
+        if [[ "$create_new" != "y" ]]; then
+            echo "Initialization cancelled"
+            return 1
+        fi
+
+        # Initialize new repository
+        mkdir -p "$REPO_DIR"
+        cd "$REPO_DIR"
+        git init
+        git remote add origin "$KEYS_REPO"
+
+        # Initialize transcrypt
+        echo ""
+        echo -e "${BLUE}Initializing transcrypt encryption...${NC}"
+        init_transcrypt "$TRANSCRYPT_PASSWORD"
+
+        # Create initial metadata
+        init_metadata
+
+        # Initial commit
+        git add .gitattributes backup-metadata.json
+        git commit -m "Initial commit: setup transcrypt and metadata"
+
+        echo ""
+        echo -e "${GREEN}✓${NC} New repository created and configured"
+        echo ""
+        echo "Next steps:"
+        echo "  1. Create the remote repository: $KEYS_REPO"
+        echo "  2. Run: git -C $REPO_DIR push -u origin main"
+        echo "  3. Run: keys-backup select  # Select files to backup"
+
+        log_event "Repository initialized (new)"
+        return 0
+    fi
+
+    # Repository cloned successfully
+    cd "$REPO_DIR"
+    echo -e "${GREEN}✓${NC} Repository cloned"
+    echo ""
+
+    # Check for transcrypt configuration
+    if [[ -f .gitattributes ]] && grep -q "filter=crypt" .gitattributes 2>/dev/null; then
+        echo -e "${BLUE}Unlocking transcrypt encryption...${NC}"
+        unlock_transcrypt "$TRANSCRYPT_PASSWORD" || {
+            echo -e "${RED}Error:${NC} Failed to unlock transcrypt" >&2
+            echo ""
+            echo "This repository uses transcrypt encryption."
+            echo "Please provide the correct password:"
+            echo "  - Use -p flag: keys-backup init -p <password>"
+            echo "  - Or run again and enter password interactively"
+            return 1
+        }
+        echo -e "${GREEN}✓${NC} Transcrypt unlocked"
+    else
+        echo -e "${YELLOW}Note:${NC} Repository doesn't use transcrypt encryption"
+    fi
+
+    # Initialize metadata if needed
+    if [[ ! -f "$METADATA_FILE" ]]; then
+        echo ""
+        echo "Initializing metadata..."
+        init_metadata
+        git add backup-metadata.json
+        git commit -m "Initialize metadata v2"
+        git push
+    fi
+
+    echo ""
+    echo -e "${GREEN}✓${NC} Repository initialized successfully"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Run: keys-backup select  # Select files to backup"
+    echo "  2. Run: keys-backup backup  # Backup selected files"
+
+    log_event "Repository initialized (clone)"
 }
 
 # Command: status - Show current backup status
@@ -77,7 +221,7 @@ cmd_status() {
         echo "  Last commit: $last_commit"
     else
         echo -e "${YELLOW}⚠${NC} Repository not initialized"
-        echo "  Run 'keys-backup backup' to initialize"
+        echo "  Run 'keys-backup init' to initialize"
         return 0
     fi
 
@@ -584,6 +728,19 @@ cmd_menu() {
                 echo -e "\033[1;34m━━━ $cmd ━━━\033[0m"
                 echo ""
                 case "$cmd" in
+                    init)
+                        echo "Initialize or setup backup repository"
+                        echo ""
+                        echo "Functions:"
+                        echo "  • Clone remote repository (if not exists)"
+                        echo "  • Unlock transcrypt encryption"
+                        echo "  • Initialize metadata"
+                        echo ""
+                        echo "First time setup:"
+                        echo "  1. Configure keysRepository in chezmoi"
+                        echo "  2. Run 'keys-backup init'"
+                        echo "  3. Provide transcrypt password"
+                        ;;
                     select)
                         echo "Select files to backup (REPLACE list)"
                         echo ""
@@ -651,11 +808,12 @@ cmd_menu() {
                     fi
                 else
                     echo "⚠ Not initialized"
-                    echo "Run backup to initialize"
+                    echo "Run 'init' to initialize"
                 fi
             ' \
             --preview-window='right:50%:wrap' \
             --preview-label="[ Keys Backup Manager ]"
+init           Initialize backup repository
 select         Select files (replace list)
 add            Add files (append to list)
 remove         Remove files from list
@@ -671,6 +829,9 @@ MENU
 
         echo ""
         case "$cmd" in
+            init)
+                cmd_init
+                ;;
             select)
                 cmd_select
                 ;;
@@ -754,6 +915,9 @@ main() {
 
     # Route commands
     case "$cmd" in
+        init)
+            cmd_init "$@"
+            ;;
         select)
             cmd_select "$@"
             ;;
