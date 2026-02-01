@@ -392,12 +392,25 @@ check_repo_health() {
 
 # Initialize repository if needed
 init_repo_if_needed() {
+    # If git repo already exists, update and return
     if [[ -d "$REPO_DIR/.git" ]]; then
         cd "$REPO_DIR"
         git pull --quiet 2>/dev/null || true
         return 0
     fi
 
+    # If directory exists but no git (created by ensure_local_dir), run init
+    if [[ -d "$REPO_DIR" ]] && [[ ! -d "$REPO_DIR/.git" ]]; then
+        log_info "Local directory exists, initializing git repository..."
+        echo ""
+        # Source cmd_init from keys-backup (it's defined there)
+        # We'll just provide instructions instead
+        log_warn "Please run 'keys-backup init' first to initialize the git repository"
+        return 1
+    fi
+
+    # Directory doesn't exist at all - this shouldn't happen normally
+    # as both ensure_local_dir and init should create it
     echo -e "${BLUE}Cloning keys repository...${NC}"
     git clone "$KEYS_REPO" "$REPO_DIR" || {
         echo -e "${RED}Error:${NC} Failed to clone repository" >&2
