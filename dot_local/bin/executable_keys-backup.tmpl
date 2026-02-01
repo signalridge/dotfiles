@@ -1,0 +1,470 @@
+#!/usr/bin/env bash
+# SSH Keys Backup Script with FZF Interface
+# Backs up SSH keys to transcrypt-encrypted git repository
+set -euo pipefail
+
+# shellcheck source=keys-lib
+source "$(dirname "$0")/keys-lib"
+
+# ===== Command Functions =====
+
+# Show help
+show_help() {
+    cat <<EOF
+Usage: keys-backup [command] [options]
+
+Commands:
+  backup [mode]       Backup files (auto/full/interactive)
+                      - auto: Incremental backup (changed files only)
+                      - full: Backup all files regardless of changes
+                      - interactive: Select files with FZF, then backup
+  select              Interactively select files with FZF
+  verify              Verify backup integrity
+  history             Show backup history
+  status              Show current backup status
+
+Options:
+  -p, --password PWD  Transcrypt password (interactive if not provided)
+  -r, --reconfigure   Force file selection reconfiguration
+  --dry-run          Preview without making changes
+  --path PATH        Add custom path to backup list
+
+Examples:
+  keys-backup                              # Interactive menu
+  keys-backup backup                       # Incremental backup (default)
+  keys-backup backup full                  # Full backup all files
+  keys-backup backup interactive           # Select files then backup
+  keys-backup select                       # Select files with FZF
+  keys-backup verify                       # Check integrity
+  keys-backup --path ~/.gnupg/secret.key   # Add custom file
+  keys-backup status                       # Show backup status
+
+Status Indicators:
+  ${GREEN}✓${NC}  Up to date (backed up, no changes)
+  ${YELLOW}⚠${NC}  Modified (backed up but changed since)
+  ${CYAN}⊕${NC}  New file (not in backup list)
+  ${RED}⊗${NC}  Removed (was backed up, now excluded)
+  ${GRAY}○${NC}  Available (not selected)
+
+EOF
+}
+
+# Command: status - Show current backup status
+cmd_status() {
+    require_cmd git transcrypt jq || exit 1
+
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}SSH Keys Backup Status${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    # Repository status
+    if [[ -d "$REPO_DIR/.git" ]]; then
+        echo -e "${GREEN}✓${NC} Repository: ${REPO_DIR}"
+        cd "$REPO_DIR"
+
+        local remote_url
+        remote_url=$(git remote get-url origin 2>/dev/null || echo "N/A")
+        echo "  Remote: $remote_url"
+
+        local last_commit
+        last_commit=$(git log -1 --format="%h - %s (%ar)" 2>/dev/null || echo "N/A")
+        echo "  Last commit: $last_commit"
+    else
+        echo -e "${YELLOW}⚠${NC} Repository not initialized"
+        echo "  Run 'keys-backup backup' to initialize"
+        return 0
+    fi
+
+    # Metadata status
+    if [[ -f "$METADATA_FILE" ]]; then
+        local version file_count
+        version=$(jq -r '.version // 1' "$METADATA_FILE")
+        file_count=$(jq '.files | length' "$METADATA_FILE")
+        echo -e "${GREEN}✓${NC} Metadata: v$version ($file_count files tracked)"
+    else
+        echo -e "${YELLOW}⚠${NC} Metadata not initialized (legacy v1)"
+    fi
+
+    # Backup list
+    if [[ -f "$BACKUP_LIST" ]]; then
+        local selected_count
+        selected_count=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
+        echo -e "${GREEN}✓${NC} Backup list: $selected_count files selected"
+    else
+        echo -e "${YELLOW}⚠${NC} No backup list"
+        return 0
+    fi
+
+    # File status
+    echo ""
+    echo -e "${BLUE}File Status:${NC}"
+    echo ""
+
+    local total=0 unchanged=0 modified=0 new=0 missing=0
+
+    while IFS= read -r file; do
+        ((total++))
+        local status
+        status=$(get_file_status "$file")
+
+        if [[ ! -f "$file" ]]; then
+            echo -e "  ${RED}⊗${NC} Missing: $file"
+            ((missing++))
+        elif [[ "$status" == *"✓"* ]]; then
+            echo -e "  ${GREEN}✓${NC} $(basename "$file")"
+            ((unchanged++))
+        elif [[ "$status" == *"⚠"* ]]; then
+            echo -e "  ${YELLOW}⚠${NC} Modified: $(basename "$file")"
+            ((modified++))
+        else
+            echo -e "  ${CYAN}⊕${NC} New: $(basename "$file")"
+            ((new++))
+        fi
+    done < "$BACKUP_LIST"
+
+    echo ""
+    echo "Summary: $total total, $unchanged unchanged, $modified modified, $new new, $missing missing"
+    echo ""
+
+    if [[ $modified -gt 0 ]] || [[ $new -gt 0 ]]; then
+        echo -e "${YELLOW}→ Run 'keys-backup backup' to backup changes${NC}"
+    else
+        echo -e "${GREEN}→ All files up to date${NC}"
+    fi
+    echo ""
+}
+
+# Command: select - Interactive file selection with FZF
+cmd_select() {
+    require_cmd fzf || exit 1
+
+    echo -e "${BLUE}Select files to backup with FZF${NC}"
+    echo -e "${GRAY}(Tab: multi-select, Ctrl-A: all, Ctrl-D: deselect all)${NC}"
+    echo ""
+
+    local selected
+    selected=$(fzf_select_files "Select files to backup") || {
+        echo -e "${YELLOW}Selection cancelled${NC}"
+        return 0
+    }
+
+    if [[ -z "$selected" ]]; then
+        echo -e "${YELLOW}No files selected${NC}"
+        return 0
+    fi
+
+    # Initialize repo if needed
+    init_repo_if_needed || exit 1
+    cd "$REPO_DIR"
+
+    # Save selection
+    echo "$selected" > "$BACKUP_LIST"
+
+    local count
+    count=$(echo "$selected" | wc -l | tr -d ' ')
+    echo -e "${GREEN}✓${NC} Selected $count files"
+    echo ""
+    echo "$selected" | sed 's/^/  /'
+    echo ""
+
+    # Commit backup list
+    if git diff --quiet backup-list.txt 2>/dev/null; then
+        echo "No changes to backup list"
+    else
+        git add backup-list.txt
+        git commit -m "Update backup list - $count files"
+        git push
+        log_event "Updated backup list: $count files"
+    fi
+}
+
+# Command: backup - Backup files
+cmd_backup() {
+    local mode="${1:-auto}"
+    local dry_run=false
+
+    # Parse flags
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --dry-run) dry_run=true; shift ;;
+            --verify) VERIFY_AFTER_BACKUP=true; shift ;;
+            *) shift ;;
+        esac
+    done
+
+    require_cmd git transcrypt jq || exit 1
+
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}SSH Keys Backup${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    # Initialize repo
+    init_repo_if_needed || exit 1
+    cd "$REPO_DIR"
+
+    # Initialize metadata if needed
+    [[ ! -f "$METADATA_FILE" ]] && init_metadata
+
+    # Interactive mode - select files first
+    if [[ "$mode" == "interactive" ]]; then
+        cmd_select
+        [[ ! -f "$BACKUP_LIST" ]] && { echo "No files selected"; exit 0; }
+    fi
+
+    # Check backup list exists
+    if [[ ! -f "$BACKUP_LIST" ]]; then
+        echo -e "${YELLOW}No backup list found${NC}"
+        echo "Run 'keys-backup select' to choose files"
+        return 1
+    fi
+
+    # Show backup list
+    echo "[1/5] Files in backup list:"
+    echo ""
+    while IFS= read -r file; do
+        local status
+        status=$(get_file_status "$file")
+        printf "  %b %s\n" "$status" "$(basename "$file")"
+    done < "$BACKUP_LIST"
+    echo ""
+
+    # Detect changes
+    echo "[2/5] Detecting changes..."
+    local changed_files=()
+    local total_files=0
+
+    while IFS= read -r file; do
+        ((total_files++))
+        if [[ ! -f "$file" ]]; then
+            echo -e "  ${RED}✗${NC} Missing: $file"
+            continue
+        fi
+
+        if [[ "$mode" == "full" ]] || detect_changes "$file"; then
+            changed_files+=("$file")
+            if [[ "$mode" != "full" ]]; then
+                echo -e "  ${YELLOW}⚠${NC} Changed: $(basename "$file")"
+            fi
+        fi
+    done < "$BACKUP_LIST"
+
+    if [[ ${#changed_files[@]} -eq 0 ]]; then
+        echo -e "${GREEN}✓${NC} No changes to backup"
+        return 0
+    fi
+
+    echo ""
+    if [[ "$mode" == "full" ]]; then
+        echo "Mode: Full backup (all $total_files files)"
+    else
+        echo "Mode: Incremental (${#changed_files[@]} of $total_files files changed)"
+    fi
+    echo ""
+
+    if [[ "$dry_run" == true ]]; then
+        echo "Dry run mode - files that would be backed up:"
+        printf '%s\n' "${changed_files[@]}" | sed 's/^/  /'
+        return 0
+    fi
+
+    # Backup files
+    echo "[3/5] Backing up files..."
+    for file in "${changed_files[@]}"; do
+        if backup_file "$file"; then
+            update_file_metadata "$file"
+            echo -e "  ${GREEN}✓${NC} $(basename "$file")"
+        else
+            echo -e "  ${RED}✗${NC} Failed: $(basename "$file")"
+        fi
+    done
+
+    # Commit changes
+    echo ""
+    echo "[4/5] Committing to git..."
+    git add ssh-keys/ backup-list.txt backup-metadata.json
+
+    if git diff --cached --quiet; then
+        echo "  No changes to commit"
+    else
+        local commit_msg
+        if [[ "$mode" == "full" ]]; then
+            commit_msg="Full backup: ${#changed_files[@]} files - $(date '+%Y-%m-%d %H:%M:%S')"
+        else
+            commit_msg="Incremental backup: ${#changed_files[@]} files - $(date '+%Y-%m-%d %H:%M:%S')"
+        fi
+
+        git commit -m "$commit_msg"
+        log_event "$commit_msg"
+
+        echo "[5/5] Pushing to remote..."
+        git push
+    fi
+
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}✅ Backup Complete${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo "Backed up ${#changed_files[@]} files"
+    echo "Repository: $KEYS_REPO"
+    echo "Local copy: $REPO_DIR"
+    echo ""
+
+    # Verify if requested
+    if [[ "${VERIFY_AFTER_BACKUP:-false}" == true ]]; then
+        echo "Verifying backup..."
+        cmd_verify
+    fi
+}
+
+# Command: verify - Verify backup integrity
+cmd_verify() {
+    require_cmd git transcrypt || exit 1
+
+    [[ ! -d "$REPO_DIR/.git" ]] && {
+        echo -e "${RED}Error:${NC} Repository not initialized"
+        return 1
+    }
+
+    [[ ! -f "$BACKUP_LIST" ]] && {
+        echo -e "${RED}Error:${NC} No backup list found"
+        return 1
+    }
+
+    cd "$REPO_DIR"
+
+    echo -e "${BLUE}Verifying backup integrity...${NC}"
+    echo ""
+
+    local errors=0
+    local verified=0
+
+    while IFS= read -r file; do
+        local filename
+        filename=$(basename "$file")
+
+        if [[ ! -f "$file" ]]; then
+            echo -e "${YELLOW}⚠${NC} Local file missing: $file"
+            continue
+        fi
+
+        if [[ ! -f "ssh-keys/$filename" ]]; then
+            echo -e "${RED}✗${NC} Not in backup: $filename"
+            ((errors++))
+            continue
+        fi
+
+        if verify_file "$file"; then
+            echo -e "${GREEN}✓${NC} OK: $filename"
+            ((verified++))
+        else
+            echo -e "${RED}✗${NC} Mismatch: $filename"
+            ((errors++))
+        fi
+    done < "$BACKUP_LIST"
+
+    echo ""
+    if [[ $errors -eq 0 ]]; then
+        echo -e "${GREEN}✅ All $verified files verified${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ $errors verification failures${NC}"
+        return 1
+    fi
+}
+
+# Command: history - Show backup history
+cmd_history() {
+    [[ ! -f "$HISTORY_LOG" ]] && {
+        echo "No history available"
+        return 0
+    }
+
+    echo -e "${BLUE}Backup History${NC}"
+    echo ""
+    tail -n 20 "$HISTORY_LOG"
+    echo ""
+}
+
+# ===== Main Entry Point =====
+
+main() {
+    local cmd="${1:-}"
+    shift || true
+
+    # Global options
+    TRANSCRYPT_PASSWORD=""
+    RECONFIGURE=false
+    CUSTOM_PATH=""
+
+    # Parse global options
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            -p|--password)
+                TRANSCRYPT_PASSWORD="$2"
+                shift 2
+                ;;
+            -r|--reconfigure)
+                RECONFIGURE=true
+                shift
+                ;;
+            --path)
+                CUSTOM_PATH="$2"
+                shift 2
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+
+    # Handle custom path
+    if [[ -n "$CUSTOM_PATH" ]]; then
+        if [[ -f "$CUSTOM_PATH" ]]; then
+            init_repo_if_needed || exit 1
+            echo "$CUSTOM_PATH" >> "$BACKUP_LIST"
+            sort -u "$BACKUP_LIST" -o "$BACKUP_LIST"
+            echo -e "${GREEN}✓${NC} Added: $CUSTOM_PATH"
+        else
+            echo -e "${RED}Error:${NC} File not found: $CUSTOM_PATH"
+            exit 1
+        fi
+        exit 0
+    fi
+
+    # Route commands
+    case "$cmd" in
+        backup)
+            cmd_backup "$@"
+            ;;
+        select)
+            cmd_select "$@"
+            ;;
+        verify)
+            cmd_verify "$@"
+            ;;
+        history)
+            cmd_history "$@"
+            ;;
+        status)
+            cmd_status "$@"
+            ;;
+        "")
+            # No command - show status
+            cmd_status
+            ;;
+        *)
+            echo -e "${RED}Error:${NC} Unknown command: $cmd"
+            echo "Run 'keys-backup --help' for usage"
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"

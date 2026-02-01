@@ -1,0 +1,427 @@
+#!/usr/bin/env bash
+# SSH Keys Backup/Restore Shared Library
+# Common functions for keys-backup and keys-restore
+#
+# Usage: source keys-lib
+
+# ===== Constants =====
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+GRAY='\033[0;90m'
+NC='\033[0m'
+
+# Paths from chezmoi data
+KEYS_REPO="{{ .keysRepository }}"
+REPO_DIR="$HOME/.local/share/keys-backup"
+BACKUP_LIST="$REPO_DIR/backup-list.txt"
+METADATA_FILE="$REPO_DIR/backup-metadata.json"
+HISTORY_LOG="$REPO_DIR/backup-history.log"
+
+VERSION=2
+
+# ===== Utility Functions =====
+
+# Require commands to exist
+require_cmd() {
+    local c
+    for c in "$@"; do
+        if ! command -v "$c" &>/dev/null; then
+            echo -e "${RED}Error:${NC} required command not found: $c" >&2
+            return 1
+        fi
+    done
+}
+
+# Log event to history
+log_event() {
+    local event="$1"
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    echo "[$timestamp] $event" >> "$HISTORY_LOG"
+}
+
+# ===== File Discovery & Filtering =====
+
+# Discover SSH files with smart filtering
+discover_ssh_files() {
+    find ~/.ssh -type f -print0 2>/dev/null | while IFS= read -r -d $'\0' file; do
+        # Skip public keys, known_hosts, authorized_keys
+        [[ ! "$file" =~ \.pub$ ]] && \
+        [[ ! "$file" =~ known_hosts ]] && \
+        [[ ! "$file" =~ authorized_keys ]] && \
+        echo "$file"
+    done
+}
+
+# Get key type from file
+detect_key_type() {
+    local file="$1"
+    [[ ! -f "$file" ]] && { echo "unknown"; return; }
+
+    local first_line
+    first_line=$(head -n1 "$file" 2>/dev/null)
+
+    case "$first_line" in
+        *"BEGIN OPENSSH PRIVATE KEY"*)
+            if grep -q "ssh-ed25519" "$file"; then
+                echo "Ed25519"
+            elif grep -q "ecdsa" "$file"; then
+                echo "ECDSA"
+            else
+                echo "OpenSSH"
+            fi
+            ;;
+        *"BEGIN RSA PRIVATE KEY"*) echo "RSA" ;;
+        *"BEGIN EC PRIVATE KEY"*) echo "ECDSA" ;;
+        *"BEGIN DSA PRIVATE KEY"*) echo "DSA" ;;
+        "Host "*) echo "SSH Config" ;;
+        *) echo "unknown" ;;
+    esac
+}
+
+# ===== Checksum & Change Detection =====
+
+# Calculate file checksum
+calc_checksum() {
+    local file="$1"
+    [[ ! -f "$file" ]] && return 1
+
+    if command -v sha256sum &>/dev/null; then
+        sha256sum "$file" | awk '{print $1}'
+    else
+        shasum -a 256 "$file" | awk '{print $1}'
+    fi
+}
+
+# Detect if file has changed since last backup
+detect_changes() {
+    local file="$1"
+    [[ ! -f "$file" ]] && return 0  # Missing file = changed
+    [[ ! -f "$METADATA_FILE" ]] && return 0  # No metadata = changed
+
+    local stored_hash
+    stored_hash=$(jq -r ".files[\"$file\"].sha256 // empty" "$METADATA_FILE" 2>/dev/null)
+    [[ -z "$stored_hash" ]] && return 0  # Not in metadata = new file
+
+    local current_hash
+    current_hash=$(calc_checksum "$file")
+    [[ "$current_hash" != "$stored_hash" ]]
+}
+
+# Get file status (for display)
+get_file_status() {
+    local file="$1"
+    local backed_up=false
+
+    # Check if in backup list
+    if [[ -f "$BACKUP_LIST" ]] && grep -qxF "$file" "$BACKUP_LIST"; then
+        backed_up=true
+    fi
+
+    if [[ "$backed_up" == true ]]; then
+        if detect_changes "$file"; then
+            echo "${YELLOW}⚠${NC}"  # Modified
+        else
+            echo "${GREEN}✓${NC}"  # Up to date
+        fi
+    else
+        if [[ -f "$METADATA_FILE" ]] && jq -e ".files[\"$file\"] // empty" "$METADATA_FILE" &>/dev/null; then
+            echo "${RED}⊗${NC}"  # Removed from list
+        else
+            echo "${CYAN}⊕${NC}"  # New file
+        fi
+    fi
+}
+
+# ===== Metadata Management =====
+
+# Initialize metadata file
+init_metadata() {
+    cat > "$METADATA_FILE" <<'EOF'
+{
+  "version": 2,
+  "filters": {
+    "include_patterns": ["*"],
+    "exclude_patterns": ["*.pub", "known_hosts*", "authorized_keys*"],
+    "custom_paths": []
+  },
+  "files": {}
+}
+EOF
+    log_event "Initialized metadata v2"
+}
+
+# Update file metadata after backup
+update_file_metadata() {
+    local file="$1"
+    [[ ! -f "$file" ]] && return 1
+    [[ ! -f "$METADATA_FILE" ]] && init_metadata
+
+    local hash size mtime now count
+    hash=$(calc_checksum "$file")
+
+    # Platform-agnostic stat
+    if stat -f%z "$file" &>/dev/null; then
+        # macOS/BSD
+        size=$(stat -f%z "$file")
+        mtime=$(stat -f%m "$file")
+    else
+        # Linux/GNU
+        size=$(stat -c%s "$file")
+        mtime=$(stat -c%Y "$file")
+    fi
+
+    now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    count=$(jq -r ".files[\"$file\"].backup_count // 0" "$METADATA_FILE")
+    ((count++))
+
+    local tmp
+    tmp=$(mktemp)
+    jq ".files[\"$file\"] = {
+        \"sha256\": \"$hash\",
+        \"size\": $size,
+        \"mtime\": $mtime,
+        \"last_backup\": \"$now\",
+        \"backup_count\": $count
+    }" "$METADATA_FILE" > "$tmp"
+    mv "$tmp" "$METADATA_FILE"
+}
+
+# Get file metadata from JSON
+get_file_info() {
+    local file="$1"
+    local field="$2"
+    [[ ! -f "$METADATA_FILE" ]] && return 1
+    jq -r ".files[\"$file\"].$field // empty" "$METADATA_FILE"
+}
+
+# ===== FZF Builders =====
+
+# Build file list with status indicators
+build_file_list_with_status() {
+    while IFS= read -r file; do
+        local status
+        status=$(get_file_status "$file")
+        printf "%b %s\n" "$status" "$file"
+    done < <(discover_ssh_files)
+}
+
+# FZF file preview script
+FILE_PREVIEW='
+    line=$(echo {} | sed "s/^[[:space:]]*//" | sed "s/^[✓⚠⊕⊗○] //")
+    file="$line"
+
+    echo -e "\033[1;34m━━━ File Info ━━━\033[0m"
+    echo ""
+    echo "Path: $file"
+
+    if [[ -f "$file" ]]; then
+        # File metadata
+        if stat -f%z "$file" &>/dev/null 2>&1; then
+            # macOS
+            size=$(stat -f%z "$file")
+            mtime=$(stat -f%Sm -t "%Y-%m-%d %H:%M:%S" "$file")
+            perms=$(stat -f%Sp "$file")
+        else
+            # Linux
+            size=$(stat -c%s "$file")
+            mtime=$(stat -c%y "$file" | cut -d. -f1)
+            perms=$(stat -c%A "$file")
+        fi
+        echo "Size: $size bytes"
+        echo "Modified: $mtime"
+        echo "Permissions: $perms"
+
+        # Key type detection
+        keytype=$('"$(declare -f detect_key_type)"'; detect_key_type "$file")
+        echo "Type: $keytype"
+
+        # Show backup status if metadata exists
+        meta_file="'"$METADATA_FILE"'"
+        if [[ -f "$meta_file" ]]; then
+            last_backup=$(jq -r ".files[\"$file\"].last_backup // empty" "$meta_file" 2>/dev/null)
+            backup_count=$(jq -r ".files[\"$file\"].backup_count // 0" "$meta_file" 2>/dev/null)
+            if [[ -n "$last_backup" ]]; then
+                echo ""
+                echo -e "\033[1;34m━━━ Backup Info ━━━\033[0m"
+                echo "Last backup: $last_backup"
+                echo "Backup count: $backup_count"
+            fi
+        fi
+
+        # Preview first 10 lines
+        echo ""
+        echo -e "\033[1;34m━━━ Preview ━━━\033[0m"
+        head -n 10 "$file" 2>/dev/null || echo "(binary or unreadable)"
+    else
+        echo ""
+        echo -e "\033[0;31m✗ File not found\033[0m"
+    fi
+'
+
+# FZF file selector with status
+fzf_select_files() {
+    local header="${1:-Select files to backup}"
+
+    build_file_list_with_status | fzf --ansi --multi \
+        --height=80% \
+        --border=rounded \
+        --header="$header (Tab: multi-select, Ctrl-A: all)" \
+        --preview="$FILE_PREVIEW" \
+        --preview-window='right:50%:wrap:border-left' \
+        --preview-label="[File Preview]" \
+        --bind='ctrl-a:select-all' \
+        --bind='ctrl-d:deselect-all' \
+        --bind='ctrl-r:reload('"$(declare -f build_file_list_with_status)"'; build_file_list_with_status)' \
+        --bind='ctrl-/:toggle-preview' | \
+    sed 's/^[[:space:]]*//' | sed 's/^[✓⚠⊕⊗○] //'
+}
+
+# ===== Transcrypt Operations =====
+
+# Initialize transcrypt in repo
+init_transcrypt() {
+    local password="$1"
+
+    if [[ ! -f .transcrypt/cipher ]]; then
+        if [[ -n "$password" ]]; then
+            transcrypt -c aes-256-cbc -p "$password"
+        else
+            echo "Enter password for encryption:"
+            transcrypt -c aes-256-cbc
+        fi
+
+        # Configure encryption
+        cat > .gitattributes <<'EOF'
+ssh-keys/** filter=crypt diff=crypt merge=crypt
+backup-list.txt filter=crypt diff=crypt merge=crypt
+backup-metadata.json filter=crypt diff=crypt merge=crypt
+EOF
+        git add .gitattributes
+        git commit -m "Configure transcrypt for SSH keys"
+        log_event "Initialized transcrypt encryption"
+    fi
+}
+
+# Unlock transcrypt in existing repo
+unlock_transcrypt() {
+    local password="$1"
+
+    if [[ -f .transcrypt/cipher ]]; then
+        return 0  # Already unlocked
+    fi
+
+    if [[ -n "$password" ]]; then
+        transcrypt -c aes-256-cbc -p "$password"
+    else
+        echo "Enter password to decrypt:"
+        transcrypt -c aes-256-cbc
+    fi
+}
+
+# ===== Repository Health =====
+
+# Check repository health
+check_repo_health() {
+    [[ ! -d "$REPO_DIR/.git" ]] && {
+        echo -e "${RED}Error:${NC} Repository not initialized" >&2
+        return 1
+    }
+
+    [[ ! -f "$REPO_DIR/.transcrypt/cipher" ]] && {
+        echo -e "${YELLOW}Warning:${NC} Transcrypt not configured" >&2
+        return 2
+    }
+
+    cd "$REPO_DIR"
+    if ! git ls-remote &>/dev/null; then
+        echo -e "${YELLOW}Warning:${NC} Cannot reach remote repository" >&2
+        return 3
+    fi
+
+    return 0
+}
+
+# Initialize repository if needed
+init_repo_if_needed() {
+    if [[ -d "$REPO_DIR/.git" ]]; then
+        cd "$REPO_DIR"
+        git pull --quiet 2>/dev/null || true
+        return 0
+    fi
+
+    echo -e "${BLUE}Cloning keys repository...${NC}"
+    git clone "$KEYS_REPO" "$REPO_DIR" || {
+        echo -e "${RED}Error:${NC} Failed to clone repository" >&2
+        return 1
+    }
+
+    cd "$REPO_DIR"
+    log_event "Repository initialized"
+}
+
+# ===== Backup Operations =====
+
+# Backup single file
+backup_file() {
+    local file="$1"
+    [[ ! -f "$file" ]] && return 1
+
+    local filename
+    filename=$(basename "$file")
+    mkdir -p "$REPO_DIR/ssh-keys"
+
+    cp "$file" "$REPO_DIR/ssh-keys/$filename"
+    chmod 600 "$REPO_DIR/ssh-keys/$filename"
+
+    # Backup public key if exists
+    if [[ -f "$file.pub" ]]; then
+        cp "$file.pub" "$REPO_DIR/ssh-keys/$filename.pub"
+        chmod 644 "$REPO_DIR/ssh-keys/$filename.pub"
+    fi
+}
+
+# ===== Verification =====
+
+# Verify file integrity
+verify_file() {
+    local file="$1"
+    [[ ! -f "$file" ]] && return 1
+
+    local filename
+    filename=$(basename "$file")
+    local backup_file="$REPO_DIR/ssh-keys/$filename"
+    [[ ! -f "$backup_file" ]] && return 2
+
+    local local_hash backup_hash
+    local_hash=$(calc_checksum "$file")
+    backup_hash=$(calc_checksum "$backup_file")
+
+    [[ "$local_hash" == "$backup_hash" ]]
+}
+
+# ===== Git Version Helpers =====
+
+# Get commit list with formatting
+get_commit_list() {
+    cd "$REPO_DIR"
+    git log --oneline --format="%C(yellow)%h%C(reset) %C(green)%ad%C(reset) %s" \
+        --date=short -- ssh-keys/ backup-metadata.json
+}
+
+# FZF commit picker
+fzf_pick_commit() {
+    local header="${1:-Select version to restore}"
+
+    get_commit_list | fzf --ansi \
+        --height=80% \
+        --border=rounded \
+        --header="$header" \
+        --preview='git -C "'"$REPO_DIR"'" show --color=always {1} -- ssh-keys/' \
+        --preview-window='right:60%:wrap' \
+        --bind='enter:accept' | awk '{print $1}'
+}
+

@@ -1,0 +1,559 @@
+#!/usr/bin/env bash
+# SSH Keys Restore Script with Version Control
+# Restores SSH keys from transcrypt-encrypted git repository
+set -euo pipefail
+
+# shellcheck source=keys-lib
+source "$(dirname "$0")/keys-lib"
+
+# ===== Command Functions =====
+
+# Show help
+show_help() {
+    cat <<EOF
+Usage: keys-restore [command] [options]
+
+Commands:
+  restore [commit]    Restore files from backup
+                      - If commit not specified, uses FZF to select version
+                      - Backs up current state before restoring
+  list-versions       Show available backup versions with FZF
+  diff [commit]       Preview changes between current and backup version
+  validate            Validate backup repository integrity
+  status              Show restore status
+
+Options:
+  -p, --password PWD  Transcrypt password (interactive if not provided)
+  -c, --commit HASH   Specific commit to restore from
+  --dry-run          Preview without making changes
+  --no-backup        Skip backup of current state (dangerous)
+
+Examples:
+  keys-restore                         # Interactive version selection
+  keys-restore restore                 # Restore from latest (with FZF selection)
+  keys-restore list-versions           # Browse available versions
+  keys-restore diff HEAD~1             # Preview changes from previous version
+  keys-restore restore --commit abc123 # Restore specific version
+  keys-restore --dry-run               # Preview restore without applying
+  keys-restore validate                # Check backup integrity
+
+Safety Features:
+  - Auto-backup current state before restore
+  - Confirmation prompt with diff preview
+  - Rollback capability
+  - Dry-run mode for preview
+
+EOF
+}
+
+# Command: status - Show restore status
+cmd_status() {
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}SSH Keys Restore Status${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    # Check repository
+    if [[ ! -d "$REPO_DIR/.git" ]]; then
+        echo -e "${RED}✗${NC} Repository not initialized"
+        echo "  Run 'keys-backup backup' to create initial backup"
+        return 1
+    fi
+
+    cd "$REPO_DIR"
+
+    # Repository info
+    echo -e "${GREEN}✓${NC} Repository: $REPO_DIR"
+    local remote_url
+    remote_url=$(git remote get-url origin 2>/dev/null || echo "N/A")
+    echo "  Remote: $remote_url"
+
+    # Current version
+    local current_commit current_msg
+    current_commit=$(git rev-parse --short HEAD)
+    current_msg=$(git log -1 --format="%s (%ar)" 2>/dev/null)
+    echo "  Current version: $current_commit - $current_msg"
+
+    # Backup count
+    local backup_count
+    backup_count=$(git rev-list --count HEAD -- ssh-keys/ 2>/dev/null || echo "0")
+    echo "  Total backups: $backup_count"
+
+    # Check backup list
+    if [[ -f "$BACKUP_LIST" ]]; then
+        local file_count
+        file_count=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
+        echo -e "${GREEN}✓${NC} Backup list: $file_count files"
+    else
+        echo -e "${YELLOW}⚠${NC} No backup list found"
+        return 0
+    fi
+
+    # File comparison
+    echo ""
+    echo -e "${BLUE}File Comparison (local vs backup):${NC}"
+    echo ""
+
+    local total=0 match=0 differ=0 missing_local=0 missing_backup=0
+
+    while IFS= read -r file; do
+        ((total++))
+        local filename
+        filename=$(basename "$file")
+
+        if [[ ! -f "$file" ]]; then
+            echo -e "  ${RED}⊗${NC} Missing locally: $filename"
+            ((missing_local++))
+        elif [[ ! -f "ssh-keys/$filename" ]]; then
+            echo -e "  ${YELLOW}⚠${NC} Not in backup: $filename"
+            ((missing_backup++))
+        elif verify_file "$file"; then
+            echo -e "  ${GREEN}✓${NC} Match: $filename"
+            ((match++))
+        else
+            echo -e "  ${YELLOW}⚠${NC} Differ: $filename"
+            ((differ++))
+        fi
+    done < "$BACKUP_LIST"
+
+    echo ""
+    echo "Summary: $total total, $match match, $differ differ, $missing_local missing locally, $missing_backup not in backup"
+    echo ""
+
+    if [[ $differ -gt 0 ]]; then
+        echo -e "${YELLOW}→ Run 'keys-restore diff' to preview changes${NC}"
+        echo -e "${YELLOW}→ Run 'keys-restore restore' to restore from backup${NC}"
+    else
+        echo -e "${GREEN}→ Local files match backup${NC}"
+    fi
+    echo ""
+}
+
+# Command: list-versions - Show available versions with FZF
+cmd_list_versions() {
+    require_cmd fzf || exit 1
+
+    [[ ! -d "$REPO_DIR/.git" ]] && {
+        echo -e "${RED}Error:${NC} Repository not initialized"
+        return 1
+    }
+
+    cd "$REPO_DIR"
+
+    echo -e "${BLUE}Select backup version to view${NC}"
+    echo ""
+
+    local selected
+    selected=$(fzf_pick_commit "Select backup version") || {
+        echo -e "${YELLOW}Selection cancelled${NC}"
+        return 0
+    }
+
+    if [[ -n "$selected" ]]; then
+        echo ""
+        echo -e "${BLUE}Selected commit: $selected${NC}"
+        echo ""
+        git show --stat "$selected" -- ssh-keys/
+        echo ""
+        echo -e "${GRAY}To restore: keys-restore restore --commit $selected${NC}"
+        echo -e "${GRAY}To preview: keys-restore diff $selected${NC}"
+    fi
+}
+
+# Command: diff - Preview changes between current and backup
+cmd_diff() {
+    local commit="${1:-HEAD}"
+
+    [[ ! -d "$REPO_DIR/.git" ]] && {
+        echo -e "${RED}Error:${NC} Repository not initialized"
+        return 1
+    }
+
+    [[ ! -f "$BACKUP_LIST" ]] && {
+        echo -e "${RED}Error:${NC} No backup list found"
+        return 1
+    }
+
+    cd "$REPO_DIR"
+
+    # Validate commit
+    if ! git rev-parse "$commit" &>/dev/null; then
+        echo -e "${RED}Error:${NC} Invalid commit: $commit"
+        return 1
+    fi
+
+    local commit_short
+    commit_short=$(git rev-parse --short "$commit")
+
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}Diff: Current vs $commit_short${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    local has_diff=false
+
+    while IFS= read -r file; do
+        local filename
+        filename=$(basename "$file")
+        local backup_file="ssh-keys/$filename"
+
+        # Check if file exists in backup
+        if ! git show "$commit:$backup_file" &>/dev/null; then
+            echo -e "${YELLOW}⚠${NC} Not in backup version: $filename"
+            continue
+        fi
+
+        # Compare hashes
+        local local_hash backup_hash
+
+        if [[ -f "$file" ]]; then
+            local_hash=$(calc_checksum "$file" | cut -c1-16)
+        else
+            local_hash="missing"
+        fi
+
+        backup_hash=$(git show "$commit:$backup_file" | calc_checksum | cut -c1-16)
+
+        if [[ "$local_hash" == "$backup_hash" ]]; then
+            echo -e "${GREEN}✓${NC} No changes: $filename"
+        else
+            echo -e "${YELLOW}⚠${NC} Changed: $filename"
+            echo "  Local:  $local_hash..."
+            echo "  Backup: $backup_hash..."
+            has_diff=true
+
+            # Show detailed diff for text files
+            if [[ -f "$file" ]] && file "$file" | grep -q "text"; then
+                echo ""
+                echo -e "${GRAY}  Diff preview:${NC}"
+                git show "$commit:$backup_file" > "/tmp/backup-$filename"
+                diff -u "$file" "/tmp/backup-$filename" 2>/dev/null | head -n 20 | sed 's/^/  /' || true
+                rm -f "/tmp/backup-$filename"
+                echo ""
+            fi
+        fi
+    done < "$BACKUP_LIST"
+
+    echo ""
+    if [[ "$has_diff" == true ]]; then
+        echo -e "${YELLOW}→ Files differ from backup version${NC}"
+        echo -e "${GRAY}  To restore: keys-restore restore --commit $commit_short${NC}"
+    else
+        echo -e "${GREEN}→ All files match backup version${NC}"
+    fi
+    echo ""
+}
+
+# Command: validate - Validate backup integrity
+cmd_validate() {
+    require_cmd git transcrypt || exit 1
+
+    [[ ! -d "$REPO_DIR/.git" ]] && {
+        echo -e "${RED}Error:${NC} Repository not initialized"
+        return 1
+    }
+
+    cd "$REPO_DIR"
+
+    echo -e "${BLUE}Validating backup repository...${NC}"
+    echo ""
+
+    # Check git repository
+    if git fsck --quiet 2>/dev/null; then
+        echo -e "${GREEN}✓${NC} Git repository integrity OK"
+    else
+        echo -e "${RED}✗${NC} Git repository has errors"
+        return 1
+    fi
+
+    # Check transcrypt
+    if [[ -f .transcrypt/cipher ]]; then
+        echo -e "${GREEN}✓${NC} Transcrypt encryption configured"
+    else
+        echo -e "${RED}✗${NC} Transcrypt not configured"
+        return 1
+    fi
+
+    # Check remote connectivity
+    if git ls-remote &>/dev/null; then
+        echo -e "${GREEN}✓${NC} Remote repository accessible"
+    else
+        echo -e "${YELLOW}⚠${NC} Cannot reach remote repository"
+    fi
+
+    # Check backup files exist
+    if [[ -d ssh-keys ]] && [[ -n "$(ls -A ssh-keys 2>/dev/null)" ]]; then
+        local file_count
+        file_count=$(find ssh-keys -type f | wc -l | tr -d ' ')
+        echo -e "${GREEN}✓${NC} Backup contains $file_count files"
+    else
+        echo -e "${YELLOW}⚠${NC} No backup files found"
+    fi
+
+    # Check metadata
+    if [[ -f "$METADATA_FILE" ]]; then
+        if jq empty "$METADATA_FILE" 2>/dev/null; then
+            echo -e "${GREEN}✓${NC} Metadata format valid"
+        else
+            echo -e "${RED}✗${NC} Metadata format invalid"
+            return 1
+        fi
+    else
+        echo -e "${YELLOW}⚠${NC} No metadata file (legacy v1)"
+    fi
+
+    echo ""
+    echo -e "${GREEN}✅ Validation complete${NC}"
+    echo ""
+}
+
+# Command: restore - Restore files from backup
+cmd_restore() {
+    local commit=""
+    local dry_run=false
+    local no_backup=false
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --commit|-c)
+                commit="$2"
+                shift 2
+                ;;
+            --dry-run)
+                dry_run=true
+                shift
+                ;;
+            --no-backup)
+                no_backup=true
+                shift
+                ;;
+            *)
+                # First positional argument is commit
+                if [[ -z "$commit" ]]; then
+                    commit="$1"
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    require_cmd git transcrypt || exit 1
+
+    [[ ! -d "$REPO_DIR/.git" ]] && {
+        echo -e "${RED}Error:${NC} Repository not initialized"
+        echo "Run 'keys-backup backup' first"
+        return 1
+    }
+
+    cd "$REPO_DIR"
+
+    # Unlock transcrypt if needed
+    if [[ ! -f .transcrypt/cipher ]]; then
+        unlock_transcrypt "$TRANSCRYPT_PASSWORD" || {
+            echo -e "${RED}Error:${NC} Failed to unlock transcrypt"
+            return 1
+        }
+    fi
+
+    [[ ! -f "$BACKUP_LIST" ]] && {
+        echo -e "${RED}Error:${NC} No backup list found"
+        return 1
+    }
+
+    # Select version with FZF if not specified
+    if [[ -z "$commit" ]]; then
+        if command -v fzf &>/dev/null; then
+            commit=$(fzf_pick_commit "Select version to restore") || {
+                echo -e "${YELLOW}Restore cancelled${NC}"
+                return 0
+            }
+        else
+            commit="HEAD"
+            echo -e "${YELLOW}Warning:${NC} fzf not found, using latest version"
+        fi
+    fi
+
+    # Validate commit
+    if ! git rev-parse "$commit" &>/dev/null; then
+        echo -e "${RED}Error:${NC} Invalid commit: $commit"
+        return 1
+    fi
+
+    local commit_short
+    commit_short=$(git rev-parse --short "$commit")
+
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}SSH Keys Restore${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo "Restore from: $commit_short"
+    echo ""
+
+    # Show diff
+    echo "[1/5] Preview changes..."
+    echo ""
+    cmd_diff "$commit"
+
+    if [[ "$dry_run" == true ]]; then
+        echo ""
+        echo -e "${YELLOW}Dry run mode - no files will be restored${NC}"
+        return 0
+    fi
+
+    # Confirmation
+    echo ""
+    read -p "Restore from $commit_short? (y/n): " confirm
+    if [[ "$confirm" != "y" ]]; then
+        echo "Restore cancelled"
+        return 0
+    fi
+
+    # Backup current state
+    local backup_dir="${HOME}/.ssh/backup-$(date +%Y%m%d-%H%M%S)"
+
+    if [[ "$no_backup" != true ]]; then
+        echo ""
+        echo "[2/5] Backing up current state..."
+        mkdir -p "$backup_dir"
+
+        local backed_up=0
+        while IFS= read -r file; do
+            if [[ -f "$file" ]]; then
+                cp "$file" "$backup_dir/"
+                [[ -f "$file.pub" ]] && cp "$file.pub" "$backup_dir/"
+                ((backed_up++))
+            fi
+        done < "$BACKUP_LIST"
+
+        echo -e "${GREEN}✓${NC} Backed up $backed_up files to: $backup_dir"
+    else
+        echo ""
+        echo -e "${YELLOW}⚠ Skipping current state backup (--no-backup)${NC}"
+    fi
+
+    # Checkout backup version
+    echo ""
+    echo "[3/5] Checking out backup version..."
+    git checkout "$commit" -- ssh-keys/ 2>/dev/null || {
+        echo -e "${RED}Error:${NC} Failed to checkout backup version"
+        return 1
+    }
+
+    # Restore files
+    echo ""
+    echo "[4/5] Restoring SSH keys..."
+    mkdir -p ~/.ssh
+    chmod 700 ~/.ssh
+
+    local restored_count=0
+    local failed_count=0
+
+    while IFS= read -r file; do
+        local filename
+        filename=$(basename "$file")
+        local source_file="ssh-keys/$filename"
+
+        if [[ -f "$source_file" ]]; then
+            # Restore private key
+            cp "$source_file" "$file"
+            chmod 600 "$file"
+
+            # Restore public key if exists
+            if [[ -f "$source_file.pub" ]]; then
+                cp "$source_file.pub" "$file.pub"
+                chmod 644 "$file.pub"
+            fi
+
+            echo -e "  ${GREEN}✓${NC} Restored: $filename"
+            ((restored_count++))
+        else
+            echo -e "  ${RED}✗${NC} Not found in backup: $filename"
+            ((failed_count++))
+        fi
+    done < "$BACKUP_LIST"
+
+    # Cleanup
+    echo ""
+    echo "[5/5] Cleanup..."
+    git checkout HEAD -- ssh-keys/ 2>/dev/null || true
+
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}✅ Restore Complete${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo "Restored $restored_count files"
+    [[ $failed_count -gt 0 ]] && echo "Failed: $failed_count files"
+
+    if [[ "$no_backup" != true ]]; then
+        echo ""
+        echo -e "${CYAN}Rollback available:${NC}"
+        echo "  Current state saved to: $backup_dir"
+        echo "  To rollback: cp $backup_dir/* ~/.ssh/"
+    fi
+
+    echo ""
+    echo "Restored keys:"
+    ls -lh ~/.ssh/ | grep -E "$(cat "$BACKUP_LIST" | xargs -I{} basename {} | paste -sd '|' -)" 2>/dev/null || ls -lh ~/.ssh/
+    echo ""
+
+    log_event "Restored from commit $commit_short: $restored_count files"
+}
+
+# ===== Main Entry Point =====
+
+main() {
+    local cmd="${1:-}"
+    shift || true
+
+    # Global options
+    TRANSCRYPT_PASSWORD=""
+
+    # Parse global options
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            -p|--password)
+                TRANSCRYPT_PASSWORD="$2"
+                shift 2
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+
+    # Route commands
+    case "$cmd" in
+        restore)
+            cmd_restore "$@"
+            ;;
+        list-versions|list|versions)
+            cmd_list_versions "$@"
+            ;;
+        diff)
+            cmd_diff "$@"
+            ;;
+        validate)
+            cmd_validate "$@"
+            ;;
+        status)
+            cmd_status "$@"
+            ;;
+        "")
+            # No command - show status
+            cmd_status
+            ;;
+        *)
+            echo -e "${RED}Error:${NC} Unknown command: $cmd"
+            echo "Run 'keys-restore --help' for usage"
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"
