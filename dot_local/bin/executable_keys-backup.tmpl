@@ -15,8 +15,11 @@ Usage: keys-backup [command] [options]
 
 Commands:
   menu                Interactive FZF menu (default if no command)
-  select              Select files to backup with FZF
-  backup              Backup changed files (always incremental)
+  select              Select files to backup (replaces existing list)
+  add                 Add files to backup list (append)
+  remove              Remove files from backup list
+  backup              Backup changed files (incremental)
+  backup --force      Force backup all files (complete)
   verify              Verify backup integrity
   history             Show backup history
   status              Show current backup status
@@ -131,35 +134,43 @@ cmd_status() {
     echo ""
 }
 
-# Command: select - Interactive file selection with FZF
+# Command: select - Interactive file selection with FZF (replaces list)
 cmd_select() {
     require_cmd fzf || exit 1
 
     echo -e "${BLUE}Select files to backup with FZF${NC}"
-    echo -e "${GRAY}(Tab: multi-select, Ctrl-A: all, Ctrl-D: deselect all)${NC}"
+    echo -e "${GRAY}(Tab: multi-select, Ctrl-A: all, ESC: cancel)${NC}"
     echo ""
 
+    # Show current list if exists
+    if [[ -f "$BACKUP_LIST" ]]; then
+        local current_count
+        current_count=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
+        echo -e "${YELLOW}⚠${NC} This will replace current backup list ($current_count files)"
+        echo ""
+    fi
+
     local selected
-    selected=$(fzf_select_files "Select files to backup") || {
-        echo -e "${YELLOW}Selection cancelled${NC}"
-        return 0
+    selected=$(fzf_select_files "Select files to backup (will REPLACE current list)") || {
+        echo -e "${YELLOW}Selection cancelled - no changes made${NC}"
+        return 1  # Exit with error code
     }
 
     if [[ -z "$selected" ]]; then
-        echo -e "${YELLOW}No files selected${NC}"
-        return 0
+        echo -e "${YELLOW}No files selected - aborting${NC}"
+        return 1  # Exit with error code
     fi
 
     # Initialize repo if needed
     init_repo_if_needed || exit 1
     cd "$REPO_DIR"
 
-    # Save selection
+    # Save selection (overwrites existing list)
     echo "$selected" > "$BACKUP_LIST"
 
     local count
     count=$(echo "$selected" | wc -l | tr -d ' ')
-    echo -e "${GREEN}✓${NC} Selected $count files"
+    echo -e "${GREEN}✓${NC} Selected $count files (replaced backup list)"
     echo ""
     echo "$selected" | sed 's/^/  /'
     echo ""
@@ -175,25 +186,211 @@ cmd_select() {
     fi
 }
 
-# Command: backup - Backup changed files (always incremental)
+# Command: add - Add files to backup list (append)
+cmd_add() {
+    require_cmd fzf || exit 1
+
+    # Initialize repo if needed
+    init_repo_if_needed || exit 1
+    cd "$REPO_DIR"
+
+    # Load current list
+    local current_files=()
+    if [[ -f "$BACKUP_LIST" ]]; then
+        mapfile -t current_files < "$BACKUP_LIST"
+        echo -e "${BLUE}Current backup list: ${#current_files[@]} files${NC}"
+        echo ""
+    else
+        echo -e "${BLUE}No existing backup list - selecting from all files${NC}"
+        echo ""
+    fi
+
+    # Build list of files NOT in current backup list
+    local available_files=()
+    while IFS= read -r file; do
+        local is_in_list=false
+        for current_file in "${current_files[@]}"; do
+            if [[ "$file" == "$current_file" ]]; then
+                is_in_list=true
+                break
+            fi
+        done
+        [[ "$is_in_list" == false ]] && available_files+=("$file")
+    done < <(discover_ssh_files)
+
+    if [[ ${#available_files[@]} -eq 0 ]]; then
+        echo -e "${GREEN}✓${NC} All SSH files are already in backup list"
+        return 0
+    fi
+
+    echo -e "${CYAN}Available files to add: ${#available_files[@]}${NC}"
+    echo -e "${GRAY}(Tab: multi-select, ESC: cancel)${NC}"
+    echo ""
+
+    # FZF to select files to add
+    local to_add
+    to_add=$(printf '%s\n' "${available_files[@]}" | fzf --multi \
+        --height=80% \
+        --border=rounded \
+        --header="Select files to ADD to backup list" \
+        --preview="$FILE_PREVIEW" \
+        --preview-window='right:50%:wrap:border-left' \
+        --bind='ctrl-a:select-all') || {
+        echo -e "${YELLOW}Selection cancelled${NC}"
+        return 1
+    }
+
+    if [[ -z "$to_add" ]]; then
+        echo -e "${YELLOW}No files selected${NC}"
+        return 1
+    fi
+
+    # Append to backup list
+    echo "$to_add" >> "$BACKUP_LIST"
+    sort -u "$BACKUP_LIST" -o "$BACKUP_LIST"  # Remove duplicates and sort
+
+    local added_count
+    added_count=$(echo "$to_add" | wc -l | tr -d ' ')
+    echo -e "${GREEN}✓${NC} Added $added_count files to backup list"
+    echo ""
+    echo "$to_add" | sed 's/^/  /'
+    echo ""
+
+    # Commit changes
+    if git diff --quiet backup-list.txt 2>/dev/null; then
+        echo "No changes to commit"
+    else
+        git add backup-list.txt
+        git commit -m "Add $added_count files to backup list"
+        git push
+        log_event "Added $added_count files to backup list"
+    fi
+}
+
+# Command: remove - Remove files from backup list
+cmd_remove() {
+    require_cmd fzf || exit 1
+
+    # Initialize repo if needed
+    init_repo_if_needed || exit 1
+    cd "$REPO_DIR"
+
+    if [[ ! -f "$BACKUP_LIST" ]] || [[ ! -s "$BACKUP_LIST" ]]; then
+        echo -e "${YELLOW}Backup list is empty${NC}"
+        return 1
+    fi
+
+    local current_count
+    current_count=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
+    echo -e "${BLUE}Current backup list: $current_count files${NC}"
+    echo -e "${GRAY}(Tab: multi-select, ESC: cancel)${NC}"
+    echo ""
+
+    # FZF to select files to remove
+    local to_remove
+    to_remove=$(cat "$BACKUP_LIST" | fzf --multi \
+        --height=80% \
+        --border=rounded \
+        --header="Select files to REMOVE from backup list" \
+        --preview="
+            file={}
+            echo -e \"\033[1;31m━━━ WILL BE REMOVED ━━━\033[0m\"
+            echo \"\"
+            echo \"Path: \$file\"
+            if [[ -f \"\$file\" ]]; then
+                echo \"Status: Exists\"
+            else
+                echo \"Status: Missing\"
+            fi
+        " \
+        --preview-window='right:50%:wrap' \
+        --bind='ctrl-a:select-all') || {
+        echo -e "${YELLOW}Selection cancelled${NC}"
+        return 1
+    }
+
+    if [[ -z "$to_remove" ]]; then
+        echo -e "${YELLOW}No files selected${NC}"
+        return 1
+    fi
+
+    # Confirm removal
+    local remove_count
+    remove_count=$(echo "$to_remove" | wc -l | tr -d ' ')
+    echo -e "${RED}Will remove $remove_count files from backup list:${NC}"
+    echo ""
+    echo "$to_remove" | sed 's/^/  /'
+    echo ""
+    read -p "Confirm removal? (y/N): " confirm
+    if [[ "$confirm" != "y" ]]; then
+        echo "Cancelled"
+        return 1
+    fi
+
+    # Remove from backup list
+    local tmp
+    tmp=$(mktemp)
+    while IFS= read -r line; do
+        local should_keep=true
+        while IFS= read -r remove_line; do
+            if [[ "$line" == "$remove_line" ]]; then
+                should_keep=false
+                break
+            fi
+        done <<< "$to_remove"
+        [[ "$should_keep" == true ]] && echo "$line"
+    done < "$BACKUP_LIST" > "$tmp"
+    mv "$tmp" "$BACKUP_LIST"
+
+    echo -e "${GREEN}✓${NC} Removed $remove_count files from backup list"
+    echo ""
+
+    local remaining
+    remaining=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
+    echo "Remaining files: $remaining"
+    echo ""
+
+    # Commit changes
+    if git diff --quiet backup-list.txt 2>/dev/null; then
+        echo "No changes to commit"
+    else
+        git add backup-list.txt
+        git commit -m "Remove $remove_count files from backup list"
+        git push
+        log_event "Removed $remove_count files from backup list"
+    fi
+}
+
+# Command: backup - Backup files (incremental or force)
 cmd_backup() {
     local dry_run=false
+    local force=false
 
     # Parse flags
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --dry-run) dry_run=true; shift ;;
             --verify) VERIFY_AFTER_BACKUP=true; shift ;;
+            --force|-f) force=true; shift ;;
             *) shift ;;
         esac
     done
 
     require_cmd git transcrypt jq || exit 1
 
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BLUE}SSH Keys Backup (Incremental)${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
+    if [[ "$force" == true ]]; then
+        echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${BLUE}SSH Keys Backup (Force Complete)${NC}"
+        echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo ""
+        echo -e "${YELLOW}⚠ Force mode: Will backup ALL files regardless of changes${NC}"
+        echo ""
+    else
+        echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${BLUE}SSH Keys Backup (Incremental)${NC}"
+        echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo ""
+    fi
 
     # Initialize repo
     init_repo_if_needed || exit 1
@@ -223,7 +420,12 @@ cmd_backup() {
     echo ""
 
     # Detect changes
-    echo "[2/5] Detecting changes..."
+    if [[ "$force" == true ]]; then
+        echo "[2/5] Selecting all files (force mode)..."
+    else
+        echo "[2/5] Detecting changes..."
+    fi
+
     local changed_files=()
     local total_files=0
 
@@ -234,19 +436,33 @@ cmd_backup() {
             continue
         fi
 
-        if detect_changes "$file"; then
+        if [[ "$force" == true ]]; then
+            # Force mode: backup all files
             changed_files+=("$file")
-            echo -e "  ${YELLOW}⚠${NC} Changed: $(basename "$file")"
+        else
+            # Normal mode: only backup changed files
+            if detect_changes "$file"; then
+                changed_files+=("$file")
+                echo -e "  ${YELLOW}⚠${NC} Changed: $(basename "$file")"
+            fi
         fi
     done < "$BACKUP_LIST"
 
     if [[ ${#changed_files[@]} -eq 0 ]]; then
-        echo -e "${GREEN}✓${NC} No changes to backup (all files up to date)"
+        if [[ "$force" == true ]]; then
+            echo -e "${YELLOW}⚠${NC} No files to backup (check backup list)"
+        else
+            echo -e "${GREEN}✓${NC} No changes to backup (all files up to date)"
+        fi
         return 0
     fi
 
     echo ""
-    echo "Detected: ${#changed_files[@]} of $total_files files changed"
+    if [[ "$force" == true ]]; then
+        echo "Force mode: Will backup all $total_files files"
+    else
+        echo "Detected: ${#changed_files[@]} of $total_files files changed"
+    fi
     echo ""
 
     if [[ "$dry_run" == true ]]; then
@@ -274,7 +490,12 @@ cmd_backup() {
     if git diff --cached --quiet; then
         echo "  No changes to commit"
     else
-        local commit_msg="Backup: ${#changed_files[@]} files - $(date '+%Y-%m-%d %H:%M:%S')"
+        local commit_msg
+        if [[ "$force" == true ]]; then
+            commit_msg="Force backup: ${#changed_files[@]} files - $(date '+%Y-%m-%d %H:%M:%S')"
+        else
+            commit_msg="Backup: ${#changed_files[@]} files - $(date '+%Y-%m-%d %H:%M:%S')"
+        fi
         git commit -m "$commit_msg"
         log_event "$commit_msg"
 
@@ -388,24 +609,41 @@ cmd_menu() {
                 echo ""
                 case "$cmd" in
                     select)
-                        echo "Select files to backup with FZF"
+                        echo "Select files to backup (REPLACE list)"
                         echo ""
                         echo "Features:"
                         echo "  • Rich preview (metadata, key type, content)"
                         echo "  • Status indicators (✓ ⚠ ⊕ ⊗)"
                         echo "  • Multi-select (Tab/Ctrl-A)"
                         echo ""
-                        echo "Saves selection to backup-list.txt"
+                        echo "⚠ This REPLACES current backup list"
+                        ;;
+                    add)
+                        echo "Add files to backup list (APPEND)"
+                        echo ""
+                        echo "Features:"
+                        echo "  • Shows only files NOT in current list"
+                        echo "  • Appends to existing list"
+                        echo "  • Multi-select support"
+                        ;;
+                    remove)
+                        echo "Remove files from backup list"
+                        echo ""
+                        echo "Features:"
+                        echo "  • Shows current backup list"
+                        echo "  • Multi-select for removal"
+                        echo "  • Confirmation required"
                         ;;
                     backup)
-                        echo "Backup changed files to encrypted repository"
+                        echo "Backup files to encrypted repository"
                         echo ""
-                        echo "Behavior:"
+                        echo "Incremental mode (default):"
                         echo "  • Auto-detects changes (SHA256)"
                         echo "  • Only backs up modified files"
-                        echo "  • Always incremental (no full mode)"
                         echo ""
-                        echo "If no backup list: prompts for file selection"
+                        echo "Force mode (--force):"
+                        echo "  • Backups ALL files regardless of changes"
+                        echo "  • Useful for migration/verification"
                         ;;
                     verify)
                         echo "Verify backup integrity"
@@ -445,8 +683,11 @@ cmd_menu() {
             ' \
             --preview-window='right:50%:wrap' \
             --preview-label="[ Keys Backup Manager ]"
-select         Select files to backup (FZF)
-backup         Backup changed files (incremental)
+select         Select files (replace list)
+add            Add files (append to list)
+remove         Remove files from list
+backup         Backup changed files
+backup-force   Force backup all files
 verify         Verify backup integrity
 history        Show backup history
 status         Show current status
@@ -461,8 +702,17 @@ MENU
             select)
                 cmd_select
                 ;;
+            add)
+                cmd_add
+                ;;
+            remove)
+                cmd_remove
+                ;;
             backup)
                 cmd_backup
+                ;;
+            backup-force)
+                cmd_backup --force
                 ;;
             verify)
                 cmd_verify
@@ -535,11 +785,17 @@ main() {
 
     # Route commands
     case "$cmd" in
-        backup)
-            cmd_backup "$@"
-            ;;
         select)
             cmd_select "$@"
+            ;;
+        add)
+            cmd_add "$@"
+            ;;
+        remove)
+            cmd_remove "$@"
+            ;;
+        backup)
+            cmd_backup "$@"
             ;;
         verify)
             cmd_verify "$@"
