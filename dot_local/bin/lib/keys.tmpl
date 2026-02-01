@@ -266,47 +266,81 @@ FILE_PREVIEW='
     fi
 '
 
-# Helper function to select custom files using native macOS file picker
+# Helper function to select custom files using FZF file browser
 prompt_custom_files() {
     local additions=""
 
     echo ""
-    log_section "Opening macOS File Picker"
-    echo "Select files to add to backup (multiple selection enabled)"
+    log_section "Browse filesystem with FZF"
+    echo "Fuzzy search for any file to add to backup (Tab: multi-select)"
     echo ""
 
-    # Use osascript to open native macOS file picker with multiple selection
-    local selected_files
-    selected_files=$(osascript 2>/dev/null <<'APPLESCRIPT'
-tell application "System Events"
-    activate
-    set theFiles to choose file with prompt "Select files to backup" with multiple selections allowed
-    set filePaths to {}
-    repeat with aFile in theFiles
-        set end of filePaths to POSIX path of aFile
-    end repeat
-    return filePaths as text
-end tell
-APPLESCRIPT
-    )
+    # Use fd if available (faster), otherwise fall back to find
+    local file_list_cmd
+    if command -v fd &>/dev/null; then
+        # fd: faster, respects .gitignore, colored output
+        file_list_cmd="fd --type f --hidden --follow --exclude .git . $HOME"
+    else
+        # find: universally available fallback
+        file_list_cmd="find $HOME -type f -not -path '*/\.git/*' 2>/dev/null"
+    fi
 
-    # Check if user cancelled
-    if [[ $? -ne 0 ]] || [[ -z "$selected_files" ]]; then
+    # Launch second FZF for file browsing
+    local selected_files
+    selected_files=$(eval "$file_list_cmd" | fzf --ansi --multi \
+        --height=80% \
+        --border=rounded \
+        --header="Browse files (Tab: multi-select, Ctrl-A: all)" \
+        --preview='
+            file={}
+            echo -e "\033[1;34m━━━ File Preview ━━━\033[0m"
+            echo ""
+            echo "Path: $file"
+            if [[ -f "$file" ]]; then
+                if stat -f%z "$file" &>/dev/null 2>&1; then
+                    # macOS
+                    size=$(stat -f%z "$file")
+                    mtime=$(stat -f%Sm -t "%Y-%m-%d %H:%M:%S" "$file")
+                    perms=$(stat -f%Sp "$file")
+                else
+                    # Linux
+                    size=$(stat -c%s "$file")
+                    mtime=$(stat -c%y "$file" | cut -d. -f1)
+                    perms=$(stat -c%A "$file")
+                fi
+                echo "Size: $size bytes"
+                echo "Modified: $mtime"
+                echo "Permissions: $perms"
+                echo ""
+                echo -e "\033[1;34m━━━ Content ━━━\033[0m"
+                head -n 20 "$file" 2>/dev/null || echo "(binary or unreadable)"
+            else
+                echo "File not found"
+            fi
+        ' \
+        --preview-window='right:50%:wrap:border-left' \
+        --preview-label="[File Preview]" \
+        --bind='ctrl-a:select-all' \
+        --bind='ctrl-d:deselect-all' \
+        --bind='ctrl-/:toggle-preview') || {
         echo -e "${GRAY}File selection cancelled${NC}"
+        return 0
+    }
+
+    # Process selected files
+    if [[ -z "$selected_files" ]]; then
+        echo -e "${GRAY}No files selected${NC}"
         return 0
     fi
 
-    # Parse the comma-separated file paths from AppleScript
-    # AppleScript returns paths separated by ", "
     while IFS= read -r file; do
-        # Trim whitespace
-        file=$(echo "$file" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-
         if [[ -f "$file" ]]; then
             echo -e "${GREEN}✓ Added:${NC} $file"
             additions+="$file"$'\n'
+        else
+            echo -e "${RED}✗ Not found:${NC} $file"
         fi
-    done < <(echo "$selected_files" | tr ',' '\n')
+    done <<< "$selected_files"
 
     echo ""
     echo -e "${GRAY}File selection complete${NC}"
