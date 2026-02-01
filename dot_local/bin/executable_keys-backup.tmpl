@@ -15,11 +15,8 @@ Usage: keys-backup [command] [options]
 
 Commands:
   menu                Interactive FZF menu (default if no command)
-  backup [mode]       Backup files (auto/full/interactive)
-                      - auto: Incremental backup (changed files only)
-                      - full: Backup all files regardless of changes
-                      - interactive: Select files with FZF, then backup
-  select              Interactively select files with FZF
+  select              Select files to backup with FZF
+  backup              Backup changed files (always incremental)
   verify              Verify backup integrity
   history             Show backup history
   status              Show current backup status
@@ -31,14 +28,12 @@ Options:
   --path PATH        Add custom path to backup list
 
 Examples:
-  keys-backup                              # Interactive menu
-  keys-backup backup                       # Incremental backup (default)
-  keys-backup backup full                  # Full backup all files
-  keys-backup backup interactive           # Select files then backup
-  keys-backup select                       # Select files with FZF
-  keys-backup verify                       # Check integrity
+  keys-backup                              # Interactive menu (default)
+  keys-backup select                       # Select files to backup
+  keys-backup backup                       # Backup changed files
+  keys-backup verify                       # Verify integrity
+  keys-backup status                       # Show status
   keys-backup --path ~/.gnupg/secret.key   # Add custom file
-  keys-backup status                       # Show backup status
 
 Status Indicators:
   ${GREEN}✓${NC}  Up to date (backed up, no changes)
@@ -180,9 +175,8 @@ cmd_select() {
     fi
 }
 
-# Command: backup - Backup files
+# Command: backup - Backup changed files (always incremental)
 cmd_backup() {
-    local mode="${1:-auto}"
     local dry_run=false
 
     # Parse flags
@@ -197,7 +191,7 @@ cmd_backup() {
     require_cmd git transcrypt jq || exit 1
 
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BLUE}SSH Keys Backup${NC}"
+    echo -e "${BLUE}SSH Keys Backup (Incremental)${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
 
@@ -208,17 +202,14 @@ cmd_backup() {
     # Initialize metadata if needed
     [[ ! -f "$METADATA_FILE" ]] && init_metadata
 
-    # Interactive mode - select files first
-    if [[ "$mode" == "interactive" ]]; then
-        cmd_select
-        [[ ! -f "$BACKUP_LIST" ]] && { echo "No files selected"; exit 0; }
-    fi
-
     # Check backup list exists
     if [[ ! -f "$BACKUP_LIST" ]]; then
         echo -e "${YELLOW}No backup list found${NC}"
-        echo "Run 'keys-backup select' to choose files"
-        return 1
+        echo ""
+        echo "First time setup: Select files to backup"
+        echo ""
+        cmd_select
+        [[ ! -f "$BACKUP_LIST" ]] && { echo "No files selected, aborting"; exit 0; }
     fi
 
     # Show backup list
@@ -243,25 +234,19 @@ cmd_backup() {
             continue
         fi
 
-        if [[ "$mode" == "full" ]] || detect_changes "$file"; then
+        if detect_changes "$file"; then
             changed_files+=("$file")
-            if [[ "$mode" != "full" ]]; then
-                echo -e "  ${YELLOW}⚠${NC} Changed: $(basename "$file")"
-            fi
+            echo -e "  ${YELLOW}⚠${NC} Changed: $(basename "$file")"
         fi
     done < "$BACKUP_LIST"
 
     if [[ ${#changed_files[@]} -eq 0 ]]; then
-        echo -e "${GREEN}✓${NC} No changes to backup"
+        echo -e "${GREEN}✓${NC} No changes to backup (all files up to date)"
         return 0
     fi
 
     echo ""
-    if [[ "$mode" == "full" ]]; then
-        echo "Mode: Full backup (all $total_files files)"
-    else
-        echo "Mode: Incremental (${#changed_files[@]} of $total_files files changed)"
-    fi
+    echo "Detected: ${#changed_files[@]} of $total_files files changed"
     echo ""
 
     if [[ "$dry_run" == true ]]; then
@@ -289,13 +274,7 @@ cmd_backup() {
     if git diff --cached --quiet; then
         echo "  No changes to commit"
     else
-        local commit_msg
-        if [[ "$mode" == "full" ]]; then
-            commit_msg="Full backup: ${#changed_files[@]} files - $(date '+%Y-%m-%d %H:%M:%S')"
-        else
-            commit_msg="Incremental backup: ${#changed_files[@]} files - $(date '+%Y-%m-%d %H:%M:%S')"
-        fi
-
+        local commit_msg="Backup: ${#changed_files[@]} files - $(date '+%Y-%m-%d %H:%M:%S')"
         git commit -m "$commit_msg"
         log_event "$commit_msg"
 
@@ -308,7 +287,7 @@ cmd_backup() {
     echo -e "${GREEN}✅ Backup Complete${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    echo "Backed up ${#changed_files[@]} files"
+    echo "Backed up ${#changed_files[@]} changed files"
     echo "Repository: $KEYS_REPO"
     echo "Local copy: $REPO_DIR"
     echo ""
@@ -408,26 +387,30 @@ cmd_menu() {
                 echo -e "\033[1;34m━━━ $cmd ━━━\033[0m"
                 echo ""
                 case "$cmd" in
-                    backup)
-                        echo "Backup SSH keys to encrypted repository"
-                        echo ""
-                        echo "Modes:"
-                        echo "  auto         - Incremental (only changed files)"
-                        echo "  full         - Backup all files"
-                        echo "  interactive  - Select files with FZF first"
-                        ;;
                     select)
-                        echo "Interactively select files to backup"
+                        echo "Select files to backup with FZF"
                         echo ""
-                        echo "Uses FZF with rich preview:"
-                        echo "  • File metadata and key type"
+                        echo "Features:"
+                        echo "  • Rich preview (metadata, key type, content)"
                         echo "  • Status indicators (✓ ⚠ ⊕ ⊗)"
-                        echo "  • Multi-select support"
+                        echo "  • Multi-select (Tab/Ctrl-A)"
+                        echo ""
+                        echo "Saves selection to backup-list.txt"
+                        ;;
+                    backup)
+                        echo "Backup changed files to encrypted repository"
+                        echo ""
+                        echo "Behavior:"
+                        echo "  • Auto-detects changes (SHA256)"
+                        echo "  • Only backs up modified files"
+                        echo "  • Always incremental (no full mode)"
+                        echo ""
+                        echo "If no backup list: prompts for file selection"
                         ;;
                     verify)
                         echo "Verify backup integrity"
                         echo ""
-                        echo "Checks SHA256 checksums of:"
+                        echo "Checks SHA256 checksums:"
                         echo "  • Local files vs backup"
                         echo "  • Reports mismatches"
                         ;;
@@ -462,8 +445,8 @@ cmd_menu() {
             ' \
             --preview-window='right:50%:wrap' \
             --preview-label="[ Keys Backup Manager ]"
-backup         Backup SSH keys (auto/full/interactive)
 select         Select files to backup (FZF)
+backup         Backup changed files (incremental)
 verify         Verify backup integrity
 history        Show backup history
 status         Show current status
@@ -475,21 +458,11 @@ MENU
 
         echo ""
         case "$cmd" in
-            backup)
-                echo -e "${CYAN}Choose backup mode:${NC}"
-                echo "  1) auto (incremental - default)"
-                echo "  2) full (all files)"
-                echo "  3) interactive (select files first)"
-                echo ""
-                read -p "Mode [1-3, default=1]: " mode_choice
-                case "$mode_choice" in
-                    2) cmd_backup full ;;
-                    3) cmd_backup interactive ;;
-                    *) cmd_backup auto ;;
-                esac
-                ;;
             select)
                 cmd_select
+                ;;
+            backup)
+                cmd_backup
                 ;;
             verify)
                 cmd_verify
