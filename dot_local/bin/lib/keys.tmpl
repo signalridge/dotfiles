@@ -30,51 +30,27 @@ log_event() {
 
 # ===== File Discovery & Filtering =====
 
-# Discover key/certificate files from common directories AND home directory
+# Discover key/certificate files from common directories
 discover_key_files() {
-    # Use fd if available (faster), otherwise fall back to find
-    if command -v fd &>/dev/null; then
-        # fd: faster, respects .gitignore, skip large directories
-        fd --type f --hidden --follow \
-            --exclude .git \
-            --exclude node_modules \
-            --exclude .cache \
-            --exclude Library \
-            --exclude 'Application Support' \
-            --exclude Downloads \
-            . "$HOME" 2>/dev/null | \
-        grep -v '\.pub$' | \
-        grep -v 'known_hosts' | \
-        grep -v 'authorized_keys' | \
-        grep -v '\.lock$' | \
-        sort -u
-    else
-        # find: universally available fallback
-        # First: scan key directories (fast)
-        local key_dirs=(
-            "$HOME/.ssh"
-            "$HOME/.gnupg"
-            "$HOME/.config/age"
-            "$HOME/.config"
-            "$HOME/Documents"
-            "$HOME/Desktop"
-        )
+    # Common directories for keys and certificates
+    local key_dirs=(
+        "$HOME/.ssh"           # SSH keys
+        "$HOME/.gnupg"         # GPG keys
+        "$HOME/.config/age"    # Age encryption keys
+    )
 
-        for dir in "${key_dirs[@]}"; do
-            [[ ! -d "$dir" ]] && continue
+    for dir in "${key_dirs[@]}"; do
+        [[ ! -d "$dir" ]] && continue
 
-            find "$dir" -type f \
-                -not -path '*/.git/*' \
-                -not -path '*/node_modules/*' \
-                -not -path '*/.cache/*' \
-                -not -path '*/Library/*' \
-                -not -name '*.pub' \
-                -not -name '*known_hosts*' \
-                -not -name '*authorized_keys*' \
-                -not -name '*.lock' \
-                2>/dev/null
-        done | sort -u
-    fi
+        find "$dir" -type f -print0 2>/dev/null | while IFS= read -r -d $'\0' file; do
+            # Skip public keys, known_hosts, authorized_keys
+            [[ ! "$file" =~ \.pub$ ]] && \
+            [[ ! "$file" =~ known_hosts ]] && \
+            [[ ! "$file" =~ authorized_keys ]] && \
+            [[ ! "$file" =~ \.lock$ ]] && \
+            echo "$file"
+        done
+    done | sort -u
 }
 
 # Get key type from file
@@ -220,28 +196,6 @@ FILE_PREVIEW='
     line=$(echo {} | sed "s/^[[:space:]]*//" | sed "s/^[✓⚠⊕⊗○] //")
     file="$line"
 
-    # Special handling for "Add custom file..." option
-    if echo "$line" | grep -q "Add custom file"; then
-        echo -e "\033[1;34m━━━ Add Custom File ━━━\033[0m"
-        echo ""
-        echo "Select this option to add a file from any location."
-        echo ""
-        echo -e "\033[1;33mHow it works:\033[0m"
-        echo "1. Select this option (press Enter)"
-        echo "2. You will be prompted to enter a file path"
-        echo "3. Path can include ~ for home directory"
-        echo "4. File will be validated before adding"
-        echo ""
-        echo -e "\033[1;33mExample paths:\033[0m"
-        echo "  ~/Documents/private-key.pem"
-        echo "  /etc/ssl/private/cert.key"
-        echo "  ~/.config/app/secret.key"
-        echo ""
-        echo -e "\033[1;36mTip: You can select multiple files by using Tab,\033[0m"
-        echo -e "\033[1;36mthen select this option to add custom files too.\033[0m"
-        exit 0
-    fi
-
     echo -e "\033[1;34m━━━ File Info ━━━\033[0m"
     echo ""
     echo "Path: $file"
@@ -291,136 +245,99 @@ FILE_PREVIEW='
 '
 
 # Helper function to select custom files using FZF file browser
-prompt_custom_files() {
-    local additions=""
-
-    echo ""
-    log_section "Browse filesystem with FZF"
-    echo "Fuzzy search for any file to add to backup (Tab: multi-select)"
-    echo ""
-
-    # Use fd if available (faster), otherwise fall back to find
-    local file_list_cmd
-    if command -v fd &>/dev/null; then
-        # fd: faster, respects .gitignore, colored output
-        file_list_cmd="fd --type f --hidden --follow --exclude .git . $HOME"
-    else
-        # find: universally available fallback
-        file_list_cmd="find $HOME -type f -not -path '*/\.git/*' 2>/dev/null"
+# Browse filesystem with yazi (file manager)
+yazi_select_files() {
+    if ! command -v yazi &>/dev/null; then
+        log_error "yazi not found. Install with: brew install yazi"
+        return 1
     fi
 
-    # Launch second FZF for file browsing
-    local selected_files
-    selected_files=$(eval "$file_list_cmd" | fzf --ansi --multi \
-        --height=80% \
-        --border=rounded \
-        --header="Browse files (Tab: multi-select, Ctrl-A: all)" \
-        --preview='
-            file={}
-            echo -e "\033[1;34m━━━ File Preview ━━━\033[0m"
-            echo ""
-            echo "Path: $file"
-            if [[ -f "$file" ]]; then
-                if stat -f%z "$file" &>/dev/null 2>&1; then
-                    # macOS
-                    size=$(stat -f%z "$file")
-                    mtime=$(stat -f%Sm -t "%Y-%m-%d %H:%M:%S" "$file")
-                    perms=$(stat -f%Sp "$file")
-                else
-                    # Linux
-                    size=$(stat -c%s "$file")
-                    mtime=$(stat -c%y "$file" | cut -d. -f1)
-                    perms=$(stat -c%A "$file")
-                fi
-                echo "Size: $size bytes"
-                echo "Modified: $mtime"
-                echo "Permissions: $perms"
-                echo ""
-                echo -e "\033[1;34m━━━ Content ━━━\033[0m"
-                head -n 20 "$file" 2>/dev/null || echo "(binary or unreadable)"
-            else
-                echo "File not found"
-            fi
-        ' \
-        --preview-window='right:50%:wrap:border-left' \
-        --preview-label="[File Preview]" \
-        --bind='ctrl-a:select-all' \
-        --bind='ctrl-d:deselect-all' \
-        --bind='ctrl-/:toggle-preview') || {
-        echo -e "${GRAY}File selection cancelled${NC}"
-        return 0
+    echo ""
+    log_section "Browse filesystem with yazi"
+    echo "Navigate: j/k or ↑/↓ | Space: select | a: select all | Enter: confirm"
+    echo ""
+
+    # Create temp file for yazi output
+    local tmpfile
+    tmpfile=$(mktemp)
+
+    # Launch yazi in multi-select mode starting from $HOME
+    yazi --chooser-file="$tmpfile" "$HOME" || {
+        rm -f "$tmpfile"
+        log_warn "File selection cancelled"
+        return 1
     }
 
-    # Process selected files
+    # Read selected files
+    local selected_files
+    selected_files=$(cat "$tmpfile")
+    rm -f "$tmpfile"
+
     if [[ -z "$selected_files" ]]; then
-        echo -e "${GRAY}No files selected${NC}"
-        return 0
+        log_warn "No files selected"
+        return 1
     fi
 
-    while IFS= read -r file; do
-        if [[ -f "$file" ]]; then
-            echo -e "${GREEN}✓ Added:${NC} $file"
-            additions+="$file"$'\n'
-        else
-            echo -e "${RED}✗ Not found:${NC} $file"
-        fi
-    done <<< "$selected_files"
-
-    echo ""
-    echo -e "${GRAY}File selection complete${NC}"
-
-    # Return additions
-    echo -n "${additions%$'\n'}"
+    # Return selected files
+    echo "$selected_files"
 }
 
-# FZF file selector with status (supports custom file input)
+# FZF file selector with status and multi-select support (for discovered keys)
 fzf_select_files() {
     local header="${1:-Select files to backup}"
+    local mode="${2:-discovered}"  # "discovered" or "browse"
 
-    # Build list with special "Add custom file" option at top
+    if [[ "$mode" == "browse" ]]; then
+        # Use yazi for filesystem browsing
+        yazi_select_files
+        return $?
+    fi
+
+    # Build file list with status indicators (discovered keys only)
     local file_list
+    file_list=$(build_file_list_with_status)
+
+    # Add option to browse filesystem
     file_list=$({
-        echo -e "${CYAN}⊕ Add custom file...${NC}"
-        build_file_list_with_status
+        echo "$file_list"
+        echo ""
+        echo -e "${CYAN}⊕ Browse entire filesystem with yazi...${NC}"
     })
 
+    # FZF multi-select
     local selected
     selected=$(echo "$file_list" | fzf --ansi --multi \
         --height=80% \
         --border=rounded \
-        --header="$header | Tab: multi-select | Select '⊕ Add custom file...' to enter path" \
+        --header="$header (Tab: multi-select, Ctrl-A: select all)" \
         --preview="$FILE_PREVIEW" \
         --preview-window='right:50%:wrap:border-left' \
         --preview-label="[File Preview - Ctrl-/: toggle]" \
         --bind='ctrl-a:select-all' \
         --bind='ctrl-d:deselect-all' \
-        --bind='ctrl-r:reload(echo -e "'"${CYAN}⊕ Add custom file...${NC}"'"; '"$(declare -f build_file_list_with_status)"'; build_file_list_with_status)' \
+        --bind='ctrl-r:reload('"$(declare -f build_file_list_with_status)"'; build_file_list_with_status; echo ""; echo -e "'"${CYAN}⊕ Browse entire filesystem with yazi...${NC}"'")' \
         --bind='ctrl-/:toggle-preview') || return 1
 
-    # Process selection
-    local final_selection=""
-    local has_custom_file_option=false
-
-    while IFS= read -r line; do
-        # Check if it's the "Add custom file" option
-        if echo "$line" | grep -q "Add custom file"; then
-            has_custom_file_option=true
-        else
-            # Regular file selection
-            local cleaned
-            cleaned=$(echo "$line" | sed 's/^[[:space:]]*//' | sed 's/^[✓⚠⊕⊗○] //')
-            final_selection+="$cleaned"$'\n'
+    # Check if user selected "Browse filesystem" option
+    if echo "$selected" | grep -q "Browse entire filesystem"; then
+        # Launch yazi for browsing
+        local yazi_files
+        yazi_files=$(yazi_select_files)
+        if [[ -n "$yazi_files" ]]; then
+            echo "$yazi_files"
+            return 0
         fi
-    done <<< "$selected"
-
-    # If custom file option was selected, prompt for custom files
-    if [[ "$has_custom_file_option" == true ]]; then
-        local custom_files
-        custom_files=$(prompt_custom_files)
-        if [[ -n "$custom_files" ]]; then
-            final_selection+="$custom_files"$'\n'
-        fi
+        return 1
     fi
+
+    # Clean up selected lines (remove status indicators)
+    local final_selection=""
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        local cleaned
+        cleaned=$(echo "$line" | sed 's/^[[:space:]]*//' | sed 's/^[✓⚠⊕⊗○] //')
+        final_selection+="$cleaned"$'\n'
+    done <<< "$selected"
 
     # Return final selection (remove trailing newline)
     echo -n "${final_selection%$'\n'}"

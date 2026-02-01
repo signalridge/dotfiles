@@ -14,9 +14,8 @@ Usage: keys-manage [command] [options]
 
 Backup Commands:
   init              Initialize encrypted backup repository
-  select            Select files with FZF (multi-select, replaces list)
-  add <file>        Add files to backup list (append)
-  remove <file>     Remove files from backup list
+  add               Add files to backup list (multi-select with FZF)
+  remove            Remove files from backup list (multi-select with FZF)
   backup            Incremental backup (only changed files)
   verify            Verify backup checksums
   history           Show backup event log
@@ -42,7 +41,7 @@ Examples:
 
   # Backup workflow
   keys-manage init             # First time: initialize repository
-  keys-manage select           # Choose files to backup
+  keys-manage add              # Add files to backup list
   keys-manage backup           # Backup changed files
   keys-manage verify           # Verify backup integrity
 
@@ -196,7 +195,7 @@ cmd_init() {
         echo "Next steps:"
         echo "  1. Create the remote repository: $KEYS_REPO"
         echo "  2. Run: git -C $REPO_DIR push -u origin main"
-        echo "  3. Run: keys-manage select  # Select files to backup"
+        echo "  3. Run: keys-manage add  # Add files to backup"
 
         log_event "Repository initialized (new)"
         return 0
@@ -231,67 +230,10 @@ cmd_init() {
     log_success "Repository initialized successfully"
     echo ""
     echo "Next steps:"
-    echo "  1. Run: keys-manage select  # Select files to backup"
+    echo "  1. Run: keys-manage add  # Add files to backup"
     echo "  2. Run: keys-manage backup  # Backup selected files"
 
     log_event "Repository initialized (clone)"
-}
-
-# Command: select - Interactive file selection with FZF (replaces list)
-cmd_select() {
-    require_cmd fzf || exit 1
-
-    log_section "Select files to backup with FZF"
-    echo -e "(Tab: multi-select, Ctrl-A: all, ESC: cancel)${NC}"
-    echo ""
-
-    # Show current list if exists
-    if [[ -f "$BACKUP_LIST" ]]; then
-        local current_count
-        current_count=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
-        log_warn "This will replace current backup list ($current_count files)"
-        echo ""
-    fi
-
-    local selected
-    selected=$(fzf_select_files "Select files to backup (will REPLACE current list)") || {
-        log_warn "Selection cancelled - no changes made"
-        return 1
-    }
-
-    if [[ -z "$selected" ]]; then
-        log_warn "No files selected - aborting"
-        return 1
-    fi
-
-    # Ensure local directory exists (doesn't need git yet)
-    ensure_local_dir
-
-    # Save selection (overwrites existing list)
-    echo "$selected" > "$BACKUP_LIST"
-
-    local count
-    count=$(echo "$selected" | wc -l | tr -d ' ')
-    log_success "Selected $count files (replaced backup list)"
-    echo ""
-    echo "$selected" | sed 's/^/  /'
-    echo ""
-
-    # Commit backup list if git repo exists
-    if [[ -d "$REPO_DIR/.git" ]]; then
-        cd "$REPO_DIR"
-        if git diff --quiet backup-list.txt 2>/dev/null; then
-            echo "No changes to backup list"
-        else
-            git add backup-list.txt
-            git commit -m "Update backup list - $count files"
-            if safe_git_push; then
-                log_event "Updated backup list: $count files"
-            else
-                log_warn "Committed locally but push failed (will retry on next backup)"
-            fi
-        fi
-    fi
 }
 
 # Command: add - Add files to backup list (append)
@@ -1153,9 +1095,8 @@ cmd_menu() {
                 echo ""
                 case "$cmd" in
                     init) echo "Initialize encrypted backup repository" ;;
-                    select) echo "Select files to backup (REPLACE list)" ;;
-                    add) echo "Add files to backup list (APPEND)" ;;
-                    remove) echo "Remove files from backup list" ;;
+                    add) echo "Add files to backup list (multi-select with FZF)" ;;
+                    remove) echo "Remove files from backup list (multi-select with FZF)" ;;
                     backup) echo "Backup changed files (incremental)" ;;
                     verify) echo "Verify backup integrity (checksums)" ;;
                     history) echo "Show backup event history" ;;
@@ -1183,9 +1124,8 @@ cmd_menu() {
             --preview-window='right:50%:wrap' \
             --preview-label="[ Keys Manager ]"
 init           Initialize backup repository
-select         Select files (replace list)
-add            Add files (append to list)
-remove         Remove files from list
+add            Add files to backup (multi-select)
+remove         Remove files from backup (multi-select)
 backup         Backup changed files
 verify         Verify backup integrity
 history        Show backup history
@@ -1203,7 +1143,6 @@ MENU
         echo ""
         case "$cmd" in
             init) cmd_init ;;
-            select) cmd_select ;;
             add) cmd_add ;;
             remove) cmd_remove ;;
             backup) cmd_backup ;;
@@ -1254,7 +1193,6 @@ main() {
     case "$cmd" in
         # Backup commands
         init) cmd_init "$@" ;;
-        select) cmd_select "$@" ;;
         add) cmd_add "$@" ;;
         remove) cmd_remove "$@" ;;
         backup) cmd_backup "$@" ;;
