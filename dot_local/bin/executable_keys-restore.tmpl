@@ -504,13 +504,10 @@ cmd_restore() {
 # ===== Main Entry Point =====
 
 main() {
-    local cmd="${1:-}"
-    shift || true
-
     # Global options
     TRANSCRYPT_PASSWORD=""
 
-    # Parse global options
+    # Parse global options first
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -h|--help)
@@ -522,10 +519,15 @@ main() {
                 shift 2
                 ;;
             *)
+                # Not a global option, assume it's a command
                 break
                 ;;
         esac
     done
+
+    # Extract command after global options
+    local cmd="${1:-}"
+    shift || true
 
     # Route commands
     case "$cmd" in
