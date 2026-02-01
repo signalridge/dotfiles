@@ -63,7 +63,7 @@ launch_claude() {
     shift
 
     if ! is_configured_account "$account"; then
-        echo -e "${RED}Error: Unknown account '$account'${NC}" >&2
+        log_error "Unknown account '$account'"
         echo "Available accounts:" >&2
         printf '  %s\n' "${ACCOUNTS[@]}" >&2
         return 1
@@ -80,7 +80,7 @@ launch_claude() {
     if [[ -n "$base_url" ]]; then
         local token
         if ! token=$(claude-token "$account" 2>/dev/null); then
-            echo -e "${RED}Error: No API token for $account${NC}" >&2
+            log_error "No API token for $account"
             echo -e "Run: ${YELLOW}claude-manage add-key $account${NC}" >&2
             return 1
         fi

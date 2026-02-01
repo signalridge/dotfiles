@@ -48,6 +48,23 @@ log_fail() {
     echo -e "${RED}${STATUS_ERROR}${NC} $*"
 }
 
+# Log note message
+log_note() {
+    echo -e "${YELLOW}Note:${NC} $*"
+}
+
+# Print section header with separator line
+log_header() {
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}$*${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+}
+
+# Print section title (single line, no separator)
+log_section() {
+    echo -e "${BLUE}$*${NC}"
+}
+
 # ===== Command Validation =====
 
 # Check if required commands are available

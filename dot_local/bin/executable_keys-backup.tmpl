@@ -61,50 +61,48 @@ EOF
 cmd_init() {
     require_cmd git transcrypt || exit 1
 
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BLUE}Keys Backup Repository Initialization${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    log_header "Keys Backup Repository Initialization"
     echo ""
 
     # Check if repository already exists
     if [[ -d "$REPO_DIR/.git" ]]; then
-        echo -e "${YELLOW}Repository already initialized:${NC} $REPO_DIR"
+        log_warn "Repository already initialized: $REPO_DIR"
         echo ""
 
         # Check transcrypt status
         cd "$REPO_DIR"
         if [[ -f .gitattributes ]] && grep -q "filter=crypt" .gitattributes 2>/dev/null; then
             if [[ -f .transcrypt/cipher ]]; then
-                echo -e "${GREEN}✓${NC} Transcrypt is configured and unlocked"
+                log_success "Transcrypt is configured and unlocked"
             else
-                echo -e "${YELLOW}⚠${NC} Transcrypt is configured but locked"
+                log_warn "Transcrypt is configured but locked"
                 echo ""
                 echo "Unlocking transcrypt encryption..."
                 unlock_transcrypt "$TRANSCRYPT_PASSWORD" || {
-                    echo -e "${RED}Error:${NC} Failed to unlock transcrypt" >&2
+                    log_error "Failed to unlock transcrypt"
                     echo "Please provide the correct password with -p or interactively"
                     return 1
                 }
-                echo -e "${GREEN}✓${NC} Transcrypt unlocked successfully"
+                log_success "Transcrypt unlocked successfully"
             fi
         else
-            echo -e "${YELLOW}⚠${NC} Repository exists but transcrypt is not configured"
+            log_warn "Repository exists but transcrypt is not configured"
             echo ""
             read -p "Initialize transcrypt encryption? (y/n): " init_transcrypt
             if [[ "$init_transcrypt" == "y" ]]; then
                 init_transcrypt "$TRANSCRYPT_PASSWORD"
-                echo -e "${GREEN}✓${NC} Transcrypt initialized"
+                log_success "Transcrypt initialized"
             fi
         fi
 
         echo ""
-        echo -e "${GREEN}✓${NC} Repository ready"
+        log_success "Repository ready"
         return 0
     fi
 
     # Check if remote repository is configured
     if [[ -z "$KEYS_REPO" ]]; then
-        echo -e "${RED}Error:${NC} Repository URL not configured" >&2
+        log_error "Repository URL not configured"
         echo ""
         echo "Please set keysRepository in .chezmoidata/keys.yaml:"
         echo "  keysRepository: git@github.com:username/keys-backup.git"
@@ -116,9 +114,9 @@ cmd_init() {
     echo ""
 
     # Clone repository
-    echo -e "${BLUE}Cloning repository...${NC}"
+    log_info "Cloning repository..."
     if ! git clone "$KEYS_REPO" "$REPO_DIR" 2>/dev/null; then
-        echo -e "${YELLOW}Note:${NC} Remote repository may not exist yet"
+        log_note Remote repository may not exist yet"
         echo ""
         read -p "Create new repository? (y/n): " create_new
         if [[ "$create_new" != "y" ]]; then
@@ -134,7 +132,7 @@ cmd_init() {
 
         # Initialize transcrypt
         echo ""
-        echo -e "${BLUE}Initializing transcrypt encryption...${NC}"
+        log_info "Initializing transcrypt encryption..."
         init_transcrypt "$TRANSCRYPT_PASSWORD"
 
         # Create initial metadata
@@ -145,7 +143,7 @@ cmd_init() {
         git commit -m "Initial commit: setup transcrypt and metadata"
 
         echo ""
-        echo -e "${GREEN}✓${NC} New repository created and configured"
+        log_success "New repository created and configured"
         echo ""
         echo "Next steps:"
         echo "  1. Create the remote repository: $KEYS_REPO"
@@ -158,14 +156,14 @@ cmd_init() {
 
     # Repository cloned successfully
     cd "$REPO_DIR"
-    echo -e "${GREEN}✓${NC} Repository cloned"
+    log_success "Repository cloned"
     echo ""
 
     # Check for transcrypt configuration
     if [[ -f .gitattributes ]] && grep -q "filter=crypt" .gitattributes 2>/dev/null; then
-        echo -e "${BLUE}Unlocking transcrypt encryption...${NC}"
+        log_info "Unlocking transcrypt encryption..."
         unlock_transcrypt "$TRANSCRYPT_PASSWORD" || {
-            echo -e "${RED}Error:${NC} Failed to unlock transcrypt" >&2
+            log_error "Failed to unlock transcrypt"
             echo ""
             echo "This repository uses transcrypt encryption."
             echo "Please provide the correct password:"
@@ -173,9 +171,9 @@ cmd_init() {
             echo "  - Or run again and enter password interactively"
             return 1
         }
-        echo -e "${GREEN}✓${NC} Transcrypt unlocked"
+        log_success "Transcrypt unlocked"
     else
-        echo -e "${YELLOW}Note:${NC} Repository doesn't use transcrypt encryption"
+        log_note Repository doesn't use transcrypt encryption"
     fi
 
     # Initialize metadata if needed
@@ -189,7 +187,7 @@ cmd_init() {
     fi
 
     echo ""
-    echo -e "${GREEN}✓${NC} Repository initialized successfully"
+    log_success "Repository initialized successfully"
     echo ""
     echo "Next steps:"
     echo "  1. Run: keys-backup select  # Select files to backup"
@@ -202,14 +200,12 @@ cmd_init() {
 cmd_status() {
     require_cmd git transcrypt jq || exit 1
 
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BLUE}SSH Keys Backup Status${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    log_header "SSH Keys Backup Status"
     echo ""
 
     # Repository status
     if [[ -d "$REPO_DIR/.git" ]]; then
-        echo -e "${GREEN}✓${NC} Repository: ${REPO_DIR}"
+        log_success "Repository: ${REPO_DIR}"
         cd "$REPO_DIR"
 
         local remote_url
@@ -220,7 +216,7 @@ cmd_status() {
         last_commit=$(git log -1 --format="%h - %s (%ar)" 2>/dev/null || echo "N/A")
         echo "  Last commit: $last_commit"
     else
-        echo -e "${YELLOW}⚠${NC} Repository not initialized"
+        log_warn "Repository not initialized"
         echo "  Run 'keys-backup init' to initialize"
         return 0
     fi
@@ -230,24 +226,24 @@ cmd_status() {
         local version file_count
         version=$(jq -r '.version // 1' "$METADATA_FILE")
         file_count=$(jq '.files | length' "$METADATA_FILE")
-        echo -e "${GREEN}✓${NC} Metadata: v$version ($file_count files tracked)"
+        log_success "Metadata: v$version ($file_count files tracked)"
     else
-        echo -e "${YELLOW}⚠${NC} Metadata not initialized (legacy v1)"
+        log_warn "Metadata not initialized (legacy v1)"
     fi
 
     # Backup list
     if [[ -f "$BACKUP_LIST" ]]; then
         local selected_count
         selected_count=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
-        echo -e "${GREEN}✓${NC} Backup list: $selected_count files selected"
+        log_success "Backup list: $selected_count files selected"
     else
-        echo -e "${YELLOW}⚠${NC} No backup list"
+        log_warn "No backup list"
         return 0
     fi
 
     # File status
     echo ""
-    echo -e "${BLUE}File Status:${NC}"
+    log_section "File Status:"
     echo ""
 
     local total=0 unchanged=0 modified=0 new=0 missing=0
@@ -258,16 +254,16 @@ cmd_status() {
         status=$(get_file_status "$file")
 
         if [[ ! -f "$file" ]]; then
-            echo -e "  ${RED}⊗${NC} Missing: $file"
+            echo "  ${STATUS_REMOVED} Missing: $file"
             ((missing++))
         elif [[ "$status" == *"✓"* ]]; then
-            echo -e "  ${GREEN}✓${NC} $(basename "$file")"
+            echo "  ${STATUS_OK} $(basename "$file")"
             ((unchanged++))
         elif [[ "$status" == *"⚠"* ]]; then
-            echo -e "  ${YELLOW}⚠${NC} Modified: $(basename "$file")"
+            echo "  ${STATUS_WARN} Modified: $(basename "$file")"
             ((modified++))
         else
-            echo -e "  ${CYAN}⊕${NC} New: $(basename "$file")"
+            echo "  ${STATUS_NEW} New: $(basename "$file")"
             ((new++))
         fi
     done < "$BACKUP_LIST"
@@ -277,9 +273,9 @@ cmd_status() {
     echo ""
 
     if [[ $modified -gt 0 ]] || [[ $new -gt 0 ]]; then
-        echo -e "${YELLOW}→ Run 'keys-backup backup' to backup changes${NC}"
+        echo "  → Run 'keys-backup backup' to backup changes"
     else
-        echo -e "${GREEN}→ All files up to date${NC}"
+        echo "  → All files up to date"
     fi
     echo ""
 }
@@ -288,26 +284,26 @@ cmd_status() {
 cmd_select() {
     require_cmd fzf || exit 1
 
-    echo -e "${BLUE}Select files to backup with FZF${NC}"
-    echo -e "${GRAY}(Tab: multi-select, Ctrl-A: all, ESC: cancel)${NC}"
+    log_section "Select files to backup with FZF"
+    echo "(Tab: multi-select, Ctrl-A: all, ESC: cancel)${NC}"
     echo ""
 
     # Show current list if exists
     if [[ -f "$BACKUP_LIST" ]]; then
         local current_count
         current_count=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
-        echo -e "${YELLOW}⚠${NC} This will replace current backup list ($current_count files)"
+        log_warn "This will replace current backup list ($current_count files)"
         echo ""
     fi
 
     local selected
     selected=$(fzf_select_files "Select files to backup (will REPLACE current list)") || {
-        echo -e "${YELLOW}Selection cancelled - no changes made${NC}"
+        log_warn "Selection cancelled - no changes made"
         return 1  # Exit with error code
     }
 
     if [[ -z "$selected" ]]; then
-        echo -e "${YELLOW}No files selected - aborting${NC}"
+        log_warn "No files selected - aborting"
         return 1  # Exit with error code
     fi
 
@@ -320,7 +316,7 @@ cmd_select() {
 
     local count
     count=$(echo "$selected" | wc -l | tr -d ' ')
-    echo -e "${GREEN}✓${NC} Selected $count files (replaced backup list)"
+    log_success "Selected $count files (replaced backup list)"
     echo ""
     echo "$selected" | sed 's/^/  /'
     echo ""
@@ -348,10 +344,10 @@ cmd_add() {
     local current_files=()
     if [[ -f "$BACKUP_LIST" ]]; then
         mapfile -t current_files < "$BACKUP_LIST"
-        echo -e "${BLUE}Current backup list: ${#current_files[@]} files${NC}"
+        log_section "Current backup list: ${#current_files[@]} files${NC}"
         echo ""
     else
-        echo -e "${BLUE}No existing backup list - selecting from all files${NC}"
+        log_section "No existing backup list - selecting from all files${NC}"
         echo ""
     fi
 
@@ -369,12 +365,12 @@ cmd_add() {
     done < <(discover_key_files)
 
     if [[ ${#available_files[@]} -eq 0 ]]; then
-        echo -e "${GREEN}✓${NC} All SSH files are already in backup list"
+        log_success "All SSH files are already in backup list"
         return 0
     fi
 
-    echo -e "${CYAN}Available files to add: ${#available_files[@]}${NC}"
-    echo -e "${GRAY}(Tab: multi-select, ESC: cancel)${NC}"
+    echo "Available files to add: ${#available_files[@]}${NC}"
+    echo "(Tab: multi-select, ESC: cancel)${NC}"
     echo ""
 
     # FZF to select files to add
@@ -386,12 +382,12 @@ cmd_add() {
         --preview="$FILE_PREVIEW" \
         --preview-window='right:50%:wrap:border-left' \
         --bind='ctrl-a:select-all') || {
-        echo -e "${YELLOW}Selection cancelled${NC}"
+        log_warn "Selection cancelled"
         return 1
     }
 
     if [[ -z "$to_add" ]]; then
-        echo -e "${YELLOW}No files selected${NC}"
+        log_warn "No files selected"
         return 1
     fi
 
@@ -401,7 +397,7 @@ cmd_add() {
 
     local added_count
     added_count=$(echo "$to_add" | wc -l | tr -d ' ')
-    echo -e "${GREEN}✓${NC} Added $added_count files to backup list"
+    log_success "Added $added_count files to backup list"
     echo ""
     echo "$to_add" | sed 's/^/  /'
     echo ""
@@ -426,14 +422,14 @@ cmd_remove() {
     cd "$REPO_DIR"
 
     if [[ ! -f "$BACKUP_LIST" ]] || [[ ! -s "$BACKUP_LIST" ]]; then
-        echo -e "${YELLOW}Backup list is empty${NC}"
+        log_warn "Backup list is empty"
         return 1
     fi
 
     local current_count
     current_count=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
-    echo -e "${BLUE}Current backup list: $current_count files${NC}"
-    echo -e "${GRAY}(Tab: multi-select, ESC: cancel)${NC}"
+    log_section "Current backup list: $current_count files${NC}"
+    echo "(Tab: multi-select, ESC: cancel)${NC}"
     echo ""
 
     # FZF to select files to remove
@@ -455,19 +451,19 @@ cmd_remove() {
         " \
         --preview-window='right:50%:wrap' \
         --bind='ctrl-a:select-all') || {
-        echo -e "${YELLOW}Selection cancelled${NC}"
+        log_warn "Selection cancelled"
         return 1
     }
 
     if [[ -z "$to_remove" ]]; then
-        echo -e "${YELLOW}No files selected${NC}"
+        log_warn "No files selected"
         return 1
     fi
 
     # Confirm removal
     local remove_count
     remove_count=$(echo "$to_remove" | wc -l | tr -d ' ')
-    echo -e "${RED}Will remove $remove_count files from backup list:${NC}"
+    echo "Will remove $remove_count files from backup list:${NC}"
     echo ""
     echo "$to_remove" | sed 's/^/  /'
     echo ""
@@ -492,7 +488,7 @@ cmd_remove() {
     done < "$BACKUP_LIST" > "$tmp"
     mv "$tmp" "$BACKUP_LIST"
 
-    echo -e "${GREEN}✓${NC} Removed $remove_count files from backup list"
+    log_success "Removed $remove_count files from backup list"
     echo ""
 
     local remaining
@@ -526,9 +522,7 @@ cmd_backup() {
 
     require_cmd git transcrypt jq || exit 1
 
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BLUE}Keys Backup (Incremental)${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    log_header "Keys Backup (Incremental)"
     echo ""
 
     # Initialize repo
@@ -540,7 +534,7 @@ cmd_backup() {
 
     # Check backup list exists
     if [[ ! -f "$BACKUP_LIST" ]]; then
-        echo -e "${YELLOW}No backup list found${NC}"
+        log_warn "No backup list found"
         echo ""
         echo "First time setup: Select files to backup"
         echo ""
@@ -566,18 +560,18 @@ cmd_backup() {
     while IFS= read -r file; do
         ((total_files++))
         if [[ ! -f "$file" ]]; then
-            echo -e "  ${RED}✗${NC} Missing: $file"
+            echo "  ${STATUS_ERROR} Missing: $file"
             continue
         fi
 
         if detect_changes "$file"; then
             changed_files+=("$file")
-            echo -e "  ${YELLOW}⚠${NC} Changed: $(basename "$file")"
+            echo "  ${STATUS_WARN} Changed: $(basename "$file")"
         fi
     done < "$BACKUP_LIST"
 
     if [[ ${#changed_files[@]} -eq 0 ]]; then
-        echo -e "${GREEN}✓${NC} No changes to backup (all files up to date)"
+        log_success "No changes to backup (all files up to date)"
         return 0
     fi
 
@@ -596,9 +590,9 @@ cmd_backup() {
     for file in "${changed_files[@]}"; do
         if backup_file "$file"; then
             update_file_metadata "$file"
-            echo -e "  ${GREEN}✓${NC} $(basename "$file")"
+            echo "  ${STATUS_OK} $(basename "$file")"
         else
-            echo -e "  ${RED}✗${NC} Failed: $(basename "$file")"
+            echo "  ${STATUS_ERROR} Failed: $(basename "$file")"
         fi
     done
 
@@ -624,9 +618,7 @@ cmd_backup() {
     fi
 
     echo ""
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${GREEN}✅ Backup Complete${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    log_header "✅ Backup Complete"
     echo ""
     echo "Backed up ${#changed_files[@]} changed files"
     echo "Repository: $KEYS_REPO"
@@ -645,18 +637,18 @@ cmd_verify() {
     require_cmd git transcrypt || exit 1
 
     [[ ! -d "$REPO_DIR/.git" ]] && {
-        echo -e "${RED}Error:${NC} Repository not initialized"
+        log_error "Repository not initialized"
         return 1
     }
 
     [[ ! -f "$BACKUP_LIST" ]] && {
-        echo -e "${RED}Error:${NC} No backup list found"
+        log_error "No backup list found"
         return 1
     }
 
     cd "$REPO_DIR"
 
-    echo -e "${BLUE}Verifying backup integrity...${NC}"
+    log_info "Verifying backup integrity..."
     echo ""
 
     local errors=0
@@ -667,31 +659,31 @@ cmd_verify() {
         filename=$(basename "$file")
 
         if [[ ! -f "$file" ]]; then
-            echo -e "${YELLOW}⚠${NC} Local file missing: $file"
+            log_warn "Local file missing: $file"
             continue
         fi
 
         if [[ ! -f "ssh-keys/$filename" ]]; then
-            echo -e "${RED}✗${NC} Not in backup: $filename"
+            log_fail "Not in backup: $filename"
             ((errors++))
             continue
         fi
 
         if verify_file "$file"; then
-            echo -e "${GREEN}✓${NC} OK: $filename"
+            log_success "OK: $filename"
             ((verified++))
         else
-            echo -e "${RED}✗${NC} Mismatch: $filename"
+            log_fail "Mismatch: $filename"
             ((errors++))
         fi
     done < "$BACKUP_LIST"
 
     echo ""
     if [[ $errors -eq 0 ]]; then
-        echo -e "${GREEN}✅ All $verified files verified${NC}"
+        echo "✅ All $verified files verified${NC}"
         return 0
     else
-        echo -e "${RED}❌ $errors verification failures${NC}"
+        echo "❌ $errors verification failures${NC}"
         return 1
     fi
 }
@@ -703,7 +695,7 @@ cmd_history() {
         return 0
     }
 
-    echo -e "${BLUE}Backup History${NC}"
+    log_section "Backup History"
     echo ""
     tail -n 20 "$HISTORY_LOG"
     echo ""
@@ -712,7 +704,7 @@ cmd_history() {
 # Command: menu - Interactive FZF menu
 cmd_menu() {
     require_cmd fzf || {
-        echo -e "${YELLOW}FZF not found, showing status instead${NC}"
+        log_warn "FZF not found, showing status instead"
         cmd_status
         return 0
     }
@@ -905,9 +897,9 @@ main() {
             init_repo_if_needed || exit 1
             echo "$CUSTOM_PATH" >> "$BACKUP_LIST"
             sort -u "$BACKUP_LIST" -o "$BACKUP_LIST"
-            echo -e "${GREEN}✓${NC} Added: $CUSTOM_PATH"
+            log_success "Added: $CUSTOM_PATH"
         else
-            echo -e "${RED}Error:${NC} File not found: $CUSTOM_PATH"
+            log_error "File not found: $CUSTOM_PATH"
             exit 1
         fi
         exit 0
@@ -947,7 +939,7 @@ main() {
             cmd_menu
             ;;
         *)
-            echo -e "${RED}Error:${NC} Unknown command: $cmd"
+            log_error "Unknown command: $cmd"
             echo "Run 'keys-backup --help' for usage"
             exit 1
             ;;
