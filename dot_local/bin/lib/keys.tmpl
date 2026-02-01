@@ -196,6 +196,28 @@ FILE_PREVIEW='
     line=$(echo {} | sed "s/^[[:space:]]*//" | sed "s/^[✓⚠⊕⊗○] //")
     file="$line"
 
+    # Special handling for "Add custom file..." option
+    if echo "$line" | grep -q "Add custom file"; then
+        echo -e "\033[1;34m━━━ Add Custom File ━━━\033[0m"
+        echo ""
+        echo "Select this option to add a file from any location."
+        echo ""
+        echo -e "\033[1;33mHow it works:\033[0m"
+        echo "1. Select this option (press Enter)"
+        echo "2. You will be prompted to enter a file path"
+        echo "3. Path can include ~ for home directory"
+        echo "4. File will be validated before adding"
+        echo ""
+        echo -e "\033[1;33mExample paths:\033[0m"
+        echo "  ~/Documents/private-key.pem"
+        echo "  /etc/ssl/private/cert.key"
+        echo "  ~/.config/app/secret.key"
+        echo ""
+        echo -e "\033[1;36mTip: You can select multiple files by using Tab,\033[0m"
+        echo -e "\033[1;36mthen select this option to add custom files too.\033[0m"
+        exit 0
+    fi
+
     echo -e "\033[1;34m━━━ File Info ━━━\033[0m"
     echo ""
     echo "Path: $file"
@@ -259,10 +281,10 @@ fzf_select_files() {
     selected=$(echo "$file_list" | fzf --ansi --multi \
         --height=80% \
         --border=rounded \
-        --header="$header (Tab: multi-select, Ctrl-A: all)" \
+        --header="$header | Tab: multi-select | Select '⊕ Add custom file...' to enter path" \
         --preview="$FILE_PREVIEW" \
         --preview-window='right:50%:wrap:border-left' \
-        --preview-label="[File Preview]" \
+        --preview-label="[File Preview - Ctrl-/: toggle]" \
         --bind='ctrl-a:select-all' \
         --bind='ctrl-d:deselect-all' \
         --bind='ctrl-r:reload(echo -e "'"${CYAN}⊕ Add custom file...${NC}"'"; '"$(declare -f build_file_list_with_status)"'; build_file_list_with_status)' \
@@ -273,24 +295,35 @@ fzf_select_files() {
     while IFS= read -r line; do
         # Check if it's the "Add custom file" option
         if echo "$line" | grep -q "Add custom file"; then
-            # Prompt for custom file path
+            # Prompt for custom file path (can add multiple files)
             echo ""
-            echo -e "${CYAN}Enter custom file path (or press Enter to skip):${NC}"
-            local custom_path
-            if read -r -e -p "> " custom_path && [[ -n "$custom_path" ]]; then
+            log_section "Add Custom Files"
+            echo "Enter file paths one at a time (press Enter with empty input to finish)"
+            echo ""
+
+            while true; do
+                local custom_path
+                echo -ne "${CYAN}File path${NC} (or Enter to finish): "
+                read -r -e custom_path
+
+                # Empty input = done
+                [[ -z "$custom_path" ]] && break
+
                 # Expand tilde
                 custom_path="${custom_path/#\~/$HOME}"
 
                 # Validate file exists
                 if [[ -f "$custom_path" ]]; then
-                    echo -e "${GREEN}✓${NC} Added: $custom_path"
+                    echo -e "  ${GREEN}✓ Added:${NC} $custom_path"
                     final_selection+="$custom_path"$'\n'
                 else
-                    echo -e "${RED}✗${NC} File not found: $custom_path"
+                    echo -e "  ${RED}✗ Not found:${NC} $custom_path"
+                    echo -e "  ${YELLOW}Tip:${NC} Use absolute path or ~ for home directory"
                 fi
-            else
-                echo -e "${GRAY}Skipped${NC}"
-            fi
+                echo ""
+            done
+
+            echo -e "${GRAY}Custom file input complete${NC}"
         else
             # Regular file selection
             local cleaned
