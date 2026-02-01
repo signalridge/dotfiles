@@ -467,63 +467,60 @@ ensure_local_dir() {
 # ===== Transcrypt Operations =====
 
 # Initialize transcrypt in repo
+# Transcrypt is idempotent - it handles "already configured" automatically
 init_transcrypt() {
     local password="$1"
 
-    if [[ ! -f .transcrypt/cipher ]]; then
-        if [[ -n "$password" ]]; then
-            transcrypt -c aes-256-cbc -p "$password"
-        else
-            echo "Enter password for encryption:"
-            transcrypt -c aes-256-cbc
-        fi
+    # Transcrypt stores config in .git/crypt/transcrypt, NOT .transcrypt/cipher
+    # Run transcrypt with -y flag (yes to all prompts) for automation
+    if [[ -n "$password" ]]; then
+        transcrypt -c aes-256-cbc -p "$password" -y
+    else
+        echo "Enter password for encryption:"
+        transcrypt -c aes-256-cbc -y
+    fi
 
-        # Configure encryption
-        cat > .gitattributes <<'EOF'
+    # Append encryption patterns (don't overwrite transcrypt's metadata)
+    # Transcrypt adds its own metadata comments to .gitattributes
+    if ! grep -q "ssh-keys/\*\* filter=crypt" .gitattributes 2>/dev/null; then
+        cat >> .gitattributes <<'EOF'
 ssh-keys/** filter=crypt diff=crypt merge=crypt
 backup-list.txt filter=crypt diff=crypt merge=crypt
 backup-metadata.json filter=crypt diff=crypt merge=crypt
 EOF
         git add .gitattributes
-        git commit -m "Configure transcrypt for SSH keys"
+        git commit -m "Configure transcrypt for SSH keys" || true
         log_event "Initialized transcrypt encryption"
     fi
 }
 
-# Unlock transcrypt in existing repo
-unlock_transcrypt() {
-    local password="$1"
-
-    if [[ -f .transcrypt/cipher ]]; then
-        return 0  # Already unlocked
-    fi
-
-    if [[ -n "$password" ]]; then
-        transcrypt -c aes-256-cbc -p "$password"
-    else
-        echo "Enter password to decrypt:"
-        transcrypt -c aes-256-cbc
-    fi
+# Check if transcrypt is configured
+is_transcrypt_configured() {
+    [[ -f "$REPO_DIR/.git/crypt/transcrypt" ]]
 }
 
 # ===== Repository Health =====
 
 # Check repository health
+# Returns: 0=healthy, 1=not git repo, 2=transcrypt not configured, 3=offline mode
 check_repo_health() {
     [[ ! -d "$REPO_DIR/.git" ]] && {
-        echo -e "${RED}Error:${NC} Repository not initialized" >&2
+        log_error "Not a git repository"
+        echo "Run 'keys-backup init' or 'keys-restore clone' to initialize"
         return 1
     }
 
-    [[ ! -f "$REPO_DIR/.transcrypt/cipher" ]] && {
-        echo -e "${YELLOW}Warning:${NC} Transcrypt not configured" >&2
+    # Check transcrypt using correct path: .git/crypt/transcrypt
+    [[ ! -f "$REPO_DIR/.git/crypt/transcrypt" ]] && {
+        log_error "Transcrypt not configured"
+        echo "Run 'keys-backup init' to configure encryption"
         return 2
     }
 
     cd "$REPO_DIR"
     if ! git ls-remote &>/dev/null; then
-        echo -e "${YELLOW}Warning:${NC} Cannot reach remote repository" >&2
-        return 3
+        log_warn "Remote unreachable (working offline)"
+        return 3  # Different exit code for offline mode
     fi
 
     return 0

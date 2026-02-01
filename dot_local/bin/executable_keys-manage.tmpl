@@ -1,0 +1,1282 @@
+#!/usr/bin/env bash
+# SSH Keys Manager - Unified backup and restore command
+# Manages SSH/GPG/Age keys with transcrypt-encrypted git repository
+set -euo pipefail
+
+# shellcheck source=lib/keys.tmpl
+source "$(dirname "$0")/lib/keys"
+
+# ===== Help =====
+
+show_help() {
+    cat <<EOF
+Usage: keys-manage [command] [options]
+
+Backup Commands:
+  init              Initialize encrypted backup repository
+  select            Select files with FZF (multi-select, replaces list)
+  add <file>        Add files to backup list (append)
+  remove <file>     Remove files from backup list
+  backup            Incremental backup (only changed files)
+  verify            Verify backup checksums
+  history           Show backup event log
+
+Restore Commands:
+  restore [commit]  Restore files (FZF version picker if no commit)
+  diff [commit]     Preview changes before restore
+  versions          Browse backup versions with FZF
+  validate          Validate repository integrity
+
+Common Commands:
+  status            Show backup and restore status
+  menu              Interactive menu (TUI)
+
+Options:
+  -p, --password PWD  Transcrypt password
+  --dry-run          Preview without changes
+  --no-backup        Skip safety backup (restore only)
+
+Examples:
+  # Interactive menu (recommended for first-time users)
+  keys-manage menu
+
+  # Backup workflow
+  keys-manage init             # First time: initialize repository
+  keys-manage select           # Choose files to backup
+  keys-manage backup           # Backup changed files
+  keys-manage verify           # Verify backup integrity
+
+  # Restore workflow
+  keys-manage versions         # Browse all versions
+  keys-manage diff HEAD~1      # Preview changes
+  keys-manage restore          # Restore with FZF version picker
+  keys-manage restore HEAD~1   # Restore specific version
+
+  # Status and maintenance
+  keys-manage status           # Check sync status
+  keys-manage history          # View backup log
+  keys-manage validate         # Validate repository
+
+Supported Directories:
+  - ~/.ssh               SSH keys
+  - ~/.gnupg             GPG keys
+  - ~/.config/age        Age encryption keys
+  - Custom paths via "⊕ Add custom file..." in FZF menu
+
+Status Indicators:
+  ${GREEN}✓${NC}  Up to date (backed up, no changes)
+  ${YELLOW}⚠${NC}  Modified (backed up but changed since)
+  ${CYAN}⊕${NC}  New file (not in backup list)
+  ${RED}⊗${NC}  Removed (was backed up, now excluded)
+
+EOF
+}
+
+# ===== Backup Commands (from keys-backup) =====
+
+# Command: init - Initialize backup repository
+cmd_init() {
+    require_cmd git transcrypt || exit 1
+
+    log_header "Keys Backup Repository Initialization"
+    echo ""
+
+    # Check if repository already exists
+    if [[ -d "$REPO_DIR/.git" ]]; then
+        log_warn "Repository already initialized: $REPO_DIR"
+        echo ""
+
+        # Check transcrypt status using correct path
+        cd "$REPO_DIR"
+        if is_transcrypt_configured; then
+            log_success "Transcrypt is configured"
+        else
+            log_warn "Repository exists but transcrypt is not configured"
+            echo ""
+            read -r -p "Initialize transcrypt encryption? (y/n): " confirm
+            if [[ "$confirm" == "y" ]]; then
+                init_transcrypt "$TRANSCRYPT_PASSWORD"
+                log_success "Transcrypt initialized"
+            fi
+        fi
+
+        echo ""
+        log_success "Repository ready"
+        return 0
+    fi
+
+    # Check if remote repository is configured
+    if [[ -z "$KEYS_REPO" ]]; then
+        log_error "Repository URL not configured"
+        echo ""
+        echo "Please set keysRepository in .chezmoidata/keys.yaml:"
+        echo "  keysRepository: git@github.com:username/keys-backup.git"
+        return 1
+    fi
+
+    echo "Repository URL: $KEYS_REPO"
+    echo "Local path: $REPO_DIR"
+    echo ""
+
+    # Clone repository
+    log_info "Cloning keys repository..."
+    local clone_error
+    clone_error=$(mktemp)
+
+    if ! git clone "$KEYS_REPO" "$REPO_DIR" 2>"$clone_error"; then
+        echo ""
+        log_warn "Failed to clone repository"
+        echo ""
+
+        # Show git error
+        if [[ -s "$clone_error" ]]; then
+            echo "Git error:"
+            sed 's/^/  /' "$clone_error"
+            echo ""
+        fi
+
+        # Determine likely cause and provide guidance
+        local error_content
+        error_content=$(cat "$clone_error" 2>/dev/null)
+        rm -f "$clone_error"
+
+        if echo "$error_content" | grep -q "not found\|does not exist"; then
+            log_note "Repository does not exist yet (first time setup)"
+        elif echo "$error_content" | grep -q "Authentication\|Permission denied\|publickey"; then
+            log_error "Authentication failed"
+            echo ""
+            echo "Possible causes:"
+            echo "  - SSH key not added to git server"
+            echo "  - Wrong repository URL"
+            echo "  - Insufficient permissions"
+            echo ""
+            echo "To fix:"
+            echo "  1. Add your SSH key: ssh-add ~/.ssh/your_key"
+            echo "  2. Test connection: ssh -T git@github.com (or your git server)"
+            echo "  3. Verify repository URL: $KEYS_REPO"
+            return 1
+        fi
+
+        echo ""
+        echo "Options:"
+        echo "  1. Create a new empty repository on your git server first, then run init again"
+        echo "  2. Or initialize a local repository now (you can push later)"
+        echo ""
+        read -r -p "Initialize local repository? (y/n): " create_new
+        if [[ "$create_new" != "y" ]]; then
+            echo "Initialization cancelled"
+            echo ""
+            echo "Next steps:"
+            echo "  1. Create repository on your git server: $KEYS_REPO"
+            echo "  2. Run: keys-manage init"
+            return 1
+        fi
+
+        # Initialize new repository
+        mkdir -p "$REPO_DIR"
+        cd "$REPO_DIR"
+        git init
+        git remote add origin "$KEYS_REPO"
+
+        # Initialize transcrypt
+        echo ""
+        log_info "Initializing transcrypt encryption..."
+        init_transcrypt "$TRANSCRYPT_PASSWORD"
+
+        # Create initial metadata
+        init_metadata
+
+        # Initial commit
+        git add .gitattributes backup-metadata.json
+        git commit -m "Initial commit: setup transcrypt and metadata"
+
+        echo ""
+        log_success "New repository created and configured"
+        echo ""
+        echo "Next steps:"
+        echo "  1. Create the remote repository: $KEYS_REPO"
+        echo "  2. Run: git -C $REPO_DIR push -u origin main"
+        echo "  3. Run: keys-manage select  # Select files to backup"
+
+        log_event "Repository initialized (new)"
+        return 0
+    fi
+
+    # Repository cloned successfully
+    rm -f "$clone_error"
+    cd "$REPO_DIR"
+    log_success "Repository cloned"
+    echo ""
+
+    # Check for transcrypt configuration
+    if is_transcrypt_configured; then
+        log_info "Configuring transcrypt encryption..."
+        init_transcrypt "$TRANSCRYPT_PASSWORD"
+        log_success "Transcrypt configured"
+    else
+        log_note "Repository doesn't use transcrypt encryption"
+    fi
+
+    # Initialize metadata if needed
+    if [[ ! -f "$METADATA_FILE" ]]; then
+        echo ""
+        echo "Initializing metadata..."
+        init_metadata
+        git add backup-metadata.json
+        git commit -m "Initialize metadata v2"
+        safe_git_push || log_warn "Failed to push metadata (will retry on next backup)"
+    fi
+
+    echo ""
+    log_success "Repository initialized successfully"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Run: keys-manage select  # Select files to backup"
+    echo "  2. Run: keys-manage backup  # Backup selected files"
+
+    log_event "Repository initialized (clone)"
+}
+
+# Command: select - Interactive file selection with FZF (replaces list)
+cmd_select() {
+    require_cmd fzf || exit 1
+
+    log_section "Select files to backup with FZF"
+    echo "(Tab: multi-select, Ctrl-A: all, ESC: cancel)${NC}"
+    echo ""
+
+    # Show current list if exists
+    if [[ -f "$BACKUP_LIST" ]]; then
+        local current_count
+        current_count=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
+        log_warn "This will replace current backup list ($current_count files)"
+        echo ""
+    fi
+
+    local selected
+    selected=$(fzf_select_files "Select files to backup (will REPLACE current list)") || {
+        log_warn "Selection cancelled - no changes made"
+        return 1
+    }
+
+    if [[ -z "$selected" ]]; then
+        log_warn "No files selected - aborting"
+        return 1
+    fi
+
+    # Ensure local directory exists (doesn't need git yet)
+    ensure_local_dir
+
+    # Save selection (overwrites existing list)
+    echo "$selected" > "$BACKUP_LIST"
+
+    local count
+    count=$(echo "$selected" | wc -l | tr -d ' ')
+    log_success "Selected $count files (replaced backup list)"
+    echo ""
+    echo "$selected" | sed 's/^/  /'
+    echo ""
+
+    # Commit backup list if git repo exists
+    if [[ -d "$REPO_DIR/.git" ]]; then
+        cd "$REPO_DIR"
+        if git diff --quiet backup-list.txt 2>/dev/null; then
+            echo "No changes to backup list"
+        else
+            git add backup-list.txt
+            git commit -m "Update backup list - $count files"
+            if safe_git_push; then
+                log_event "Updated backup list: $count files"
+            else
+                log_warn "Committed locally but push failed (will retry on next backup)"
+            fi
+        fi
+    fi
+}
+
+# Command: add - Add files to backup list (append)
+cmd_add() {
+    require_cmd fzf || exit 1
+
+    # Ensure local directory exists (doesn't need git yet)
+    ensure_local_dir
+
+    # Load current list
+    local current_files=()
+    if [[ -f "$BACKUP_LIST" ]]; then
+        mapfile -t current_files < "$BACKUP_LIST"
+        log_section "Current backup list: ${#current_files[@]} files${NC}"
+        echo ""
+    else
+        log_section "No existing backup list - selecting from all files${NC}"
+        echo ""
+    fi
+
+    # Build list of files NOT in current backup list
+    local available_files=()
+    while IFS= read -r file; do
+        local is_in_list=false
+        for current_file in "${current_files[@]}"; do
+            if [[ "$file" == "$current_file" ]]; then
+                is_in_list=true
+                break
+            fi
+        done
+        [[ "$is_in_list" == false ]] && available_files+=("$file")
+    done < <(discover_key_files)
+
+    if [[ ${#available_files[@]} -eq 0 ]]; then
+        log_success "All SSH files are already in backup list"
+        return 0
+    fi
+
+    echo "Available files to add: ${#available_files[@]}${NC}"
+    echo "(Tab: multi-select, ESC: cancel)${NC}"
+    echo ""
+
+    # FZF to select files to add
+    local to_add
+    to_add=$(printf '%s\n' "${available_files[@]}" | fzf --multi \
+        --height=80% \
+        --border=rounded \
+        --header="Select files to ADD to backup list" \
+        --preview="$FILE_PREVIEW" \
+        --preview-window='right:50%:wrap:border-left' \
+        --bind='ctrl-a:select-all') || {
+        log_warn "Selection cancelled"
+        return 1
+    }
+
+    if [[ -z "$to_add" ]]; then
+        log_warn "No files selected"
+        return 1
+    fi
+
+    # Append to backup list
+    echo "$to_add" >> "$BACKUP_LIST"
+    sort -u "$BACKUP_LIST" -o "$BACKUP_LIST"  # Remove duplicates and sort
+
+    local added_count
+    added_count=$(echo "$to_add" | wc -l | tr -d ' ')
+    log_success "Added $added_count files to backup list"
+    echo ""
+    echo "$to_add" | sed 's/^/  /'
+    echo ""
+
+    # Commit changes if git repo exists
+    if [[ -d "$REPO_DIR/.git" ]]; then
+        cd "$REPO_DIR"
+        if git diff --quiet backup-list.txt 2>/dev/null; then
+            echo "No changes to commit"
+        else
+            git add backup-list.txt
+            git commit -m "Add $added_count files to backup list"
+            if safe_git_push; then
+                log_event "Added $added_count files to backup list"
+            else
+                log_warn "Committed locally but push failed (will retry on next backup)"
+            fi
+        fi
+    fi
+}
+
+# Command: remove - Remove files from backup list
+cmd_remove() {
+    require_cmd fzf || exit 1
+
+    # Ensure local directory exists (doesn't need git yet)
+    ensure_local_dir
+
+    if [[ ! -f "$BACKUP_LIST" ]] || [[ ! -s "$BACKUP_LIST" ]]; then
+        log_warn "Backup list is empty"
+        return 1
+    fi
+
+    local current_count
+    current_count=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
+    log_section "Current backup list: $current_count files${NC}"
+    echo "(Tab: multi-select, ESC: cancel)${NC}"
+    echo ""
+
+    # FZF to select files to remove
+    local to_remove
+    to_remove=$(cat "$BACKUP_LIST" | fzf --multi \
+        --height=80% \
+        --border=rounded \
+        --header="Select files to REMOVE from backup list" \
+        --preview="
+            file={}
+            echo -e \"\033[1;31m━━━ WILL BE REMOVED ━━━\033[0m\"
+            echo \"\"
+            echo \"Path: \$file\"
+            if [[ -f \"\$file\" ]]; then
+                echo \"Status: Exists\"
+            else
+                echo \"Status: Missing\"
+            fi
+        " \
+        --preview-window='right:50%:wrap' \
+        --bind='ctrl-a:select-all') || {
+        log_warn "Selection cancelled"
+        return 1
+    }
+
+    if [[ -z "$to_remove" ]]; then
+        log_warn "No files selected"
+        return 1
+    fi
+
+    # Confirm removal
+    local remove_count
+    remove_count=$(echo "$to_remove" | wc -l | tr -d ' ')
+    echo "Will remove $remove_count files from backup list:${NC}"
+    echo ""
+    echo "$to_remove" | sed 's/^/  /'
+    echo ""
+    read -r -p "Confirm removal? (y/N): " confirm
+    if [[ "$confirm" != "y" ]]; then
+        echo "Cancelled"
+        return 1
+    fi
+
+    # Remove from backup list
+    local tmp
+    tmp=$(mktemp)
+    while IFS= read -r line; do
+        local should_keep=true
+        while IFS= read -r remove_line; do
+            if [[ "$line" == "$remove_line" ]]; then
+                should_keep=false
+                break
+            fi
+        done <<< "$to_remove"
+        [[ "$should_keep" == true ]] && echo "$line"
+    done < "$BACKUP_LIST" > "$tmp"
+    mv "$tmp" "$BACKUP_LIST"
+
+    log_success "Removed $remove_count files from backup list"
+    echo ""
+
+    local remaining
+    remaining=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
+    echo "Remaining files: $remaining"
+    echo ""
+
+    # Commit changes if git repo exists
+    if [[ -d "$REPO_DIR/.git" ]]; then
+        cd "$REPO_DIR"
+        if git diff --quiet backup-list.txt 2>/dev/null; then
+            echo "No changes to commit"
+        else
+            git add backup-list.txt
+            git commit -m "Remove $remove_count files from backup list"
+            if safe_git_push; then
+                log_event "Removed $remove_count files from backup list"
+            else
+                log_warn "Committed locally but push failed (will retry on next backup)"
+            fi
+        fi
+    fi
+}
+
+# Command: backup - Backup changed files (always incremental)
+cmd_backup() {
+    local dry_run=false
+
+    # Parse flags
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --dry-run) dry_run=true; shift ;;
+            --verify) VERIFY_AFTER_BACKUP=true; shift ;;
+            *) shift ;;
+        esac
+    done
+
+    require_cmd git transcrypt jq || exit 1
+
+    log_header "Keys Backup (Incremental)"
+    echo ""
+
+    # Initialize repo
+    init_repo_if_needed || exit 1
+    cd "$REPO_DIR"
+
+    # Initialize metadata if needed
+    [[ ! -f "$METADATA_FILE" ]] && init_metadata
+
+    # Check backup list exists
+    if [[ ! -f "$BACKUP_LIST" ]]; then
+        log_warn "No backup list found"
+        echo ""
+        echo "First time setup: Select files to backup"
+        echo ""
+        cmd_select
+        [[ ! -f "$BACKUP_LIST" ]] && { echo "No files selected, aborting"; exit 0; }
+    fi
+
+    # Show backup list
+    echo "[1/5] Files in backup list:"
+    echo ""
+    while IFS= read -r file; do
+        local status
+        status=$(get_file_status "$file")
+        printf "  %b %s\n" "$status" "$(basename "$file")"
+    done < "$BACKUP_LIST"
+    echo ""
+
+    # Detect changes
+    echo "[2/5] Detecting changes..."
+    local changed_files=()
+    local total_files=0
+
+    while IFS= read -r file; do
+        ((total_files++))
+        if [[ ! -f "$file" ]]; then
+            echo "  ${STATUS_ERROR} Missing: $file"
+            continue
+        fi
+
+        if detect_changes "$file"; then
+            changed_files+=("$file")
+            echo "  ${STATUS_WARN} Changed: $(basename "$file")"
+        fi
+    done < "$BACKUP_LIST"
+
+    if [[ ${#changed_files[@]} -eq 0 ]]; then
+        log_success "No changes to backup (all files up to date)"
+        return 0
+    fi
+
+    echo ""
+    echo "Detected: ${#changed_files[@]} of $total_files files changed"
+    echo ""
+
+    if [[ "$dry_run" == true ]]; then
+        echo "Dry run mode - files that would be backed up:"
+        printf '%s\n' "${changed_files[@]}" | sed 's/^/  /'
+        return 0
+    fi
+
+    # Backup files
+    echo "[3/5] Backing up files..."
+    for file in "${changed_files[@]}"; do
+        if backup_file "$file"; then
+            update_file_metadata "$file"
+            echo "  ${STATUS_OK} $(basename "$file")"
+        else
+            echo "  ${STATUS_ERROR} Failed: $(basename "$file")"
+        fi
+    done
+
+    # Commit changes
+    echo ""
+    echo "[4/5] Committing to git..."
+    git add ssh-keys/ backup-list.txt backup-metadata.json
+
+    if git diff --cached --quiet; then
+        echo "  No changes to commit"
+    else
+        local commit_msg="Backup: ${#changed_files[@]} files - $(date '+%Y-%m-%d %H:%M:%S')"
+        git commit -m "$commit_msg"
+        log_event "$commit_msg"
+
+        echo ""
+        echo "[5/5] Pushing to remote..."
+        safe_git_push || {
+            log_warn "Backup committed locally but push failed"
+            echo ""
+            echo "Your backup is saved locally in: $REPO_DIR"
+            echo "You can push manually later: cd $REPO_DIR && git push"
+            return 1
+        }
+    fi
+
+    echo ""
+    log_header "✅ Backup Complete"
+    echo ""
+    echo "Backed up ${#changed_files[@]} changed files"
+    echo "Repository: $KEYS_REPO"
+    echo "Local copy: $REPO_DIR"
+    echo ""
+
+    # Verify if requested
+    if [[ "${VERIFY_AFTER_BACKUP:-false}" == true ]]; then
+        echo "Verifying backup..."
+        cmd_verify
+    fi
+}
+
+# Command: verify - Verify backup integrity
+cmd_verify() {
+    require_cmd git transcrypt || exit 1
+
+    [[ ! -d "$REPO_DIR/.git" ]] && {
+        log_error "Repository not initialized"
+        return 1
+    }
+
+    [[ ! -f "$BACKUP_LIST" ]] && {
+        log_error "No backup list found"
+        return 1
+    }
+
+    cd "$REPO_DIR"
+
+    log_info "Verifying backup integrity..."
+    echo ""
+
+    local errors=0
+    local verified=0
+
+    while IFS= read -r file; do
+        local filename
+        filename=$(basename "$file")
+
+        if [[ ! -f "$file" ]]; then
+            log_warn "Local file missing: $file"
+            continue
+        fi
+
+        if [[ ! -f "ssh-keys/$filename" ]]; then
+            log_fail "Not in backup: $filename"
+            ((errors++))
+            continue
+        fi
+
+        if verify_file "$file"; then
+            log_success "OK: $filename"
+            ((verified++))
+        else
+            log_fail "Mismatch: $filename"
+            ((errors++))
+        fi
+    done < "$BACKUP_LIST"
+
+    echo ""
+    if [[ $errors -eq 0 ]]; then
+        echo "✅ All $verified files verified${NC}"
+        return 0
+    else
+        echo "❌ $errors verification failures${NC}"
+        return 1
+    fi
+}
+
+# Command: history - Show backup history
+cmd_history() {
+    [[ ! -f "$HISTORY_LOG" ]] && {
+        echo "No history available"
+        return 0
+    }
+
+    log_section "Backup History"
+    echo ""
+    tail -n 20 "$HISTORY_LOG"
+    echo ""
+}
+
+# ===== Restore Commands (from keys-restore) =====
+
+# Command: restore - Restore files from backup
+cmd_restore() {
+    local commit=""
+    local dry_run=false
+    local no_backup=false
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --commit|-c)
+                commit="$2"
+                shift 2
+                ;;
+            --dry-run)
+                dry_run=true
+                shift
+                ;;
+            --no-backup)
+                no_backup=true
+                shift
+                ;;
+            *)
+                # First positional argument is commit
+                if [[ -z "$commit" ]]; then
+                    commit="$1"
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    require_cmd git transcrypt || exit 1
+
+    [[ ! -d "$REPO_DIR/.git" ]] && {
+        log_error "Repository not initialized"
+        echo "Run 'keys-manage init' first"
+        return 1
+    }
+
+    cd "$REPO_DIR"
+
+    [[ ! -f "$BACKUP_LIST" ]] && {
+        log_error "No backup list found"
+        return 1
+    }
+
+    # Select version with FZF if not specified
+    if [[ -z "$commit" ]]; then
+        if command -v fzf &>/dev/null; then
+            commit=$(fzf_pick_commit "Select version to restore") || {
+                log_warn "Restore cancelled"
+                return 0
+            }
+        else
+            commit="HEAD"
+            log_warn "fzf not found, using latest version"
+        fi
+    fi
+
+    # Validate commit
+    if ! git rev-parse "$commit" &>/dev/null; then
+        log_error "Invalid commit: $commit"
+        return 1
+    fi
+
+    local commit_short
+    commit_short=$(git rev-parse --short "$commit")
+
+    log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    log_section "SSH Keys Restore"
+    log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Restore from: $commit_short"
+    echo ""
+
+    # Show diff
+    echo "[1/5] Preview changes..."
+    echo ""
+    cmd_diff "$commit"
+
+    if [[ "$dry_run" == true ]]; then
+        echo ""
+        log_warn "Dry run mode - no files will be restored"
+        return 0
+    fi
+
+    # Confirmation
+    echo ""
+    read -r -p "Restore from $commit_short? (y/n): " confirm
+    if [[ "$confirm" != "y" ]]; then
+        echo "Restore cancelled"
+        return 0
+    fi
+
+    # Backup current state
+    local backup_dir="${HOME}/.ssh/backup-$(date +%Y%m%d-%H%M%S)"
+
+    if [[ "$no_backup" != true ]]; then
+        echo ""
+        echo "[2/5] Backing up current state..."
+        mkdir -p "$backup_dir"
+
+        local backed_up=0
+        while IFS= read -r file; do
+            if [[ -f "$file" ]]; then
+                cp "$file" "$backup_dir/"
+                [[ -f "$file.pub" ]] && cp "$file.pub" "$backup_dir/"
+                ((backed_up++))
+            fi
+        done < "$BACKUP_LIST"
+
+        log_success "Backed up $backed_up files to: $backup_dir"
+    else
+        echo ""
+        log_warn "⚠ Skipping current state backup (--no-backup)"
+    fi
+
+    # Checkout backup version
+    echo ""
+    echo "[3/5] Checking out backup version..."
+    git checkout "$commit" -- ssh-keys/ 2>/dev/null || {
+        log_error "Failed to checkout backup version"
+        return 1
+    }
+
+    # Restore files
+    echo ""
+    echo "[4/5] Restoring SSH keys..."
+    mkdir -p ~/.ssh
+    chmod 700 ~/.ssh
+
+    local restored_count=0
+    local failed_count=0
+
+    while IFS= read -r file; do
+        local filename
+        filename=$(basename "$file")
+        local source_file="ssh-keys/$filename"
+
+        if [[ -f "$source_file" ]]; then
+            # Restore private key
+            cp "$source_file" "$file"
+            chmod 600 "$file"
+
+            # Restore public key if exists
+            if [[ -f "$source_file.pub" ]]; then
+                cp "$source_file.pub" "$file.pub"
+                chmod 644 "$file.pub"
+            fi
+
+            echo "  ${STATUS_OK} Restored: $filename"
+            ((restored_count++))
+        else
+            echo "  ${STATUS_ERROR} Not found in backup: $filename"
+            ((failed_count++))
+        fi
+    done < "$BACKUP_LIST"
+
+    # Cleanup
+    echo ""
+    echo "[5/5] Cleanup..."
+    git checkout HEAD -- ssh-keys/ 2>/dev/null || true
+
+    echo ""
+    log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "✅ Restore Complete${NC}"
+    log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Restored $restored_count files"
+    [[ $failed_count -gt 0 ]] && echo "Failed: $failed_count files"
+
+    if [[ "$no_backup" != true ]]; then
+        echo ""
+        log_info "Rollback available:"
+        echo "  Current state saved to: $backup_dir"
+        echo "  To rollback: cp $backup_dir/* ~/.ssh/"
+    fi
+
+    echo ""
+    log_event "Restored from commit $commit_short: $restored_count files"
+}
+
+# Command: diff - Preview changes between current and backup
+cmd_diff() {
+    local commit="${1:-HEAD}"
+
+    [[ ! -d "$REPO_DIR/.git" ]] && {
+        log_error "Repository not initialized"
+        return 1
+    }
+
+    [[ ! -f "$BACKUP_LIST" ]] && {
+        log_error "No backup list found"
+        return 1
+    }
+
+    cd "$REPO_DIR"
+
+    # Validate commit
+    if ! git rev-parse "$commit" &>/dev/null; then
+        log_error "Invalid commit: $commit"
+        return 1
+    fi
+
+    local commit_short
+    commit_short=$(git rev-parse --short "$commit")
+
+    log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    log_section "Diff: Current vs $commit_short${NC}"
+    log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+
+    local has_diff=false
+
+    while IFS= read -r file; do
+        local filename
+        filename=$(basename "$file")
+        local backup_file="ssh-keys/$filename"
+
+        # Check if file exists in backup
+        if ! git show "$commit:$backup_file" &>/dev/null; then
+            log_warn "Not in backup version: $filename"
+            continue
+        fi
+
+        # Compare hashes
+        local local_hash backup_hash
+
+        if [[ -f "$file" ]]; then
+            local_hash=$(calc_checksum "$file" | cut -c1-16)
+        else
+            local_hash="missing"
+        fi
+
+        backup_hash=$(git show "$commit:$backup_file" | calc_checksum | cut -c1-16)
+
+        if [[ "$local_hash" == "$backup_hash" ]]; then
+            log_success "No changes: $filename"
+        else
+            log_warn "Changed: $filename"
+            echo "  Local:  $local_hash..."
+            echo "  Backup: $backup_hash..."
+            has_diff=true
+
+            # Show detailed diff for text files
+            if [[ -f "$file" ]] && file "$file" | grep -q "text"; then
+                echo ""
+                echo "  Diff preview:"
+                git show "$commit:$backup_file" > "/tmp/backup-$filename"
+                diff -u "$file" "/tmp/backup-$filename" 2>/dev/null | head -n 20 | sed 's/^/  /' || true
+                rm -f "/tmp/backup-$filename"
+                echo ""
+            fi
+        fi
+    done < "$BACKUP_LIST"
+
+    echo ""
+    if [[ "$has_diff" == true ]]; then
+        log_warn "→ Files differ from backup version"
+        echo -e "${GRAY}  To restore: keys-manage restore --commit $commit_short${NC}"
+    else
+        echo "→ All files match backup version${NC}"
+    fi
+    echo ""
+}
+
+# Command: versions - Show available versions with FZF
+cmd_versions() {
+    require_cmd fzf || exit 1
+
+    [[ ! -d "$REPO_DIR/.git" ]] && {
+        log_error "Repository not initialized"
+        return 1
+    }
+
+    cd "$REPO_DIR"
+
+    log_section "Select backup version to view"
+    echo ""
+
+    local selected
+    selected=$(fzf_pick_commit "Select backup version") || {
+        log_warn "Selection cancelled"
+        return 0
+    }
+
+    if [[ -n "$selected" ]]; then
+        echo ""
+        log_section "Selected commit: $selected${NC}"
+        echo ""
+        git show --stat "$selected" -- ssh-keys/
+        echo ""
+        echo "To restore: keys-manage restore --commit $selected${NC}"
+        echo "To preview: keys-manage diff $selected${NC}"
+    fi
+}
+
+# Command: validate - Validate backup integrity
+cmd_validate() {
+    require_cmd git transcrypt || exit 1
+
+    [[ ! -d "$REPO_DIR/.git" ]] && {
+        log_error "Repository not initialized"
+        return 1
+    }
+
+    cd "$REPO_DIR"
+
+    log_section "Validating backup repository..."
+    echo ""
+
+    # Check git repository
+    if git fsck --quiet 2>/dev/null; then
+        log_success "Git repository integrity OK"
+    else
+        log_fail "Git repository has errors"
+        return 1
+    fi
+
+    # Check transcrypt
+    if is_transcrypt_configured; then
+        log_success "Transcrypt encryption configured"
+    else
+        log_fail "Transcrypt not configured"
+        return 1
+    fi
+
+    # Check remote connectivity
+    if git ls-remote &>/dev/null; then
+        log_success "Remote repository accessible"
+    else
+        log_warn "Cannot reach remote repository"
+    fi
+
+    # Check backup files exist
+    if [[ -d ssh-keys ]] && [[ -n "$(ls -A ssh-keys 2>/dev/null)" ]]; then
+        local file_count
+        file_count=$(find ssh-keys -type f | wc -l | tr -d ' ')
+        log_success "Backup contains $file_count files"
+    else
+        log_warn "No backup files found"
+    fi
+
+    # Check metadata
+    if [[ -f "$METADATA_FILE" ]]; then
+        if jq empty "$METADATA_FILE" 2>/dev/null; then
+            log_success "Metadata format valid"
+        else
+            log_fail "Metadata format invalid"
+            return 1
+        fi
+    else
+        log_warn "No metadata file (legacy v1)"
+    fi
+
+    echo ""
+    echo "✅ Validation complete${NC}"
+    echo ""
+}
+
+# ===== Unified Status Command =====
+
+# Command: status - Unified backup and restore status
+cmd_status() {
+    require_cmd git transcrypt jq || exit 1
+
+    log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    log_section "Keys Manager Status"
+    log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+
+    # Repository status
+    if [[ -d "$REPO_DIR/.git" ]]; then
+        log_success "Repository: ${REPO_DIR}"
+        cd "$REPO_DIR"
+
+        local remote_url
+        remote_url=$(git remote get-url origin 2>/dev/null || echo "N/A")
+        echo "  Remote: $remote_url"
+
+        local current_commit current_msg
+        current_commit=$(git rev-parse --short HEAD 2>/dev/null || echo "N/A")
+        current_msg=$(git log -1 --format="%s (%ar)" 2>/dev/null || echo "N/A")
+        echo "  Current: $current_commit - $current_msg"
+
+        local backup_count
+        backup_count=$(git rev-list --count HEAD -- ssh-keys/ 2>/dev/null || echo "0")
+        echo "  Total backups: $backup_count"
+    else
+        log_warn "Repository not initialized"
+        echo "  Run 'keys-manage init' to initialize"
+        return 0
+    fi
+
+    # Metadata status
+    if [[ -f "$METADATA_FILE" ]]; then
+        local version file_count
+        version=$(jq -r '.version // 1' "$METADATA_FILE")
+        file_count=$(jq '.files | length' "$METADATA_FILE")
+        log_success "Metadata: v$version ($file_count files tracked)"
+    else
+        log_warn "Metadata not initialized (legacy v1)"
+    fi
+
+    # Backup list
+    if [[ -f "$BACKUP_LIST" ]]; then
+        local selected_count
+        selected_count=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
+        log_success "Backup list: $selected_count files selected"
+    else
+        log_warn "No backup list"
+        return 0
+    fi
+
+    # File status (combined backup and restore view)
+    echo ""
+    log_section "File Status (Backup & Restore):"
+    echo ""
+
+    local total=0 unchanged=0 modified=0 new=0 missing=0
+
+    while IFS= read -r file; do
+        ((total++))
+        local status
+        status=$(get_file_status "$file")
+
+        if [[ ! -f "$file" ]]; then
+            echo "  ${STATUS_REMOVED} Missing locally: $(basename "$file")"
+            ((missing++))
+        elif [[ "$status" == *"✓"* ]]; then
+            echo "  ${STATUS_OK} $(basename "$file")"
+            ((unchanged++))
+        elif [[ "$status" == *"⚠"* ]]; then
+            echo "  ${STATUS_WARN} Modified: $(basename "$file")"
+            ((modified++))
+        else
+            echo "  ${STATUS_NEW} New: $(basename "$file")"
+            ((new++))
+        fi
+    done < "$BACKUP_LIST"
+
+    echo ""
+    echo "Summary: $total total, $unchanged unchanged, $modified modified, $new new, $missing missing"
+    echo ""
+
+    if [[ $modified -gt 0 ]] || [[ $new -gt 0 ]]; then
+        echo "  → Run 'keys-manage backup' to backup changes"
+    elif [[ $missing -gt 0 ]]; then
+        echo "  → Run 'keys-manage restore' to restore missing files"
+    else
+        echo "  → All files up to date"
+    fi
+    echo ""
+}
+
+# ===== Interactive Menu =====
+
+cmd_menu() {
+    require_cmd fzf || {
+        log_warn "FZF not found, showing status instead"
+        cmd_status
+        return 0
+    }
+
+    while true; do
+        local selected
+        selected=$(cat << 'MENU' | fzf --ansi \
+            --height=70% \
+            --border=rounded \
+            --header="SSH Keys Manager" \
+            --preview='
+                cmd=$(echo {} | awk "{print \$1}")
+                echo -e "\033[1;34m━━━ $cmd ━━━\033[0m"
+                echo ""
+                case "$cmd" in
+                    init) echo "Initialize encrypted backup repository" ;;
+                    select) echo "Select files to backup (REPLACE list)" ;;
+                    add) echo "Add files to backup list (APPEND)" ;;
+                    remove) echo "Remove files from backup list" ;;
+                    backup) echo "Backup changed files (incremental)" ;;
+                    verify) echo "Verify backup integrity (checksums)" ;;
+                    history) echo "Show backup event history" ;;
+                    restore) echo "Restore files from backup (FZF picker)" ;;
+                    diff) echo "Preview changes before restore" ;;
+                    versions) echo "Browse backup versions with FZF" ;;
+                    validate) echo "Validate repository integrity" ;;
+                    status) echo "Show backup and restore status" ;;
+                esac
+                echo ""
+                echo -e "\033[1;34m━━━ Quick Status ━━━\033[0m"
+                echo ""
+                if [[ -d "$HOME/.local/share/keys-backup/.git" ]]; then
+                    cd "$HOME/.local/share/keys-backup"
+                    echo "Repository: $(git remote get-url origin 2>/dev/null || echo "N/A")"
+                    echo "Last commit: $(git log -1 --format="%ar" 2>/dev/null || echo "N/A")"
+                    if [[ -f "$HOME/.local/share/keys-backup/backup-list.txt" ]]; then
+                        echo "Files: $(wc -l < "$HOME/.local/share/keys-backup/backup-list.txt" | tr -d " ") selected"
+                    fi
+                else
+                    echo "⚠ Not initialized"
+                    echo "Run init to initialize"
+                fi
+            ' \
+            --preview-window='right:50%:wrap' \
+            --preview-label="[ Keys Manager ]"
+init           Initialize backup repository
+select         Select files (replace list)
+add            Add files (append to list)
+remove         Remove files from list
+backup         Backup changed files
+verify         Verify backup integrity
+history        Show backup history
+restore        Restore from backup
+diff           Preview changes
+versions       Browse backup versions
+validate       Validate repository
+status         Show current status
+MENU
+        ) || return 0
+
+        local cmd
+        cmd=$(echo "$selected" | awk '{print $1}')
+
+        echo ""
+        case "$cmd" in
+            init) cmd_init ;;
+            select) cmd_select ;;
+            add) cmd_add ;;
+            remove) cmd_remove ;;
+            backup) cmd_backup ;;
+            verify) cmd_verify ;;
+            history) cmd_history ;;
+            restore) cmd_restore ;;
+            diff) cmd_diff ;;
+            versions) cmd_versions ;;
+            validate) cmd_validate ;;
+            status) cmd_status ;;
+            *) echo "Unknown command: $cmd" ;;
+        esac
+
+        echo ""
+        read -r -p "Press Enter to continue..." || return 0
+    done
+}
+
+# ===== Main Entry Point =====
+
+main() {
+    # Global options
+    TRANSCRYPT_PASSWORD=""
+
+    # Parse global options first
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            -p|--password)
+                TRANSCRYPT_PASSWORD="$2"
+                shift 2
+                ;;
+            *)
+                # Not a global option, assume it's a command
+                break
+                ;;
+        esac
+    done
+
+    # Extract command after global options
+    local cmd="${1:-menu}"
+    shift || true
+
+    # Route commands
+    case "$cmd" in
+        # Backup commands
+        init) cmd_init "$@" ;;
+        select) cmd_select "$@" ;;
+        add) cmd_add "$@" ;;
+        remove) cmd_remove "$@" ;;
+        backup) cmd_backup "$@" ;;
+        verify) cmd_verify "$@" ;;
+        history) cmd_history "$@" ;;
+
+        # Restore commands
+        restore) cmd_restore "$@" ;;
+        diff) cmd_diff "$@" ;;
+        versions|list-versions) cmd_versions "$@" ;;
+        validate) cmd_validate "$@" ;;
+
+        # Unified commands
+        status) cmd_status "$@" ;;
+        menu) cmd_menu "$@" ;;
+
+        *)
+            log_error "Unknown command: $cmd"
+            echo "Run 'keys-manage --help' for usage"
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"

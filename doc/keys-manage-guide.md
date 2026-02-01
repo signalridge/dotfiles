@@ -1,0 +1,674 @@
+# Keys Manager Guide
+
+Unified command for managing SSH/GPG/Age keys with encrypted git backup.
+
+## Overview
+
+`keys-manage` is a unified tool that combines backup and restore functionality for your sensitive keys. It uses:
+
+- **Transcrypt**: AES-256-CBC encryption for git repositories
+- **FZF**: Interactive file selection and version browsing
+- **Git**: Version control and remote backup
+- **Incremental backups**: Only changed files are backed up
+
+**Replaces**: `keys-backup` and `keys-restore` commands
+
+## Quick Start
+
+### First Time Setup
+
+```bash
+# 1. Initialize encrypted repository
+keys-manage init
+
+# 2. Select files to backup
+keys-manage select
+
+# 3. Backup selected files
+keys-manage backup
+
+# 4. Verify backup integrity
+keys-manage verify
+```
+
+### Interactive Menu (Recommended)
+
+```bash
+keys-manage menu
+# Or just:
+keys-manage
+```
+
+The interactive menu provides guided workflows with rich previews.
+
+## Commands
+
+### Backup Commands
+
+#### `init` - Initialize Repository
+
+Initialize or setup the encrypted backup repository.
+
+```bash
+keys-manage init                    # Interactive password prompt
+keys-manage init -p <password>      # Provide password
+```
+
+**First time setup:**
+
+1. Clones remote repository (if exists)
+2. Or creates new local repository
+3. Configures transcrypt encryption
+4. Initializes metadata
+
+**Subsequent runs:**
+
+- Unlocks transcrypt if needed
+- Syncs with remote
+
+#### `select` - Select Files (Replace)
+
+Select files to backup using FZF multi-select. **Replaces** current backup list.
+
+```bash
+keys-manage select
+```
+
+**Features:**
+
+- Auto-discovers keys in `~/.ssh`, `~/.gnupg`, `~/.config/age`
+- Rich preview (file metadata, key type, content)
+- Status indicators (✓ ⚠ ⊕ ⊗)
+- Multi-select (Tab/Ctrl-A)
+- Custom file paths via "⊕ Add custom file..."
+
+**Keybindings:**
+
+- `Tab`: Toggle selection
+- `Ctrl-A`: Select all
+- `Ctrl-D`: Deselect all
+- `Ctrl-R`: Reload list
+- `Ctrl-/`: Toggle preview
+- `ESC`: Cancel
+
+#### `add` - Add Files (Append)
+
+Add files to backup list without replacing existing selections.
+
+```bash
+keys-manage add
+```
+
+**Features:**
+
+- Shows only files NOT in current list
+- Appends to existing list
+- Removes duplicates automatically
+
+#### `remove` - Remove Files
+
+Remove files from backup list.
+
+```bash
+keys-manage remove
+```
+
+**Features:**
+
+- Shows current backup list
+- Multi-select for removal
+- Confirmation prompt before removing
+
+#### `backup` - Incremental Backup
+
+Backup changed files to encrypted repository.
+
+```bash
+keys-manage backup                  # Backup changed files
+keys-manage backup --dry-run        # Preview without backing up
+keys-manage backup --verify         # Verify after backup
+```
+
+**Process:**
+
+1. Detects changes (SHA256 checksums)
+2. Backs up only modified files
+3. Commits to git
+4. Pushes to remote
+
+**Features:**
+
+- Incremental (only changed files)
+- Preserves permissions (600 for private keys, 644 for public)
+- Automatic metadata updates
+- Git commit with timestamp
+
+#### `verify` - Verify Integrity
+
+Verify backup integrity using checksums.
+
+```bash
+keys-manage verify
+```
+
+Compares SHA256 checksums of local files vs backup.
+
+#### `history` - Show Event Log
+
+Show last 20 backup events.
+
+```bash
+keys-manage history
+```
+
+### Restore Commands
+
+#### `restore` - Restore Files
+
+Restore files from backup with safety features.
+
+```bash
+keys-manage restore                 # FZF version picker
+keys-manage restore HEAD~1          # Restore from specific commit
+keys-manage restore --dry-run       # Preview without restoring
+keys-manage restore --no-backup     # Skip safety backup (dangerous)
+```
+
+**Process:**
+
+1. Preview changes (diff)
+2. Confirmation prompt
+3. Backup current state to `~/.ssh/backup-YYYYMMDD-HHMMSS/`
+4. Restore files from backup
+5. Set correct permissions
+
+**Safety Features:**
+
+- Auto-backup current state (can be disabled with `--no-backup`)
+- Diff preview before restore
+- Confirmation prompt
+- Rollback instructions
+
+#### `diff` - Preview Changes
+
+Preview changes between current and backup version.
+
+```bash
+keys-manage diff                    # Compare with HEAD
+keys-manage diff HEAD~1             # Compare with previous version
+keys-manage diff abc123             # Compare with specific commit
+```
+
+Shows:
+
+- File-by-file comparison
+- SHA256 hash differences
+- Text diff for readable files
+
+#### `versions` - Browse Versions
+
+Browse backup versions with FZF.
+
+```bash
+keys-manage versions
+```
+
+**Features:**
+
+- FZF commit picker
+- Rich preview (git show --stat)
+- Shows all commits affecting ssh-keys/
+
+#### `validate` - Validate Repository
+
+Validate repository integrity.
+
+```bash
+keys-manage validate
+```
+
+**Checks:**
+
+- Git repository integrity (`git fsck`)
+- Transcrypt configuration
+- Remote connectivity
+- Backup file count
+- Metadata format
+
+### Common Commands
+
+#### `status` - Unified Status
+
+Show backup and restore status.
+
+```bash
+keys-manage status
+```
+
+**Displays:**
+
+- Repository info (URL, current commit, total backups)
+- Metadata version and file count
+- File status (unchanged, modified, new, missing)
+- Sync recommendations
+
+**Status Indicators:**
+
+- ✓ Up to date (backed up, no changes)
+- ⚠ Modified (backed up but changed since)
+- ⊕ New file (not in backup list)
+- ⊗ Removed (was backed up, now excluded)
+
+#### `menu` - Interactive Menu
+
+Launch interactive TUI menu.
+
+```bash
+keys-manage menu
+# Or just:
+keys-manage
+```
+
+## Options
+
+### Global Options
+
+```bash
+-p, --password PWD    Transcrypt password (otherwise interactive)
+-h, --help           Show help message
+```
+
+### Command-Specific Options
+
+```bash
+# backup
+--dry-run            Preview without backing up
+--verify             Verify after backup
+
+# restore
+--commit HASH        Restore from specific commit
+--dry-run            Preview without restoring
+--no-backup          Skip safety backup (dangerous)
+```
+
+## Workflows
+
+### Daily Backup
+
+```bash
+# Quick check
+keys-manage status
+
+# Backup if changes detected
+keys-manage backup
+
+# Verify
+keys-manage verify
+```
+
+### Restore to New Machine
+
+```bash
+# 1. Initialize (clone repository)
+keys-manage init -p <password>
+
+# 2. Check status
+keys-manage status
+
+# 3. Restore latest version
+keys-manage restore
+
+# Or restore specific version
+keys-manage versions        # Browse versions
+keys-manage restore abc123  # Restore selected version
+```
+
+### Browse History
+
+```bash
+# View backup history
+keys-manage history
+
+# Browse all versions
+keys-manage versions
+
+# Preview changes from specific version
+keys-manage diff HEAD~5
+```
+
+### Rollback After Restore
+
+If you need to rollback after restore:
+
+```bash
+# Current state was backed up to:
+ls ~/.ssh/backup-YYYYMMDD-HHMMSS/
+
+# Rollback:
+cp ~/.ssh/backup-YYYYMMDD-HHMMSS/* ~/.ssh/
+```
+
+## File Discovery
+
+Keys Manager auto-discovers files from:
+
+### SSH Keys (`~/.ssh`)
+
+- Private keys (RSA, ECDSA, Ed25519, DSA, OpenSSH format)
+- Excludes: `*.pub`, `known_hosts*`, `authorized_keys*`, `*.lock`
+
+### GPG Keys (`~/.gnupg`)
+
+- Private keyring files
+- Trust database
+
+### Age Keys (`~/.config/age`)
+
+- Age encryption keys
+
+### Custom Paths
+
+Use "⊕ Add custom file..." option in FZF menu to add files from any location.
+
+## Repository Structure
+
+```
+~/.local/share/keys-backup/
+├── .git/                       # Git repository
+│   └── crypt/
+│       └── transcrypt          # Transcrypt config (NOT .transcrypt/cipher!)
+├── .gitattributes              # Encryption patterns
+├── ssh-keys/                   # Encrypted key backups
+│   ├── id_ed25519
+│   ├── id_ed25519.pub
+│   └── ...
+├── backup-list.txt             # Selected files (encrypted)
+├── backup-metadata.json        # Metadata v2 (encrypted)
+└── backup-history.log          # Event log (encrypted)
+```
+
+## Metadata Format (v2)
+
+```json
+{
+  "version": 2,
+  "filters": {
+    "include_patterns": ["*"],
+    "exclude_patterns": ["*.pub", "known_hosts*", "authorized_keys*"],
+    "custom_paths": []
+  },
+  "files": {
+    "/home/user/.ssh/id_ed25519": {
+      "sha256": "abc123...",
+      "size": 464,
+      "mtime": 1234567890,
+      "last_backup": "2025-01-15T10:30:00Z",
+      "backup_count": 5
+    }
+  }
+}
+```
+
+## Configuration
+
+Configure in `~/.local/share/chezmoi/.chezmoidata/keys.yaml`:
+
+```yaml
+keysRepository: git@github.com:username/keys-backup.git
+```
+
+Or in `~/.config/chezmoi/chezmoi.toml`:
+
+```toml
+[data]
+    keysRepository = "git@github.com:username/keys-backup.git"
+```
+
+## Transcrypt Path Fix
+
+**IMPORTANT**: This version uses the correct transcrypt path `.git/crypt/transcrypt` (not `.transcrypt/cipher`).
+
+The old path was incorrect and caused:
+
+- Repeated transcrypt initialization
+- Overwritten .gitattributes
+- Failed transcrypt detection
+
+## Troubleshooting
+
+### Repository not initialized
+
+```bash
+keys-manage init
+```
+
+### Transcrypt not configured
+
+```bash
+cd ~/.local/share/keys-backup
+rm -rf .git/crypt
+keys-manage init -p <password>
+```
+
+### Push failed (non-fast-forward)
+
+```bash
+cd ~/.local/share/keys-backup
+git pull --rebase
+git push
+```
+
+### Authentication failed
+
+```bash
+# Test SSH connection
+ssh -T git@github.com
+
+# Add SSH key
+ssh-add ~/.ssh/your_key
+
+# Verify repository URL
+git -C ~/.local/share/keys-backup remote get-url origin
+```
+
+### Cannot reach remote (offline)
+
+Keys Manager works offline:
+
+- Backups are saved locally
+- Push will retry on next backup
+- Status shows "working offline"
+
+### Verification failures
+
+```bash
+# Check git integrity
+cd ~/.local/share/keys-backup
+git fsck
+
+# Validate repository
+keys-manage validate
+
+# Re-backup specific files
+keys-manage backup
+```
+
+## Migration from Old Commands
+
+If you were using `keys-backup` and `keys-restore`:
+
+### Command Mapping
+
+| Old Command                  | New Command            |
+| ---------------------------- | ---------------------- |
+| `keys-backup init`           | `keys-manage init`     |
+| `keys-backup select`         | `keys-manage select`   |
+| `keys-backup add`            | `keys-manage add`      |
+| `keys-backup remove`         | `keys-manage remove`   |
+| `keys-backup backup`         | `keys-manage backup`   |
+| `keys-backup verify`         | `keys-manage verify`   |
+| `keys-backup history`        | `keys-manage history`  |
+| `keys-backup status`         | `keys-manage status`   |
+| `keys-restore restore`       | `keys-manage restore`  |
+| `keys-restore diff`          | `keys-manage diff`     |
+| `keys-restore list-versions` | `keys-manage versions` |
+| `keys-restore validate`      | `keys-manage validate` |
+| `keys-restore status`        | `keys-manage status`   |
+
+### No Changes Needed
+
+Your existing repository works without changes:
+
+- Backup list preserved
+- Metadata compatible
+- Encryption unchanged
+- Git history intact
+
+Just start using `keys-manage` instead of old commands.
+
+## Security
+
+- **Encryption**: AES-256-CBC via transcrypt
+- **Permissions**: 600 for private keys, 644 for public keys, 700 for ~/.ssh
+- **Git**: No plaintext keys ever committed
+- **Safety**: Auto-backup before restore
+- **Verification**: SHA256 checksums
+
+## Best Practices
+
+1. **Regular backups**: Run `keys-manage backup` after generating new keys
+2. **Verify backups**: Run `keys-manage verify` periodically
+3. **Test restores**: Occasionally test restore on a new machine
+4. **Secure password**: Use strong transcrypt password
+5. **Private repository**: Keep backup repository private
+6. **SSH keys**: Use SSH keys for git authentication (not HTTPS)
+7. **Backup safety backups**: The restore command creates safety backups in `~/.ssh/backup-*` - keep these until verified
+
+## Examples
+
+### Example 1: First Time Setup
+
+```bash
+# Initialize repository
+$ keys-manage init
+Enter password for encryption: ********
+Repository cloned
+Transcrypt configured
+Repository initialized successfully
+
+# Select files to backup
+$ keys-manage select
+# (FZF menu appears, select files with Tab, press Enter)
+Selected 3 files (replaced backup list)
+  /home/user/.ssh/id_ed25519
+  /home/user/.ssh/id_rsa
+  /home/user/.gnupg/secring.gpg
+
+# Backup selected files
+$ keys-manage backup
+[1/5] Files in backup list:
+  ⊕ id_ed25519
+  ⊕ id_rsa
+  ⊕ secring.gpg
+
+[2/5] Detecting changes...
+  ⚠ Changed: id_ed25519
+  ⚠ Changed: id_rsa
+  ⚠ Changed: secring.gpg
+
+Detected: 3 of 3 files changed
+
+[3/5] Backing up files...
+  ✓ id_ed25519
+  ✓ id_rsa
+  ✓ secring.gpg
+
+[4/5] Committing to git...
+
+[5/5] Pushing to remote...
+✓
+
+✅ Backup Complete
+
+Backed up 3 changed files
+```
+
+### Example 2: Restore on New Machine
+
+```bash
+# Initialize (clone repository)
+$ keys-manage init -p mypassword
+Repository cloned
+Transcrypt configured
+
+# Check status
+$ keys-manage status
+Repository: /home/user/.local/share/keys-backup
+  Remote: git@github.com:user/keys-backup.git
+  Current: abc1234 - Backup: 3 files (2 hours ago)
+  Total backups: 15
+
+# Restore with FZF version picker
+$ keys-manage restore
+# (FZF menu appears, select version, press Enter)
+
+[1/5] Preview changes...
+Changed: id_ed25519
+  Local:  missing...
+  Backup: abc123...
+
+[2/5] Backing up current state...
+Backed up 0 files to: /home/user/.ssh/backup-20250115-103000
+
+Restore from abc1234? (y/n): y
+
+[3/5] Checking out backup version...
+
+[4/5] Restoring SSH keys...
+  ✓ Restored: id_ed25519
+  ✓ Restored: id_rsa
+  ✓ Restored: secring.gpg
+
+[5/5] Cleanup...
+
+✅ Restore Complete
+
+Restored 3 files
+```
+
+### Example 3: Browse and Restore Specific Version
+
+```bash
+# Browse all versions
+$ keys-manage versions
+# (FZF menu shows git log with previews)
+# Select commit, press Enter
+
+Selected commit: abc1234
+
+# Preview changes from that version
+$ keys-manage diff abc1234
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Diff: Current vs abc1234
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Changed: id_ed25519
+  Local:  def456...
+  Backup: abc123...
+
+  Diff preview:
+  (shows unified diff)
+
+# Restore that version
+$ keys-manage restore abc1234
+```
+
+## See Also
+
+- [Transcrypt](https://github.com/elasticdog/transcrypt) - Transparent git encryption
+- [FZF](https://github.com/junegunn/fzf) - Command-line fuzzy finder
+- Chezmoi documentation for configuration
+
+## Support
+
+Report issues at: https://github.com/anthropics/claude-code/issues
