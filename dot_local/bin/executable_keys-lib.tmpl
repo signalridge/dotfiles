@@ -224,7 +224,7 @@ build_file_list_with_status() {
         local status
         status=$(get_file_status "$file")
         printf "%b %s\n" "$status" "$file"
-    done < <(discover_ssh_files)
+    done < <(discover_key_files)
 }
 
 # FZF file preview script
