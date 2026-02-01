@@ -57,6 +57,14 @@ encryption = "age"
 {{-   $claudeProviderAccount = .claudeProvider -}}{{/* backward compatibility */}}
 {{- end -}}
 
+{{/* gopass password store repository */}}
+{{- $gopassRepository := "git@github.com:signalridge/password-store.git" -}}
+{{- if hasKey . "gopassRepository" -}}
+{{-   $gopassRepository = .gopassRepository -}}
+{{- else if and (stdinIsATTY) $useEncryption -}}
+{{-   $gopassRepository = promptStringOnce . "gopassRepository" "gopass repository URL (e.g. git@github.com:username/password-store.git)" -}}
+{{- end -}}
+
 {{/* timezone: prefer local config, fallback to ip-api.com */}}
 {{- $timezone := "" -}}
 
@@ -94,6 +102,7 @@ homeWifiSSIDs = {{ $homeWifiSSIDs | quote }}
 osid = {{ $osID | quote }}
 timezone = {{ $timezone | quote }}
 claudeProviderAccount = {{ $claudeProviderAccount | quote }}
+gopassRepository = {{ $gopassRepository | quote }}
 
 [edit]
 command = "code"

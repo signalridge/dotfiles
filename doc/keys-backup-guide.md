@@ -195,6 +195,7 @@ Interactive file selection with rich preview:
 ```
 
 **Status Indicators:**
+
 - `✓` Green - Up to date (backed up, no changes)
 - `⚠` Yellow - Modified (backed up but changed since)
 - `⊕` Cyan - New file (not in backup list)
@@ -202,6 +203,7 @@ Interactive file selection with rich preview:
 - `○` Gray - Available (not selected)
 
 **Keyboard Shortcuts:**
+
 - `Tab` - Multi-select
 - `Ctrl-A` - Select all
 - `Ctrl-D` - Deselect all
@@ -224,6 +226,7 @@ keys-backup backup --dry-run
 ```
 
 Change detection:
+
 ```
 [2/5] Detecting changes...
   ⚠ Changed: config
@@ -281,17 +284,20 @@ keys-restore diff HEAD~1
 ### 5. Safety Features
 
 **Auto-backup before restore:**
+
 ```
 [2/5] Backing up current state...
 ✓ Backed up 3 files to: ~/.ssh/backup-20240115-120000
 ```
 
 **Confirmation prompt:**
+
 ```
 Restore from abc123? (y/n):
 ```
 
 **Rollback instructions:**
+
 ```
 Rollback available:
   Current state saved to: ~/.ssh/backup-20240115-120000
@@ -397,6 +403,7 @@ keys-backup verify
 The migration tool automatically upgrades legacy backups to v2 format with metadata support.
 
 **Before Migration:**
+
 ```bash
 # Check current status
 cd ~/.local/share/keys-backup
@@ -404,11 +411,13 @@ git log --oneline | head -5
 ```
 
 **Run Migration:**
+
 ```bash
 keys-migrate
 ```
 
 **What Happens:**
+
 1. Creates backup branch `pre-migration-backup-YYYYMMDD-HHMMSS`
 2. Generates `backup-metadata.json` from existing backups
 3. Calculates checksums for all backed up files
@@ -417,6 +426,7 @@ keys-migrate
 6. Commits and pushes changes
 
 **After Migration:**
+
 ```bash
 # Verify migration
 keys-backup status
@@ -612,6 +622,7 @@ keysRepository: "git@github.com:user/keys-backup.git"
 ### File Discovery
 
 Uses `find` with smart filtering:
+
 - Scans `~/.ssh` directory
 - Excludes: `*.pub`, `known_hosts*`, `authorized_keys*`
 - Detects key types: RSA, Ed25519, ECDSA, DSA, SSH Config
@@ -619,12 +630,14 @@ Uses `find` with smart filtering:
 ### Checksum Algorithm
 
 SHA256 for cross-platform compatibility:
+
 - macOS: `shasum -a 256`
 - Linux: `sha256sum`
 
 ### Change Detection
 
 Compares SHA256 hashes:
+
 1. Calculate current file hash
 2. Load stored hash from metadata
 3. Compare hashes
@@ -640,6 +653,7 @@ Compares SHA256 hashes:
 ### Encryption
 
 AES-256-CBC via transcrypt:
+
 - Encrypts: `ssh-keys/`, `backup-list.txt`, `backup-metadata.json`
 - Plaintext: `backup-history.log` (for debugging)
 - Password-based encryption
@@ -651,15 +665,15 @@ AES-256-CBC via transcrypt:
 
 Typical performance on modern systems:
 
-| Operation | Time | Files |
-|-----------|------|-------|
-| File discovery | <100ms | ~10 files |
-| Checksum calculation | ~10ms | per file |
-| FZF selection | Interactive | N/A |
-| Incremental backup | ~1s | 1-2 changed files |
-| Full backup | ~3s | 10 files |
-| Verification | ~500ms | 10 files |
-| Version restore | ~2s | 10 files |
+| Operation            | Time        | Files             |
+| -------------------- | ----------- | ----------------- |
+| File discovery       | <100ms      | ~10 files         |
+| Checksum calculation | ~10ms       | per file          |
+| FZF selection        | Interactive | N/A               |
+| Incremental backup   | ~1s         | 1-2 changed files |
+| Full backup          | ~3s         | 10 files          |
+| Verification         | ~500ms      | 10 files          |
+| Version restore      | ~2s         | 10 files          |
 
 ### Optimization Tips
 

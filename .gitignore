@@ -42,3 +42,4 @@ backups/
 
 # Node modules (created by prettier cache)
 node_modules/
+backup/

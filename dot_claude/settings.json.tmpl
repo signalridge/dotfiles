@@ -117,13 +117,25 @@
     ]
   },
   "env": {
+{{- /* Third-party providers: set base_url */ -}}
 {{- if and $provider (hasKey $provider "base_url") }}
     "ANTHROPIC_BASE_URL": "{{ $provider.base_url }}",
+{{- end }}
+{{- /* Model settings: apply to all accounts */ -}}
 {{- if and $account (hasKey $account "model") }}
     "ANTHROPIC_MODEL": "{{ $account.model }}",
 {{- end }}
 {{- if and $account (hasKey $account "small_model") }}
     "ANTHROPIC_SMALL_FAST_MODEL": "{{ $account.small_model }}",
+{{- end }}
+{{- if and $account (hasKey $account "haiku_model") }}
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "{{ $account.haiku_model }}",
+{{- end }}
+{{- if and $account (hasKey $account "sonnet_model") }}
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "{{ $account.sonnet_model }}",
+{{- end }}
+{{- if and $account (hasKey $account "opus_model") }}
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "{{ $account.opus_model }}",
 {{- end }}
 {{- /* timeout_ms: account -> defaults */ -}}
 {{- $timeout := "" -}}
@@ -136,16 +148,6 @@
 {{- if and $account (hasKey $account "disable_nonessential_traffic") }}{{ $disableTraffic = $account.disable_nonessential_traffic }}{{ else if hasKey $defaults "disable_nonessential_traffic" }}{{ $disableTraffic = $defaults.disable_nonessential_traffic }}{{ end -}}
 {{- if $disableTraffic }}
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-{{- end }}
-{{- if and $account (hasKey $account "haiku_model") }}
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "{{ $account.haiku_model }}",
-{{- end }}
-{{- if and $account (hasKey $account "sonnet_model") }}
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "{{ $account.sonnet_model }}",
-{{- end }}
-{{- if and $account (hasKey $account "opus_model") }}
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "{{ $account.opus_model }}",
-{{- end }}
 {{- end }}
     "INSIDE_CLAUDE_CODE": "1"
   }

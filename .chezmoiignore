@@ -61,3 +61,5 @@ nix-config/modules/host-users.nix
 .chezmoiscripts/01_setup-encryption-key.sh
 .ssh/*
 {{- end }}
+
+backup/

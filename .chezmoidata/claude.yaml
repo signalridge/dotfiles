@@ -73,40 +73,8 @@ claude:
       provider: anthropic
       model: claude-haiku-4-5-20251001
       small_model: claude-haiku-4-5-20251001
-    # Third-party accounts
-    deepseek:
-      model: deepseek-chat
-      small_model: deepseek-chat
-      haiku_model: deepseek-chat
-      sonnet_model: deepseek-chat
-      opus_model: deepseek-chat
-    kimi:
-      model: kimi-k2.5
-      small_model: kimi-k2.5
-      haiku_model: kimi-k2.5
-      sonnet_model: kimi-k2.5
-      opus_model: kimi-k2.5
-    glm:
-      model: glm-4.7
-      small_model: glm-4.5-air
-      haiku_model: glm-4.5-air
-      sonnet_model: glm-4.7
-      opus_model: glm-4.7
-      timeout_ms: 3000000
-    qwen:
-      model: qwen3-coder-plus
-      small_model: qwen-flash
-      haiku_model: qwen-flash
-      sonnet_model: qwen3-coder-plus
-      opus_model: qwen3-max
-      disable_nonessential_traffic: false
-    minimax:
-      model: MiniMax-M2.1
-      small_model: MiniMax-M2.1
-      haiku_model: MiniMax-M2.1
-      sonnet_model: MiniMax-M2.1
-      opus_model: MiniMax-M2.1
-      timeout_ms: 3000000
+    # Third-party accounts (format: provider@label)
+    # Add your own: deepseek@work, kimi@personal, etc.
     doubao@private:
       model: ark-code-latest
       small_model: ark-code-latest

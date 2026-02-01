@@ -10,7 +10,7 @@
 set -euo pipefail
 
 # shellcheck source=lib/claude.tmpl
-source "$(dirname "$0")/lib/claude.tmpl"
+source "$(dirname "$0")/lib/claude"
 
 # FZF picker with shortcuts
 fzf_select() {
