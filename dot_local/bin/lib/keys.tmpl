@@ -303,6 +303,28 @@ fzf_select_files() {
     echo -n "${final_selection%$'\n'}"
 }
 
+# ===== Directory Management =====
+
+# Ensure local directory exists (without git initialization)
+# Used by select/add/remove commands that only need local storage
+ensure_local_dir() {
+    if [[ -d "$REPO_DIR" ]]; then
+        return 0
+    fi
+
+    log_info "Creating local backup directory..."
+    mkdir -p "$REPO_DIR"
+
+    # Initialize metadata if it doesn't exist
+    if [[ ! -f "$METADATA_FILE" ]]; then
+        init_metadata
+    fi
+
+    log_success "Local directory ready: $REPO_DIR"
+    echo ""
+    log_note "Run 'keys-backup init' before backing up to initialize git repository"
+}
+
 # ===== Transcrypt Operations =====
 
 # Initialize transcrypt in repo

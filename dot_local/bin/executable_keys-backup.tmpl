@@ -351,9 +351,8 @@ cmd_select() {
         return 1  # Exit with error code
     fi
 
-    # Initialize repo if needed
-    init_repo_if_needed || exit 1
-    cd "$REPO_DIR"
+    # Ensure local directory exists (doesn't need git yet)
+    ensure_local_dir
 
     # Save selection (overwrites existing list)
     echo "$selected" > "$BACKUP_LIST"
@@ -380,9 +379,8 @@ cmd_select() {
 cmd_add() {
     require_cmd fzf || exit 1
 
-    # Initialize repo if needed
-    init_repo_if_needed || exit 1
-    cd "$REPO_DIR"
+    # Ensure local directory exists (doesn't need git yet)
+    ensure_local_dir
 
     # Load current list
     local current_files=()
@@ -461,9 +459,8 @@ cmd_add() {
 cmd_remove() {
     require_cmd fzf || exit 1
 
-    # Initialize repo if needed
-    init_repo_if_needed || exit 1
-    cd "$REPO_DIR"
+    # Ensure local directory exists (doesn't need git yet)
+    ensure_local_dir
 
     if [[ ! -f "$BACKUP_LIST" ]] || [[ ! -s "$BACKUP_LIST" ]]; then
         log_warn "Backup list is empty"
@@ -935,7 +932,7 @@ main() {
     # Handle custom path
     if [[ -n "$CUSTOM_PATH" ]]; then
         if [[ -f "$CUSTOM_PATH" ]]; then
-            init_repo_if_needed || exit 1
+            ensure_local_dir
             echo "$CUSTOM_PATH" >> "$BACKUP_LIST"
             sort -u "$BACKUP_LIST" -o "$BACKUP_LIST"
             log_success "Added: $CUSTOM_PATH"
