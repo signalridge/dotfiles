@@ -88,7 +88,7 @@ cmd_init() {
         else
             log_warn "Repository exists but transcrypt is not configured"
             echo ""
-            read -p "Initialize transcrypt encryption? (y/n): " init_transcrypt
+            read -r -p "Initialize transcrypt encryption? (y/n): " init_transcrypt
             if [[ "$init_transcrypt" == "y" ]]; then
                 init_transcrypt "$TRANSCRYPT_PASSWORD"
                 log_success "Transcrypt initialized"
@@ -118,7 +118,7 @@ cmd_init() {
     if ! git clone "$KEYS_REPO" "$REPO_DIR" 2>/dev/null; then
         log_note "Remote repository may not exist yet"
         echo ""
-        read -p "Create new repository? (y/n): " create_new
+        read -r -p "Create new repository? (y/n): " create_new
         if [[ "$create_new" != "y" ]]; then
             echo "Initialization cancelled"
             return 1
@@ -467,7 +467,7 @@ cmd_remove() {
     echo ""
     echo "$to_remove" | sed 's/^/  /'
     echo ""
-    read -p "Confirm removal? (y/N): " confirm
+    read -r -p "Confirm removal? (y/N): " confirm
     if [[ "$confirm" != "y" ]]; then
         echo "Cancelled"
         return 1
@@ -604,12 +604,7 @@ cmd_backup() {
     if git diff --cached --quiet; then
         echo "  No changes to commit"
     else
-        local commit_msg
-        if [[ "$force" == true ]]; then
-            commit_msg="Force backup: ${#changed_files[@]} files - $(date '+%Y-%m-%d %H:%M:%S')"
-        else
-            commit_msg="Backup: ${#changed_files[@]} files - $(date '+%Y-%m-%d %H:%M:%S')"
-        fi
+        local commit_msg="Backup: ${#changed_files[@]} files - $(date '+%Y-%m-%d %H:%M:%S')"
         git commit -m "$commit_msg"
         log_event "$commit_msg"
 
@@ -730,7 +725,7 @@ cmd_menu() {
                         echo ""
                         echo "First time setup:"
                         echo "  1. Configure keysRepository in chezmoi"
-                        echo "  2. Run 'keys-backup init'"
+                        echo "  2. Run '\''keys-backup init'\''"
                         echo "  3. Provide transcrypt password"
                         ;;
                     select)
@@ -800,7 +795,7 @@ cmd_menu() {
                     fi
                 else
                     echo "⚠ Not initialized"
-                    echo "Run 'init' to initialize"
+                    echo "Run '\''init'\'' to initialize"
                 fi
             ' \
             --preview-window='right:50%:wrap' \
@@ -851,7 +846,7 @@ MENU
         esac
 
         echo ""
-        read -p "Press Enter to continue..." || return 0
+        read -r -p "Press Enter to continue..." || return 0
     done
 }
 

@@ -403,7 +403,7 @@ cmd_restore() {
 
     # Confirmation
     echo ""
-    read -p "Restore from $commit_short? (y/n): " confirm
+    read -r -p "Restore from $commit_short? (y/n): " confirm
     if [[ "$confirm" != "y" ]]; then
         echo "Restore cancelled"
         return 0
