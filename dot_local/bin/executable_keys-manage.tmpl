@@ -1924,7 +1924,10 @@ cmd_history() {
 
 # Command: update - Re-encrypt modified files
 cmd_update() {
-    require_repo_and_cd || return 1
+    require_repo_and_cd || {
+        log_error "Failed to initialize repository"
+        return 1
+    }
 
     if [[ ! -f "$BACKUP_LIST" ]] || [[ ! -s "$BACKUP_LIST" ]]; then
         log_warn "Backup list is empty"
@@ -1968,7 +1971,7 @@ cmd_update() {
         # Check if file is modified
         if [[ -z "$stored_checksum" ]] || [[ "$current_checksum" != "$stored_checksum" ]]; then
             modified_files+=("$file")
-            ((modified_count++))
+            modified_count=$((modified_count + 1))
             echo "  Modified: $file"
         fi
     done
