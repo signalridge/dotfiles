@@ -1177,6 +1177,7 @@ Backup Commands:
   select            Interactive file selection (shows all, toggle with Tab)
   add               Add files to backup list (encrypts + commits immediately)
   remove            Remove files from backup list (deletes + commits immediately)
+  update            Re-encrypt modified files in backup list
   sync              Git synchronization only (pull + push)
   verify            Verify backup integrity (compare checksums)
   history           Show sync event log (detailed operations)
@@ -1206,6 +1207,7 @@ Examples:
   keys-manage select           # Interactive: add/remove files (encrypts/commits immediately)
   # OR
   keys-manage add ~/.ssh/id_rsa  # Add specific file (encrypts + commits immediately)
+  keys-manage update           # Re-encrypt modified files
   keys-manage sync             # Git push/pull only (no encryption)
   keys-manage verify           # Verify backup integrity
 
@@ -1920,6 +1922,108 @@ cmd_history() {
     echo ""
 }
 
+# Command: update - Re-encrypt modified files
+cmd_update() {
+    require_repo_and_cd || return 1
+
+    if [[ ! -f "$BACKUP_LIST" ]] || [[ ! -s "$BACKUP_LIST" ]]; then
+        log_warn "Backup list is empty"
+        return 1
+    fi
+
+    log_section "Checking for modified files..."
+    echo ""
+
+    # Get password once for all files
+    local password
+    password=$(get_encryption_password) || {
+        log_error "Cannot proceed without password"
+        return 1
+    }
+
+    # Load current files from list
+    local current_files=()
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && current_files+=("$line")
+    done < "$BACKUP_LIST"
+
+    # Find modified files
+    local modified_files=()
+    local modified_count=0
+
+    for file in "${current_files[@]}"; do
+        if [[ ! -f "$file" ]]; then
+            log_warn "Missing: $file"
+            continue
+        fi
+
+        # Calculate current checksum
+        local current_checksum
+        current_checksum=$(sha256sum "$file" | awk '{print $1}')
+
+        # Get checksum from metadata
+        local stored_checksum
+        stored_checksum=$(jq -r --arg path "$file" '.files[$path].sha256 // empty' "$METADATA_FILE" 2>/dev/null)
+
+        # Check if file is modified
+        if [[ -z "$stored_checksum" ]] || [[ "$current_checksum" != "$stored_checksum" ]]; then
+            modified_files+=("$file")
+            ((modified_count++))
+            echo "  Modified: $file"
+        fi
+    done
+
+    echo ""
+
+    if [[ $modified_count -eq 0 ]]; then
+        log_success "All files are up-to-date"
+        return 0
+    fi
+
+    log_info "Found $modified_count modified file(s)"
+    echo ""
+    read -r -p "Re-encrypt and commit these files? (Y/n): " confirm
+
+    if [[ -n "$confirm" ]] && [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        log_warn "Cancelled"
+        return 0
+    fi
+
+    echo ""
+    log_section "Re-encrypting modified files..."
+    echo ""
+
+    # Re-encrypt each modified file
+    for file in "${modified_files[@]}"; do
+        echo "  Encrypting: $file"
+
+        local relative_path="${file#$HOME/}"
+        local backup_path="$REPO_DIR/backup-files/$relative_path"
+
+        # Encrypt file
+        if encrypt_file "$file" "$backup_path" "$password"; then
+            # Update metadata
+            update_file_metadata "$file"
+            log_success "  ✓ Updated: $file"
+        else
+            log_error "  ✗ Failed: $file"
+        fi
+    done
+
+    echo ""
+
+    # Commit changes
+    if commit_backup_changes "Update: re-encrypt $modified_count modified file(s)"; then
+        echo ""
+        log_success "Changes committed locally"
+        echo ""
+        log_note "Run 'keys-manage sync' to push to remote"
+    else
+        log_error "Failed to commit changes"
+        return 1
+    fi
+}
+
 # ===== Restore Commands (from keys-restore) =====
 
 # Command: restore - Restore files from backup
@@ -2618,6 +2722,11 @@ cmd_menu() {
                           echo "• Add files: encrypts + commits immediately (gopass-style)"
                           echo "• Remove files: deletes + commits immediately"
                           echo "• Use 'sync' afterward to push to remote" ;;
+                    update) echo "Re-encrypt modified files in backup list"
+                          echo ""
+                          echo "• Detects files changed since last backup"
+                          echo "• Re-encrypts and commits automatically"
+                          echo "• Use after modifying backed-up files" ;;
                     sync) echo "Git synchronization only (pull + push)"
                           echo ""
                           echo "• Files are already encrypted by add/remove operations"
@@ -2656,6 +2765,7 @@ cmd_menu() {
             --preview-label="[ Keys Manager ]"
 init           Initialize backup repository
 select         Add/remove files (encrypts immediately)
+update         Re-encrypt modified files
 sync           Git push/pull only
 verify         Verify backup integrity
 history        Show backup history
@@ -2680,6 +2790,7 @@ MENU
         case "$cmd" in
             init) cmd_init ;;
             select) cmd_select ;;
+            update) cmd_update ;;
             sync) cmd_sync ;;
             verify) cmd_verify ;;
             history) cmd_history ;;
@@ -2731,6 +2842,7 @@ main() {
         select) cmd_select "$@" ;;  # Interactive selection (encrypts + commits immediately)
         add) cmd_add "$@" ;;        # Add files (encrypts + commits immediately)
         remove) cmd_remove "$@" ;;  # Remove files (deletes + commits immediately)
+        update) cmd_update "$@" ;;  # Re-encrypt modified files
         sync) cmd_sync "$@" ;;      # Git push/pull only
         verify) cmd_verify "$@" ;;
         history) cmd_history "$@" ;;
