@@ -5,6 +5,9 @@
 	crypto = age
 	path = {{ .chezmoi.homeDir }}/.local/share/gopass/stores/root
 
+[mounts.root]
+	source_url = {{ .gopassRepository }}
+
 [age]
 	ssh-key-path = {{ .chezmoi.homeDir }}/.ssh/main
 

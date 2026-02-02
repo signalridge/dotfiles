@@ -831,7 +831,7 @@ get_encryption_password() {
     # 3. Try to get from gopass
     if command -v gopass &>/dev/null; then
         local gopass_password
-        gopass_password=$(gopass show -o dev/keys-backup-password 2>/dev/null)
+        gopass_password=$(gopass show -o keys-manage/password 2>/dev/null)
 
         if [[ -n "$gopass_password" ]]; then
             _CACHED_PASSWORD="$gopass_password"
@@ -858,8 +858,8 @@ get_encryption_password() {
         read -rp "Save password to gopass for future use? (Y/n): " save_choice
 
         if [[ -z "$save_choice" ]] || [[ "$save_choice" =~ ^[Yy]$ ]]; then
-            if echo "$password" | gopass insert -f dev/keys-backup-password 2>/dev/null; then
-                log_success "Password saved to gopass (dev/keys-backup-password)" >&2
+            if echo "$password" | gopass insert -f keys-manage/password 2>/dev/null; then
+                log_success "Password saved to gopass (keys-manage/password)" >&2
             else
                 log_warn "Failed to save to gopass" >&2
             fi
@@ -1529,6 +1529,7 @@ cmd_select() {
 
             ←)
                 # Back to main menu
+                _SKIP_PAUSE=true
                 return 0
                 ;;
         esac
@@ -2395,7 +2396,76 @@ cmd_status() {
 
 # Command: password - Manage encryption password in gopass
 cmd_password() {
-    local action="${1:-help}"
+    local action="${1:-menu}"
+
+    # If no argument, show interactive menu
+    if [[ "$action" == "menu" ]]; then
+        require_cmd fzf || {
+            log_warn "FZF not found, showing help instead"
+            action="help"
+        }
+
+        if [[ "$action" == "menu" ]]; then
+            action=$(printf "%b\n%b\n%b\n%b\n%b\n" \
+                "${GREEN}save${NC} - Save/update password in gopass" \
+                "${CYAN}show${NC} - Display password from gopass" \
+                "${YELLOW}test${NC} - Test password encryption/decryption" \
+                "${RED}delete${NC} - Remove password from gopass" \
+                "${GRAY}← Back${NC} - Return to main menu" \
+            | fzf --ansi \
+                --height=50% \
+                --border=rounded \
+                --header="Password Management" \
+                --preview='
+                    action=$(echo {} | awk "{print \$1}")
+                    echo -e "\033[1;36m━━━ Password Management ━━━\033[0m"
+                    echo ""
+                    case "$action" in
+                        save)
+                            echo "Save or update your encryption password in gopass"
+                            echo ""
+                            echo "Path: keys-manage/password"
+                            echo ""
+                            echo "After saving, the password will be automatically"
+                            echo "loaded for all future operations."
+                            ;;
+                        show)
+                            echo "Display the stored password"
+                            echo ""
+                            echo "Note: Password will be visible on screen"
+                            ;;
+                        test)
+                            echo "Test password by encrypting and decrypting a file"
+                            echo ""
+                            echo "Verifies that:"
+                            echo "  • Password can be retrieved"
+                            echo "  • Encryption works"
+                            echo "  • Decryption works"
+                            echo "  • Data integrity is maintained"
+                            ;;
+                        delete)
+                            echo "Remove password from gopass"
+                            echo ""
+                            echo "⚠ Warning: You will need to re-enter"
+                            echo "  the password for future operations"
+                            ;;
+                        ←) echo "Return to main menu" ;;
+                    esac
+                ' \
+                --preview-window='right:50%:wrap') || {
+                return 0
+            }
+
+            action=$(echo "$action" | awk '{print $1}')
+
+            # Handle Back
+            if [[ "$action" == "←" ]]; then
+                return 0
+            fi
+
+            echo ""
+        fi
+    fi
 
     case "$action" in
         save)
@@ -2412,8 +2482,8 @@ cmd_password() {
             log_header "Save Password to gopass"
             echo ""
 
-            gopass insert dev/keys-backup-password
-            log_success "Password saved to gopass (dev/keys-backup-password)"
+            gopass insert keys-manage/password
+            log_success "Password saved to gopass (keys-manage/password)"
             ;;
 
         show)
@@ -2423,7 +2493,7 @@ cmd_password() {
                 return 1
             fi
 
-            gopass show dev/keys-backup-password
+            gopass show keys-manage/password
             ;;
 
         delete)
@@ -2433,7 +2503,7 @@ cmd_password() {
                 return 1
             fi
 
-            local gopass_path="dev/keys-backup-password"
+            local gopass_path="keys-manage/password"
             echo "This will delete: $gopass_path"
             echo ""
             read -rp "Are you sure? (y/N): " confirm
@@ -2498,23 +2568,25 @@ cmd_password() {
             rm -f "$test_file" "$test_file.enc" "$test_file.dec"
             ;;
 
-        *)
+        help|*)
             cat << 'EOF'
 Usage: keys-manage password [action]
 
 Actions:
-  save      Save/update password in gopass
-  show      Display password from gopass
-  delete    Remove password from gopass
-  test      Test password encryption/decryption
+  (no action)   Interactive menu
+  save          Save/update password in gopass
+  show          Display password from gopass
+  delete        Remove password from gopass
+  test          Test password encryption/decryption
 
 Examples:
+  keys-manage password           # Interactive menu
   keys-manage password save      # Save password to gopass
   keys-manage password show      # View password
   keys-manage password test      # Test password works
-  gopass show dev/keys-backup-password  # Direct gopass access
+  gopass show keys-manage/password  # Direct gopass access
 
-Note: Password is stored at: dev/keys-backup-password
+Note: Password is stored at: keys-manage/password
 EOF
             ;;
     esac
@@ -2621,12 +2693,6 @@ MENU
             *) echo "Unknown command: $cmd" ;;
         esac
 
-        # Pause to let user view output (skip if user cancelled)
-        if [[ "$cmd" != "quit" ]] && [[ "$_SKIP_PAUSE" != true ]]; then
-            echo ""
-            echo -e "${GRAY}Press Enter to return to menu...${NC}"
-            read -r
-        fi
     done
 }
 
