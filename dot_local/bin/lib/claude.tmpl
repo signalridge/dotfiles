@@ -170,3 +170,21 @@ fzf_pick_account() {
     echo "$result"
 }
 
+# ===== String Utilities =====
+
+# Parse provider/account or account@provider format
+# Usage: parse_provider_account "account@provider"
+# Returns: "account|provider" or "input|default" if no delimiter
+parse_provider_account() {
+    local input="$1"
+    # Clean UI artifacts (trailing checkmarks, leading spaces)
+    input=$(echo "$input" | sed 's/ ✓$//' | sed 's/^[[:space:]]*//')
+
+    if [[ "$input" =~ ^([^@]+)@(.+)$ ]]; then
+        echo "${BASH_REMATCH[1]}|${BASH_REMATCH[2]}"
+    elif [[ "$input" =~ ^([^/]+)/(.+)$ ]]; then
+        echo "${BASH_REMATCH[1]}|${BASH_REMATCH[2]}"
+    else
+        echo "$input|default"
+    fi
+}

@@ -11,6 +11,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 GRAY='\033[0;90m'
+BOLD='\033[1m'
 NC='\033[0m'
 
 # ===== Status Indicators =====
@@ -184,21 +185,3 @@ jq_update() {
     fi
 }
 
-# ===== String Utilities =====
-
-# Parse provider/account or account@provider format
-# Usage: parse_provider_account "account@provider"
-# Returns: "account|provider" or "input|default" if no delimiter
-parse_provider_account() {
-    local input="$1"
-    # Clean UI artifacts (trailing checkmarks, leading spaces)
-    input=$(echo "$input" | sed 's/ ✓$//' | sed 's/^[[:space:]]*//')
-
-    if [[ "$input" =~ ^([^@]+)@(.+)$ ]]; then
-        echo "${BASH_REMATCH[1]}|${BASH_REMATCH[2]}"
-    elif [[ "$input" =~ ^([^/]+)/(.+)$ ]]; then
-        echo "${BASH_REMATCH[1]}|${BASH_REMATCH[2]}"
-    else
-        echo "$input|default"
-    fi
-}
