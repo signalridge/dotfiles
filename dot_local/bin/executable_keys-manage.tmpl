@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SSH Keys Manager - Unified backup and restore command
-# Manages SSH/GPG/Age keys with OpenSSL PBKDF2-encrypted git repository
+# Manages SSH/GPG/Age keys with Age-encrypted git repository
 set -euo pipefail
 
 # shellcheck source=lib/common.tmpl
@@ -875,7 +875,7 @@ clear_password_cache() {
     _CACHED_PASSWORD=""
 }
 
-# Encrypt file using OpenSSL PBKDF2
+# Encrypt file using Age
 # Usage: encrypt_file <source> <destination> [password]
 encrypt_file() {
     local source="$1"
@@ -897,20 +897,19 @@ encrypt_file() {
 
     mkdir -p "$(dirname "$dest")"
 
-    # OpenSSL AES-256-CBC with PBKDF2 (100,000 iterations)
-    # -salt: Add random salt for security
-    # -pbkdf2 -iter 100000: Use PBKDF2 with 100k iterations (recommended)
-    if openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt \
-        -pass pass:"$password" -in "$source" -out "$dest" 2>/dev/null; then
+    # Age encryption with passphrase
+    # Age uses modern ChaCha20-Poly1305 and scrypt for key derivation
+    # Pass password twice to stdin (age -p requires confirmation)
+    if printf '%s\n%s\n' "$password" "$password" | age -p -o "$dest" "$source" 2>/dev/null; then
         chmod 600 "$dest"
         return 0
     else
-        log_error "Failed to encrypt file"
+        log_error "Failed to encrypt file (is age installed?)"
         return 1
     fi
 }
 
-# Decrypt file using OpenSSL PBKDF2
+# Decrypt file using Age
 # Usage: decrypt_file <source> <destination> [password]
 decrypt_file() {
     local source="$1"
@@ -932,9 +931,8 @@ decrypt_file() {
 
     mkdir -p "$(dirname "$dest")"
 
-    # Decrypt using same parameters
-    if openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 \
-        -pass pass:"$password" -in "$source" -out "$dest" 2>/dev/null; then
+    # Decrypt with age (password from stdin)
+    if echo "$password" | age -d "$source" > "$dest" 2>/dev/null; then
         chmod 600 "$dest"
         return 0
     else
@@ -1246,11 +1244,11 @@ EOF
 
 # Command: init - Initialize backup repository
 cmd_init() {
-    require_cmd git || return 1
+    require_cmd git age || return 1
 
     log_header "Keys Backup Repository Initialization"
     echo ""
-    log_info "Using OpenSSL PBKDF2 encryption (AES-256-CBC with 100k iterations)"
+    log_info "Using Age encryption (ChaCha20-Poly1305 with scrypt)"
     echo ""
 
     # Check if repository already exists
@@ -1348,7 +1346,7 @@ cmd_init() {
         echo ""
         log_success "New repository created and configured"
         echo ""
-        log_note "Files will be encrypted with OpenSSL PBKDF2 before backup"
+        log_note "Files will be encrypted with Age before backup"
         echo ""
         echo "Next steps:"
         echo "  1. Create the remote repository: $KEYS_REPO"
@@ -1365,7 +1363,7 @@ cmd_init() {
     cd "$REPO_DIR"
     log_success "Repository cloned"
     echo ""
-    log_note "Files will be encrypted with OpenSSL PBKDF2 before backup"
+    log_note "Files will be encrypted with Age before backup"
     echo ""
 
     # Initialize metadata if needed
@@ -2405,7 +2403,7 @@ cmd_validate() {
     fi
 
     # Note about encryption
-    log_success "Using OpenSSL PBKDF2 encryption (AES-256-CBC)"
+    log_success "Using Age encryption (AES-256-CBC)"
 
     # Check remote connectivity
     if git ls-remote &>/dev/null; then
