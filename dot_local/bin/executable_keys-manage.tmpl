@@ -220,10 +220,12 @@ update_file_metadata() {
     [[ ! -f "$file" ]] && return 1
     [[ ! -f "$METADATA_FILE" ]] && init_metadata
 
-    local hash size mtime now count
+    local hash size mtime permissions now count
     hash=$(calc_checksum "$file")
     size=$(get_file_size "$file")
     mtime=$(get_file_mtime "$file")
+    # Get file permissions in octal format (e.g., "644", "600")
+    permissions=$(stat -f "%Lp" "$file" 2>/dev/null || stat -c "%a" "$file" 2>/dev/null)
 
     now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     count=$(jq -r ".files[\"$file\"].backup_count // 0" "$METADATA_FILE")
@@ -235,6 +237,7 @@ update_file_metadata() {
         \"sha256\": \"$hash\",
         \"size\": $size,
         \"mtime\": $mtime,
+        \"permissions\": \"$permissions\",
         \"last_backup\": \"$now\",
         \"backup_count\": $count
     }" "$METADATA_FILE" > "$tmp"
@@ -927,6 +930,7 @@ encrypt_file() {
 
 # Decrypt file using OpenSSL PBKDF2
 # Usage: decrypt_file <source> <destination> [password]
+# Note: Does NOT modify file permissions - caller is responsible for setting correct permissions
 decrypt_file() {
     local source="$1"
     local dest="$2"
@@ -947,10 +951,9 @@ decrypt_file() {
 
     mkdir -p "$(dirname "$dest")"
 
-    # Decrypt using same parameters
+    # Decrypt using same parameters (permissions unchanged)
     if openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 \
         -pass pass:"$password" -in "$source" -out "$dest" 2>/dev/null; then
-        chmod 600 "$dest"
         return 0
     else
         log_error "Failed to decrypt file (wrong password?)"
@@ -2376,7 +2379,18 @@ cmd_restore() {
         # Decrypt and restore
         mkdir -p "$(dirname "$target_path")"
         if decrypt_file "$temp_encrypted" "$target_path" "$password" 2>/dev/null; then
-            chmod 600 "$target_path"
+            # Restore original permissions from metadata
+            local original_perms
+            original_perms=$(jq -r ".files[\"$target_path\"].permissions // empty" "$METADATA_FILE" 2>/dev/null)
+
+            if [[ -n "$original_perms" ]]; then
+                # Use original permissions from metadata
+                chmod "$original_perms" "$target_path"
+            else
+                # Fallback: default to 600 for private files
+                chmod 600 "$target_path"
+            fi
+
             echo "  ${STATUS_OK} Restored: $filename"
             restored_count=$((restored_count + 1))
         else
