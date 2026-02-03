@@ -1489,6 +1489,22 @@ cmd_select() {
                     # Add to pending list
                     while IFS= read -r file; do
                         if [[ -n "$file" ]]; then
+                            # Check if in pending remove (cancel removal)
+                            local in_pending_remove=false
+                            local new_pending_remove=()
+                            for pending_file in "${pending_remove[@]}"; do
+                                if [[ "$file" == "$pending_file" ]]; then
+                                    in_pending_remove=true
+                                    log_success "Cancelled removal: $(basename "$file")"
+                                else
+                                    new_pending_remove+=("$pending_file")
+                                fi
+                            done
+                            if [[ "$in_pending_remove" == true ]]; then
+                                pending_remove=("${new_pending_remove[@]}")
+                                continue
+                            fi
+
                             # Check if already in backup list
                             local already_in_list=false
                             for current_file in "${current_files[@]}"; do
@@ -1525,8 +1541,13 @@ cmd_select() {
 
             -)
                 # Remove files (record only, don't delete yet)
-                if [[ ${#current_files[@]} -eq 0 ]]; then
-                    log_warn "Backup list is empty"
+                # Build list: current_files + pending_add
+                local removable_files=()
+                removable_files+=("${current_files[@]}")
+                removable_files+=("${pending_add[@]}")
+
+                if [[ ${#removable_files[@]} -eq 0 ]]; then
+                    log_warn "No files to remove"
                     echo ""
                     continue
                 fi
@@ -1536,13 +1557,29 @@ cmd_select() {
                 echo ""
 
                 local to_remove
-                to_remove=$(printf '%s\n' "${current_files[@]}" | fzf_multi_select \
+                to_remove=$(printf '%s\n' "${removable_files[@]}" | fzf_multi_select \
                     "Tab: select to remove | Enter: confirm" \
                     "$FILE_PREVIEW")
 
                 if [[ -n "$to_remove" ]]; then
                     while IFS= read -r file; do
                         if [[ -n "$file" ]]; then
+                            # Check if in pending add (cancel addition)
+                            local in_pending_add=false
+                            local new_pending_add=()
+                            for pending_file in "${pending_add[@]}"; do
+                                if [[ "$file" == "$pending_file" ]]; then
+                                    in_pending_add=true
+                                    log_success "Cancelled addition: $(basename "$file")"
+                                else
+                                    new_pending_add+=("$pending_file")
+                                fi
+                            done
+                            if [[ "$in_pending_add" == true ]]; then
+                                pending_add=("${new_pending_add[@]}")
+                                continue
+                            fi
+
                             # Check if already in pending remove
                             local already_pending=false
                             for pending_file in "${pending_remove[@]}"; do
