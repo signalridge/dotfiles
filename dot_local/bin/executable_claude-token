@@ -81,19 +81,20 @@ get_account_config() {
     "
 }
 
-# Check if token exists in gopass (non-interactive)
+# Check if token exists in gopass (non-interactive, with timeout)
 check_token_exists() {
     local provider="$1"
     local account="$2"
+    local timeout_sec=3
 
     # New path format: provider/account/api_key
-    if gopass list -f "claude-code/providers/$provider/$account/api_key" &>/dev/null; then
+    if timeout "$timeout_sec" gopass list -f "claude-code/providers/$provider/$account/api_key" &>/dev/null; then
         return 0
     fi
 
     # Fallback for default account: provider/api_key (legacy)
     if [[ "$account" == "default" ]]; then
-        if gopass list -f "claude-code/providers/$provider/api_key" &>/dev/null; then
+        if timeout "$timeout_sec" gopass list -f "claude-code/providers/$provider/api_key" &>/dev/null; then
             return 0
         fi
     fi
@@ -101,19 +102,23 @@ check_token_exists() {
     return 1
 }
 
-# Get token from gopass
+# Get token from gopass with timeout
 get_token() {
     local provider="$1"
     local account="$2"
+    local timeout_sec=5
+    local token
 
     # Try new path: provider/account/api_key
-    if gopass show -o "claude-code/providers/$provider/$account/api_key" 2>/dev/null; then
+    if token=$(timeout "$timeout_sec" gopass show -o "claude-code/providers/$provider/$account/api_key" 2>/dev/null); then
+        echo "$token"
         return 0
     fi
 
     # Fallback for default account: provider/api_key (legacy)
     if [[ "$account" == "default" ]]; then
-        if gopass show -o "claude-code/providers/$provider/api_key" 2>/dev/null; then
+        if token=$(timeout "$timeout_sec" gopass show -o "claude-code/providers/$provider/api_key" 2>/dev/null); then
+            echo "$token"
             return 0
         fi
     fi
