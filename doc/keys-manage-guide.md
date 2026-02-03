@@ -6,7 +6,7 @@ Unified command for managing SSH/GPG/Age keys with encrypted git backup.
 
 `keys-manage` is a unified tool that combines backup and restore functionality for your sensitive keys. It uses:
 
-- **Transcrypt**: AES-256-CBC encryption for git repositories
+- **OpenSSL**: AES-256-CBC encryption with PBKDF2 (100,000 iterations)
 - **FZF**: Interactive file selection and version browsing
 - **Git**: Version control and remote backup
 - **Incremental backups**: Only changed files are backed up
@@ -58,12 +58,12 @@ keys-manage init -p <password>      # Provide password
 
 1. Clones remote repository (if exists)
 2. Or creates new local repository
-3. Configures transcrypt encryption
-4. Initializes metadata
+3. Initializes metadata
+4. Generates encryption password (saved to gopass)
 
 **Subsequent runs:**
 
-- Unlocks transcrypt if needed
+- Uses password from gopass (or prompts if not saved)
 - Syncs with remote
 
 #### `select` - Select Files (Replace)
@@ -230,7 +230,7 @@ keys-manage validate
 **Checks:**
 
 - Git repository integrity (`git fsck`)
-- Transcrypt configuration
+- Password availability (gopass)
 - Remote connectivity
 - Backup file count
 - Metadata format
@@ -274,7 +274,7 @@ keys-manage
 ### Global Options
 
 ```bash
--p, --password PWD    Transcrypt password (otherwise interactive)
+-p, --password PWD    Encryption password (OpenSSL, otherwise from gopass/interactive)
 -h, --help           Show help message
 ```
 
@@ -375,17 +375,19 @@ Use "⊕ Add custom file..." option in FZF menu to add files from any location.
 ```
 ~/.local/share/keys-backup/
 ├── .git/                       # Git repository
-│   └── crypt/
-│       └── transcrypt          # Transcrypt config (NOT .transcrypt/cipher!)
-├── .gitattributes              # Encryption patterns
-├── ssh-keys/                   # Encrypted key backups
-│   ├── id_ed25519
-│   ├── id_ed25519.pub
+├── .gitignore                  # Git ignore patterns
+├── backup-files/               # OpenSSL encrypted backups
+│   ├── Justfile                # Each file encrypted with AES-256-CBC
+│   ├── .ssh/
+│   │   ├── id_ed25519          # Encrypted private keys
+│   │   └── config              # Encrypted config files
 │   └── ...
-├── backup-list.txt             # Selected files (encrypted)
+├── backup-list.txt             # Selected files (plaintext list)
 ├── backup-metadata.json        # Metadata v2 (encrypted)
-└── backup-history.log          # Event log (encrypted)
+└── backup-history.log          # Event log (plaintext)
 ```
+
+**Note**: Each file in `backup-files/` is independently encrypted with OpenSSL. Git stores the encrypted binary files directly (no git filters).
 
 ## Metadata Format (v2)
 
@@ -424,15 +426,19 @@ Or in `~/.config/chezmoi/chezmoi.toml`:
     keysRepository = "git@github.com:username/keys-backup.git"
 ```
 
-## Transcrypt Path Fix
+## Encryption Details
 
-**IMPORTANT**: This version uses the correct transcrypt path `.git/crypt/transcrypt` (not `.transcrypt/cipher`).
+Files are encrypted using **OpenSSL AES-256-CBC** with:
 
-The old path was incorrect and caused:
+- **PBKDF2** key derivation (100,000 iterations)
+- **Random salt** per file (different encryption each time, same decryption)
+- **Binary storage** in git (no base64 encoding)
 
-- Repeated transcrypt initialization
-- Overwritten .gitattributes
-- Failed transcrypt detection
+Each encryption produces different ciphertext (due to random salt), but decryption always produces the same plaintext. This is a security feature that prevents:
+
+- Rainbow table attacks
+- Pattern analysis
+- File content correlation
 
 ## Troubleshooting
 
@@ -442,11 +448,14 @@ The old path was incorrect and caused:
 keys-manage init
 ```
 
-### Transcrypt not configured
+### Password not found
 
 ```bash
-cd ~/.local/share/keys-backup
-rm -rf .git/crypt
+# Save password to gopass
+keys-manage password save
+
+# Or provide via command line
+keys-manage -p "your-password" backup
 keys-manage init -p <password>
 ```
 
@@ -528,7 +537,7 @@ Just start using `keys-manage` instead of old commands.
 
 ## Security
 
-- **Encryption**: AES-256-CBC via transcrypt
+- **Encryption**: AES-256-CBC with PBKDF2 (100,000 iterations) via OpenSSL
 - **Permissions**: 600 for private keys, 644 for public keys, 700 for ~/.ssh
 - **Git**: No plaintext keys ever committed
 - **Safety**: Auto-backup before restore
@@ -539,7 +548,7 @@ Just start using `keys-manage` instead of old commands.
 1. **Regular backups**: Run `keys-manage backup` after generating new keys
 2. **Verify backups**: Run `keys-manage verify` periodically
 3. **Test restores**: Occasionally test restore on a new machine
-4. **Secure password**: Use strong transcrypt password
+4. **Secure password**: Use strong encryption password (stored in gopass)
 5. **Private repository**: Keep backup repository private
 6. **SSH keys**: Use SSH keys for git authentication (not HTTPS)
 7. **Backup safety backups**: The restore command creates safety backups in `~/.ssh/backup-*` - keep these until verified
@@ -553,7 +562,7 @@ Just start using `keys-manage` instead of old commands.
 $ keys-manage init
 Enter password for encryption: ********
 Repository cloned
-Transcrypt configured
+Password saved to gopass (keys-manage/password)
 Repository initialized successfully
 
 # Select files to backup
@@ -599,7 +608,7 @@ Backed up 3 changed files
 # Initialize (clone repository)
 $ keys-manage init -p mypassword
 Repository cloned
-Transcrypt configured
+Password saved to gopass (keys-manage/password)
 
 # Check status
 $ keys-manage status
@@ -665,8 +674,9 @@ $ keys-manage restore abc1234
 
 ## See Also
 
-- [Transcrypt](https://github.com/elasticdog/transcrypt) - Transparent git encryption
+- [OpenSSL](https://www.openssl.org/) - Cryptography toolkit
 - [FZF](https://github.com/junegunn/fzf) - Command-line fuzzy finder
+- [gopass](https://github.com/gopasspw/gopass) - Password manager
 - Chezmoi documentation for configuration
 
 ## Support
