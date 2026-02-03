@@ -1091,7 +1091,7 @@ remove_files_from_backup() {
                 remove_file_metadata "$remove_file"
 
                 echo "  ${STATUS_OK} Removed: $(basename "$remove_file")"
-                ((removed++))
+                removed=$((removed + 1))
                 break
             fi
         done <<< "$files"
