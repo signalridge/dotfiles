@@ -1176,6 +1176,8 @@ show_help() {
     cat <<EOF
 Usage: keys-manage [command] [options]
 
+When run without a command, displays interactive menu.
+
 Backup Commands:
   init              Initialize encrypted backup repository
   select            Interactive file selection (shows all, toggle with Tab)
@@ -1194,7 +1196,6 @@ Restore Commands:
 Common Commands:
   status            Show backup and restore status
   password          Manage encryption password (gopass integration)
-  menu              Interactive menu (TUI)
 
 Options:
   -p, --password PWD  Transcrypt password
@@ -1202,8 +1203,8 @@ Options:
   --no-backup        Skip safety backup (restore only)
 
 Examples:
-  # Interactive menu (recommended for first-time users)
-  keys-manage menu
+  # Interactive menu (default)
+  keys-manage
 
   # Backup workflow
   keys-manage init             # First time: initialize repository
@@ -3080,17 +3081,23 @@ main() {
     done
 
     # Extract command after global options
-    local cmd="${1:-menu}"
+    local cmd="${1:-}"
     shift || true
+
+    # If no command, show interactive menu
+    if [[ -z "$cmd" ]]; then
+        cmd_menu
+        return 0
+    fi
 
     # Route commands
     case "$cmd" in
         # Backup commands
         init) cmd_init "$@" ;;
-        select) cmd_select "$@" ;;  # Interactive selection (encrypts + commits immediately)
-        add) cmd_add "$@" ;;        # Add files (encrypts + commits immediately)
-        remove) cmd_remove "$@" ;;  # Remove files (deletes + commits immediately)
-        sync) cmd_sync "$@" ;;      # Sync all changes (auto re-encrypt + git push/pull)
+        select) cmd_select "$@" ;;
+        add) cmd_add "$@" ;;
+        remove) cmd_remove "$@" ;;
+        sync) cmd_sync "$@" ;;
         verify) cmd_verify "$@" ;;
         history) cmd_history "$@" ;;
 
@@ -3103,7 +3110,6 @@ main() {
         # Unified commands
         status) cmd_status "$@" ;;
         password) cmd_password "$@" ;;
-        menu) cmd_menu "$@" ;;
 
         *)
             log_error "Unknown command: $cmd"
