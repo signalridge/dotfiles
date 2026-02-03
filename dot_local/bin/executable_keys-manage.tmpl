@@ -1061,9 +1061,11 @@ add_files_to_backup() {
     sort -u "$BACKUP_LIST" -o "$BACKUP_LIST"
 
     # Commit changes
-    commit_backup_changes "Add $success files"
-
-    log_success "Added $success files"
+    if commit_backup_changes "Add $success files"; then
+        log_success "Added $success files"
+    else
+        log_warn "Added $success files (commit skipped)"
+    fi
     [[ $failed -gt 0 ]] && log_warn "Failed: $failed files"
 }
 
@@ -1103,9 +1105,11 @@ remove_files_from_backup() {
 
     # Commit changes (use -A to remove deleted files)
     git add -A backup-files/ backup-list.txt backup-metadata.json
-    commit_backup_changes "Remove $removed files"
-
-    log_success "Removed $removed files"
+    if commit_backup_changes "Remove $removed files"; then
+        log_success "Removed $removed files"
+    else
+        log_warn "Removed $removed files (commit skipped)"
+    fi
 }
 
 # ===== Verification =====
