@@ -1401,6 +1401,12 @@ cmd_select() {
     local -a pending_add=()
     local -a pending_remove=()
 
+    # Create temp files for preview
+    local pending_add_file
+    local pending_remove_file
+    pending_add_file=$(mktemp)
+    pending_remove_file=$(mktemp)
+
     while true; do
         # Load current backup list
         local current_files=()
@@ -1417,6 +1423,10 @@ cmd_select() {
         local add_count=${#pending_add[@]}
         local remove_count=${#pending_remove[@]}
         local final_count=$((total_files + add_count - remove_count))
+
+        # Write pending lists to temp files for preview
+        printf '%s\n' "${pending_add[@]}" > "$pending_add_file"
+        printf '%s\n' "${pending_remove[@]}" > "$pending_remove_file"
 
         # Action menu with expanded variables
         local action
@@ -1444,16 +1454,16 @@ cmd_select() {
 
                 echo ''
                 echo -e \"\033[1;32m━━━ Pending Add ($add_count) ━━━\033[0m\"
-                if [[ $add_count -gt 0 ]]; then
-                    echo '${pending_add[@]}' | tr ' ' '\n' | nl
+                if [[ -s '$pending_add_file' ]]; then
+                    nl '$pending_add_file'
                 else
                     echo 'None'
                 fi
 
                 echo ''
                 echo -e \"\033[1;31m━━━ Pending Remove ($remove_count) ━━━\033[0m\"
-                if [[ $remove_count -gt 0 ]]; then
-                    echo '${pending_remove[@]}' | tr ' ' '\n' | nl
+                if [[ -s '$pending_remove_file' ]]; then
+                    nl '$pending_remove_file'
                 else
                     echo 'None'
                 fi
@@ -1469,6 +1479,7 @@ cmd_select() {
             " \
             --preview-window='right:50%:wrap') || {
             _SKIP_PAUSE=true
+            rm -f "$pending_add_file" "$pending_remove_file"
             log_warn "Cancelled"
             return 0
         }
@@ -1660,10 +1671,14 @@ cmd_select() {
                     log_warn "Discarded ${#pending_add[@]} additions and ${#pending_remove[@]} removals"
                 fi
                 _SKIP_PAUSE=true
+                rm -f "$pending_add_file" "$pending_remove_file"
                 return 0
                 ;;
         esac
     done
+
+    # Cleanup temp files
+    rm -f "$pending_add_file" "$pending_remove_file"
 
     # Show final summary
     local count
