@@ -2505,178 +2505,111 @@ cmd_status() {
 cmd_password() {
     local action="${1:-menu}"
 
-    # If no argument, show interactive menu
-    if [[ "$action" == "menu" ]]; then
-        require_cmd fzf || {
-            log_warn "FZF not found, showing help instead"
-            action="help"
-        }
-
-        if [[ "$action" == "menu" ]]; then
-            action=$(printf "%b\n%b\n%b\n%b\n%b\n" \
-                "${GREEN}save${NC} - Save/update password in gopass" \
-                "${CYAN}show${NC} - Display password from gopass" \
-                "${YELLOW}test${NC} - Test password encryption/decryption" \
-                "${RED}delete${NC} - Remove password from gopass" \
-                "${GRAY}← Back${NC} - Return to main menu" \
-            | fzf --ansi \
-                --height=50% \
-                --border=rounded \
-                --header="Password Management" \
-                --preview='
-                    action=$(echo {} | awk "{print \$1}")
-                    echo -e "\033[1;36m━━━ Password Management ━━━\033[0m"
+    # Direct command line call - execute once and exit
+    if [[ "$action" != "menu" ]]; then
+        case "$action" in
+            save)
+                # Save/update password in gopass
+                if ! command -v gopass &>/dev/null; then
+                    log_error "gopass not installed"
                     echo ""
-                    case "$action" in
-                        save)
-                            echo "Save or update your encryption password in gopass"
-                            echo ""
-                            echo "Path: keys-manage/password"
-                            echo ""
-                            echo "After saving, the password will be automatically"
-                            echo "loaded for all future operations."
-                            ;;
-                        show)
-                            echo "Display the stored password"
-                            echo ""
-                            echo "Note: Password will be visible on screen"
-                            ;;
-                        test)
-                            echo "Test password by encrypting and decrypting a file"
-                            echo ""
-                            echo "Verifies that:"
-                            echo "  • Password can be retrieved"
-                            echo "  • Encryption works"
-                            echo "  • Decryption works"
-                            echo "  • Data integrity is maintained"
-                            ;;
-                        delete)
-                            echo "Remove password from gopass"
-                            echo ""
-                            echo "⚠ Warning: You will need to re-enter"
-                            echo "  the password for future operations"
-                            ;;
-                        ←) echo "Return to main menu" ;;
-                    esac
-                ' \
-                --preview-window='right:50%:wrap') || {
-                return 0
-            }
+                    echo "Install gopass:"
+                    echo "  macOS: brew install gopass"
+                    echo "  Linux: apt install gopass"
+                    return 1
+                fi
 
-            action=$(echo "$action" | awk '{print $1}')
-
-            # Handle Back
-            if [[ "$action" == "←" ]]; then
-                return 0
-            fi
-
-            echo ""
-        fi
-    fi
-
-    case "$action" in
-        save)
-            # Save/update password in gopass
-            if ! command -v gopass &>/dev/null; then
-                log_error "gopass not installed"
+                log_header "Save Password to gopass"
                 echo ""
-                echo "Install gopass:"
-                echo "  macOS: brew install gopass"
-                echo "  Linux: apt install gopass"
-                return 1
-            fi
 
-            log_header "Save Password to gopass"
-            echo ""
+                gopass insert keys-manage/password
+                log_success "Password saved to gopass (keys-manage/password)"
+                ;;
 
-            gopass insert keys-manage/password
-            log_success "Password saved to gopass (keys-manage/password)"
-            ;;
+            show)
+                # Display password from gopass
+                if ! command -v gopass &>/dev/null; then
+                    log_error "gopass not installed"
+                    return 1
+                fi
 
-        show)
-            # Display password from gopass
-            if ! command -v gopass &>/dev/null; then
-                log_error "gopass not installed"
-                return 1
-            fi
+                gopass show keys-manage/password
+                ;;
 
-            gopass show keys-manage/password
-            ;;
+            delete)
+                # Remove password from gopass
+                if ! command -v gopass &>/dev/null; then
+                    log_error "gopass not installed"
+                    return 1
+                fi
 
-        delete)
-            # Remove password from gopass
-            if ! command -v gopass &>/dev/null; then
-                log_error "gopass not installed"
-                return 1
-            fi
-
-            local gopass_path="keys-manage/password"
-            echo "This will delete: $gopass_path"
-            echo ""
-            read -rp "Are you sure? (y/N): " confirm
-
-            if [[ "$confirm" =~ ^[Yy]$ ]]; then
-                gopass rm "$gopass_path"
-                log_success "Password deleted from gopass"
-            else
-                log_warn "Cancelled"
-            fi
-            ;;
-
-        test)
-            # Test password encryption/decryption
-            log_header "Test Password"
-            echo ""
-
-            local password
-            password=$(get_encryption_password) || {
-                log_error "Failed to get password"
-                return 1
-            }
-
-            # Create test file
-            local test_file="/tmp/keys-manage-test-$$"
-            local test_content="keys-manage password test $(date)"
-            echo "$test_content" > "$test_file"
-
-            echo "Testing encryption/decryption..."
-            echo ""
-
-            # Test encryption
-            if encrypt_file "$test_file" "$test_file.enc" "$password" 2>/dev/null; then
-                log_success "✓ Encryption successful"
-            else
-                log_error "✗ Encryption failed"
-                rm -f "$test_file" "$test_file.enc"
-                return 1
-            fi
-
-            # Test decryption
-            if decrypt_file "$test_file.enc" "$test_file.dec" "$password" 2>/dev/null; then
-                log_success "✓ Decryption successful"
-            else
-                log_error "✗ Decryption failed"
-                rm -f "$test_file" "$test_file.enc" "$test_file.dec"
-                return 1
-            fi
-
-            # Verify content matches
-            if diff -q "$test_file" "$test_file.dec" &>/dev/null; then
-                log_success "✓ Content verification successful"
+                local gopass_path="keys-manage/password"
+                echo "This will delete: $gopass_path"
                 echo ""
-                log_success "Password is correct and working"
-            else
-                log_error "✗ Content verification failed"
+                read -rp "Are you sure? (y/N): " confirm
+
+                if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                    gopass rm "$gopass_path"
+                    log_success "Password deleted from gopass"
+                else
+                    log_warn "Cancelled"
+                fi
+                ;;
+
+            test)
+                # Test password encryption/decryption
+                log_header "Test Password"
+                echo ""
+
+                local password
+                password=$(get_encryption_password) || {
+                    log_error "Failed to get password"
+                    return 1
+                }
+
+                # Create test file
+                local test_file="/tmp/keys-manage-test-$$"
+                local test_content="keys-manage password test $(date)"
+                echo "$test_content" > "$test_file"
+
+                echo "Testing encryption/decryption..."
+                echo ""
+
+                # Test encryption
+                if encrypt_file "$test_file" "$test_file.enc" "$password" 2>/dev/null; then
+                    log_success "✓ Encryption successful"
+                else
+                    log_error "✗ Encryption failed"
+                    rm -f "$test_file" "$test_file.enc"
+                    return 1
+                fi
+
+                # Test decryption
+                if decrypt_file "$test_file.enc" "$test_file.dec" "$password" 2>/dev/null; then
+                    log_success "✓ Decryption successful"
+                else
+                    log_error "✗ Decryption failed"
+                    rm -f "$test_file" "$test_file.enc" "$test_file.dec"
+                    return 1
+                fi
+
+                # Verify content matches
+                if diff -q "$test_file" "$test_file.dec" &>/dev/null; then
+                    log_success "✓ Content verification successful"
+                    echo ""
+                    log_success "Password is correct and working"
+                else
+                    log_error "✗ Content verification failed"
+                    rm -f "$test_file" "$test_file.enc" "$test_file.dec"
+                    return 1
+                fi
+
+                # Cleanup
                 rm -f "$test_file" "$test_file.enc" "$test_file.dec"
-                return 1
-            fi
+                ;;
 
-            # Cleanup
-            rm -f "$test_file" "$test_file.enc" "$test_file.dec"
-            ;;
-
-        help|*)
-            cat << 'EOF'
+            help|*)
+                cat << 'EOF'
 Usage: keys-manage password [action]
 
 Actions:
@@ -2695,8 +2628,196 @@ Examples:
 
 Note: Password is stored at: keys-manage/password
 EOF
-            ;;
-    esac
+                ;;
+        esac
+        return 0
+    fi
+
+    # Interactive menu mode - loop until Back
+    require_cmd fzf || {
+        log_warn "FZF not found, showing help instead"
+        cat << 'EOF'
+Usage: keys-manage password [action]
+
+Actions:
+  save          Save/update password in gopass
+  show          Display password from gopass
+  delete        Remove password from gopass
+  test          Test password encryption/decryption
+
+Examples:
+  keys-manage password save      # Save password to gopass
+  keys-manage password show      # View password
+  keys-manage password test      # Test password works
+EOF
+        return 0
+    }
+
+    log_section "Password Management"
+    echo ""
+
+    while true; do
+        local selected
+        selected=$(printf "%b\n%b\n%b\n%b\n%b\n" \
+            "${GREEN}save${NC} - Save/update password in gopass" \
+            "${CYAN}show${NC} - Display password from gopass" \
+            "${YELLOW}test${NC} - Test password encryption/decryption" \
+            "${RED}delete${NC} - Remove password from gopass" \
+            "${GRAY}← Back${NC} - Return to main menu" \
+        | fzf --ansi \
+            --height=50% \
+            --border=rounded \
+            --header="Select operation" \
+            --preview='
+                action=$(echo {} | awk "{print \$1}")
+                echo -e "\033[1;36m━━━ Password Management ━━━\033[0m"
+                echo ""
+                case "$action" in
+                    save)
+                        echo "Save or update your encryption password in gopass"
+                        echo ""
+                        echo "Path: keys-manage/password"
+                        echo ""
+                        echo "After saving, the password will be automatically"
+                        echo "loaded for all future operations."
+                        ;;
+                    show)
+                        echo "Display the stored password"
+                        echo ""
+                        echo "Note: Password will be visible on screen"
+                        ;;
+                    test)
+                        echo "Test password by encrypting and decrypting a file"
+                        echo ""
+                        echo "Verifies that:"
+                        echo "  • Password can be retrieved"
+                        echo "  • Encryption works"
+                        echo "  • Decryption works"
+                        echo "  • Data integrity is maintained"
+                        ;;
+                    delete)
+                        echo "Remove password from gopass"
+                        echo ""
+                        echo "⚠ Warning: You will need to re-enter"
+                        echo "  the password for future operations"
+                        ;;
+                    ←) echo "Return to previous menu" ;;
+                esac
+            ' \
+            --preview-window='right:50%:wrap') || {
+            return 0
+        }
+
+        local cmd
+        cmd=$(echo "$selected" | awk '{print $1}')
+
+        # Handle Back
+        if [[ "$cmd" == "←" ]]; then
+            return 0
+        fi
+
+        echo ""
+
+        case "$cmd" in
+            save)
+                # Save/update password in gopass
+                if ! command -v gopass &>/dev/null; then
+                    log_error "gopass not installed"
+                    echo ""
+                    echo "Install gopass:"
+                    echo "  macOS: brew install gopass"
+                    echo "  Linux: apt install gopass"
+                else
+                    log_header "Save Password to gopass"
+                    echo ""
+
+                    gopass insert keys-manage/password
+                    log_success "Password saved to gopass (keys-manage/password)"
+                fi
+                ;;
+
+            show)
+                # Display password from gopass
+                if ! command -v gopass &>/dev/null; then
+                    log_error "gopass not installed"
+                else
+                    gopass show keys-manage/password
+                fi
+                ;;
+
+            delete)
+                # Remove password from gopass
+                if ! command -v gopass &>/dev/null; then
+                    log_error "gopass not installed"
+                else
+                    local gopass_path="keys-manage/password"
+                    echo "This will delete: $gopass_path"
+                    echo ""
+                    read -rp "Are you sure? (y/N): " confirm
+
+                    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                        gopass rm "$gopass_path"
+                        log_success "Password deleted from gopass"
+                    else
+                        log_warn "Cancelled"
+                    fi
+                fi
+                ;;
+
+            test)
+                # Test password encryption/decryption
+                log_header "Test Password"
+                echo ""
+
+                local password
+                if password=$(get_encryption_password); then
+                    # Create test file
+                    local test_file="/tmp/keys-manage-test-$$"
+                    local test_content="keys-manage password test $(date)"
+                    echo "$test_content" > "$test_file"
+
+                    echo "Testing encryption/decryption..."
+                    echo ""
+
+                    local test_failed=false
+
+                    # Test encryption
+                    if encrypt_file "$test_file" "$test_file.enc" "$password" 2>/dev/null; then
+                        log_success "✓ Encryption successful"
+                    else
+                        log_error "✗ Encryption failed"
+                        test_failed=true
+                    fi
+
+                    # Test decryption
+                    if [[ "$test_failed" == false ]] && decrypt_file "$test_file.enc" "$test_file.dec" "$password" 2>/dev/null; then
+                        log_success "✓ Decryption successful"
+                    else
+                        log_error "✗ Decryption failed"
+                        test_failed=true
+                    fi
+
+                    # Verify content matches
+                    if [[ "$test_failed" == false ]] && diff -q "$test_file" "$test_file.dec" &>/dev/null; then
+                        log_success "✓ Content verification successful"
+                        echo ""
+                        log_success "Password is correct and working"
+                    else
+                        if [[ "$test_failed" == false ]]; then
+                            log_error "✗ Content verification failed"
+                        fi
+                    fi
+
+                    # Cleanup
+                    rm -f "$test_file" "$test_file.enc" "$test_file.dec"
+                else
+                    log_error "Failed to get password"
+                fi
+                ;;
+        esac
+
+        echo ""
+    done
 }
 
 # ===== Interactive Menu =====
