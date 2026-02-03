@@ -2951,63 +2951,65 @@ cmd_menu() {
         return 0
     }
 
-    local selected
-    selected=$(cat << 'MENU' | fzf --ansi \
-        --height=60% \
-        --border=rounded \
-        --header="SSH Keys Manager" \
-            --preview='
-                cmd=$(echo {} | awk "{print \$1}")
-                echo -e "\033[1;34m━━━ $cmd ━━━\033[0m"
-                echo ""
-                case "$cmd" in
-                    init) echo "Initialize encrypted backup repository" ;;
-                    select) echo "Interactively select/deselect files to backup"
-                          echo ""
-                          echo "• Add files: encrypts + commits immediately"
-                          echo "• Remove files: deletes + commits immediately"
-                          echo "• Use 'sync' afterward to push to remote" ;;
-                    sync) echo "Sync all changes (auto re-encrypt + git push/pull)"
-                          echo ""
-                          echo "• Automatically detects modified files"
-                          echo "• Re-encrypts modified files and commits"
-                          echo "• Pushes all changes to remote" ;;
-                    verify) echo "Verify backup integrity (read-only)"
-                          echo ""
-                          echo "• Compare local files with backup checksums"
-                          echo "• Shows which files are modified" ;;
-                    history) echo "Show sync event log with detailed file operations" ;;
-                    restore) echo "Restore files from backup (FZF picker)" ;;
-                    diff) echo "Preview changes before restore" ;;
-                    versions) echo "Browse backup versions with FZF" ;;
-                    validate) echo "Validate repository integrity" ;;
-                    status) echo "Show backup and restore status" ;;
-                    password) echo "Manage encryption password in gopass"
-                          echo ""
-                          echo "• save: Save password to gopass"
-                          echo "• show: Display password"
-                          echo "• test: Test password works"
-                          echo "• delete: Remove password" ;;
-                esac
-                echo ""
-                echo -e "\033[1;34m━━━ Quick Status ━━━\033[0m"
-                echo ""
-                if [[ -d "$HOME/.local/share/keys-backup/.git" ]]; then
-                    cd "$HOME/.local/share/keys-backup"
-                    echo "Repository: $(git remote get-url origin 2>/dev/null || echo "N/A")"
-                    echo "Last commit: $(git log -1 --format="%ar" 2>/dev/null || echo "N/A")"
-                    if [[ -f "$HOME/.local/share/keys-backup/backup-list.txt" ]]; then
-                        echo "Files: $(wc -l < "$HOME/.local/share/keys-backup/backup-list.txt" | tr -d " ") selected"
+    while true; do
+        local selected
+        selected=$(cat << 'MENU' | fzf --ansi \
+            --height=60% \
+            --border=rounded \
+            --header="SSH Keys Manager" \
+                --preview='
+                    cmd=$(echo {} | awk "{print \$1}")
+                    echo -e "\033[1;34m━━━ $cmd ━━━\033[0m"
+                    echo ""
+                    case "$cmd" in
+                        init) echo "Initialize encrypted backup repository" ;;
+                        select) echo "Interactively select/deselect files to backup"
+                              echo ""
+                              echo "• Add files: marks to add (encrypts on Done)"
+                              echo "• Remove files: marks to remove (deletes on Done)"
+                              echo "• Done: commits all changes at once" ;;
+                        sync) echo "Sync all changes (auto re-encrypt + git push/pull)"
+                              echo ""
+                              echo "• Automatically detects modified files"
+                              echo "• Re-encrypts modified files and commits"
+                              echo "• Pushes all changes to remote" ;;
+                        verify) echo "Verify backup integrity (read-only)"
+                              echo ""
+                              echo "• Compare local files with backup checksums"
+                              echo "• Shows which files are modified" ;;
+                        history) echo "Show sync event log with detailed file operations" ;;
+                        restore) echo "Restore files from backup (FZF picker)" ;;
+                        diff) echo "Preview changes before restore" ;;
+                        versions) echo "Browse backup versions with FZF" ;;
+                        validate) echo "Validate repository integrity" ;;
+                        status) echo "Show backup and restore status" ;;
+                        password) echo "Manage encryption password in gopass"
+                              echo ""
+                              echo "• save: Save password to gopass"
+                              echo "• show: Display password"
+                              echo "• test: Test password works"
+                              echo "• delete: Remove password" ;;
+                        quit) echo "Exit to shell" ;;
+                    esac
+                    echo ""
+                    echo -e "\033[1;34m━━━ Quick Status ━━━\033[0m"
+                    echo ""
+                    if [[ -d "$HOME/.local/share/keys-backup/.git" ]]; then
+                        cd "$HOME/.local/share/keys-backup"
+                        echo "Repository: $(git remote get-url origin 2>/dev/null || echo "N/A")"
+                        echo "Last commit: $(git log -1 --format="%ar" 2>/dev/null || echo "N/A")"
+                        if [[ -f "$HOME/.local/share/keys-backup/backup-list.txt" ]]; then
+                            echo "Files: $(wc -l < "$HOME/.local/share/keys-backup/backup-list.txt" | tr -d " ") selected"
+                        fi
+                    else
+                        echo "⚠ Not initialized"
+                        echo "Run init to initialize"
                     fi
-                else
-                    echo "⚠ Not initialized"
-                    echo "Run init to initialize"
-                fi
-            ' \
-            --preview-window='right:50%:wrap' \
-            --preview-label="[ Keys Manager ]"
+                ' \
+                --preview-window='right:50%:wrap' \
+                --preview-label="[ Keys Manager ]"
 init           Initialize backup repository
-select         Add/remove files (encrypts immediately)
+select         Add/remove files (batch commit on Done)
 sync           Sync all changes (auto re-encrypt + push)
 verify         Verify backup integrity (read-only)
 history        Show backup history
@@ -3017,31 +3019,36 @@ versions       Browse backup versions
 validate       Validate repository
 status         Show current status
 password       Manage password (gopass)
+quit           Exit to shell
 MENU
-    ) || return 0
+        ) || return 0
 
-    local cmd
-    cmd=$(echo "$selected" | awk '{print $1}')
+        local cmd
+        cmd=$(echo "$selected" | awk '{print $1}')
 
-    echo ""
+        echo ""
 
-    # Reset skip pause flag
-    _SKIP_PAUSE=false
+        # Reset skip pause flag
+        _SKIP_PAUSE=false
 
-    case "$cmd" in
-        init) cmd_init ;;
-        select) cmd_select ;;
-        sync) cmd_sync ;;
-        verify) cmd_verify ;;
-        history) cmd_history ;;
-        restore) cmd_restore ;;
-        diff) cmd_diff ;;
-        versions) cmd_versions ;;
-        validate) cmd_validate ;;
-        status) cmd_status ;;
-        password) cmd_password ;;
-        *) echo "Unknown command: $cmd" ;;
-    esac
+        case "$cmd" in
+            init) cmd_init ;;
+            select) cmd_select ;;
+            sync) cmd_sync ;;
+            verify) cmd_verify ;;
+            history) cmd_history ;;
+            restore) cmd_restore ;;
+            diff) cmd_diff ;;
+            versions) cmd_versions ;;
+            validate) cmd_validate ;;
+            status) cmd_status ;;
+            password) cmd_password ;;
+            quit) return 0 ;;
+            *) echo "Unknown command: $cmd" ;;
+        esac
+
+        echo ""
+    done
 }
 
 # ===== Main Entry Point =====
