@@ -827,9 +827,6 @@ require_repo_and_cd() {
 # Cached password for the current session
 _CACHED_PASSWORD=""
 
-# Skip pause flag (set when user cancels operation)
-_SKIP_PAUSE=false
-
 # Get encryption password from cache, environment, gopass, or prompt
 get_encryption_password() {
     # 1. Return cached password if available
@@ -1503,7 +1500,6 @@ cmd_select() {
                 esac
             " \
             --preview-window='right:50%:wrap') || {
-            _SKIP_PAUSE=true
             rm -f "$pending_add_file" "$pending_remove_file"
             log_warn "Cancelled"
             return 0
@@ -1695,7 +1691,6 @@ cmd_select() {
                 if [[ ${#pending_add[@]} -gt 0 ]] || [[ ${#pending_remove[@]} -gt 0 ]]; then
                     log_warn "Discarded ${#pending_add[@]} additions and ${#pending_remove[@]} removals"
                 fi
-                _SKIP_PAUSE=true
                 rm -f "$pending_add_file" "$pending_remove_file"
                 return 0
                 ;;
@@ -1780,7 +1775,6 @@ cmd_add() {
         --preview="$FILE_PREVIEW" \
         --preview-window='right:50%:wrap:border-left' \
         --bind='ctrl-a:select-all') || {
-        _SKIP_PAUSE=true
         log_warn "Selection cancelled"
         return 0
     }
@@ -1791,7 +1785,6 @@ cmd_add() {
         # Launch yazi for browsing
         to_add=$(yazi_select_files)
         if [[ -z "$to_add" ]]; then
-            _SKIP_PAUSE=true
             return 0
         fi
     else
@@ -1799,7 +1792,6 @@ cmd_add() {
     fi
 
     if [[ -z "$to_add" ]]; then
-        _SKIP_PAUSE=true
         log_warn "No files selected"
         return 0
     fi
@@ -1877,13 +1869,11 @@ cmd_remove() {
             fi
         " \
         --preview-window='right:50%:wrap') || {
-        _SKIP_PAUSE=true
         log_warn "Selection cancelled"
         return 0
     }
 
     if [[ -z "$to_remove" ]]; then
-        _SKIP_PAUSE=true
         log_warn "No files selected"
         return 0
     fi
@@ -1897,7 +1887,6 @@ cmd_remove() {
     echo ""
     read -r -p "Confirm removal? (y/N): " confirm
     if [[ "$confirm" != "y" ]]; then
-        _SKIP_PAUSE=true
         echo "Cancelled"
         return 0
     fi
@@ -2178,15 +2167,15 @@ cmd_history() {
 
 # Command: restore - Restore files from backup
 cmd_restore() {
-    local commit=""
     local dry_run=false
     local no_backup=false
+    local commit_arg=""
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --commit|-c)
-                commit="$2"
+                commit_arg="$2"
                 shift 2
                 ;;
             --dry-run)
@@ -2199,15 +2188,15 @@ cmd_restore() {
                 ;;
             *)
                 # First positional argument is commit
-                if [[ -z "$commit" ]]; then
-                    commit="$1"
+                if [[ -z "$commit_arg" ]]; then
+                    commit_arg="$1"
                 fi
                 shift
                 ;;
         esac
     done
 
-    require_cmd git || return 1
+    require_cmd git fzf || return 1
 
     [[ ! -d "$REPO_DIR/.git" ]] && {
         log_error "Repository not initialized"
@@ -2222,106 +2211,115 @@ cmd_restore() {
         return 1
     }
 
-    # Step 1: Select version with FZF if not specified
-    if [[ -z "$commit" ]]; then
-        if command -v fzf &>/dev/null; then
-            commit=$(fzf_pick_commit "Select version to restore") || {
-                _SKIP_PAUSE=true
-                log_warn "Restore cancelled"
-                return 0
-            }
-        else
-            commit="HEAD"
-            log_warn "fzf not found, using latest version"
-        fi
+    log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    log_section "Interactive Restore - Per-file version selection"
+    log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+
+    # Step 1: Select ONE file to restore
+    log_section "Step 1: Select file to restore"
+    echo ""
+
+    local selected_file
+    selected_file=$(git ls-tree -r --name-only HEAD backup-files/ 2>/dev/null | \
+        sed 's|^backup-files/||' | \
+        fzf \
+            --height=70% \
+            --border=rounded \
+            --header="Select file to restore (showing only commits that modified this file)" \
+            --preview="echo 'File: {}'; echo ''; echo 'Commit history (only commits affecting this file):'; echo ''; git log --oneline -10 -- 'backup-files/{}'" \
+            --preview-window='right:50%:wrap') || {
+        log_warn "No file selected"
+        return 0
+    }
+
+    if [[ -z "$selected_file" ]]; then
+        log_warn "No file selected"
+        return 0
+    fi
+
+    local backup_path="backup-files/$selected_file"
+    local target_path
+    target_path=$(get_absolute_path "$BACKUP_FILES_DIR/$selected_file")
+
+    echo ""
+    echo "Selected: $selected_file"
+    echo ""
+
+    # Step 2: Select version (commit) for this specific file
+    log_section "Step 2: Select version for: $selected_file"
+    echo ""
+    echo "Showing only commits that modified this file:"
+    echo ""
+
+    local selected_commit
+    if [[ -n "$commit_arg" ]]; then
+        # Use specified commit
+        selected_commit="$commit_arg"
+        echo "Using specified commit: $(git log -1 --format='%h - %s (%ar)' "$selected_commit")"
+    else
+        # Show commit history for this specific file ONLY
+        selected_commit=$(git log --oneline -- "$backup_path" | \
+            fzf \
+                --height=60% \
+                --border=rounded \
+                --header="Select version to restore for: $selected_file (only commits affecting this file)" \
+                --preview="echo 'Commit details:'; echo ''; git show --stat {1} -- '$backup_path'; echo ''; echo 'Changes in this file:'; git show {1} -- '$backup_path' | head -50" \
+                --preview-window='right:60%:wrap' | \
+            awk '{print $1}') || {
+            log_warn "No commit selected"
+            return 0
+        }
     fi
 
     # Validate commit
-    if ! git rev-parse "$commit" &>/dev/null; then
-        log_error "Invalid commit: $commit"
+    if ! git rev-parse "$selected_commit" &>/dev/null; then
+        log_error "Invalid commit: $selected_commit"
         return 1
     fi
 
-    # Step 2: Select files to restore (FZF multi-select)
-    local files_to_restore
-    if command -v fzf &>/dev/null; then
-        log_section "Select files to restore (Tab to multi-select, Enter to confirm)"
-        echo ""
-
-        # Get list of encrypted files in this commit
-        local available_files
-        available_files=$(git ls-tree -r --name-only "$commit" backup-files/ 2>/dev/null | \
-            sed 's|^backup-files/||' | \
-            fzf -m \
-                --height=60% \
-                --border=rounded \
-                --header="Select files to restore (Tab=select, Enter=confirm)" \
-                --preview="echo 'File: {}'; echo ''; git log -1 --format='Commit: %h%nDate: %ar%nMessage: %s' '$commit' -- 'backup-files/{}'" \
-                --preview-window='right:50%:wrap') || {
-            _SKIP_PAUSE=true
-            log_warn "No files selected"
-            return 0
-        }
-
-        # Convert to array
-        files_to_restore=()
-        while IFS= read -r file; do
-            [[ -n "$file" ]] && files_to_restore+=("$file")
-        done <<< "$available_files"
-
-        if [[ ${#files_to_restore[@]} -eq 0 ]]; then
-            _SKIP_PAUSE=true
-            log_warn "No files selected"
-            return 0
-        fi
-    else
-        # No FZF, restore all files from backup-list.txt
-        files_to_restore=()
-        while IFS= read -r file; do
-            [[ -n "$file" ]] && files_to_restore+=("$(basename "$file")")
-        done < "$BACKUP_LIST"
+    # Check if file exists in selected commit
+    if ! git cat-file -e "$selected_commit:$backup_path" 2>/dev/null; then
+        log_error "File not found in commit $selected_commit: $selected_file"
+        return 1
     fi
 
-    local commit_short commit_msg commit_date
-    commit_short=$(git rev-parse --short "$commit")
-    commit_msg=$(git log -1 --format="%s" "$commit")
-    commit_date=$(git log -1 --format="%ar" "$commit")
+    echo ""
+    echo "✓ Selected version: $(git log -1 --format='%h - %s (%ar)' "$selected_commit")"
+    echo ""
+
+    # Step 3: Show summary and confirm
+    log_section "Step 3: Confirm restore"
+    echo ""
 
     log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    log_section "SSH Keys Restore"
+    log_section "Restore Summary"
     log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "Restore from:"
-    echo "  Commit:  $commit_short"
-    echo "  Message: $commit_msg"
-    echo "  Date:    $commit_date"
+
+    local commit_info
+    commit_info=$(git log -1 --format='%h - %s (%ar)' "$selected_commit")
+
+    echo "File to restore:"
+    echo "  • $selected_file"
+    echo "    From: $commit_info"
+    echo "    To:   $target_path"
     echo ""
 
     if [[ "$dry_run" == true ]]; then
         echo ""
-        log_warn "Dry run mode - no files will be restored"
+        log_warn "Dry run mode - file will not be restored"
         return 0
     fi
 
     # Confirmation
-    echo ""
-    read -r -p "Restore from $commit_short? (y/n): " confirm
+    read -r -p "Proceed with restore? (y/n): " confirm
     if [[ "$confirm" != "y" ]]; then
-        _SKIP_PAUSE=true
         echo "Restore cancelled"
         return 0
     fi
 
-    # Show selected files
-    echo ""
-    echo "Files to restore (${#files_to_restore[@]}):"
-    for rel_file in "${files_to_restore[@]}"; do
-        local target_path
-        target_path=$(get_absolute_path "$BACKUP_FILES_DIR/$rel_file")
-        echo "  • $rel_file → $target_path"
-    done
-
-    # Backup current state (only files being restored)
+    # Backup current state
     local backup_dir
     backup_dir="${HOME}/.ssh/backup-$(date +%Y%m%d-%H%M%S)"
 
@@ -2330,27 +2328,25 @@ cmd_restore() {
         echo "[1/3] Backing up current state..."
         mkdir -p "$backup_dir"
 
-        local backed_up=0
-        for rel_file in "${files_to_restore[@]}"; do
-            local target_path
-            target_path=$(get_absolute_path "$BACKUP_FILES_DIR/$rel_file")
-
-            if [[ -f "$target_path" ]]; then
-                cp "$target_path" "$backup_dir/"
-                [[ -f "$target_path.pub" ]] && cp "$target_path.pub" "$backup_dir/"
-                backed_up=$((backed_up + 1))
-            fi
-        done
-
-        log_success "Backed up $backed_up files to: $backup_dir"
+        if [[ -f "$target_path" ]]; then
+            # Preserve directory structure in backup
+            local backup_subdir
+            backup_subdir=$(dirname "$backup_dir/$selected_file")
+            mkdir -p "$backup_subdir"
+            cp "$target_path" "$backup_subdir/"
+            [[ -f "$target_path.pub" ]] && cp "$target_path.pub" "$backup_subdir/"
+            log_success "Backed up current file to: $backup_dir"
+        else
+            echo "No existing file to backup"
+        fi
     else
         echo ""
         log_warn "⚠ Skipping current state backup (--no-backup)"
     fi
 
-    # Restore files (using git show, not checkout)
+    # Restore file
     echo ""
-    echo "[2/3] Restoring files..."
+    echo "[2/3] Restoring file..."
 
     local password
     password=$(get_encryption_password) || {
@@ -2358,52 +2354,46 @@ cmd_restore() {
         return 1
     }
 
-    local restored_count=0
-    local failed_count=0
     local temp_encrypted="/tmp/keys-restore-$$.enc"
+    local filename
+    filename=$(basename "$target_path")
 
-    for rel_file in "${files_to_restore[@]}"; do
-        local backup_path="backup-files/$rel_file"
-        local target_path
-        target_path=$(get_absolute_path "$BACKUP_FILES_DIR/$rel_file")
-        local filename
-        filename=$(basename "$target_path")
+    # Extract encrypted file from selected commit
+    if ! git show "$selected_commit:$backup_path" > "$temp_encrypted" 2>/dev/null; then
+        echo "  ${STATUS_ERROR} Not found in commit $(git rev-parse --short "$selected_commit"): $filename"
+        rm -f "$temp_encrypted"
+        return 1
+    fi
 
-        # Extract encrypted file from commit using git show
-        if ! git show "$commit:$backup_path" > "$temp_encrypted" 2>/dev/null; then
-            echo "  ${STATUS_ERROR} Not found in commit: $filename"
-            failed_count=$((failed_count + 1))
-            continue
-        fi
+    # Decrypt and restore
+    mkdir -p "$(dirname "$target_path")"
+    if decrypt_file "$temp_encrypted" "$target_path" "$password" 2>/dev/null; then
+        # Restore original permissions from metadata
+        local original_perms
+        original_perms=$(jq -r ".files[\"$target_path\"].permissions // empty" "$METADATA_FILE" 2>/dev/null)
 
-        # Decrypt and restore
-        mkdir -p "$(dirname "$target_path")"
-        if decrypt_file "$temp_encrypted" "$target_path" "$password" 2>/dev/null; then
-            # Restore original permissions from metadata
-            local original_perms
-            original_perms=$(jq -r ".files[\"$target_path\"].permissions // empty" "$METADATA_FILE" 2>/dev/null)
-
-            if [[ -n "$original_perms" ]]; then
-                # Use original permissions from metadata
-                chmod "$original_perms" "$target_path"
-            else
-                # Fallback: default to 600 for private files
-                chmod 600 "$target_path"
-            fi
-
-            echo "  ${STATUS_OK} Restored: $filename"
-            restored_count=$((restored_count + 1))
+        if [[ -n "$original_perms" ]]; then
+            # Use original permissions from metadata
+            chmod "$original_perms" "$target_path"
         else
-            echo "  ${STATUS_ERROR} Decryption failed: $filename"
-            failed_count=$((failed_count + 1))
+            # Fallback: default to 600 for private files
+            chmod 600 "$target_path"
         fi
 
-        # Restore public key if exists in commit
-        if git cat-file -e "$commit:$backup_path.pub" 2>/dev/null; then
-            git show "$commit:$backup_path.pub" > "$target_path.pub" 2>/dev/null
-            chmod 644 "$target_path.pub"
-        fi
-    done
+        local commit_short
+        commit_short=$(git rev-parse --short "$selected_commit")
+        echo "  ${STATUS_OK} Restored: $filename (from $commit_short)"
+    else
+        echo "  ${STATUS_ERROR} Decryption failed: $filename"
+        rm -f "$temp_encrypted"
+        return 1
+    fi
+
+    # Restore public key if exists in commit
+    if git cat-file -e "$selected_commit:$backup_path.pub" 2>/dev/null; then
+        git show "$selected_commit:$backup_path.pub" > "$target_path.pub" 2>/dev/null
+        chmod 644 "$target_path.pub"
+    fi
 
     # Cleanup
     rm -f "$temp_encrypted"
@@ -2415,18 +2405,18 @@ cmd_restore() {
     echo -e "✅ Restore Complete${NC}"
     log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "Restored $restored_count files"
-    [[ $failed_count -gt 0 ]] && echo "Failed: $failed_count files"
+    echo "Successfully restored: $selected_file"
+    echo "From commit: $commit_info"
 
     if [[ "$no_backup" != true ]]; then
         echo ""
         log_info "Rollback available:"
         echo "  Current state saved to: $backup_dir"
-        echo "  To rollback: cp $backup_dir/* ~/.ssh/"
+        echo "  To rollback: cp -r $backup_dir/* ~/.ssh/"
     fi
 
     echo ""
-    log_event "Restored from commit $commit_short: $restored_count files"
+    log_event "Restored: $selected_file from $(git rev-parse --short "$selected_commit")"
 }
 
 # Command: versions - Show available versions with FZF
@@ -2445,7 +2435,6 @@ cmd_versions() {
 
     local selected
     selected=$(fzf_pick_commit "Select backup version") || {
-        _SKIP_PAUSE=true
         log_warn "Selection cancelled"
         return 0
     }
@@ -2975,8 +2964,11 @@ cmd_menu() {
                               echo "• Exits after completion" ;;
                         history) echo "Show sync event log"
                               echo "• Exits after completion" ;;
-                        restore) echo "Restore files from backup (FZF version picker)"
-                              echo "• Exits after completion" ;;
+                        restore) echo "Restore files from backup (per-file version picker)"
+                              echo ""
+                              echo "• Select one file at a time"
+                              echo "• View only commits affecting that file"
+                              echo "• Returns to menu after restore or ESC" ;;
                         validate) echo "Validate repository integrity"
                               echo "• Exits after completion" ;;
                         status) echo "Show backup and restore status"
@@ -3012,7 +3004,7 @@ select         Add/remove files (returns to menu)
 sync           Sync all changes (exits after)
 verify         Verify backup integrity (exits after)
 history        Show backup history (exits after)
-restore        Restore from backup (exits after)
+restore        Restore from backup (returns to menu)
 validate       Validate repository (exits after)
 status         Show current status (exits after)
 password       Manage password (returns to menu)
@@ -3025,20 +3017,17 @@ MENU
 
         echo ""
 
-        # Reset skip pause flag
-        _SKIP_PAUSE=false
-
         case "$cmd" in
             # Commands that return to menu (no break)
             select) cmd_select ;;
             password) cmd_password ;;
+            restore) cmd_restore ;;
 
             # Commands that exit after execution (break loop)
             init) cmd_init ; break ;;
             sync) cmd_sync ; break ;;
             verify) cmd_verify ; break ;;
             history) cmd_history ; break ;;
-            restore) cmd_restore ; break ;;
             validate) cmd_validate ; break ;;
             status) cmd_status ; break ;;
             quit) return 0 ;;
