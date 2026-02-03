@@ -1393,9 +1393,13 @@ cmd_select() {
     echo -e "${BOLD}Actions:${NC}"
     echo -e "  ${GREEN}+ Add files${NC}    - Browse and add files with yazi"
     echo -e "  ${RED}- Remove files${NC} - Remove files from backup list"
-    echo -e "  ${CYAN}✓ Done${NC}         - Save and exit"
-    echo -e "  ${GRAY}← Back${NC}         - Return to main menu"
+    echo -e "  ${CYAN}✓ Done${NC}         - Save changes and commit"
+    echo -e "  ${GRAY}← Back${NC}         - Cancel all changes"
     echo ""
+
+    # Track pending changes
+    local -a pending_add=()
+    local -a pending_remove=()
 
     while true; do
         # Load current backup list
@@ -1408,6 +1412,12 @@ cmd_select() {
             done < "$BACKUP_LIST"
         fi
 
+        # Calculate preview counts
+        local total_files=${#current_files[@]}
+        local add_count=${#pending_add[@]}
+        local remove_count=${#pending_remove[@]}
+        local final_count=$((total_files + add_count - remove_count))
+
         # Action menu with expanded variables
         local action
         action=$(printf "%b\n%b\n%b\n%b\n" \
@@ -1418,36 +1428,43 @@ cmd_select() {
         | fzf --ansi \
             --height=50% \
             --border=rounded \
-            --header="Current: ${#current_files[@]} files | Select action" \
+            --header="Current: $total_files | +$add_count -$remove_count | Final: $final_count" \
             --preview="
                 action=\$(echo {} | awk '{print \$1}')
-                # Load and filter backup list (same logic as main script)
-                if [[ -f '$BACKUP_LIST' ]]; then
-                    filtered_list=\$(grep -v '\[0\;' '$BACKUP_LIST' 2>/dev/null | grep -v 'Add Custom' | grep -v 'File path' | grep -v 'Tip:' | grep -v '^$')
-                    if [[ -n \"\$filtered_list\" ]]; then
-                        count=\$(echo \"\$filtered_list\" | wc -l | tr -d ' ')
-                    else
-                        count=0
+
+                echo -e \"\033[1;36m━━━ Current Backup List ($total_files files) ━━━\033[0m\"
+                echo ''
+                if [[ $total_files -gt 0 ]]; then
+                    if [[ -f '$BACKUP_LIST' ]]; then
+                        grep -v '\[0\;' '$BACKUP_LIST' 2>/dev/null | grep -v 'Add Custom' | grep -v 'File path' | grep -v 'Tip:' | grep -v '^$' | nl
                     fi
                 else
-                    filtered_list=''
-                    count=0
+                    echo 'List is empty'
                 fi
 
-                echo -e \"\033[1;36m━━━ Current Backup List (\$count files) ━━━\033[0m\"
                 echo ''
-                if [[ \$count -gt 0 ]]; then
-                    echo \"\$filtered_list\" | nl
+                echo -e \"\033[1;32m━━━ Pending Add ($add_count) ━━━\033[0m\"
+                if [[ $add_count -gt 0 ]]; then
+                    echo '${pending_add[@]}' | tr ' ' '\n' | nl
                 else
-                    echo 'List is empty - add files to start'
+                    echo 'None'
                 fi
+
+                echo ''
+                echo -e \"\033[1;31m━━━ Pending Remove ($remove_count) ━━━\033[0m\"
+                if [[ $remove_count -gt 0 ]]; then
+                    echo '${pending_remove[@]}' | tr ' ' '\n' | nl
+                else
+                    echo 'None'
+                fi
+
                 echo ''
                 echo -e \"\033[1;36m━━━ Action ━━━\033[0m\"
                 case \"\$action\" in
-                    +) echo 'Browse filesystem with yazi and select files to add' ;;
-                    -) echo 'Select files to remove from backup list' ;;
-                    ✓) echo 'Save changes and exit' ;;
-                    ←) echo 'Return to main menu' ;;
+                    +) echo 'Browse and select files (will be added when Done)' ;;
+                    -) echo 'Select files to remove (will be removed when Done)' ;;
+                    ✓) echo 'Process all changes and commit once' ;;
+                    ←) echo 'Cancel all pending changes' ;;
                 esac
             " \
             --preview-window='right:50%:wrap') || {
@@ -1462,36 +1479,52 @@ cmd_select() {
         echo ""
         case "$cmd" in
             +)
-                # Add files with yazi (encrypt immediately)
+                # Add files with yazi (record only, don't encrypt yet)
                 log_section "Add files with yazi"
                 echo ""
 
                 # Capture yazi selection
                 local yazi_files
                 if yazi_files=$(yazi_select_files); then
-                    # Initialize repo and change to repo directory
-                    require_repo_and_cd || continue
+                    # Add to pending list
+                    while IFS= read -r file; do
+                        if [[ -n "$file" ]]; then
+                            # Check if already in backup list
+                            local already_in_list=false
+                            for current_file in "${current_files[@]}"; do
+                                if [[ "$file" == "$current_file" ]]; then
+                                    already_in_list=true
+                                    break
+                                fi
+                            done
 
-                    # Get password once for all files
-                    local password
-                    password=$(get_encryption_password) || {
-                        log_error "Cannot proceed without password"
-                        continue
-                    }
+                            # Check if already in pending add
+                            local already_pending=false
+                            for pending_file in "${pending_add[@]}"; do
+                                if [[ "$file" == "$pending_file" ]]; then
+                                    already_pending=true
+                                    break
+                                fi
+                            done
 
-                    echo "Encrypting and adding files..."
-                    echo ""
-
-                    # Use batch add function
-                    add_files_to_backup "$yazi_files" "$password"
+                            if [[ "$already_in_list" == true ]]; then
+                                log_warn "Already in backup: $(basename "$file")"
+                            elif [[ "$already_pending" == true ]]; then
+                                log_warn "Already pending: $(basename "$file")"
+                            else
+                                pending_add+=("$file")
+                                log_success "Marked to add: $(basename "$file")"
+                            fi
+                        fi
+                    done <<< "$yazi_files"
                 else
-                    :  # User cancelled
+                    log_warn "Cancelled"
                 fi
                 echo ""
                 ;;
 
             -)
-                # Remove files
+                # Remove files (record only, don't delete yet)
                 if [[ ${#current_files[@]} -eq 0 ]]; then
                     log_warn "Backup list is empty"
                     echo ""
@@ -1508,14 +1541,25 @@ cmd_select() {
                     "$FILE_PREVIEW")
 
                 if [[ -n "$to_remove" ]]; then
-                    # Initialize repo and change to repo directory
-                    require_repo_and_cd || continue
+                    while IFS= read -r file; do
+                        if [[ -n "$file" ]]; then
+                            # Check if already in pending remove
+                            local already_pending=false
+                            for pending_file in "${pending_remove[@]}"; do
+                                if [[ "$file" == "$pending_file" ]]; then
+                                    already_pending=true
+                                    break
+                                fi
+                            done
 
-                    echo "Removing files from backup..."
-                    echo ""
-
-                    # Use batch remove function
-                    remove_files_from_backup "$to_remove"
+                            if [[ "$already_pending" == true ]]; then
+                                log_warn "Already pending removal: $(basename "$file")"
+                            else
+                                pending_remove+=("$file")
+                                log_success "Marked to remove: $(basename "$file")"
+                            fi
+                        fi
+                    done <<< "$to_remove"
                 else
                     log_warn "No files selected"
                 fi
@@ -1523,12 +1567,61 @@ cmd_select() {
                 ;;
 
             ✓)
-                # Done
+                # Done - process all pending changes
+                if [[ ${#pending_add[@]} -eq 0 ]] && [[ ${#pending_remove[@]} -eq 0 ]]; then
+                    log_warn "No pending changes"
+                    echo ""
+                    continue
+                fi
+
+                echo ""
+                log_section "Processing changes..."
+                echo ""
+
+                # Initialize repo
+                require_repo_and_cd || {
+                    log_error "Failed to initialize repository"
+                    return 1
+                }
+
+                # Get password if adding files
+                local password=""
+                if [[ ${#pending_add[@]} -gt 0 ]]; then
+                    password=$(get_encryption_password) || {
+                        log_error "Cannot proceed without password"
+                        continue
+                    }
+                fi
+
+                # Process additions
+                if [[ ${#pending_add[@]} -gt 0 ]]; then
+                    echo "Adding ${#pending_add[@]} file(s)..."
+                    echo ""
+                    local add_files_str
+                    add_files_str=$(printf '%s\n' "${pending_add[@]}")
+                    add_files_to_backup "$add_files_str" "$password"
+                    echo ""
+                fi
+
+                # Process removals
+                if [[ ${#pending_remove[@]} -gt 0 ]]; then
+                    echo "Removing ${#pending_remove[@]} file(s)..."
+                    echo ""
+                    local remove_files_str
+                    remove_files_str=$(printf '%s\n' "${pending_remove[@]}")
+                    remove_files_from_backup "$remove_files_str"
+                    echo ""
+                fi
+
+                log_success "All changes committed"
                 break
                 ;;
 
             ←)
-                # Back to main menu
+                # Back - cancel all pending changes
+                if [[ ${#pending_add[@]} -gt 0 ]] || [[ ${#pending_remove[@]} -gt 0 ]]; then
+                    log_warn "Discarded ${#pending_add[@]} additions and ${#pending_remove[@]} removals"
+                fi
                 _SKIP_PAUSE=true
                 return 0
                 ;;
