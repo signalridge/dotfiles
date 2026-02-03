@@ -1624,7 +1624,7 @@ cmd_select() {
                 if [[ ${#pending_add[@]} -eq 0 ]] && [[ ${#pending_remove[@]} -eq 0 ]]; then
                     log_warn "No pending changes"
                     echo ""
-                    continue
+                    break  # Return to main menu
                 fi
 
                 echo ""
