@@ -132,11 +132,25 @@ detect_changes() {
         return 0  # File not in git = new file
     fi
 
-    # Compare source file with decrypted backup
-    local current_hash backup_hash
+    # Fast path: Compare with metadata (avoids decryption)
+    local current_hash
     current_hash=$(calc_checksum "$file")
 
-    # Decrypt backup file to temp location for comparison
+    if [[ -f "$METADATA_FILE" ]]; then
+        local metadata_hash
+        metadata_hash=$(jq -r ".files[\"$file\"].sha256 // empty" "$METADATA_FILE" 2>/dev/null)
+
+        if [[ -n "$metadata_hash" ]]; then
+            # Metadata exists, compare directly (no decryption needed)
+            [[ "$current_hash" != "$metadata_hash" ]] && return 0 || return 1
+        fi
+    fi
+
+    # Slow path (fallback): Decrypt and compare
+    # This happens when:
+    # - No metadata file exists
+    # - File not in metadata (legacy backups)
+    local backup_hash
     local temp_encrypted="/tmp/keys-detect-$$.enc"
     local temp_decrypted="/tmp/keys-detect-$$"
 
@@ -2205,7 +2219,7 @@ cmd_restore() {
         return 1
     }
 
-    # Select version with FZF if not specified
+    # Step 1: Select version with FZF if not specified
     if [[ -z "$commit" ]]; then
         if command -v fzf &>/dev/null; then
             commit=$(fzf_pick_commit "Select version to restore") || {
@@ -2223,6 +2237,46 @@ cmd_restore() {
     if ! git rev-parse "$commit" &>/dev/null; then
         log_error "Invalid commit: $commit"
         return 1
+    fi
+
+    # Step 2: Select files to restore (FZF multi-select)
+    local files_to_restore
+    if command -v fzf &>/dev/null; then
+        log_section "Select files to restore (Tab to multi-select, Enter to confirm)"
+        echo ""
+
+        # Get list of encrypted files in this commit
+        local available_files
+        available_files=$(git ls-tree -r --name-only "$commit" backup-files/ 2>/dev/null | \
+            sed 's|^backup-files/||' | \
+            fzf -m \
+                --height=60% \
+                --border=rounded \
+                --header="Select files to restore (Tab=select, Enter=confirm)" \
+                --preview="echo 'File: {}'; echo ''; git log -1 --format='Commit: %h%nDate: %ar%nMessage: %s' '$commit' -- 'backup-files/{}'" \
+                --preview-window='right:50%:wrap') || {
+            _SKIP_PAUSE=true
+            log_warn "No files selected"
+            return 0
+        }
+
+        # Convert to array
+        files_to_restore=()
+        while IFS= read -r file; do
+            [[ -n "$file" ]] && files_to_restore+=("$file")
+        done <<< "$available_files"
+
+        if [[ ${#files_to_restore[@]} -eq 0 ]]; then
+            _SKIP_PAUSE=true
+            log_warn "No files selected"
+            return 0
+        fi
+    else
+        # No FZF, restore all files from backup-list.txt
+        files_to_restore=()
+        while IFS= read -r file; do
+            [[ -n "$file" ]] && files_to_restore+=("$(basename "$file")")
+        done < "$BACKUP_LIST"
     fi
 
     local commit_short commit_msg commit_date
@@ -2255,23 +2309,35 @@ cmd_restore() {
         return 0
     fi
 
-    # Backup current state
+    # Show selected files
+    echo ""
+    echo "Files to restore (${#files_to_restore[@]}):"
+    for rel_file in "${files_to_restore[@]}"; do
+        local target_path
+        target_path=$(get_absolute_path "$BACKUP_FILES_DIR/$rel_file")
+        echo "  • $rel_file → $target_path"
+    done
+
+    # Backup current state (only files being restored)
     local backup_dir
     backup_dir="${HOME}/.ssh/backup-$(date +%Y%m%d-%H%M%S)"
 
     if [[ "$no_backup" != true ]]; then
         echo ""
-        echo "[1/4] Backing up current state..."
+        echo "[1/3] Backing up current state..."
         mkdir -p "$backup_dir"
 
         local backed_up=0
-        while IFS= read -r file; do
-            if [[ -f "$file" ]]; then
-                cp "$file" "$backup_dir/"
-                [[ -f "$file.pub" ]] && cp "$file.pub" "$backup_dir/"
+        for rel_file in "${files_to_restore[@]}"; do
+            local target_path
+            target_path=$(get_absolute_path "$BACKUP_FILES_DIR/$rel_file")
+
+            if [[ -f "$target_path" ]]; then
+                cp "$target_path" "$backup_dir/"
+                [[ -f "$target_path.pub" ]] && cp "$target_path.pub" "$backup_dir/"
                 backed_up=$((backed_up + 1))
             fi
-        done < "$BACKUP_LIST"
+        done
 
         log_success "Backed up $backed_up files to: $backup_dir"
     else
@@ -2279,60 +2345,56 @@ cmd_restore() {
         log_warn "⚠ Skipping current state backup (--no-backup)"
     fi
 
-    # Checkout backup version
+    # Restore files (using git show, not checkout)
     echo ""
-    echo "[2/4] Checking out backup version..."
+    echo "[2/3] Restoring files..."
 
-    # IMPORTANT: git checkout doesn't remove extra files from working directory
-    # We must remove backup-files/ first to ensure clean state
-    rm -rf backup-files/
-
-    git checkout "$commit" -- backup-files/ 2>/dev/null || {
-        log_error "Failed to checkout backup version"
+    local password
+    password=$(get_encryption_password) || {
+        log_error "Failed to get encryption password"
         return 1
     }
 
-    # Restore files
-    echo ""
-    echo "[3/4] Restoring SSH keys..."
-    mkdir -p ~/.ssh
-    chmod 700 ~/.ssh
-
     local restored_count=0
     local failed_count=0
+    local temp_encrypted="/tmp/keys-restore-$$.enc"
 
-    while IFS= read -r file; do
+    for rel_file in "${files_to_restore[@]}"; do
+        local backup_path="backup-files/$rel_file"
+        local target_path
+        target_path=$(get_absolute_path "$BACKUP_FILES_DIR/$rel_file")
         local filename
-        filename=$(basename "$file")
+        filename=$(basename "$target_path")
 
-        # Get backup path
-        local backup_path
-        backup_path=$(get_backup_path "$file")
+        # Extract encrypted file from commit using git show
+        if ! git show "$commit:$backup_path" > "$temp_encrypted" 2>/dev/null; then
+            echo "  ${STATUS_ERROR} Not found in commit: $filename"
+            failed_count=$((failed_count + 1))
+            continue
+        fi
 
-        if [[ -f "$backup_path" ]]; then
-            # Restore private key
-            mkdir -p "$(dirname "$file")"
-            cp "$backup_path" "$file"
-            chmod 600 "$file"
-
-            # Restore public key if exists
-            if [[ -f "$backup_path.pub" ]]; then
-                cp "$backup_path.pub" "$file.pub"
-                chmod 644 "$file.pub"
-            fi
-
+        # Decrypt and restore
+        mkdir -p "$(dirname "$target_path")"
+        if decrypt_file "$temp_encrypted" "$target_path" "$password" 2>/dev/null; then
+            chmod 600 "$target_path"
             echo "  ${STATUS_OK} Restored: $filename"
             restored_count=$((restored_count + 1))
         else
-            echo "  ${STATUS_ERROR} Not found in backup: $filename"
+            echo "  ${STATUS_ERROR} Decryption failed: $filename"
             failed_count=$((failed_count + 1))
         fi
-    done < "$BACKUP_LIST"
+
+        # Restore public key if exists in commit
+        if git cat-file -e "$commit:$backup_path.pub" 2>/dev/null; then
+            git show "$commit:$backup_path.pub" > "$target_path.pub" 2>/dev/null
+            chmod 644 "$target_path.pub"
+        fi
+    done
 
     # Cleanup
+    rm -f "$temp_encrypted"
     echo ""
-    echo "[4/4] Cleanup..."
-    git checkout HEAD -- backup-files/ 2>/dev/null || true
+    echo "[3/3] Complete"
 
     echo ""
     log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
