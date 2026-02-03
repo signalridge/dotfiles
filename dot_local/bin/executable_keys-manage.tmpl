@@ -2708,12 +2708,11 @@ cmd_menu() {
         return 0
     }
 
-    while true; do
-        local selected
-        selected=$(cat << 'MENU' | fzf --ansi \
-            --height=60% \
-            --border=rounded \
-            --header="SSH Keys Manager" \
+    local selected
+    selected=$(cat << 'MENU' | fzf --ansi \
+        --height=60% \
+        --border=rounded \
+        --header="SSH Keys Manager" \
             --preview='
                 cmd=$(echo {} | awk "{print \$1}")
                 echo -e "\033[1;34m━━━ $cmd ━━━\033[0m"
@@ -2747,7 +2746,6 @@ cmd_menu() {
                           echo "• show: Display password"
                           echo "• test: Test password works"
                           echo "• delete: Remove password" ;;
-                    quit) echo "Exit keys-manage" ;;
                 esac
                 echo ""
                 echo -e "\033[1;34m━━━ Quick Status ━━━\033[0m"
@@ -2778,36 +2776,32 @@ versions       Browse backup versions
 validate       Validate repository
 status         Show current status
 password       Manage password (gopass)
-quit           Exit
 MENU
-        ) || return 0
+    ) || return 0
 
-        local cmd
-        cmd=$(echo "$selected" | awk '{print $1}')
+    local cmd
+    cmd=$(echo "$selected" | awk '{print $1}')
 
-        echo ""
+    echo ""
 
-        # Reset skip pause flag
-        _SKIP_PAUSE=false
+    # Reset skip pause flag
+    _SKIP_PAUSE=false
 
-        case "$cmd" in
-            init) cmd_init ;;
-            select) cmd_select ;;
-            update) cmd_update ;;
-            sync) cmd_sync ;;
-            verify) cmd_verify ;;
-            history) cmd_history ;;
-            restore) cmd_restore ;;
-            diff) cmd_diff ;;
-            versions) cmd_versions ;;
-            validate) cmd_validate ;;
-            status) cmd_status ;;
-            password) cmd_password ;;
-            quit) return 0 ;;
-            *) echo "Unknown command: $cmd" ;;
-        esac
-
-    done
+    case "$cmd" in
+        init) cmd_init ;;
+        select) cmd_select ;;
+        update) cmd_update ;;
+        sync) cmd_sync ;;
+        verify) cmd_verify ;;
+        history) cmd_history ;;
+        restore) cmd_restore ;;
+        diff) cmd_diff ;;
+        versions) cmd_versions ;;
+        validate) cmd_validate ;;
+        status) cmd_status ;;
+        password) cmd_password ;;
+        *) echo "Unknown command: $cmd" ;;
+    esac
 }
 
 # ===== Main Entry Point =====
