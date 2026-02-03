@@ -1202,7 +1202,7 @@ Common Commands:
   password          Manage encryption password (gopass integration)
 
 Options:
-  -p, --password PWD  Transcrypt password
+  -p, --password PWD  Encryption password (OpenSSL)
   --dry-run          Preview without changes
   --no-backup        Skip safety backup (restore only)
 
@@ -2972,9 +2972,6 @@ MENU
 # ===== Main Entry Point =====
 
 main() {
-    # Global options
-    TRANSCRYPT_PASSWORD=""
-
     # Parse global options first
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -2983,7 +2980,8 @@ main() {
                 exit 0
                 ;;
             -p|--password)
-                TRANSCRYPT_PASSWORD="$2"
+                # Export as environment variable for get_encryption_password()
+                export KEYS_BACKUP_PASSWORD="$2"
                 shift 2
                 ;;
             *)
