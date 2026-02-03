@@ -2239,11 +2239,6 @@ cmd_restore() {
     echo "  Date:    $commit_date"
     echo ""
 
-    # Show diff
-    echo "[1/5] Preview changes..."
-    echo ""
-    cmd_diff "$commit"
-
     if [[ "$dry_run" == true ]]; then
         echo ""
         log_warn "Dry run mode - no files will be restored"
@@ -2265,7 +2260,7 @@ cmd_restore() {
 
     if [[ "$no_backup" != true ]]; then
         echo ""
-        echo "[2/5] Backing up current state..."
+        echo "[1/4] Backing up current state..."
         mkdir -p "$backup_dir"
 
         local backed_up=0
@@ -2285,7 +2280,7 @@ cmd_restore() {
 
     # Checkout backup version
     echo ""
-    echo "[3/5] Checking out backup version..."
+    echo "[2/4] Checking out backup version..."
     git checkout "$commit" -- backup-files/ 2>/dev/null || {
         log_error "Failed to checkout backup version"
         return 1
@@ -2293,7 +2288,7 @@ cmd_restore() {
 
     # Restore files
     echo ""
-    echo "[4/5] Restoring SSH keys..."
+    echo "[3/4] Restoring SSH keys..."
     mkdir -p ~/.ssh
     chmod 700 ~/.ssh
 
@@ -2330,7 +2325,7 @@ cmd_restore() {
 
     # Cleanup
     echo ""
-    echo "[5/5] Cleanup..."
+    echo "[4/4] Cleanup..."
     git checkout HEAD -- backup-files/ 2>/dev/null || true
 
     echo ""
