@@ -1193,7 +1193,6 @@ Backup Commands:
 
 Restore Commands:
   restore [commit]  Restore files (FZF version picker if no commit)
-  diff [commit]     Preview changes before restore
   versions          Browse backup versions with FZF
   validate          Validate repository integrity
 
@@ -1220,7 +1219,6 @@ Examples:
 
   # Restore workflow
   keys-manage versions         # Browse all versions
-  keys-manage diff HEAD~1      # Preview changes
   keys-manage restore          # Restore with FZF version picker
   keys-manage restore HEAD~1   # Restore specific version
 
@@ -2354,106 +2352,6 @@ cmd_restore() {
     log_event "Restored from commit $commit_short: $restored_count files"
 }
 
-# Command: diff - Preview changes between current and backup
-cmd_diff() {
-    local commit="${1:-HEAD}"
-
-    [[ ! -d "$REPO_DIR/.git" ]] && {
-        log_error "Repository not initialized"
-        return 1
-    }
-
-    [[ ! -f "$BACKUP_LIST" ]] && {
-        log_error "No backup list found"
-        return 1
-    }
-
-    cd "$REPO_DIR"
-
-    # Validate commit
-    if ! git rev-parse "$commit" &>/dev/null; then
-        log_error "Invalid commit: $commit"
-        return 1
-    fi
-
-    local commit_short
-    commit_short=$(git rev-parse --short "$commit")
-
-    log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    log_section "Diff: Current vs $commit_short${NC}"
-    log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-
-    # Load metadata from specified commit (no password needed!)
-    local -A commit_hashes
-    local commit_metadata
-    commit_metadata=$(git show "$commit:backup-metadata.json" 2>/dev/null)
-
-    if [[ -z "$commit_metadata" ]]; then
-        log_error "No metadata found at commit $commit_short"
-        return 1
-    fi
-
-    while IFS= read -r line; do
-        local file_path hash
-        file_path=$(echo "$line" | jq -r '.file' 2>/dev/null)
-        hash=$(echo "$line" | jq -r '.hash' 2>/dev/null)
-        [[ -n "$file_path" && -n "$hash" && "$hash" != "null" ]] && commit_hashes["$file_path"]="$hash"
-    done < <(echo "$commit_metadata" | jq -c 'to_entries | map({file: .key, hash: .value.sha256})[]' 2>/dev/null)
-
-    local has_diff=false
-
-    while IFS= read -r file; do
-        local filename
-        filename=$(basename "$file")
-
-        # Get backup path
-        local backup_path
-        backup_path=$(get_backup_path "$file")
-
-        # Check if file exists in that commit
-        if ! git show "$commit:$backup_path" &>/dev/null; then
-            log_warn "Not in backup at $commit_short: $filename"
-            has_diff=true
-            continue
-        fi
-
-        # Compare current file hash with commit's metadata hash (no decryption needed!)
-        local current_hash commit_hash
-
-        if [[ -f "$file" ]]; then
-            current_hash=$(calc_checksum "$file" | cut -c1-16)
-        else
-            current_hash="missing"
-            log_warn "File missing locally: $filename"
-            has_diff=true
-            continue
-        fi
-
-        # Get hash from commit's metadata
-        commit_hash="${commit_hashes[$file]:-missing}"
-        [[ "$commit_hash" != "missing" ]] && commit_hash="${commit_hash:0:16}"
-
-        if [[ "$current_hash" == "$commit_hash" ]]; then
-            log_success "No changes: $filename"
-        else
-            log_warn "Changed: $filename"
-            echo "  Current:   $current_hash..."
-            echo "  At $commit_short: $commit_hash..."
-            has_diff=true
-        fi
-    done < "$BACKUP_LIST"
-
-    echo ""
-    if [[ "$has_diff" == true ]]; then
-        log_warn "→ Files differ from $commit_short"
-        echo -e "${GRAY}  To restore: keys-manage restore --commit $commit_short${NC}"
-    else
-        log_success "→ All files match $commit_short"
-    fi
-    echo ""
-}
-
 # Command: versions - Show available versions with FZF
 cmd_versions() {
     require_cmd fzf || return 1
@@ -3122,7 +3020,6 @@ main() {
 
         # Restore commands
         restore) cmd_restore "$@" ;;
-        diff) cmd_diff "$@" ;;
         versions|list-versions) cmd_versions "$@" ;;
         validate) cmd_validate "$@" ;;
 
