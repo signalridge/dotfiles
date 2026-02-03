@@ -2282,6 +2282,11 @@ cmd_restore() {
     # Checkout backup version
     echo ""
     echo "[2/4] Checking out backup version..."
+
+    # IMPORTANT: git checkout doesn't remove extra files from working directory
+    # We must remove backup-files/ first to ensure clean state
+    rm -rf backup-files/
+
     git checkout "$commit" -- backup-files/ 2>/dev/null || {
         log_error "Failed to checkout backup version"
         return 1
