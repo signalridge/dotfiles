@@ -1248,7 +1248,7 @@ EOF
 
 # Command: init - Initialize backup repository
 cmd_init() {
-    require_cmd git || exit 1
+    require_cmd git || return 1
 
     log_header "Keys Backup Repository Initialization"
     echo ""
@@ -1392,7 +1392,7 @@ cmd_init() {
 
 # Command: select - Interactive file selection (for menu only)
 cmd_select() {
-    require_cmd fzf || exit 1
+    require_cmd fzf || return 1
 
     # Ensure local directory exists
     ensure_local_dir
@@ -1704,7 +1704,7 @@ cmd_select() {
 
 # Command: add - Add files to backup list (append)
 cmd_add() {
-    require_cmd fzf || exit 1
+    require_cmd fzf || return 1
 
     # Ensure local directory exists (doesn't need git yet)
     ensure_local_dir
@@ -1815,7 +1815,7 @@ cmd_add() {
 
 # Command: remove - Remove files from backup list
 cmd_remove() {
-    require_cmd fzf || exit 1
+    require_cmd fzf || return 1
 
     # Ensure local directory exists (doesn't need git yet)
     ensure_local_dir
@@ -1920,16 +1920,16 @@ cmd_remove() {
 
 # Command: sync - Git synchronization only (pull + push)
 cmd_sync() {
-    require_cmd git || exit 1
+    require_cmd git || return 1
 
     log_header "Keys Sync - Sync All Changes"
     echo ""
 
     # Initialize repo
-    init_repo_if_needed || exit 1
+    init_repo_if_needed || return 1
     cd "$REPO_DIR" || {
         log_error "Failed to change directory to $REPO_DIR"
-        exit 1
+        return 1
     }
 
     # Check if repository is initialized
@@ -2078,7 +2078,7 @@ cmd_sync() {
 
 # Command: verify - Verify backup integrity
 cmd_verify() {
-    require_cmd git || exit 1
+    require_cmd git || return 1
 
     [[ ! -d "$REPO_DIR/.git" ]] && {
         log_error "Repository not initialized"
@@ -2191,7 +2191,7 @@ cmd_restore() {
         esac
     done
 
-    require_cmd git || exit 1
+    require_cmd git || return 1
 
     [[ ! -d "$REPO_DIR/.git" ]] && {
         log_error "Repository not initialized"
@@ -2384,16 +2384,22 @@ cmd_diff() {
     log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
-    # Load metadata for hash comparison (no password needed!)
-    local -A last_hashes
-    if [[ -f "$METADATA_FILE" ]]; then
-        while IFS= read -r line; do
-            local file_path hash
-            file_path=$(echo "$line" | jq -r '.file' 2>/dev/null)
-            hash=$(echo "$line" | jq -r '.hash' 2>/dev/null)
-            [[ -n "$file_path" && -n "$hash" && "$hash" != "null" ]] && last_hashes["$file_path"]="$hash"
-        done < <(jq -c 'to_entries | map({file: .key, hash: .value.sha256})[]' "$METADATA_FILE" 2>/dev/null)
+    # Load metadata from specified commit (no password needed!)
+    local -A commit_hashes
+    local commit_metadata
+    commit_metadata=$(git show "$commit:backup-metadata.json" 2>/dev/null)
+
+    if [[ -z "$commit_metadata" ]]; then
+        log_error "No metadata found at commit $commit_short"
+        return 1
     fi
+
+    while IFS= read -r line; do
+        local file_path hash
+        file_path=$(echo "$line" | jq -r '.file' 2>/dev/null)
+        hash=$(echo "$line" | jq -r '.hash' 2>/dev/null)
+        [[ -n "$file_path" && -n "$hash" && "$hash" != "null" ]] && commit_hashes["$file_path"]="$hash"
+    done < <(echo "$commit_metadata" | jq -c 'to_entries | map({file: .key, hash: .value.sha256})[]' 2>/dev/null)
 
     local has_diff=false
 
@@ -2405,48 +2411,52 @@ cmd_diff() {
         local backup_path
         backup_path=$(get_backup_path "$file")
 
-        # Check if file exists in backup
+        # Check if file exists in that commit
         if ! git show "$commit:$backup_path" &>/dev/null; then
-            log_warn "Not in backup version: $filename"
+            log_warn "Not in backup at $commit_short: $filename"
+            has_diff=true
             continue
         fi
 
-        # Compare hashes using metadata (no decryption needed!)
-        local current_hash metadata_hash
+        # Compare current file hash with commit's metadata hash (no decryption needed!)
+        local current_hash commit_hash
 
         if [[ -f "$file" ]]; then
             current_hash=$(calc_checksum "$file" | cut -c1-16)
         else
             current_hash="missing"
+            log_warn "File missing locally: $filename"
+            has_diff=true
+            continue
         fi
 
-        # Get hash from metadata
-        metadata_hash="${last_hashes[$file]:-missing}"
-        [[ "$metadata_hash" != "missing" ]] && metadata_hash="${metadata_hash:0:16}"
+        # Get hash from commit's metadata
+        commit_hash="${commit_hashes[$file]:-missing}"
+        [[ "$commit_hash" != "missing" ]] && commit_hash="${commit_hash:0:16}"
 
-        if [[ "$current_hash" == "$metadata_hash" ]]; then
+        if [[ "$current_hash" == "$commit_hash" ]]; then
             log_success "No changes: $filename"
         else
             log_warn "Changed: $filename"
-            echo "  Current: $current_hash..."
-            echo "  Backup:  $metadata_hash..."
+            echo "  Current:   $current_hash..."
+            echo "  At $commit_short: $commit_hash..."
             has_diff=true
         fi
     done < "$BACKUP_LIST"
 
     echo ""
     if [[ "$has_diff" == true ]]; then
-        log_warn "→ Files differ from backup version"
+        log_warn "→ Files differ from $commit_short"
         echo -e "${GRAY}  To restore: keys-manage restore --commit $commit_short${NC}"
     else
-        echo -e "→ All files match backup version${NC}"
+        log_success "→ All files match $commit_short"
     fi
     echo ""
 }
 
 # Command: versions - Show available versions with FZF
 cmd_versions() {
-    require_cmd fzf || exit 1
+    require_cmd fzf || return 1
 
     [[ ! -d "$REPO_DIR/.git" ]] && {
         log_error "Repository not initialized"
@@ -2478,7 +2488,7 @@ cmd_versions() {
 
 # Command: validate - Validate backup integrity
 cmd_validate() {
-    require_cmd git || exit 1
+    require_cmd git || return 1
 
     [[ ! -d "$REPO_DIR/.git" ]] && {
         log_error "Repository not initialized"
@@ -2541,7 +2551,7 @@ cmd_validate() {
 
 # Command: status - Unified backup and restore status
 cmd_status() {
-    require_cmd git jq || exit 1
+    require_cmd git jq || return 1
 
     log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     log_section "Keys Manager Status"
@@ -2960,104 +2970,96 @@ cmd_menu() {
         return 0
     }
 
-    while true; do
-        local selected
-        selected=$(cat << 'MENU' | fzf --ansi \
-            --height=60% \
-            --border=rounded \
-            --header="SSH Keys Manager" \
-                --preview='
-                    cmd=$(echo {} | awk "{print \$1}")
-                    echo -e "\033[1;34m━━━ $cmd ━━━\033[0m"
-                    echo ""
-                    case "$cmd" in
-                        init) echo "Initialize encrypted backup repository" ;;
-                        select) echo "Interactively select/deselect files to backup"
-                              echo ""
-                              echo "• Add files: marks to add (encrypts on Done)"
-                              echo "• Remove files: marks to remove (deletes on Done)"
-                              echo "• Done: commits all changes at once" ;;
-                        sync) echo "Sync all changes (auto re-encrypt + git push/pull)"
-                              echo ""
-                              echo "• Automatically detects modified files"
-                              echo "• Re-encrypts modified files and commits"
-                              echo "• Pushes all changes to remote" ;;
-                        verify) echo "Verify backup integrity (read-only)"
-                              echo ""
-                              echo "• Compare local files with backup checksums"
-                              echo "• Shows which files are modified" ;;
-                        history) echo "Show sync event log with detailed file operations" ;;
-                        restore) echo "Restore files from backup (FZF picker)" ;;
-                        diff) echo "Preview changes before restore" ;;
-                        versions) echo "Browse backup versions with FZF" ;;
-                        validate) echo "Validate repository integrity" ;;
-                        status) echo "Show backup and restore status" ;;
-                        password) echo "Manage encryption password in gopass"
-                              echo ""
-                              echo "• save: Save password to gopass"
-                              echo "• show: Display password"
-                              echo "• test: Test password works"
-                              echo "• delete: Remove password" ;;
-                        quit) echo "Exit to shell" ;;
-                    esac
-                    echo ""
-                    echo -e "\033[1;34m━━━ Quick Status ━━━\033[0m"
-                    echo ""
-                    if [[ -d "$HOME/.local/share/keys-backup/.git" ]]; then
-                        cd "$HOME/.local/share/keys-backup"
-                        echo "Repository: $(git remote get-url origin 2>/dev/null || echo "N/A")"
-                        echo "Last commit: $(git log -1 --format="%ar" 2>/dev/null || echo "N/A")"
-                        if [[ -f "$HOME/.local/share/keys-backup/backup-list.txt" ]]; then
-                            echo "Files: $(wc -l < "$HOME/.local/share/keys-backup/backup-list.txt" | tr -d " ") selected"
-                        fi
-                    else
-                        echo "⚠ Not initialized"
-                        echo "Run init to initialize"
+    local selected
+    selected=$(cat << 'MENU' | fzf --ansi \
+        --height=60% \
+        --border=rounded \
+        --header="SSH Keys Manager" \
+            --preview='
+                cmd=$(echo {} | awk "{print \$1}")
+                echo -e "\033[1;34m━━━ $cmd ━━━\033[0m"
+                echo ""
+                case "$cmd" in
+                    init) echo "Initialize encrypted backup repository" ;;
+                    select) echo "Interactively select/deselect files to backup"
+                          echo ""
+                          echo "• Add files: marks to add (encrypts on Done)"
+                          echo "• Remove files: marks to remove (deletes on Done)"
+                          echo "• Done: commits all changes at once"
+                          echo "• Has internal loop - returns to menu until Done/Back" ;;
+                    sync) echo "Sync all changes (auto re-encrypt + git push/pull)"
+                          echo ""
+                          echo "• Automatically detects modified files"
+                          echo "• Re-encrypts modified files and commits"
+                          echo "• Pushes all changes to remote" ;;
+                    verify) echo "Verify backup integrity (read-only)"
+                          echo ""
+                          echo "• Compare local files with backup checksums"
+                          echo "• Shows which files are modified" ;;
+                    history) echo "Show sync event log with detailed file operations" ;;
+                    restore) echo "Restore files from backup (FZF version picker)" ;;
+                    diff) echo "Preview changes from specific commit" ;;
+                    validate) echo "Validate repository integrity" ;;
+                    status) echo "Show backup and restore status" ;;
+                    password) echo "Manage encryption password in gopass"
+                          echo ""
+                          echo "• save: Save password to gopass"
+                          echo "• show: Display password"
+                          echo "• test: Test password works"
+                          echo "• delete: Remove password"
+                          echo "• Has internal loop - returns to menu until Back" ;;
+                esac
+                echo ""
+                echo -e "\033[1;34m━━━ Quick Status ━━━\033[0m"
+                echo ""
+                if [[ -d "$HOME/.local/share/keys-backup/.git" ]]; then
+                    cd "$HOME/.local/share/keys-backup"
+                    echo "Repository: $(git remote get-url origin 2>/dev/null || echo "N/A")"
+                    echo "Last commit: $(git log -1 --format="%ar" 2>/dev/null || echo "N/A")"
+                    if [[ -f "$HOME/.local/share/keys-backup/backup-list.txt" ]]; then
+                        echo "Files: $(wc -l < "$HOME/.local/share/keys-backup/backup-list.txt" | tr -d " ") selected"
                     fi
-                ' \
-                --preview-window='right:50%:wrap' \
-                --preview-label="[ Keys Manager ]"
+                else
+                    echo "⚠ Not initialized"
+                    echo "Run init to initialize"
+                fi
+            ' \
+            --preview-window='right:50%:wrap' \
+            --preview-label="[ Keys Manager ]"
 init           Initialize backup repository
 select         Add/remove files (batch commit on Done)
 sync           Sync all changes (auto re-encrypt + push)
 verify         Verify backup integrity (read-only)
 history        Show backup history
-restore        Restore from backup
-diff           Preview changes
-versions       Browse backup versions
+restore        Restore from backup (with version picker)
+diff           Preview changes from commit
 validate       Validate repository
 status         Show current status
 password       Manage password (gopass)
-quit           Exit to shell
 MENU
-        ) || return 0
+    ) || return 0
 
-        local cmd
-        cmd=$(echo "$selected" | awk '{print $1}')
+    local cmd
+    cmd=$(echo "$selected" | awk '{print $1}')
 
-        echo ""
+    echo ""
 
-        # Reset skip pause flag
-        _SKIP_PAUSE=false
+    # Reset skip pause flag
+    _SKIP_PAUSE=false
 
-        case "$cmd" in
-            init) cmd_init ;;
-            select) cmd_select ;;
-            sync) cmd_sync ;;
-            verify) cmd_verify ;;
-            history) cmd_history ;;
-            restore) cmd_restore ;;
-            diff) cmd_diff ;;
-            versions) cmd_versions ;;
-            validate) cmd_validate ;;
-            status) cmd_status ;;
-            password) cmd_password ;;
-            quit) return 0 ;;
-            *) echo "Unknown command: $cmd" ;;
-        esac
-
-        echo ""
-    done
+    case "$cmd" in
+        init) cmd_init ;;
+        select) cmd_select ;;
+        sync) cmd_sync ;;
+        verify) cmd_verify ;;
+        history) cmd_history ;;
+        restore) cmd_restore ;;
+        diff) cmd_diff ;;
+        validate) cmd_validate ;;
+        status) cmd_status ;;
+        password) cmd_password ;;
+        *) echo "Unknown command: $cmd" ;;
+    esac
 }
 
 # ===== Main Entry Point =====
@@ -3118,7 +3120,7 @@ main() {
         *)
             log_error "Unknown command: $cmd"
             echo "Run 'keys-manage --help' for usage"
-            exit 1
+            return 1
             ;;
     esac
 }
