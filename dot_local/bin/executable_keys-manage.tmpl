@@ -1066,7 +1066,11 @@ add_files_to_backup() {
     else
         log_warn "Added $success files (commit skipped)"
     fi
-    [[ $failed -gt 0 ]] && log_warn "Failed: $failed files"
+
+    # Report failures if any (use if to avoid set -e exit on false condition)
+    if [[ $failed -gt 0 ]]; then
+        log_warn "Failed: $failed files"
+    fi
 }
 
 # Batch remove files from backup (delete encrypted + update metadata + commit)
