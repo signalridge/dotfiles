@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SSH Keys Manager - Unified backup and restore command
-# Manages SSH/GPG/Age keys with Age-encrypted git repository
+# Manages SSH/GPG/Age keys with OpenSSL PBKDF2-encrypted git repository
 set -euo pipefail
 
 # shellcheck source=lib/common.tmpl
@@ -63,7 +63,7 @@ discover_key_files() {
     local key_dirs=(
         "$HOME/.ssh"           # SSH keys
         "$HOME/.gnupg"         # GPG keys
-        "$HOME/.config/age"    # Age encryption keys
+        "$HOME/.config/age"    # OpenSSL PBKDF2 encryption keys
     )
 
     for dir in "${key_dirs[@]}"; do
@@ -875,7 +875,7 @@ clear_password_cache() {
     _CACHED_PASSWORD=""
 }
 
-# Encrypt file using Age
+# Encrypt file using OpenSSL PBKDF2
 # Usage: encrypt_file <source> <destination> [password]
 encrypt_file() {
     local source="$1"
@@ -897,19 +897,21 @@ encrypt_file() {
 
     mkdir -p "$(dirname "$dest")"
 
-    # Age encryption with passphrase
-    # Age uses modern ChaCha20-Poly1305 and scrypt for key derivation
-    # Pass password twice to stdin (age -p requires confirmation)
-    if printf '%s\n%s\n' "$password" "$password" | age -p -o "$dest" "$source" 2>/dev/null; then
+    # OpenSSL AES-256-CBC with PBKDF2 (100,000 iterations)
+    # -salt: Add random salt for security (makes each encryption unique)
+    # -pbkdf2 -iter 100000: Use PBKDF2 with 100k iterations (recommended)
+    # Note: Random salt means same file encrypts differently each time (this is good!)
+    if openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt \
+        -pass pass:"$password" -in "$source" -out "$dest" 2>/dev/null; then
         chmod 600 "$dest"
         return 0
     else
-        log_error "Failed to encrypt file (is age installed?)"
+        log_error "Failed to encrypt file"
         return 1
     fi
 }
 
-# Decrypt file using Age
+# Decrypt file using OpenSSL PBKDF2
 # Usage: decrypt_file <source> <destination> [password]
 decrypt_file() {
     local source="$1"
@@ -931,8 +933,9 @@ decrypt_file() {
 
     mkdir -p "$(dirname "$dest")"
 
-    # Decrypt with age (password from stdin)
-    if echo "$password" | age -d "$source" > "$dest" 2>/dev/null; then
+    # Decrypt using same parameters
+    if openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 \
+        -pass pass:"$password" -in "$source" -out "$dest" 2>/dev/null; then
         chmod 600 "$dest"
         return 0
     else
@@ -1228,7 +1231,7 @@ Examples:
 Supported Directories:
   - ~/.ssh               SSH keys
   - ~/.gnupg             GPG keys
-  - ~/.config/age        Age encryption keys
+  - ~/.config/age        OpenSSL PBKDF2 encryption keys
   - Custom paths via "⊕ Add custom file..." in FZF menu
 
 Status Indicators:
@@ -1244,11 +1247,11 @@ EOF
 
 # Command: init - Initialize backup repository
 cmd_init() {
-    require_cmd git age || return 1
+    require_cmd git || return 1
 
     log_header "Keys Backup Repository Initialization"
     echo ""
-    log_info "Using Age encryption (ChaCha20-Poly1305 with scrypt)"
+    log_info "Using OpenSSL PBKDF2 encryption (AES-256-CBC with 100k iterations)"
     echo ""
 
     # Check if repository already exists
@@ -1346,7 +1349,7 @@ cmd_init() {
         echo ""
         log_success "New repository created and configured"
         echo ""
-        log_note "Files will be encrypted with Age before backup"
+        log_note "Files will be encrypted with OpenSSL PBKDF2 before backup"
         echo ""
         echo "Next steps:"
         echo "  1. Create the remote repository: $KEYS_REPO"
@@ -1363,7 +1366,7 @@ cmd_init() {
     cd "$REPO_DIR"
     log_success "Repository cloned"
     echo ""
-    log_note "Files will be encrypted with Age before backup"
+    log_note "Files will be encrypted with OpenSSL PBKDF2 before backup"
     echo ""
 
     # Initialize metadata if needed
@@ -2403,7 +2406,7 @@ cmd_validate() {
     fi
 
     # Note about encryption
-    log_success "Using Age encryption (AES-256-CBC)"
+    log_success "Using OpenSSL PBKDF2 encryption (AES-256-CBC)"
 
     # Check remote connectivity
     if git ls-remote &>/dev/null; then
