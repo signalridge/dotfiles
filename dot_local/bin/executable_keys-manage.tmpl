@@ -1050,10 +1050,10 @@ add_files_to_backup() {
         if backup_file "$file" "$password"; then
             update_file_metadata "$file"
             echo "  ${STATUS_OK} $(basename "$file")"
-            ((success++))
+            success=$((success + 1))
         else
             echo "  ${STATUS_ERROR} Failed: $(basename "$file")"
-            ((failed++))
+            failed=$((failed + 1))
         fi
     done <<< "$files"
 
