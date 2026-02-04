@@ -10,13 +10,23 @@
 
 set -euo pipefail
 
-# Source common library
-source "$(dirname "$0")/lib/common"
+# Source shared Claude library (includes common helpers).
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/claude"
 
-# Validate provider/account names (prevent path traversal)
-validate_name() {
+# Validate provider names (prevent path traversal).
+validate_provider_name() {
     local name="$1"
     [[ -n "$name" && "$name" =~ ^[A-Za-z0-9._-]+$ ]]
+}
+
+# Validate account names while allowing arbitrary printable text.
+validate_account_name() {
+    local name="$1"
+    [[ -n "$name" ]] || return 1
+    [[ "$name" != *$'\n'* ]] || return 1
+    [[ "$name" != *$'\r'* ]] || return 1
+    return 0
 }
 
 # Get current provider@account from chezmoi data
@@ -38,7 +48,7 @@ get_actual_provider() {
 
     # Check if account has explicit provider field
     local explicit_provider
-    explicit_provider=$(echo "$data" | jq -r ".claude.accounts.\"$account_key\".provider // empty")
+    explicit_provider=$(echo "$data" | jq -r --arg account "$account_key" '.claude.accounts[$account].provider // empty')
 
     if [[ -n "$explicit_provider" ]]; then
         echo "$explicit_provider"
@@ -52,7 +62,7 @@ get_actual_provider() {
 is_third_party() {
     local provider="$1"
     local base_url
-    base_url=$(chezmoi data --format json 2>/dev/null | jq -r ".claude.providers.\"$provider\".base_url // empty")
+    base_url=$(chezmoi data --format json 2>/dev/null | jq -r --arg provider "$provider" '.claude.providers[$provider].base_url // empty')
     [[ -n "$base_url" ]]
 }
 
@@ -62,42 +72,39 @@ get_account_config() {
     local account_key="$1"
     local provider="$2"
 
-    chezmoi data --format json 2>/dev/null | jq -c "
-        .claude as \$c |
-        (\$c.defaults // {}) as \$defaults |
-        (\$c.providers.\"$provider\" // {}) as \$provider |
-        (\$c.accounts.\"$account_key\" // {}) as \$account |
+    chezmoi data --format json 2>/dev/null | jq -c \
+        --arg provider "$provider" \
+        --arg account "$account_key" '
+        .claude as $c |
+        ($c.defaults // {}) as $defaults |
+        ($c.providers[$provider] // {}) as $provider_cfg |
+        ($c.accounts[$account] // {}) as $account_cfg |
         {
-            base_url: \$provider.base_url,
-            models: \$provider.models,
-            model: \$account.model,
-            small_model: \$account.small_model,
-            haiku_model: \$account.haiku_model,
-            sonnet_model: \$account.sonnet_model,
-            opus_model: \$account.opus_model,
-            timeout_ms: (\$account.timeout_ms // \$defaults.timeout_ms),
-            disable_nonessential_traffic: (\$account.disable_nonessential_traffic // \$defaults.disable_nonessential_traffic)
+            base_url: $provider_cfg.base_url,
+            models: $provider_cfg.models,
+            model: $account_cfg.model,
+            small_model: $account_cfg.small_model,
+            haiku_model: $account_cfg.haiku_model,
+            sonnet_model: $account_cfg.sonnet_model,
+            opus_model: $account_cfg.opus_model,
+            timeout_ms: ($account_cfg.timeout_ms // $defaults.timeout_ms),
+            disable_nonessential_traffic: ($account_cfg.disable_nonessential_traffic // $defaults.disable_nonessential_traffic)
         } | with_entries(select(.value != null))
-    "
+    '
 }
 
 # Check if token exists in gopass (non-interactive, with timeout)
 check_token_exists() {
     local provider="$1"
     local account="$2"
-    local timeout_sec=3
 
-    # New path format: provider/account/api_key
-    if timeout "$timeout_sec" gopass list -f "claude-code/providers/$provider/$account/api_key" &>/dev/null; then
-        return 0
-    fi
-
-    # Fallback for default account: provider/api_key (legacy)
-    if [[ "$account" == "default" ]]; then
-        if timeout "$timeout_sec" gopass list -f "claude-code/providers/$provider/api_key" &>/dev/null; then
+    local path
+    while IFS= read -r path; do
+        [[ -z "$path" ]] && continue
+        if run_with_timeout 3 gopass list -f "$path" &>/dev/null; then
             return 0
         fi
-    fi
+    done < <(api_key_path_candidates "$provider" "$account")
 
     return 1
 }
@@ -106,28 +113,24 @@ check_token_exists() {
 get_token() {
     local provider="$1"
     local account="$2"
-    local timeout_sec=5
     local token
 
-    # Try new path: provider/account/api_key
-    if token=$(timeout "$timeout_sec" gopass show -o "claude-code/providers/$provider/$account/api_key" 2>/dev/null); then
-        echo "$token"
-        return 0
-    fi
-
-    # Fallback for default account: provider/api_key (legacy)
-    if [[ "$account" == "default" ]]; then
-        if token=$(timeout "$timeout_sec" gopass show -o "claude-code/providers/$provider/api_key" 2>/dev/null); then
+    local path
+    while IFS= read -r path; do
+        [[ -z "$path" ]] && continue
+        if token=$(run_with_timeout 5 gopass show -o "$path" 2>/dev/null); then
             echo "$token"
             return 0
         fi
-    fi
+    done < <(api_key_path_candidates "$provider" "$account")
 
     return 1
 }
 
 # Main
 main() {
+    require_cmd chezmoi jq gopass || exit 1
+
     local mode="token"
     local input=""
 
@@ -187,7 +190,7 @@ EOF
 
     # Build the full account key for lookup
     if [[ "$account" == "default" ]]; then
-        account_key="$account_key"
+        :
     else
         account_key="${parsed%%|*}@$account"
     fi
@@ -196,11 +199,11 @@ EOF
     provider=$(get_actual_provider "$account_key") || provider="${parsed%%|*}"
 
     # Validate names to prevent path traversal
-    if ! validate_name "$provider"; then
+    if ! validate_provider_name "$provider"; then
         log_error "Invalid provider name '$provider'"
         exit 1
     fi
-    if ! validate_name "$account"; then
+    if ! validate_account_name "$account"; then
         log_error "Invalid account name '$account'"
         exit 1
     fi

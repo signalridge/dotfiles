@@ -81,6 +81,43 @@ require_cmd() {
     done
 }
 
+# Run command with timeout across macOS/Linux.
+# Usage: run_with_timeout 5 cmd arg1 arg2 ...
+run_with_timeout() {
+    local timeout_sec="$1"
+    shift
+
+    if command -v timeout &>/dev/null; then
+        timeout "$timeout_sec" "$@"
+        return $?
+    fi
+
+    if command -v gtimeout &>/dev/null; then
+        gtimeout "$timeout_sec" "$@"
+        return $?
+    fi
+
+    if command -v python3 &>/dev/null; then
+        python3 - "$timeout_sec" "$@" <<'PY'
+import subprocess
+import sys
+
+timeout = float(sys.argv[1])
+cmd = sys.argv[2:]
+
+try:
+    completed = subprocess.run(cmd, timeout=timeout)
+    sys.exit(completed.returncode)
+except subprocess.TimeoutExpired:
+    sys.exit(124)
+PY
+        return $?
+    fi
+
+    # Fallback without timeout if no timeout backend is available.
+    "$@"
+}
+
 # ===== File Operations =====
 
 # Calculate SHA256 checksum (cross-platform)
@@ -184,4 +221,3 @@ jq_update() {
         return 1
     fi
 }
-

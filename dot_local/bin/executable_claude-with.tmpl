@@ -10,13 +10,11 @@
 set -euo pipefail
 
 # shellcheck source=lib/claude.tmpl
-source "$(dirname "$0")/lib/claude"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/claude"
 
 # FZF picker with shortcuts
 fzf_select() {
-    local current
-    current=$(get_current)
-
     local selected
     selected=$(build_account_list_with_token | fzf --ansi \
         --height=50% \
@@ -48,7 +46,7 @@ fzf_select() {
 
     # Extract account name
     local account
-    account=$(echo "$selection" | sed 's/^[^ ]* //')
+    account="${selection#* }"
 
     if [[ -n "$query" ]]; then
         echo "$account|$query"
@@ -144,14 +142,16 @@ EOF
 
 # Main
 main() {
-    require_cmd chezmoi jq fzf claude || exit 1
-
     if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+        require_cmd claude || exit 1
         show_help
         exit 0
     fi
 
+    require_cmd chezmoi jq claude || exit 1
+
     if [[ $# -eq 0 ]]; then
+        require_cmd fzf || exit 1
         local result
         result=$(fzf_select) || exit 0
         local account="${result%%|*}"

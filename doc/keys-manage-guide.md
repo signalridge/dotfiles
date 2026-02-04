@@ -80,7 +80,7 @@ keys-manage select
 - Rich preview (file metadata, key type, content)
 - Status indicators (✓ ⚠ ⊕ ⊗)
 - Multi-select (Tab/Ctrl-A)
-- Custom file paths via "⊕ Add custom file..."
+- Custom file paths under `$HOME` via yazi browser
 
 **Keybindings:**
 
@@ -119,14 +119,13 @@ keys-manage remove
 - Multi-select for removal
 - Confirmation prompt before removing
 
-#### `backup` - Incremental Backup
+#### `sync` (or `backup`) - Incremental Backup + Push
 
 Backup changed files to encrypted repository.
 
 ```bash
-keys-manage backup                  # Backup changed files
-keys-manage backup --dry-run        # Preview without backing up
-keys-manage backup --verify         # Verify after backup
+keys-manage sync                    # Detect changes, encrypt, commit, push
+keys-manage backup                  # Alias of sync
 ```
 
 **Process:**
@@ -176,34 +175,30 @@ keys-manage restore --no-backup     # Skip safety backup (dangerous)
 
 **Process:**
 
-1. Preview changes (diff)
+1. Preview restore plan
 2. Confirmation prompt
-3. Backup current state to `~/.ssh/backup-YYYYMMDD-HHMMSS/`
+3. Backup current state to `~/.local/share/keys-backup/restore-snapshots/<timestamp>/`
 4. Restore files from backup
 5. Set correct permissions
+6. Re-encrypt restored file and create a new latest backup commit
+7. Run `keys-manage sync` when you want to publish restore commit
 
 **Safety Features:**
 
 - Auto-backup current state (can be disabled with `--no-backup`)
-- Diff preview before restore
+- Dry-run preview support before restore
 - Confirmation prompt
 - Rollback instructions
+- Writes restored content back into backup repo as latest commit
 
-#### `diff` - Preview Changes
+#### Preview Restore (Dry Run)
 
-Preview changes between current and backup version.
+Preview a restore plan without writing files:
 
 ```bash
-keys-manage diff                    # Compare with HEAD
-keys-manage diff HEAD~1             # Compare with previous version
-keys-manage diff abc123             # Compare with specific commit
+keys-manage restore --dry-run
+keys-manage restore --dry-run --commit abc123
 ```
-
-Shows:
-
-- File-by-file comparison
-- SHA256 hash differences
-- Text diff for readable files
 
 #### `versions` - Browse Versions
 
@@ -281,10 +276,6 @@ keys-manage
 ### Command-Specific Options
 
 ```bash
-# backup
---dry-run            Preview without backing up
---verify             Verify after backup
-
 # restore
 --commit HASH        Restore from specific commit
 --dry-run            Preview without restoring
@@ -332,8 +323,8 @@ keys-manage history
 # Browse all versions
 keys-manage versions
 
-# Preview changes from specific version
-keys-manage diff HEAD~5
+# Preview restore plan from specific version
+keys-manage restore --dry-run --commit HEAD~5
 ```
 
 ### Rollback After Restore
@@ -342,10 +333,10 @@ If you need to rollback after restore:
 
 ```bash
 # Current state was backed up to:
-ls ~/.ssh/backup-YYYYMMDD-HHMMSS/
+ls ~/.local/share/keys-backup/restore-snapshots/<timestamp>/
 
 # Rollback:
-cp ~/.ssh/backup-YYYYMMDD-HHMMSS/* ~/.ssh/
+cp -R ~/.local/share/keys-backup/restore-snapshots/<timestamp>/. ~/
 ```
 
 ## File Discovery
@@ -368,7 +359,7 @@ Keys Manager auto-discovers files from:
 
 ### Custom Paths
 
-Use "⊕ Add custom file..." option in FZF menu to add files from any location.
+Use yazi in FZF menu to add custom files under `$HOME`.
 
 ## Repository Structure
 
@@ -383,8 +374,9 @@ Use "⊕ Add custom file..." option in FZF menu to add files from any location.
 │   │   └── config              # Encrypted config files
 │   └── ...
 ├── backup-list.txt             # Selected files (plaintext list)
-├── backup-metadata.json        # Metadata v2 (encrypted)
-└── backup-history.log          # Event log (plaintext)
+├── backup-metadata.json        # Metadata v2 (plaintext JSON)
+├── backup-history.log          # Event log (plaintext)
+└── restore-snapshots/          # Safety snapshots before restore
 ```
 
 **Note**: Each file in `backup-files/` is independently encrypted with OpenSSL. Git stores the encrypted binary files directly (no git filters).
@@ -508,21 +500,21 @@ If you were using `keys-backup` and `keys-restore`:
 
 ### Command Mapping
 
-| Old Command                  | New Command            |
-| ---------------------------- | ---------------------- |
-| `keys-backup init`           | `keys-manage init`     |
-| `keys-backup select`         | `keys-manage select`   |
-| `keys-backup add`            | `keys-manage add`      |
-| `keys-backup remove`         | `keys-manage remove`   |
-| `keys-backup backup`         | `keys-manage backup`   |
-| `keys-backup verify`         | `keys-manage verify`   |
-| `keys-backup history`        | `keys-manage history`  |
-| `keys-backup status`         | `keys-manage status`   |
-| `keys-restore restore`       | `keys-manage restore`  |
-| `keys-restore diff`          | `keys-manage diff`     |
-| `keys-restore list-versions` | `keys-manage versions` |
-| `keys-restore validate`      | `keys-manage validate` |
-| `keys-restore status`        | `keys-manage status`   |
+| Old Command                  | New Command                                     |
+| ---------------------------- | ----------------------------------------------- |
+| `keys-backup init`           | `keys-manage init`                              |
+| `keys-backup select`         | `keys-manage select`                            |
+| `keys-backup add`            | `keys-manage add`                               |
+| `keys-backup remove`         | `keys-manage remove`                            |
+| `keys-backup backup`         | `keys-manage backup`                            |
+| `keys-backup verify`         | `keys-manage verify`                            |
+| `keys-backup history`        | `keys-manage history`                           |
+| `keys-backup status`         | `keys-manage status`                            |
+| `keys-restore restore`       | `keys-manage restore`                           |
+| `keys-restore diff`          | `keys-manage restore --dry-run --commit <hash>` |
+| `keys-restore list-versions` | `keys-manage versions`                          |
+| `keys-restore validate`      | `keys-manage validate`                          |
+| `keys-restore status`        | `keys-manage status`                            |
 
 ### No Changes Needed
 
@@ -545,13 +537,13 @@ Just start using `keys-manage` instead of old commands.
 
 ## Best Practices
 
-1. **Regular backups**: Run `keys-manage backup` after generating new keys
+1. **Regular backups**: Run `keys-manage sync` (or `keys-manage backup`) after generating new keys
 2. **Verify backups**: Run `keys-manage verify` periodically
 3. **Test restores**: Occasionally test restore on a new machine
 4. **Secure password**: Use strong encryption password (stored in gopass)
 5. **Private repository**: Keep backup repository private
 6. **SSH keys**: Use SSH keys for git authentication (not HTTPS)
-7. **Backup safety backups**: The restore command creates safety backups in `~/.ssh/backup-*` - keep these until verified
+7. **Backup safety snapshots**: Restore creates snapshots in `~/.local/share/keys-backup/restore-snapshots/` - keep these until verified
 
 ## Examples
 
@@ -627,7 +619,7 @@ Changed: id_ed25519
   Backup: abc123...
 
 [2/5] Backing up current state...
-Backed up 0 files to: /home/user/.ssh/backup-20250115-103000
+Backed up 0 files to: /home/user/.local/share/keys-backup/restore-snapshots/20250115-103000
 
 Restore from abc1234? (y/n): y
 
@@ -655,18 +647,8 @@ $ keys-manage versions
 
 Selected commit: abc1234
 
-# Preview changes from that version
-$ keys-manage diff abc1234
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Diff: Current vs abc1234
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Changed: id_ed25519
-  Local:  def456...
-  Backup: abc123...
-
-  Diff preview:
-  (shows unified diff)
+# Preview restore plan from that version
+$ keys-manage restore --dry-run --commit abc1234
 
 # Restore that version
 $ keys-manage restore abc1234

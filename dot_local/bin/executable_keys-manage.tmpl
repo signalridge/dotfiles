@@ -3,8 +3,10 @@
 # Manages SSH/GPG/Age keys with OpenSSL PBKDF2-encrypted git repository
 set -euo pipefail
 
+# Resolve script directory robustly (works with symlinked entrypoints too).
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=lib/common.tmpl
-source "$(dirname "$0")/lib/common"
+source "$SCRIPT_DIR/lib/common"
 
 # ===== Library Functions (from lib/keys.tmpl) =====
 
@@ -18,6 +20,7 @@ BACKUP_FILES_DIR="backup-files"  # Generic directory for all backed up files
 BACKUP_LIST="$REPO_DIR/backup-list.txt"
 METADATA_FILE="$REPO_DIR/backup-metadata.json"
 HISTORY_LOG="$REPO_DIR/backup-history.log"
+RESTORE_SNAPSHOT_DIR="$REPO_DIR/restore-snapshots"
 
 VERSION=2
 
@@ -31,19 +34,55 @@ log_event() {
     echo "[$timestamp] $event" >> "$HISTORY_LOG"
 }
 
+# Canonicalize path for reliable prefix checks.
+canonicalize_path() {
+    local input_path="$1"
+
+    if command -v realpath &>/dev/null; then
+        realpath "$input_path" 2>/dev/null || return 1
+        return 0
+    fi
+
+    if command -v python3 &>/dev/null; then
+        python3 - "$input_path" <<'PY' 2>/dev/null || return 1
+import os
+import sys
+print(os.path.realpath(sys.argv[1]))
+PY
+        return 0
+    fi
+
+    local parent base
+    parent=$(dirname "$input_path")
+    base=$(basename "$input_path")
+    (
+        cd "$parent" 2>/dev/null || exit 1
+        printf '%s/%s\n' "$(pwd -P)" "$base"
+    ) || return 1
+}
+
 # Convert absolute path to backup path (relative to $HOME)
 # Usage: get_backup_path "/Users/user/.ssh/main" -> "backup-files/.ssh/main"
 get_backup_path() {
     local file="$1"
+    local canonical_file canonical_home
+    canonical_file=$(canonicalize_path "$file") || {
+        log_error "Invalid path: $file"
+        return 1
+    }
+    canonical_home=$(canonicalize_path "$HOME") || {
+        log_error "Cannot resolve HOME path: $HOME"
+        return 1
+    }
 
-    # Validate file is under $HOME
-    if [[ "$file" != "$HOME"/* ]]; then
+    # Validate file is under canonical $HOME
+    if [[ "$canonical_file" != "$canonical_home/"* ]]; then
         log_error "Only files under $HOME can be backed up: $file"
         return 1
     fi
 
     # Convert absolute path to relative path under $HOME
-    local rel_path="${file#$HOME/}"
+    local rel_path="${canonical_file#"$canonical_home"/}"
     echo "$BACKUP_FILES_DIR/$rel_path"
 }
 
@@ -51,7 +90,7 @@ get_backup_path() {
 # Usage: get_absolute_path "backup-files/.ssh/main" -> "/Users/user/.ssh/main"
 get_absolute_path() {
     local backup_path="$1"
-    local rel_path="${backup_path#$BACKUP_FILES_DIR/}"
+    local rel_path="${backup_path#"$BACKUP_FILES_DIR"/}"
     echo "$HOME/$rel_path"
 }
 
@@ -138,7 +177,7 @@ detect_changes() {
 
     if [[ -f "$METADATA_FILE" ]]; then
         local metadata_hash
-        metadata_hash=$(jq -r ".files[\"$file\"].sha256 // empty" "$METADATA_FILE" 2>/dev/null)
+        metadata_hash=$(jq -r --arg path "$file" '.files[$path].sha256 // empty' "$METADATA_FILE" 2>/dev/null)
 
         if [[ -n "$metadata_hash" ]]; then
             # Metadata exists, compare directly (no decryption needed)
@@ -151,8 +190,9 @@ detect_changes() {
     # - No metadata file exists
     # - File not in metadata (legacy backups)
     local backup_hash
-    local temp_encrypted="/tmp/keys-detect-$$.enc"
-    local temp_decrypted="/tmp/keys-detect-$$"
+    local temp_encrypted temp_decrypted
+    temp_encrypted=$(mktemp "${TMPDIR:-/tmp}/keys-detect.XXXXXX.enc")
+    temp_decrypted=$(mktemp "${TMPDIR:-/tmp}/keys-detect.XXXXXX")
 
     if git show "HEAD:$backup_file" > "$temp_encrypted" 2>/dev/null; then
         if decrypt_file "$temp_encrypted" "$temp_decrypted" "$password" 2>/dev/null; then
@@ -162,13 +202,19 @@ detect_changes() {
             rm -f "$temp_encrypted" "$temp_decrypted"
             return 0
         fi
-        rm -f "$temp_encrypted" "$temp_decrypted"
     else
         # Cannot get backup file, assume changed
+        rm -f "$temp_encrypted" "$temp_decrypted"
         return 0
     fi
 
-    [[ "$current_hash" != "$backup_hash" ]]
+    if [[ "$current_hash" != "$backup_hash" ]]; then
+        rm -f "$temp_encrypted" "$temp_decrypted"
+        return 0
+    fi
+
+    rm -f "$temp_encrypted" "$temp_decrypted"
+    return 1
 }
 
 # Get file status (for display)
@@ -188,7 +234,7 @@ get_file_status() {
             echo "${GREEN}✓${NC}"  # Up to date
         fi
     else
-        if [[ -f "$METADATA_FILE" ]] && jq -e ".files[\"$file\"] // empty" "$METADATA_FILE" &>/dev/null; then
+        if [[ -f "$METADATA_FILE" ]] && jq -e --arg path "$file" '.files[$path] // empty' "$METADATA_FILE" &>/dev/null; then
             echo "${RED}⊗${NC}"  # Removed from list
         else
             echo "${CYAN}⊕${NC}"  # New file
@@ -200,9 +246,9 @@ get_file_status() {
 
 # Initialize metadata file
 init_metadata() {
-    cat > "$METADATA_FILE" <<'EOF'
+    cat > "$METADATA_FILE" <<EOF
 {
-  "version": 2,
+  "version": $VERSION,
   "filters": {
     "include_patterns": ["*"],
     "exclude_patterns": ["*.pub", "known_hosts*", "authorized_keys*"],
@@ -228,19 +274,28 @@ update_file_metadata() {
     permissions=$(stat -f "%Lp" "$file" 2>/dev/null || stat -c "%a" "$file" 2>/dev/null)
 
     now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    count=$(jq -r ".files[\"$file\"].backup_count // 0" "$METADATA_FILE")
+    count=$(jq -r --arg path "$file" '.files[$path].backup_count // 0' "$METADATA_FILE")
     count=$((count + 1))
 
     local tmp
     tmp=$(mktemp)
-    jq ".files[\"$file\"] = {
-        \"sha256\": \"$hash\",
-        \"size\": $size,
-        \"mtime\": $mtime,
-        \"permissions\": \"$permissions\",
-        \"last_backup\": \"$now\",
-        \"backup_count\": $count
-    }" "$METADATA_FILE" > "$tmp"
+    jq \
+        --arg path "$file" \
+        --arg hash "$hash" \
+        --argjson size "$size" \
+        --argjson mtime "$mtime" \
+        --arg permissions "$permissions" \
+        --arg now "$now" \
+        --argjson count "$count" \
+        '.files[$path] = {
+            "sha256": $hash,
+            "size": $size,
+            "mtime": $mtime,
+            "permissions": $permissions,
+            "last_backup": $now,
+            "backup_count": $count
+        }' \
+        "$METADATA_FILE" > "$tmp"
     mv "$tmp" "$METADATA_FILE"
 }
 
@@ -251,7 +306,7 @@ remove_file_metadata() {
 
     local tmp
     tmp=$(mktemp)
-    if jq "del(.files[\"$file\"])" "$METADATA_FILE" > "$tmp" 2>/dev/null; then
+    if jq --arg path "$file" 'del(.files[$path])' "$METADATA_FILE" > "$tmp" 2>/dev/null; then
         mv "$tmp" "$METADATA_FILE"
         return 0
     else
@@ -265,92 +320,10 @@ get_file_info() {
     local file="$1"
     local field="$2"
     [[ ! -f "$METADATA_FILE" ]] && return 1
-    jq -r ".files[\"$file\"].$field // empty" "$METADATA_FILE"
-}
-
-# Restore a single file from backup
-restore_single_file() {
-    local file="$1"
-    local commit="${2:-HEAD}"
-
-    cd "$REPO_DIR" || return 1
-
-    # Get backup path using new structure
-    local backup_file
-    backup_file=$(get_backup_path "$file") || return 1
-
-    # Check if file exists in backup
-    if ! git cat-file -e "$commit:$backup_file" 2>/dev/null; then
-        log_error "File not found in backup: $file"
-        return 1
-    fi
-
-    # Create backup of current file if it exists
-    if [[ -f "$file" ]]; then
-        local backup_dir
-        backup_dir="$(dirname "$file")/backup-$(date +%Y%m%d-%H%M%S)"
-        mkdir -p "$backup_dir"
-        cp "$file" "$backup_dir/"
-        [[ -f "$file.pub" ]] && cp "$file.pub" "$backup_dir/"
-        echo "  Backed up current file to: $backup_dir"
-    fi
-
-    # Extract encrypted file from git to temporary location
-    local temp_encrypted="/tmp/keys-restore-$$.enc"
-    local temp_decrypted="/tmp/keys-restore-$$"
-
-    # Export encrypted file from git
-    git show "$commit:$backup_file" > "$temp_encrypted" 2>/dev/null || {
-        log_error "Failed to extract file from git"
-        rm -f "$temp_encrypted"
-        return 1
-    }
-
-    # Decrypt the file
-    if ! decrypt_file "$temp_encrypted" "$temp_decrypted"; then
-        log_error "Failed to decrypt file"
-        rm -f "$temp_encrypted" "$temp_decrypted"
-        return 1
-    fi
-
-    # Copy decrypted file to destination
-    mkdir -p "$(dirname "$file")"
-    cp "$temp_decrypted" "$file"
-    chmod 600 "$file"
-
-    # Clean up temporary files
-    rm -f "$temp_encrypted" "$temp_decrypted"
-
-    # Restore public key if exists (public keys are NOT encrypted)
-    if git cat-file -e "$commit:$backup_file.pub" 2>/dev/null; then
-        git show "$commit:$backup_file.pub" > "$file.pub" 2>/dev/null
-        chmod 644 "$file.pub"
-    fi
-
-    log_success "Restored: $(basename "$file")"
-    return 0
+    jq -r --arg path "$file" --arg field "$field" '.files[$path] | .[$field] // empty' "$METADATA_FILE"
 }
 
 # ===== FZF Builders =====
-
-# Generic FZF wrapper with common options
-fzf_select() {
-    local header="$1"
-    local preview="${2:-}"
-
-    local fzf_opts=(
-        --height=50%
-        --border=rounded
-        --ansi
-        --header="$header"
-    )
-
-    if [[ -n "$preview" ]]; then
-        fzf_opts+=(--preview="$preview" --preview-window='right:50%:wrap')
-    fi
-
-    fzf "${fzf_opts[@]}"
-}
 
 # Multi-select FZF wrapper
 fzf_multi_select() {
@@ -372,23 +345,6 @@ fzf_multi_select() {
     fi
 
     fzf "${fzf_opts[@]}"
-}
-
-# FZF menu (single selection, no preview)
-fzf_menu() {
-    local header="$1"
-    local preview="${2:-}"
-
-    fzf_select "$header" "$preview"
-}
-
-# Build file list with status indicators
-build_file_list_with_status() {
-    while IFS= read -r file; do
-        local status
-        status=$(get_file_status "$file")
-        printf "%b %s\n" "$status" "$file"
-    done < <(discover_key_files)
 }
 
 # FZF file preview script
@@ -424,8 +380,8 @@ FILE_PREVIEW='
         # Show backup status if metadata exists
         meta_file="'"$METADATA_FILE"'"
         if [[ -f "$meta_file" ]]; then
-            last_backup=$(jq -r ".files[\"$file\"].last_backup // empty" "$meta_file" 2>/dev/null)
-            backup_count=$(jq -r ".files[\"$file\"].backup_count // 0" "$meta_file" 2>/dev/null)
+            last_backup=$(jq -r --arg path "$file" ".files[\$path].last_backup // empty" "$meta_file" 2>/dev/null)
+            backup_count=$(jq -r --arg path "$file" ".files[\$path].backup_count // 0" "$meta_file" 2>/dev/null)
             if [[ -n "$last_backup" ]]; then
                 echo ""
                 echo -e "\033[1;34m━━━ Backup Info ━━━\033[0m"
@@ -479,8 +435,11 @@ yazi_select_files() {
     # Filter out directories - only allow regular files
     local valid_files=""
     local invalid_items=()
+    local outside_home_items=()
     while IFS= read -r path; do
-        if [[ -f "$path" ]]; then
+        if [[ "$path" != "$HOME/"* ]]; then
+            outside_home_items+=("$path")
+        elif [[ -f "$path" ]]; then
             valid_files="${valid_files}${path}"$'\n'
         elif [[ -d "$path" ]]; then
             invalid_items+=("$path")
@@ -500,11 +459,20 @@ yazi_select_files() {
         echo "" >&2
     fi
 
+    if [[ ${#outside_home_items[@]} -gt 0 ]]; then
+        echo "" >&2
+        log_warn "Cannot backup files outside \$HOME:"
+        for item in "${outside_home_items[@]}"; do
+            echo "  • $item" >&2
+        done
+        echo "" >&2
+    fi
+
     # If no valid files but had invalid items, give helpful message
     if [[ -z "$valid_files" ]]; then
-        if [[ ${#invalid_items[@]} -gt 0 ]]; then
-            log_error "No files selected - only directories were chosen"
-            echo "Tip: Select individual files, not folders" >&2
+        if [[ ${#invalid_items[@]} -gt 0 ]] || [[ ${#outside_home_items[@]} -gt 0 ]]; then
+            log_error "No valid files selected"
+            echo "Tip: Select regular files under $HOME" >&2
         else
             log_warn "No files selected"
         fi
@@ -515,85 +483,42 @@ yazi_select_files() {
     echo "$valid_files"
 }
 
-# FZF file selector with status and multi-select support (for discovered keys)
-fzf_select_files() {
-    local header="${1:-Select files to backup}"
-    local mode="${2:-discovered}"  # "discovered" or "browse"
-
-    if [[ "$mode" == "browse" ]]; then
-        # Use yazi for filesystem browsing
-        yazi_select_files
-        return $?
-    fi
-
-    # Build file list with status indicators (discovered keys only)
-    local file_list
-    file_list=$(build_file_list_with_status)
-
-    # Add option to browse filesystem
-    file_list=$({
-        echo "$file_list"
-        echo ""
-        echo -e "${CYAN}⊕ Browse entire filesystem with yazi...${NC}"
-    })
-
-    # FZF multi-select
-    local selected
-    selected=$(echo "$file_list" | fzf --ansi --multi \
-        --height=80% \
-        --border=rounded \
-        --header="$header (Tab: multi-select, Ctrl-A: select all)" \
-        --preview="$FILE_PREVIEW" \
-        --preview-window='right:50%:wrap:border-left' \
-        --preview-label="[File Preview - Ctrl-/: toggle]" \
-        --bind='ctrl-a:select-all' \
-        --bind='ctrl-d:deselect-all' \
-        --bind='ctrl-r:reload('"$(declare -f build_file_list_with_status)"'; build_file_list_with_status; echo ""; echo -e "'"${CYAN}⊕ Browse entire filesystem with yazi...${NC}"'")' \
-        --bind='ctrl-/:toggle-preview') || return 1
-
-    # Check if user selected "Browse filesystem" option
-    if echo "$selected" | grep -q "Browse entire filesystem"; then
-        # Launch yazi for browsing
-        local yazi_files
-        yazi_files=$(yazi_select_files)
-        if [[ -n "$yazi_files" ]]; then
-            echo "$yazi_files"
-            return 0
-        fi
-        return 1
-    fi
-
-    # Clean up selected lines (remove status indicators)
-    local final_selection=""
-    while IFS= read -r line; do
-        [[ -z "$line" ]] && continue
-        local cleaned
-        cleaned=$(echo "$line" | sed 's/^[[:space:]]*//' | sed 's/^[✓⚠⊕⊗○] //')
-        final_selection+="$cleaned"$'\n'
-    done <<< "$selected"
-
-    # Return final selection (remove trailing newline)
-    echo -n "${final_selection%$'\n'}"
-}
-
 # ===== Git Operations =====
 
 # Check git sync status with remote
-# Returns: 0=in sync, 1=ahead, 2=behind, 3=diverged, 4=no remote
+# Returns: 0=in sync, 1=ahead, 2=behind, 3=diverged, 4=no remote, 5=offline
 check_git_sync_status() {
     local ahead behind
+
+    if ! git remote get-url origin &>/dev/null; then
+        log_warn "No remote 'origin' configured"
+        return 4
+    fi
 
     # Fetch remote without pulling
     git fetch origin --quiet 2>/dev/null || {
         log_warn "Cannot fetch from remote (offline or no access)"
-        return 4
+        return 5
     }
 
+    # Resolve upstream reference safely.
+    local upstream
+    upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || true)
+
+    if [[ -z "$upstream" ]]; then
+        local branch
+        branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)
+        if [[ -n "$branch" ]] && git rev-parse --verify --quiet "origin/$branch" >/dev/null; then
+            upstream="origin/$branch"
+        else
+            echo "no-upstream"
+            return 0
+        fi
+    fi
+
     # Get ahead/behind counts
-    local branch
-    branch=$(git branch --show-current)
     local counts
-    counts=$(git rev-list --left-right --count "HEAD...origin/$branch" 2>/dev/null || echo "0 0")
+    counts=$(git rev-list --left-right --count "HEAD...$upstream" 2>/dev/null || echo "0 0")
     ahead=$(echo "$counts" | awk '{print $1}')
     behind=$(echo "$counts" | awk '{print $2}')
 
@@ -614,12 +539,15 @@ check_git_sync_status() {
 
 # Sync repository with remote (pull if needed)
 sync_with_remote() {
-    local status_info
-    status_info=$(check_git_sync_status)
-    local status_code=$?
+    local status_info=""
+    local status_code=0
+    status_info=$(check_git_sync_status) || status_code=$?
 
     case $status_code in
         0)  # In sync
+            if [[ "$status_info" == "no-upstream" ]]; then
+                log_warn "No upstream tracking branch configured; pull check skipped"
+            fi
             return 0
             ;;
         1)  # Ahead of remote
@@ -633,7 +561,7 @@ sync_with_remote() {
             local behind
             behind=$(echo "$status_info" | cut -d: -f2)
             log_info "Pulling $behind new commit(s) from remote..."
-            if git pull --quiet --ff-only 2>/dev/null; then
+            if safe_git_pull; then
                 log_success "Updated from remote"
                 return 0
             else
@@ -659,12 +587,20 @@ sync_with_remote() {
             echo "  To fix (choose one):"
             echo "  1. Merge: cd $REPO_DIR && git pull"
             echo "  2. Rebase: cd $REPO_DIR && git pull --rebase"
-            echo "  3. Reset to remote: cd $REPO_DIR && git reset --hard origin/\$(git branch --show-current)"
             return 1
             ;;
         4)  # Cannot reach remote
+            log_error "No remote 'origin' configured"
+            echo "  Configure remote first: cd $REPO_DIR && git remote add origin <repo-url>"
+            return 1
+            ;;
+        5)  # Offline / unreachable remote
             log_warn "Working offline (cannot reach remote)"
             return 0
+            ;;
+        *)
+            log_error "Unknown git sync state: $status_code"
+            return 1
             ;;
     esac
 }
@@ -775,7 +711,7 @@ safe_git_pull() {
 commit_backup_changes() {
     local message="$1"
 
-    git add backup-files/ backup-list.txt backup-metadata.json 2>/dev/null || true
+    git add -A backup-files/ backup-list.txt backup-metadata.json 2>/dev/null || true
 
     if safe_git_commit "$message"; then
         log_success "Changes committed: $message"
@@ -916,7 +852,7 @@ encrypt_file() {
     # -pbkdf2 -iter 100000: Use PBKDF2 with 100k iterations (recommended)
     # Note: Random salt means same file encrypts differently each time (this is good!)
     if openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt \
-        -pass pass:"$password" -in "$source" -out "$dest" 2>/dev/null; then
+        -pass fd:3 -in "$source" -out "$dest" 3<<<"$password" 2>/dev/null; then
         chmod 600 "$dest"
         return 0
     else
@@ -950,36 +886,12 @@ decrypt_file() {
 
     # Decrypt using same parameters (permissions unchanged)
     if openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 \
-        -pass pass:"$password" -in "$source" -out "$dest" 2>/dev/null; then
+        -pass fd:3 -in "$source" -out "$dest" 3<<<"$password" 2>/dev/null; then
         return 0
     else
         log_error "Failed to decrypt file (wrong password?)"
         return 1
     fi
-}
-
-# ===== Repository Health =====
-
-# Check repository health
-# Returns: 0=healthy, 1=not git repo, 2=offline mode
-check_repo_health() {
-    [[ ! -d "$REPO_DIR/.git" ]] && {
-        log_error "Not a git repository"
-        echo "Run 'keys-manage init' to initialize"
-        return 1
-    }
-
-    cd "$REPO_DIR" || {
-        log_error "Failed to change directory to $REPO_DIR"
-        return 1
-    }
-
-    if ! git ls-remote &>/dev/null; then
-        log_warn "Remote unreachable (working offline)"
-        return 3  # Different exit code for offline mode
-    fi
-
-    return 0
 }
 
 # Initialize repository if needed
@@ -1054,16 +966,15 @@ add_files_to_backup() {
 
     local success=0
     local failed=0
+    local -a added_files=()
 
     while IFS= read -r file; do
         [[ -z "$file" ]] && continue
 
-        # Add to backup list
-        grep -qxF "$file" "$BACKUP_LIST" 2>/dev/null || echo "$file" >> "$BACKUP_LIST"
-
         # Encrypt file
         if backup_file "$file" "$password"; then
             update_file_metadata "$file"
+            added_files+=("$file")
             echo "  ${STATUS_OK} $(basename "$file")"
             success=$((success + 1))
         else
@@ -1072,8 +983,15 @@ add_files_to_backup() {
         fi
     done <<< "$files"
 
-    # Sort and deduplicate backup list
-    sort -u "$BACKUP_LIST" -o "$BACKUP_LIST"
+    # Add successfully encrypted files to backup list
+    if [[ ${#added_files[@]} -gt 0 ]]; then
+        touch "$BACKUP_LIST"
+        local added_file
+        for added_file in "${added_files[@]}"; do
+            grep -qxF "$added_file" "$BACKUP_LIST" 2>/dev/null || echo "$added_file" >> "$BACKUP_LIST"
+        done
+        sort -u "$BACKUP_LIST" -o "$BACKUP_LIST"
+    fi
 
     # Commit changes
     if commit_backup_changes "Add $success files"; then
@@ -1105,7 +1023,10 @@ remove_files_from_backup() {
 
                 # Delete encrypted file
                 local backup_path
-                backup_path=$(get_backup_path "$remove_file")
+                backup_path=$(get_backup_path "$remove_file") || {
+                    log_warn "Skipped invalid backup path: $remove_file"
+                    continue
+                }
                 rm -f "$REPO_DIR/$backup_path" "$REPO_DIR/$backup_path.pub"
 
                 # Delete metadata
@@ -1146,7 +1067,8 @@ verify_file() {
     [[ ! -f "$backup_file" ]] && return 2
 
     # Decrypt backup file to temp location for comparison
-    local temp_decrypted="/tmp/keys-verify-$$"
+    local temp_decrypted
+    temp_decrypted=$(mktemp "${TMPDIR:-/tmp}/keys-verify.XXXXXX")
     if ! decrypt_file "$backup_file" "$temp_decrypted" "$password" 2>/dev/null; then
         rm -f "$temp_decrypted"
         return 3  # Decryption failed
@@ -1155,9 +1077,14 @@ verify_file() {
     local local_hash backup_hash
     local_hash=$(calc_checksum "$file")
     backup_hash=$(calc_checksum "$temp_decrypted")
-    rm -f "$temp_decrypted"
 
-    [[ "$local_hash" == "$backup_hash" ]]
+    if [[ "$local_hash" == "$backup_hash" ]]; then
+        rm -f "$temp_decrypted"
+        return 0
+    fi
+
+    rm -f "$temp_decrypted"
+    return 1
 }
 
 # ===== Git Version Helpers =====
@@ -1200,9 +1127,10 @@ When run without a command, displays interactive menu.
 Backup Commands:
   init              Initialize encrypted backup repository
   select            Interactive file selection (shows all, toggle with Tab)
-  add               Add files to backup list (encrypts + commits immediately)
-  remove            Remove files from backup list (deletes + commits immediately)
+  add               Add files to backup list (local changes)
+  remove            Remove files from backup list (local changes)
   sync              Sync all changes (auto re-encrypt modified files + git push/pull)
+  backup            Alias for 'sync'
   verify            Verify backup integrity (compare checksums, read-only)
   history           Show sync event log (detailed operations)
 
@@ -1212,6 +1140,7 @@ Restore Commands:
   validate          Validate repository integrity
 
 Common Commands:
+  menu              Open interactive menu (same as no command)
   status            Show backup and restore status
   password          Manage encryption password (gopass integration)
 
@@ -1226,9 +1155,10 @@ Examples:
 
   # Backup workflow
   keys-manage init             # First time: initialize repository
-  keys-manage select           # Interactive: add/remove files (encrypts/commits immediately)
-  # OR
-  keys-manage add ~/.ssh/id_rsa  # Add specific file (encrypts + commits immediately)
+  keys-manage select           # Interactive: add/remove files
+  # OR (interactive add/remove)
+  keys-manage add
+  keys-manage remove
   keys-manage sync             # Sync all changes (auto re-encrypt + git push/pull)
   keys-manage verify           # Verify backup integrity (read-only)
 
@@ -1238,6 +1168,7 @@ Examples:
   keys-manage restore HEAD~1   # Restore specific version
 
   # Status and maintenance
+  keys-manage menu             # Open interactive menu
   keys-manage status           # Check sync status
   keys-manage history          # View backup log
   keys-manage validate         # Validate repository
@@ -1246,7 +1177,7 @@ Supported Directories:
   - ~/.ssh               SSH keys
   - ~/.gnupg             GPG keys
   - ~/.config/age        OpenSSL PBKDF2 encryption keys
-  - Custom paths via "⊕ Add custom file..." in FZF menu
+  - Custom paths under \$HOME via yazi picker
 
 Status Indicators:
   ${GREEN}✓${NC}  Up to date (backed up, no changes)
@@ -1276,6 +1207,22 @@ cmd_init() {
         echo ""
         log_success "Repository ready"
         return 0
+    fi
+
+    # If local directory exists but is not a git repository, handle explicitly
+    if [[ -d "$REPO_DIR" ]] && [[ ! -d "$REPO_DIR/.git" ]]; then
+        if [[ -n "$(ls -A "$REPO_DIR" 2>/dev/null)" ]]; then
+            log_error "Local directory exists but is not a git repository: $REPO_DIR"
+            echo ""
+            echo "To continue safely, choose one:"
+            echo "  1. Move existing files elsewhere"
+            echo "  2. Remove directory: rm -rf \"$REPO_DIR\""
+            echo "  3. Then run: keys-manage init"
+            return 1
+        fi
+
+        # Empty directory blocks git clone; remove it first.
+        rmdir "$REPO_DIR" 2>/dev/null || true
     fi
 
     # Check if remote repository is configured
@@ -1313,7 +1260,11 @@ cmd_init() {
         error_content=$(cat "$clone_error" 2>/dev/null)
         rm -f "$clone_error"
 
-        if echo "$error_content" | grep -q "not found\|does not exist"; then
+        if echo "$error_content" | grep -q "already exists and is not an empty directory"; then
+            log_error "Local path already exists and is not empty: $REPO_DIR"
+            echo "Please move/delete it, then run init again."
+            return 1
+        elif echo "$error_content" | grep -q "not found\|does not exist"; then
             log_note "Repository does not exist yet (first time setup)"
         elif echo "$error_content" | grep -q "Authentication\|Permission denied\|publickey"; then
             log_error "Authentication failed"
@@ -1348,7 +1299,9 @@ cmd_init() {
         # Initialize new repository
         mkdir -p "$REPO_DIR"
         cd "$REPO_DIR"
-        git init
+        if ! git init -b main &>/dev/null; then
+            git init
+        fi
         git remote add origin "$KEYS_REPO"
 
         # Create initial metadata
@@ -1367,7 +1320,9 @@ cmd_init() {
         echo ""
         echo "Next steps:"
         echo "  1. Create the remote repository: $KEYS_REPO"
-        echo "  2. Run: git -C $REPO_DIR push -u origin main"
+        local default_branch
+        default_branch=$(git branch --show-current 2>/dev/null || echo "main")
+        echo "  2. Run: git -C $REPO_DIR push -u origin $default_branch"
         echo "  3. Set password: export KEYS_BACKUP_PASSWORD='your-password'"
         echo "  4. Run: keys-manage select  # Select files to backup"
 
@@ -1760,7 +1715,7 @@ cmd_add() {
         file_list=$(printf '%s\n' "${available_files[@]}")
         file_list+=$'\n\n'
     fi
-    file_list+="${CYAN}⊕ Browse entire filesystem with yazi...${NC}"
+    file_list+="${CYAN}⊕ Browse files under \$HOME with yazi...${NC}"
 
     echo -e "Available files to add: ${#available_files[@]}"
     echo -e "(Tab: multi-select, ESC: cancel)"
@@ -1781,7 +1736,7 @@ cmd_add() {
 
     # Check if user selected "Browse filesystem" option
     local to_add=""
-    if echo "$selected" | grep -q "Browse entire filesystem"; then
+    if echo "$selected" | grep -q "Browse files under"; then
         # Launch yazi for browsing
         to_add=$(yazi_select_files)
         if [[ -z "$to_add" ]]; then
@@ -1881,7 +1836,7 @@ cmd_remove() {
     # Confirm removal
     local remove_count
     remove_count=$(echo "$to_remove" | wc -l | tr -d ' ')
-    echo -e "Will remove $remove_count files from backup list:${NC}"
+    echo "Will remove $remove_count files from backup list:"
     echo ""
     echo "$to_remove" | sed 's/^/  /'
     echo ""
@@ -1925,7 +1880,7 @@ cmd_remove() {
 
 # Command: sync - Git synchronization only (pull + push)
 cmd_sync() {
-    require_cmd git || return 1
+    require_cmd git jq openssl || return 1
 
     log_header "Keys Sync - Sync All Changes"
     echo ""
@@ -1943,17 +1898,10 @@ cmd_sync() {
         return 1
     fi
 
-    # [1/4] Check for modified files and re-encrypt
+    # [1/5] Check for modified files and re-encrypt
     if [[ -f "$BACKUP_LIST" ]] && [[ -s "$BACKUP_LIST" ]]; then
-        echo "[1/4] Checking for modified files..."
+        echo "[1/5] Checking for modified files..."
         echo ""
-
-        # Get password once for all files
-        local password
-        password=$(get_encryption_password) || {
-            log_error "Cannot proceed without password"
-            return 1
-        }
 
         # Load current files from list
         local current_files=()
@@ -1972,7 +1920,7 @@ cmd_sync() {
 
             # Calculate current checksum
             local current_checksum
-            current_checksum=$(sha256sum "$file" | awk '{print $1}')
+            current_checksum=$(calc_checksum "$file")
 
             # Get checksum from metadata
             local stored_checksum
@@ -1990,25 +1938,55 @@ cmd_sync() {
             echo "Found $modified_count modified file(s), re-encrypting..."
             echo ""
 
+            # Get password once for all updates
+            local password
+            password=$(get_encryption_password) || {
+                log_error "Cannot proceed without password"
+                return 1
+            }
+            local failed_reencrypt=0
+            local -a failed_reencrypt_files=()
+
             for file in "${modified_files[@]}"; do
                 local filename
                 filename=$(basename "$file")
                 echo "  Encrypting: $filename"
 
-                local relative_path="${file#$HOME/}"
-                local backup_path="$REPO_DIR/backup-files/$relative_path"
+                local backup_path
+                backup_path=$(get_backup_path "$file") || {
+                    log_error "  ✗ Invalid path (must be under \$HOME): $file"
+                    failed_reencrypt=$((failed_reencrypt + 1))
+                    failed_reencrypt_files+=("$file")
+                    continue
+                }
 
                 # Encrypt file
-                if encrypt_file "$file" "$backup_path" "$password"; then
+                if encrypt_file "$file" "$REPO_DIR/$backup_path" "$password"; then
                     # Update metadata
-                    update_file_metadata "$file"
-                    log_success "  ✓ Updated: $filename"
+                    if update_file_metadata "$file"; then
+                        log_success "  ✓ Updated: $filename"
+                    else
+                        log_error "  ✗ Failed to update metadata: $filename"
+                        failed_reencrypt=$((failed_reencrypt + 1))
+                        failed_reencrypt_files+=("$file")
+                    fi
                 else
                     log_error "  ✗ Failed: $filename"
+                    failed_reencrypt=$((failed_reencrypt + 1))
+                    failed_reencrypt_files+=("$file")
                 fi
             done
 
             echo ""
+
+            if [[ $failed_reencrypt -gt 0 ]]; then
+                log_error "Sync aborted: $failed_reencrypt file(s) failed during re-encryption"
+                local failed_file
+                for failed_file in "${failed_reencrypt_files[@]}"; do
+                    echo "  - $failed_file"
+                done
+                return 1
+            fi
 
             # Commit changes
             if commit_backup_changes "Sync: re-encrypt $modified_count modified file(s)"; then
@@ -2023,18 +2001,48 @@ cmd_sync() {
             echo ""
         fi
     else
-        echo "[1/4] No backup list found, skipping file check"
+        echo "[1/5] No backup list found, skipping file check"
         echo ""
     fi
 
-    # [2/4] Sync with remote
-    sync_with_remote || {
-        log_warn "Sync issues detected - continuing with push"
-    }
+    # [2/5] Remove encrypted files no longer present in backup list
+    echo "[2/5] Cleaning removed files..."
+    local removed_count=0
+    if [[ -f "$BACKUP_LIST" ]]; then
+        while IFS= read -r encrypted_file; do
+            local rel_path local_path
+            rel_path="${encrypted_file#"$REPO_DIR/$BACKUP_FILES_DIR"/}"
+            local_path="$HOME/$rel_path"
 
-    # [3/4] Check for unpushed commits
+            if ! grep -qxF "$local_path" "$BACKUP_LIST"; then
+                rm -f "$encrypted_file" "$encrypted_file.pub"
+                remove_file_metadata "$local_path"
+                removed_count=$((removed_count + 1))
+            fi
+        done < <(find "$REPO_DIR/$BACKUP_FILES_DIR" -type f ! -name '*.pub' 2>/dev/null | sort)
+    fi
+
+    if [[ $removed_count -gt 0 ]]; then
+        if commit_backup_changes "Sync: remove $removed_count file(s) no longer in backup list"; then
+            log_success "Removed $removed_count stale backup file(s)"
+        else
+            log_error "Failed to commit removed files cleanup"
+            return 1
+        fi
+    else
+        log_success "No removed files to clean"
+        echo ""
+    fi
+
+    # [3/5] Sync with remote
+    if ! sync_with_remote; then
+        log_error "Cannot continue sync until remote issues are resolved"
+        return 1
+    fi
+
+    # [4/5] Check for unpushed commits
     echo ""
-    echo "[3/4] Checking for unpushed commits..."
+    echo "[4/5] Checking for unpushed commits..."
     local unpushed=0
 
     if git rev-parse --abbrev-ref '@{upstream}' &>/dev/null; then
@@ -2059,14 +2067,14 @@ cmd_sync() {
     echo ""
     echo "Recent commits to push:"
     if git rev-parse --abbrev-ref '@{upstream}' &>/dev/null; then
-        git log '@{upstream}..HEAD' --oneline --color=always | head -5
+        git log -n 5 '@{upstream}..HEAD' --oneline --color=always
     else
-        git log --oneline --color=always | head -5
+        git log -n 5 --oneline --color=always
     fi
 
-    # [4/4] Push to remote
+    # [5/5] Push to remote
     echo ""
-    echo "[4/4] Pushing to remote..."
+    echo "[5/5] Pushing to remote..."
     if safe_git_push; then
         echo ""
         log_success "Successfully synced (pushed $unpushed commit(s))"
@@ -2083,7 +2091,7 @@ cmd_sync() {
 
 # Command: verify - Verify backup integrity
 cmd_verify() {
-    require_cmd git || return 1
+    require_cmd git jq openssl || return 1
 
     [[ ! -d "$REPO_DIR/.git" ]] && {
         log_error "Repository not initialized"
@@ -2124,8 +2132,12 @@ cmd_verify() {
 
         # Get backup path
         local backup_path
-        backup_path=$(get_backup_path "$file")
-        if [[ ! -f "$backup_path" ]]; then
+        backup_path=$(get_backup_path "$file") || {
+            log_warn "Invalid backup path (must be under \$HOME): $file"
+            errors=$((errors + 1))
+            continue
+        }
+        if [[ ! -f "$REPO_DIR/$backup_path" ]]; then
             log_fail "Not in backup: $filename"
             errors=$((errors + 1))
             continue
@@ -2175,6 +2187,10 @@ cmd_restore() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --commit|-c)
+                if [[ $# -lt 2 ]] || [[ "$2" == -* ]]; then
+                    log_error "Missing value for --commit"
+                    return 1
+                fi
                 commit_arg="$2"
                 shift 2
                 ;;
@@ -2190,13 +2206,16 @@ cmd_restore() {
                 # First positional argument is commit
                 if [[ -z "$commit_arg" ]]; then
                     commit_arg="$1"
+                else
+                    log_error "Unexpected argument: $1"
+                    return 1
                 fi
                 shift
                 ;;
         esac
     done
 
-    require_cmd git fzf || return 1
+    require_cmd git fzf jq openssl || return 1
 
     [[ ! -d "$REPO_DIR/.git" ]] && {
         log_error "Repository not initialized"
@@ -2205,11 +2224,20 @@ cmd_restore() {
     }
 
     cd "$REPO_DIR"
-
-    [[ ! -f "$BACKUP_LIST" ]] && {
-        log_error "No backup list found"
+    local restorable_files
+    restorable_files=$(git ls-tree -r --name-only HEAD backup-files/ 2>/dev/null | \
+        sed 's|^backup-files/||' | \
+        grep -v '\.pub$' || true)
+    if [[ -z "$restorable_files" ]]; then
+        log_error "No backup files found in repository"
         return 1
-    }
+    fi
+
+    # Ensure we are not behind remote before creating a new restore commit.
+    if ! sync_with_remote; then
+        log_error "Cannot proceed with restore until repository sync issues are resolved"
+        return 1
+    fi
 
     log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     log_section "Interactive Restore - Per-file version selection"
@@ -2221,8 +2249,7 @@ cmd_restore() {
     echo ""
 
     local selected_file
-    selected_file=$(git ls-tree -r --name-only HEAD backup-files/ 2>/dev/null | \
-        sed 's|^backup-files/||' | \
+    selected_file=$(echo "$restorable_files" | \
         fzf \
             --height=70% \
             --border=rounded \
@@ -2256,6 +2283,10 @@ cmd_restore() {
     if [[ -n "$commit_arg" ]]; then
         # Use specified commit
         selected_commit="$commit_arg"
+        if ! git rev-parse --verify "$selected_commit^{commit}" &>/dev/null; then
+            log_error "Invalid commit: $selected_commit"
+            return 1
+        fi
         echo "Using specified commit: $(git log -1 --format='%h - %s (%ar)' "$selected_commit")"
     else
         # Show commit history for this specific file ONLY
@@ -2273,7 +2304,7 @@ cmd_restore() {
     fi
 
     # Validate commit
-    if ! git rev-parse "$selected_commit" &>/dev/null; then
+    if ! git rev-parse --verify "$selected_commit^{commit}" &>/dev/null; then
         log_error "Invalid commit: $selected_commit"
         return 1
     fi
@@ -2321,11 +2352,11 @@ cmd_restore() {
 
     # Backup current state
     local backup_dir
-    backup_dir="${HOME}/.ssh/backup-$(date +%Y%m%d-%H%M%S)"
+    backup_dir="${RESTORE_SNAPSHOT_DIR}/$(date +%Y%m%d-%H%M%S)"
 
     if [[ "$no_backup" != true ]]; then
         echo ""
-        echo "[1/3] Backing up current state..."
+        echo "[1/4] Backing up current state..."
         mkdir -p "$backup_dir"
 
         if [[ -f "$target_path" ]]; then
@@ -2346,7 +2377,7 @@ cmd_restore() {
 
     # Restore file
     echo ""
-    echo "[2/3] Restoring file..."
+    echo "[2/4] Restoring file..."
 
     local password
     password=$(get_encryption_password) || {
@@ -2354,7 +2385,8 @@ cmd_restore() {
         return 1
     }
 
-    local temp_encrypted="/tmp/keys-restore-$$.enc"
+    local temp_encrypted
+    temp_encrypted=$(mktemp "${TMPDIR:-/tmp}/keys-restore.XXXXXX.enc")
     local filename
     filename=$(basename "$target_path")
 
@@ -2370,7 +2402,7 @@ cmd_restore() {
     if decrypt_file "$temp_encrypted" "$target_path" "$password" 2>/dev/null; then
         # Restore original permissions from metadata
         local original_perms
-        original_perms=$(jq -r ".files[\"$target_path\"].permissions // empty" "$METADATA_FILE" 2>/dev/null)
+        original_perms=$(get_file_info "$target_path" "permissions" || true)
 
         if [[ -n "$original_perms" ]]; then
             # Use original permissions from metadata
@@ -2395,10 +2427,39 @@ cmd_restore() {
         chmod 644 "$target_path.pub"
     fi
 
-    # Cleanup
+    # Re-encrypt restored file into backup repo and create a new latest commit.
+    echo ""
+    echo "[3/4] Writing restored version as latest backup commit..."
+
+    if ! backup_file "$target_path" "$password"; then
+        log_error "Failed to update backup repository for restored file"
+        return 1
+    fi
+
+    update_file_metadata "$target_path"
+
+    # Keep backup list in sync (idempotent).
+    touch "$BACKUP_LIST"
+    if ! grep -qxF "$target_path" "$BACKUP_LIST"; then
+        echo "$target_path" >> "$BACKUP_LIST"
+        sort -u "$BACKUP_LIST" -o "$BACKUP_LIST"
+    fi
+
+    local selected_commit_short restore_commit_msg
+    selected_commit_short=$(git rev-parse --short "$selected_commit")
+    restore_commit_msg="Restore $selected_file from $selected_commit_short"
+
+    git add -A backup-files/ backup-list.txt backup-metadata.json 2>/dev/null || true
+    if safe_git_commit "$restore_commit_msg"; then
+        log_success "Created latest restore commit"
+        log_note "Run 'keys-manage sync' to publish restore commit to remote"
+    else
+        log_warn "No repository content change to commit (already same as latest)"
+    fi
+
     rm -f "$temp_encrypted"
     echo ""
-    echo "[3/3] Complete"
+    echo "[4/4] Complete"
 
     echo ""
     log_section "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -2412,7 +2473,7 @@ cmd_restore() {
         echo ""
         log_info "Rollback available:"
         echo "  Current state saved to: $backup_dir"
-        echo "  To rollback: cp -r $backup_dir/* ~/.ssh/"
+        echo "  To rollback: cp -R \"$backup_dir\"/. \"$HOME\"/"
     fi
 
     echo ""
@@ -2441,18 +2502,18 @@ cmd_versions() {
 
     if [[ -n "$selected" ]]; then
         echo ""
-        log_section "Selected commit: $selected${NC}"
+        log_section "Selected commit: $selected"
         echo ""
         git show --stat "$selected" -- backup-files/
         echo ""
-        echo -e "To restore: keys-manage restore --commit $selected${NC}"
-        echo -e "To preview: keys-manage diff $selected${NC}"
+        echo "To restore: keys-manage restore --commit $selected"
+        echo "To preview: keys-manage restore --dry-run --commit $selected"
     fi
 }
 
 # Command: validate - Validate backup integrity
 cmd_validate() {
-    require_cmd git || return 1
+    require_cmd git jq || return 1
 
     [[ ! -d "$REPO_DIR/.git" ]] && {
         log_error "Repository not initialized"
@@ -2466,10 +2527,15 @@ cmd_validate() {
 
     # Check git repository
     local fsck_output
-    fsck_output=$(git fsck 2>&1)
-    if echo "$fsck_output" | grep -q "error:"; then
+    local fsck_status=0
+    fsck_output=$(git fsck 2>&1) || fsck_status=$?
+    if [[ $fsck_status -ne 0 ]] || echo "$fsck_output" | grep -q "error:"; then
         log_fail "Git repository has errors"
-        echo "$fsck_output" | grep "error:"
+        if echo "$fsck_output" | grep -q "error:"; then
+            echo "$fsck_output" | grep "error:"
+        else
+            echo "$fsck_output"
+        fi
         return 1
     else
         log_success "Git repository integrity OK"
@@ -2673,8 +2739,10 @@ cmd_password() {
                 }
 
                 # Create test file
-                local test_file="/tmp/keys-manage-test-$$"
-                local test_content="keys-manage password test $(date)"
+                local test_file
+                test_file=$(mktemp "${TMPDIR:-/tmp}/keys-manage-test.XXXXXX")
+                local test_content
+                test_content="keys-manage password test $(date)"
                 echo "$test_content" > "$test_file"
 
                 echo "Testing encryption/decryption..."
@@ -2877,8 +2945,10 @@ EOF
                 local password
                 if password=$(get_encryption_password); then
                     # Create test file
-                    local test_file="/tmp/keys-manage-test-$$"
-                    local test_content="keys-manage password test $(date)"
+                    local test_file
+                    test_file=$(mktemp "${TMPDIR:-/tmp}/keys-manage-test.XXXXXX")
+                    local test_content
+                    test_content="keys-manage password test $(date)"
                     echo "$test_content" > "$test_file"
 
                     echo "Testing encryption/decryption..."
@@ -3042,6 +3112,8 @@ MENU
 # ===== Main Entry Point =====
 
 main() {
+    trap clear_password_cache EXIT
+
     # Parse global options first
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -3050,6 +3122,10 @@ main() {
                 exit 0
                 ;;
             -p|--password)
+                if [[ $# -lt 2 ]]; then
+                    log_error "Missing value for $1"
+                    return 1
+                fi
                 # Export as environment variable for get_encryption_password()
                 export KEYS_BACKUP_PASSWORD="$2"
                 shift 2
@@ -3075,9 +3151,11 @@ main() {
     case "$cmd" in
         # Backup commands
         init) cmd_init "$@" ;;
+        menu) cmd_menu "$@" ;;
         select) cmd_select "$@" ;;
         add) cmd_add "$@" ;;
         remove) cmd_remove "$@" ;;
+        backup) cmd_sync "$@" ;;
         sync) cmd_sync "$@" ;;
         verify) cmd_verify "$@" ;;
         history) cmd_history "$@" ;;

@@ -17,22 +17,42 @@
 set -euo pipefail
 
 # shellcheck source=lib/claude.tmpl
-source "$(dirname "$0")/lib/claude"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/claude"
+
+# Escape value for TOML basic string context.
+escape_toml_string() {
+    local value="$1"
+    value=${value//\\/\\\\}
+    value=${value//\"/\\\"}
+    value=${value//$'\n'/ }
+    value=${value//$'\r'/ }
+    printf '%s' "$value"
+}
+
+validate_account_name() {
+    local name="$1"
+    [[ -n "$name" ]] || return 1
+    [[ "$name" != *$'\n'* ]] || return 1
+    [[ "$name" != *$'\r'* ]] || return 1
+    return 0
+}
 
 # Set account in chezmoi.toml
 set_chezmoi_account() {
     local account="$1"
+    local escaped_account
+    escaped_account=$(escape_toml_string "$account")
     local tmp_file
     tmp_file=$(mktemp) || { log_error "Failed to create temp file"; return 1; }
-    trap 'rm -f "$tmp_file"' RETURN
 
     if grep -q "^claudeProviderAccount = " "$CHEZMOI_CONFIG"; then
-        sed "s/^claudeProviderAccount = .*/claudeProviderAccount = \"$account\"/" "$CHEZMOI_CONFIG" > "$tmp_file"
+        sed "s/^claudeProviderAccount = .*/claudeProviderAccount = \"$escaped_account\"/" "$CHEZMOI_CONFIG" > "$tmp_file"
     elif grep -q "^claudeProvider = " "$CHEZMOI_CONFIG"; then
-        sed "s/^claudeProvider = .*/claudeProviderAccount = \"$account\"/" "$CHEZMOI_CONFIG" > "$tmp_file"
+        sed "s/^claudeProvider = .*/claudeProviderAccount = \"$escaped_account\"/" "$CHEZMOI_CONFIG" > "$tmp_file"
     else
         cp "$CHEZMOI_CONFIG" "$tmp_file"
-        echo "claudeProviderAccount = \"$account\"" >> "$tmp_file"
+        echo "claudeProviderAccount = \"$escaped_account\"" >> "$tmp_file"
     fi
     mv "$tmp_file" "$CHEZMOI_CONFIG"
 }
@@ -147,7 +167,7 @@ cmd_switch() {
 
 # Add account
 cmd_add_account() {
-    require_cmd yq || return 1
+    require_cmd fzf yq || return 1
 
     log_info "Add New Account"
     echo ""
@@ -169,13 +189,18 @@ cmd_add_account() {
         [[ -z "$account_name" ]] && return 1
         full_name="$account_name"
     else
-        printf "Account name (will become ${provider}@<name>): "
+        printf 'Account name (will become %s@<name>): ' "$provider"
         read -r account_name
         [[ -z "$account_name" ]] && return 1
         full_name="${provider}@${account_name}"
     fi
 
-    yq -e ".claude.accounts.\"$full_name\"" "$CLAUDE_YAML" &>/dev/null && {
+    if ! validate_account_name "$account_name"; then
+        log_error "Invalid account name (control characters are not allowed)"
+        return 1
+    fi
+
+    ACCOUNT_NAME="$full_name" yq -e '.claude.accounts[strenv(ACCOUNT_NAME)]' "$CLAUDE_YAML" &>/dev/null && {
         log_error "Account '$full_name' already exists"
         return 1
     }
@@ -193,11 +218,17 @@ cmd_add_account() {
     # Add to YAML
     echo ""
     log_info "Adding account..."
-    if [[ "$provider" == "anthropic" ]]; then
-        yq -i ".claude.accounts.\"$full_name\" = {\"provider\": \"anthropic\", \"model\": \"$model\", \"small_model\": \"$small_model\"}" "$CLAUDE_YAML"
-    else
-        yq -i ".claude.accounts.\"$full_name\" = {\"model\": \"$model\", \"small_model\": \"$small_model\"}" "$CLAUDE_YAML"
-    fi
+    ACCOUNT_NAME="$full_name" \
+    PROVIDER_NAME="$provider" \
+    MODEL_NAME="$model" \
+    SMALL_MODEL_NAME="$small_model" \
+    yq -i '
+        .claude.accounts[strenv(ACCOUNT_NAME)] = {
+            "provider": strenv(PROVIDER_NAME),
+            "model": strenv(MODEL_NAME),
+            "small_model": strenv(SMALL_MODEL_NAME)
+        }
+    ' "$CLAUDE_YAML"
     log_success "Account '$full_name' added"
 
     # Add API key for third-party
@@ -210,7 +241,7 @@ cmd_add_account() {
             read -rs api_key
             echo ""
             [[ -n "$api_key" ]] && {
-                echo "$api_key" | gopass insert -f "claude-code/providers/$provider/$account_name/api_key"
+                store_api_key "$provider" "$account_name" "$api_key"
                 log_success "API key saved"
             }
         fi
@@ -227,6 +258,9 @@ cmd_edit_account() {
     require_cmd yq || return 1
 
     local input="${1:-}"
+    if [[ -z "$input" ]]; then
+        require_cmd fzf || return 1
+    fi
     [[ -z "$input" ]] && { input=$(fzf_pick_account "Edit Account" "plain") || return 1; }
 
     is_configured_account "$input" || { log_error "Unknown account '$input'"; return 1; }
@@ -235,8 +269,8 @@ cmd_edit_account() {
     echo ""
 
     local current_model current_small
-    current_model=$(yq -r ".claude.accounts.\"$input\".model // \"\"" "$CLAUDE_YAML")
-    current_small=$(yq -r ".claude.accounts.\"$input\".small_model // \"\"" "$CLAUDE_YAML")
+    current_model=$(ACCOUNT_NAME="$input" yq -r '.claude.accounts[strenv(ACCOUNT_NAME)].model // ""' "$CLAUDE_YAML")
+    current_small=$(ACCOUNT_NAME="$input" yq -r '.claude.accounts[strenv(ACCOUNT_NAME)].small_model // ""' "$CLAUDE_YAML")
 
     echo "Current model: $current_model"
     printf "New model (Enter to keep): "
@@ -248,7 +282,13 @@ cmd_edit_account() {
     read -r new_small
     [[ -z "$new_small" ]] && new_small="$current_small"
 
-    yq -i ".claude.accounts.\"$input\".model = \"$new_model\" | .claude.accounts.\"$input\".small_model = \"$new_small\"" "$CLAUDE_YAML"
+    ACCOUNT_NAME="$input" \
+    NEW_MODEL="$new_model" \
+    NEW_SMALL="$new_small" \
+    yq -i '
+        .claude.accounts[strenv(ACCOUNT_NAME)].model = strenv(NEW_MODEL) |
+        .claude.accounts[strenv(ACCOUNT_NAME)].small_model = strenv(NEW_SMALL)
+    ' "$CLAUDE_YAML"
 
     echo ""
     log_success "Account '$input' updated"
@@ -262,6 +302,9 @@ cmd_remove_account() {
     require_cmd yq || return 1
 
     local input="${1:-}"
+    if [[ -z "$input" ]]; then
+        require_cmd fzf || return 1
+    fi
     [[ -z "$input" ]] && { input=$(fzf_pick_account "Remove Account" "plain") || return 1; }
 
     is_configured_account "$input" || { log_error "Unknown account '$input'"; return 1; }
@@ -274,7 +317,7 @@ cmd_remove_account() {
     local provider
     provider=$(get_provider "$input")
 
-    yq -i "del(.claude.accounts.\"$input\")" "$CLAUDE_YAML"
+    ACCOUNT_NAME="$input" yq -i 'del(.claude.accounts[strenv(ACCOUNT_NAME)])' "$CLAUDE_YAML"
     log_success "Account removed"
 
     if is_third_party "$provider"; then
@@ -285,7 +328,7 @@ cmd_remove_account() {
             printf "Also delete API key? [y/N]: "
             read -r del_key
             [[ "$del_key" == "y" || "$del_key" == "Y" ]] && {
-                gopass rm -f "claude-code/providers/$provider/$acct_name/api_key" 2>/dev/null || true
+                delete_api_key "$provider" "$acct_name"
                 log_success "API key deleted"
             }
         fi
@@ -299,9 +342,11 @@ cmd_remove_account() {
 
 # Add API key
 cmd_add_key() {
+    require_cmd gopass || return 1
     local input="${1:-}"
 
     if [[ -z "$input" ]]; then
+        require_cmd fzf || return 1
         local needs_key=()
         for acct in "${ACCOUNTS[@]}"; do
             local prov
@@ -341,7 +386,7 @@ cmd_add_key() {
     echo ""
     [[ -z "$api_key" ]] && { log_error "API key required"; return 1; }
 
-    echo "$api_key" | gopass insert -f "claude-code/providers/$provider/$acct_name/api_key"
+    store_api_key "$provider" "$acct_name" "$api_key"
     log_success "API key saved"
 
     printf "Test connectivity? [Y/n]: "
@@ -351,9 +396,11 @@ cmd_add_key() {
 
 # Update API key
 cmd_update_key() {
+    require_cmd gopass || return 1
     local input="${1:-}"
 
     if [[ -z "$input" ]]; then
+        require_cmd fzf || return 1
         local existing
         existing=$(build_accounts_with_keys)
         [[ -z "$existing" ]] && { log_warn "No API keys to update"; return 1; }
@@ -380,7 +427,7 @@ cmd_update_key() {
     echo ""
     [[ -z "$api_key" ]] && { log_error "API key required"; return 1; }
 
-    echo "$api_key" | gopass insert -f "claude-code/providers/$provider/$acct_name/api_key"
+    store_api_key "$provider" "$acct_name" "$api_key"
     log_success "API key updated"
 
     printf "Test connectivity? [Y/n]: "
@@ -390,9 +437,11 @@ cmd_update_key() {
 
 # Delete API key
 cmd_delete_key() {
+    require_cmd gopass || return 1
     local input="${1:-}"
 
     if [[ -z "$input" ]]; then
+        require_cmd fzf || return 1
         local existing
         existing=$(build_accounts_with_keys)
         [[ -z "$existing" ]] && { log_warn "No API keys to delete"; return 1; }
@@ -416,7 +465,7 @@ cmd_delete_key() {
     printf "Continue? [y/N]: "
     read -r confirm
     [[ "$confirm" == "y" || "$confirm" == "Y" ]] && {
-        gopass rm -f "claude-code/providers/$provider/$acct_name/api_key" 2>/dev/null || true
+        delete_api_key "$provider" "$acct_name"
         log_success "API key deleted"
     } || echo "Cancelled"
 }
@@ -460,13 +509,20 @@ cmd_test() {
     echo "  Testing API..."
     local model response http_code
     model=$(echo "$config" | jq -r '.model // "unknown"')
+    local header_file
+    header_file=$(mktemp)
+    chmod 600 "$header_file"
+    cat > "$header_file" <<EOF
+x-api-key: $token
+anthropic-version: 2023-06-01
+Content-Type: application/json
+EOF
 
     response=$(curl -sS -w "\n%{http_code}" --max-time 30 \
         -X POST "$base_url/v1/messages" \
-        -H "x-api-key: $token" \
-        -H "anthropic-version: 2023-06-01" \
-        -H "Content-Type: application/json" \
+        -H @"$header_file" \
         -d "{\"model\":\"$model\",\"max_tokens\":1,\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}" 2>&1)
+    rm -f "$header_file"
 
     http_code=$(echo "$response" | tail -n1)
 
@@ -539,22 +595,55 @@ main() {
     local cmd="${1:-}"
     shift || true
 
-    require_cmd chezmoi jq fzf gopass || exit 1
-
     case "$cmd" in
-        "")             fzf_menu ;;
-        switch|sw)      cmd_switch "$@" ;;
-        add-account)    cmd_add_account "$@" ;;
-        edit-account)   cmd_edit_account "$@" ;;
-        remove-account) cmd_remove_account "$@" ;;
-        add-key)        cmd_add_key "$@" ;;
-        update-key)     cmd_update_key "$@" ;;
-        delete-key)     cmd_delete_key "$@" ;;
-        test)           cmd_test "$@" ;;
-        list|ls)        cmd_list "$@" ;;
-        current)        cmd_current ;;
-        help|--help|-h) show_help ;;
-        *)              log_error "Unknown: $cmd"; show_help; exit 1 ;;
+        help|--help|-h)
+            show_help
+            ;;
+        "")
+            require_cmd chezmoi jq fzf gopass || exit 1
+            fzf_menu
+            ;;
+        switch|sw)
+            require_cmd chezmoi jq || exit 1
+            cmd_switch "$@"
+            ;;
+        add-account)
+            require_cmd chezmoi jq yq fzf || exit 1
+            cmd_add_account "$@"
+            ;;
+        edit-account)
+            require_cmd chezmoi jq yq || exit 1
+            cmd_edit_account "$@"
+            ;;
+        remove-account)
+            require_cmd chezmoi jq yq || exit 1
+            cmd_remove_account "$@"
+            ;;
+        add-key|update-key|delete-key)
+            require_cmd chezmoi jq gopass || exit 1
+            case "$cmd" in
+                add-key) cmd_add_key "$@" ;;
+                update-key) cmd_update_key "$@" ;;
+                delete-key) cmd_delete_key "$@" ;;
+            esac
+            ;;
+        test)
+            require_cmd chezmoi jq gopass curl || exit 1
+            cmd_test "$@"
+            ;;
+        list|ls)
+            require_cmd chezmoi jq gopass || exit 1
+            cmd_list "$@"
+            ;;
+        current)
+            require_cmd chezmoi jq || exit 1
+            cmd_current
+            ;;
+        *)
+            log_error "Unknown: $cmd"
+            show_help
+            exit 1
+            ;;
     esac
 }
 

@@ -5,7 +5,8 @@
 # Usage: source lib/claude.tmpl
 
 # Source common library
-source "$(dirname "${BASH_SOURCE[0]}")/common"
+CLAUDE_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$CLAUDE_LIB_DIR/common"
 
 # Paths
 CHEZMOI_CONFIG="${HOME}/.config/chezmoi/chezmoi.toml"
@@ -68,7 +69,14 @@ is_configured_account() {
 key_exists() {
     local provider="$1"
     local account="$2"
-    gopass list -f "claude-code/providers/$provider/$account/api_key" &>/dev/null
+    local path
+    while IFS= read -r path; do
+        [[ -z "$path" ]] && continue
+        if run_with_timeout 3 gopass list -f "$path" &>/dev/null; then
+            return 0
+        fi
+    done < <(api_key_path_candidates "$provider" "$account")
+    return 1
 }
 
 # Get current account from chezmoi
@@ -187,4 +195,57 @@ parse_provider_account() {
     else
         echo "$input|default"
     fi
+}
+
+# Normalize account names for gopass path safety.
+encode_account_segment() {
+    local input="$1"
+    if command -v base64 &>/dev/null; then
+        printf '%s' "$input" | base64 | tr -d '\n=' | tr '+/' '-_'
+    else
+        printf '%s' "$input" | openssl base64 -A | tr -d '=' | tr '+/' '-_'
+    fi
+}
+
+api_key_path_v2() {
+    local provider="$1"
+    local account="$2"
+    local encoded
+    encoded=$(encode_account_segment "$account")
+    printf 'claude-code/providers/%s/accounts/%s/api_key\n' "$provider" "$encoded"
+}
+
+# Emit candidate gopass paths (new first, then legacy).
+api_key_path_candidates() {
+    local provider="$1"
+    local account="$2"
+
+    api_key_path_v2 "$provider" "$account"
+    if [[ "$account" =~ ^[A-Za-z0-9._-]+$ ]]; then
+        printf 'claude-code/providers/%s/%s/api_key\n' "$provider" "$account"
+    fi
+
+    if [[ "$account" == "default" ]]; then
+        printf 'claude-code/providers/%s/api_key\n' "$provider"
+    fi
+}
+
+# Write API key to canonical v2 path.
+store_api_key() {
+    local provider="$1"
+    local account="$2"
+    local key_value="$3"
+    local target
+    target=$(api_key_path_v2 "$provider" "$account")
+    printf '%s' "$key_value" | gopass insert -f "$target"
+}
+
+delete_api_key() {
+    local provider="$1"
+    local account="$2"
+    local path
+    while IFS= read -r path; do
+        [[ -z "$path" ]] && continue
+        gopass rm -f "$path" &>/dev/null || true
+    done < <(api_key_path_candidates "$provider" "$account")
 }
