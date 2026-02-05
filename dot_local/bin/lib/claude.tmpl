@@ -13,6 +13,11 @@ CHEZMOI_CONFIG="${HOME}/.config/chezmoi/chezmoi.toml"
 SETTINGS_FILE="${HOME}/.claude/settings.json"
 CLAUDE_YAML="${HOME}/.local/share/chezmoi/.chezmoidata/claude.yaml"
 
+# Return codes used for interactive navigation.
+# Callers can override these if needed, but keeping them consistent makes UX predictable.
+: "${RC_BACK:=10}"
+: "${RC_EXIT:=130}"
+
 # Available providers (from chezmoi data)
 PROVIDERS=({{- range $name, $_ := .claude.providers }} "{{ $name }}"{{- end }})
 
@@ -92,7 +97,7 @@ build_account_list_with_status() {
         if [[ "$account" == "$current" ]]; then
             echo -e "${GREEN}$account ✓${NC}"
         else
-            echo "  $account"
+            echo "$account"
         fi
     done
 }
@@ -117,7 +122,7 @@ build_account_list_with_token() {
 # Common preview script for account selection
 ACCOUNT_PREVIEW='
     line=$(echo {} | sed "s/^[[:space:]]*//")
-    if echo "$line" | grep -q "Back"; then
+    if [[ "$line" == "Back" ]]; then
         echo "Return to main menu"
         exit 0
     fi
@@ -152,23 +157,25 @@ fzf_pick_account() {
     current=$(get_current)
 
     local result
-    result=$({
-        echo -e "${YELLOW}← Back${NC}"
+    if ! result=$({
         case "$list_type" in
             token) build_account_list_with_token ;;
             plain) printf '%s\n' "${ACCOUNTS[@]}" ;;
             *)     build_account_list_with_status ;;
         esac
+        echo -e "${YELLOW}Back${NC}"
     } | fzf --ansi \
         --height=50% \
         --border=rounded \
         --header="$header" \
         --preview="$ACCOUNT_PREVIEW" \
         --preview-window='right:50%:wrap' \
-        --preview-label="[ Current: $current ]") || true
+        --preview-label="[ Current: $current ]"); then
+        return "$RC_EXIT"
+    fi
 
-    [[ -z "$result" ]] && return 1
-    [[ "$result" == *"Back"* ]] && return 1
+    [[ -z "$result" ]] && return "$RC_EXIT"
+    [[ "$result" == "Back" ]] && return "$RC_BACK"
 
     # Extract account name: remove status icon prefix and ✓ suffix
     # Formats: "✓ account", "✗ account", "○ account", "  account", "account ✓"
@@ -215,11 +222,26 @@ api_key_path_v2() {
     printf 'claude-code/providers/%s/accounts/%s/api_key\n' "$provider" "$encoded"
 }
 
+# Current canonical gopass path:
+#   claude-code/accounts/<provider>@<account>/api_key
+# Example:
+#   claude-code/accounts/doubao@private/api_key
+api_key_path_v3() {
+    local provider="$1"
+    local account="$2"
+    if [[ "$account" == "default" ]]; then
+        printf 'claude-code/accounts/%s/api_key\n' "$provider"
+    else
+        printf 'claude-code/accounts/%s@%s/api_key\n' "$provider" "$account"
+    fi
+}
+
 # Emit candidate gopass paths (new first, then legacy).
 api_key_path_candidates() {
     local provider="$1"
     local account="$2"
 
+    api_key_path_v3 "$provider" "$account"
     api_key_path_v2 "$provider" "$account"
     if [[ "$account" =~ ^[A-Za-z0-9._-]+$ ]]; then
         printf 'claude-code/providers/%s/%s/api_key\n' "$provider" "$account"
@@ -230,13 +252,13 @@ api_key_path_candidates() {
     fi
 }
 
-# Write API key to canonical v2 path.
+# Write API key to canonical v3 path.
 store_api_key() {
     local provider="$1"
     local account="$2"
     local key_value="$3"
     local target
-    target=$(api_key_path_v2 "$provider" "$account")
+    target=$(api_key_path_v3 "$provider" "$account")
     printf '%s' "$key_value" | gopass insert -f "$target"
 }
 

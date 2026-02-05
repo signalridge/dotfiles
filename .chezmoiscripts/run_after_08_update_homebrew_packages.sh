@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eufo pipefail
+set -euo pipefail
 
 # Periodic upgrade check (7-day interval)
 # New packages are installed by nix-darwin (script 02)
@@ -13,7 +13,7 @@ UPDATE_INTERVAL=$((7 * 86400)) # 7 days
 [[ -f "$LAST_UPDATE_FILE" ]] && LAST_UPDATE=$(cat "$LAST_UPDATE_FILE")
 DAYS_AGO=$(((CURRENT_TIME - LAST_UPDATE) / 86400))
 
-echo ":: [04] Updating Homebrew packages"
+echo ":: [08] Updating Homebrew packages"
 
 if ((CURRENT_TIME - LAST_UPDATE > UPDATE_INTERVAL)); then
     echo "    Last update: ${DAYS_AGO} days ago, checking for updates..."

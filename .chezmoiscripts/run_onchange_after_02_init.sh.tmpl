@@ -1,7 +1,7 @@
 #!/bin/bash
 # darwin-only: excluded on linux via .chezmoiignore
 
-set -eufo pipefail
+set -euo pipefail
 
 {{ $flake := joinPath .chezmoi.homeDir "nix-config/flake.nix" -}}
 {{- $lock := joinPath .chezmoi.homeDir "nix-config/flake.lock" -}}

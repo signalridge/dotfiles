@@ -32,7 +32,6 @@ homepkgs:
     - mermaid-cli # mmdc - Mermaid diagram renderer (render-markdown.nvim dependency)
     - mosh
     - gopass
-    - transcrypt # transparent git encryption with password
     - gh
     - gh-dash
     - ghq

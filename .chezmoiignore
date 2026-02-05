@@ -10,10 +10,13 @@ nix-config/.flake-linux.lock
 README.ja.md
 README.zh-CN.md
 .editorconfig
+.git/
 .gitignore
 .github/
 .pre-commit-config.yaml
+.claude/
 init.sh
+doc/
 docs/
 node_modules/
 selene.toml
@@ -31,8 +34,8 @@ nix-config/modules/host-users.nix
 
 # macOS-specific scripts (target paths)
 .chezmoiscripts/02_init.sh
-.chezmoiscripts/04_update_homebrew_packages.sh
 .chezmoiscripts/07_install-paperlib.sh
+.chezmoiscripts/08_update_homebrew_packages.sh
 
 # macOS-only GUI apps (target paths)
 .config/aerospace/
@@ -59,7 +62,9 @@ nix-config/modules/host-users.nix
 # ─────────────────────────────────────────────────────────────────────────────
 {{- if not .useEncryption }}
 .chezmoiscripts/01_setup-encryption-key.sh
+.chezmoiscripts/04_setup-gopass.sh
 .ssh/*
 {{- end }}
 
 backup/
+tests/

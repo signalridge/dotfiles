@@ -58,11 +58,19 @@ encryption = "age"
 {{- end -}}
 
 {{/* gopass password store repository */}}
-{{- $gopassRepository := "git@github.com:signalridge/password-store.git" -}}
+{{- $gopassRepository := printf "git@github.com:%s/passwords.git" $gitUsername -}}
 {{- if hasKey . "gopassRepository" -}}
 {{-   $gopassRepository = .gopassRepository -}}
 {{- else if and (stdinIsATTY) $useEncryption -}}
-{{-   $gopassRepository = promptStringOnce . "gopassRepository" "gopass repository URL (e.g. git@github.com:username/password-store.git)" -}}
+{{-   $gopassRepository = promptStringOnce . "gopassRepository" "gopass repository URL" $gopassRepository -}}
+{{- end -}}
+
+{{/* keys-manage backup repository */}}
+{{- $keysRepository := printf "git@github.com:%s/keypairs.git" $gitUsername -}}
+{{- if hasKey . "keysRepository" -}}
+{{-   $keysRepository = .keysRepository -}}
+{{- else if and (stdinIsATTY) $useEncryption -}}
+{{-   $keysRepository = promptStringOnce . "keysRepository" "keys-manage backup repository URL" $keysRepository -}}
 {{- end -}}
 
 {{/* timezone: prefer local config, fallback to ip-api.com */}}
@@ -103,6 +111,7 @@ osid = {{ $osID | quote }}
 timezone = {{ $timezone | quote }}
 claudeProviderAccount = {{ $claudeProviderAccount | quote }}
 gopassRepository = {{ $gopassRepository | quote }}
+keysRepository = {{ $keysRepository | quote }}
 
 [edit]
 command = "code"

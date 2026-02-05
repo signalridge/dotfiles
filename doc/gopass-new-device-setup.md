@@ -4,7 +4,8 @@ Complete workflow for restoring gopass password manager on a new device.
 
 ## Prerequisites
 
-- Bitwarden account (stores age encryption key)
+- Access to your `keys-manage` backup repository (Git remote)
+- Keys-backup encryption password (used by `keys-manage` / OpenSSL)
 - GitHub SSH access
 - Network connection
 
@@ -17,10 +18,9 @@ chezmoi init --apply https://github.com/YOUR_USERNAME/dotfiles.git
 
 chezmoi will automatically:
 
-1. Install required tools (age, gopass, bitwarden-cli)
-2. Prompt for Bitwarden login
-3. Restore `~/.ssh/main` encryption key from Bitwarden
-4. Create gopass configuration file `~/.config/gopass/config`
+1. Install required tools (git, openssl, age, gopass)
+2. (If `useEncryption` enabled) Clone your keys-backup repo and restore `~/.ssh/main` (prompts for repo URL + backup password)
+3. Create gopass configuration file `~/.config/gopass/config`
 
 ## Step 2: Clone Password Store
 
@@ -50,7 +50,7 @@ gopass clone "$REPO_URL"
 gopass ls
 
 # Test reading a password
-gopass show claude-code/providers/kimi/private/api_key
+gopass show claude-code/accounts/kimi@private/api_key
 
 # Test claude-manage integration
 ccm list
@@ -60,7 +60,7 @@ ccm list
 
 ### Automatically Created Files
 
-1. **`~/.ssh/main`** - age encryption private key (restored from Bitwarden)
+1. **`~/.ssh/main`** - age encryption private key (restored from keys-backup repo)
 2. **`~/.ssh/main.pub`** - age encryption public key
 3. **`~/.config/gopass/config`** - gopass configuration:
 
@@ -132,11 +132,13 @@ gopass clone "$GOPASS_REPO"
 
 ### Error: "Age encryption key not found"
 
-**Solution:** Ensure Bitwarden is logged in and unlocked:
+**Solution:** Re-run `chezmoi apply` and make sure `useEncryption=true`, and that you can access your keys repository.
+
+If you want to avoid prompts:
 
 ```bash
-bw login
-export BW_SESSION=$(bw unlock --raw)
+export KEYS_REPO=git@github.com:YOUR_USERNAME/keypairs.git
+export KEYS_BACKUP_PASSWORD='...'
 chezmoi apply
 ```
 
@@ -173,7 +175,7 @@ chmod 644 ~/.ssh/main.pub
 
 **Shared across devices:**
 
-- Same SSH key (restored from Bitwarden)
+- Same SSH key (restored from keys-backup repo)
 - Same Git repository (password store)
 
 **Device-specific:**
@@ -183,7 +185,7 @@ chmod 644 ~/.ssh/main.pub
 ## Security Recommendations
 
 1. **Backup SSH key:**
-   - Primary: Bitwarden
+   - Primary: keys-backup Git repository (`keys-manage`)
    - Physical: Encrypted USB (optional)
 
 2. **Key permissions:**
@@ -193,15 +195,14 @@ chmod 644 ~/.ssh/main.pub
    chmod 644 ~/.ssh/main.pub   # Public key: world readable
    ```
 
-3. **Bitwarden security:**
-   - Use strong master password
-   - Enable two-factor authentication
-   - Rotate master password regularly
+3. **Backup password security:**
+   - Use a strong keys-backup encryption password
+   - Store it in a secure password manager
 
 ## Related Files
 
 - `migrate-gopass-to-age.sh` - Initial migration script (current device)
-- `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh` - Restore encryption key
-- `.chezmoiscripts/run_once_after_02_setup-gopass.sh.tmpl` - Clone password store
+- `.chezmoiscripts/run_before_01_setup-encryption-key.sh.tmpl` - Restore/ensure encryption key
+- `.chezmoiscripts/run_onchange_after_04_setup-gopass.sh.tmpl` - Clone password store
 - `private_dot_config/gopass/config.tmpl` - gopass configuration template
 - `.chezmoidata/gopass.yaml` - Repository URL configuration (optional)

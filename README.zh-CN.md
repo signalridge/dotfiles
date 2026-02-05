@@ -107,17 +107,16 @@ cd dotfiles && ./init.sh
 上述命令会自动完成：
 
 1. 安装 Nix（Determinate Systems 安装器）
-2. 通过 Nix 安装 `age` 和 `gopass` 用于解密
-3. 从 gopass 获取解密密钥（或提示手动设置）
-4. 应用所有 dotfiles 和配置
-5. 同步 Claude Code 插件
+2. （若启用 `useEncryption`）从 keys-manage 加密备份仓库恢复 `~/.ssh/main` 等文件（会提示输入解密密码）
+3. 应用所有 dotfiles 和配置
+4. 同步 Claude Code 插件
 
 > [!IMPORTANT]
 > **首次使用者**：当提示 `useEncryption` 时，请选择 **No**（默认值）。
 > 加密设置仅适用于仓库所有者。如需启用加密，请修改：
 >
-> - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`：修改 `KEY_FILE`、`KEY_PUB` 和 gopass 路径
-> - `.chezmoi.toml.tmpl`：更新 `[age]` 部分的 `identity` 和 `recipientsFile` 路径
+> - `.chezmoiscripts/run_before_01_setup-encryption-key.sh.tmpl`：从 `keys-manage` 加密备份仓库恢复/确保加密密钥
+> - `.chezmoi.toml.tmpl`：更新 `keysRepository`，并更新 `[age]` 部分的 `identity` / `recipientsFile` 路径
 
 安装完成后，重启终端。macOS 用户运行 `just darwin` 激活 nix-darwin 配置。
 

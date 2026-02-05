@@ -2,7 +2,7 @@
 {{- if eq .chezmoi.arch "amd64" -}}{{- $suffix = "" -}}{{- end -}}
 #!/bin/bash
 
-set -eufo pipefail
+set -euo pipefail
 
 echo ":: [07] Installing Paperlib"
 

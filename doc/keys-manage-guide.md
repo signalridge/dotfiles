@@ -11,6 +11,12 @@ Unified command for managing SSH/GPG/Age keys with encrypted git backup.
 - **Git**: Version control and remote backup
 - **Incremental backups**: Only changed files are backed up
 
+Repository note:
+
+- The **control files** (`backup-list.txt` and `backup-metadata.json`) are stored **encrypted** in git as
+  `backup-list.txt.enc` and `backup-metadata.json.enc`.
+- Plaintext working copies exist **only locally** (gitignored), so you can `select/add/remove` without a password.
+
 **Replaces**: `keys-backup` and `keys-restore` commands
 
 ## Quick Start
@@ -24,8 +30,8 @@ keys-manage init
 # 2. Select files to backup
 keys-manage select
 
-# 3. Backup selected files
-keys-manage backup
+# 3. Sync (encrypt + commit + push)
+keys-manage sync    # or: keys-manage backup
 
 # 4. Verify backup integrity
 keys-manage verify
@@ -58,13 +64,12 @@ keys-manage init -p <password>      # Provide password
 
 1. Clones remote repository (if exists)
 2. Or creates new local repository
-3. Initializes metadata
-4. Generates encryption password (saved to gopass)
+3. Sets up encrypted control files (`*.enc`) and local plaintext working copies (gitignored)
 
 **Subsequent runs:**
 
-- Uses password from gopass (or prompts if not saved)
-- Syncs with remote
+- Ensures the repo is on the encrypted control-file layout
+- Does not push automatically; use `keys-manage sync` to pull/push
 
 #### `select` - Select Files (Replace)
 
@@ -82,12 +87,16 @@ keys-manage select
 - Multi-select (Tab/Ctrl-A)
 - Custom file paths under `$HOME` via yazi browser
 
+Note:
+
+- `select/add/remove` only edit your local plaintext control files.
+- Run `keys-manage sync` to encrypt/commit/push the updated list and backup changes.
+
 **Keybindings:**
 
 - `Tab`: Toggle selection
 - `Ctrl-A`: Select all
 - `Ctrl-D`: Deselect all
-- `Ctrl-R`: Reload list
 - `Ctrl-/`: Toggle preview
 - `ESC`: Cancel
 
@@ -101,9 +110,9 @@ keys-manage add
 
 **Features:**
 
-- Shows only files NOT in current list
-- Appends to existing list
-- Removes duplicates automatically
+- If `yazi` is installed: browse under `$HOME` and add any files you pick
+- Otherwise: use FZF to browse files under `$HOME` (pruned; may be slow)
+- Appends to existing list and deduplicates automatically
 
 #### `remove` - Remove Files
 
@@ -132,8 +141,15 @@ keys-manage backup                  # Alias of sync
 
 1. Detects changes (SHA256 checksums)
 2. Backs up only modified files
-3. Commits to git
-4. Pushes to remote
+3. Updates metadata
+4. Commits to git (including encrypted control files)
+5. Pulls/pushes to remote
+
+Conflict handling (control files):
+
+- If another machine updated the encrypted control files and you also have local pending edits,
+  `sync` may ask which side to keep.
+- You can preselect a policy via `KEYS_MANAGE_CONTROL_CONFLICT_POLICY=local|remote|abort|prompt`.
 
 **Features:**
 
