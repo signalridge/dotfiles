@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # llm-query.sh - Query LLM API with retry logic
-# Usage: ./openrouter-query.sh < prompt.txt > response.txt
+# Usage: ./llm-query.sh < prompt.txt > response.txt
 #
 # Environment variables:
 #   LLM_API_KEY   - Required: API key
