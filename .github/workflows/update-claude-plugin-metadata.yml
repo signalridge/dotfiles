@@ -52,15 +52,14 @@ jobs:
           else
             echo "needs_ai=false" >> $GITHUB_OUTPUT
           fi
-      - name: Generate keywords with OpenRouter
+      - name: Generate keywords with LLM API
         if: steps.scan.outputs.needs_ai == 'true'
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OPENROUTER_REFERER: https://github.com/${{ github.repository }}
+          LLM_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           PROMPT: ${{ steps.scan.outputs.prompt }}
         run: |
-          chmod +x .github/scripts/openrouter-query.sh
-          printf '%s' "$PROMPT" | .github/scripts/openrouter-query.sh > /tmp/ai_response.txt
+          chmod +x .github/scripts/llm-query.sh
+          printf '%s' "$PROMPT" | .github/scripts/llm-query.sh > /tmp/ai_response.txt
       - name: Apply AI-generated keywords
         if: steps.scan.outputs.needs_ai == 'true'
         env:
