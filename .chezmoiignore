@@ -14,7 +14,6 @@ README.zh-CN.md
 .gitignore
 .github/
 .pre-commit-config.yaml
-.claude/
 init.sh
 doc/
 docs/
