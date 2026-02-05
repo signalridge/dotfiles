@@ -97,6 +97,8 @@ repos:
           gitEmail = "test@test.com"
           useEncryption = false
           headless = false
+          gopassRepository = "git@github.com:test/pass.git"
+          keysRepository = "git@github.com:test/keys.git"
 
           [data.claude.wshobsonAgents]
           include = ["python-development", "javascript-typescript"]
