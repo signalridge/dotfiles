@@ -57,18 +57,26 @@ claude:
       base_url: https://ark.cn-beijing.volces.com/api/coding
       models:
         - ark-code-latest
+    wanxiaot:
+      base_url: https://na.wanxiaot.com
+      models:
+        - claude-opus-4-5-20251101
+        - claude-opus-4-5-20251101-thinking
+        - claude-sonnet-4-5-20250929
+        - claude-sonnet-4-5-20250929-thinking
+        - claude-haiku-4-5-20251001
   # ===== Account Configurations =====
   # Format: provider or provider@account
   # Fields: model, small_model, haiku_model, sonnet_model, opus_model, timeout_ms, disable_nonessential_traffic
   accounts:
     # Native Anthropic accounts (use OAuth)
     anthropic:
-      model: claude-sonnet-4-5-20250929
+      model: claude-opus-4-5-20251101
       small_model: claude-sonnet-4-5-20250929
     opus:
       provider: anthropic
       model: claude-opus-4-5-20251101
-      small_model: claude-sonnet-4-5-20250929
+      small_model: claude-opus-4-5-20251101
     haiku:
       provider: anthropic
       model: claude-haiku-4-5-20251001
@@ -87,6 +95,10 @@ claude:
       haiku_model: kimi-k2.5
       sonnet_model: kimi-k2.5
       opus_model: kimi-k2.5
+    wanxiaot@private:
+      provider: wanxiaot
+      model: claude-opus-4-5-20251101-thinking
+      small_model: claude-opus-4-5-20251101-thinking
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
   # ==========================================================================

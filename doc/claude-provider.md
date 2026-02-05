@@ -19,14 +19,11 @@ Wrapper script that launches Claude Code with a specified account via environmen
 claude-with
 
 # Launch with specific account
-claude-with deepseek
 claude-with kimi@private
+claude-with deepseek@work
 
 # Pass arguments to claude
-claude-with deepseek -- --resume
-
-# List available accounts
-claude-with --list
+claude-with kimi@private -- --resume
 ```
 
 ## claude-manage
@@ -39,27 +36,25 @@ claude-manage
 
 # List accounts
 claude-manage list
-claude-manage list deepseek
 
 # Get/set default account
-claude-manage default              # Show current
-claude-manage default kimi@private # Set default
+claude-manage current              # Show current
+claude-manage switch kimi@private  # Set default
 
-# Add new account API key (must not exist)
-claude-manage add-key
-claude-manage add-key deepseek
+# Add new account (interactive)
+claude-manage add-account
+
+# Add API key for account
+claude-manage add-key kimi@private
 
 # Update existing account API key
-claude-manage update-key
 claude-manage update-key kimi@private
 
 # Delete account API key
-claude-manage delete-key
 claude-manage delete-key kimi@private
 
 # Test connectivity
-claude-manage test
-claude-manage test kimi
+claude-manage test kimi@private
 ```
 
 ## claude-token
@@ -71,13 +66,13 @@ Internal tool for fetching API tokens. Primarily called by `apiKeyHelper` and ot
 claude-token
 
 # Get token for specific account
-claude-token deepseek
+claude-token kimi@private
 
 # Check if token exists (exit code only)
 claude-token --check kimi@private
 
 # Get account config as JSON
-claude-token --config deepseek
+claude-token --config kimi@private
 ```
 
 ## Configuration Structure
@@ -118,17 +113,14 @@ claude:
       model: claude-opus-4-5-20251101
       small_model: claude-sonnet-4-5-20250929
 
-    # Third-party accounts
-    deepseek:
-      model: deepseek-chat
-      small_model: deepseek-chat
-      haiku_model: deepseek-chat
-      sonnet_model: deepseek-chat
-      opus_model: deepseek-chat
+    # Third-party accounts (format: provider@label)
     kimi@private:
       model: kimi-k2.5
       small_model: kimi-k2.5
-      timeout_ms: 300000 # Override default
+      haiku_model: kimi-k2.5
+      sonnet_model: kimi-k2.5
+      opus_model: kimi-k2.5
+      timeout_ms: 300000
 ```
 
 ## Environment Variable Mapping
@@ -158,7 +150,7 @@ Use `claude-with` as a command wrapper in VS Code settings:
 
 ```json
 {
-  "claude.codebase.commandWrapper": ["claude-with", "deepseek", "--"]
+  "claude.codebase.commandWrapper": ["claude-with", "kimi@private", "--"]
 }
 ```
 
@@ -170,24 +162,24 @@ Use `claude-with` as a command wrapper in VS Code settings:
 # Default to anthropic (official)
 claude
 
-# Temporarily switch to DeepSeek for testing
-claude-with deepseek
+# Temporarily switch to Kimi for testing
+claude-with kimi@private
 
 # Need Kimi frequently? Set as default
-claude-manage default kimi
+claude-manage switch kimi@private
 ```
 
 ### New Machine Setup
 
 ```bash
-# 1. Add API key for configured account
-claude-manage add-key deepseek
+# 1. Add account and API key
+claude-manage add-account  # Interactive: select provider, enter name and model
 
 # 2. Test connectivity
-claude-manage test deepseek
+claude-manage test kimi@private
 
 # 3. Set as default (optional)
-claude-manage default deepseek
+claude-manage switch kimi@private
 ```
 
 ### Adding a New Account

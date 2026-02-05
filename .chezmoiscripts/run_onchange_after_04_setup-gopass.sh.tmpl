@@ -1,0 +1,84 @@
+#!/bin/bash
+# Setup gopass on new device
+# Prerequisites: age encryption key already restored by 01_setup-encryption-key.sh
+set -euo pipefail
+
+echo ":: [04] Setting up gopass password store"
+
+# Check if gopass store already exists
+if [[ -d ~/.local/share/gopass/stores/root ]]; then
+    echo "✓ gopass store already exists"
+    exit 0
+fi
+
+# Check if age key exists
+if [[ ! -f ~/.ssh/main ]]; then
+    echo "⚠ Age encryption key not found at ~/.ssh/main"
+    echo "Please run: chezmoi apply"
+    exit 1
+fi
+
+# Check if gopass is installed
+if ! command -v gopass &>/dev/null; then
+    echo "⚠ gopass not installed"
+    echo "Please run: chezmoi apply"
+    exit 1
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Clone gopass password store from Git"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "This will clone your password store from:"
+echo "  {{ .gopassRepository }}"
+echo ""
+echo "Note: ~/.config/gopass/config is already configured by chezmoi"
+echo "      It points to ~/.ssh/main for age decryption"
+echo ""
+
+if ! read -r -p "Clone password store now? (yes/no): " confirm; then
+    echo ""
+    echo "Cancelled"
+    exit 0
+fi
+
+if [[ "$confirm" != "yes" ]]; then
+    echo ""
+    echo "Skipped. You can clone later with:"
+    echo "  gopass clone {{ .gopassRepository | quote }}"
+    echo ""
+    exit 0
+fi
+
+# Remove age native identities if they exist
+# (Force gopass to use SSH key from config instead)
+if [[ -d ~/.config/gopass/age ]]; then
+    echo "Removing age identities directory (will use SSH key)..."
+    rm -rf ~/.config/gopass/age
+fi
+
+echo ""
+echo "Cloning password store..."
+# --check-keys=false: Don't generate new keys, use existing SSH key
+gopass clone --check-keys=false {{ .gopassRepository | quote }}
+
+echo ""
+echo "✓ gopass password store cloned successfully"
+echo ""
+
+# Verify decryption works
+echo "Verifying decryption..."
+if gopass ls &>/dev/null; then
+    FIRST_PASSWORD=$(gopass ls --flat 2>/dev/null | head -1)
+    if [[ -n "$FIRST_PASSWORD" ]] && gopass show "$FIRST_PASSWORD" &>/dev/null; then
+        echo "✓ Decryption successful (using SSH key: ~/.ssh/main)"
+    fi
+fi
+
+echo ""
+echo "Verification commands:"
+echo "  gopass ls                    # List all passwords"
+echo "  gopass config | grep age     # Check age configuration"
+echo "  ccm list                     # Test claude-manage integration"
+echo ""

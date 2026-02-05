@@ -107,17 +107,16 @@ cd dotfiles && ./init.sh
 This will automatically:
 
 1. Install Nix (Determinate Systems installer)
-2. Install `age` and `gopass` for secrets decryption
-3. Fetch encryption key from gopass (or prompt for manual setup)
-4. Apply all dotfiles and configurations
-5. Sync Claude Code plugins from marketplace
+2. (If `useEncryption` enabled) Restore `~/.ssh/main` and other keys-manage managed files (prompts for decryption password)
+3. Apply all dotfiles and configurations
+4. Sync Claude Code plugins from marketplace
 
 > [!IMPORTANT]
 > **First-time users**: When prompted for `useEncryption`, answer **No** (default).
 > The encryption setup is specific to the repo owner. If you need encryption, modify:
 >
-> - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`: Change `KEY_FILE`, `KEY_PUB`, and gopass secret path
-> - `.chezmoi.toml.tmpl`: Update `identity` and `recipientsFile` paths in `[age]` section
+> - `.chezmoiscripts/run_before_01_setup-encryption-key.sh.tmpl`: Restore/ensure encryption keys from a `keys-manage` encrypted backup repo
+> - `.chezmoi.toml.tmpl`: Update `keysRepository`, and update `identity` / `recipientsFile` paths in `[age]` section
 
 After installation, restart your terminal. For macOS, run `just darwin` to activate nix-darwin configuration.
 

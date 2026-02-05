@@ -2,7 +2,10 @@
 export BAT_THEME="Dracula"
 
 # gpg symmetric encryption
-export GPG_TTY=$(tty)
+# Only set GPG_TTY in actual TTY environments
+if tty -s 2>/dev/null; then
+    export GPG_TTY=$(tty)
+fi
 
 {{ if eq .platform "darwin" -}}
 # Added by OrbStack: command-line tools and integration

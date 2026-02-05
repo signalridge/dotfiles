@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eufo pipefail
+set -euo pipefail
 
 {{ $profile := joinPath .chezmoi.homeDir "nix-config/modules/profile.nix" -}}
 {{- $lock := joinPath .chezmoi.homeDir "nix-config/flake.lock" -}}

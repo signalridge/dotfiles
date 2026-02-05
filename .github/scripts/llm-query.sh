@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # llm-query.sh - Query LLM API with retry logic
-# Usage: ./openrouter-query.sh < prompt.txt > response.txt
+# Usage: ./llm-query.sh < prompt.txt > response.txt
 #
 # Environment variables:
 #   LLM_API_KEY   - Required: API key
 #   LLM_API_URL   - Optional: API endpoint (default: https://na.wanxiaot.com/v1/chat/completions)
-#   LLM_MODEL     - Optional: Model ID (default: gemini-3-pro-preview)
+#   LLM_MODEL     - Optional: Model ID (default: gpt-5.2)
 #   MAX_RETRIES   - Optional: Max retry attempts (default: 3)
 
 set -euo pipefail
 
 : "${LLM_API_KEY:?LLM_API_KEY is required}"
 : "${LLM_API_URL:=https://na.wanxiaot.com/v1/chat/completions}"
-: "${LLM_MODEL:=gemini-3-pro-preview}"
+: "${LLM_MODEL:=gpt-5.2}"
 : "${MAX_RETRIES:=3}"
 
 # Debug: show model being used

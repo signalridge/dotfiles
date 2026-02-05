@@ -38,6 +38,8 @@ jobs:
           gitEmail = "ci@test.com"
           useEncryption = false
           headless = true
+          gopassRepository = "git@github.com:test/pass.git"
+          keysRepository = "git@github.com:test/keys.git"
           EOF
       - uses: pre-commit/action@v3.0.1
   nix:

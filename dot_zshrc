@@ -1,5 +1,8 @@
 # GPG Agent for gopass (not for SSH)
-export GPG_TTY=$(tty)
+# Only set GPG_TTY in actual TTY environments
+if tty -s 2>/dev/null; then
+    export GPG_TTY=$(tty)
+fi
 
 # SSH agent: macOS uses Keychain, Linux starts ssh-agent
 if [[ "$OSTYPE" == linux* ]] && [[ -z "$SSH_AUTH_SOCK" ]]; then

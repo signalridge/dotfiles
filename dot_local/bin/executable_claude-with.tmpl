@@ -9,14 +9,12 @@
 
 set -euo pipefail
 
-# shellcheck source=claude-lib
-source "$(dirname "$0")/claude-lib"
+# shellcheck source=lib/claude.tmpl
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/claude"
 
 # FZF picker with shortcuts
 fzf_select() {
-    local current
-    current=$(get_current)
-
     local selected
     selected=$(build_account_list_with_token | fzf --ansi \
         --height=50% \
@@ -48,7 +46,7 @@ fzf_select() {
 
     # Extract account name
     local account
-    account=$(echo "$selection" | sed 's/^[^ ]* //')
+    account="${selection#* }"
 
     if [[ -n "$query" ]]; then
         echo "$account|$query"
@@ -63,7 +61,7 @@ launch_claude() {
     shift
 
     if ! is_configured_account "$account"; then
-        echo -e "${RED}Error: Unknown account '$account'${NC}" >&2
+        log_error "Unknown account '$account'"
         echo "Available accounts:" >&2
         printf '  %s\n' "${ACCOUNTS[@]}" >&2
         return 1
@@ -80,7 +78,7 @@ launch_claude() {
     if [[ -n "$base_url" ]]; then
         local token
         if ! token=$(claude-token "$account" 2>/dev/null); then
-            echo -e "${RED}Error: No API token for $account${NC}" >&2
+            log_error "No API token for $account"
             echo -e "Run: ${YELLOW}claude-manage add-key $account${NC}" >&2
             return 1
         fi
@@ -144,14 +142,16 @@ EOF
 
 # Main
 main() {
-    require_cmd chezmoi jq fzf claude || exit 1
-
     if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+        require_cmd claude || exit 1
         show_help
         exit 0
     fi
 
+    require_cmd chezmoi jq claude || exit 1
+
     if [[ $# -eq 0 ]]; then
+        require_cmd fzf || exit 1
         local result
         result=$(fzf_select) || exit 0
         local account="${result%%|*}"

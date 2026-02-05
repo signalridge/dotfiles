@@ -57,6 +57,22 @@ encryption = "age"
 {{-   $claudeProviderAccount = .claudeProvider -}}{{/* backward compatibility */}}
 {{- end -}}
 
+{{/* gopass password store repository */}}
+{{- $gopassRepository := printf "git@github.com:%s/passwords.git" $gitUsername -}}
+{{- if hasKey . "gopassRepository" -}}
+{{-   $gopassRepository = .gopassRepository -}}
+{{- else if and (stdinIsATTY) $useEncryption -}}
+{{-   $gopassRepository = promptStringOnce . "gopassRepository" "gopass repository URL" $gopassRepository -}}
+{{- end -}}
+
+{{/* keys-manage backup repository */}}
+{{- $keysRepository := printf "git@github.com:%s/keypairs.git" $gitUsername -}}
+{{- if hasKey . "keysRepository" -}}
+{{-   $keysRepository = .keysRepository -}}
+{{- else if and (stdinIsATTY) $useEncryption -}}
+{{-   $keysRepository = promptStringOnce . "keysRepository" "keys-manage backup repository URL" $keysRepository -}}
+{{- end -}}
+
 {{/* timezone: prefer local config, fallback to ip-api.com */}}
 {{- $timezone := "" -}}
 
@@ -94,6 +110,8 @@ homeWifiSSIDs = {{ $homeWifiSSIDs | quote }}
 osid = {{ $osID | quote }}
 timezone = {{ $timezone | quote }}
 claudeProviderAccount = {{ $claudeProviderAccount | quote }}
+gopassRepository = {{ $gopassRepository | quote }}
+keysRepository = {{ $keysRepository | quote }}
 
 [edit]
 command = "code"

@@ -107,17 +107,16 @@ cd dotfiles && ./init.sh
 上記コマンドで自動的に：
 
 1. Nix をインストール（Determinate Systems インストーラ）
-2. Nix 経由で `age` と `gopass` をインストール（復号用）
-3. gopass から復号鍵を取得（または手動セットアップを案内）
-4. すべての dotfiles と設定を適用
-5. Claude Code プラグインを同期
+2. （`useEncryption` が有効な場合）keys-manage の暗号化バックアップリポジトリから `~/.ssh/main` などを復元（復号パスワードを入力）
+3. すべての dotfiles と設定を適用
+4. Claude Code プラグインを同期
 
 > [!IMPORTANT]
 > **初めて使う方へ**：`useEncryption` を聞かれたら **No**（デフォルト）を選択してください。
 > 暗号化設定はリポジトリ所有者専用です。暗号化が必要な場合は以下を修正してください：
 >
-> - `.chezmoiscripts/run_once_before_01_setup-encryption-key.sh`：`KEY_FILE`、`KEY_PUB`、gopass パスを変更
-> - `.chezmoi.toml.tmpl`：`[age]` セクションの `identity` と `recipientsFile` パスを更新
+> - `.chezmoiscripts/run_before_01_setup-encryption-key.sh.tmpl`：`keys-manage` の暗号化バックアップから暗号鍵を復元/確認
+> - `.chezmoi.toml.tmpl`：`keysRepository` を更新し、`[age]` セクションの `identity` / `recipientsFile` パスを更新
 
 インストール後、ターミナルを再起動してください。macOS では `just darwin` で nix-darwin 設定を有効化します。
 

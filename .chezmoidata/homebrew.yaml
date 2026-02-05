@@ -21,6 +21,8 @@ homebrew:
       - mas # Required for masApps installation
   casks:
     shared:
+      - bitwarden # Password manager (backup age key and daily passwords)
+      - codex-app
       - dockdoor
       - visual-studio-code
       - hammerspoon
@@ -88,3 +90,5 @@ homebrew:
         - "836500024"
       - - QQ
         - "451108668"
+      - - Spokenly
+        - "6740315592"

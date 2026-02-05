@@ -1,0 +1,223 @@
+#!/usr/bin/env bash
+# Common Shell Library for Local Bin Scripts
+# Shared functions, colors, and utilities
+#
+# Usage: source "$(dirname "$0")/common-lib"
+
+# ===== Color Constants =====
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+GRAY='\033[0;90m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# ===== Status Indicators =====
+STATUS_OK="✓"
+STATUS_WARN="⚠"
+STATUS_ERROR="✗"
+STATUS_NEW="⊕"
+STATUS_REMOVED="⊗"
+STATUS_NATIVE="○"
+
+# ===== Logging Functions =====
+
+# Log error message to stderr
+log_error() {
+    echo -e "${RED}Error:${NC} $*" >&2
+}
+
+# Log warning message
+log_warn() {
+    echo -e "${YELLOW}Warning:${NC} $*"
+}
+
+# Log info message
+log_info() {
+    echo -e "${BLUE}$*${NC}"
+}
+
+# Log success message with checkmark
+log_success() {
+    echo -e "${GREEN}${STATUS_OK}${NC} $*"
+}
+
+# Log failure message with cross
+log_fail() {
+    echo -e "${RED}${STATUS_ERROR}${NC} $*"
+}
+
+# Log note message
+log_note() {
+    echo -e "${YELLOW}Note:${NC} $*"
+}
+
+# Print section header with separator line
+log_header() {
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}$*${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+}
+
+# Print section title (single line, no separator)
+log_section() {
+    echo -e "${BLUE}$*${NC}"
+}
+
+# ===== Command Validation =====
+
+# Check if required commands are available
+# Usage: require_cmd cmd1 cmd2 cmd3
+# Returns: 0 if all found, 1 if any missing
+require_cmd() {
+    local c
+    for c in "$@"; do
+        if ! command -v "$c" &>/dev/null; then
+            log_error "required command not found: $c"
+            return 1
+        fi
+    done
+}
+
+# Run command with timeout across macOS/Linux.
+# Usage: run_with_timeout 5 cmd arg1 arg2 ...
+run_with_timeout() {
+    local timeout_sec="$1"
+    shift
+
+    if command -v timeout &>/dev/null; then
+        timeout "$timeout_sec" "$@"
+        return $?
+    fi
+
+    if command -v gtimeout &>/dev/null; then
+        gtimeout "$timeout_sec" "$@"
+        return $?
+    fi
+
+    if command -v python3 &>/dev/null; then
+        python3 - "$timeout_sec" "$@" <<'PY'
+import subprocess
+import sys
+
+timeout = float(sys.argv[1])
+cmd = sys.argv[2:]
+
+try:
+    completed = subprocess.run(cmd, timeout=timeout)
+    sys.exit(completed.returncode)
+except subprocess.TimeoutExpired:
+    sys.exit(124)
+PY
+        return $?
+    fi
+
+    # Fallback without timeout if no timeout backend is available.
+    "$@"
+}
+
+# ===== File Operations =====
+
+# Calculate SHA256 checksum (cross-platform)
+# Usage: calc_checksum /path/to/file
+# Returns: hex digest string, or exits with code 1 if file not found
+calc_checksum() {
+    local file="$1"
+    [[ ! -f "$file" ]] && return 1
+
+    if command -v sha256sum &>/dev/null; then
+        sha256sum "$file" | awk '{print $1}'
+    else
+        shasum -a 256 "$file" | awk '{print $1}'
+    fi
+}
+
+# Get file size in bytes (cross-platform)
+# Usage: get_file_size /path/to/file
+get_file_size() {
+    local file="$1"
+    if stat -f%z "$file" &>/dev/null 2>&1; then
+        stat -f%z "$file"  # macOS/BSD
+    else
+        stat -c%s "$file"  # Linux/GNU
+    fi
+}
+
+# Get file modification time as Unix epoch (cross-platform)
+# Usage: get_file_mtime /path/to/file
+get_file_mtime() {
+    local file="$1"
+    if stat -f%m "$file" &>/dev/null 2>&1; then
+        stat -f%m "$file"  # macOS/BSD
+    else
+        stat -c%Y "$file"  # Linux/GNU
+    fi
+}
+
+# Get file modification time in human-readable format (cross-platform)
+# Usage: get_file_mtime_human /path/to/file
+get_file_mtime_human() {
+    local file="$1"
+    if stat -f%Sm "$file" &>/dev/null 2>&1; then
+        stat -f%Sm -t "%Y-%m-%d %H:%M:%S" "$file"  # macOS/BSD
+    else
+        stat -c%y "$file" | cut -d. -f1  # Linux/GNU
+    fi
+}
+
+# Get file permissions in symbolic format (cross-platform)
+# Usage: get_file_perms /path/to/file
+get_file_perms() {
+    local file="$1"
+    if stat -f%Sp "$file" &>/dev/null 2>&1; then
+        stat -f%Sp "$file"  # macOS/BSD
+    else
+        stat -c%A "$file"   # Linux/GNU
+    fi
+}
+
+# ===== FZF Utilities =====
+
+# Run FZF with standard defaults
+# Usage: fzf_with_defaults [additional fzf options]
+fzf_with_defaults() {
+    fzf --ansi --height=50% --border=rounded "$@"
+}
+
+# ===== JSON Utilities =====
+
+# Safely query JSON file with default fallback
+# Usage: jq_get file.json ".path.to.field" "default_value"
+jq_get() {
+    local file="$1"
+    local query="$2"
+    local default="${3:-}"
+
+    [[ ! -f "$file" ]] && { echo "$default"; return; }
+
+    local result
+    result=$(jq -r "$query // empty" "$file" 2>/dev/null)
+    [[ -z "$result" ]] && echo "$default" || echo "$result"
+}
+
+# Update JSON file atomically
+# Usage: jq_update file.json '.field = "value"'
+jq_update() {
+    local file="$1"
+    local query="$2"
+
+    [[ ! -f "$file" ]] && { log_error "JSON file not found: $file"; return 1; }
+
+    local tmp
+    tmp=$(mktemp) || { log_error "Failed to create temp file"; return 1; }
+
+    if jq "$query" "$file" > "$tmp" 2>/dev/null; then
+        mv "$tmp" "$file"
+    else
+        rm -f "$tmp"
+        log_error "JSON update failed"
+        return 1
+    fi
+}

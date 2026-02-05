@@ -1,0 +1,23 @@
+# gopass configuration file
+# Managed by chezmoi - do not edit manually
+
+[mounts]
+	crypto = age
+	path = {{ .chezmoi.homeDir }}/.local/share/gopass/stores/root
+
+[mounts.root]
+	source_url = {{ .gopassRepository }}
+
+[age]
+	ssh-key-path = {{ .chezmoi.homeDir }}/.ssh/main
+
+[core]
+	autopush = true
+	autosync = true
+	cliptimeout = 45
+	exportkeys = true
+	follow-references = false
+	notifications = true
+
+[pwgen]
+	xkcd-lang = en

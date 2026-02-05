@@ -1,0 +1,619 @@
+#!/usr/bin/env bash
+# Restore all files managed by keys-manage from the encrypted backup repository.
+#
+# - Clone/pull the keys-backup git repo from GitHub.
+# - Restore every file in backup-list.txt to its original path under $HOME.
+# - If a local file already exists:
+#     - compare SHA256; if identical, skip
+#     - if different, ask for confirmation before overwriting
+#
+# This runs early in bootstrap so encrypted chezmoi secrets can be decrypted later.
+set -euo pipefail
+umask 077
+
+# Keep a handle to the original stdin so we can still prompt even if stdin is
+# temporarily redirected (e.g. while reading backup-list.txt via process substitution).
+PROMPT_FD=0
+if [[ -t 0 ]]; then
+    # Use fd 9 so we don't conflict with OpenSSL's fd 3 password piping.
+    exec 9<&0
+    PROMPT_FD=9
+fi
+
+REPO_DIR="${HOME}/.local/share/keys-backup"
+BACKUP_FILES_DIR="${REPO_DIR}/backup-files"
+BACKUP_LIST="${REPO_DIR}/backup-list.txt"
+BACKUP_LIST_ENC="${REPO_DIR}/backup-list.txt.enc"
+METADATA_FILE="${REPO_DIR}/backup-metadata.json"
+METADATA_FILE_ENC="${REPO_DIR}/backup-metadata.json.enc"
+CONTROL_STATE_DIR="${REPO_DIR}/.keys-manage"
+CONTROL_BASELINE_LIST="${CONTROL_STATE_DIR}/backup-list.remote.sha256"
+CONTROL_BASELINE_META="${CONTROL_STATE_DIR}/backup-metadata.remote.sha256"
+
+# Fast path: avoid network and prompting on every apply if everything is already present.
+if [[ -d "$REPO_DIR/.git" && -d "$BACKUP_FILES_DIR" && -f "$HOME/.ssh/main" ]]; then
+    missing=false
+
+    if [[ -f "$BACKUP_LIST" ]]; then
+        while IFS= read -r line; do
+            line="${line%$'\r'}"
+            [[ -z "$line" ]] && continue
+            [[ "$line" == *"[0;"* || "$line" == *"Add Custom"* || "$line" == *"File path"* || "$line" == *"Tip:"* ]] && continue
+
+            path="$line"
+            # shellcheck disable=SC2088 # Intentional: matching literal ~/
+            if [[ "$path" == "~/"* ]]; then
+                path="$HOME/${path#~/}"
+            fi
+
+            rel=""
+            if [[ "$path" == "$HOME/"* ]]; then
+                rel="${path#"$HOME"/}"
+            elif [[ "$path" == /* ]]; then
+                continue
+            else
+                rel="$path"
+            fi
+
+            while [[ "$rel" == "./"* ]]; do
+                rel="${rel#./}"
+            done
+            [[ -z "$rel" || "$rel" == "." || "$rel" == ".." ]] && continue
+            [[ "$rel" == "../"* || "$rel" == *"/../"* || "$rel" == *"/.." ]] && continue
+
+            if [[ ! -f "$HOME/$rel" ]]; then
+                missing=true
+                break
+            fi
+        done <"$BACKUP_LIST"
+    elif command -v python3 >/dev/null 2>&1 && [[ -f "$METADATA_FILE" ]]; then
+        while IFS= read -r rel; do
+            [[ -z "$rel" ]] && continue
+            [[ "$rel" == /* ]] && continue
+            if [[ ! -f "$HOME/$rel" ]]; then
+                missing=true
+                break
+            fi
+        done < <(
+            python3 - "$METADATA_FILE" <<'PY' 2>/dev/null || true
+import json
+import sys
+
+path = sys.argv[1]
+try:
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    files = data.get("files", {}) or {}
+    for k in files.keys():
+        # Keys are expected to be $HOME-relative (no leading slash).
+        if isinstance(k, str):
+            print(k)
+except Exception:
+    pass
+PY
+        )
+    fi
+
+    if [[ "$missing" == false ]]; then
+        exit 0
+    fi
+fi
+
+echo ":: [01] Restoring keys-manage managed files"
+
+# Source nix environment (if present).
+if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
+    # shellcheck disable=SC1091
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+fi
+
+info() { echo ":: $*"; }
+warn() { echo "Warning: $*" >&2; }
+err() { echo "Error: $*" >&2; }
+
+require_cmd() {
+    local cmd="$1"
+    command -v "$cmd" >/dev/null 2>&1 || return 1
+}
+
+maybe_install_with_nix() {
+    local tool="$1"
+    require_cmd "$tool" && return 0
+    require_cmd nix || return 1
+    info "Installing $tool with nix profile..."
+    nix --extra-experimental-features 'nix-command flakes' profile add "nixpkgs#$tool" >/dev/null
+    require_cmd "$tool"
+}
+
+calc_checksum() {
+    local file="$1"
+    [[ -f "$file" ]] || return 1
+
+    if require_cmd sha256sum; then
+        sha256sum "$file" | awk '{print $1}'
+        return 0
+    fi
+
+    if require_cmd shasum; then
+        shasum -a 256 "$file" | awk '{print $1}'
+        return 0
+    fi
+
+    if require_cmd openssl; then
+        openssl dgst -sha256 "$file" | awk '{print $2}'
+        return 0
+    fi
+
+    return 1
+}
+
+get_file_perms() {
+    local file="$1"
+    stat -f "%Lp" "$file" 2>/dev/null || stat -c "%a" "$file" 2>/dev/null || true
+}
+
+metadata_get() {
+    local metadata_file="$1"
+    local path="$2"
+    local field="$3"
+    [[ -f "$metadata_file" ]] || return 0
+
+    if require_cmd jq; then
+        jq -r --arg path "$path" --arg field "$field" '.files[$path] | .[$field] // empty' "$metadata_file" 2>/dev/null || true
+        return 0
+    fi
+
+    if require_cmd python3; then
+        python3 - "$metadata_file" "$path" "$field" <<'PY' 2>/dev/null || true
+import json
+import sys
+
+meta_path = sys.argv[1]
+key = sys.argv[2]
+field = sys.argv[3]
+
+try:
+    with open(meta_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    v = (data.get("files", {}) or {}).get(key, {})
+    out = v.get(field, "")
+    if out is None:
+        out = ""
+    sys.stdout.write(str(out))
+except Exception:
+    pass
+PY
+        return 0
+    fi
+
+    return 0
+}
+
+decrypt_openssl_pbkdf2() {
+    local src="$1"
+    local dest="$2"
+    local password="$3"
+
+    mkdir -p "$(dirname "$dest")"
+
+    # Keep params in sync with keys-manage (AES-256-CBC + PBKDF2 + 100k iters).
+    openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 \
+        -pass fd:3 -in "$src" -out "$dest" 3<<<"$password" 2>/dev/null
+}
+
+get_backup_password() {
+    # Same priority as keys-manage:
+    #  1) KEYS_BACKUP_PASSWORD env var
+    #  2) prompt
+    #
+    # Note: Don't read from gopass here. This script runs before the password store
+    # is typically cloned/restored, so gopass is often unavailable at this stage.
+    local password="${KEYS_BACKUP_PASSWORD:-}"
+    if [[ -n "$password" ]]; then
+        printf '%s\n' "$password"
+        return 0
+    fi
+
+    if [[ "$PROMPT_FD" -ne 0 ]]; then
+        if ! read -r -s -u "$PROMPT_FD" -p "Enter keys-backup encryption password: " password; then
+            echo ""
+            return 1
+        fi
+        echo ""
+        [[ -n "$password" ]] || return 1
+        printf '%s\n' "$password"
+        return 0
+    fi
+
+    return 1
+}
+
+confirm() {
+    local prompt="$1"
+    local answer=""
+    if [[ "$PROMPT_FD" -eq 0 ]]; then
+        return 1
+    fi
+    read -r -u "$PROMPT_FD" -p "$prompt" answer || return 1
+    [[ "$answer" == "y" || "$answer" == "Y" ]]
+}
+
+maybe_install_with_nix git || true
+maybe_install_with_nix openssl || true
+maybe_install_with_nix jq || true
+
+require_cmd git || {
+    err "git is required"
+    exit 1
+}
+require_cmd openssl || {
+    err "openssl is required"
+    exit 1
+}
+
+DEFAULT_KEYS_REPO='{{- if hasKey . "keysRepository" -}}{{ .keysRepository }}{{- end -}}'
+KEYS_REPO_URL="${KEYS_REPO:-$DEFAULT_KEYS_REPO}"
+if [[ -z "$KEYS_REPO_URL" ]]; then
+    err "Cannot determine keys repository URL"
+    err "Set data.keysRepository in your chezmoi config, or export KEYS_REPO=<repo-url>"
+    exit 1
+fi
+info "Using keys repository: $KEYS_REPO_URL"
+
+mkdir -p "$(dirname "$REPO_DIR")"
+
+if [[ -d "$REPO_DIR/.git" ]]; then
+    info "Updating existing keys repository: $REPO_DIR"
+    (cd "$REPO_DIR" && git remote get-url origin >/dev/null 2>&1) || (cd "$REPO_DIR" && git remote add origin "$KEYS_REPO_URL")
+    (cd "$REPO_DIR" && git fetch origin --quiet)
+    (cd "$REPO_DIR" && git pull --ff-only --quiet) || {
+        err "Failed to pull keys repository (ff-only)"
+        exit 1
+    }
+else
+    info "Cloning keys repository..."
+    git clone "$KEYS_REPO_URL" "$REPO_DIR" || {
+        err "Failed to clone keys repository"
+        exit 1
+    }
+fi
+
+[[ -d "$BACKUP_FILES_DIR" ]] || {
+    err "Missing $BACKUP_FILES_DIR"
+    exit 1
+}
+
+# Encrypted control files are tracked; plaintext working copies may not exist on a new machine.
+# Unlock them here so we can decide what to restore without decrypting every backup file.
+password="${KEYS_BACKUP_PASSWORD:-}"
+if [[ ! -f "$BACKUP_LIST" ]]; then
+    if [[ -f "$BACKUP_LIST_ENC" ]]; then
+        [[ -n "$password" ]] || password="$(get_backup_password)" || {
+            err "Cannot obtain backup encryption password"
+            exit 1
+        }
+        decrypt_openssl_pbkdf2 "$BACKUP_LIST_ENC" "$BACKUP_LIST" "$password" || {
+            err "Failed to decrypt $BACKUP_LIST_ENC"
+            exit 1
+        }
+        chmod 600 "$BACKUP_LIST" 2>/dev/null || true
+        # Record the decrypted remote hash as this machine's baseline. This avoids
+        # false "control file conflict" prompts on first sync.
+        mkdir -p "$CONTROL_STATE_DIR"
+        chmod 700 "$CONTROL_STATE_DIR" 2>/dev/null || true
+        list_hash="$(calc_checksum "$BACKUP_LIST" 2>/dev/null || true)"
+        if [[ -n "$list_hash" ]]; then
+            printf '%s\n' "$list_hash" >"$CONTROL_BASELINE_LIST"
+            chmod 600 "$CONTROL_BASELINE_LIST" 2>/dev/null || true
+        fi
+    else
+        err "Missing $BACKUP_LIST (and no $BACKUP_LIST_ENC found)"
+        exit 1
+    fi
+fi
+
+if [[ ! -f "$METADATA_FILE" && -f "$METADATA_FILE_ENC" ]]; then
+    [[ -n "$password" ]] || password="$(get_backup_password)" || {
+        err "Cannot obtain backup encryption password"
+        exit 1
+    }
+    # Metadata is an optimization. If it can't be decrypted, the script will fall back to decrypting
+    # individual files when needed.
+    if decrypt_openssl_pbkdf2 "$METADATA_FILE_ENC" "$METADATA_FILE" "$password"; then
+        chmod 600 "$METADATA_FILE" 2>/dev/null || true
+        mkdir -p "$CONTROL_STATE_DIR"
+        chmod 700 "$CONTROL_STATE_DIR" 2>/dev/null || true
+        meta_hash="$(calc_checksum "$METADATA_FILE" 2>/dev/null || true)"
+        if [[ -n "$meta_hash" ]]; then
+            printf '%s\n' "$meta_hash" >"$CONTROL_BASELINE_META"
+            chmod 600 "$CONTROL_BASELINE_META" 2>/dev/null || true
+        fi
+    else
+        rm -f "$METADATA_FILE" 2>/dev/null || true
+        warn "Failed to decrypt metadata; continuing without it"
+    fi
+fi
+
+iter_backup_list() {
+    awk '
+    { sub(/\r$/, "", $0) }
+    NF && $0 !~ /\[0;/ && $0 !~ /Add Custom/ && $0 !~ /File path/ && $0 !~ /Tip:/ { print }
+  ' "$BACKUP_LIST"
+}
+
+to_home_rel() {
+    local input="$1"
+    local path="$input"
+
+    path="${path%$'\r'}"
+    [[ -z "$path" ]] && return 1
+
+    # shellcheck disable=SC2088 # Intentional: matching literal ~/
+    if [[ "$path" == "~/"* ]]; then
+        path="$HOME/${path#~/}"
+    fi
+
+    if [[ "$path" == "$HOME/"* ]]; then
+        path="${path#"$HOME"/}"
+    elif [[ "$path" == /* ]]; then
+        return 1
+    fi
+
+    while [[ "$path" == "./"* ]]; do
+        path="${path#./}"
+    done
+
+    [[ -z "$path" || "$path" == "." || "$path" == ".." ]] && return 1
+    [[ "$path" == "../"* || "$path" == *"/../"* || "$path" == *"/.." ]] && return 1
+
+    printf '%s\n' "$path"
+}
+
+metadata_get_any() {
+    local metadata_file="$1"
+    local rel="$2"
+    local abs="$3"
+    local field="$4"
+
+    local v
+    v="$(metadata_get "$metadata_file" "$rel" "$field")"
+    [[ -n "$v" ]] && {
+        printf '%s' "$v"
+        return 0
+    }
+    metadata_get "$metadata_file" "$abs" "$field"
+}
+
+# First pass: compute a summary without decrypting.
+total=0
+same=0
+missing=0
+needs_check=0
+outside_home=0
+missing_in_repo=0
+
+while IFS= read -r file; do
+    [[ -z "$file" ]] && continue
+    total=$((total + 1))
+
+    rel="$(to_home_rel "$file" 2>/dev/null || true)"
+    if [[ -z "$rel" ]]; then
+        outside_home=$((outside_home + 1))
+        continue
+    fi
+
+    target="${HOME}/${rel}"
+    enc="${BACKUP_FILES_DIR}/${rel}"
+    if [[ ! -f "$enc" ]]; then
+        missing_in_repo=$((missing_in_repo + 1))
+        continue
+    fi
+
+    if [[ -f "$target" ]]; then
+        local_hash="$(calc_checksum "$target" || true)"
+        meta_hash="$(metadata_get_any "$METADATA_FILE" "$rel" "$target" "sha256")"
+        if [[ -n "$meta_hash" && -n "$local_hash" && "$meta_hash" == "$local_hash" ]]; then
+            same=$((same + 1))
+        else
+            needs_check=$((needs_check + 1))
+        fi
+    else
+        missing=$((missing + 1))
+    fi
+done < <(iter_backup_list)
+
+info "Backup list: $total files"
+info "  - Already match backup: $same"
+info "  - Missing locally:       $missing"
+info "  - Need check/restore:    $needs_check"
+[[ $missing_in_repo -gt 0 ]] && warn "  - Missing in repo:        $missing_in_repo (will skip)"
+[[ $outside_home -gt 0 ]] && warn "  - Outside HOME:           $outside_home (will skip)"
+
+if [[ $missing -eq 0 && $needs_check -eq 0 ]]; then
+    info "Nothing to restore"
+    exit 0
+fi
+
+if ! confirm "Restore missing/changed files now? [y/N]: "; then
+    info "Cancelled"
+    exit 0
+fi
+
+[[ -n "$password" ]] || password="$(get_backup_password)" || {
+    err "Cannot obtain backup encryption password"
+    err "Tip: export KEYS_BACKUP_PASSWORD=... to avoid prompting"
+    exit 1
+}
+
+_tmp_files=()
+cleanup() {
+    # Best-effort cleanup of decrypted temp files.
+    if [[ ${#_tmp_files[@]} -gt 0 ]]; then
+        rm -f "${_tmp_files[@]}" 2>/dev/null || true
+    fi
+}
+trap cleanup EXIT
+
+snapshot_dir=""
+snapshot_made=false
+
+snapshot_existing() {
+    local path="$1"
+    local rel="$2"
+    if [[ "$snapshot_made" != true ]]; then
+        snapshot_dir="${REPO_DIR}/restore-snapshots/$(date +%Y%m%d-%H%M%S)"
+        mkdir -p "$snapshot_dir"
+        snapshot_made=true
+    fi
+
+    local dst_dir
+    dst_dir="$(dirname "$snapshot_dir/$rel")"
+    mkdir -p "$dst_dir"
+    cp -p "$path" "$dst_dir/" 2>/dev/null || cp "$path" "$dst_dir/"
+
+    # If this is a private key, snapshot its public key too (if present).
+    # Avoid returning non-zero just because the .pub doesn't exist (set -e).
+    if [[ "$path" != *.pub && -f "${path}.pub" ]]; then
+        cp -p "${path}.pub" "$dst_dir/" 2>/dev/null || cp "${path}.pub" "$dst_dir/"
+    fi
+}
+
+restore_file() {
+    local target="$1"
+    local rel="$2"
+    local enc="$3"
+    local password="$4"
+    local existed="$5"
+
+    local tmp
+    tmp="$(mktemp "${TMPDIR:-/tmp}/keys-restore.XXXXXX")"
+    _tmp_files+=("$tmp")
+
+    decrypt_openssl_pbkdf2 "$enc" "$tmp" "$password" || return 1
+
+    local backup_hash local_hash
+    backup_hash="$(calc_checksum "$tmp" || true)"
+    local_hash=""
+    if [[ "$existed" == true ]]; then
+        local_hash="$(calc_checksum "$target" || true)"
+    fi
+
+    if [[ -n "$local_hash" && -n "$backup_hash" && "$local_hash" == "$backup_hash" ]]; then
+        info "OK: $target (matches backup)"
+        rm -f "$tmp"
+        return 2
+    fi
+
+    if [[ "$existed" == true ]]; then
+        warn "DIFF: $target"
+        [[ -n "$local_hash" ]] && info "  local:  $local_hash"
+        [[ -n "$backup_hash" ]] && info "  backup: $backup_hash"
+        if ! confirm "Overwrite with backup? [y/N]: "; then
+            info "Skip: $target"
+            rm -f "$tmp"
+            return 3
+        fi
+
+        snapshot_existing "$target" "$rel"
+    fi
+
+    mkdir -p "$(dirname "$target")"
+    # Harden common sensitive parent dirs.
+    if [[ "$target" == "$HOME/.ssh/"* ]]; then
+        mkdir -p "$HOME/.ssh"
+        chmod 700 "$HOME/.ssh" 2>/dev/null || true
+    fi
+    if [[ "$target" == "$HOME/.gnupg/"* ]]; then
+        mkdir -p "$HOME/.gnupg"
+        chmod 700 "$HOME/.gnupg" 2>/dev/null || true
+    fi
+
+    # Determine permissions (metadata -> existing -> default 600).
+    local desired_perms existing_perms
+    desired_perms="$(metadata_get_any "$METADATA_FILE" "$rel" "$target" "permissions")"
+    existing_perms=""
+    [[ "$existed" == true ]] && existing_perms="$(get_file_perms "$target")"
+    [[ -z "$desired_perms" ]] && desired_perms="$existing_perms"
+    if [[ -z "$desired_perms" ]]; then
+        if [[ "$target" == *.pub ]]; then
+            desired_perms="644"
+        else
+            desired_perms="600"
+        fi
+    fi
+
+    cp -f "$tmp" "$target"
+    chmod "$desired_perms" "$target" 2>/dev/null || chmod 600 "$target" 2>/dev/null || true
+
+    rm -f "$tmp"
+    info "Restored: $target"
+    return 0
+}
+
+restored=0
+skipped=0
+kept=0
+failed=0
+
+while IFS= read -r file; do
+    [[ -z "$file" ]] && continue
+
+    rel="$(to_home_rel "$file" 2>/dev/null || true)"
+    if [[ -z "$rel" ]]; then
+        warn "Skip (outside HOME): $file"
+        continue
+    fi
+
+    file="${HOME}/${rel}"
+    enc="${BACKUP_FILES_DIR}/${rel}"
+    if [[ ! -f "$enc" ]]; then
+        warn "Skip (missing in repo): $file"
+        continue
+    fi
+
+    # Fast path: if metadata says it's already identical, skip decrypt.
+    if [[ -f "$file" ]]; then
+        local_hash="$(calc_checksum "$file" || true)"
+        meta_hash="$(metadata_get_any "$METADATA_FILE" "$rel" "$file" "sha256")"
+        if [[ -n "$meta_hash" && -n "$local_hash" && "$meta_hash" == "$local_hash" ]]; then
+            skipped=$((skipped + 1))
+            continue
+        fi
+    fi
+
+    existed=false
+    [[ -f "$file" ]] && existed=true
+
+    rc=0
+    restore_file "$file" "$rel" "$enc" "$password" "$existed" || rc=$?
+    case "$rc" in
+    0) restored=$((restored + 1)) ;;
+    2) skipped=$((skipped + 1)) ;;
+    3) kept=$((kept + 1)) ;;
+    *)
+        failed=$((failed + 1))
+        warn "Failed: $file"
+        ;;
+    esac
+done < <(iter_backup_list)
+
+# Ensure chezmoi recipient key exists (best effort).
+if [[ -f "$HOME/.ssh/main" && ! -f "$HOME/.ssh/main.pub" ]]; then
+    if require_cmd ssh-keygen; then
+        ssh-keygen -y -f "$HOME/.ssh/main" >"$HOME/.ssh/main.pub" 2>/dev/null && chmod 644 "$HOME/.ssh/main.pub" 2>/dev/null || true
+    fi
+fi
+
+info "Restore complete:"
+info "  - restored: $restored"
+info "  - skipped:  $skipped"
+info "  - kept:     $kept"
+[[ $failed -gt 0 ]] && warn "  - failed:   $failed"
+[[ "$snapshot_made" == true ]] && info "Rollback snapshot: $snapshot_dir"
+
+# If we still don't have the identity key, fail fast (chezmoi may need it to decrypt secrets).
+if [[ ! -f "$HOME/.ssh/main" ]]; then
+    err "Missing required identity key: $HOME/.ssh/main"
+    err "Tip: ensure it is backed up in keys-manage and present in backup-list.txt"
+    exit 1
+fi
