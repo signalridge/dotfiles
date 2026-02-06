@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # ===== Restore Commands (from keys-restore) =====
 
 # Command: restore - Restore files from backup
@@ -9,32 +10,32 @@ cmd_restore() {
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --commit|-c)
-                if [[ $# -lt 2 ]] || [[ "$2" == -* ]]; then
-                    log_error "Missing value for --commit"
-                    return 1
-                fi
-                commit_arg="$2"
-                shift 2
-                ;;
-            --dry-run)
-                dry_run=true
-                shift
-                ;;
-            --no-backup)
-                no_backup=true
-                shift
-                ;;
-            *)
-                # First positional argument is commit
-                if [[ -z "$commit_arg" ]]; then
-                    commit_arg="$1"
-                else
-                    log_error "Unexpected argument: $1"
-                    return 1
-                fi
-                shift
-                ;;
+        --commit | -c)
+            if [[ $# -lt 2 ]] || [[ "$2" == -* ]]; then
+                log_error "Missing value for --commit"
+                return 1
+            fi
+            commit_arg="$2"
+            shift 2
+            ;;
+        --dry-run)
+            dry_run=true
+            shift
+            ;;
+        --no-backup)
+            no_backup=true
+            shift
+            ;;
+        *)
+            # First positional argument is commit
+            if [[ -z "$commit_arg" ]]; then
+                commit_arg="$1"
+            else
+                log_error "Unexpected argument: $1"
+                return 1
+            fi
+            shift
+            ;;
         esac
     done
 
@@ -46,7 +47,10 @@ cmd_restore() {
         return 1
     }
 
-    cd "$REPO_DIR"
+    cd "$REPO_DIR" || {
+        log_error "Failed to change directory to $REPO_DIR"
+        return 1
+    }
 
     # Restore should see latest backups when remote exists, so sync first.
     # (Uses time-limited fetch/pull so it doesn't hang forever.)
@@ -67,10 +71,10 @@ cmd_restore() {
 
     local restorable_files
     if [[ -n "$commit_arg" ]]; then
-        restorable_files=$(git ls-tree -r --name-only "$commit_arg" backup-files/ 2>/dev/null | \
+        restorable_files=$(git ls-tree -r --name-only "$commit_arg" backup-files/ 2>/dev/null |
             sed 's|^backup-files/||' || true)
     else
-        restorable_files=$(git ls-tree -r --name-only HEAD backup-files/ 2>/dev/null | \
+        restorable_files=$(git ls-tree -r --name-only HEAD backup-files/ 2>/dev/null |
             sed 's|^backup-files/||' || true)
     fi
     if [[ -z "$restorable_files" ]]; then
@@ -245,32 +249,32 @@ cmd_restore() {
         fi
 
         case "$confirm" in
-            [Yy])
-                break
-                ;;
-            [Bb])
-                if [[ -n "$commit_arg" ]]; then
-                    log_warn "Cannot reselect commit when --commit is provided"
-                else
-                    selected_commit=""
-                fi
-                continue
-                ;;
-            [Ff])
-                selected_file=""
-                backup_path=""
-                target_path=""
+        [Yy])
+            break
+            ;;
+        [Bb])
+            if [[ -n "$commit_arg" ]]; then
+                log_warn "Cannot reselect commit when --commit is provided"
+            else
                 selected_commit=""
-                continue
-                ;;
-            [Nn]|"")
-                echo "Restore cancelled"
-                return 0
-                ;;
-            *)
-                log_warn "Invalid choice: $confirm"
-                continue
-                ;;
+            fi
+            continue
+            ;;
+        [Ff])
+            selected_file=""
+            backup_path=""
+            target_path=""
+            selected_commit=""
+            continue
+            ;;
+        [Nn] | "")
+            echo "Restore cancelled"
+            return 0
+            ;;
+        *)
+            log_warn "Invalid choice: $confirm"
+            continue
+            ;;
         esac
     done
 
@@ -323,7 +327,7 @@ cmd_restore() {
     filename=$(basename "$target_path")
 
     # Extract encrypted file from selected commit
-    if ! git show "$selected_commit:$backup_path" > "$temp_encrypted" 2>/dev/null; then
+    if ! git show "$selected_commit:$backup_path" >"$temp_encrypted" 2>/dev/null; then
         echo "  ${STATUS_ERROR} Not found in commit $(git rev-parse --short "$selected_commit"): $filename"
         rm -f "$temp_encrypted"
         return 1
@@ -370,7 +374,7 @@ cmd_restore() {
 
         # Keep backup list in sync (idempotent).
         if ! grep -qxF "$selected_file" "$BACKUP_LIST"; then
-            echo "$selected_file" >> "$BACKUP_LIST"
+            echo "$selected_file" >>"$BACKUP_LIST"
             normalize_backup_list_file
         fi
 
@@ -424,7 +428,10 @@ cmd_versions() {
         return 1
     }
 
-    cd "$REPO_DIR"
+    cd "$REPO_DIR" || {
+        log_error "Failed to change directory to $REPO_DIR"
+        return 1
+    }
 
     log_section "Select backup version to view"
     echo ""
@@ -455,7 +462,10 @@ cmd_validate() {
         return 1
     }
 
-    cd "$REPO_DIR"
+    cd "$REPO_DIR" || {
+        log_error "Failed to change directory to $REPO_DIR"
+        return 1
+    }
 
     log_section "Validating backup repository..."
     echo ""
@@ -516,4 +526,3 @@ cmd_validate() {
     echo -e "✅ Validation complete${NC}"
     echo ""
 }
-

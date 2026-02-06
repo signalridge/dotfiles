@@ -19,4 +19,3 @@ jobs:
           nix profile install nixpkgs#chezmoi nixpkgs#jq
       - name: Run tests
         run: bash tests/run.sh
-

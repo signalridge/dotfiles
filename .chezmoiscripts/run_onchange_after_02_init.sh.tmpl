@@ -13,7 +13,6 @@ echo ":: [02] Configuring nix-darwin"
 
 # Source nix environment if not already available
 {{ include ".chezmoitemplates/shell/source_nix_env.sh" }}
-
 if ! command -v darwin-version >/dev/null 2>&1; then
     echo "    Installing nix-darwin..."
     sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake ~/nix-config#{{ .hostname }} --show-trace --verbose

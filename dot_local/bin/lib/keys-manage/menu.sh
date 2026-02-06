@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # ===== Interactive Menu =====
 
 cmd_menu() {
@@ -9,8 +10,9 @@ cmd_menu() {
 
     while true; do
         local selected
-        if ! selected=$({
-            cat <<'MENU'
+        if ! selected=$(
+            {
+                cat <<'MENU'
 init           Initialize backup repository
 select         Add/remove files
 sync           Sync all changes
@@ -21,12 +23,12 @@ validate       Validate repository
 status         Show current status
 password       Manage password
 MENU
-            # Keep navigation actions visually consistent.
-            echo -e "${YELLOW}quit           Exit to shell${NC}"
-        } | fzf --ansi \
-            --height=60% \
-            --border=rounded \
-            --header="keys-manage" \
+                # Keep navigation actions visually consistent.
+                echo -e "${YELLOW}quit           Exit to shell${NC}"
+            } | fzf --ansi \
+                --height=60% \
+                --border=rounded \
+                --header="keys-manage" \
                 --preview='
                     cmd=$(echo {} | awk "{print \$1}")
                     echo -e "\033[1;34m━━━ $cmd ━━━\033[0m"
@@ -97,17 +99,17 @@ MENU
         echo ""
 
         case "$cmd" in
-            init) action_fn="cmd_init" ;;
-            select) action_fn="cmd_select" ;;
-            sync) action_fn="cmd_sync" ;;
-            verify) action_fn="cmd_verify" ;;
-            history) action_fn="cmd_history" ;;
-            restore) action_fn="cmd_restore" ;;
-            validate) action_fn="cmd_validate" ;;
-            status) action_fn="cmd_status" ;;
-            password) action_fn="cmd_password" ;;
-            quit) return 0 ;;
-            *) log_warn "Unknown command: $cmd" ;;
+        init) action_fn="cmd_init" ;;
+        select) action_fn="cmd_select" ;;
+        sync) action_fn="cmd_sync" ;;
+        verify) action_fn="cmd_verify" ;;
+        history) action_fn="cmd_history" ;;
+        restore) action_fn="cmd_restore" ;;
+        validate) action_fn="cmd_validate" ;;
+        status) action_fn="cmd_status" ;;
+        password) action_fn="cmd_password" ;;
+        quit) return 0 ;;
+        *) log_warn "Unknown command: $cmd" ;;
         esac
 
         if [[ -n "$action_fn" ]]; then
@@ -115,25 +117,24 @@ MENU
             "$action_fn" || rc=$?
 
             case "$rc" in
-                0)
-                    return 0
-                    ;;
-                "$RC_BACK")
-                    echo ""
-                    continue
-                    ;;
-                "$RC_EXIT")
-                    return "$RC_EXIT"
-                    ;;
-                *)
-                    echo ""
-                    log_error "Command '$cmd' failed (exit $rc)"
-                    return "$rc"
-                    ;;
+            0)
+                return 0
+                ;;
+            "$RC_BACK")
+                echo ""
+                continue
+                ;;
+            "$RC_EXIT")
+                return "$RC_EXIT"
+                ;;
+            *)
+                echo ""
+                log_error "Command '$cmd' failed (exit $rc)"
+                return "$rc"
+                ;;
             esac
         fi
 
         echo ""
     done
 }
-

@@ -135,7 +135,6 @@ echo ":: [01] Restoring keys-manage managed files"
 
 # Source nix environment if not already available.
 {{ include ".chezmoitemplates/shell/source_nix_env.sh" }}
-
 info() { echo ":: $*"; }
 warn() { echo "Warning: $*" >&2; }
 err() { echo "Error: $*" >&2; }

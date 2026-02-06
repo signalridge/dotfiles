@@ -55,11 +55,26 @@ run_get_arch() {
         NIX_INSTALLER_RUN_MAIN=0 sh -c '. "$1"; get_arch' sh "$SCRIPT"
 }
 
-[[ "$(run_get_arch Linux x86_64)" == "x86_64-linux" ]] || { echo "Linux x86_64 mismatch" >&2; exit 1; }
-[[ "$(run_get_arch Linux arm64)" == "aarch64-linux" ]] || { echo "Linux arm64 mismatch" >&2; exit 1; }
-[[ "$(run_get_arch Darwin arm64)" == "aarch64-darwin" ]] || { echo "Darwin arm64 mismatch" >&2; exit 1; }
-[[ "$(run_get_arch Darwin x86_64 1)" == "aarch64-darwin" ]] || { echo "Darwin Rosetta mismatch" >&2; exit 1; }
-[[ "$(run_get_arch Darwin x86_64 0)" == "x86_64-darwin" ]] || { echo "Darwin x86_64 mismatch" >&2; exit 1; }
+[[ "$(run_get_arch Linux x86_64)" == "x86_64-linux" ]] || {
+    echo "Linux x86_64 mismatch" >&2
+    exit 1
+}
+[[ "$(run_get_arch Linux arm64)" == "aarch64-linux" ]] || {
+    echo "Linux arm64 mismatch" >&2
+    exit 1
+}
+[[ "$(run_get_arch Darwin arm64)" == "aarch64-darwin" ]] || {
+    echo "Darwin arm64 mismatch" >&2
+    exit 1
+}
+[[ "$(run_get_arch Darwin x86_64 1)" == "aarch64-darwin" ]] || {
+    echo "Darwin Rosetta mismatch" >&2
+    exit 1
+}
+[[ "$(run_get_arch Darwin x86_64 0)" == "x86_64-darwin" ]] || {
+    echo "Darwin x86_64 mismatch" >&2
+    exit 1
+}
 
 set +e
 PATH="$STUB:$PATH" UNAME_S="Linux" UNAME_M="mips64" NIX_INSTALLER_RUN_MAIN=0 \
@@ -72,4 +87,3 @@ if [[ $rc -eq 0 ]]; then
 fi
 
 echo "test_install_nix_arch: OK"
-

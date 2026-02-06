@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # ===== Backup Commands (from keys-backup) =====
 
 # Command: init - Initialize backup repository
@@ -136,7 +137,10 @@ cmd_init() {
 
         # Initialize new repository
         mkdir -p "$REPO_DIR"
-        cd "$REPO_DIR"
+        cd "$REPO_DIR" || {
+            log_error "Failed to change directory to $REPO_DIR"
+            return 1
+        }
         if ! git init -b main &>/dev/null; then
             git init
         fi
@@ -175,7 +179,10 @@ cmd_init() {
 
     # Repository cloned successfully
     rm -f "$clone_error"
-    cd "$REPO_DIR"
+    cd "$REPO_DIR" || {
+        log_error "Failed to change directory to $REPO_DIR"
+        return 1
+    }
     log_success "Repository cloned"
     echo ""
     log_note "Files will be encrypted with OpenSSL PBKDF2 before backup"
@@ -243,8 +250,8 @@ cmd_select() {
         local final_count=$((total_files + add_count - remove_count))
 
         # Write pending lists to temp files for preview
-        printf '%s\n' "${pending_add[@]}" > "$pending_add_file"
-        printf '%s\n' "${pending_remove[@]}" > "$pending_remove_file"
+        printf '%s\n' "${pending_add[@]}" >"$pending_add_file"
+        printf '%s\n' "${pending_remove[@]}" >"$pending_remove_file"
 
         # Action menu with expanded variables
         local action
@@ -252,12 +259,12 @@ cmd_select() {
             "${GREEN}Add files${NC}" \
             "${RED}Remove files${NC}" \
             "${CYAN}Done${NC}" \
-            "${YELLOW}Back${NC}" \
-        | fzf --ansi \
-            --height=50% \
-            --border=rounded \
-            --header="Current: $total_files | +$add_count -$remove_count | Final: $final_count" \
-            --preview="
+            "${YELLOW}Back${NC}" |
+            fzf --ansi \
+                --height=50% \
+                --border=rounded \
+                --header="Current: $total_files | +$add_count -$remove_count | Final: $final_count" \
+                --preview="
                 action=\$(echo {} | awk '{print \$1}')
 
                 echo -e \"\033[1;36m━━━ Current Backup List ($total_files files) ━━━\033[0m\"
@@ -295,7 +302,7 @@ cmd_select() {
                     Back) echo 'Cancel all pending changes' ;;
                 esac
             " \
-            --preview-window='right:50%:wrap') || {
+                --preview-window='right:50%:wrap') || {
             rm -f "$pending_add_file" "$pending_remove_file"
             log_warn "Cancelled"
             return 0
@@ -306,207 +313,207 @@ cmd_select() {
 
         echo ""
         case "$cmd" in
-            Add)
-                # Add files with yazi (record only, don't encrypt yet)
-                log_section "Add files with yazi"
-                echo ""
+        Add)
+            # Add files with yazi (record only, don't encrypt yet)
+            log_section "Add files with yazi"
+            echo ""
 
-                # Capture yazi selection
-                local yazi_files
-                if yazi_files=$(yazi_select_files); then
-                    # Add to pending list
-                    while IFS= read -r file; do
-                        if [[ -n "$file" ]]; then
-                            # Check if in pending remove (cancel removal)
-                            local in_pending_remove=false
-                            local new_pending_remove=()
-                            for pending_file in "${pending_remove[@]}"; do
-                                if [[ "$file" == "$pending_file" ]]; then
-                                    in_pending_remove=true
-                                    log_success "Cancelled removal: $(basename "$file")"
-                                else
-                                    new_pending_remove+=("$pending_file")
-                                fi
-                            done
-                            if [[ "$in_pending_remove" == true ]]; then
-                                pending_remove=("${new_pending_remove[@]}")
-                                continue
-                            fi
-
-                            # Check if already in backup list
-                            local already_in_list=false
-                            for current_file in "${current_files[@]}"; do
-                                if [[ "$file" == "$current_file" ]]; then
-                                    already_in_list=true
-                                    break
-                                fi
-                            done
-
-                            # Check if already in pending add
-                            local already_pending=false
-                            for pending_file in "${pending_add[@]}"; do
-                                if [[ "$file" == "$pending_file" ]]; then
-                                    already_pending=true
-                                    break
-                                fi
-                            done
-
-                            if [[ "$already_in_list" == true ]]; then
-                                log_warn "Already in backup: $(basename "$file")"
-                            elif [[ "$already_pending" == true ]]; then
-                                log_warn "Already pending: $(basename "$file")"
+            # Capture yazi selection
+            local yazi_files
+            if yazi_files=$(yazi_select_files); then
+                # Add to pending list
+                while IFS= read -r file; do
+                    if [[ -n "$file" ]]; then
+                        # Check if in pending remove (cancel removal)
+                        local in_pending_remove=false
+                        local new_pending_remove=()
+                        for pending_file in "${pending_remove[@]}"; do
+                            if [[ "$file" == "$pending_file" ]]; then
+                                in_pending_remove=true
+                                log_success "Cancelled removal: $(basename "$file")"
                             else
-                                pending_add+=("$file")
-                                log_success "Marked to add: $(basename "$file")"
+                                new_pending_remove+=("$pending_file")
                             fi
+                        done
+                        if [[ "$in_pending_remove" == true ]]; then
+                            pending_remove=("${new_pending_remove[@]}")
+                            continue
                         fi
-                    done <<< "$yazi_files"
-                else
-                    local yazi_rc=$?
-                    case "$yazi_rc" in
-                        "$RC_BACK"|"$RC_EXIT")
-                            log_warn "Cancelled"
-                            ;;
-                        *)
-                            return "$yazi_rc"
-                            ;;
-                    esac
-                fi
+
+                        # Check if already in backup list
+                        local already_in_list=false
+                        for current_file in "${current_files[@]}"; do
+                            if [[ "$file" == "$current_file" ]]; then
+                                already_in_list=true
+                                break
+                            fi
+                        done
+
+                        # Check if already in pending add
+                        local already_pending=false
+                        for pending_file in "${pending_add[@]}"; do
+                            if [[ "$file" == "$pending_file" ]]; then
+                                already_pending=true
+                                break
+                            fi
+                        done
+
+                        if [[ "$already_in_list" == true ]]; then
+                            log_warn "Already in backup: $(basename "$file")"
+                        elif [[ "$already_pending" == true ]]; then
+                            log_warn "Already pending: $(basename "$file")"
+                        else
+                            pending_add+=("$file")
+                            log_success "Marked to add: $(basename "$file")"
+                        fi
+                    fi
+                done <<<"$yazi_files"
+            else
+                local yazi_rc=$?
+                case "$yazi_rc" in
+                "$RC_BACK" | "$RC_EXIT")
+                    log_warn "Cancelled"
+                    ;;
+                *)
+                    return "$yazi_rc"
+                    ;;
+                esac
+            fi
+            echo ""
+            ;;
+
+        Remove)
+            # Remove files (record only, don't delete yet)
+            # Build list: current_files + pending_add
+            local removable_files=()
+            removable_files+=("${current_files[@]}")
+            removable_files+=("${pending_add[@]}")
+
+            if [[ ${#removable_files[@]} -eq 0 ]]; then
+                log_warn "No files to remove"
                 echo ""
-                ;;
+                continue
+            fi
 
-            Remove)
-                # Remove files (record only, don't delete yet)
-                # Build list: current_files + pending_add
-                local removable_files=()
-                removable_files+=("${current_files[@]}")
-                removable_files+=("${pending_add[@]}")
+            log_section "Remove files from backup list"
+            echo -e "Use ${CYAN}Tab${NC} to select files to remove, ${CYAN}Enter${NC} to confirm"
+            echo ""
 
-                if [[ ${#removable_files[@]} -eq 0 ]]; then
-                    log_warn "No files to remove"
+            local to_remove
+            to_remove=$({
+                printf '%s\n' "${removable_files[@]}"
+                echo -e "${YELLOW}Back${NC}"
+            } | fzf_multi_select \
+                "Tab: select to remove | Enter: confirm" \
+                "$FILE_PREVIEW")
+
+            if [[ -n "$to_remove" ]]; then
+                if printf '%s\n' "$to_remove" | grep -qxF "Back"; then
                     echo ""
                     continue
                 fi
-
-                log_section "Remove files from backup list"
-                echo -e "Use ${CYAN}Tab${NC} to select files to remove, ${CYAN}Enter${NC} to confirm"
-                echo ""
-
-                local to_remove
-                to_remove=$({
-                    printf '%s\n' "${removable_files[@]}"
-                    echo -e "${YELLOW}Back${NC}"
-                } | fzf_multi_select \
-                    "Tab: select to remove | Enter: confirm" \
-                    "$FILE_PREVIEW")
-
-                if [[ -n "$to_remove" ]]; then
-                    if printf '%s\n' "$to_remove" | grep -qxF "Back"; then
-                        echo ""
-                        continue
-                    fi
-                    while IFS= read -r file; do
-                        if [[ -n "$file" ]]; then
-                            # Check if in pending add (cancel addition)
-                            local in_pending_add=false
-                            local new_pending_add=()
-                            for pending_file in "${pending_add[@]}"; do
-                                if [[ "$file" == "$pending_file" ]]; then
-                                    in_pending_add=true
-                                    log_success "Cancelled addition: $(basename "$file")"
-                                else
-                                    new_pending_add+=("$pending_file")
-                                fi
-                            done
-                            if [[ "$in_pending_add" == true ]]; then
-                                pending_add=("${new_pending_add[@]}")
-                                continue
-                            fi
-
-                            # Check if already in pending remove
-                            local already_pending=false
-                            for pending_file in "${pending_remove[@]}"; do
-                                if [[ "$file" == "$pending_file" ]]; then
-                                    already_pending=true
-                                    break
-                                fi
-                            done
-
-                            if [[ "$already_pending" == true ]]; then
-                                log_warn "Already pending removal: $(basename "$file")"
+                while IFS= read -r file; do
+                    if [[ -n "$file" ]]; then
+                        # Check if in pending add (cancel addition)
+                        local in_pending_add=false
+                        local new_pending_add=()
+                        for pending_file in "${pending_add[@]}"; do
+                            if [[ "$file" == "$pending_file" ]]; then
+                                in_pending_add=true
+                                log_success "Cancelled addition: $(basename "$file")"
                             else
-                                pending_remove+=("$file")
-                                log_success "Marked to remove: $(basename "$file")"
+                                new_pending_add+=("$pending_file")
                             fi
+                        done
+                        if [[ "$in_pending_add" == true ]]; then
+                            pending_add=("${new_pending_add[@]}")
+                            continue
                         fi
-                    done <<< "$to_remove"
-                else
-                    log_warn "No files selected"
-                fi
+
+                        # Check if already in pending remove
+                        local already_pending=false
+                        for pending_file in "${pending_remove[@]}"; do
+                            if [[ "$file" == "$pending_file" ]]; then
+                                already_pending=true
+                                break
+                            fi
+                        done
+
+                        if [[ "$already_pending" == true ]]; then
+                            log_warn "Already pending removal: $(basename "$file")"
+                        else
+                            pending_remove+=("$file")
+                            log_success "Marked to remove: $(basename "$file")"
+                        fi
+                    fi
+                done <<<"$to_remove"
+            else
+                log_warn "No files selected"
+            fi
+            echo ""
+            ;;
+
+        Done)
+            # Done - apply pending changes locally (no encryption/commit here)
+            if [[ ${#pending_add[@]} -eq 0 ]] && [[ ${#pending_remove[@]} -eq 0 ]]; then
+                log_warn "No pending changes"
                 echo ""
-                ;;
+                break # Return to main menu
+            fi
 
-            Done)
-                # Done - apply pending changes locally (no encryption/commit here)
-                if [[ ${#pending_add[@]} -eq 0 ]] && [[ ${#pending_remove[@]} -eq 0 ]]; then
-                    log_warn "No pending changes"
-                    echo ""
-                    break  # Return to main menu
-                fi
+            echo ""
+            log_section "Applying changes (local)..."
+            echo ""
 
-                echo ""
-                log_section "Applying changes (local)..."
-                echo ""
+            touch "$BACKUP_LIST"
 
-                touch "$BACKUP_LIST"
+            local tmp
+            tmp=$(mktemp)
 
-                local tmp
-                tmp=$(mktemp)
+            # Build removal set (HOME-relative).
+            local -A remove_set=()
+            local pending_file rel
+            for pending_file in "${pending_remove[@]}"; do
+                rel=$(to_home_rel_path "$pending_file" 2>/dev/null || true)
+                [[ -n "$rel" ]] && remove_set["$rel"]=1
+            done
 
-                # Build removal set (HOME-relative).
-                local -A remove_set=()
-                local pending_file rel
+            # Keep existing entries not marked for removal.
+            while IFS= read -r rel; do
+                [[ -z "$rel" ]] && continue
+                [[ -n "${remove_set[$rel]:-}" ]] && continue
+                echo "$rel" >>"$tmp"
+            done < <(iter_backup_list_rel)
+
+            # Add new entries (HOME-relative).
+            for pending_file in "${pending_add[@]}"; do
+                rel=$(to_home_rel_path "$pending_file" 2>/dev/null || true)
+                [[ -n "$rel" ]] && echo "$rel" >>"$tmp"
+            done
+
+            sort -u "$tmp" -o "$BACKUP_LIST"
+            rm -f "$tmp"
+
+            # Optionally clean metadata entries for removed files (local only).
+            if [[ -f "$METADATA_FILE" ]] && [[ ${#pending_remove[@]} -gt 0 ]]; then
                 for pending_file in "${pending_remove[@]}"; do
-                    rel=$(to_home_rel_path "$pending_file" 2>/dev/null || true)
-                    [[ -n "$rel" ]] && remove_set["$rel"]=1
+                    remove_file_metadata "$pending_file" || true
                 done
+            fi
 
-                # Keep existing entries not marked for removal.
-                while IFS= read -r rel; do
-                    [[ -z "$rel" ]] && continue
-                    [[ -n "${remove_set[$rel]:-}" ]] && continue
-                    echo "$rel" >> "$tmp"
-                done < <(iter_backup_list_rel)
+            log_success "Changes saved locally"
+            log_note "Run 'keys-manage sync' to encrypt + commit + push to remote"
+            break
+            ;;
 
-                # Add new entries (HOME-relative).
-                for pending_file in "${pending_add[@]}"; do
-                    rel=$(to_home_rel_path "$pending_file" 2>/dev/null || true)
-                    [[ -n "$rel" ]] && echo "$rel" >> "$tmp"
-                done
-
-                sort -u "$tmp" -o "$BACKUP_LIST"
-                rm -f "$tmp"
-
-                # Optionally clean metadata entries for removed files (local only).
-                if [[ -f "$METADATA_FILE" ]] && [[ ${#pending_remove[@]} -gt 0 ]]; then
-                    for pending_file in "${pending_remove[@]}"; do
-                        remove_file_metadata "$pending_file" || true
-                    done
-                fi
-
-                log_success "Changes saved locally"
-                log_note "Run 'keys-manage sync' to encrypt + commit + push to remote"
-                break
-                ;;
-
-            Back)
-                # Back - cancel all pending changes
-                if [[ ${#pending_add[@]} -gt 0 ]] || [[ ${#pending_remove[@]} -gt 0 ]]; then
-                    log_warn "Discarded ${#pending_add[@]} additions and ${#pending_remove[@]} removals"
-                fi
-                rm -f "$pending_add_file" "$pending_remove_file"
-                return "$RC_BACK"
-                ;;
+        Back)
+            # Back - cancel all pending changes
+            if [[ ${#pending_add[@]} -gt 0 ]] || [[ ${#pending_remove[@]} -gt 0 ]]; then
+                log_warn "Discarded ${#pending_add[@]} additions and ${#pending_remove[@]} removals"
+            fi
+            rm -f "$pending_add_file" "$pending_remove_file"
+            return "$RC_BACK"
+            ;;
         esac
     done
 
@@ -515,7 +522,7 @@ cmd_select() {
 
     # Show final summary
     local count
-    count=$(wc -l < "$BACKUP_LIST" 2>/dev/null | tr -d ' ')
+    count=$(wc -l <"$BACKUP_LIST" 2>/dev/null | tr -d ' ')
     echo ""
     if [[ $count -eq 0 ]]; then
         log_warn "No files in backup"
@@ -528,29 +535,29 @@ cmd_select() {
 
 # Command: add - Add files to backup list (append)
 cmd_add() {
-    local picker="auto"   # auto|yazi|fzf
-    local scope="home"    # home|keys
+    local picker="auto" # auto|yazi|fzf
+    local scope="home"  # home|keys
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --fzf)
-                picker="fzf"
-                shift
-                ;;
-            --yazi)
-                picker="yazi"
-                shift
-                ;;
-            --home)
-                scope="home"
-                shift
-                ;;
-            --keys|--keys-only)
-                scope="keys"
-                shift
-                ;;
-            -h|--help)
-                cat <<EOF
+        --fzf)
+            picker="fzf"
+            shift
+            ;;
+        --yazi)
+            picker="yazi"
+            shift
+            ;;
+        --home)
+            scope="home"
+            shift
+            ;;
+        --keys | --keys-only)
+            scope="keys"
+            shift
+            ;;
+        -h | --help)
+            cat <<EOF
 Usage: keys-manage add [--fzf|--yazi] [--home|--keys]
 
 Add files to backup list without replacing existing selections.
@@ -563,12 +570,12 @@ Scopes (fzf only):
   --home   Browse files under \$HOME (default; may be slow)
   --keys   Only discover common key dirs (~/.ssh, ~/.gnupg, ~/.config/age)
 EOF
-                return 0
-                ;;
-            *)
-                log_error "Unknown option for add: $1"
-                return 1
-                ;;
+            return 0
+            ;;
+        *)
+            log_error "Unknown option for add: $1"
+            return 1
+            ;;
         esac
     done
 
@@ -598,13 +605,13 @@ EOF
         to_add=$(yazi_select_files) || {
             local rc=$?
             case "$rc" in
-                "$RC_BACK"|"$RC_EXIT")
-                    log_warn "Cancelled"
-                    return 0
-                    ;;
-                *)
-                    return "$rc"
-                    ;;
+            "$RC_BACK" | "$RC_EXIT")
+                log_warn "Cancelled"
+                return 0
+                ;;
+            *)
+                return "$rc"
+                ;;
             esac
         }
     elif [[ "$picker" == "yazi" ]]; then
@@ -615,7 +622,7 @@ EOF
 
         local list_file
         list_file=$(mktemp)
-        printf '%s\n' "${current_files[@]}" > "$list_file"
+        printf '%s\n' "${current_files[@]}" >"$list_file"
 
         local header="Select files to ADD (Tab: toggle, Ctrl-A: all, Ctrl-D: none, Ctrl-/: preview)"
         if [[ "$scope" == "keys" ]]; then
@@ -672,7 +679,7 @@ EOF
     fi
 
     local before_count after_count
-    before_count=$(wc -l < "$BACKUP_LIST" 2>/dev/null | tr -d ' ' || echo 0)
+    before_count=$(wc -l <"$BACKUP_LIST" 2>/dev/null | tr -d ' ' || echo 0)
 
     # Write clean list (only valid file paths)
     local tmp
@@ -682,7 +689,7 @@ EOF
     for file in "${current_files[@]}"; do
         local rel
         rel=$(to_home_rel_path "$file") || continue
-        echo "$rel" >> "$tmp"
+        echo "$rel" >>"$tmp"
     done
 
     # Add new files (write HOME-relative entries)
@@ -690,14 +697,14 @@ EOF
         [[ -z "$file" ]] && continue
         local rel
         rel=$(to_home_rel_path "$file") || continue
-        echo "$rel" >> "$tmp"
-    done <<< "$to_add"
+        echo "$rel" >>"$tmp"
+    done <<<"$to_add"
 
     # Sort and deduplicate
     sort -u "$tmp" -o "$BACKUP_LIST"
     rm -f "$tmp"
 
-    after_count=$(wc -l < "$BACKUP_LIST" 2>/dev/null | tr -d ' ' || echo 0)
+    after_count=$(wc -l <"$BACKUP_LIST" 2>/dev/null | tr -d ' ' || echo 0)
     local added_count
     if [[ "$after_count" =~ ^[0-9]+$ ]] && [[ "$before_count" =~ ^[0-9]+$ ]] && [[ "$after_count" -ge "$before_count" ]]; then
         added_count=$((after_count - before_count))
@@ -803,12 +810,12 @@ cmd_remove() {
         local rel
         rel=$(to_home_rel_path "$file") || continue
         remove_set["$rel"]=1
-    done <<< "$to_remove"
+    done <<<"$to_remove"
 
     while IFS= read -r rel; do
         [[ -z "$rel" ]] && continue
         [[ -n "${remove_set[$rel]:-}" ]] && continue
-        echo "$rel" >> "$tmp"
+        echo "$rel" >>"$tmp"
     done < <(iter_backup_list_rel)
 
     mv "$tmp" "$BACKUP_LIST"
@@ -818,14 +825,14 @@ cmd_remove() {
     if [[ -f "$METADATA_FILE" ]]; then
         while IFS= read -r file; do
             remove_file_metadata "$file"
-        done <<< "$to_remove"
+        done <<<"$to_remove"
     fi
 
     log_success "Removed $remove_count files from backup list (local)"
     echo ""
 
     local remaining
-    remaining=$(wc -l < "$BACKUP_LIST" | tr -d ' ')
+    remaining=$(wc -l <"$BACKUP_LIST" | tr -d ' ')
     echo "Remaining files: $remaining"
     echo ""
     log_note "Run 'keys-manage sync' to encrypt + commit + push to remote"
@@ -1076,7 +1083,6 @@ cmd_sync() {
     fi
 }
 
-
 # Command: verify - Verify backup integrity
 cmd_verify() {
     require_cmd git jq openssl || return 1
@@ -1086,7 +1092,10 @@ cmd_verify() {
         return 1
     }
 
-    cd "$REPO_DIR"
+    cd "$REPO_DIR" || {
+        log_error "Failed to change directory to $REPO_DIR"
+        return 1
+    }
 
     log_info "Verifying backup integrity (comparing SHA256 checksums)..."
     echo ""
@@ -1211,4 +1220,3 @@ cmd_history() {
     ' "$HISTORY_LOG"
     echo ""
 }
-

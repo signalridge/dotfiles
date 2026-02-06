@@ -9,5 +9,4 @@ echo ":: [03] Switching Nix profile"
 
 # Source nix environment if not already available
 {{ include ".chezmoitemplates/shell/source_nix_env.sh" }}
-
 nix run ~/nix-config#{{ .hostname }}.switch

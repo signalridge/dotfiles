@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # ===== Utility Functions =====
 
 # Log event to history
@@ -5,7 +6,7 @@ log_event() {
     local event="$1"
     local timestamp
     timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    echo "[$timestamp] $event" >> "$HISTORY_LOG"
+    echo "[$timestamp] $event" >>"$HISTORY_LOG"
 }
 
 # Canonicalize path for reliable prefix checks.
@@ -46,7 +47,7 @@ to_home_rel_path() {
     path="${path%$'\r'}"
 
     # Expand common forms.
-    if [[ "$path" == "~/"* ]]; then
+    if [[ "$path" == \~/* ]]; then
         path="$HOME/${path#~/}"
     fi
 
@@ -100,7 +101,7 @@ iter_backup_list_rel() {
         local rel
         rel=$(to_home_rel_path "$line") || continue
         printf '%s\n' "$rel"
-    done < "$BACKUP_LIST"
+    done <"$BACKUP_LIST"
 }
 
 iter_backup_list_abs() {
@@ -123,7 +124,7 @@ normalize_backup_list_file() {
 
     local tmp
     tmp=$(mktemp)
-    iter_backup_list_rel | sort -u > "$tmp"
+    iter_backup_list_rel | sort -u >"$tmp"
 
     if ! cmp -s "$tmp" "$BACKUP_LIST" 2>/dev/null; then
         mv "$tmp" "$BACKUP_LIST"
@@ -185,7 +186,7 @@ migrate_metadata_keys_to_rel() {
                 .
             end
         )))
-    ' "$METADATA_FILE" > "$tmp" 2>/dev/null; then
+    ' "$METADATA_FILE" >"$tmp" 2>/dev/null; then
         mv "$tmp" "$METADATA_FILE"
         return 0
     fi
@@ -209,7 +210,7 @@ migrate_metadata_keys_to_rel() {
 ensure_gitignore_pattern() {
     local pattern="$1"
     local file="$2"
-    grep -qxF "$pattern" "$file" 2>/dev/null || echo "$pattern" >> "$file"
+    grep -qxF "$pattern" "$file" 2>/dev/null || echo "$pattern" >>"$file"
 }
 
 ensure_repo_ignores_plain_control_files() {
@@ -235,34 +236,34 @@ write_control_baseline_hash() {
     local file="$1"
     local hash="$2"
     ensure_control_state_dir
-    printf '%s\n' "$hash" > "$file"
+    printf '%s\n' "$hash" >"$file"
     chmod 600 "$file" 2>/dev/null || true
 }
 
 control_conflict_policy() {
     local policy="${KEYS_MANAGE_CONTROL_CONFLICT_POLICY:-}"
     case "$policy" in
-        local|remote|abort|prompt)
-            printf '%s\n' "$policy"
-            return 0
-            ;;
-        "")
-            if [[ -t 0 ]]; then
-                printf '%s\n' "prompt"
-            else
-                printf '%s\n' "abort"
-            fi
-            return 0
-            ;;
-        *)
-            log_warn "Unknown KEYS_MANAGE_CONTROL_CONFLICT_POLICY=$policy (expected: local|remote|abort|prompt)"
-            if [[ -t 0 ]]; then
-                printf '%s\n' "prompt"
-            else
-                printf '%s\n' "abort"
-            fi
-            return 0
-            ;;
+    local | remote | abort | prompt)
+        printf '%s\n' "$policy"
+        return 0
+        ;;
+    "")
+        if [[ -t 0 ]]; then
+            printf '%s\n' "prompt"
+        else
+            printf '%s\n' "abort"
+        fi
+        return 0
+        ;;
+    *)
+        log_warn "Unknown KEYS_MANAGE_CONTROL_CONFLICT_POLICY=$policy (expected: local|remote|abort|prompt)"
+        if [[ -t 0 ]]; then
+            printf '%s\n' "prompt"
+        else
+            printf '%s\n' "abort"
+        fi
+        return 0
+        ;;
     esac
 }
 
@@ -311,8 +312,8 @@ reconcile_plain_control_file_with_enc() {
 
     local baseline_file=""
     case "$label" in
-        backup-list) baseline_file="$CONTROL_BASELINE_LIST" ;;
-        metadata) baseline_file="$CONTROL_BASELINE_META" ;;
+    backup-list) baseline_file="$CONTROL_BASELINE_LIST" ;;
+    metadata) baseline_file="$CONTROL_BASELINE_META" ;;
     esac
     local remote_hash=""
     remote_hash=$(calc_checksum "$tmp" 2>/dev/null || true)
@@ -345,8 +346,59 @@ reconcile_plain_control_file_with_enc() {
     policy=$(control_conflict_policy)
 
     case "$policy" in
-        remote)
-            log_warn "$label differs; accepting encrypted repo version (discarding local plaintext)"
+    remote)
+        log_warn "$label differs; accepting encrypted repo version (discarding local plaintext)"
+        if [[ -f "$plain" ]]; then
+            ensure_control_state_dir
+            local conflict_dir="$CONTROL_STATE_DIR/conflicts"
+            mkdir -p "$conflict_dir"
+            chmod 700 "$conflict_dir" 2>/dev/null || true
+            local ts backup_path
+            ts=$(date +%Y%m%d-%H%M%S 2>/dev/null || echo "unknown")
+            backup_path="$conflict_dir/$(basename "$plain").local.$ts"
+            cp "$plain" "$backup_path" 2>/dev/null || true
+            chmod 600 "$backup_path" 2>/dev/null || true
+            log_note "Saved local $label to: $backup_path"
+        fi
+        mv "$tmp" "$plain"
+        chmod 600 "$plain" 2>/dev/null || true
+        [[ -n "$baseline_file" && -n "$remote_hash" ]] && write_control_baseline_hash "$baseline_file" "$remote_hash"
+        return 0
+        ;;
+    local)
+        log_warn "$label differs; keeping local plaintext (will overwrite remote on next sync)"
+        rm -f "$tmp"
+        return 0
+        ;;
+    abort)
+        log_error "$label differs between local plaintext and encrypted repo state"
+        echo "  Local: $plain"
+        echo "  Repo:  $enc (encrypted)"
+        rm -f "$tmp"
+        return 1
+        ;;
+    prompt | *)
+        if [[ ! -t 0 ]]; then
+            log_error "$label differs but no TTY available to prompt. Set KEYS_MANAGE_CONTROL_CONFLICT_POLICY=local|remote|abort."
+            rm -f "$tmp"
+            return 1
+        fi
+
+        echo ""
+        log_warn "$label differs between local plaintext and encrypted repo state"
+        echo "  Local: $plain"
+        echo "  Repo:  $enc (encrypted)"
+        echo ""
+        echo "Choose:"
+        echo "  [L] Keep local (overwrite remote on next sync)"
+        echo "  [R] Accept remote (discard local changes)"
+        echo "  [D] Show diff and abort"
+        echo ""
+        local choice=""
+        read -r -p "Your choice [L/R/D]: " choice || true
+
+        case "$choice" in
+        [Rr])
             if [[ -f "$plain" ]]; then
                 ensure_control_state_dir
                 local conflict_dir="$CONTROL_STATE_DIR/conflicts"
@@ -364,75 +416,24 @@ reconcile_plain_control_file_with_enc() {
             [[ -n "$baseline_file" && -n "$remote_hash" ]] && write_control_baseline_hash "$baseline_file" "$remote_hash"
             return 0
             ;;
-        local)
-            log_warn "$label differs; keeping local plaintext (will overwrite remote on next sync)"
+        [Ll] | "")
             rm -f "$tmp"
             return 0
             ;;
-        abort)
-            log_error "$label differs between local plaintext and encrypted repo state"
-            echo "  Local: $plain"
-            echo "  Repo:  $enc (encrypted)"
+        [Dd])
+            if command -v diff &>/dev/null; then
+                diff -u "$plain" "$tmp" | sed 's/^/  /' || true
+            fi
             rm -f "$tmp"
             return 1
             ;;
-        prompt|*)
-            if [[ ! -t 0 ]]; then
-                log_error "$label differs but no TTY available to prompt. Set KEYS_MANAGE_CONTROL_CONFLICT_POLICY=local|remote|abort."
-                rm -f "$tmp"
-                return 1
-            fi
-
-            echo ""
-            log_warn "$label differs between local plaintext and encrypted repo state"
-            echo "  Local: $plain"
-            echo "  Repo:  $enc (encrypted)"
-            echo ""
-            echo "Choose:"
-            echo "  [L] Keep local (overwrite remote on next sync)"
-            echo "  [R] Accept remote (discard local changes)"
-            echo "  [D] Show diff and abort"
-            echo ""
-            local choice=""
-            read -r -p "Your choice [L/R/D]: " choice || true
-
-            case "$choice" in
-                [Rr])
-                    if [[ -f "$plain" ]]; then
-                        ensure_control_state_dir
-                        local conflict_dir="$CONTROL_STATE_DIR/conflicts"
-                        mkdir -p "$conflict_dir"
-                        chmod 700 "$conflict_dir" 2>/dev/null || true
-                        local ts backup_path
-                        ts=$(date +%Y%m%d-%H%M%S 2>/dev/null || echo "unknown")
-                        backup_path="$conflict_dir/$(basename "$plain").local.$ts"
-                        cp "$plain" "$backup_path" 2>/dev/null || true
-                        chmod 600 "$backup_path" 2>/dev/null || true
-                        log_note "Saved local $label to: $backup_path"
-                    fi
-                    mv "$tmp" "$plain"
-                    chmod 600 "$plain" 2>/dev/null || true
-                    [[ -n "$baseline_file" && -n "$remote_hash" ]] && write_control_baseline_hash "$baseline_file" "$remote_hash"
-                    return 0
-                    ;;
-                [Ll]|"")
-                    rm -f "$tmp"
-                    return 0
-                    ;;
-                [Dd])
-                    if command -v diff &>/dev/null; then
-                        diff -u "$plain" "$tmp" | sed 's/^/  /' || true
-                    fi
-                    rm -f "$tmp"
-                    return 1
-                    ;;
-                *)
-                    log_warn "Invalid choice; aborting"
-                    rm -f "$tmp"
-                    return 1
-                    ;;
-            esac
+        *)
+            log_warn "Invalid choice; aborting"
+            rm -f "$tmp"
+            return 1
             ;;
+        esac
+        ;;
     esac
 }
 
@@ -477,8 +478,8 @@ maybe_update_encrypted_control_file_from_plain() {
         # on the next run when we just regenerated the encrypted control file locally.
         local baseline_file=""
         case "$label" in
-            backup-list) baseline_file="$CONTROL_BASELINE_LIST" ;;
-            metadata) baseline_file="$CONTROL_BASELINE_META" ;;
+        backup-list) baseline_file="$CONTROL_BASELINE_LIST" ;;
+        metadata) baseline_file="$CONTROL_BASELINE_META" ;;
         esac
         local plain_hash
         plain_hash=$(calc_checksum "$plain" 2>/dev/null || true)
@@ -573,9 +574,9 @@ get_absolute_path() {
 discover_key_files() {
     # Common directories for keys and certificates
     local key_dirs=(
-        "$HOME/.ssh"           # SSH keys
-        "$HOME/.gnupg"         # GPG keys
-        "$HOME/.config/age"    # OpenSSL PBKDF2 encryption keys
+        "$HOME/.ssh"        # SSH keys
+        "$HOME/.gnupg"      # GPG keys
+        "$HOME/.config/age" # OpenSSL PBKDF2 encryption keys
     )
 
     for dir in "${key_dirs[@]}"; do
@@ -583,10 +584,10 @@ discover_key_files() {
 
         find "$dir" -type f -print0 2>/dev/null | while IFS= read -r -d $'\0' file; do
             # Skip noisy/host-specific files.
-            [[ ! "$file" =~ known_hosts ]] && \
-            [[ ! "$file" =~ authorized_keys ]] && \
-            [[ ! "$file" =~ \.lock$ ]] && \
-            echo "$file"
+            [[ ! "$file" =~ known_hosts ]] &&
+                [[ ! "$file" =~ authorized_keys ]] &&
+                [[ ! "$file" =~ \.lock$ ]] &&
+                echo "$file"
         done
     done | sort -u
 }
@@ -614,7 +615,10 @@ discover_home_files() {
 # Get key type from file
 detect_key_type() {
     local file="$1"
-    [[ ! -f "$file" ]] && { echo "unknown"; return; }
+    [[ ! -f "$file" ]] && {
+        echo "unknown"
+        return
+    }
 
     local first_line
     first_line=$(head -n1 "$file" 2>/dev/null)
@@ -626,20 +630,20 @@ detect_key_type() {
     local dsa_key="BEGIN DSA PRIVATE""KEY"
 
     case "$first_line" in
-        *"$openssh_key"*)
-            if grep -q "ssh-ed25519" "$file"; then
-                echo "Ed25519"
-            elif grep -q "ecdsa" "$file"; then
-                echo "ECDSA"
-            else
-                echo "OpenSSH"
-            fi
-            ;;
-        *"$rsa_key"*) echo "RSA" ;;
-        *"$ec_key"*) echo "ECDSA" ;;
-        *"$dsa_key"*) echo "DSA" ;;
-        "Host "*) echo "SSH Config" ;;
-        *) echo "unknown" ;;
+    *"$openssh_key"*)
+        if grep -q "ssh-ed25519" "$file"; then
+            echo "Ed25519"
+        elif grep -q "ecdsa" "$file"; then
+            echo "ECDSA"
+        else
+            echo "OpenSSH"
+        fi
+        ;;
+    *"$rsa_key"*) echo "RSA" ;;
+    *"$ec_key"*) echo "ECDSA" ;;
+    *"$dsa_key"*) echo "DSA" ;;
+    "Host "*) echo "SSH Config" ;;
+    *) echo "unknown" ;;
     esac
 }
 
@@ -649,7 +653,7 @@ detect_key_type() {
 detect_changes() {
     local file="$1"
     local password="${2:-}"
-    [[ ! -f "$file" ]] && return 0  # Missing file = changed
+    [[ ! -f "$file" ]] && return 0 # Missing file = changed
 
     # Must be in git repo to detect changes
     cd "$REPO_DIR" 2>/dev/null || return 0
@@ -660,7 +664,7 @@ detect_changes() {
 
     # Check if file exists in git HEAD
     if ! git cat-file -e "HEAD:$backup_file" 2>/dev/null; then
-        return 0  # File not in git = new file
+        return 0 # File not in git = new file
     fi
 
     # Fast path: Compare with metadata (avoids decryption)
@@ -697,7 +701,7 @@ detect_changes() {
     temp_encrypted=$(mktemp "${TMPDIR:-/tmp}/keys-detect.XXXXXX.enc")
     temp_decrypted=$(mktemp "${TMPDIR:-/tmp}/keys-detect.XXXXXX")
 
-    if git show "HEAD:$backup_file" > "$temp_encrypted" 2>/dev/null; then
+    if git show "HEAD:$backup_file" >"$temp_encrypted" 2>/dev/null; then
         if decrypt_file "$temp_encrypted" "$temp_decrypted" "$password" 2>/dev/null; then
             backup_hash=$(calc_checksum "$temp_decrypted")
         else
@@ -736,23 +740,23 @@ get_file_status() {
 
     if [[ "$backed_up" == true ]]; then
         if detect_changes "$file"; then
-            echo "${YELLOW}⚠${NC}"  # Modified
+            echo "${YELLOW}⚠${NC}" # Modified
         else
-            echo "${GREEN}✓${NC}"  # Up to date
+            echo "${GREEN}✓${NC}" # Up to date
         fi
     else
         if [[ -f "$METADATA_FILE" ]]; then
             local rel
             rel=$(to_home_rel_path "$file" 2>/dev/null || true)
             if [[ -n "$rel" ]] && jq -e --arg path "$rel" '.files[$path] // empty' "$METADATA_FILE" &>/dev/null; then
-                echo "${RED}⊗${NC}"  # Removed from list
+                echo "${RED}⊗${NC}" # Removed from list
             elif jq -e --arg path "$file" '.files[$path] // empty' "$METADATA_FILE" &>/dev/null; then
-                echo "${RED}⊗${NC}"  # Removed from list (legacy absolute key)
+                echo "${RED}⊗${NC}" # Removed from list (legacy absolute key)
             else
-                echo "${CYAN}⊕${NC}"  # New file
+                echo "${CYAN}⊕${NC}" # New file
             fi
         else
-            echo "${CYAN}⊕${NC}"  # New file
+            echo "${CYAN}⊕${NC}" # New file
         fi
     fi
 }
@@ -761,7 +765,7 @@ get_file_status() {
 
 # Initialize metadata file
 init_metadata() {
-    cat > "$METADATA_FILE" <<EOF
+    cat >"$METADATA_FILE" <<EOF
 {
   "version": $VERSION,
   "filters": {
@@ -818,7 +822,7 @@ update_file_metadata() {
             "last_backup": $now,
             "backup_count": $count
         }) | (if $abs != $key then del(.files[$abs]) else . end)' \
-        "$METADATA_FILE" > "$tmp"
+        "$METADATA_FILE" >"$tmp"
     mv "$tmp" "$METADATA_FILE"
 }
 
@@ -842,7 +846,7 @@ remove_file_metadata() {
 
     local tmp
     tmp=$(mktemp)
-    if jq --arg key "$key" --arg abs "$abs_key" 'del(.files[$key]) | del(.files[$abs])' "$METADATA_FILE" > "$tmp" 2>/dev/null; then
+    if jq --arg key "$key" --arg abs "$abs_key" 'del(.files[$key]) | del(.files[$abs])' "$METADATA_FILE" >"$tmp" 2>/dev/null; then
         mv "$tmp" "$METADATA_FILE"
         return 0
     else
@@ -900,6 +904,7 @@ fzf_multi_select() {
 }
 
 # FZF file preview script
+# shellcheck disable=SC2034 # Used by fzf preview in backup.sh
 FILE_PREVIEW='
     line=$(echo {} | sed "s/^[[:space:]]*//" | sed "s/^[✓⚠⊕⊗○] //")
     file="$line"
@@ -1005,7 +1010,7 @@ yazi_select_files() {
         elif [[ -d "$path" ]]; then
             invalid_items+=("$path")
         fi
-    done <<< "$selected_files"
+    done <<<"$selected_files"
 
     # Remove trailing newline
     valid_files="${valid_files%$'\n'}"
@@ -1115,68 +1120,68 @@ sync_with_remote() {
     status_info=$(check_git_sync_status) || status_code=$?
 
     case $status_code in
-        0)  # In sync
-            if [[ "$status_info" == "no-upstream" ]]; then
-                log_warn "No upstream tracking branch configured; pull check skipped"
-            fi
+    0) # In sync
+        if [[ "$status_info" == "no-upstream" ]]; then
+            log_warn "No upstream tracking branch configured; pull check skipped"
+        fi
+        return 0
+        ;;
+    1) # Ahead of remote
+        local ahead
+        ahead=$(echo "$status_info" | cut -d: -f2)
+        log_warn "Local repository is $ahead commit(s) ahead of remote"
+        echo "  You have unpushed changes. They will be pushed with the next backup."
+        return 0
+        ;;
+    2) # Behind remote
+        local behind
+        behind=$(echo "$status_info" | cut -d: -f2)
+        log_info "Pulling $behind new commit(s) from remote..."
+        if safe_git_pull; then
+            log_success "Updated from remote"
             return 0
-            ;;
-        1)  # Ahead of remote
-            local ahead
-            ahead=$(echo "$status_info" | cut -d: -f2)
-            log_warn "Local repository is $ahead commit(s) ahead of remote"
-            echo "  You have unpushed changes. They will be pushed with the next backup."
-            return 0
-            ;;
-        2)  # Behind remote
-            local behind
-            behind=$(echo "$status_info" | cut -d: -f2)
-            log_info "Pulling $behind new commit(s) from remote..."
-            if safe_git_pull; then
-                log_success "Updated from remote"
-                return 0
-            else
-                log_error "Failed to pull from remote"
-                echo "  Possible causes:"
-                echo "  - Merge conflicts"
-                echo "  - Non-fast-forward changes"
-                echo ""
-                echo "  To fix:"
-                echo "  - Run: cd $REPO_DIR && git pull"
-                echo "  - Resolve any conflicts manually"
-                return 1
-            fi
-            ;;
-        3)  # Diverged
-            local ahead behind
-            ahead=$(echo "$status_info" | cut -d: -f2)
-            behind=$(echo "$status_info" | cut -d: -f3)
-            log_error "Repository has diverged from remote"
-            echo "  Local: $ahead commit(s) ahead"
-            echo "  Remote: $behind commit(s) ahead"
+        else
+            log_error "Failed to pull from remote"
+            echo "  Possible causes:"
+            echo "  - Merge conflicts"
+            echo "  - Non-fast-forward changes"
             echo ""
-            echo "  To fix (choose one):"
-            echo "  1. Merge: cd $REPO_DIR && git pull"
-            echo "  2. Rebase: cd $REPO_DIR && git pull --rebase"
+            echo "  To fix:"
+            echo "  - Run: cd $REPO_DIR && git pull"
+            echo "  - Resolve any conflicts manually"
             return 1
-            ;;
-        4)  # Cannot reach remote
-            log_error "No remote 'origin' configured"
-            echo "  Configure remote first: cd $REPO_DIR && git remote add origin <repo-url>"
+        fi
+        ;;
+    3) # Diverged
+        local ahead behind
+        ahead=$(echo "$status_info" | cut -d: -f2)
+        behind=$(echo "$status_info" | cut -d: -f3)
+        log_error "Repository has diverged from remote"
+        echo "  Local: $ahead commit(s) ahead"
+        echo "  Remote: $behind commit(s) ahead"
+        echo ""
+        echo "  To fix (choose one):"
+        echo "  1. Merge: cd $REPO_DIR && git pull"
+        echo "  2. Rebase: cd $REPO_DIR && git pull --rebase"
+        return 1
+        ;;
+    4) # Cannot reach remote
+        log_error "No remote 'origin' configured"
+        echo "  Configure remote first: cd $REPO_DIR && git remote add origin <repo-url>"
+        return 1
+        ;;
+    5) # Offline / unreachable remote
+        if [[ "$require_online" == true ]]; then
+            log_error "Cannot reach remote (offline or no access)"
             return 1
-            ;;
-        5)  # Offline / unreachable remote
-            if [[ "$require_online" == true ]]; then
-                log_error "Cannot reach remote (offline or no access)"
-                return 1
-            fi
-            log_warn "Working offline (cannot reach remote)"
-            return 0
-            ;;
-        *)
-            log_error "Unknown git sync state: $status_code"
-            return 1
-            ;;
+        fi
+        log_warn "Working offline (cannot reach remote)"
+        return 0
+        ;;
+    *)
+        log_error "Unknown git sync state: $status_code"
+        return 1
+        ;;
     esac
 }
 
@@ -1565,7 +1570,7 @@ verify_file() {
     temp_decrypted=$(mktemp "${TMPDIR:-/tmp}/keys-verify.XXXXXX")
     if ! decrypt_file "$backup_file" "$temp_decrypted" "$password" 2>/dev/null; then
         rm -f "$temp_decrypted"
-        return 3  # Decryption failed
+        return 3 # Decryption failed
     fi
 
     local local_hash backup_hash
@@ -1606,9 +1611,7 @@ fzf_pick_commit() {
         --bind='enter:accept' | awk '{print $1}'
 }
 
-
 # ===== Commands =====
-
 
 # ===== Help =====
 
@@ -1681,4 +1684,3 @@ Status Indicators:
 
 EOF
 }
-
