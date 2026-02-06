@@ -41,7 +41,8 @@ def run_with_pty(cmd, env, input_bytes: bytes, timeout_sec: int = 60):
     while True:
         if time.time() > deadline:
             p.kill()
-            raise RuntimeError("timeout")
+            snippet = out.decode(errors="replace")[-2000:]
+            raise RuntimeError(f"timeout (last output):\n{snippet}")
 
         r, _, _ = select.select([master], [], [], 0.1)
         if r:
@@ -51,6 +52,65 @@ def run_with_pty(cmd, env, input_bytes: bytes, timeout_sec: int = 60):
                 chunk = b""
             if chunk:
                 out.extend(chunk)
+
+        if p.poll() is not None:
+            # Drain any remaining output.
+            while True:
+                try:
+                    chunk = os.read(master, 4096)
+                except OSError:
+                    chunk = b""
+                if not chunk:
+                    break
+                out.extend(chunk)
+            break
+
+    os.close(master)
+    rc = p.wait()
+    return rc, out.decode(errors="replace")
+
+
+def run_with_pty_steps(cmd, env, steps, timeout_sec: int = 60):
+    """Run a command with a PTY, sending inputs after matching output patterns.
+
+    steps: list[tuple[str, bytes]] of (pattern, bytes_to_send)
+    """
+    master, slave = pty.openpty()
+    try:
+        p = subprocess.Popen(cmd, stdin=slave, stdout=slave, stderr=slave, env=env)
+    finally:
+        os.close(slave)
+
+    out = bytearray()
+    text_buf = ""
+    search_from = 0
+    step_idx = 0
+
+    deadline = time.time() + timeout_sec
+    while True:
+        if time.time() > deadline:
+            p.kill()
+            snippet = out.decode(errors="replace")[-2000:]
+            raise RuntimeError(f"timeout (last output):\n{snippet}")
+
+        r, _, _ = select.select([master], [], [], 0.1)
+        if r:
+            try:
+                chunk = os.read(master, 4096)
+            except OSError:
+                chunk = b""
+            if chunk:
+                out.extend(chunk)
+                text_buf += chunk.decode(errors="replace")
+
+                while step_idx < len(steps):
+                    pattern, payload = steps[step_idx]
+                    pos = text_buf.find(pattern, search_from)
+                    if pos == -1:
+                        break
+                    search_from = pos + len(pattern)
+                    os.write(master, payload)
+                    step_idx += 1
 
         if p.poll() is not None:
             # Drain any remaining output.
@@ -277,6 +337,119 @@ def main():
         assert snap_pub.exists(), "snapshot public key missing"
         assert_eq(snap_priv.read_bytes(), local_before_priv, "snapshot private key content mismatch")
         assert_eq(snap_pub.read_bytes(), local_before_pub, "snapshot public key content mismatch")
+
+        # Scenario 4: interactive prompt retries on wrong password.
+        home4 = tmp_root / "home4"
+        repo4 = tmp_root / "repo4"
+        key4 = gen_ssh_keypair(tmp_root / "gen", "key4")
+        make_keys_repo(repo4, home4, key4)
+
+        env4 = os.environ.copy()
+        env4.update(
+            {
+                "HOME": str(home4),
+                "KEYS_REPO": str(repo4),
+            }
+        )
+
+        rc4, out4 = run_with_pty_steps(
+            ["bash", str(rendered)],
+            env=env4,
+            steps=[
+                ("Enter keys-backup encryption password:", b"wrong-pass\r"),
+                ("Enter keys-backup encryption password:", PASS.encode() + b"\r"),
+                ("Restore missing/changed files now?", b"y\r"),
+            ],
+        )
+        if rc4 != 0:
+            sys.stderr.write(out4)
+            raise SystemExit(f"scenario4 failed rc={rc4}")
+
+        assert (home4 / ".ssh" / "main").exists(), "scenario4: private key not restored"
+        assert (home4 / ".ssh" / "main.pub").exists(), "scenario4: pub key not restored"
+
+        # Scenario 5: wrong password does not leave corrupted plaintext control files behind.
+        home5 = tmp_root / "home5"
+        repo5 = tmp_root / "repo5"
+        key5 = gen_ssh_keypair(tmp_root / "gen", "key5")
+        make_keys_repo(repo5, home5, key5)
+
+        env5 = os.environ.copy()
+        env5.update(
+            {
+                "HOME": str(home5),
+                "KEYS_REPO": str(repo5),
+            }
+        )
+
+        rc5, _ = run_with_pty_steps(
+            ["bash", str(rendered)],
+            env=env5,
+            steps=[
+                ("Enter keys-backup encryption password:", b"wrong1\r"),
+                ("Enter keys-backup encryption password:", b"wrong2\r"),
+                ("Enter keys-backup encryption password:", b"wrong3\r"),
+            ],
+        )
+        if rc5 == 0:
+            raise SystemExit("scenario5 failed: expected non-zero rc for wrong password")
+
+        plain_list = home5 / ".local" / "share" / "keys-backup" / "backup-list.txt"
+        assert not plain_list.exists(), "scenario5: backup-list.txt should not exist after failed decrypt"
+
+        # Scenario 6: wrong env var password fails without leaving plaintext control files behind.
+        home6 = tmp_root / "home6"
+        repo6 = tmp_root / "repo6"
+        key6 = gen_ssh_keypair(tmp_root / "gen", "key6")
+        make_keys_repo(repo6, home6, key6)
+
+        env6 = os.environ.copy()
+        env6.update(
+            {
+                "HOME": str(home6),
+                "KEYS_REPO": str(repo6),
+                "KEYS_BACKUP_PASSWORD": "wrong-env-pass",
+            }
+        )
+
+        rc6, _ = run_with_pty(["bash", str(rendered)], env=env6, input_bytes=b"")
+        if rc6 == 0:
+            raise SystemExit("scenario6 failed: expected non-zero rc for wrong env var password")
+
+        plain_list6 = home6 / ".local" / "share" / "keys-backup" / "backup-list.txt"
+        assert not plain_list6.exists(), "scenario6: backup-list.txt should not exist after failed decrypt"
+
+        # Scenario 7: corrupted plaintext control file triggers re-decrypt (fast path must not hide it).
+        home7 = tmp_root / "home7"
+        repo7 = tmp_root / "repo7"
+        key7 = gen_ssh_keypair(tmp_root / "gen", "key7")
+        make_keys_repo(repo7, home7, key7)
+
+        env7 = os.environ.copy()
+        env7.update(
+            {
+                "HOME": str(home7),
+                "KEYS_REPO": str(repo7),
+                "KEYS_BACKUP_PASSWORD": PASS,
+            }
+        )
+
+        rc7a, out7a = run_with_pty(["bash", str(rendered)], env=env7, input_bytes=b"y\n")
+        if rc7a != 0:
+            sys.stderr.write(out7a)
+            raise SystemExit(f"scenario7a failed rc={rc7a}")
+
+        expected_list = ".ssh/main\n.ssh/main.pub\n"
+        plain_list7 = home7 / ".local" / "share" / "keys-backup" / "backup-list.txt"
+        assert plain_list7.exists(), "scenario7: expected backup-list.txt to exist after successful run"
+        plain_list7.write_bytes(b"\x00\xff\x00")
+
+        rc7b, out7b = run_with_pty(["bash", str(rendered)], env=env7, input_bytes=b"\n")
+        if rc7b != 0:
+            sys.stderr.write(out7b)
+            raise SystemExit(f"scenario7b failed rc={rc7b}")
+
+        assert plain_list7.read_text(encoding="utf-8") == expected_list, "scenario7: control file not re-decrypted"
 
         print("test_setup_encryption_key: OK")
     finally:

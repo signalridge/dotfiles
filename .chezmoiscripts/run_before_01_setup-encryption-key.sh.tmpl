@@ -18,6 +18,15 @@ if [[ -t 0 ]]; then
     # Use fd 9 so we don't conflict with OpenSSL's fd 3 password piping.
     exec 9<&0
     PROMPT_FD=9
+elif [[ -r /dev/tty ]]; then
+    # If stdin isn't a TTY (e.g. piped), still allow prompting when a controlling
+    # terminal exists.
+    exec 9</dev/tty 2>/dev/null || true
+    if [[ -t 9 ]]; then
+        PROMPT_FD=9
+    else
+        exec 9<&- 2>/dev/null || true
+    fi
 fi
 
 REPO_DIR="${HOME}/.local/share/keys-backup"
@@ -30,52 +39,67 @@ CONTROL_STATE_DIR="${REPO_DIR}/.keys-manage"
 CONTROL_BASELINE_LIST="${CONTROL_STATE_DIR}/backup-list.remote.sha256"
 CONTROL_BASELINE_META="${CONTROL_STATE_DIR}/backup-metadata.remote.sha256"
 
+control_file_is_probably_text() {
+    local file="$1"
+    [[ -f "$file" ]] || return 1
+    # Detect failed OpenSSL decrypt leaving garbage behind (common when password is wrong).
+    LC_ALL=C grep -q '[^[:print:][:space:]]' "$file" 2>/dev/null && return 1
+    return 0
+}
+
 # Fast path: avoid network and prompting on every apply if everything is already present.
 if [[ -d "$REPO_DIR/.git" && -d "$BACKUP_FILES_DIR" && -f "$HOME/.ssh/main" ]]; then
     missing=false
 
     if [[ -f "$BACKUP_LIST" ]]; then
-        while IFS= read -r line; do
-            line="${line%$'\r'}"
-            [[ -z "$line" ]] && continue
-            [[ "$line" == *"[0;"* || "$line" == *"Add Custom"* || "$line" == *"File path"* || "$line" == *"Tip:"* ]] && continue
+        if ! control_file_is_probably_text "$BACKUP_LIST"; then
+            missing=true
+        else
+            while IFS= read -r line; do
+                line="${line%$'\r'}"
+                [[ -z "$line" ]] && continue
+                [[ "$line" == *"[0;"* || "$line" == *"Add Custom"* || "$line" == *"File path"* || "$line" == *"Tip:"* ]] && continue
 
-            path="$line"
-            # shellcheck disable=SC2088 # Intentional: matching literal ~/
-            if [[ "$path" == "~/"* ]]; then
-                path="$HOME/${path#~/}"
-            fi
+                path="$line"
+                # shellcheck disable=SC2088 # Intentional: matching literal ~/
+                if [[ "$path" == "~/"* ]]; then
+                    path="$HOME/${path#~/}"
+                fi
 
-            rel=""
-            if [[ "$path" == "$HOME/"* ]]; then
-                rel="${path#"$HOME"/}"
-            elif [[ "$path" == /* ]]; then
-                continue
-            else
-                rel="$path"
-            fi
+                rel=""
+                if [[ "$path" == "$HOME/"* ]]; then
+                    rel="${path#"$HOME"/}"
+                elif [[ "$path" == /* ]]; then
+                    continue
+                else
+                    rel="$path"
+                fi
 
-            while [[ "$rel" == "./"* ]]; do
-                rel="${rel#./}"
-            done
-            [[ -z "$rel" || "$rel" == "." || "$rel" == ".." ]] && continue
-            [[ "$rel" == "../"* || "$rel" == *"/../"* || "$rel" == *"/.." ]] && continue
+                while [[ "$rel" == "./"* ]]; do
+                    rel="${rel#./}"
+                done
+                [[ -z "$rel" || "$rel" == "." || "$rel" == ".." ]] && continue
+                [[ "$rel" == "../"* || "$rel" == *"/../"* || "$rel" == *"/.." ]] && continue
 
-            if [[ ! -f "$HOME/$rel" ]]; then
-                missing=true
-                break
-            fi
-        done <"$BACKUP_LIST"
+                if [[ ! -f "$HOME/$rel" ]]; then
+                    missing=true
+                    break
+                fi
+            done <"$BACKUP_LIST"
+        fi
     elif command -v python3 >/dev/null 2>&1 && [[ -f "$METADATA_FILE" ]]; then
-        while IFS= read -r rel; do
-            [[ -z "$rel" ]] && continue
-            [[ "$rel" == /* ]] && continue
-            if [[ ! -f "$HOME/$rel" ]]; then
-                missing=true
-                break
-            fi
-        done < <(
-            python3 - "$METADATA_FILE" <<'PY' 2>/dev/null || true
+        if ! control_file_is_probably_text "$METADATA_FILE"; then
+            missing=true
+        else
+            while IFS= read -r rel; do
+                [[ -z "$rel" ]] && continue
+                [[ "$rel" == /* ]] && continue
+                if [[ ! -f "$HOME/$rel" ]]; then
+                    missing=true
+                    break
+                fi
+            done < <(
+                python3 - "$METADATA_FILE" <<'PY' 2>/dev/null || true
 import json
 import sys
 
@@ -91,7 +115,8 @@ try:
 except Exception:
     pass
 PY
-        )
+            )
+        fi
     fi
 
     if [[ "$missing" == false ]]; then
@@ -198,7 +223,26 @@ decrypt_openssl_pbkdf2() {
 
     # Keep params in sync with keys-manage (AES-256-CBC + PBKDF2 + 100k iters).
     openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 \
-        -pass fd:3 -in "$src" -out "$dest" 3<<<"$password" 2>/dev/null
+        -pass fd:3 -in "$src" -out "$dest" 3<<<"$password"
+}
+
+decrypt_openssl_pbkdf2_atomic() {
+    local src="$1"
+    local dest="$2"
+    local password="$3"
+
+    local dest_dir
+    dest_dir="$(dirname "$dest")"
+    mkdir -p "$dest_dir"
+
+    local tmp
+    tmp="$(mktemp "$dest_dir/.keys-control.XXXXXX")" || return 1
+    if decrypt_openssl_pbkdf2 "$src" "$tmp" "$password" && mv -f "$tmp" "$dest"; then
+        chmod 600 "$dest" 2>/dev/null || true
+        return 0
+    fi
+    rm -f "$tmp" 2>/dev/null || true
+    return 1
 }
 
 get_backup_password() {
@@ -215,11 +259,12 @@ get_backup_password() {
     fi
 
     if [[ "$PROMPT_FD" -ne 0 ]]; then
-        if ! read -r -s -u "$PROMPT_FD" -p "Enter keys-backup encryption password: " password; then
-            echo ""
+        if ! IFS= read -r -s -u "$PROMPT_FD" -p "Enter keys-backup encryption password: " password; then
+            echo "" >&2
             return 1
         fi
-        echo ""
+        echo "" >&2
+        password="${password%$'\r'}"
         [[ -n "$password" ]] || return 1
         printf '%s\n' "$password"
         return 0
@@ -236,6 +281,86 @@ confirm() {
     fi
     read -r -u "$PROMPT_FD" -p "$prompt" answer || return 1
     [[ "$answer" == "y" || "$answer" == "Y" ]]
+}
+
+decrypt_control_file() {
+    local enc="$1"
+    local plain="$2"
+    local required="$3" # true/false
+
+    if [[ -f "$plain" ]] && ! control_file_is_probably_text "$plain"; then
+        warn "Detected corrupted control file: $plain (will re-decrypt)"
+        rm -f "$plain" 2>/dev/null || true
+    fi
+    [[ -f "$plain" ]] && return 0
+
+    if [[ ! -f "$enc" ]]; then
+        if [[ "$required" == true ]]; then
+            err "Missing $plain (and no $enc found)"
+            return 1
+        fi
+        return 0
+    fi
+
+    # If the password is provided non-interactively, do not prompt/retry.
+    if [[ -n "${KEYS_BACKUP_PASSWORD:-}" ]]; then
+        password="$KEYS_BACKUP_PASSWORD"
+        decrypt_openssl_pbkdf2_atomic "$enc" "$plain" "$password" || return 1
+        return 0
+    fi
+
+    local attempts=0
+    local max_attempts=3
+    while ((attempts < max_attempts)); do
+        attempts=$((attempts + 1))
+
+        [[ -n "${password:-}" ]] || password="$(get_backup_password)" || return 1
+        if decrypt_openssl_pbkdf2_atomic "$enc" "$plain" "$password"; then
+            return 0
+        fi
+
+        rm -f "$plain" 2>/dev/null || true
+        password=""
+        if ((attempts < max_attempts)); then
+            warn "Failed to decrypt $enc (attempt $attempts/$max_attempts); please try again"
+        fi
+    done
+
+    return 1
+}
+
+ensure_backup_password() {
+    # Avoid prompting if we already have it.
+    if [[ -n "${KEYS_BACKUP_PASSWORD:-}" ]]; then
+        password="$KEYS_BACKUP_PASSWORD"
+        return 0
+    fi
+    [[ -n "${password:-}" ]] && return 0
+
+    local attempts=0
+    local max_attempts=3
+    while ((attempts < max_attempts)); do
+        attempts=$((attempts + 1))
+
+        password="$(get_backup_password)" || return 1
+        # If we have the encrypted control file, validate immediately so we can retry early.
+        if [[ -f "$BACKUP_LIST_ENC" ]]; then
+            local tmp
+            tmp="$(mktemp "${TMPDIR:-/tmp}/keys-passcheck.XXXXXX")"
+            if decrypt_openssl_pbkdf2 "$BACKUP_LIST_ENC" "$tmp" "$password" 2>/dev/null; then
+                rm -f "$tmp" 2>/dev/null || true
+                return 0
+            fi
+            rm -f "$tmp" 2>/dev/null || true
+            password=""
+            if ((attempts < max_attempts)); then
+                warn "Password incorrect; please try again"
+            fi
+            continue
+        fi
+        return 0
+    done
+    return 1
 }
 
 maybe_install_with_nix git || true
@@ -285,48 +410,36 @@ fi
 
 # Encrypted control files are tracked; plaintext working copies may not exist on a new machine.
 # Unlock them here so we can decide what to restore without decrypting every backup file.
+# The backup password is cached in this global variable once obtained so we don't
+# re-prompt for each control file / file restore operation.
 password="${KEYS_BACKUP_PASSWORD:-}"
-if [[ ! -f "$BACKUP_LIST" ]]; then
-    if [[ -f "$BACKUP_LIST_ENC" ]]; then
-        [[ -n "$password" ]] || password="$(get_backup_password)" || {
-            err "Cannot obtain backup encryption password"
-            exit 1
-        }
-        decrypt_openssl_pbkdf2 "$BACKUP_LIST_ENC" "$BACKUP_LIST" "$password" || {
-            err "Failed to decrypt $BACKUP_LIST_ENC"
-            exit 1
-        }
-        chmod 600 "$BACKUP_LIST" 2>/dev/null || true
-        # Record the decrypted remote hash as this machine's baseline. This avoids
-        # false "control file conflict" prompts on first sync.
-        mkdir -p "$CONTROL_STATE_DIR"
-        chmod 700 "$CONTROL_STATE_DIR" 2>/dev/null || true
-        list_hash="$(calc_checksum "$BACKUP_LIST" 2>/dev/null || true)"
-        if [[ -n "$list_hash" ]]; then
-            printf '%s\n' "$list_hash" >"$CONTROL_BASELINE_LIST"
-            chmod 600 "$CONTROL_BASELINE_LIST" 2>/dev/null || true
-        fi
-    else
-        err "Missing $BACKUP_LIST (and no $BACKUP_LIST_ENC found)"
-        exit 1
+if ! decrypt_control_file "$BACKUP_LIST_ENC" "$BACKUP_LIST" true; then
+    err "Failed to decrypt $BACKUP_LIST_ENC"
+    exit 1
+fi
+
+# Record the decrypted remote hash as this machine's baseline. This avoids
+# false "control file conflict" prompts on first sync.
+mkdir -p "$CONTROL_STATE_DIR"
+chmod 700 "$CONTROL_STATE_DIR" 2>/dev/null || true
+if [[ ! -f "$CONTROL_BASELINE_LIST" && -f "$BACKUP_LIST" ]]; then
+    list_hash="$(calc_checksum "$BACKUP_LIST" 2>/dev/null || true)"
+    if [[ -n "$list_hash" ]]; then
+        printf '%s\n' "$list_hash" >"$CONTROL_BASELINE_LIST"
+        chmod 600 "$CONTROL_BASELINE_LIST" 2>/dev/null || true
     fi
 fi
 
-if [[ ! -f "$METADATA_FILE" && -f "$METADATA_FILE_ENC" ]]; then
-    [[ -n "$password" ]] || password="$(get_backup_password)" || {
-        err "Cannot obtain backup encryption password"
-        exit 1
-    }
-    # Metadata is an optimization. If it can't be decrypted, the script will fall back to decrypting
-    # individual files when needed.
-    if decrypt_openssl_pbkdf2 "$METADATA_FILE_ENC" "$METADATA_FILE" "$password"; then
-        chmod 600 "$METADATA_FILE" 2>/dev/null || true
-        mkdir -p "$CONTROL_STATE_DIR"
-        chmod 700 "$CONTROL_STATE_DIR" 2>/dev/null || true
-        meta_hash="$(calc_checksum "$METADATA_FILE" 2>/dev/null || true)"
-        if [[ -n "$meta_hash" ]]; then
-            printf '%s\n' "$meta_hash" >"$CONTROL_BASELINE_META"
-            chmod 600 "$CONTROL_BASELINE_META" 2>/dev/null || true
+# Metadata is an optimization. If it can't be decrypted, the script will fall back to decrypting
+# individual files when needed.
+if [[ -f "$METADATA_FILE_ENC" ]]; then
+    if decrypt_control_file "$METADATA_FILE_ENC" "$METADATA_FILE" false; then
+        if [[ ! -f "$CONTROL_BASELINE_META" && -f "$METADATA_FILE" ]]; then
+            meta_hash="$(calc_checksum "$METADATA_FILE" 2>/dev/null || true)"
+            if [[ -n "$meta_hash" ]]; then
+                printf '%s\n' "$meta_hash" >"$CONTROL_BASELINE_META"
+                chmod 600 "$CONTROL_BASELINE_META" 2>/dev/null || true
+            fi
         fi
     else
         rm -f "$METADATA_FILE" 2>/dev/null || true
@@ -431,6 +544,11 @@ info "  - Need check/restore:    $needs_check"
 
 if [[ $missing -eq 0 && $needs_check -eq 0 ]]; then
     info "Nothing to restore"
+    if [[ ! -f "$HOME/.ssh/main" ]]; then
+        err "Missing required identity key: $HOME/.ssh/main"
+        err "Tip: ensure it is backed up in keys-manage and present in backup-list.txt"
+        exit 1
+    fi
     exit 0
 fi
 
@@ -439,7 +557,7 @@ if ! confirm "Restore missing/changed files now? [y/N]: "; then
     exit 0
 fi
 
-[[ -n "$password" ]] || password="$(get_backup_password)" || {
+ensure_backup_password || {
     err "Cannot obtain backup encryption password"
     err "Tip: export KEYS_BACKUP_PASSWORD=... to avoid prompting"
     exit 1
