@@ -2,6 +2,12 @@
 
 set -eu # -e: exit on error, -u: error on unset variables
 
+# Dependencies:
+#   - sh, mkdir, command, pwd
+# Optional:
+#   - chezmoi (installed automatically if missing)
+#   - curl or wget (to install chezmoi)
+
 usage() {
     cat >&2 <<'EOF'
 Usage: init.sh [options] [-- <chezmoi init flags>]
@@ -85,9 +91,9 @@ if ! command -v chezmoi >/dev/null 2>&1; then
     chezmoi="$bin_dir/chezmoi"
     mkdir -p "$bin_dir"
     if command -v curl >/dev/null 2>&1; then
-        sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$bin_dir"
+        sh -c "$(curl -fsLS --proto '=https' --tlsv1.2 https://get.chezmoi.io)" -- -b "$bin_dir"
     elif command -v wget >/dev/null 2>&1; then
-        sh -c "$(wget -qO- get.chezmoi.io)" -- -b "$bin_dir"
+        sh -c "$(wget -qO- https://get.chezmoi.io)" -- -b "$bin_dir"
     else
         echo "To install chezmoi, you must have curl or wget installed." >&2
         exit 1

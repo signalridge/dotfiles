@@ -20,11 +20,10 @@ jobs:
           use-gha-cache: true
       - name: Install tools
         run: |
-          nix profile install nixpkgs#treefmt nixpkgs#shfmt nixpkgs#shellcheck nixpkgs#statix nixpkgs#nixfmt nixpkgs#stylua nixpkgs#selene
+          nix profile install nixpkgs#treefmt nixpkgs#shfmt nixpkgs#shellcheck nixpkgs#statix nixpkgs#nixfmt nixpkgs#stylua nixpkgs#selene nixpkgs#chezmoi
           npm install -g prettier@3.6.2
       - name: Setup chezmoi
         run: |
-          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b /usr/local/bin
           mkdir -p ~/.config/chezmoi
           cat > ~/.config/chezmoi/chezmoi.toml << EOF
           [data]
@@ -56,9 +55,15 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
+          use-gha-cache: true
+      - name: Install chezmoi
+        run: nix profile install nixpkgs#chezmoi
       - name: Setup chezmoi
         run: |
-          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b /usr/local/bin
           mkdir -p ~/.config/chezmoi
           cat > ~/.config/chezmoi/chezmoi.toml << EOF
           [data]
@@ -83,11 +88,6 @@ jobs:
           for f in nix-config/modules/*.nix; do
             [ -f "$f" ] && cp "$f" "$workdir/modules/"
           done
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-        with:
-          use-flakehub: false
-          use-gha-cache: true
       - name: Check flake
         run: nix flake check --no-build "$WORKDIR"
       - uses: DeterminateSystems/flake-checker-action@v12

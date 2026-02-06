@@ -4,18 +4,20 @@
 
 eval_if_cmd_exists() {
     local cmd="$1"
-    local init_cmd="$2"
+    shift
     if command -v "$cmd" >/dev/null 2>&1; then
-        eval "$(eval "$init_cmd")"
+        local out=""
+        out="$("$@" 2>/dev/null || true)"
+        [[ -n "$out" ]] && eval "$out"
     fi
 }
 
 # Initialize shell tools
-eval_if_cmd_exists "starship" "starship init zsh"
-eval_if_cmd_exists "sheldon" "sheldon source"
-eval_if_cmd_exists "fzf" "fzf --zsh"
-eval_if_cmd_exists "navi" "navi widget zsh"
-eval_if_cmd_exists "zoxide" "zoxide init zsh"
-eval_if_cmd_exists "mise" "mise activate zsh"
-eval_if_cmd_exists "atuin" "atuin init zsh"
-eval_if_cmd_exists "direnv" "direnv hook zsh"
+eval_if_cmd_exists "starship" starship init zsh
+eval_if_cmd_exists "sheldon" sheldon source
+eval_if_cmd_exists "fzf" fzf --zsh
+eval_if_cmd_exists "navi" navi widget zsh
+eval_if_cmd_exists "zoxide" zoxide init zsh
+eval_if_cmd_exists "mise" mise activate zsh
+eval_if_cmd_exists "atuin" atuin init zsh
+eval_if_cmd_exists "direnv" direnv hook zsh

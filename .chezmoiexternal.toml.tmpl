@@ -29,10 +29,11 @@
 {{- range $type := $types }}
 [".claude/{{ $type }}/{{ $plugin }}"]
     type = "archive"
-    url = "https://github.com/wshobson/agents/archive/main.tar.gz"
+    url = "https://github.com/wshobson/agents/archive/{{ $.versions.claudeWshobsonAgentsRev }}.tar.gz"
+    checksum.sha256 = "{{ $.versions.claudeWshobsonAgentsSha256 }}"
     exact = true
     stripComponents = 4
-    include = ["agents-main/plugins/{{ $plugin }}/{{ $type }}/**"]
+    include = ["agents-*/plugins/{{ $plugin }}/{{ $type }}/**"]
     refreshPeriod = "168h"
 
 {{ end }}
@@ -45,26 +46,29 @@
 # ------------------------------------------------------------------------------
 [".claude/agents/superpowers"]
     type = "archive"
-    url = "https://github.com/obra/superpowers/archive/main.tar.gz"
+    url = "https://github.com/obra/superpowers/archive/{{ $.versions.claudeSuperpowersRev }}.tar.gz"
+    checksum.sha256 = "{{ $.versions.claudeSuperpowersSha256 }}"
     exact = true
     stripComponents = 2
-    include = ["superpowers-main/agents/**"]
+    include = ["superpowers-*/agents/**"]
     refreshPeriod = "168h"
 
 [".claude/commands/superpowers"]
     type = "archive"
-    url = "https://github.com/obra/superpowers/archive/main.tar.gz"
+    url = "https://github.com/obra/superpowers/archive/{{ $.versions.claudeSuperpowersRev }}.tar.gz"
+    checksum.sha256 = "{{ $.versions.claudeSuperpowersSha256 }}"
     exact = true
     stripComponents = 2
-    include = ["superpowers-main/commands/**"]
+    include = ["superpowers-*/commands/**"]
     refreshPeriod = "168h"
 
 [".claude/skills/superpowers"]
     type = "archive"
-    url = "https://github.com/obra/superpowers/archive/main.tar.gz"
+    url = "https://github.com/obra/superpowers/archive/{{ $.versions.claudeSuperpowersRev }}.tar.gz"
+    checksum.sha256 = "{{ $.versions.claudeSuperpowersSha256 }}"
     exact = true
     stripComponents = 2
-    include = ["superpowers-main/skills/**"]
+    include = ["superpowers-*/skills/**"]
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
@@ -78,10 +82,11 @@
 {{- range $skill := $anthropicsSkills }}
 [".claude/skills/anthropics/{{ $skill }}"]
     type = "archive"
-    url = "https://github.com/anthropics/skills/archive/main.tar.gz"
+    url = "https://github.com/anthropics/skills/archive/{{ $.versions.claudeAnthropicsSkillsRev }}.tar.gz"
+    checksum.sha256 = "{{ $.versions.claudeAnthropicsSkillsSha256 }}"
     exact = true
     stripComponents = 3
-    include = ["skills-main/skills/{{ $skill }}/**"]
+    include = ["skills-*/skills/{{ $skill }}/**"]
     refreshPeriod = "168h"
 
 {{ end }}

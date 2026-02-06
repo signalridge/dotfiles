@@ -9,6 +9,9 @@ on:
         description: "Force trigger all workflows regardless of schedule"
         type: boolean
         default: false
+permissions:
+  actions: write
+  contents: read
 jobs:
   trigger:
     runs-on: ubuntu-latest
@@ -41,21 +44,21 @@ jobs:
       - name: Trigger update-flake-lock
         if: steps.check.outputs.trigger_weekly == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           gh workflow run update-flake-lock.yml --repo ${{ github.repository }}
           echo "Triggered update-flake-lock.yml"
       - name: Trigger update-versions
         if: steps.check.outputs.trigger_weekly == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           gh workflow run update-versions.yml --repo ${{ github.repository }}
           echo "Triggered update-versions.yml"
       - name: Trigger update-claude-plugin-metadata
         if: steps.check.outputs.trigger_weekly == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           gh workflow run update-claude-plugin-metadata.yml --repo ${{ github.repository }}
           echo "Triggered update-claude-plugin-metadata.yml"
@@ -63,7 +66,7 @@ jobs:
       - name: Trigger update-claude-providers
         if: steps.check.outputs.trigger_monthly == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           gh workflow run update-claude-providers.yml --repo ${{ github.repository }}
           echo "Triggered update-claude-providers.yml"

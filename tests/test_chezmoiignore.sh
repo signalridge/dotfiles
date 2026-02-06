@@ -31,7 +31,7 @@ forbid_line() {
 }
 
 # Always ignored (repo-only content).
-require_line "doc"
+require_line "docs"
 require_line "tests"
 forbid_line ".claude"
 

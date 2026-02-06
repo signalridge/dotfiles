@@ -236,7 +236,7 @@ claude-provider                # FZF manager for default provider & API keys
 claude-provider add-key kimi   # Add API key to gopass
 ```
 
-See [doc/claude-provider.md](doc/claude-provider.md) for full documentation.
+See [docs/claude-provider.md](docs/claude-provider.md) for full documentation.
 
 ### Hooks
 

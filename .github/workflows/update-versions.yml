@@ -22,16 +22,36 @@ jobs:
           nix_index_db=$(gh release view --repo nix-community/nix-index-database --json tagName -q '.tagName')
           # paperlib tag format: release-electron-X.Y.Z -> extract X.Y.Z
           paperlib=$(gh release view --repo Future-Scholars/paperlib --json tagName -q '.tagName' | sed 's/release-electron-//')
+
+          claude_wshobson_agents_rev=$(gh api repos/wshobson/agents/commits/main -q '.sha')
+          claude_wshobson_agents_sha256=$(curl -fsSL -L "https://github.com/wshobson/agents/archive/${claude_wshobson_agents_rev}.tar.gz" | sha256sum | awk '{print $1}')
+          claude_superpowers_rev=$(gh api repos/obra/superpowers/commits/main -q '.sha')
+          claude_superpowers_sha256=$(curl -fsSL -L "https://github.com/obra/superpowers/archive/${claude_superpowers_rev}.tar.gz" | sha256sum | awk '{print $1}')
+          claude_anthropics_skills_rev=$(gh api repos/anthropics/skills/commits/main -q '.sha')
+          claude_anthropics_skills_sha256=$(curl -fsSL -L "https://github.com/anthropics/skills/archive/${claude_anthropics_skills_rev}.tar.gz" | sha256sum | awk '{print $1}')
+
           echo "nix_installer=$nix_installer" >> "$GITHUB_OUTPUT"
           echo "nix_version=$nix_version" >> "$GITHUB_OUTPUT"
           echo "nix_index_db=$nix_index_db" >> "$GITHUB_OUTPUT"
           echo "paperlib=$paperlib" >> "$GITHUB_OUTPUT"
+          echo "claude_wshobson_agents_rev=$claude_wshobson_agents_rev" >> "$GITHUB_OUTPUT"
+          echo "claude_wshobson_agents_sha256=$claude_wshobson_agents_sha256" >> "$GITHUB_OUTPUT"
+          echo "claude_superpowers_rev=$claude_superpowers_rev" >> "$GITHUB_OUTPUT"
+          echo "claude_superpowers_sha256=$claude_superpowers_sha256" >> "$GITHUB_OUTPUT"
+          echo "claude_anthropics_skills_rev=$claude_anthropics_skills_rev" >> "$GITHUB_OUTPUT"
+          echo "claude_anthropics_skills_sha256=$claude_anthropics_skills_sha256" >> "$GITHUB_OUTPUT"
       - name: Update .chezmoidata/versions.yaml
         run: |
           sed -i 's/nixInstaller: .*/nixInstaller: ${{ steps.versions.outputs.nix_installer }}/' .chezmoidata/versions.yaml
           sed -i 's/nixVersion: .*/nixVersion: ${{ steps.versions.outputs.nix_version }}/' .chezmoidata/versions.yaml
           sed -i 's/nixIndexDb: .*/nixIndexDb: ${{ steps.versions.outputs.nix_index_db }}/' .chezmoidata/versions.yaml
           sed -i 's/paperlib: .*/paperlib: ${{ steps.versions.outputs.paperlib }}/' .chezmoidata/versions.yaml
+          sed -i 's/claudeWshobsonAgentsRev: .*/claudeWshobsonAgentsRev: ${{ steps.versions.outputs.claude_wshobson_agents_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/claudeWshobsonAgentsSha256: .*/claudeWshobsonAgentsSha256: ${{ steps.versions.outputs.claude_wshobson_agents_sha256 }}/' .chezmoidata/versions.yaml
+          sed -i 's/claudeSuperpowersRev: .*/claudeSuperpowersRev: ${{ steps.versions.outputs.claude_superpowers_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/claudeSuperpowersSha256: .*/claudeSuperpowersSha256: ${{ steps.versions.outputs.claude_superpowers_sha256 }}/' .chezmoidata/versions.yaml
+          sed -i 's/claudeAnthropicsSkillsRev: .*/claudeAnthropicsSkillsRev: ${{ steps.versions.outputs.claude_anthropics_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/claudeAnthropicsSkillsSha256: .*/claudeAnthropicsSkillsSha256: ${{ steps.versions.outputs.claude_anthropics_skills_sha256 }}/' .chezmoidata/versions.yaml
       - name: Check for changes
         id: changes
         run: |
@@ -48,7 +68,7 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           commit-message: "chore(versions): update pinned versions"
           title: "chore(versions): update pinned versions (${{ steps.date.outputs.date }})"
           branch: update-pinned-versions

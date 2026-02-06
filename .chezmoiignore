@@ -15,7 +15,6 @@ README.zh-CN.md
 .github/
 .pre-commit-config.yaml
 init.sh
-doc/
 docs/
 node_modules/
 selene.toml
