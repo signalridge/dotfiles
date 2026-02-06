@@ -8,6 +8,13 @@
 #     - if different, ask for confirmation before overwriting
 #
 # This runs early in bootstrap so encrypted chezmoi secrets can be decrypted later.
+#
+# Dependencies:
+#   - git, openssl
+#   - jq or python3 (metadata parsing)
+#   - nix (optional, to install missing tools)
+# Optional env:
+#   - KEYS_BACKUP_PASSWORD (skip prompt)
 set -euo pipefail
 umask 077
 
@@ -126,12 +133,8 @@ fi
 
 echo ":: [01] Restoring keys-manage managed files"
 
-# Source nix environment (if present).
-if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
-    # shellcheck disable=SC1091
-    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-fi
-
+# Source nix environment if not already available.
+{{ include ".chezmoitemplates/shell/source_nix_env.sh" }}
 info() { echo ":: $*"; }
 warn() { echo "Warning: $*" >&2; }
 err() { echo "Error: $*" >&2; }

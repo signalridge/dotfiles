@@ -6,3 +6,9 @@ versions:
   nixVersion: v2.33.1
   nixIndexDb: 2025-12-09-080420
   paperlib: 3.1.12
+  claudeWshobsonAgentsRev: 4820385a315c9cad2cc4b794bdab49afcafd635e
+  claudeWshobsonAgentsSha256: 01cfdc403dd4b1407201c51556792064b2177f934071fa2839f9ff306cde17b6
+  claudeSuperpowersRev: a98c5dfc9de0df5318f4980d91d24780a566ee60
+  claudeSuperpowersSha256: 8d37bea80459528c5231ea14dbf5b1fad368fff58855e262ab0f26e6c0511687
+  claudeAnthropicsSkillsRev: a5bcdd7e58cdff48566bf876f0a72a2008dcefbc
+  claudeAnthropicsSkillsSha256: bf55ab90fba7b8b6e7da072994f54b16c13d2e83a6b4f9b23fa5777e6dcaf9db

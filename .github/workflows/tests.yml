@@ -1,0 +1,21 @@
+name: Tests
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bootstrap:
+    name: Bootstrap tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
+          use-gha-cache: true
+      - name: Install test dependencies
+        run: |
+          nix profile install nixpkgs#chezmoi nixpkgs#jq
+      - name: Run tests
+        run: bash tests/run.sh

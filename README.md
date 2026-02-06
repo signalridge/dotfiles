@@ -85,10 +85,26 @@ Setting up a new development machine is tedious: dozens of packages to install, 
 
 ## 🚀 Quick Start
 
-**Option 1: Run init script directly from GitHub (recommended)**
+**Option 1: Run init script directly from GitHub (fast, NOT pinned)**
+
+> [!WARNING]
+> Running `curl | sh` executes code directly from the internet.
+> Prefer the pinned/reviewed options below if you want auditability.
 
 ```bash
 curl -fsLS https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | sh
+```
+
+**Option 1b: Pinned ref + review (recommended for auditability)**
+
+> `--ref` maps to `chezmoi init --branch`, so prefer tags/branches here.
+> If you want to pin to an exact commit SHA, use Option 3.
+
+```bash
+REF="<tag-or-branch>"
+curl -fsSLo init.sh "https://raw.githubusercontent.com/signalridge/dotfiles/${REF}/init.sh"
+shasum -a 256 init.sh || sha256sum init.sh
+sh init.sh --ref "${REF}"
 ```
 
 **Option 2: Install chezmoi and init**
@@ -97,11 +113,13 @@ curl -fsLS https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh |
 sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply signalridge
 ```
 
-**Option 3: Clone and run locally**
+**Option 3: Clone and run locally (best for pinning to a commit SHA)**
 
 ```bash
 git clone https://github.com/signalridge/dotfiles.git
-cd dotfiles && ./init.sh
+cd dotfiles
+git checkout <commit-or-tag>
+./init.sh
 ```
 
 This will automatically:
@@ -218,7 +236,7 @@ claude-provider                # FZF manager for default provider & API keys
 claude-provider add-key kimi   # Add API key to gopass
 ```
 
-See [doc/claude-provider.md](doc/claude-provider.md) for full documentation.
+See [docs/claude-provider.md](docs/claude-provider.md) for full documentation.
 
 ### Hooks
 

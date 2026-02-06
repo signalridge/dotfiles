@@ -20,10 +20,20 @@ require_line() {
     fi
 }
 
+forbid_line() {
+    local unexpected="$1"
+    if printf '%s\n' "$out" | grep -qxF "$unexpected"; then
+        echo "unexpected ignored entry found: $unexpected" >&2
+        echo "--- ignored output ---" >&2
+        printf '%s\n' "$out" >&2
+        exit 1
+    fi
+}
+
 # Always ignored (repo-only content).
-require_line "doc"
+require_line "docs"
 require_line "tests"
-require_line ".claude"
+forbid_line ".claude"
 
 # When encryption is disabled, key-related scripts and targets must be ignored.
 require_line ".chezmoiscripts/01_setup-encryption-key.sh"

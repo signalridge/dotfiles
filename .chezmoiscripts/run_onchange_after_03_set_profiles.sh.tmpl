@@ -4,16 +4,9 @@ set -euo pipefail
 
 {{ $profile := joinPath .chezmoi.homeDir "nix-config/modules/profile.nix" -}}
 {{- $lock := joinPath .chezmoi.homeDir "nix-config/flake.lock" -}}
-# profile.nix: {{ if stat $profile }}{{ output "sha256sum" $profile | trim }}{{ else }}n/a{{ end }}
-# flake.lock: {{ if stat $lock }}{{ output "sha256sum" $lock | trim }}{{ else }}n/a{{ end }}
 
 echo ":: [03] Switching Nix profile"
 
 # Source nix environment if not already available
-if ! command -v nix &>/dev/null; then
-    if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
-        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    fi
-fi
-
+{{ include ".chezmoitemplates/shell/source_nix_env.sh" }}
 nix run ~/nix-config#{{ .hostname }}.switch

@@ -4,7 +4,9 @@
 
 set -eu
 
-echo ":: [00] Installing Nix"
+if [ "${NIX_INSTALLER_RUN_MAIN:-1}" = "1" ]; then
+    echo ":: [00] Installing Nix"
+fi
 
 # --- Version (pinned in .chezmoidata.yaml, auto-updated by GitHub Actions) ---
 
@@ -220,4 +222,6 @@ main() {
     fi
 }
 
-main
+if [ "${NIX_INSTALLER_RUN_MAIN:-1}" = "1" ]; then
+    main
+fi

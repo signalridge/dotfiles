@@ -7,6 +7,8 @@
 #   LLM_API_URL   - Optional: API endpoint (default: https://na.wanxiaot.com/v1/chat/completions)
 #   LLM_MODEL     - Optional: Model ID (default: gpt-5.2)
 #   MAX_RETRIES   - Optional: Max retry attempts (default: 3)
+#
+# Dependencies: curl, jq
 
 set -euo pipefail
 
@@ -14,10 +16,12 @@ set -euo pipefail
 : "${LLM_API_URL:=https://na.wanxiaot.com/v1/chat/completions}"
 : "${LLM_MODEL:=gpt-5.2}"
 : "${MAX_RETRIES:=3}"
+: "${LLM_DEBUG:=0}"
 
-# Debug: show model being used
-echo "Using model: $LLM_MODEL" >&2
-echo "API URL: $LLM_API_URL" >&2
+if [[ "$LLM_DEBUG" == "1" ]]; then
+    echo "Using model: $LLM_MODEL" >&2
+    echo "API URL: $LLM_API_URL" >&2
+fi
 
 # Read prompt from stdin
 prompt=$(cat)

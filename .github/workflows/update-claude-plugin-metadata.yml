@@ -55,7 +55,10 @@ jobs:
       - name: Generate keywords with LLM API
         if: steps.scan.outputs.needs_ai == 'true'
         env:
-          LLM_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          # Optional overrides (otherwise llm-query.sh defaults apply)
+          LLM_API_URL: ${{ vars.LLM_API_URL }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
           PROMPT: ${{ steps.scan.outputs.prompt }}
         run: |
           chmod +x .github/scripts/llm-query.sh
@@ -84,7 +87,7 @@ jobs:
         if: steps.changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           add-paths: .chezmoidata/claude.yaml
           commit-message: "chore(claude): update plugin metadata"
           title: "chore(claude): update plugin metadata"

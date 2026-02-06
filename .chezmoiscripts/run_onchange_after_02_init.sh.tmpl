@@ -8,21 +8,11 @@ set -euo pipefail
 {{- $apps := joinPath .chezmoi.homeDir "nix-config/modules/apps.nix" -}}
 {{- $system := joinPath .chezmoi.homeDir "nix-config/modules/system.nix" -}}
 {{- $hostUsers := joinPath .chezmoi.homeDir "nix-config/modules/host-users.nix" -}}
-# flake.nix: {{ if stat $flake }}{{ output "sha256sum" $flake | trim }}{{ else }}n/a{{ end }}
-# flake.lock: {{ if stat $lock }}{{ output "sha256sum" $lock | trim }}{{ else }}n/a{{ end }}
-# apps.nix: {{ if stat $apps }}{{ output "sha256sum" $apps | trim }}{{ else }}n/a{{ end }}
-# system.nix: {{ if stat $system }}{{ output "sha256sum" $system | trim }}{{ else }}n/a{{ end }}
-# host-users.nix: {{ if stat $hostUsers }}{{ output "sha256sum" $hostUsers | trim }}{{ else }}n/a{{ end }}
 
 echo ":: [02] Configuring nix-darwin"
 
 # Source nix environment if not already available
-if ! command -v nix &>/dev/null; then
-    if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
-        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    fi
-fi
-
+{{ include ".chezmoitemplates/shell/source_nix_env.sh" }}
 if ! command -v darwin-version >/dev/null 2>&1; then
     echo "    Installing nix-darwin..."
     sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake ~/nix-config#{{ .hostname }} --show-trace --verbose

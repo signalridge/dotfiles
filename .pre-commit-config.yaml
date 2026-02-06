@@ -115,16 +115,44 @@ repos:
           EOF
 
             # Render templates to tmpdir
+            render_error_log="$tmpdir/chezmoi-render.stderr"
+            : > "$render_error_log"
+            render_failed_files=()
+
+            render_template() {
+              local src="$1"
+              local dest="$2"
+
+              if ! chezmoi execute-template --config "$tmpdir/chezmoi.toml" --source . < "$src" > "$dest" 2>> "$render_error_log"; then
+                echo "❌ Template render failed: $src" >&2
+                render_failed_files+=("$src")
+                return 1
+              fi
+              return 0
+            }
+
             for f in $(find . \( -name "*.sh.tmpl" -o -name "*.lua.tmpl" -o -name "*.json.tmpl" -o -name "*.yaml.tmpl" -o -name "*.yml.tmpl" -o -name "*.md.tmpl" \) ! -path "*/node_modules/*" ! -path "*/Spoons/*"); do
-              chezmoi execute-template --config "$tmpdir/chezmoi.toml" --source . < "$f" > "$tmpdir/$(basename "${f%.tmpl}")" 2>/dev/null || true
+              render_template "$f" "$tmpdir/$(basename "${f%.tmpl}")" || true
             done
 
             # Render nix templates
             mkdir -p "$tmpdir/nix-modules"
-            [ -f nix-config/flake.nix.tmpl ] && chezmoi execute-template --config "$tmpdir/chezmoi.toml" --source . < nix-config/flake.nix.tmpl > "$tmpdir/flake.nix" 2>/dev/null || true
+            [[ -f nix-config/flake.nix.tmpl ]] && render_template nix-config/flake.nix.tmpl "$tmpdir/flake.nix" || true
             for f in nix-config/modules/*.tmpl; do
-              [ -f "$f" ] && chezmoi execute-template --config "$tmpdir/chezmoi.toml" --source . < "$f" > "$tmpdir/nix-modules/$(basename "${f%.tmpl}")" 2>/dev/null || true
+              [[ -f "$f" ]] && render_template "$f" "$tmpdir/nix-modules/$(basename "${f%.tmpl}")" || true
             done
+
+            if (( ${#render_failed_files[@]} > 0 )); then
+              echo "" >&2
+              echo "❌ Template rendering failed for ${#render_failed_files[@]} file(s):" >&2
+              for f in "${render_failed_files[@]}"; do
+                echo "  - $f" >&2
+              done
+              echo "" >&2
+              echo "---- chezmoi stderr (last 200 lines) ----" >&2
+              tail -200 "$render_error_log" >&2 || true
+              exit 1
+            fi
 
             cd "$tmpdir"
 
