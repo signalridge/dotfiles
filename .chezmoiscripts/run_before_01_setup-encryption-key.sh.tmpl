@@ -39,52 +39,67 @@ CONTROL_STATE_DIR="${REPO_DIR}/.keys-manage"
 CONTROL_BASELINE_LIST="${CONTROL_STATE_DIR}/backup-list.remote.sha256"
 CONTROL_BASELINE_META="${CONTROL_STATE_DIR}/backup-metadata.remote.sha256"
 
+control_file_is_probably_text() {
+    local file="$1"
+    [[ -f "$file" ]] || return 1
+    # Detect failed OpenSSL decrypt leaving garbage behind (common when password is wrong).
+    LC_ALL=C grep -q '[^[:print:][:space:]]' "$file" 2>/dev/null && return 1
+    return 0
+}
+
 # Fast path: avoid network and prompting on every apply if everything is already present.
 if [[ -d "$REPO_DIR/.git" && -d "$BACKUP_FILES_DIR" && -f "$HOME/.ssh/main" ]]; then
     missing=false
 
     if [[ -f "$BACKUP_LIST" ]]; then
-        while IFS= read -r line; do
-            line="${line%$'\r'}"
-            [[ -z "$line" ]] && continue
-            [[ "$line" == *"[0;"* || "$line" == *"Add Custom"* || "$line" == *"File path"* || "$line" == *"Tip:"* ]] && continue
+        if ! control_file_is_probably_text "$BACKUP_LIST"; then
+            missing=true
+        else
+            while IFS= read -r line; do
+                line="${line%$'\r'}"
+                [[ -z "$line" ]] && continue
+                [[ "$line" == *"[0;"* || "$line" == *"Add Custom"* || "$line" == *"File path"* || "$line" == *"Tip:"* ]] && continue
 
-            path="$line"
-            # shellcheck disable=SC2088 # Intentional: matching literal ~/
-            if [[ "$path" == "~/"* ]]; then
-                path="$HOME/${path#~/}"
-            fi
+                path="$line"
+                # shellcheck disable=SC2088 # Intentional: matching literal ~/
+                if [[ "$path" == "~/"* ]]; then
+                    path="$HOME/${path#~/}"
+                fi
 
-            rel=""
-            if [[ "$path" == "$HOME/"* ]]; then
-                rel="${path#"$HOME"/}"
-            elif [[ "$path" == /* ]]; then
-                continue
-            else
-                rel="$path"
-            fi
+                rel=""
+                if [[ "$path" == "$HOME/"* ]]; then
+                    rel="${path#"$HOME"/}"
+                elif [[ "$path" == /* ]]; then
+                    continue
+                else
+                    rel="$path"
+                fi
 
-            while [[ "$rel" == "./"* ]]; do
-                rel="${rel#./}"
-            done
-            [[ -z "$rel" || "$rel" == "." || "$rel" == ".." ]] && continue
-            [[ "$rel" == "../"* || "$rel" == *"/../"* || "$rel" == *"/.." ]] && continue
+                while [[ "$rel" == "./"* ]]; do
+                    rel="${rel#./}"
+                done
+                [[ -z "$rel" || "$rel" == "." || "$rel" == ".." ]] && continue
+                [[ "$rel" == "../"* || "$rel" == *"/../"* || "$rel" == *"/.." ]] && continue
 
-            if [[ ! -f "$HOME/$rel" ]]; then
-                missing=true
-                break
-            fi
-        done <"$BACKUP_LIST"
+                if [[ ! -f "$HOME/$rel" ]]; then
+                    missing=true
+                    break
+                fi
+            done <"$BACKUP_LIST"
+        fi
     elif command -v python3 >/dev/null 2>&1 && [[ -f "$METADATA_FILE" ]]; then
-        while IFS= read -r rel; do
-            [[ -z "$rel" ]] && continue
-            [[ "$rel" == /* ]] && continue
-            if [[ ! -f "$HOME/$rel" ]]; then
-                missing=true
-                break
-            fi
-        done < <(
-            python3 - "$METADATA_FILE" <<'PY' 2>/dev/null || true
+        if ! control_file_is_probably_text "$METADATA_FILE"; then
+            missing=true
+        else
+            while IFS= read -r rel; do
+                [[ -z "$rel" ]] && continue
+                [[ "$rel" == /* ]] && continue
+                if [[ ! -f "$HOME/$rel" ]]; then
+                    missing=true
+                    break
+                fi
+            done < <(
+                python3 - "$METADATA_FILE" <<'PY' 2>/dev/null || true
 import json
 import sys
 
@@ -100,7 +115,8 @@ try:
 except Exception:
     pass
 PY
-        )
+            )
+        fi
     fi
 
     if [[ "$missing" == false ]]; then
@@ -215,12 +231,13 @@ decrypt_openssl_pbkdf2_atomic() {
     local dest="$2"
     local password="$3"
 
-    mkdir -p "$(dirname "$dest")"
+    local dest_dir
+    dest_dir="$(dirname "$dest")"
+    mkdir -p "$dest_dir"
 
     local tmp
-    tmp="$(mktemp "${TMPDIR:-/tmp}/keys-control.XXXXXX")"
-    if decrypt_openssl_pbkdf2 "$src" "$tmp" "$password"; then
-        mv -f "$tmp" "$dest"
+    tmp="$(mktemp "$dest_dir/.keys-control.XXXXXX")" || return 1
+    if decrypt_openssl_pbkdf2 "$src" "$tmp" "$password" && mv -f "$tmp" "$dest"; then
         chmod 600 "$dest" 2>/dev/null || true
         return 0
     fi
@@ -264,14 +281,6 @@ confirm() {
     fi
     read -r -u "$PROMPT_FD" -p "$prompt" answer || return 1
     [[ "$answer" == "y" || "$answer" == "Y" ]]
-}
-
-control_file_is_probably_text() {
-    local file="$1"
-    [[ -f "$file" ]] || return 1
-    # Detect failed OpenSSL decrypt leaving garbage behind (common when password is wrong).
-    LC_ALL=C grep -q '[^[:print:][:space:]]' "$file" 2>/dev/null && return 1
-    return 0
 }
 
 decrypt_control_file() {
@@ -401,6 +410,8 @@ fi
 
 # Encrypted control files are tracked; plaintext working copies may not exist on a new machine.
 # Unlock them here so we can decide what to restore without decrypting every backup file.
+# The backup password is cached in this global variable once obtained so we don't
+# re-prompt for each control file / file restore operation.
 password="${KEYS_BACKUP_PASSWORD:-}"
 if ! decrypt_control_file "$BACKUP_LIST_ENC" "$BACKUP_LIST" true; then
     err "Failed to decrypt $BACKUP_LIST_ENC"

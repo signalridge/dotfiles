@@ -397,6 +397,60 @@ def main():
         plain_list = home5 / ".local" / "share" / "keys-backup" / "backup-list.txt"
         assert not plain_list.exists(), "scenario5: backup-list.txt should not exist after failed decrypt"
 
+        # Scenario 6: wrong env var password fails without leaving plaintext control files behind.
+        home6 = tmp_root / "home6"
+        repo6 = tmp_root / "repo6"
+        key6 = gen_ssh_keypair(tmp_root / "gen", "key6")
+        make_keys_repo(repo6, home6, key6)
+
+        env6 = os.environ.copy()
+        env6.update(
+            {
+                "HOME": str(home6),
+                "KEYS_REPO": str(repo6),
+                "KEYS_BACKUP_PASSWORD": "wrong-env-pass",
+            }
+        )
+
+        rc6, _ = run_with_pty(["bash", str(rendered)], env=env6, input_bytes=b"")
+        if rc6 == 0:
+            raise SystemExit("scenario6 failed: expected non-zero rc for wrong env var password")
+
+        plain_list6 = home6 / ".local" / "share" / "keys-backup" / "backup-list.txt"
+        assert not plain_list6.exists(), "scenario6: backup-list.txt should not exist after failed decrypt"
+
+        # Scenario 7: corrupted plaintext control file triggers re-decrypt (fast path must not hide it).
+        home7 = tmp_root / "home7"
+        repo7 = tmp_root / "repo7"
+        key7 = gen_ssh_keypair(tmp_root / "gen", "key7")
+        make_keys_repo(repo7, home7, key7)
+
+        env7 = os.environ.copy()
+        env7.update(
+            {
+                "HOME": str(home7),
+                "KEYS_REPO": str(repo7),
+                "KEYS_BACKUP_PASSWORD": PASS,
+            }
+        )
+
+        rc7a, out7a = run_with_pty(["bash", str(rendered)], env=env7, input_bytes=b"y\n")
+        if rc7a != 0:
+            sys.stderr.write(out7a)
+            raise SystemExit(f"scenario7a failed rc={rc7a}")
+
+        expected_list = ".ssh/main\n.ssh/main.pub\n"
+        plain_list7 = home7 / ".local" / "share" / "keys-backup" / "backup-list.txt"
+        assert plain_list7.exists(), "scenario7: expected backup-list.txt to exist after successful run"
+        plain_list7.write_bytes(b"\x00\xff\x00")
+
+        rc7b, out7b = run_with_pty(["bash", str(rendered)], env=env7, input_bytes=b"\n")
+        if rc7b != 0:
+            sys.stderr.write(out7b)
+            raise SystemExit(f"scenario7b failed rc={rc7b}")
+
+        assert plain_list7.read_text(encoding="utf-8") == expected_list, "scenario7: control file not re-decrypted"
+
         print("test_setup_encryption_key: OK")
     finally:
         shutil.rmtree(tmp_root)
