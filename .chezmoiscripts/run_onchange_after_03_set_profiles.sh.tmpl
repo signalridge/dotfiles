@@ -4,8 +4,9 @@ set -euo pipefail
 
 {{ $profile := joinPath .chezmoi.homeDir "nix-config/modules/profile.nix" -}}
 {{- $lock := joinPath .chezmoi.homeDir "nix-config/flake.lock" -}}
-# profile.nix: {{ if stat $profile }}{{ output "sha256sum" $profile | trim }}{{ else }}n/a{{ end }}
-# flake.lock: {{ if stat $lock }}{{ output "sha256sum" $lock | trim }}{{ else }}n/a{{ end }}
+{{- $sha256 := "if command -v sha256sum >/dev/null 2>&1; then sha256sum \"$1\" | awk '{print $1}'; elif command -v shasum >/dev/null 2>&1; then shasum -a 256 \"$1\" | awk '{print $1}'; elif command -v openssl >/dev/null 2>&1; then openssl dgst -sha256 \"$1\" | awk '{print $NF}'; else echo no-sha256; fi" -}}
+# profile.nix: {{ if stat $profile }}{{ output "sh" "-c" $sha256 "_" $profile | trim }}{{ else }}n/a{{ end }}
+# flake.lock: {{ if stat $lock }}{{ output "sh" "-c" $sha256 "_" $lock | trim }}{{ else }}n/a{{ end }}
 
 echo ":: [03] Switching Nix profile"
 

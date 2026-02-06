@@ -63,6 +63,9 @@ jobs:
       - name: Query provider configs with LLM
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          # Optional overrides (otherwise llm-query.sh defaults apply)
+          LLM_API_URL: ${{ vars.LLM_API_URL }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
           PROMPT: ${{ steps.prompt.outputs.prompt }}
         run: |
           chmod +x .github/scripts/llm-query.sh
