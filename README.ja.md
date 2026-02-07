@@ -169,34 +169,32 @@ cd dotfiles && ./init.sh
 
 プラグインは `.chezmoiexternal.toml.tmpl` を通じて複数のソースから自動ダウンロードされます：
 
-| ソース                                                    | 説明                                                   |
-| --------------------------------------------------------- | ------------------------------------------------------ |
-| [wshobson/agents](https://github.com/wshobson/agents)     | 50+ コミュニティプラグイン（agents、commands、skills） |
-| [anthropics/skills](https://github.com/anthropics/skills) | 公式ドキュメント処理（pdf、docx、pptx、xlsx）          |
-| [obra/superpowers](https://github.com/obra/superpowers)   | 高度なワークフローパターン                             |
+| ソース                                                    | 説明                                             |
+| --------------------------------------------------------- | ------------------------------------------------ |
+| [wshobson/agents](https://github.com/wshobson/agents)     | 厳選したコミュニティ skills（Claude/Codex 共有） |
+| [anthropics/skills](https://github.com/anthropics/skills) | 公式ドキュメント処理（pdf、docx、pptx、xlsx）    |
+| [obra/superpowers](https://github.com/obra/superpowers)   | 厳選した OpenSpec 補完ワークフロー skills        |
 
 ```yaml
-# .chezmoidata/claude.yaml
-claude:
-  wshobsonAgents:
-    include:
-      - python-development
-      - javascript-typescript
-      - backend-development
-      - tdd-workflows
-      - cloud-infrastructure
-      # ... 全19プラグイン
-  anthropicsSkills:
-    include:
-      - pdf
-      - docx
+# skills の単一ソース: .chezmoiexternal.toml.tmpl
+# - wshobson/agents: 選択したプラグイン（skills のみ）を ~/.agents/skills/<plugin>/ に同期
+# - anthropics/skills: 選択した skills を ~/.agents/skills/anthropics/<skill>/ に同期
+# - obra/superpowers: 選択した skills のみを ~/.agents/skills/superpowers/ に同期
+
+# superpowers の包含スキル（ホワイトリスト）:
+# - brainstorming
+# - test-driven-development
+# - systematic-debugging
+# - verification-before-completion
+# - requesting-code-review
+# - receiving-code-review
 ```
 
 chezmoi external が自動的に：
 
-- `chezmoi apply` 時に有効なプラグインをダウンロード
-- agents、commands、skills を `~/.claude/` に展開
-- 設定変更時に自動更新
+- `chezmoi apply` 時に有効な共有 skills をダウンロード
+- skills を `~/.agents/skills` に保持し、Claude/Codex で共有
+- プラグイン/skill 設定変更時に自動更新
 
 ### 品質プロトコル
 

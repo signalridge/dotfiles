@@ -1,21 +1,27 @@
 #!/usr/bin/env bash
-# Claude Code Shared Library
-# Common functions for claude-manage and claude-with
+# Codex CLI Shared Library
+# Common functions for codex-manage
 #
-# Usage: source lib/claude
+# Usage: source lib/codex
 
 # Source shared AI tools library
-CLAUDE_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-AI_TOOL_CONTEXT="claude"
-source "$CLAUDE_LIB_DIR/ai-tools"
+CODEX_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+AI_TOOL_CONTEXT="codex"
+source "$CODEX_LIB_DIR/ai-tools"
 
-# Claude-specific paths
-SETTINGS_FILE="${HOME}/.claude/settings.json"
-CLAUDE_YAML="${HOME}/.local/share/chezmoi/.chezmoidata/claude.yaml"
+# Codex-specific paths
+CODEX_CONFIG="${HOME}/.codex/config.toml"
 
-# Get current Claude account from chezmoi
+# Get current Codex account from chezmoi data
 get_current() {
-    chezmoi data --format json 2>/dev/null | jq -r '.claudeProviderAccount // .claudeProvider // "anthropic"'
+    chezmoi data --format json 2>/dev/null | jq -r '.codexProviderAccount // "openai"'
+}
+
+# Get current Codex provider from selected account
+get_current_provider() {
+    local current_account
+    current_account=$(get_current)
+    get_provider "$current_account"
 }
 
 # Build account list with status indicators
@@ -37,7 +43,10 @@ build_account_list_with_token() {
         local provider
         provider=$(get_provider "$account")
         if is_third_party "$provider"; then
-            if claude-token --check "$account" 2>/dev/null; then
+            local parsed acct_name
+            parsed=$(parse_provider_account "$account")
+            acct_name="${parsed#*|}"
+            if key_exists "$provider" "$acct_name"; then
                 echo -e "${GREEN}✓${NC} $account"
             else
                 echo -e "${RED}✗${NC} $account"
@@ -58,21 +67,11 @@ ACCOUNT_PREVIEW='
     account=$(echo "$line" | sed "s/ ✓$//" | sed "s/^[✓✗○] //")
     echo -e "\033[1;34m━━━ $account ━━━\033[0m"
     echo ""
-    claude-token --config "$account" 2>/dev/null | jq -r "
+    chezmoi data --format json 2>/dev/null | jq -r --arg acct "$account" "
+        .codex.accounts[\$acct] // {} |
         \"Model:     \(.model // \"default\")\",
-        \"Small:     \(.small_model // \"default\")\",
-        \"Base URL:  \(.base_url // \"Anthropic (native)\")\"
+        \"Provider:  \(.provider // \"auto\")\"
     " 2>/dev/null || echo "Config not available"
-    echo ""
-    if claude-token --check "$account" 2>/dev/null; then
-        echo -e "\033[0;32m✓ Token ready\033[0m"
-    else
-        if claude-token --config "$account" 2>/dev/null | jq -e ".base_url // empty" >/dev/null 2>&1; then
-            echo -e "\033[0;31m✗ No token (run: claude-manage add-key)\033[0m"
-        else
-            echo -e "\033[0;36m○ Native OAuth\033[0m"
-        fi
-    fi
 '
 
 # Generic account picker with Back option
@@ -106,4 +105,27 @@ fzf_pick_account() {
     result=$(echo "$result" | sed 's/ ✓$//' | sed 's/^[[:space:]]*//')
     result=$(echo "$result" | sed 's/^[✓✗○] //')
     echo "$result"
+}
+
+# Update Codex config.toml
+update_codex_config() {
+    local key="$1"
+    local value="$2"
+
+    if [[ ! -f "$CODEX_CONFIG" ]]; then
+        log_error "Codex config not found: $CODEX_CONFIG"
+        return 1
+    fi
+
+    local tmp_file
+    tmp_file=$(mktemp) || { log_error "Failed to create temp file"; return 1; }
+
+    if grep -q "^${key}\s*=" "$CODEX_CONFIG"; then
+        sed "s/^${key}\s*=.*/${key} = \"${value}\"/" "$CODEX_CONFIG" > "$tmp_file"
+    else
+        cp "$CODEX_CONFIG" "$tmp_file"
+        echo "${key} = \"${value}\"" >> "$tmp_file"
+    fi
+
+    mv "$tmp_file" "$CODEX_CONFIG"
 }

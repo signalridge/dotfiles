@@ -1,6 +1,10 @@
 # Claude Code local settings
 .claude
 
+# OpenSpec working directory (generated state)
+openspec/
+
+
 # macOS
 .DS_Store
 .AppleDouble

@@ -57,6 +57,12 @@ encryption = "age"
 {{-   $claudeProviderAccount = .claudeProvider -}}{{/* backward compatibility */}}
 {{- end -}}
 
+{{/* Codex provider@account selection (e.g. "openai" or "deepseek@work") */}}
+{{- $codexProviderAccount := "openai" -}}
+{{- if hasKey . "codexProviderAccount" -}}
+{{-   $codexProviderAccount = .codexProviderAccount -}}
+{{- end -}}
+
 {{/* gopass password store repository */}}
 {{- $gopassRepository := printf "git@github.com:%s/passwords.git" $gitUsername -}}
 {{- if hasKey . "gopassRepository" -}}
@@ -114,6 +120,7 @@ homeWifiSSIDs = {{ $homeWifiSSIDs | quote }}
 osid = {{ $osID | quote }}
 timezone = {{ $timezone | quote }}
 claudeProviderAccount = {{ $claudeProviderAccount | quote }}
+codexProviderAccount = {{ $codexProviderAccount | quote }}
 gopassRepository = {{ $gopassRepository | quote }}
 keysRepository = {{ $keysRepository | quote }}
 

@@ -99,19 +99,7 @@ repos:
           headless = false
           gopassRepository = "git@github.com:test/pass.git"
           keysRepository = "git@github.com:test/keys.git"
-
-          [data.claude.wshobsonAgents]
-          include = ["python-development", "javascript-typescript"]
-
-          [[data.claude.wshobsonAgents.registry]]
-          name = "python-development"
-          description = "Python development"
-          keywords = ["python"]
-
-          [[data.claude.wshobsonAgents.registry]]
-          name = "javascript-typescript"
-          description = "JS/TS development"
-          keywords = ["javascript", "typescript"]
+          codexProviderAccount = "openai"
           EOF
 
             # Render templates to tmpdir

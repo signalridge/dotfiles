@@ -285,3 +285,212 @@ full-upgrade:
 [group('utils')]
 clean-all: gc
 {{ end }}
+
+############################################################################
+#
+#  AI Tools (Claude Code + Codex CLI)
+#
+############################################################################
+
+# Validate skills for duplicate names and required metadata
+[group('ai')]
+validate-skills:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Scanning skills metadata..."
+    skills_dir="$HOME/.agents/skills"
+    if [[ ! -d "$skills_dir" ]]; then
+        echo "Skills directory not found: $skills_dir"
+        exit 1
+    fi
+
+    # Ensure every SKILL.md has required frontmatter fields
+    missing=0
+    while IFS= read -r file; do
+        if ! grep -q '^name:' "$file"; then
+            echo "❌ Missing name: $file"
+            missing=1
+        fi
+        if ! grep -q '^description:' "$file"; then
+            echo "❌ Missing description: $file"
+            missing=1
+        fi
+    done < <(find "$skills_dir" -name "SKILL.md" -type f)
+
+    [[ $missing -eq 0 ]] || exit 1
+
+    names=$(find "$skills_dir" -name "SKILL.md" -exec grep -h '^name:' {} \; | sed 's/^name:[[:space:]]*//' | sed '/^$/d' | sort)
+    duplicates=$(echo "$names" | uniq -d)
+    if [[ -n "$duplicates" ]]; then
+        echo "❌ Duplicate skill names found:"
+        echo "$duplicates"
+        exit 1
+    fi
+
+    count=$(echo "$names" | sed '/^$/d' | wc -l | tr -d ' ')
+    echo "✓ $count skills validated, no duplicate names"
+
+# Show AI tools status
+[group('ai')]
+ai-status:
+    @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    @echo "Claude Code"
+    @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    @claude-manage current 2>/dev/null || echo "Not configured"
+    @echo ""
+    @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    @echo "Codex CLI"
+    @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    @codex-manage current 2>/dev/null || echo "Not configured"
+    @echo ""
+    @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    @echo "OpenSpec"
+    @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    @if command -v openspec >/dev/null 2>&1; then \
+        echo "Source: local PATH"; \
+        openspec --version; \
+      elif command -v bun >/dev/null 2>&1; then \
+        echo "Source: bunx (@fission-ai/openspec@latest)"; \
+        bunx --yes @fission-ai/openspec@latest --version; \
+      else \
+        echo "❌ OpenSpec not found (install via mise: npm:@fission-ai/openspec)"; \
+        exit 1; \
+      fi
+    @echo ""
+    @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    @echo "Shared Skills (~/.agents/skills)"
+    @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    @find "$HOME/.agents/skills" -name "SKILL.md" 2>/dev/null | wc -l | xargs echo "Total skills:"
+    @ls -1 "$HOME/.agents/skills" 2>/dev/null | head -10 || echo "No skills found"
+
+# Check OpenSpec availability with local-first fallback
+[group('ai')]
+openspec-check:
+    @if command -v openspec >/dev/null 2>&1; then \
+        openspec --version; \
+    elif command -v bun >/dev/null 2>&1; then \
+        bunx --yes @fission-ai/openspec@latest --version; \
+    else \
+        echo "❌ OpenSpec not found (install via mise: npm:@fission-ai/openspec)"; \
+        exit 1; \
+    fi
+
+# Initialize OpenSpec in current repository
+[group('ai')]
+openspec-init tools='all':
+    @if command -v openspec >/dev/null 2>&1; then \
+        openspec init --tools {{ "{{tools}}" }}; \
+    elif command -v bun >/dev/null 2>&1; then \
+        bunx --yes @fission-ai/openspec@latest init --tools {{ "{{tools}}" }}; \
+    else \
+        echo "❌ OpenSpec not found (install via mise: npm:@fission-ai/openspec)"; \
+        exit 1; \
+    fi
+
+# Show OpenSpec status in JSON
+[group('ai')]
+openspec-status change='':
+    @if command -v openspec >/dev/null 2>&1; then \
+        if [[ -n "{{ "{{change}}" }}" ]]; then \
+            openspec status --change {{ "{{change}}" }} --json; \
+        else \
+            openspec status --json; \
+        fi; \
+    elif command -v bun >/dev/null 2>&1; then \
+        if [[ -n "{{ "{{change}}" }}" ]]; then \
+            bunx --yes @fission-ai/openspec@latest status --change {{ "{{change}}" }} --json; \
+        else \
+            bunx --yes @fission-ai/openspec@latest status --json; \
+        fi; \
+    else \
+        echo "❌ OpenSpec not found (install via mise: npm:@fission-ai/openspec)"; \
+        exit 1; \
+    fi
+
+# Validate OpenSpec artifacts and changes in JSON
+[group('ai')]
+openspec-validate:
+    @if command -v openspec >/dev/null 2>&1; then \
+        openspec validate --changes --specs --json; \
+    elif command -v bun >/dev/null 2>&1; then \
+        bunx --yes @fission-ai/openspec@latest validate --changes --specs --json; \
+    else \
+        echo "❌ OpenSpec not found (install via mise: npm:@fission-ai/openspec)"; \
+        exit 1; \
+    fi
+
+# Verify Codex configuration
+[group('ai')]
+codex-verify:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Verifying Codex configuration..."
+
+    config="$HOME/.codex/config.toml"
+    agents="$HOME/.codex/AGENTS.md"
+    skills_link="$HOME/.codex/skills"
+    shared_skills_dir="$HOME/.agents/skills"
+
+    [[ -f "$config" ]] && echo "✓ config.toml exists" || { echo "❌ config.toml not found"; exit 1; }
+    [[ -f "$agents" ]] && echo "✓ AGENTS.md exists" || { echo "❌ AGENTS.md not found"; exit 1; }
+
+    if [[ -L "$skills_link" ]]; then
+        target=$(readlink "$skills_link")
+        echo "✓ ~/.codex/skills is symlink → $target"
+    else
+        echo "⚠ ~/.codex/skills is not a symlink"
+    fi
+
+    [[ -d "$shared_skills_dir" ]] && echo "✓ ~/.agents/skills exists" || { echo "❌ ~/.agents/skills not found"; exit 1; }
+
+    if command -v python3 >/dev/null 2>&1; then
+        python3 -c "import sys,tomllib; from pathlib import Path; data=tomllib.loads(Path(sys.argv[1]).read_text(encoding='utf-8')); print('✓ TOML parses successfully'); provider=data.get('model_provider'); model=data.get('model'); print(f'✓ model/provider set: {model} @ {provider}' if provider and model else (f'✓ model set: {model}' if model else '⚠ model is not explicitly set')); profile=data.get('profile'); profiles=data.get('profiles', {}); assert (not profile) or (profile in profiles), f'❌ active profile missing in [profiles.*]: {profile}'; assert ('web_search' not in data) or isinstance(data['web_search'], bool), '❌ web_search must be boolean'; [(_ for _ in ()).throw(AssertionError(f'❌ profiles.{name}.web_search must be boolean')) for name,p in profiles.items() if ('web_search' in p and not isinstance(p['web_search'], bool))]; print('✓ semantic checks passed')" "$config"
+    else
+        echo "⚠ python3 not found; skipped TOML semantic checks"
+    fi
+
+# Validate Claude/Codex registry contracts
+[group('ai')]
+ai-contracts:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="$HOME/.local/share/chezmoi"
+
+    claude_yaml="$root/.chezmoidata/claude.yaml"
+    codex_tmpl="$root/dot_codex/config.toml.tmpl"
+    codex_templates_dir="$root/dot_codex"
+
+    [[ -f "$claude_yaml" ]] || { echo "❌ Missing $claude_yaml"; exit 1; }
+    [[ -f "$codex_tmpl" ]] || { echo "❌ Missing $codex_tmpl"; exit 1; }
+
+    # Contract 1: third-party Claude accounts must include 5 model fields
+    yq -e '
+      . as $root |
+      [
+        $root.claude.accounts
+        | to_entries[]
+        | select((.value.provider // (.key | split("@")[0])) as $p | ($root.claude.providers[$p].base_url // "") != "")
+        | select((.value.model // "") == "" or (.value.small_model // "") == "" or (.value.sonnet_model // "") == "" or (.value.opus_model // "") == "" or (.value.haiku_model // "") == "")
+        | .key
+      ] | length == 0
+    ' "$claude_yaml" >/dev/null || {
+      echo "❌ Third-party Claude accounts must include: model, small_model, sonnet_model, opus_model, haiku_model"
+      yq -r '
+        . as $root |
+        .claude.accounts
+        | to_entries[]
+        | select((.value.provider // (.key | split("@")[0])) as $p | ($root.claude.providers[$p].base_url // "") != "")
+        | select((.value.model // "") == "" or (.value.small_model // "") == "" or (.value.sonnet_model // "") == "" or (.value.opus_model // "") == "" or (.value.haiku_model // "") == "")
+        | .key
+      ' "$claude_yaml"
+      exit 1
+    }
+
+    # Contract 2: Codex templates must not reference .claude.*
+    if rg -n '\.claude\.' "$codex_templates_dir" >/dev/null; then
+      echo "❌ dot_codex templates must not reference .claude.*"
+      rg -n '\.claude\.' "$codex_templates_dir"
+      exit 1
+    fi
+
+    echo "✓ AI contracts validated"

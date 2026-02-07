@@ -212,6 +212,69 @@ cmd_switch() {
     log_warn "Restart Claude Code to apply changes"
 }
 
+# Resolve provider default model from claude.yaml
+get_provider_default_model() {
+    local provider="$1"
+    PROVIDER_NAME="$provider" yq -r '.claude.providers[strenv(PROVIDER_NAME)].models[0] // ""' "$CLAUDE_YAML"
+}
+
+is_third_party_account() {
+    local account="$1"
+    local provider
+    provider=$(get_provider "$account")
+    is_third_party "$provider"
+}
+
+# Ensure third-party account model fields exist (fill missing only; never overwrite)
+ensure_third_party_account_models() {
+    local account="$1"
+    local provider
+    provider=$(get_provider "$account")
+
+    if ! is_third_party "$provider"; then
+        return 0
+    fi
+
+    local default_model
+    default_model=$(get_provider_default_model "$provider")
+
+    ACCOUNT_NAME="$account" DEFAULT_MODEL="$default_model" yq -i '
+      .claude.accounts[strenv(ACCOUNT_NAME)] as $acct |
+      .claude.accounts[strenv(ACCOUNT_NAME)].model = (
+        ($acct.model // "") as $m |
+        if $m == "" then (($acct.small_model // strenv(DEFAULT_MODEL) // "") as $s | if $s == "" then null else $s end) else $m end
+      ) |
+      .claude.accounts[strenv(ACCOUNT_NAME)].small_model = (
+        ($acct.small_model // "") as $s |
+        if $s == "" then (($acct.model // strenv(DEFAULT_MODEL) // "") as $m | if $m == "" then null else $m end) else $s end
+      ) |
+      .claude.accounts[strenv(ACCOUNT_NAME)].sonnet_model = (
+        ($acct.sonnet_model // "") as $v |
+        if $v == "" then (($acct.small_model // $acct.model // strenv(DEFAULT_MODEL) // "") as $d | if $d == "" then null else $d end) else $v end
+      ) |
+      .claude.accounts[strenv(ACCOUNT_NAME)].opus_model = (
+        ($acct.opus_model // "") as $v |
+        if $v == "" then (($acct.model // $acct.small_model // strenv(DEFAULT_MODEL) // "") as $d | if $d == "" then null else $d end) else $v end
+      ) |
+      .claude.accounts[strenv(ACCOUNT_NAME)].haiku_model = (
+        ($acct.haiku_model // "") as $v |
+        if $v == "" then (($acct.small_model // $acct.model // strenv(DEFAULT_MODEL) // "") as $d | if $d == "" then null else $d end) else $v end
+      )
+    ' "$CLAUDE_YAML"
+
+    if ! ACCOUNT_NAME="$account" yq -e '
+      .claude.accounts[strenv(ACCOUNT_NAME)] as $acct |
+      ($acct.model // "") != "" and
+      ($acct.small_model // "") != "" and
+      ($acct.sonnet_model // "") != "" and
+      ($acct.opus_model // "") != "" and
+      ($acct.haiku_model // "") != ""
+    ' "$CLAUDE_YAML" >/dev/null; then
+        log_error "Failed to ensure required third-party model fields for '$account'"
+        return 1
+    fi
+}
+
 # Add account
 cmd_add_account() {
     require_cmd fzf yq || return 1
@@ -257,13 +320,21 @@ cmd_add_account() {
 
     # Get model
     echo ""
-    printf "Model name: "
-    read -r model
-    [[ -z "$model" ]] && { log_error "Model is required"; return 1; }
+    local model small_model
+    if is_third_party "$provider"; then
+        model=$(get_provider_default_model "$provider")
+        [[ -z "$model" ]] && model="$provider"
+        small_model="$model"
+        log_info "Using provider default model: $model"
+    else
+        printf "Model name: "
+        read -r model
+        [[ -z "$model" ]] && { log_error "Model is required"; return 1; }
 
-    printf "Small model (Enter to use same): "
-    read -r small_model
-    [[ -z "$small_model" ]] && small_model="$model"
+        printf "Small model (Enter to use same): "
+        read -r small_model
+        [[ -z "$small_model" ]] && small_model="$model"
+    fi
 
     # Add to YAML
     echo ""
@@ -279,6 +350,10 @@ cmd_add_account() {
             "small_model": strenv(SMALL_MODEL_NAME)
         }
     ' "$CLAUDE_YAML"
+
+    if is_third_party "$provider"; then
+        ensure_third_party_account_models "$full_name"
+    fi
     log_success "Account '$full_name' added"
 
     # Add API key for third-party
@@ -345,6 +420,11 @@ cmd_edit_account() {
         .claude.accounts[strenv(ACCOUNT_NAME)].model = strenv(NEW_MODEL) |
         .claude.accounts[strenv(ACCOUNT_NAME)].small_model = strenv(NEW_SMALL)
     ' "$CLAUDE_YAML"
+
+    if is_third_party_account "$input"; then
+        ensure_third_party_account_models "$input"
+        log_info "Ensured third-party model fields (fill missing only)"
+    fi
 
     echo ""
     log_success "Account '$input' updated"

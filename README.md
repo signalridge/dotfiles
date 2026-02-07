@@ -189,32 +189,30 @@ Plugins are automatically downloaded via `.chezmoiexternal.toml.tmpl` from multi
 
 | Source                                                    | Description                                          |
 | --------------------------------------------------------- | ---------------------------------------------------- |
-| [wshobson/agents](https://github.com/wshobson/agents)     | 50+ community plugins (agents, commands, skills)     |
+| [wshobson/agents](https://github.com/wshobson/agents)     | Selected community skills (shared to Claude/Codex)   |
 | [anthropics/skills](https://github.com/anthropics/skills) | Official document processing (pdf, docx, pptx, xlsx) |
-| [obra/superpowers](https://github.com/obra/superpowers)   | Advanced workflow patterns                           |
+| [obra/superpowers](https://github.com/obra/superpowers)   | Selected OpenSpec-complementary workflow skills      |
 
 ```yaml
-# .chezmoidata/claude.yaml
-claude:
-  wshobsonAgents:
-    include:
-      - python-development
-      - javascript-typescript
-      - backend-development
-      - tdd-workflows
-      - cloud-infrastructure
-      # ... 19 plugins enabled
-  anthropicsSkills:
-    include:
-      - pdf
-      - docx
+# Skills source of truth: .chezmoiexternal.toml.tmpl
+# - wshobson/agents: selected plugins, skills-only, synced to ~/.agents/skills/<plugin>/
+# - anthropics/skills: selected skills, synced to ~/.agents/skills/anthropics/<skill>/
+# - obra/superpowers: selected skills-only, synced to ~/.agents/skills/superpowers/
+
+# superpowers included skills:
+# - brainstorming
+# - test-driven-development
+# - systematic-debugging
+# - verification-before-completion
+# - requesting-code-review
+# - receiving-code-review
 ```
 
 chezmoi external automatically:
 
-- Downloads enabled plugins on `chezmoi apply`
-- Extracts agents, commands, and skills into `~/.claude/`
-- Updates when plugin configuration changes
+- Downloads enabled shared skills on `chezmoi apply`
+- Keeps skills in shared path `~/.agents/skills` for both Claude and Codex
+- Updates when plugin/skill configuration changes
 
 ### Quality Protocols
 
@@ -230,10 +228,8 @@ Built-in quality assurance inspired by SuperClaude:
 Switch between Claude providers (Anthropic, DeepSeek, Kimi, etc.) with FZF-powered tools:
 
 ```bash
-claude-with                    # FZF picker → launch with selected provider
-claude-with deepseek@work      # Launch with specific provider/account
-claude-provider                # FZF manager for default provider & API keys
-claude-provider add-key kimi   # Add API key to gopass
+claude-manage                   # FZF manager for default provider & API keys
+claude-manage add-key kimi      # Add API key to gopass
 ```
 
 See [docs/claude-provider.md](docs/claude-provider.md) for full documentation.

@@ -1,0 +1,216 @@
+#!/usr/bin/env bash
+# AI Tools Shared Library
+# Common functions for Claude Code and Codex CLI management
+#
+# Usage: source lib/ai-tools
+
+# Source common library
+AI_TOOLS_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$AI_TOOLS_LIB_DIR/common"
+
+# Paths
+CHEZMOI_CONFIG="${HOME}/.config/chezmoi/chezmoi.toml"
+CHEZMOI_DATA_CLAUDE="${HOME}/.local/share/chezmoi/.chezmoidata/claude.yaml"
+CHEZMOI_DATA_CODEX="${HOME}/.local/share/chezmoi/.chezmoidata/codex.yaml"
+
+# Tool context: claude | codex (set by caller before sourcing)
+: "${AI_TOOL_CONTEXT:=claude}"
+
+# Return codes used for interactive navigation.
+: "${RC_BACK:=10}"
+: "${RC_EXIT:=130}"
+
+# Available providers/accounts (templated from chezmoi data)
+CLAUDE_PROVIDERS=({{- range $name, $_ := .claude.providers }} "{{ $name }}"{{- end }})
+CLAUDE_ACCOUNTS=({{- range $name, $_ := .claude.accounts }} "{{ $name }}"{{- end }})
+CODEX_PROVIDERS=({{- range $name, $_ := .codex.providers }} "{{ $name }}"{{- end }})
+CODEX_ACCOUNTS=({{- range $name, $_ := .codex.accounts }} "{{ $name }}"{{- end }})
+
+if [[ "$AI_TOOL_CONTEXT" == "codex" ]]; then
+    CHEZMOI_DATA="$CHEZMOI_DATA_CODEX"
+    PROVIDERS=("${CODEX_PROVIDERS[@]}")
+    ACCOUNTS=("${CODEX_ACCOUNTS[@]}")
+else
+    CHEZMOI_DATA="$CHEZMOI_DATA_CLAUDE"
+    PROVIDERS=("${CLAUDE_PROVIDERS[@]}")
+    ACCOUNTS=("${CLAUDE_ACCOUNTS[@]}")
+fi
+
+# Get provider for an account
+get_provider() {
+    local account="$1"
+    if [[ "$AI_TOOL_CONTEXT" == "codex" ]]; then
+        case "$account" in
+{{- range $name, $config := .codex.accounts }}
+{{- if hasKey $config "provider" }}
+        "{{ $name }}") echo "{{ $config.provider }}" ;;
+{{- else }}
+        "{{ $name }}") echo "{{ (split "@" $name)._0 }}" ;;
+{{- end }}
+{{- end }}
+        *) echo "${account%%@*}" ;;
+        esac
+    else
+        case "$account" in
+{{- range $name, $config := .claude.accounts }}
+{{- if hasKey $config "provider" }}
+        "{{ $name }}") echo "{{ $config.provider }}" ;;
+{{- else }}
+        "{{ $name }}") echo "{{ (split "@" $name)._0 }}" ;;
+{{- end }}
+{{- end }}
+        *) echo "${account%%@*}" ;;
+        esac
+    fi
+}
+
+# Check if provider is third-party (has base_url)
+is_third_party() {
+    local provider="$1"
+    if [[ "$AI_TOOL_CONTEXT" == "codex" ]]; then
+        case "$provider" in
+{{- range $name, $config := .codex.providers }}
+{{- if hasKey $config "base_url" }}
+        {{ $name }}) return 0 ;;
+{{- end }}
+{{- end }}
+        *) return 1 ;;
+        esac
+    else
+        case "$provider" in
+{{- range $name, $config := .claude.providers }}
+{{- if hasKey $config "base_url" }}
+        {{ $name }}) return 0 ;;
+{{- end }}
+{{- end }}
+        *) return 1 ;;
+        esac
+    fi
+}
+
+# Check if provider is valid
+is_valid_provider() {
+    local provider="$1"
+    for p in "${PROVIDERS[@]}"; do
+        [[ "$p" == "$provider" ]] && return 0
+    done
+    return 1
+}
+
+# Check if account is configured
+is_configured_account() {
+    local account="$1"
+    for a in "${ACCOUNTS[@]}"; do
+        [[ "$a" == "$account" ]] && return 0
+    done
+    return 1
+}
+
+# Check if API key exists in gopass
+key_exists() {
+    local provider="$1"
+    local account="$2"
+    local path
+    while IFS= read -r path; do
+        [[ -z "$path" ]] && continue
+        if run_with_timeout 3 gopass list -f "$path" &>/dev/null; then
+            return 0
+        fi
+    done < <(api_key_path_candidates "$provider" "$account")
+    return 1
+}
+
+# ===== String Utilities =====
+
+# Parse provider/account or account@provider format
+parse_provider_account() {
+    local input="$1"
+    input=$(echo "$input" | sed 's/ ✓$//' | sed 's/^[[:space:]]*//')
+
+    if [[ "$input" =~ ^([^@]+)@(.+)$ ]]; then
+        echo "${BASH_REMATCH[1]}|${BASH_REMATCH[2]}"
+    elif [[ "$input" =~ ^([^/]+)/(.+)$ ]]; then
+        echo "${BASH_REMATCH[1]}|${BASH_REMATCH[2]}"
+    else
+        echo "$input|default"
+    fi
+}
+
+# Normalize account names for gopass path safety.
+encode_account_segment() {
+    local input="$1"
+    if command -v base64 &>/dev/null; then
+        printf '%s' "$input" | base64 | tr -d '\n=' | tr '+/' '-_'
+    else
+        printf '%s' "$input" | openssl base64 -A | tr -d '=' | tr '+/' '-_'
+    fi
+}
+
+# Gopass path functions
+api_key_path_v2() {
+    local provider="$1"
+    local account="$2"
+    local encoded
+    encoded=$(encode_account_segment "$account")
+    printf 'claude-code/providers/%s/accounts/%s/api_key\n' "$provider" "$encoded"
+}
+
+api_key_path_v3() {
+    local provider="$1"
+    local account="$2"
+    if [[ "$account" == "default" ]]; then
+        printf 'claude-code/accounts/%s/api_key\n' "$provider"
+    else
+        printf 'claude-code/accounts/%s@%s/api_key\n' "$provider" "$account"
+    fi
+}
+
+api_key_path_candidates() {
+    local provider="$1"
+    local account="$2"
+
+    api_key_path_v3 "$provider" "$account"
+    api_key_path_v2 "$provider" "$account"
+    if [[ "$account" =~ ^[A-Za-z0-9._-]+$ ]]; then
+        printf 'claude-code/providers/%s/%s/api_key\n' "$provider" "$account"
+    fi
+
+    if [[ "$account" == "default" ]]; then
+        printf 'claude-code/providers/%s/api_key\n' "$provider"
+    fi
+}
+
+store_api_key() {
+    local provider="$1"
+    local account="$2"
+    local key_value="$3"
+    local target
+    target=$(api_key_path_v3 "$provider" "$account")
+    printf '%s' "$key_value" | gopass insert -f "$target"
+}
+
+delete_api_key() {
+    local provider="$1"
+    local account="$2"
+    local path
+    while IFS= read -r path; do
+        [[ -z "$path" ]] && continue
+        gopass rm -f "$path" &>/dev/null || true
+    done < <(api_key_path_candidates "$provider" "$account")
+}
+
+# Retrieve API key from gopass
+get_api_key() {
+    local provider="$1"
+    local account="$2"
+    local path
+    while IFS= read -r path; do
+        [[ -z "$path" ]] && continue
+        local key
+        if key=$(run_with_timeout 3 gopass show -o "$path" 2>/dev/null); then
+            echo "$key"
+            return 0
+        fi
+    done < <(api_key_path_candidates "$provider" "$account")
+    return 1
+}

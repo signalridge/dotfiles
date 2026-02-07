@@ -1,4 +1,4 @@
-# Claude Code Global Instructions
+# Codex CLI Global Instructions
 
 ## Role
 
@@ -6,14 +6,12 @@ Pragmatic AI programming assistant. Prioritize clarity, correctness, and simplic
 
 ## Quick Reference
 
-| Category | Tool | Notes |
-|----------|------|-------|
-| Python | `uv` + `ruff` | Never pip |
-| Shell | `zsh` + `tmux` | With fzf |
-| Packages | `nix` + `mise` | Declarative |
-| Git | `gh` + `ghq` | For PR/issues |
-
-See `context/tech-stack-guidelines.md` for language-specific conventions.
+| Category | Tool           | Notes         |
+| -------- | -------------- | ------------- |
+| Python   | `uv` + `ruff`  | Never pip     |
+| Shell    | `zsh` + `tmux` | With fzf      |
+| Packages | `nix` + `mise` | Declarative   |
+| Git      | `gh` + `ghq`   | For PR/issues |
 
 ## Search Tool Policy
 
@@ -25,12 +23,12 @@ See `context/tech-stack-guidelines.md` for language-specific conventions.
 
 ## Workflow Complexity
 
-| Level | Scope | Default Path |
-|-------|-------|--------------|
-| **L1** | <10 lines, single file | Execute directly |
-| **L2** | <100 lines, 1-3 files | Brief analysis → implement |
+| Level  | Scope                     | Default Path                      |
+| ------ | ------------------------- | --------------------------------- |
+| **L1** | <10 lines, single file    | Execute directly                  |
+| **L2** | <100 lines, 1-3 files     | Brief analysis → implement        |
 | **L3** | 100-500 lines, 3-10 files | **OpenSpec lifecycle (required)** |
-| **L4** | >500 lines, >10 files | **OpenSpec lifecycle (required)** |
+| **L4** | >500 lines, >10 files     | **OpenSpec lifecycle (required)** |
 
 **Rule:** L3/L4 must use OpenSpec-first workflow.
 
@@ -69,6 +67,7 @@ superpowers skills are phase-specific accelerators and must not form a second wo
 - `superpowers:receiving-code-review`
 
 Excluded from default distribution to avoid parallel orchestration:
+
 - `superpowers:executing-plans`
 - `superpowers:dispatching-parallel-agents`
 - `superpowers:using-git-worktrees`
@@ -81,29 +80,19 @@ Excluded from default distribution to avoid parallel orchestration:
 
 ## Workflow Routing
 
-Primary capability layer is shared skills at `~/.agents/skills`.
+Codex and Claude share one skills source: `~/.agents/skills`.
 
-### Minimal Command Set (default)
+- `~/.codex/skills` must symlink to `~/.agents/skills`
+- Keep workflow routing centered on skills and OpenSpec
 
-- `/commit` (`core/commit`)
-- `/context` (`core/context`)
-- `/review` (`core/review`)
-- `/test` (`core/test`)
-- `/pr:pr-create` (`core/pr-create`)
-- `/pr:pr-review` (`core/pr-review`)
-- `/plan` (`core/plan`, optional)
-- `/opsx:*` (OpenSpec bridge commands)
+### Minimal Command Surface
 
-### Task Routing Map
-
-| Intent | Route |
-|-------|-------|
-| L1/L2 small change | `/context` → implement → `/test` → `/commit` |
-| L3/L4 feature/refactor | Suggest `/opsx:new` and ask explicit confirmation; then execute one step at a time with explicit confirmation before each next command (never auto-chain to `/opsx:archive`) |
-| review / 审查 | `/review` |
-| test / 测试 | `/test` |
-| commit / 提交 | `/commit` |
-| create PR / 创建 PR | `/pr:pr-create` |
+- `/review`
+- `/test`
+- `/commit`
+- `/pr:pr-create`
+- `/pr:pr-review`
+- `/opsx:*`
 
 ---
 
@@ -113,10 +102,11 @@ Before implementing L3+ tasks, complete:
 
 ```markdown
 ## Pre-Analysis
+
 - **Similar patterns**: [3+ existing implementations]
 - **Dependencies**: [affected modules/files]
 - **Conventions**: [naming, structure, test patterns]
-- **Risk areas**: [guardrails triggered? see context/guardrails.md]
+- **Risk areas**: [security, performance, breaking changes]
 ```
 
 ---
@@ -126,20 +116,7 @@ Before implementing L3+ tasks, complete:
 - **Simplicity** - Three similar lines > premature abstraction
 - **Correctness** - Understand before modifying, run tests after
 - **Minimal changes** - Only what's necessary, don't "improve" working code
-- **Fix, don't hide** - No `@ts-ignore`, `skip`, empty catch without fixing root cause
-
----
-
-## Guardrails
-
-Sensitive areas defined in `context/guardrails.md`:
-
-| Category | Examples |
-|----------|----------|
-| Critical | Auth, Authorization, Financial, Security |
-| High | Schema migrations, External APIs, Irreversible ops |
-
-**Post-change report required:** Files → Changes → Reason → Impact → Rollback
+- **Fix, don't hide** - No workarounds without fixing root cause
 
 ---
 
@@ -148,6 +125,7 @@ Sensitive areas defined in `context/guardrails.md`:
 **Branch:** `feat/`, `fix/`, `refactor/`, `docs/`, `test/`, `chore/`
 
 **Commit (Conventional):**
+
 ```
 type(scope): description
 
@@ -155,13 +133,13 @@ feat(auth): add OAuth2 support
 fix(api): handle null response
 ```
 
-**Safety:** Force push to protected branches blocked. `--amend` and `--hard` require confirmation.
+**Safety:** Force push to protected branches blocked.
 
 ---
 
 ## Chinese Response
 
-When user uses Chinese: apply `context/chinese-response.md` rules.
+When user uses Chinese:
 
 - 中英文间加空格
 - 技术术语保留英文
@@ -171,27 +149,23 @@ When user uses Chinese: apply `context/chinese-response.md` rules.
 
 ## Resources
 
-```
-~/.claude/
-├── commands/<category>/*.md
-├── context/*.md
+Shared skills location: `~/.agents/skills/`
 
-~/.agents/
-└── skills/<plugin>/<skill>/
-```
+Codex skills link target: `~/.codex/skills -> ~/.agents/skills`
 
 ---
 
 ## What NOT To Do
 
 **Never:**
+
 - Use `pip` (use `uv`)
 - Commit to main directly
 - Force push protected branches
-- Interactive git (`-i` flag)
 - Create files unless necessary
 
 **Avoid:**
+
 - Over-engineering
 - "Just in case" error handling
 - Refactoring while fixing bugs

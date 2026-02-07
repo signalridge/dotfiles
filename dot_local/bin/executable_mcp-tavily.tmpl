@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Tavily MCP wrapper
+# Resolve Tavily API key from gopass at runtime, then launch tavily-mcp.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/common"
+
+require_cmd gopass bunx
+
+# Keep path simple as requested.
+TAVILY_GOPASS_PATH="tavily/api_key"
+
+if ! TAVILY_API_KEY=$(run_with_timeout 3 gopass show -o "$TAVILY_GOPASS_PATH" 2>/dev/null); then
+    log_error "Failed to read Tavily API key from gopass: $TAVILY_GOPASS_PATH"
+    exit 1
+fi
+
+if [[ -z "$TAVILY_API_KEY" ]]; then
+    log_error "Tavily API key is empty: $TAVILY_GOPASS_PATH"
+    exit 1
+fi
+
+export TAVILY_API_KEY
+
+# Use latest package tag.
+exec bunx tavily-mcp@latest "$@"

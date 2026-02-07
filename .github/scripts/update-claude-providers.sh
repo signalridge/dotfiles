@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# update-claude-providers.sh - Update Claude Code provider configs from official docs
+# update-claude-providers.sh - Update Claude/Codex provider configs from official docs
 # Usage:
 #   ./update-claude-providers.sh prompt [provider]  # Generate AI prompt
 #   ./update-claude-providers.sh apply              # Apply AI response (reads stdin)
@@ -11,9 +11,10 @@ set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 CLAUDE_YAML="$REPO_ROOT/.chezmoidata/claude.yaml"
+CODEX_YAML="$REPO_ROOT/.chezmoidata/codex.yaml"
 
-# Provider documentation URLs
-declare -A PROVIDER_DOCS=(
+# Provider documentation URLs (Claude)
+declare -A CLAUDE_PROVIDER_DOCS=(
     ["deepseek"]="https://api-docs.deepseek.com/guides/anthropic_api"
     ["kimi"]="https://github.com/MoonshotAI/kimi-cli/blob/main/docs/en/configuration/providers.md"
     ["glm"]="https://docs.bigmodel.cn/cn/guide/develop/claude"
@@ -22,74 +23,94 @@ declare -A PROVIDER_DOCS=(
     ["doubao"]="https://www.volcengine.com/docs/82379/1928261"
 )
 
+# Provider documentation URLs (Codex)
+# Placeholder links: replace with provider-specific Codex docs later.
+declare -A CODEX_PROVIDER_DOCS=(
+    ["deepseek"]="TODO_CODEX_DOC_DEEPSEEK"
+    ["kimi"]="TODO_CODEX_DOC_KIMI"
+    ["glm"]="TODO_CODEX_DOC_GLM"
+    ["qwen"]="TODO_CODEX_DOC_QWEN"
+    ["minimax"]="TODO_CODEX_DOC_MINIMAX"
+    ["doubao"]="TODO_CODEX_DOC_DOUBAO"
+)
+
 # Generate prompt for AI
 generate_prompt() {
     local provider="${1:-all}"
     local providers=()
 
     if [[ "$provider" == "all" ]]; then
-        providers=("${!PROVIDER_DOCS[@]}")
+        providers=("${!CLAUDE_PROVIDER_DOCS[@]}")
     else
         providers=("$provider")
     fi
 
     cat <<'HEADER'
-You are a configuration extraction assistant. Extract Claude Code provider configuration from official documentation.
+You are a configuration extraction assistant. Extract provider configuration for BOTH Claude Code and Codex CLI from official documentation.
 
 ## Task
 
-Extract the following information for each provider:
-1. **base_url**: The API endpoint URL (without /v1 suffix)
-2. **models**: List of available model IDs
-
-## YAML Structure
-
-The config uses this structure:
-```yaml
-claude:
-  providers:
-    provider_name:
-      base_url: "https://api.example.com/anthropic"
-      models:
-        - model-id-1
-        - model-id-2
-```
-
-## Rules
-1. Extract base_url exactly as documented (remove /v1 or /v1/ suffix if present)
-2. List ALL available model IDs mentioned in the documentation
-3. Order models by capability: most powerful first, fastest/cheapest last
-4. Return valid JSON array only
+For each provider, extract two independent configs:
+1. **claude**: Anthropic-compatible endpoint + model IDs
+2. **codex**: OpenAI-compatible endpoint + model IDs
 
 ## Output format
+
+Return valid JSON array only:
+
 ```json
 [
   {
     "provider": "provider_name",
-    "base_url": "https://api.example.com/anthropic",
-    "models": ["model-powerful", "model-balanced", "model-fast"]
+    "claude": {
+      "base_url": "https://...",
+      "models": ["..."]
+    },
+    "codex": {
+      "base_url": "https://...",
+      "models": ["..."]
+    }
   }
 ]
 ```
+
+## Rules
+1. Keep Claude/Codex values independent (do NOT copy one into another unless docs explicitly match).
+2. Remove trailing `/v1` or `/v1/` from base_url if present.
+3. List model IDs exactly as documented.
+4. If one side is unavailable, set that side to an empty object (`{}`).
 
 Extract configuration for the following providers:
 
 HEADER
 
     for p in "${providers[@]}"; do
-        local url="${PROVIDER_DOCS[$p]:-}"
-        if [[ -n "$url" ]]; then
+        local claude_url codex_url
+        claude_url="${CLAUDE_PROVIDER_DOCS[$p]:-}"
+        codex_url="${CODEX_PROVIDER_DOCS[$p]:-}"
+        if [[ -n "$claude_url" || -n "$codex_url" ]]; then
             echo "## $p"
-            echo "Documentation: $url"
-            # Include fetched content if available (from DOCS_JSON_FILE env var)
+            echo "Claude docs: $claude_url"
+            echo "Codex docs: $codex_url"
+
             if [[ -n "${DOCS_JSON_FILE:-}" && -f "$DOCS_JSON_FILE" ]]; then
-                local content
-                content=$(jq -r ".[\"$p\"].content // empty" "$DOCS_JSON_FILE" 2>/dev/null)
-                if [[ -n "$content" ]]; then
+                local claude_content codex_content
+                claude_content=$(jq -r ".[\"$p\"].claude.content // empty" "$DOCS_JSON_FILE" 2>/dev/null)
+                codex_content=$(jq -r ".[\"$p\"].codex.content // empty" "$DOCS_JSON_FILE" 2>/dev/null)
+
+                if [[ -n "$claude_content" ]]; then
                     echo ""
-                    echo "Page content:"
+                    echo "Claude page content:"
                     echo '```'
-                    echo "$content" | head -2000 || true
+                    echo "$claude_content" | head -2000 || true
+                    echo '```'
+                fi
+
+                if [[ -n "$codex_content" ]]; then
+                    echo ""
+                    echo "Codex page content:"
+                    echo '```'
+                    echo "$codex_content" | head -2000 || true
                     echo '```'
                 fi
             fi
@@ -98,21 +119,46 @@ HEADER
     done
 }
 
-# Apply AI response to claude.yaml
-# Only updates providers section (base_url, models), not accounts
+apply_target() {
+    local yaml_file="$1"
+    local root_key="$2"
+    local provider="$3"
+    local base_url="$4"
+    local models_json="$5"
+
+    [[ -f "$yaml_file" ]] || return 0
+
+    if ! yq -e ".${root_key}.providers.${provider}" "$yaml_file" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    if [[ -n "$base_url" ]]; then
+        BASE_URL="$base_url" yq -i ".${root_key}.providers.${provider}.base_url = strenv(BASE_URL)" "$yaml_file"
+        echo "  ${root_key}.base_url = $base_url"
+    fi
+
+    if [[ "$models_json" != "[]" ]]; then
+        local tmpfile
+        tmpfile=$(mktemp)
+        echo "$models_json" | yq -p json -o yaml >"$tmpfile"
+        yq -i ".${root_key}.providers.${provider}.models = load(\"$tmpfile\")" "$yaml_file"
+        rm -f "$tmpfile"
+        echo "  ${root_key}.models = $models_json"
+    fi
+}
+
+# Apply AI response to claude.yaml / codex.yaml
 apply_response() {
     local response
     response=$(cat)
 
     # Extract JSON from response (handles markdown code blocks)
     local json
-    # Try extracting from code block first
     if echo "$response" | grep -q '```json'; then
         json=$(echo "$response" | sed -n '/```json/,/```/p' | grep -v '```')
     elif echo "$response" | grep -q '```'; then
         json=$(echo "$response" | sed -n '/```/,/```/p' | grep -v '```')
     else
-        # Try to extract raw JSON array (handles both compact and multiline)
         json=$(echo "$response" | awk '
             /\[/ { start=1; depth=0 }
             start {
@@ -127,7 +173,6 @@ apply_response() {
         ')
     fi
 
-    # Validate JSON
     if ! echo "$json" | jq -e '.' >/dev/null 2>&1; then
         echo "Error: Invalid JSON in AI response" >&2
         echo "Response was:" >&2
@@ -135,33 +180,25 @@ apply_response() {
         exit 1
     fi
 
-    # Apply each provider config (only base_url and models)
     echo "$json" | jq -c '.[]' | while read -r item; do
-        local provider base_url models
+        local provider
         provider=$(echo "$item" | jq -r '.provider')
-        base_url=$(echo "$item" | jq -r '.base_url // empty')
-        models=$(echo "$item" | jq -c '.models // []')
+
+        local claude_base_url claude_models codex_base_url codex_models
+        claude_base_url=$(echo "$item" | jq -r '.claude.base_url // empty')
+        claude_models=$(echo "$item" | jq -c '.claude.models // []')
+        codex_base_url=$(echo "$item" | jq -r '.codex.base_url // empty')
+        codex_models=$(echo "$item" | jq -c '.codex.models // []')
 
         echo "Updating: $provider"
-
-        # Update base_url
-        if [[ -n "$base_url" ]]; then
-            BASE_URL="$base_url" yq -i ".claude.providers.$provider.base_url = strenv(BASE_URL)" "$CLAUDE_YAML"
-            echo "  base_url = $base_url"
-        fi
-
-        # Update models array
-        if [[ "$models" != "[]" ]]; then
-            # yq can't parse JSON from env var directly, use temp file
-            tmpfile=$(mktemp)
-            echo "$models" | yq -p json -o yaml >"$tmpfile"
-            yq -i ".claude.providers.$provider.models = load(\"$tmpfile\")" "$CLAUDE_YAML"
-            rm -f "$tmpfile"
-            echo "  models = $models"
-        fi
+        apply_target "$CLAUDE_YAML" "claude" "$provider" "$claude_base_url" "$claude_models"
+        apply_target "$CODEX_YAML" "codex" "$provider" "$codex_base_url" "$codex_models"
     done
 
     echo "Updated: $CLAUDE_YAML"
+    if [[ -f "$CODEX_YAML" ]]; then
+        echo "Updated: $CODEX_YAML"
+    fi
 }
 
 # Main

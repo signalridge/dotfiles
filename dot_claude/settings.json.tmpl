@@ -21,16 +21,32 @@
   "apiKeyHelper": "~/.local/bin/claude-token",
 {{- end }}
   "mcpServers": {
-    "github": {
+    "slack": {
       "command": "npx",
-      "args": ["-y", "@anthropic/mcp-server-github"],
+      "args": ["-y", "@anthropic/mcp-server-slack"],
       "env": {
-        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+        "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
+      }
+    },
+    "notion": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-server-notion"],
+      "env": {
+        "NOTION_API_KEY": "${NOTION_API_KEY}"
       }
     },
     "sequential-thinking": {
       "command": "npx",
       "args": ["-y", "@anthropic/mcp-server-sequential-thinking"]
+    },
+    "tavily": {
+      "command": "~/.local/bin/mcp-tavily",
+      "args": []
+    },
+    "postgres": {
+      "command": "~/.local/bin/mcp-postgres",
+      "args": []
     }
   },
   "permissions": {
@@ -60,6 +76,9 @@
       "Bash(gh:*)",
       "Bash(just:*)",
       "Bash(mise:*)",
+      "Bash(bun:*)",
+      "Bash(bunx:*)",
+      "Bash(openspec:*)",
       "Bash(nix:*)",
       "Bash(chezmoi:*)"
     ]
@@ -70,7 +89,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/hooks/skill-hint.sh",
+            "command": "$HOME/.claude/hooks/navigation-hint.sh",
             "timeout": 3
           }
         ]
@@ -117,11 +136,10 @@
     ]
   },
   "env": {
-{{- /* Third-party providers: set base_url */ -}}
+{{- /* Third-party providers: use provider base_url + account-configured model settings */ -}}
 {{- if and $provider (hasKey $provider "base_url") }}
     "ANTHROPIC_BASE_URL": "{{ $provider.base_url }}",
 {{- end }}
-{{- /* Model settings: apply to all accounts */ -}}
 {{- if and $account (hasKey $account "model") }}
     "ANTHROPIC_MODEL": "{{ $account.model }}",
 {{- end }}

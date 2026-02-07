@@ -2,12 +2,16 @@
 
 set -euo pipefail
 
-{{ $miseConfig := joinPath .chezmoi.homeDir ".config/mise/config.toml" -}}
+# chezmoi may be updating dot-directories (e.g. ~/.claude). If the current working
+# directory disappears mid-apply, mise will warn. Run mise from a stable dir.
+cd "$HOME"
 
 echo ":: [05] Installing mise tools"
 
 if command -v mise &>/dev/null; then
     mise install --yes
+    mise tasks run ensure-openspec --raw
 else
     echo "    Skipped (mise not found)"
+    exit 0
 fi
