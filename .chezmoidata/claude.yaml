@@ -96,11 +96,11 @@ claude:
       opus_model: kimi-k2.5
     wanxiaot@private:
       provider: wanxiaot
-      model: gpt-5.3-codex
+      model: gpt-5.2-codex(xhigh)
       small_model: gpt-5.2-codex(medium)
       haiku_model: gpt-5.2-codex(low)
       sonnet_model: gpt-5.2-codex(medium)
-      opus_model: gpt-5.3-codex
+      opus_model: gpt-5.2-codex(xhigh)
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
   # All skills are hardcoded in .chezmoiexternal.toml.tmpl
