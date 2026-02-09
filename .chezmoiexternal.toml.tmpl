@@ -52,7 +52,8 @@
 {{- range $plugin := $wshobsonPlugins }}
 [".agents/skills/{{ $plugin }}"]
     type = "archive"
-    url = "https://github.com/wshobson/agents/archive/refs/heads/main.tar.gz"
+    url = "https://github.com/wshobson/agents/archive/{{ $.versions.claudeWshobsonAgentsRev }}.tar.gz"
+    checksum.sha256 = "{{ $.versions.claudeWshobsonAgentsSha256 }}"
     exact = true
     stripComponents = 4
     include = ["agents-*/plugins/{{ $plugin }}/skills/**"]
@@ -67,7 +68,8 @@
 # ------------------------------------------------------------------------------
 [".agents/skills/superpowers"]
     type = "archive"
-    url = "https://github.com/obra/superpowers/archive/refs/heads/main.tar.gz"
+    url = "https://github.com/obra/superpowers/archive/{{ $.versions.claudeSuperpowersRev }}.tar.gz"
+    checksum.sha256 = "{{ $.versions.claudeSuperpowersSha256 }}"
     exact = true
     stripComponents = 2
     include = [
@@ -93,7 +95,8 @@
 {{- range $skill := $anthropicsSkills }}
 [".agents/skills/anthropics/{{ $skill }}"]
     type = "archive"
-    url = "https://github.com/anthropics/skills/archive/refs/heads/main.tar.gz"
+    url = "https://github.com/anthropics/skills/archive/{{ $.versions.claudeAnthropicsSkillsRev }}.tar.gz"
+    checksum.sha256 = "{{ $.versions.claudeAnthropicsSkillsSha256 }}"
     exact = true
     stripComponents = 3
     include = ["skills-*/skills/{{ $skill }}/**"]
