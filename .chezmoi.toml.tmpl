@@ -5,6 +5,9 @@ encryption = "age"
 {{- $private := not $work -}}{{/* true if this machine should have private configuration  */}}
 {{- $headless := false -}}{{/* true if this machine does not have a screen and keyboard */}}
 {{- $useEncryption := false -}}{{/* default false for users without encryption key */}}
+{{- if hasKey . "useEncryption" -}}
+{{-   $useEncryption = .useEncryption -}}
+{{- end -}}
 {{- if stdinIsATTY -}}
 {{-   $useEncryption = promptBoolOnce . "useEncryption" "Enable encryption & SSH config (requires ~/.ssh/main key, default: false)" -}}
 {{- end -}}
@@ -33,18 +36,26 @@ encryption = "age"
 {{/* prompt for headless if stdin is a TTY */}}
 {{- if stdinIsATTY -}}
 {{-   $headless = promptBoolOnce . "headless" "headless" -}}
+{{- else if hasKey . "headless" -}}
+{{-   $headless = .headless -}}
 {{- else -}}
-{{-   $headless = true -}}
+{{-   $headless = ne .chezmoi.os "darwin" -}}
 {{- end -}}
 
 {{/* macOS specific: install Mac App Store apps */}}
 {{- $installMasApps := false -}}
+{{- if hasKey . "installMasApps" -}}
+{{-   $installMasApps = .installMasApps -}}
+{{- end -}}
 {{- if and (eq .chezmoi.os "darwin") (stdinIsATTY) -}}
 {{-   $installMasApps = promptBoolOnce . "installMasApps" "Install Mac App Store apps (requires Apple ID login)" -}}
 {{- end -}}
 
 {{/* macOS specific: home WiFi SSIDs for auto-volume (comma-separated) */}}
 {{- $homeWifiSSIDs := "" -}}
+{{- if hasKey . "homeWifiSSIDs" -}}
+{{-   $homeWifiSSIDs = .homeWifiSSIDs -}}
+{{- end -}}
 {{- if and (eq .chezmoi.os "darwin") (stdinIsATTY) -}}
 {{-   $homeWifiSSIDs = promptStringOnce . "homeWifiSSIDs" "Home WiFi SSIDs for auto-volume (comma-separated, e.g. Home-5G,Home-2.4G)" -}}
 {{- end -}}
@@ -100,6 +111,8 @@ encryption = "age"
 {{- if eq $timezone "" -}}
 {{-   if stdinIsATTY -}}
 {{-     $timezone = promptStringOnce . "timezone" "Timezone (e.g. Asia/Tokyo)" -}}
+{{-   else if hasKey . "timezone" -}}
+{{-     $timezone = .timezone -}}
 {{-   else -}}
 {{-     $timezone = "Etc/UTC" -}}
 {{-   end -}}

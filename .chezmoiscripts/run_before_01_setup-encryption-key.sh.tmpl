@@ -25,11 +25,10 @@ if [[ -t 0 ]]; then
     # Use fd 9 so we don't conflict with OpenSSL's fd 3 password piping.
     exec 9<&0
     PROMPT_FD=9
-elif [[ -r /dev/tty ]]; then
+elif [[ -t 1 || -t 2 ]]; then
     # If stdin isn't a TTY (e.g. piped), still allow prompting when a controlling
     # terminal exists.
-    exec 9</dev/tty 2>/dev/null || true
-    if [[ -t 9 ]]; then
+    if exec 9</dev/tty 2>/dev/null && [[ -t 9 ]]; then
         PROMPT_FD=9
     else
         exec 9<&- 2>/dev/null || true
