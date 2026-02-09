@@ -97,9 +97,9 @@ claude:
     wanxiaot@private:
       provider: wanxiaot
       model: gpt-5.3-codex
-      small_model: gpt-5.3-codex
+      small_model: claude-opus-4-5-20251101
       haiku_model: claude-opus-4-5-20251101
-      sonnet_model: gpt-5.2-codex
+      sonnet_model: claude-opus-4-5-20251101
       opus_model: gpt-5.3-codex
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
