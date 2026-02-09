@@ -1,0 +1,146 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Sync Claude Code MCP servers on every chezmoi apply.
+# Fast path: only add when missing, avoid remove+add churn.
+
+echo ":: [09] Syncing Claude Code MCP servers"
+
+if ! command -v claude &>/dev/null; then
+    echo "    Skipped (claude not found)"
+    exit 0
+fi
+
+check_user_mcp_json() {
+    local name="$1"
+    local expected_json="$2"
+    python3 - "$name" "$expected_json" <<'PY'
+import json
+import os
+import sys
+
+name = sys.argv[1]
+expected = json.loads(sys.argv[2])
+path = os.path.expanduser("~/.claude.json")
+
+try:
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+except Exception:
+    print("missing")
+    sys.exit(0)
+
+server = data.get("mcpServers", {}).get(name)
+if not server:
+    print("missing")
+    sys.exit(0)
+
+actual_cmp = {
+    "command": server.get("command"),
+    "args": server.get("args", []),
+    "env": server.get("env", {}),
+}
+expected_cmp = {
+    "command": expected.get("command"),
+    "args": expected.get("args", []),
+    "env": expected.get("env", {}),
+}
+actual_type = server.get("type", "stdio")
+
+print("match" if actual_type == "stdio" and actual_cmp == expected_cmp else "mismatch")
+PY
+}
+
+check_user_mcp_sse() {
+    local name="$1"
+    local expected_url="$2"
+    python3 - "$name" "$expected_url" <<'PY'
+import json
+import os
+import sys
+
+name = sys.argv[1]
+expected_url = sys.argv[2]
+path = os.path.expanduser("~/.claude.json")
+
+try:
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+except Exception:
+    print("missing")
+    sys.exit(0)
+
+server = data.get("mcpServers", {}).get(name)
+if not server:
+    print("missing")
+    sys.exit(0)
+
+actual_type = server.get("type", "stdio")
+actual_url = server.get("url")
+print("match" if actual_type == "sse" and actual_url == expected_url else "mismatch")
+PY
+}
+
+ensure_user_mcp_json() {
+    local name="$1"
+    local json="$2"
+
+    local status
+    status="$(check_user_mcp_json "$name" "$json")"
+
+    case "$status" in
+    match)
+        echo "    Exists: $name"
+        ;;
+    missing)
+        claude mcp add-json -s user "$name" "$json"
+        ;;
+    mismatch)
+        echo "    Updating: $name"
+        claude mcp remove -s user "$name" >/dev/null 2>&1 || true
+        claude mcp add-json -s user "$name" "$json"
+        ;;
+    *)
+        echo "    Skipped: $name (unknown check status: $status)"
+        ;;
+    esac
+}
+
+ensure_user_mcp_sse() {
+    local name="$1"
+    local url="$2"
+
+    local status
+    status="$(check_user_mcp_sse "$name" "$url")"
+
+    case "$status" in
+    match)
+        echo "    Exists: $name"
+        ;;
+    missing)
+        claude mcp add --transport sse -s user "$name" "$url"
+        ;;
+    mismatch)
+        echo "    Updating: $name"
+        claude mcp remove -s user "$name" >/dev/null 2>&1 || true
+        claude mcp add --transport sse -s user "$name" "$url"
+        ;;
+    *)
+        echo "    Skipped: $name (unknown check status: $status)"
+        ;;
+    esac
+}
+
+ensure_user_mcp_json "slack" '{"command":"npx","args":["-y","@anthropic/mcp-server-slack"],"env":{"SLACK_BOT_TOKEN":"${SLACK_BOT_TOKEN}","SLACK_TEAM_ID":"${SLACK_TEAM_ID}"}}'
+
+ensure_user_mcp_json "slack-explorer" '{"command":"docker","args":["run","-i","--rm","--pull","always","ghcr.io/shibayu36/slack-explorer-mcp:latest"],"env":{"SLACK_USER_TOKEN":"${SLACK_USER_TOKEN}"}}'
+
+ensure_user_mcp_sse "notion" "https://mcp.notion.com/sse"
+ensure_user_mcp_json "sequential-thinking" '{"command":"npx","args":["-y","@anthropic/mcp-server-sequential-thinking"]}'
+ensure_user_mcp_json "playwright" '{"command":"npx","args":["-y","@playwright/mcp@latest"]}'
+ensure_user_mcp_json "context7" '{"command":"npx","args":["-y","@upstash/context7-mcp"]}'
+ensure_user_mcp_json "markitdown" '{"command":"uvx","args":["markitdown-mcp"]}'
+ensure_user_mcp_json "arxiv-mcp-server" '{"command":"uv","args":["tool","run","arxiv-mcp-server"]}'
+ensure_user_mcp_json "tavily" '{"command":"~/.local/bin/mcp-tavily","args":[]}'
+ensure_user_mcp_json "postgres" '{"command":"~/.local/bin/mcp-postgres","args":[]}'

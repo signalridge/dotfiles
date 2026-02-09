@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/lib/common"
 
-require_cmd gopass bunx
+require_cmd gopass npx
 
 # Keep path simple as requested.
 TAVILY_GOPASS_PATH="tavily/api_key"
@@ -25,4 +25,4 @@ fi
 export TAVILY_API_KEY
 
 # Use latest package tag.
-exec bunx tavily-mcp@latest "$@"
+exec npx tavily-mcp@latest "$@"

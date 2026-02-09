@@ -83,11 +83,11 @@ claude:
     # Third-party accounts (format: provider@label)
     # Add your own: deepseek@work, kimi@personal, etc.
     doubao@private:
-      model: ark-code-latest
-      small_model: ark-code-latest
-      haiku_model: ark-code-latest
-      sonnet_model: ark-code-latest
-      opus_model: ark-code-latest
+      model: kimi-k2.5
+      small_model: kimi-k2.5
+      haiku_model: kimi-k2.5
+      sonnet_model: kimi-k2.5
+      opus_model: kimi-k2.5
     kimi@private:
       model: kimi-k2.5
       small_model: kimi-k2.5

@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/lib/common"
 
-require_cmd gopass bunx
+require_cmd gopass npx
 
 PG_DSN_GOPASS_PATH="postgres/api_key"
 
@@ -22,4 +22,4 @@ if [[ -z "$PG_DSN" ]]; then
 fi
 
 # Reference server: read-only Postgres MCP
-exec bunx @modelcontextprotocol/server-postgres "$PG_DSN" "$@"
+exec npx @modelcontextprotocol/server-postgres "$PG_DSN" "$@"
