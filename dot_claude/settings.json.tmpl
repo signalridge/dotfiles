@@ -18,41 +18,7 @@
 {{- $defaults := .claude.defaults -}}
 
 {
-  "apiKeyHelper": "~/.local/bin/claude-token",
-  "mcpServers": {
-    "slack": {
-      "command": "bunx",
-      "args": ["-y", "@anthropic/mcp-server-slack"],
-      "env": {
-        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
-        "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
-      }
-    },
-    "notion": {
-      "command": "bunx",
-      "args": ["-y", "@anthropic/mcp-server-notion"],
-      "env": {
-        "NOTION_API_KEY": "${NOTION_API_KEY}"
-      }
-    },
-    "sequential-thinking": {
-      "command": "bunx",
-      "args": ["-y", "@anthropic/mcp-server-sequential-thinking"]
-    },
-    "playwright": {
-      "command": "bunx",
-      "args": ["-y", "@playwright/mcp@latest"],
-      "description": "Browser automation for JS-rendered pages"
-    },
-    "tavily": {
-      "command": "~/.local/bin/mcp-tavily",
-      "args": []
-    },
-    "postgres": {
-      "command": "~/.local/bin/mcp-postgres",
-      "args": []
-    }
-  },
+  "apiKeyHelper": "{{- if and $provider (hasKey $provider "base_url") -}}~/.local/bin/claude-token{{- end -}}",
   "permissions": {
     "deny": [
       "Bash(sudo rm -rf:*)",
@@ -95,8 +61,8 @@
       "Bash(gh:*)",
       "Bash(just:*)",
       "Bash(mise:*)",
-      "Bash(bun:*)",
-      "Bash(bunx:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
       "Bash(openspec:*)",
       "Bash(nix:*)",
       "Bash(chezmoi:*)"

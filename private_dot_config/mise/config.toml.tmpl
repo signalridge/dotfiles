@@ -2,8 +2,8 @@
 # https://mise.jdx.dev/configuration.html
 
 [tools]
-# Bun (used for global JS CLIs)
-bun = "latest"
+# Node.js (used for global JS CLIs via npm/npx)
+node = "lts"
 
 # Terraform (replaces tenv)
 terraform = "latest"
@@ -31,29 +31,8 @@ rust = "latest"
 # pre-commit (avoid Swift compilation from nixpkgs dotnet dependency)
 pre-commit = "latest"
 
-[tasks.ensure-openspec]
-description = "Ensure OpenSpec CLI is available (installed via bun)"
-run = '''
-set -euo pipefail
-
-if command -v openspec >/dev/null 2>&1; then
-  openspec --version >/dev/null 2>&1 || true
-  exit 0
-fi
-
-if ! command -v bun >/dev/null 2>&1; then
-  echo "bun not found; install via mise first" >&2
-  exit 1
-fi
-
-bun add -g @fission-ai/openspec@${OPEN_SPEC_VERSION}
-
-command -v openspec >/dev/null 2>&1 || {
-  echo "OpenSpec install finished but 'openspec' not on PATH" >&2
-  echo "Ensure ~/.bun/bin is in PATH" >&2
-  exit 1
-}
-'''
+# OpenSpec CLI managed declaratively via mise npm backend
+"npm:@fission-ai/openspec" = "1.1.1"
 
 [settings]
 # Automatically install tools when entering directory
@@ -77,8 +56,5 @@ always_keep_download = false
 always_keep_install = false
 
 [env]
-# Pinned OpenSpec version used by mise task and Justfile bunx fallback
-OPEN_SPEC_VERSION = "1.1.1"
-
 # Add local bin to PATH
 _.path = ["./node_modules/.bin", "./bin"]
