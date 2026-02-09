@@ -34,6 +34,29 @@ declare -A CODEX_PROVIDER_DOCS=(
     ["doubao"]="TODO_CODEX_DOC_DOUBAO"
 )
 
+is_placeholder_doc() {
+    local url="${1:-}"
+    [[ -z "$url" ]] && return 0
+    [[ "$url" == TODO_* ]]
+}
+
+normalize_base_url() {
+    local url="${1:-}"
+    [[ -z "$url" ]] && {
+        echo ""
+        return 0
+    }
+
+    # Remove trailing /v1 or /v1/ (Codex OpenAI-compatible APIs add /v1 per endpoint).
+    url="${url%/v1}"
+    url="${url%/v1/}"
+
+    # Remove trailing slash to avoid // in later concatenation.
+    url="${url%/}"
+
+    echo "$url"
+}
+
 # Generate prompt for AI
 generate_prompt() {
     local provider="${1:-all}"
@@ -76,7 +99,8 @@ Return valid JSON array only:
 
 ## Rules
 1. Keep Claude/Codex values independent (do NOT copy one into another unless docs explicitly match).
-2. Remove trailing `/v1` or `/v1/` from base_url if present.
+2. Normalize base_url for both Claude and Codex by removing trailing `/v1` or `/v1/` if present.
+   - Also remove a trailing slash to avoid `//` when concatenating paths.
 3. List model IDs exactly as documented.
 4. If one side is unavailable, set that side to an empty object (`{}`).
 
@@ -88,6 +112,11 @@ HEADER
         local claude_url codex_url
         claude_url="${CLAUDE_PROVIDER_DOCS[$p]:-}"
         codex_url="${CODEX_PROVIDER_DOCS[$p]:-}"
+
+        # If Codex docs are placeholders, treat Codex as unavailable.
+        if is_placeholder_doc "$codex_url"; then
+            codex_url=""
+        fi
         if [[ -n "$claude_url" || -n "$codex_url" ]]; then
             echo "## $p"
             echo "Claude docs: $claude_url"
@@ -133,6 +162,7 @@ apply_target() {
     fi
 
     if [[ -n "$base_url" ]]; then
+        base_url=$(normalize_base_url "$base_url")
         BASE_URL="$base_url" yq -i ".${root_key}.providers.${provider}.base_url = strenv(BASE_URL)" "$yaml_file"
         echo "  ${root_key}.base_url = $base_url"
     fi
@@ -154,10 +184,10 @@ apply_response() {
 
     # Extract JSON from response (handles markdown code blocks)
     local json
-    if echo "$response" | grep -q '```json'; then
-        json=$(echo "$response" | sed -n '/```json/,/```/p' | grep -v '```')
-    elif echo "$response" | grep -q '```'; then
-        json=$(echo "$response" | sed -n '/```/,/```/p' | grep -v '```')
+    if echo "$response" | grep -q $'```json'; then
+        json=$(echo "$response" | sed -n $'/```json/,/```/p' | grep -v $'```')
+    elif echo "$response" | grep -q $'```'; then
+        json=$(echo "$response" | sed -n $'/```/,/```/p' | grep -v $'```')
     else
         json=$(echo "$response" | awk '
             /\[/ { start=1; depth=0 }
@@ -192,7 +222,19 @@ apply_response() {
 
         echo "Updating: $provider"
         apply_target "$CLAUDE_YAML" "claude" "$provider" "$claude_base_url" "$claude_models"
-        apply_target "$CODEX_YAML" "codex" "$provider" "$codex_base_url" "$codex_models"
+
+        # Guard Codex updates when docs are placeholders/unavailable.
+        local codex_doc codex_has_payload
+        codex_doc="${CODEX_PROVIDER_DOCS[$provider]:-}"
+        codex_has_payload=$(echo "$item" | jq -e '.codex != null and (.codex | type == "object") and (.codex | length > 0)' >/dev/null 2>&1 && echo yes || echo no)
+
+        if is_placeholder_doc "$codex_doc"; then
+            echo "  codex: skipped (docs source is placeholder: $codex_doc)"
+        elif [[ "$codex_has_payload" != "yes" ]]; then
+            echo "  codex: skipped (no codex payload in AI response)"
+        else
+            apply_target "$CODEX_YAML" "codex" "$provider" "$codex_base_url" "$codex_models"
+        fi
     done
 
     echo "Updated: $CLAUDE_YAML"

@@ -14,6 +14,7 @@
 set -euo pipefail
 
 # shellcheck source=lib/codex.tmpl
+# shellcheck disable=SC1091
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/lib/codex"
 
@@ -112,6 +113,7 @@ fzf_menu() {
         current=$(get_current)
 
         local selected
+        # shellcheck disable=SC2016
         if ! selected=$({
             cat <<'MENU'
 switch         Change default account
@@ -188,9 +190,16 @@ cmd_switch() {
         return 1
     fi
 
-    [[ "$(get_current)" == "$input" ]] && { log_warn "Already using '$input'"; return 0; }
+    local provider
+    provider=$(get_provider "$input")
 
-    log_info "Setting account to $input..."
+    if is_third_party "$provider" && ! codex-token --check "$input" 2>/dev/null; then
+        log_error "No API token for $input"
+        echo "Run: codex-manage add-key $input" >&2
+        return 1
+    fi
+
+    [[ "$(get_current)" == "$input" ]] && { log_warn "Already using '$input'"; return 0; }
     set_chezmoi_account "$input"
     echo "  ✓ Updated chezmoi.toml"
     log_info "Applying chezmoi templates..."
@@ -348,10 +357,15 @@ cmd_test() {
 
     is_configured_account "$input" || { log_error "Unknown account '$input'"; return 1; }
 
-    local provider
+    local provider config base_url
     provider=$(get_provider "$input")
+    config=$(codex-token --config "$input")
+    base_url=$(echo "$config" | jq -r '.base_url // empty')
+    base_url=${base_url%/v1}
+    base_url=${base_url%/v1/}
+    base_url=${base_url%/}
 
-    if ! is_third_party "$provider"; then
+    if [[ -z "$base_url" ]]; then
         log_warn "Native OpenAI provider"
         log_success "Use 'codex' to authenticate via OAuth"
         return 0
@@ -360,6 +374,7 @@ cmd_test() {
     require_cmd curl || return 1
 
     log_info "Testing $input..."
+    echo "  Base URL: $base_url"
 
     local parsed acct_name
     parsed=$(parse_provider_account "$input")
@@ -375,8 +390,35 @@ cmd_test() {
     token=$(get_api_key "$provider" "$acct_name") || { log_fail "Failed to decrypt"; return 1; }
 
     echo "  Testing API..."
-    # Note: Codex uses OpenAI-compatible API, not Anthropic
-    log_success "API key retrieved successfully"
+
+    local model response http_code
+    model=$(echo "$config" | jq -r '.model // "unknown"')
+
+    # Codex schema indicates the Responses API at /v1/responses.
+    response=$(curl -sS -w "\n%{http_code}" --max-time 30 \
+        -X POST "$base_url/v1/responses" \
+        -H "Authorization: Bearer $token" \
+        -H "Content-Type: application/json" \
+        -d "{\"model\":\"$model\",\"input\":\"ping\"}" 2>&1)
+
+    http_code=$(echo "$response" | tail -n1)
+
+    case "$http_code" in
+        200) log_success "API OK" ;;
+        401|403) log_fail "Invalid API key"; return 1 ;;
+        429) log_warn "Rate limited"; http_code=200 ;;
+        *)
+            if [[ -z "$http_code" || "$http_code" == "000" ]]; then
+                log_fail "Network error"
+                return 1
+            fi
+            log_warn "HTTP $http_code" ;;
+    esac
+
+    if [[ "$http_code" != "200" ]]; then
+        return 1
+    fi
+
     echo ""
     log_success "Account $input is configured"
 }

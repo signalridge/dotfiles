@@ -2,6 +2,24 @@
 
 Plan a feature or task with clear structure before coding.
 
+## When to Use
+
+- L1/L2 changes where you want a lightweight plan before implementation.
+- L1/L2 changes where you want a more structured planning workflow via Superpowers `writing-plans`.
+- Any time the scope is still fuzzy and you want to clarify goal/DoD.
+
+## When NOT to Use
+
+- If this is L3/L4 (multi-file, 100+ LOC, architectural work): use OpenSpec.
+  - Next step: `/opsx:new <change-name>` (requires explicit confirmation).
+
+`/plan` does not conflict with `/opsx:*`. They are different layers:
+
+- `/plan`: L1/L2 lightweight planning entry.
+- `/opsx:*`: OpenSpec lifecycle wrappers for L3/L4.
+
+If `/opsx:*` wrappers are missing, this is an availability/initialization issue. Run `openspec init --tools claude` (or `openspec update`), or use `openspec ...` CLI directly.
+
 ## Framework: Goal → Constraints → Definition of Done
 
 ### Step 1: Clarify Goal
@@ -21,6 +39,7 @@ Consider:
 - Performance requirements
 - Security implications
 - Testing requirements
+- Rollback expectations
 
 ### Step 3: Define Success Criteria (DoD)
 
@@ -31,6 +50,7 @@ Create measurable acceptance criteria:
 - [ ] No security vulnerabilities introduced
 - [ ] Code follows project conventions
 - [ ] Documentation updated if needed
+- [ ] Rollback path is clear
 
 ### Step 4: Break Down Tasks
 
@@ -49,6 +69,22 @@ List potential blockers:
 - External dependencies
 - Breaking changes
 
+### Step 6: Decide First Command
+
+Pick the next command to run:
+
+- `/context` when you need entrypoints, dependencies, or conventions
+- `/review` when the change touches auth/permissions/tokens/secrets
+- `/test` when doing TDD or validating an assumption
+- `superpowers:writing-plans` when you need a structured, detailed execution plan
+- `superpowers:brainstorming` when you need option exploration before committing to one plan
+
+## Related Skills
+
+- `superpowers:brainstorming`
+- `superpowers:writing-plans`
+- `superpowers:executing-plans`
+
 ## Output Format
 
 ```markdown
@@ -57,6 +93,11 @@ List potential blockers:
 ### Goal
 
 [One sentence]
+
+### Scope
+
+- In scope: ...
+- Out of scope: ...
 
 ### Constraints
 
@@ -76,11 +117,8 @@ List potential blockers:
 ### Risks
 
 - [Risk 1]: [Mitigation]
+
+### Next Command
+
+- [ ] /context
 ```
-
-## When to Use
-
-- New features with multiple components
-- Refactoring with wide impact
-- Tasks requiring architectural decisions
-- Unfamiliar parts of the codebase

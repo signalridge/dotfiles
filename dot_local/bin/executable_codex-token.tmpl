@@ -10,6 +10,7 @@
 set -euo pipefail
 
 # shellcheck source=lib/codex.tmpl
+# shellcheck disable=SC1091
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/lib/codex"
 
@@ -69,7 +70,7 @@ if $CONFIG_ONLY; then
         ($root.codex.accounts[$acct] // {}) |
         . + {
             provider: ($prov),
-            base_url: ($root.codex.providers[$prov].base_url // null)
+            base_url: (($root.codex.providers[$prov].base_url // null) | if . == null then null else (sub("/v1/?$"; "") | sub("/+?$"; "")) end)
         } |
         if .base_url == null then del(.base_url) else . end
     ' 2>/dev/null || echo "{}"

@@ -54,13 +54,13 @@ sandbox_mode = "{{ $defaults.sandbox_mode }}"
 model_reasoning_effort = "{{ $defaults.model_reasoning_effort }}"
 
 # Personality: none | friendly | pragmatic
-model_personality = "{{ $defaults.personality }}"
+personality = "{{ $defaults.personality }}"
 
 # Verbosity: low | medium | high
 model_verbosity = "{{ $defaults.model_verbosity }}"
 
 # Enable built-in web search tool
-web_search = {{ .codex.features.web_search }}
+web_search = "{{ if .codex.features.web_search }}live{{ else }}disabled{{ end }}"
 
 {{- if and (hasKey .codex "active_profile") (ne .codex.active_profile "") }}
 # Active profile
@@ -84,7 +84,6 @@ project_doc_max_bytes = {{ .codex.project_doc.max_bytes }}
 [features]
 shell_tool = {{ .codex.features.shell_tool }}
 memory_tool = {{ .codex.features.memory_tool }}
-web_search = {{ .codex.features.web_search }}
 
 # =============================================================================
 # History Settings
@@ -146,7 +145,7 @@ approval_policy = "{{ $config.approval_policy }}"
 {{- end }}
 {{- if hasKey $config "web_search" }}
 {{- $ws := printf "%v" $config.web_search }}
-web_search = {{ if or (eq $ws "live") (eq $ws "true") }}true{{ else }}false{{ end }}
+web_search = "{{ if or (eq $ws "live") (eq $ws "cached") (eq $ws "disabled") }}{{ $ws }}{{ else }}disabled{{ end }}"
 {{- end }}
 {{- end }}
 

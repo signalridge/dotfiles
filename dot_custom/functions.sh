@@ -218,13 +218,6 @@ alias take="mkcd" # Alternative name
 # Note: For context-aware commits in Claude Code, use /commit command
 # ─────────────────────────────────────────────────────────────
 aicommit() {
-    # Show hint when running inside Claude Code session
-    if [[ -n "$INSIDE_CLAUDE_CODE" ]]; then
-        echo "Tip: Use /commit in Claude Code for context-aware commits"
-        echo "     Continuing with aicommit for quick commit..."
-        echo ""
-    fi
-
     local dry_run=false
     local provider="${AICOMMIT_PROVIDER:-codex}"
     local type_override=""

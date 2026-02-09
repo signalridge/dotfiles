@@ -42,6 +42,9 @@ codex:
     openai:
       provider: openai
       model: gpt-5-codex
+    deepseek@smoke:
+      provider: deepseek
+      model: deepseek-chat
   # ===== Shared Skills =====
   # All skills are hardcoded in .chezmoiexternal.toml.tmpl
   # ===== Global Defaults =====

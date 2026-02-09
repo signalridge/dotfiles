@@ -1,13 +1,19 @@
 #!/bin/bash
 # navigation-hint.sh (UserPromptSubmit hook)
-# Emit a single, low-noise navigation message.
+# Low-noise navigation: post-error reminders only.
 #
 # Design goals:
-# - Stable across environments: prefer executable `openspec ...` / `just ...` when relevant.
-# - Include OpenSpec guidance and "skills" workflows (review/test/commit/pr/context).
-# - Avoid /opsx:* as the primary recommendation since it may be routed as a skill in some setups.
+# - Silent by default; only emit when user prompt indicates failure/stuck.
+# - Output format: 2 lines max (LEVEL RULE_ID: reason + Next: single action).
+# - Dedup: /tmp marker to avoid repeating same hint within 10 minutes.
+# - Top 3 navigation points max; prefer 1 next action.
 
 set -euo pipefail
+
+DEDUP_DIR="${TMPDIR:-/tmp}/claude-hints"
+DEDUP_TTL=600 # 10 minutes
+
+mkdir -p "$DEDUP_DIR" 2>/dev/null || true
 
 # stdin is JSON (may be empty)
 input=$(cat 2>/dev/null) || true
@@ -17,136 +23,74 @@ input=$(cat 2>/dev/null) || true
 prompt=$(echo "$input" | jq -r '.prompt // ""' 2>/dev/null | tr '[:upper:]' '[:lower:]')
 [[ -n "$prompt" ]] || exit 0
 
-# Utility: build a single markdown message with sections.
-sections=()
-add_section() {
-    local title="$1"
-    local body="$2"
-    sections+=("## ${title}
-${body}")
-}
-
-join_sections() {
-    local out=""
-    local i
-    for i in "${sections[@]}"; do
-        if [[ -z "$out" ]]; then
-            out="$i"
-        else
-            out+=$'\n\n'
-            out+="$i"
-        fi
-    done
-    printf '%s' "$out"
-}
-
-# Common workflows are always safe to suggest.
-common_workflows_body=$(
-    cat <<'EOF'
-- /context: 先理解代码结构 / 找入口 / 定位问题
-- /review: 需要审查代码或做安全检查
-- /test: 需要跑测试 / TDD
-- /commit: 需要提交变更
-- /pr:pr-create: 需要创建 PR
-EOF
-)
-
-# OpenSpec preflight: show the next stable commands and when to use common workflows.
-openspec_preflight_body=$(
-    cat <<'EOF'
-- 如果是 L3/L4（多文件 / 大改动），优先走 OpenSpec 的 CLI（不要依赖 /opsx:* 作为主路径）。
-- 如果还没确认 change 状态：先跑 `openspec status --change <change-name> --json`。
-- 如果你要先摸清现状：用 /context（不改代码，先定位入口与影响面）。
-- 如果涉及安全 / 权限 / 令牌：用 /review 先做 security review。
-EOF
-)
-
-# OpenSpec guidance: stable CLI + just wrappers.
-openspec_guidance_body=$(
-    cat <<'EOF'
-优先使用稳定的原生命令（在 Claude Code / Codex 都一致）：
-
-- 查看当前 change 的阻塞关系：
-
-  openspec status --change <change-name> --json
-
-- 对所有 status=ready 的 artifact 逐个拉 instructions（合法 id：proposal/specs/design/tasks）：
-
-  openspec instructions <artifact-id> --change <change-name> --json
-
-- 校验：避免 `openspec validate --change` 这类参数漂移，统一走 wrapper：
-
-  just openspec-validate
-EOF
-)
-
-# OpenSpec + skills mapping (what to use during the workflow).
-openspec_workflow_skills_body=$(
-    cat <<'EOF'
-- Proposal / Design 阶段：
-  - /context：读代码 + 找约束（不做实现）
-  - /review：如果变更触及 security/auth
-
-- Specs / Tasks 阶段：
-  - /review：确认接口 / 风险点 / 回滚路径
-
-- Apply（实现）后：
-  - /test：跑测试 / 补测试
-  - /commit：通过测试后提交
-
-- Verify / PR：
-  - /pr:pr-create：需要开 PR
-  - /pr:pr-review：需要审查 PR
-EOF
-)
-
-# Decide if OpenSpec context is present.
-is_openspec=false
-case "$prompt" in
-*opsx* | *openspec* | *spec-first* | *spec*workflow* | *规范驱动* | *规格驱动* | *l3* | *l4* | *multi-file* | *large*change* | *复杂任务* | *多文件* | *大型重构*)
-    is_openspec=true
-    ;;
-esac
-
-# For OpenSpec contexts, emit a structured message and stop (single message).
-if [[ "$is_openspec" == true ]]; then
-    add_section "Preflight" "$openspec_preflight_body"
-    add_section "OpenSpec" "$openspec_guidance_body"
-    add_section "Workflows (skills)" "$openspec_workflow_skills_body"
-    add_section "Common workflows" "$common_workflows_body"
-    hints=$(join_sections)
-    jq -n --arg message "$hints" '{message: $message}'
+# Utility: emit a 2-line message (LEVEL RULE_ID + Next) then exit.
+emit() {
+    local level="$1"
+    local rule_id="$2"
+    local reason="$3"
+    local next_action="$4"
+    local msg="${level} ${rule_id}: ${reason}
+Next: ${next_action}"
+    jq -n --arg message "$msg" '{message: $message}'
     exit 0
+}
+
+# Utility: check dedup (returns 0 if should skip, 1 if should emit)
+should_skip() {
+    local rule_id="$1"
+    local marker="$DEDUP_DIR/$rule_id"
+    if [[ -f "$marker" ]]; then
+        # Cross-platform stat: try BSD first, then GNU
+        local mtime
+        mtime=$(stat -f %m "$marker" 2>/dev/null || stat -c %Y "$marker" 2>/dev/null || echo 0)
+        local now
+        now=$(date +%s)
+        local age=$((now - mtime))
+        if [[ $age -lt $DEDUP_TTL ]]; then
+            return 0 # skip
+        fi
+    fi
+    touch "$marker" 2>/dev/null || true
+    return 1 # emit
+}
+
+# --- Post-error reminder rules (only trigger when user indicates failure) ---
+
+# WARN-OPSX-NOT-INSTALLED: user tried /opsx but it failed
+if echo "$prompt" | grep -qE '(/opsx|opsx).*(not found|unknown|command not found|没有|找不到|不存在|失败)'; then
+    should_skip "opsx-not-installed" && exit 0
+    emit "WARN" "OPSX-NOT-INSTALLED" "/opsx command not found or failed." "Run openspec init --tools claude (or openspec update), or use openspec CLI directly."
 fi
 
-# Non-OpenSpec: lightweight single-section hints.
-case "$prompt" in
-*security* | *vulnerability* | *auth* | *password* | *token* | *secret* | *安全* | *漏洞* | *密码*)
-    add_section "Suggested" "- /review: security-focused review\n- /context: find entrypoints before changes"
-    ;;
-*"code review"* | *"review code"* | *"check code"* | *审查* | *检查代码* | *看看这个代码*)
-    add_section "Suggested" "- /review"
-    ;;
-*debug* | *bug* | *error* | *fix* | *issue* | *broken* | *crash* | *报错* | *失败* | *出错* | *崩溃*)
-    add_section "Suggested" "- /context\n- /test"
-    ;;
-*unittest* | *pytest* | *"test "* | *" test"* | *tdd* | *coverage* | *测试*)
-    add_section "Suggested" "- /test"
-    ;;
-*commit* | *message* | *提交*)
-    add_section "Suggested" "- /commit"
-    ;;
-*"pull request"* | *" pr "* | *"create pr"* | *"make pr"* | *创建*pr*)
-    add_section "Suggested" "- /pr:pr-create"
-    ;;
-*context* | *understand* | *explain* | *how*does* | *理解* | *解释* | *怎么工作*)
-    add_section "Suggested" "- /context"
-    ;;
-*)
-    exit 0
-    ;;
-esac
+# WARN-OPENSPEC-NOT-INIT: openspec command failed due to missing workspace
+if echo "$prompt" | grep -qE 'openspec.*(workspace|specs|changes|config).*(not found|missing|不存在|缺失|失败)'; then
+    should_skip "openspec-not-init" && exit 0
+    emit "WARN" "OPENSPEC-NOT-INIT" "OpenSpec workspace not initialized." "openspec init --tools claude at repo root."
+fi
 
-hints=$(join_sections)
-[[ -n "$hints" ]] || exit 0
-jq -n --arg message "$hints" '{message: $message}'
+# WARN-NAV-MISSING: user asks "where" / "which file" after a vague answer
+if echo "$prompt" | grep -qE '(where|which file|which line|在哪|哪个文件|哪一行|どこ|どのファイル)'; then
+    should_skip "nav-missing" && exit 0
+    emit "INFO" "NAV-HINT" "Include file:line references for navigability." "Restate with path:line (e.g. src/foo.ts:42)."
+fi
+
+# WARN-TEST-FAILED: user mentions test failure
+if echo "$prompt" | grep -qE '(test.*fail|tests.*fail|测试.*失败|テスト.*失敗|pytest.*error|jest.*fail)'; then
+    should_skip "test-failed" && exit 0
+    emit "WARN" "TEST-FAILED" "Tests failed." "/test to re-run and diagnose."
+fi
+
+# WARN-BUILD-FAILED: user mentions build/compile failure
+if echo "$prompt" | grep -qE '(build.*fail|compile.*fail|编译.*失败|ビルド.*失敗|tsc.*error|cargo.*error)'; then
+    should_skip "build-failed" && exit 0
+    emit "WARN" "BUILD-FAILED" "Build failed." "Fix errors, then retry build."
+fi
+
+# INFO-STUCK: user explicitly says stuck/confused
+if echo "$prompt" | grep -qE '(stuck|confused|lost|don.t know|不知道|卡住|困惑|わからない|迷っ)'; then
+    should_skip "stuck" && exit 0
+    emit "INFO" "STUCK" "Seems stuck." "/context to explore codebase, or ask a specific question."
+fi
+
+# Default: silent exit (low noise - no output unless error detected)
+exit 0

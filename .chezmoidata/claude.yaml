@@ -12,7 +12,6 @@ claude:
   # ===== Global Defaults =====
   defaults:
     timeout_ms: 600000
-    disable_nonessential_traffic: true
   # ===== Provider Definitions =====
   # Only base_url and available models list
   providers:
@@ -67,7 +66,7 @@ claude:
         - claude-haiku-4-5-20251001
   # ===== Account Configurations =====
   # Format: provider or provider@account
-  # Fields: model, small_model, haiku_model, sonnet_model, opus_model, timeout_ms, disable_nonessential_traffic
+  # Fields: model, small_model, haiku_model, sonnet_model, opus_model, timeout_ms
   accounts:
     # Native Anthropic accounts (use OAuth)
     anthropic:
@@ -98,9 +97,9 @@ claude:
     wanxiaot@private:
       provider: wanxiaot
       model: gpt-5.3-codex
-      small_model: gpt-5.2
-      haiku_model: gpt-5.2
-      sonnet_model: gpt-5.2
+      small_model: claude-opus-4-5-20251101
+      haiku_model: claude-opus-4-5-20251101
+      sonnet_model: claude-opus-4-5-20251101
       opus_model: gpt-5.3-codex
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)

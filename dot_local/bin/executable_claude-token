@@ -30,7 +30,14 @@ validate_account_name() {
 }
 
 # Get current provider@account from chezmoi data
+# Supports override via _CLAUDE_OVERRIDE_ACCOUNT for ccw
 get_provider_account() {
+    # Check for ccw override first
+    if [[ -n "${_CLAUDE_OVERRIDE_ACCOUNT:-}" ]]; then
+        echo "$_CLAUDE_OVERRIDE_ACCOUNT"
+        return
+    fi
+
     local data
     if ! data=$(chezmoi data --format json 2>/dev/null); then
         echo "anthropic"  # Safe default if chezmoi fails
@@ -87,8 +94,7 @@ get_account_config() {
             haiku_model: $account_cfg.haiku_model,
             sonnet_model: $account_cfg.sonnet_model,
             opus_model: $account_cfg.opus_model,
-            timeout_ms: ($account_cfg.timeout_ms // $defaults.timeout_ms),
-            disable_nonessential_traffic: ($account_cfg.disable_nonessential_traffic // $defaults.disable_nonessential_traffic)
+            timeout_ms: ($account_cfg.timeout_ms // $defaults.timeout_ms)
         } | with_entries(select(.value != null))
     '
 }

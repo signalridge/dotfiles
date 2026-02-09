@@ -1,27 +1,35 @@
 #!/bin/bash
-# format-python.sh - Auto-format Python files after editing
-# Uses ruff for formatting and linting (via uvx for isolation)
+# format-python.sh - Best-effort Python formatting after edits.
+# Hook type: PostToolUse (Write, Edit, MultiEdit)
 
-# Handle case where stdin is unavailable or empty
-input=$(cat 2>/dev/null) || true
-if [[ -z "$input" ]]; then
+set -euo pipefail
+
+if ! command -v jq >/dev/null 2>&1; then
     exit 0
 fi
 
-# Extract file path
-file_path=$(echo "$input" | jq -r '.tool_input.file_path // .tool_input.path // ""' 2>/dev/null || echo "")
+input=$(cat 2>/dev/null) || true
+[[ -n "$input" ]] || exit 0
 
-# Only process Python files
-if [[ "$file_path" == *.py ]]; then
-    # Format with ruff if available
-    if command -v uvx >/dev/null 2>&1; then
-        uvx ruff format "$file_path" 2>/dev/null || true
-        uvx ruff check --fix "$file_path" 2>/dev/null || true
-    elif command -v ruff >/dev/null 2>&1; then
-        ruff format "$file_path" 2>/dev/null || true
-        ruff check --fix "$file_path" 2>/dev/null || true
-    fi
+tool_name=$(echo "$input" | jq -r '.tool_name // ""' 2>/dev/null || echo "")
+case "$tool_name" in
+Write | Edit | MultiEdit) ;;
+*)
+    exit 0
+    ;;
+esac
+
+file_path=$(echo "$input" | jq -r '.tool_input.file_path // .tool_input.path // ""' 2>/dev/null || echo "")
+[[ "$file_path" == *.py ]] || exit 0
+[[ -f "$file_path" ]] || exit 0
+
+# Prefer local toolchain first for speed and reproducibility.
+if command -v ruff >/dev/null 2>&1; then
+    ruff format "$file_path" >/dev/null 2>&1 || true
+    ruff check --fix "$file_path" >/dev/null 2>&1 || true
+elif command -v uvx >/dev/null 2>&1; then
+    uvx ruff format "$file_path" >/dev/null 2>&1 || true
+    uvx ruff check --fix "$file_path" >/dev/null 2>&1 || true
 fi
 
-# Always succeed
 exit 0
