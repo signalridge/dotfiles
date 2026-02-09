@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# Codex CLI API Key Helper
+# Retrieve API keys from gopass for Codex CLI
+#
+# Usage:
+#   codex-token [account]           # Output API key for account
+#   codex-token --check [account]   # Check if key exists (exit code only)
+#   codex-token --config [account]  # Output account config as JSON
+
+set -euo pipefail
+
+# shellcheck source=lib/codex.tmpl
+# shellcheck disable=SC1091
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/codex"
+
+# Parse arguments
+CHECK_ONLY=false
+CONFIG_ONLY=false
+ACCOUNT=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --check)
+            CHECK_ONLY=true
+            shift
+            ;;
+        --config)
+            CONFIG_ONLY=true
+            shift
+            ;;
+        --help|-h)
+            cat << 'EOF'
+Codex CLI API Key Helper
+
+Usage:
+  codex-token [account]           Output API key for account
+  codex-token --check [account]   Check if key exists (exit code only)
+  codex-token --config [account]  Output account config as JSON
+
+Examples:
+  codex-token deepseek@private    Get API key for deepseek@private
+  codex-token --check kimi@work   Check if kimi@work has a key
+  codex-token --config doubao     Get config for doubao account
+EOF
+            exit 0
+            ;;
+        *)
+            ACCOUNT="$1"
+            shift
+            ;;
+    esac
+done
+
+# Default to current account if not specified
+if [[ -z "$ACCOUNT" ]]; then
+    ACCOUNT=$(get_current)
+fi
+
+# Get provider and account name
+PROVIDER=$(get_provider "$ACCOUNT")
+PARSED=$(parse_provider_account "$ACCOUNT")
+ACCT_NAME="${PARSED#*|}"
+
+# Config mode: output account configuration
+if $CONFIG_ONLY; then
+    # Get account config from chezmoi data
+    chezmoi data --format json 2>/dev/null | jq -r --arg acct "$ACCOUNT" --arg prov "$PROVIDER" '
+        . as $root |
+        ($root.codex.accounts[$acct] // {}) |
+        . + {
+            provider: ($prov),
+            base_url: (($root.codex.providers[$prov].base_url // null) | if . == null then null else (sub("/v1/?$"; "") | sub("/+?$"; "")) end)
+        } |
+        if .base_url == null then del(.base_url) else . end
+    ' 2>/dev/null || echo "{}"
+    exit 0
+fi
+
+# Check if this is a third-party provider that needs an API key
+if ! is_third_party "$PROVIDER"; then
+    if $CHECK_ONLY; then
+        exit 0  # Native providers don't need keys
+    fi
+    echo ""  # No key needed
+    exit 0
+fi
+
+# Check mode: just verify key exists
+if $CHECK_ONLY; then
+    if key_exists "$PROVIDER" "$ACCT_NAME"; then
+        exit 0
+    else
+        exit 1
+    fi
+fi
+
+# Get and output the API key
+KEY=$(get_api_key "$PROVIDER" "$ACCT_NAME") || {
+    log_error "Failed to retrieve API key for $ACCOUNT" >&2
+    exit 1
+}
+
+echo "$KEY"

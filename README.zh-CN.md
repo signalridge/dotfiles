@@ -169,34 +169,32 @@ cd dotfiles && ./init.sh
 
 插件通过 `.chezmoiexternal.toml.tmpl` 从多个来源自动下载：
 
-| 来源                                                      | 说明                                     |
-| --------------------------------------------------------- | ---------------------------------------- |
-| [wshobson/agents](https://github.com/wshobson/agents)     | 50+ 社区插件（agents、commands、skills） |
-| [anthropics/skills](https://github.com/anthropics/skills) | 官方文档处理（pdf、docx、pptx、xlsx）    |
-| [obra/superpowers](https://github.com/obra/superpowers)   | 高级工作流模式                           |
+| 来源                                                      | 说明                                  |
+| --------------------------------------------------------- | ------------------------------------- |
+| [wshobson/agents](https://github.com/wshobson/agents)     | 精选社区 skills（Claude/Codex 共享）  |
+| [anthropics/skills](https://github.com/anthropics/skills) | 官方文档处理（pdf、docx、pptx、xlsx） |
+| [obra/superpowers](https://github.com/obra/superpowers)   | 精选 OpenSpec 互补工作流 skills       |
 
 ```yaml
-# .chezmoidata/claude.yaml
-claude:
-  wshobsonAgents:
-    include:
-      - python-development
-      - javascript-typescript
-      - backend-development
-      - tdd-workflows
-      - cloud-infrastructure
-      # ... 共 19 个插件
-  anthropicsSkills:
-    include:
-      - pdf
-      - docx
+# skills 的单一真源：.chezmoiexternal.toml.tmpl
+# - wshobson/agents：精选插件，仅同步 skills 到 ~/.agents/skills/<plugin>/
+# - anthropics/skills：精选 skills，同步到 ~/.agents/skills/anthropics/<skill>/
+# - obra/superpowers：仅同步精选 skills 到 ~/.agents/skills/superpowers/
+
+# superpowers（白名单）包含：
+# - brainstorming
+# - test-driven-development
+# - systematic-debugging
+# - verification-before-completion
+# - requesting-code-review
+# - receiving-code-review
 ```
 
 chezmoi external 会自动：
 
-- 在 `chezmoi apply` 时下载已启用的插件
-- 将 agents、commands、skills 解压到 `~/.claude/`
-- 配置变更时自动更新
+- 在 `chezmoi apply` 时下载启用的共享 skills
+- 将 skills 维护在 `~/.agents/skills`，供 Claude 与 Codex 共用
+- 在插件/skill 配置变更时自动更新
 
 ### 质量协议
 

@@ -2,6 +2,12 @@
 # Claude Code Launcher
 # Launch claude with any account via environment variable injection
 #
+# Session Isolation:
+#   This script ensures complete isolation from shell environment:
+#   - Unsets ANTHROPIC_API_KEY and ANTHROPIC_AUTH_TOKEN to prevent key leakage
+#   - Unsets ANTHROPIC_BASE_URL for native Anthropic accounts
+#   - Always sets _CLAUDE_OVERRIDE_ACCOUNT to ensure correct token selection
+#
 # Usage:
 #   claude-with                    # fzf interactive picker
 #   claude-with <account> [args]   # Launch with account + claude args
@@ -74,16 +80,28 @@ launch_claude() {
     model=$(echo "$config" | jq -r '.model // empty')
     small_model=$(echo "$config" | jq -r '.small_model // empty')
 
-    # Set environment for third-party
+    # Session isolation: clean up environment to prevent shell pollution
+    # Unset any existing ANTHROPIC_* variables that could interfere
+    unset ANTHROPIC_API_KEY
+    unset ANTHROPIC_AUTH_TOKEN
+
+    # Always set override account to ensure claude-token uses the correct provider
+    # This works for both native Anthropic (OAuth) and third-party (API key)
+    export _CLAUDE_OVERRIDE_ACCOUNT="$account"
+
+    # Configure base_url for third-party providers
+    # Native Anthropic accounts have no base_url and use OAuth
     if [[ -n "$base_url" ]]; then
-        local token
-        if ! token=$(claude-token "$account" 2>/dev/null); then
+        # Verify token exists before launching
+        if ! claude-token --check "$account" 2>/dev/null; then
             log_error "No API token for $account"
             echo -e "Run: ${YELLOW}claude-manage add-key $account${NC}" >&2
             return 1
         fi
-        export ANTHROPIC_API_KEY="$token"
         export ANTHROPIC_BASE_URL="$base_url"
+    else
+        # Native Anthropic: ensure no base_url is set (prevents shell env leakage)
+        unset ANTHROPIC_BASE_URL
     fi
 
     # Common settings
@@ -91,15 +109,13 @@ launch_claude() {
     [[ -n "$small_model" ]] && export ANTHROPIC_SMALL_FAST_MODEL="$small_model"
 
     # Optional settings
-    local timeout disable_traffic haiku sonnet opus
+    local timeout haiku sonnet opus
     timeout=$(echo "$config" | jq -r '.timeout_ms // empty')
-    disable_traffic=$(echo "$config" | jq -r '.disable_nonessential_traffic // empty')
     haiku=$(echo "$config" | jq -r '.haiku_model // empty')
     sonnet=$(echo "$config" | jq -r '.sonnet_model // empty')
     opus=$(echo "$config" | jq -r '.opus_model // empty')
 
     [[ -n "$timeout" ]] && export API_TIMEOUT_MS="$timeout"
-    [[ "$disable_traffic" == "true" ]] && export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
     [[ -n "$haiku" ]] && export ANTHROPIC_DEFAULT_HAIKU_MODEL="$haiku"
     [[ -n "$sonnet" ]] && export ANTHROPIC_DEFAULT_SONNET_MODEL="$sonnet"
     [[ -n "$opus" ]] && export ANTHROPIC_DEFAULT_OPUS_MODEL="$opus"
@@ -110,7 +126,66 @@ launch_claude() {
     [[ -n "$base_url" ]] && echo -e "  URL:   $base_url"
     echo ""
 
-    exec claude "$@"
+    # Important: ~/.claude/settings.json may include a default provider's env (e.g. ANTHROPIC_BASE_URL).
+    # When default is a third-party provider, that global env will break `ccw anthropic` unless we override it.
+    # Strategy:
+    #   - Load the user's global settings JSON
+    #   - Strip provider-specific keys (apiKeyHelper + ANTHROPIC_* routing/model)
+    #   - Inject per-session overrides for the selected account
+    #   - Start Claude Code with `--setting-sources project,local` to avoid re-loading the unmodified user settings
+    local settings_override api_key_helper_override base_url_override
+
+    if [[ -n "$base_url" ]]; then
+        api_key_helper_override="$HOME/.local/bin/claude-token"
+        base_url_override="$base_url"
+    else
+        # Native Anthropic (OAuth). Ensure we do not inherit a third-party base URL.
+        api_key_helper_override=""
+        base_url_override="https://api.anthropic.com"
+    fi
+
+    local user_settings
+    user_settings=$(jq -c '
+        del(.apiKeyHelper)
+        | .env = (.env // {} | del(
+            .ANTHROPIC_BASE_URL,
+            .ANTHROPIC_MODEL,
+            .ANTHROPIC_SMALL_FAST_MODEL,
+            .ANTHROPIC_DEFAULT_HAIKU_MODEL,
+            .ANTHROPIC_DEFAULT_SONNET_MODEL,
+            .ANTHROPIC_DEFAULT_OPUS_MODEL
+        ))
+    ' "$HOME/.claude/settings.json" 2>/dev/null || echo '{}')
+
+    settings_override=$(jq -nc \
+        --argjson base "$user_settings" \
+        --arg apiKeyHelper "$api_key_helper_override" \
+        --arg base_url "$base_url_override" \
+        --arg model "${model:-}" \
+        --arg small_model "${small_model:-}" \
+        --arg haiku "${haiku:-}" \
+        --arg sonnet "${sonnet:-}" \
+        --arg opus "${opus:-}" \
+        '(
+            $base
+            * {
+                apiKeyHelper: $apiKeyHelper,
+                env: (
+                    ($base.env // {})
+                    + {
+                        ANTHROPIC_BASE_URL: $base_url,
+                        ANTHROPIC_MODEL: $model,
+                        ANTHROPIC_SMALL_FAST_MODEL: $small_model,
+                        ANTHROPIC_DEFAULT_HAIKU_MODEL: $haiku,
+                        ANTHROPIC_DEFAULT_SONNET_MODEL: $sonnet,
+                        ANTHROPIC_DEFAULT_OPUS_MODEL: $opus
+                    }
+                )
+            }
+            | .env |= with_entries(select(.value | length > 0))
+        )')
+
+    exec claude --setting-sources project,local --settings "$settings_override" "$@"
 }
 
 # Show help

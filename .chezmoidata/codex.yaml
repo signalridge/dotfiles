@@ -1,0 +1,126 @@
+codex:
+  # Codex CLI Provider Configuration
+  # Docs: https://developers.openai.com/codex/config-reference
+
+  # ===== Provider Definitions =====
+  providers:
+    # Native OpenAI (OAuth, no API key needed)
+    openai:
+      models:
+        - gpt-5-codex
+        - gpt-5
+    # Third-party OpenAI-compatible providers
+    deepseek:
+      base_url: https://api.deepseek.com/v1
+      models:
+        - deepseek-chat
+        - deepseek-reasoner
+    kimi:
+      base_url: https://api.moonshot.ai/v1
+      models:
+        - kimi-k2-0711-preview
+    glm:
+      base_url: https://open.bigmodel.cn/api/paas/v4
+      models:
+        - glm-4.5
+    qwen:
+      base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      models:
+        - qwen3-coder-plus
+    minimax:
+      base_url: https://api.minimax.io/v1
+      models:
+        - MiniMax-M2.1
+    doubao:
+      base_url: https://ark.cn-beijing.volces.com/api/v3
+      models:
+        - doubao-seed-1-6-thinking-250715
+  # ===== Account Configurations =====
+  # Format: provider or provider@account
+  # Fields: model, provider(optional override)
+  accounts:
+    openai:
+      provider: openai
+      model: gpt-5-codex
+    deepseek@smoke:
+      provider: deepseek
+      model: deepseek-chat
+  # ===== Shared Skills =====
+  # All skills are hardcoded in .chezmoiexternal.toml.tmpl
+  # ===== Global Defaults =====
+  defaults:
+    # Approval policy: untrusted | on-failure | on-request | never
+    approval_policy: on-request
+    # Sandbox mode: read-only | workspace-write | danger-full-access
+    sandbox_mode: workspace-write
+    # Model reasoning effort: none | minimal | low | medium | high | xhigh
+    model_reasoning_effort: high
+    # Personality: none | friendly | pragmatic
+    personality: pragmatic
+    # Model verbosity: low | medium | high
+    model_verbosity: medium
+  # ===== Feature Flags =====
+  features:
+    shell_tool: true
+    memory_tool: false
+    web_search: false
+  # ===== History Settings =====
+  history:
+    # persistence: save-all | none
+    persistence: save-all
+    # max_bytes: maximum history file size
+    max_bytes: 104857600
+  # ===== TUI Settings =====
+  tui:
+    notifications: true
+    animations: true
+    show_tooltips: true
+  # ===== Project Documentation =====
+  project_doc:
+    # Fallback filenames for AGENTS.md discovery
+    fallback_filenames:
+      - CLAUDE.md
+      - TEAM_GUIDE.md
+      - .agents.md
+      - CODEX.md
+    # Max bytes for combined AGENTS.md content
+    max_bytes: 65536
+  # ===== Profiles =====
+  profiles:
+    fast:
+      model_reasoning_effort: low
+      approval_policy: never
+    deep-review:
+      model_reasoning_effort: xhigh
+      approval_policy: on-request
+    research:
+      web_search: live
+      model_reasoning_effort: high
+  # ===== MCP Servers =====
+  mcp_servers:
+    slack:
+      command: npx
+      args:
+        - "-y"
+        - "@anthropic/mcp-server-slack"
+      env:
+        SLACK_BOT_TOKEN: "${SLACK_BOT_TOKEN}"
+        SLACK_TEAM_ID: "${SLACK_TEAM_ID}"
+    notion:
+      command: npx
+      args:
+        - "-y"
+        - "@anthropic/mcp-server-notion"
+      env:
+        NOTION_API_KEY: "${NOTION_API_KEY}"
+    sequential-thinking:
+      command: npx
+      args:
+        - "-y"
+        - "@anthropic/mcp-server-sequential-thinking"
+    tavily:
+      command: ~/.local/bin/mcp-tavily
+      args: []
+    postgres:
+      command: ~/.local/bin/mcp-postgres
+      args: []

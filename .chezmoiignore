@@ -64,5 +64,9 @@ nix-config/modules/host-users.nix
 .ssh/*
 {{- end }}
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Claude command convergence (OpenSpec-first + minimal commands)
+# ─────────────────────────────────────────────────────────────────────────────
 backup/
 tests/
+openspec/

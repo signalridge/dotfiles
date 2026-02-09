@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# PostgreSQL MCP wrapper
+# Resolve PostgreSQL connection string from gopass at runtime, then launch MCP server.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/common"
+
+require_cmd gopass bunx
+
+PG_DSN_GOPASS_PATH="postgres/api_key"
+
+if ! PG_DSN=$(run_with_timeout 3 gopass show -o "$PG_DSN_GOPASS_PATH" 2>/dev/null); then
+    log_error "Failed to read PostgreSQL DSN from gopass: $PG_DSN_GOPASS_PATH"
+    exit 1
+fi
+
+if [[ -z "$PG_DSN" ]]; then
+    log_error "PostgreSQL DSN is empty: $PG_DSN_GOPASS_PATH"
+    exit 1
+fi
+
+# Reference server: read-only Postgres MCP
+exec bunx @modelcontextprotocol/server-postgres "$PG_DSN" "$@"

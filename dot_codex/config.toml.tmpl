@@ -1,0 +1,167 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+# Codex CLI Configuration
+# Managed by chezmoi - do not edit directly
+# Run: chezmoi edit ~/.codex/config.toml
+
+# =============================================================================
+# Core Settings
+# =============================================================================
+
+{{- /* Get account from codexProviderAccount */ -}}
+{{- $accountKey := "openai" -}}
+{{- if hasKey . "codexProviderAccount" -}}
+{{-   $accountKey = .codexProviderAccount -}}
+{{- end -}}
+
+{{- /* Get account config from codex.accounts */ -}}
+{{- $account := index .codex.accounts $accountKey -}}
+
+{{- /* Get provider name */ -}}
+{{- $providerName := (split "@" $accountKey)._0 -}}
+{{- if and $account (hasKey $account "provider") -}}
+{{-   $providerName = $account.provider -}}
+{{- end -}}
+
+{{- /* Get provider config */ -}}
+{{- $provider := index .codex.providers $providerName -}}
+
+{{- /* Get codex defaults */ -}}
+{{- $defaults := .codex.defaults -}}
+
+# Default model (from shared account config)
+{{- if and $account (hasKey $account "model") }}
+model = "{{ $account.model }}"
+{{- else }}
+# model = "gpt-5-codex"
+{{- end }}
+
+# Model provider (use custom provider if third-party)
+{{- if and $provider (hasKey $provider "base_url") }}
+model_provider = "{{ $providerName }}"
+{{- end }}
+
+# Approval policy: untrusted | on-failure | on-request | never
+approval_policy = "{{ $defaults.approval_policy }}"
+
+# Sandbox mode: read-only | workspace-write | danger-full-access
+sandbox_mode = "{{ $defaults.sandbox_mode }}"
+
+# =============================================================================
+# Model Configuration
+# =============================================================================
+
+# Reasoning effort: none | minimal | low | medium | high | xhigh
+model_reasoning_effort = "{{ $defaults.model_reasoning_effort }}"
+
+# Personality: none | friendly | pragmatic
+personality = "{{ $defaults.personality }}"
+
+# Verbosity: low | medium | high
+model_verbosity = "{{ $defaults.model_verbosity }}"
+
+# Enable built-in web search tool
+web_search = "{{ if .codex.features.web_search }}live{{ else }}disabled{{ end }}"
+
+{{- if and (hasKey .codex "active_profile") (ne .codex.active_profile "") }}
+# Active profile
+profile = "{{ .codex.active_profile }}"
+{{- end }}
+
+# =============================================================================
+# Project Documentation
+# =============================================================================
+
+# Fallback filenames for AGENTS.md discovery (supports CLAUDE.md for compatibility)
+project_doc_fallback_filenames = [{{ range $i, $f := .codex.project_doc.fallback_filenames }}{{ if $i }}, {{ end }}"{{ $f }}"{{ end }}]
+
+# Max bytes for combined AGENTS.md content
+project_doc_max_bytes = {{ .codex.project_doc.max_bytes }}
+
+# =============================================================================
+# Feature Flags
+# =============================================================================
+
+[features]
+shell_tool = {{ .codex.features.shell_tool }}
+memory_tool = {{ .codex.features.memory_tool }}
+
+# =============================================================================
+# History Settings
+# =============================================================================
+
+[history]
+persistence = "{{ .codex.history.persistence }}"
+max_bytes = {{ .codex.history.max_bytes }}
+
+# =============================================================================
+# TUI Settings
+# =============================================================================
+
+[tui]
+notifications = {{ .codex.tui.notifications }}
+animations = {{ .codex.tui.animations }}
+show_tooltips = {{ .codex.tui.show_tooltips }}
+
+# =============================================================================
+# Model Providers (Third-Party)
+# =============================================================================
+{{- range $name, $config := .codex.providers }}
+{{- if hasKey $config "base_url" }}
+
+[model_providers.{{ $name }}]
+name = "{{ $name | title }}"
+base_url = "{{ $config.base_url }}"
+env_key = "{{ upper $name }}_API_KEY"
+{{- end }}
+{{- end }}
+
+# =============================================================================
+# MCP Servers
+# =============================================================================
+{{- range $name, $config := .codex.mcp_servers }}
+
+[mcp_servers.{{ $name }}]
+command = "{{ $config.command }}"
+args = [{{ range $i, $arg := $config.args }}{{ if $i }}, {{ end }}"{{ $arg }}"{{ end }}]
+{{- if hasKey $config "env" }}
+[mcp_servers.{{ $name }}.env]
+{{- range $k, $v := $config.env }}
+{{ $k }} = "{{ $v }}"
+{{- end }}
+{{- end }}
+{{- end }}
+
+# =============================================================================
+# Profiles
+# =============================================================================
+{{- range $name, $config := .codex.profiles }}
+
+[profiles.{{ $name }}]
+{{- if hasKey $config "model_reasoning_effort" }}
+model_reasoning_effort = "{{ $config.model_reasoning_effort }}"
+{{- end }}
+{{- if hasKey $config "approval_policy" }}
+approval_policy = "{{ $config.approval_policy }}"
+{{- end }}
+{{- if hasKey $config "web_search" }}
+{{- $ws := printf "%v" $config.web_search }}
+web_search = "{{ if or (eq $ws "live") (eq $ws "cached") (eq $ws "disabled") }}{{ $ws }}{{ else }}disabled{{ end }}"
+{{- end }}
+{{- end }}
+
+# =============================================================================
+# Shell Environment Policy
+# =============================================================================
+
+[shell_environment_policy]
+inherit = "core"
+exclude = ["AWS_*", "AZURE_*", "GCP_*", "*_SECRET*", "*_TOKEN*", "*_KEY*"]
+ignore_default_excludes = false
+
+# =============================================================================
+# Sandbox Workspace Write Settings
+# =============================================================================
+
+[sandbox_workspace_write]
+network_access = true
+exclude_slash_tmp = false

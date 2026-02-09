@@ -84,7 +84,6 @@ claude:
   # Global defaults (accounts can override)
   defaults:
     timeout_ms: 600000
-    disable_nonessential_traffic: true
 
   # Provider definitions (base_url + available models)
   providers:
@@ -125,15 +124,14 @@ claude:
 
 ## Environment Variable Mapping
 
-| Account Field                  | Environment Variable                       |
-| ------------------------------ | ------------------------------------------ |
-| `model`                        | `ANTHROPIC_MODEL`                          |
-| `small_model`                  | `ANTHROPIC_SMALL_FAST_MODEL`               |
-| `haiku_model`                  | `ANTHROPIC_DEFAULT_HAIKU_MODEL`            |
-| `sonnet_model`                 | `ANTHROPIC_DEFAULT_SONNET_MODEL`           |
-| `opus_model`                   | `ANTHROPIC_DEFAULT_OPUS_MODEL`             |
-| `timeout_ms`                   | `API_TIMEOUT_MS`                           |
-| `disable_nonessential_traffic` | `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` |
+| Account Field  | Environment Variable             |
+| -------------- | -------------------------------- |
+| `model`        | `ANTHROPIC_MODEL`                |
+| `small_model`  | `ANTHROPIC_SMALL_FAST_MODEL`     |
+| `haiku_model`  | `ANTHROPIC_DEFAULT_HAIKU_MODEL`  |
+| `sonnet_model` | `ANTHROPIC_DEFAULT_SONNET_MODEL` |
+| `opus_model`   | `ANTHROPIC_DEFAULT_OPUS_MODEL`   |
+| `timeout_ms`   | `API_TIMEOUT_MS`                 |
 
 ## Data Storage
 

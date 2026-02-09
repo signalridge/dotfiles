@@ -12,75 +12,88 @@
     refreshPeriod = "168h"
 
 # ==============================================================================
-# Claude Code Plugins
-# All plugins are downloaded at apply time via chezmoi external
-# Only metadata (keywords) is committed to git in .chezmoidata/claude.yaml
+# Shared AI Tools Plugins
+# Skills are shared between Claude Code and Codex CLI via ~/.agents/skills/
+# Agents and commands remain in ~/.claude/ (Claude Code specific)
+# Hardcoded plugin/skill lists in this template are the single source of truth
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# wshobson/agents plugins
-# Each plugin may have agents/, commands/, skills/ subdirectories
-# Structure: agents-main/plugins/{plugin}/{type}/* → .claude/{type}/{plugin}/*
+# Shared AI Skills (hardcoded baseline for Claude + Codex)
 # ------------------------------------------------------------------------------
-{{- $wshobsonPlugins := .claude.wshobsonAgents.include | default list }}
-{{- $types := list "agents" "commands" "skills" }}
 
+# ------------------------------------------------------------------------------
+# wshobson/agents plugins (skills only)
+# - Skills are shared for Claude + Codex via .agents/skills/
+# - Hardcoded plugin list (single source of truth in this template)
+# ------------------------------------------------------------------------------
+{{- $wshobsonPlugins := list
+  "developer-essentials"
+  "debugging-toolkit"
+  "python-development"
+  "backend-development"
+  "systems-programming"
+  "security-scanning"
+  "documentation-generation"
+  "comprehensive-review"
+  "llm-application-dev"
+  "data-engineering"
+  "machine-learning-ops"
+  "javascript-typescript"
+  "frontend-mobile-development"
+  "shell-scripting"
+  "observability-monitoring"
+  "deployment-strategies"
+  "cloud-infrastructure"
+  "cicd-automation"
+  "api-testing-observability"
+  "kubernetes-operations"
+}}
 {{- range $plugin := $wshobsonPlugins }}
-{{- range $type := $types }}
-[".claude/{{ $type }}/{{ $plugin }}"]
+[".agents/skills/{{ $plugin }}"]
     type = "archive"
     url = "https://github.com/wshobson/agents/archive/{{ $.versions.claudeWshobsonAgentsRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.claudeWshobsonAgentsSha256 }}"
     exact = true
     stripComponents = 4
-    include = ["agents-*/plugins/{{ $plugin }}/{{ $type }}/**"]
+    include = ["agents-*/plugins/{{ $plugin }}/skills/**"]
     refreshPeriod = "168h"
 
-{{ end }}
 {{- end }}
-# ------------------------------------------------------------------------------
-# obra/superpowers
-# Structure: superpowers-main/{type}/* → .claude/{type}/superpowers/*
-# Note: using-superpowers skill is included but unused (we use CLAUDE.md instead)
-# Cannot exclude due to chezmoi bug with include+exclude on same archive URL
-# ------------------------------------------------------------------------------
-[".claude/agents/superpowers"]
-    type = "archive"
-    url = "https://github.com/obra/superpowers/archive/{{ $.versions.claudeSuperpowersRev }}.tar.gz"
-    checksum.sha256 = "{{ $.versions.claudeSuperpowersSha256 }}"
-    exact = true
-    stripComponents = 2
-    include = ["superpowers-*/agents/**"]
-    refreshPeriod = "168h"
 
-[".claude/commands/superpowers"]
+# ------------------------------------------------------------------------------
+# obra/superpowers (skills only)
+# - Keep only OpenSpec-complementary skills
+# - Hardcoded skill list
+# ------------------------------------------------------------------------------
+[".agents/skills/superpowers"]
     type = "archive"
     url = "https://github.com/obra/superpowers/archive/{{ $.versions.claudeSuperpowersRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.claudeSuperpowersSha256 }}"
     exact = true
     stripComponents = 2
-    include = ["superpowers-*/commands/**"]
-    refreshPeriod = "168h"
-
-[".claude/skills/superpowers"]
-    type = "archive"
-    url = "https://github.com/obra/superpowers/archive/{{ $.versions.claudeSuperpowersRev }}.tar.gz"
-    checksum.sha256 = "{{ $.versions.claudeSuperpowersSha256 }}"
-    exact = true
-    stripComponents = 2
-    include = ["superpowers-*/skills/**"]
+    include = [
+      "superpowers-*/skills/brainstorming/**",
+      "superpowers-*/skills/writing-plans/**",
+      "superpowers-*/skills/executing-plans/**",
+      "superpowers-*/skills/test-driven-development/**",
+      "superpowers-*/skills/systematic-debugging/**",
+      "superpowers-*/skills/verification-before-completion/**",
+      "superpowers-*/skills/requesting-code-review/**",
+      "superpowers-*/skills/receiving-code-review/**"
+    ]
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
 # anthropics/skills (source-available, NOT open source)
 # License: https://github.com/anthropics/skills - see LICENSE.txt in each skill
-# These are downloaded locally at apply time, NOT committed to git
-# Structure: skills-main/skills/{skill}/* → .claude/skills/anthropics/{skill}/*
+# Skills go to .agents/skills/anthropics/{skill}/ (Shared)
+# - Hardcoded skill list
 # ------------------------------------------------------------------------------
-{{- $anthropicsSkills := .claude.anthropicsSkills.include | default list }}
+{{- $anthropicsSkills := list "pdf" "docx" "pptx" "xlsx" "skill-creator" "mcp-builder" "canvas-design" }}
 
 {{- range $skill := $anthropicsSkills }}
-[".claude/skills/anthropics/{{ $skill }}"]
+[".agents/skills/anthropics/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/anthropics/skills/archive/{{ $.versions.claudeAnthropicsSkillsRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.claudeAnthropicsSkillsSha256 }}"

@@ -1,88 +1,106 @@
 #!/bin/bash
-# block-git-rewrites.sh - Block dangerous git operations that could rewrite history
-# Source: Git safety best practices
+# block-git-rewrites.sh - Guard dangerous git history rewrite operations.
+# Hook type: PreToolUse (Bash)
+#
+# Design goals (low-noise, unified output):
+# - BLOCK: only for truly irreversible/dangerous actions (rare).
+# - ASK: for risky but recoverable actions.
+# - Output: 2 lines max (LEVEL RULE_ID: reason + Next: remediation).
 
-# Get the command from Claude's input (passed as JSON via stdin)
-# Handle case where stdin is unavailable or empty
-INPUT=$(cat 2>/dev/null) || true
-if [[ -z "$INPUT" ]]; then
+set -euo pipefail
+
+if ! command -v jq >/dev/null 2>&1; then
     exit 0
 fi
 
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
-if [[ -z "$COMMAND" ]]; then
-    exit 0
-fi
+input=$(cat 2>/dev/null) || true
+[[ -n "$input" ]] || exit 0
 
-# Protected branches
-PROTECTED_BRANCHES="main|master|develop|release"
+tool_name=$(echo "$input" | jq -r '.tool_name // ""' 2>/dev/null || echo "")
+[[ "$tool_name" == "Bash" ]] || exit 0
 
-# Check for dangerous operations
-check_dangerous() {
-    local cmd="$1"
+command=$(echo "$input" | jq -r '.tool_input.command // ""' 2>/dev/null || echo "")
+[[ -n "$command" ]] || exit 0
 
-    # Block force push to protected branches
-    if echo "$cmd" | grep -qE 'git\s+push.*--force|git\s+push.*-f'; then
-        # Check if pushing to protected branch
-        if echo "$cmd" | grep -qE "($PROTECTED_BRANCHES)"; then
-            echo '{"decision": "block", "reason": "BLOCKED: Force push to protected branch (main/master/develop/release) is not allowed. Use a feature branch instead."}'
-            exit 0
-        fi
-        # Warn but allow force push to other branches
-        echo '{"decision": "ask", "reason": "WARNING: Force push detected. This rewrites remote history. Are you sure?"}'
-        exit 0
-    fi
+protected_branches='main|master|develop|release'
 
-    # Block git commit --amend (with exceptions)
-    if echo "$cmd" | grep -qE 'git\s+commit.*--amend'; then
-        echo '{"decision": "ask", "reason": "WARNING: --amend rewrites the last commit. Only safe if: (1) commit not pushed to remote, (2) you made the original commit. Verify with: git status (should show \"ahead of origin\")"}'
-        exit 0
-    fi
-
-    # Block hard reset
-    if echo "$cmd" | grep -qE 'git\s+reset\s+--hard'; then
-        echo '{"decision": "ask", "reason": "WARNING: git reset --hard will discard all uncommitted changes permanently. Consider using git stash first."}'
-        exit 0
-    fi
-
-    # Block interactive rebase
-    if echo "$cmd" | grep -qE 'git\s+rebase\s+-i|git\s+rebase\s+--interactive'; then
-        echo '{"decision": "block", "reason": "BLOCKED: Interactive rebase requires manual input and is not supported. Use regular rebase or merge instead."}'
-        exit 0
-    fi
-
-    # Block rebase on protected branches
-    if echo "$cmd" | grep -qE 'git\s+rebase.*origin/('"$PROTECTED_BRANCHES"')'; then
-        echo '{"decision": "ask", "reason": "WARNING: Rebasing onto protected branch. Make sure you are on a feature branch, not main/master."}'
-        exit 0
-    fi
-
-    # Block git clean -fd (force delete untracked files)
-    if echo "$cmd" | grep -qE 'git\s+clean\s+-[a-z]*f[a-z]*d|git\s+clean\s+-[a-z]*d[a-z]*f'; then
-        echo '{"decision": "ask", "reason": "WARNING: git clean -fd will permanently delete untracked files and directories. Consider using git clean -n first to preview."}'
-        exit 0
-    fi
-
-    # Block checkout with --force on protected branches
-    if echo "$cmd" | grep -qE 'git\s+checkout\s+--force\s+('"$PROTECTED_BRANCHES"')|git\s+checkout\s+-f\s+('"$PROTECTED_BRANCHES"')'; then
-        echo '{"decision": "ask", "reason": "WARNING: Force checkout will discard local changes."}'
-        exit 0
-    fi
-
-    # Block branch deletion of protected branches
-    if echo "$cmd" | grep -qE 'git\s+branch\s+-[dD]\s+('"$PROTECTED_BRANCHES"')|git\s+branch\s+--delete\s+('"$PROTECTED_BRANCHES"')'; then
-        echo '{"decision": "block", "reason": "BLOCKED: Cannot delete protected branch (main/master/develop/release)."}'
-        exit 0
-    fi
-
-    # Block push --delete of protected branches
-    if echo "$cmd" | grep -qE 'git\s+push.*--delete\s+('"$PROTECTED_BRANCHES"')|git\s+push.*:\s*('"$PROTECTED_BRANCHES"')'; then
-        echo '{"decision": "block", "reason": "BLOCKED: Cannot delete protected remote branch."}'
-        exit 0
-    fi
+matches() {
+    local pattern="$1"
+    printf '%s\n' "$command" | grep -qE "$pattern"
 }
 
-check_dangerous "$COMMAND"
+# Unified output: 2 lines (LEVEL RULE_ID: reason + Next: action)
+ask() {
+    local rule_id="$1"
+    local reason="$2"
+    local next="$3"
+    local msg="ASK ${rule_id}: ${reason}
+Next: ${next}"
+    jq -n --arg reason "$msg" '{decision:"ask", reason:$reason}'
+    exit 0
+}
 
-# Allow all other commands
+block() {
+    local rule_id="$1"
+    local reason="$2"
+    local next="$3"
+    local msg="BLOCK ${rule_id}: ${reason}
+Next: ${next}"
+    jq -n --arg reason "$msg" '{decision:"block", reason:$reason}'
+    exit 0
+}
+
+# --- BLOCK rules (truly dangerous, no recovery) ---
+
+if matches 'git[[:space:]]+rebase[[:space:]]+(-i|--interactive)'; then
+    block "GIT-REBASE-I" "Interactive rebase requires manual input." "Use regular rebase or merge instead."
+fi
+
+if matches "git[[:space:]]+branch[[:space:]]+(-d|-D|--delete)[[:space:]]+($protected_branches)"; then
+    block "GIT-DELETE-PROTECTED" "Cannot delete protected branch." "Use a feature branch."
+fi
+
+if matches "git[[:space:]]+push.*(--delete[[:space:]]+($protected_branches)|:[[:space:]]*($protected_branches))"; then
+    block "GIT-PUSH-DELETE-PROTECTED" "Cannot delete protected remote branch." "Use a feature branch."
+fi
+
+if matches 'git[[:space:]]+push' && matches '(^|[[:space:]])(--force|-f)([[:space:]]|$)'; then
+    if matches "($protected_branches)"; then
+        block "GIT-FORCE-PUSH-PROTECTED" "Force push to protected branch not allowed." "Use a feature branch."
+    fi
+fi
+
+# --- ASK rules (risky but recoverable) ---
+
+if matches '(^|[[:space:]])openspec[[:space:]]+archive([[:space:]]|$)'; then
+    if matches '(^|[[:space:]])--yes([[:space:]]|$)'; then
+        ask "OPENSPEC-ARCHIVE-YES" "openspec archive --yes finalizes the change." "Confirm explicitly (never auto-chain)."
+    fi
+    ask "OPENSPEC-ARCHIVE" "openspec archive finalizes the change." "Confirm explicitly (one step at a time)."
+fi
+
+if matches 'git[[:space:]]+push' && matches '(^|[[:space:]])(--force|-f)([[:space:]]|$)'; then
+    ask "GIT-FORCE-PUSH" "Force push rewrites remote history." "Confirm you want to rewrite."
+fi
+
+if matches 'git[[:space:]]+commit.*--amend'; then
+    ask "GIT-AMEND" "--amend rewrites the last commit." "Verify commit not pushed (git status shows ahead)."
+fi
+
+if matches 'git[[:space:]]+reset[[:space:]]+--hard'; then
+    ask "GIT-RESET-HARD" "git reset --hard discards uncommitted changes." "Consider git stash first."
+fi
+
+if matches "git[[:space:]]+rebase.*origin/($protected_branches)"; then
+    ask "GIT-REBASE-PROTECTED" "Rebasing onto protected branch." "Ensure you are on a feature branch."
+fi
+
+if matches 'git[[:space:]]+clean[[:space:]]+-[a-z]*f[a-z]*d|git[[:space:]]+clean[[:space:]]+-[a-z]*d[a-z]*f'; then
+    ask "GIT-CLEAN-FD" "git clean -fd deletes untracked files." "Run git clean -n first to preview."
+fi
+
+if matches "git[[:space:]]+checkout[[:space:]]+(-f|--force)[[:space:]]+($protected_branches)"; then
+    ask "GIT-CHECKOUT-FORCE" "Force checkout discards local changes." "Stash or commit first."
+fi
+
 exit 0

@@ -16,21 +16,41 @@
 {{- $provider := index .claude.providers $providerName -}}
 {{- /* Get defaults */ -}}
 {{- $defaults := .claude.defaults -}}
+
 {
-{{- if and $provider (hasKey $provider "base_url") }}
   "apiKeyHelper": "~/.local/bin/claude-token",
-{{- end }}
   "mcpServers": {
-    "github": {
-      "command": "npx",
-      "args": ["-y", "@anthropic/mcp-server-github"],
+    "slack": {
+      "command": "bunx",
+      "args": ["-y", "@anthropic/mcp-server-slack"],
       "env": {
-        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+        "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
+      }
+    },
+    "notion": {
+      "command": "bunx",
+      "args": ["-y", "@anthropic/mcp-server-notion"],
+      "env": {
+        "NOTION_API_KEY": "${NOTION_API_KEY}"
       }
     },
     "sequential-thinking": {
-      "command": "npx",
+      "command": "bunx",
       "args": ["-y", "@anthropic/mcp-server-sequential-thinking"]
+    },
+    "playwright": {
+      "command": "bunx",
+      "args": ["-y", "@playwright/mcp@latest"],
+      "description": "Browser automation for JS-rendered pages"
+    },
+    "tavily": {
+      "command": "~/.local/bin/mcp-tavily",
+      "args": []
+    },
+    "postgres": {
+      "command": "~/.local/bin/mcp-postgres",
+      "args": []
     }
   },
   "permissions": {
@@ -44,11 +64,26 @@
       "Read(.env.local)",
       "Read(.env.production)",
       "Read(.env.*.local)",
+      "Read(.npmrc)",
+      "Read(.netrc)",
+      "Read(.pypirc)",
       "Read(id_rsa*)",
       "Read(id_ed25519*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/credentials*)",
       "Read(**/secrets/**)",
       "Read(**/.secrets/**)",
+      "Read(**/.ssh/**)",
+      "Read(**/.aws/**)",
+      "Read(**/.config/gcloud/**)",
+      "Read(**/.config/gh/hosts.yml)",
       "Write(.env*)",
+      "Write(.npmrc)",
+      "Write(.netrc)",
+      "Write(.pypirc)",
+      "Write(**/*.pem)",
+      "Write(**/*.key)",
       "Write(**/credentials*)",
       "Write(**/secrets/**)"
     ],
@@ -60,6 +95,9 @@
       "Bash(gh:*)",
       "Bash(just:*)",
       "Bash(mise:*)",
+      "Bash(bun:*)",
+      "Bash(bunx:*)",
+      "Bash(openspec:*)",
       "Bash(nix:*)",
       "Bash(chezmoi:*)"
     ]
@@ -70,7 +108,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/hooks/skill-hint.sh",
+            "command": "$HOME/.claude/hooks/navigation-hint.sh",
             "timeout": 3
           }
         ]
@@ -82,46 +120,45 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/hooks/enforce-uv.sh"
-          },
-          {
-            "type": "command",
-            "command": "$HOME/.claude/hooks/block-git-rewrites.sh"
+            "command": "$HOME/.claude/hooks/block-git-rewrites.sh",
+            "timeout": 5
           }
         ]
       },
       {
-        "matcher": "Write|Edit",
+        "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/hooks/block-main-edits.sh"
+            "command": "$HOME/.claude/hooks/block-main-edits.sh",
+            "timeout": 5
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Write|Edit",
+        "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/hooks/format-python.sh"
+            "command": "$HOME/.claude/hooks/format-python.sh",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "$HOME/.claude/hooks/format-code.sh"
+            "command": "$HOME/.claude/hooks/format-code.sh",
+            "timeout": 10
           }
         ]
       }
     ]
   },
   "env": {
-{{- /* Third-party providers: set base_url */ -}}
+{{- /* Third-party providers: use provider base_url + account-configured model settings */ -}}
 {{- if and $provider (hasKey $provider "base_url") }}
     "ANTHROPIC_BASE_URL": "{{ $provider.base_url }}",
 {{- end }}
-{{- /* Model settings: apply to all accounts */ -}}
 {{- if and $account (hasKey $account "model") }}
     "ANTHROPIC_MODEL": "{{ $account.model }}",
 {{- end }}
@@ -139,16 +176,13 @@
 {{- end }}
 {{- /* timeout_ms: account -> defaults */ -}}
 {{- $timeout := "" -}}
-{{- if and $account (hasKey $account "timeout_ms") }}{{ $timeout = $account.timeout_ms }}{{ else if hasKey $defaults "timeout_ms" }}{{ $timeout = $defaults.timeout_ms }}{{ end -}}
+{{- if and $account (hasKey $account "timeout_ms") -}}
+{{-   $timeout = $account.timeout_ms -}}
+{{- else if hasKey $defaults "timeout_ms" -}}
+{{-   $timeout = $defaults.timeout_ms -}}
+{{- end -}}
 {{- if $timeout }}
-    "API_TIMEOUT_MS": "{{ $timeout }}",
+    "API_TIMEOUT_MS": "{{ $timeout }}"
 {{- end }}
-{{- /* disable_nonessential_traffic: account -> defaults */ -}}
-{{- $disableTraffic := false -}}
-{{- if and $account (hasKey $account "disable_nonessential_traffic") }}{{ $disableTraffic = $account.disable_nonessential_traffic }}{{ else if hasKey $defaults "disable_nonessential_traffic" }}{{ $disableTraffic = $defaults.disable_nonessential_traffic }}{{ end -}}
-{{- if $disableTraffic }}
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-{{- end }}
-    "INSIDE_CLAUDE_CODE": "1"
   }
 }

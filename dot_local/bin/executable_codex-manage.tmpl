@@ -1,0 +1,522 @@
+#!/usr/bin/env bash
+# Codex CLI Account Manager
+# Manage accounts and API keys with fzf interface
+#
+# Usage:
+#   codex-manage                   # Interactive menu
+#   codex-manage switch [account]  # Switch default account
+#   codex-manage add-key [account] # Add new API key
+#   codex-manage update-key [acct] # Update existing API key
+#   codex-manage delete-key [acct] # Delete API key
+#   codex-manage test [account]    # Test connectivity
+#   codex-manage list [provider]   # List accounts
+
+set -euo pipefail
+
+# shellcheck source=lib/codex.tmpl
+# shellcheck disable=SC1091
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/codex"
+
+# Return codes
+: "${RC_BACK:=10}"
+: "${RC_EXIT:=130}"
+
+# Run a top-level command and normalize navigation return codes
+run_cmd() {
+    if "$@"; then
+        return 0
+    else
+        local rc=$?
+        if [[ $rc -eq $RC_BACK || $rc -eq $RC_EXIT ]]; then
+            return 0
+        fi
+        return "$rc"
+    fi
+}
+
+# Escape value for TOML basic string context.
+escape_toml_string() {
+    local value="$1"
+    value=${value//\\/\\\\}
+    value=${value//\"/\\\"}
+    value=${value//$'\n'/ }
+    value=${value//$'\r'/ }
+    printf '%s' "$value"
+}
+
+# Set Codex account in chezmoi.toml
+set_chezmoi_account() {
+    local account="$1"
+    local escaped_account
+    escaped_account=$(escape_toml_string "$account")
+    local tmp_file
+    tmp_file=$(mktemp) || { log_error "Failed to create temp file"; return 1; }
+
+    if grep -q "^codexProviderAccount = " "$CHEZMOI_CONFIG"; then
+        sed "s/^codexProviderAccount = .*/codexProviderAccount = \"$escaped_account\"/" "$CHEZMOI_CONFIG" > "$tmp_file"
+    elif grep -q "^claudeProviderAccount = " "$CHEZMOI_CONFIG"; then
+        awk -v line="codexProviderAccount = \"$escaped_account\"" '
+            BEGIN { inserted = 0 }
+            { print }
+            /^claudeProviderAccount = / && inserted == 0 { print line; inserted = 1 }
+            END { if (inserted == 0) print line }
+        ' "$CHEZMOI_CONFIG" > "$tmp_file"
+    elif grep -q "^\[data\]" "$CHEZMOI_CONFIG"; then
+        awk -v line="codexProviderAccount = \"$escaped_account\"" '
+            BEGIN { inserted = 0; in_data = 0 }
+            /^\[data\]$/ { in_data = 1; print; next }
+            /^\[/ {
+                if (in_data == 1 && inserted == 0) {
+                    print line
+                    inserted = 1
+                }
+                in_data = 0
+                print
+                next
+            }
+            { print }
+            END {
+                if (in_data == 1 && inserted == 0) {
+                    print line
+                }
+            }
+        ' "$CHEZMOI_CONFIG" > "$tmp_file"
+    else
+        cp "$CHEZMOI_CONFIG" "$tmp_file"
+        {
+            echo ""
+            echo "[data]"
+            echo "codexProviderAccount = \"$escaped_account\""
+        } >> "$tmp_file"
+    fi
+    mv "$tmp_file" "$CHEZMOI_CONFIG"
+}
+# Build list of accounts with existing keys
+build_accounts_with_keys() {
+    for acct in "${ACCOUNTS[@]}"; do
+        local prov
+        prov=$(get_provider "$acct")
+        if is_third_party "$prov"; then
+            local parsed acct_name
+            parsed=$(parse_provider_account "$acct")
+            acct_name="${parsed#*|}"
+            key_exists "$prov" "$acct_name" && echo "$acct"
+        fi
+    done
+}
+
+# FZF interactive menu
+fzf_menu() {
+    while true; do
+        local current
+        current=$(get_current)
+
+        local selected
+        # shellcheck disable=SC2016
+        if ! selected=$({
+            cat <<'MENU'
+switch         Change default account
+add-key        Add API key
+update-key     Update API key
+delete-key     Delete API key
+test           Test connectivity
+list           Show all accounts
+MENU
+            echo -e "${YELLOW}quit${NC}           Exit to shell"
+        } | fzf --ansi \
+            --height=50% \
+            --border=rounded \
+            --header="Codex Account Manager" \
+            --preview='
+                cmd=$(echo {} | awk "{print \$1}")
+                echo -e "\033[1;34m━━━ $cmd ━━━\033[0m"
+                echo ""
+                case "$cmd" in
+                    switch)     echo "Switch the default account." ;;
+                    add-key)    echo "Add API key (must not exist)." ;;
+                    update-key) echo "Update existing API key." ;;
+                    delete-key) echo "Remove API key from gopass." ;;
+                    test)       echo "Test API connectivity." ;;
+                    list)       echo "Show all accounts." ;;
+                    quit)       echo "Exit to shell." ;;
+                esac
+            ' \
+            --preview-window='right:50%:wrap' \
+            --preview-label="[ Current: $current ]"
+        ); then
+            return "$RC_EXIT"
+        fi
+
+        local cmd
+        cmd=$(echo "$selected" | awk '{print $1}')
+
+        local rc=0
+        case "$cmd" in
+            switch)     cmd_switch || rc=$? ;;
+            add-key)    cmd_add_key || rc=$? ;;
+            update-key) cmd_update_key || rc=$? ;;
+            delete-key) cmd_delete_key || rc=$? ;;
+            test)       cmd_test || rc=$? ;;
+            list)       cmd_list || rc=$? ;;
+            quit)       return 0 ;;
+            *)          log_error "Unknown command: $cmd"; return 1 ;;
+        esac
+
+        case "$rc" in
+            0) return 0 ;;
+            "$RC_BACK") continue ;;
+            "$RC_EXIT") return "$RC_EXIT" ;;
+            *) return "$rc" ;;
+        esac
+    done
+}
+
+# Switch account
+cmd_switch() {
+    local input="${1:-}"
+    if [[ -z "$input" ]]; then
+        if ! input=$(fzf_pick_account "Switch Account"); then
+            local rc=$?
+            if [[ $rc -eq $RC_BACK || $rc -eq $RC_EXIT ]]; then
+                return "$rc"
+            fi
+            return 1
+        fi
+    fi
+
+    if ! is_configured_account "$input"; then
+        log_error "Unknown account '$input'"
+        return 1
+    fi
+
+    local provider
+    provider=$(get_provider "$input")
+
+    if is_third_party "$provider" && ! codex-token --check "$input" 2>/dev/null; then
+        log_error "No API token for $input"
+        echo "Run: codex-manage add-key $input" >&2
+        return 1
+    fi
+
+    [[ "$(get_current)" == "$input" ]] && { log_warn "Already using '$input'"; return 0; }
+    set_chezmoi_account "$input"
+    echo "  ✓ Updated chezmoi.toml"
+    log_info "Applying chezmoi templates..."
+    chezmoi apply >/dev/null
+    echo "  ✓ Updated ~/.codex/config.toml"
+    echo ""
+    log_success "Account set to $input"
+    log_warn "Restart Codex to apply changes"
+}
+
+# Add API key
+cmd_add_key() {
+    require_cmd gopass || return 1
+    local input="${1:-}"
+
+    if [[ -z "$input" ]]; then
+        require_cmd fzf || return 1
+        local needs_key=()
+        for acct in "${ACCOUNTS[@]}"; do
+            local prov
+            prov=$(get_provider "$acct")
+            if is_third_party "$prov"; then
+                local parsed acct_name
+                parsed=$(parse_provider_account "$acct")
+                acct_name="${parsed#*|}"
+                key_exists "$prov" "$acct_name" || needs_key+=("$acct")
+            fi
+        done
+
+        [[ ${#needs_key[@]} -eq 0 ]] && {
+            log_warn "All accounts already have API keys"
+            return 0
+        }
+
+        if ! input=$({
+            printf '%s\n' "${needs_key[@]}"
+            echo -e "${YELLOW}Back${NC}"
+        } | fzf --ansi --height=40% --border=rounded --header='Add API Key'); then
+            return "$RC_EXIT"
+        fi
+        [[ -z "$input" ]] && return "$RC_EXIT"
+        [[ "$input" == "Back" ]] && return "$RC_BACK"
+    fi
+
+    local provider
+    provider=$(get_provider "$input")
+    local parsed acct_name
+    parsed=$(parse_provider_account "$input")
+    acct_name="${parsed#*|}"
+
+    is_third_party "$provider" || { log_warn "Native provider, no key needed"; return 0; }
+    key_exists "$provider" "$acct_name" && { log_error "Key already exists. Use update-key."; return 1; }
+
+    log_info "Adding API key for $input"
+    printf "API Key: "
+    read -rs api_key
+    echo ""
+    [[ -z "$api_key" ]] && { log_error "API key required"; return 1; }
+
+    store_api_key "$provider" "$acct_name" "$api_key"
+    log_success "API key saved"
+    log_info "Tip: run 'codex-manage test $input' to verify"
+}
+
+# Update API key
+cmd_update_key() {
+    require_cmd gopass || return 1
+    local input="${1:-}"
+
+    if [[ -z "$input" ]]; then
+        require_cmd fzf || return 1
+        local existing
+        existing=$(build_accounts_with_keys)
+        [[ -z "$existing" ]] && { log_warn "No API keys to update"; return 0; }
+
+        if ! input=$({
+            echo "$existing"
+            echo -e "${YELLOW}Back${NC}"
+        } | fzf --ansi --height=40% --border=rounded --header='Update API Key'); then
+            return "$RC_EXIT"
+        fi
+        [[ -z "$input" ]] && return "$RC_EXIT"
+        [[ "$input" == "Back" ]] && return "$RC_BACK"
+    fi
+
+    local provider
+    provider=$(get_provider "$input")
+    local parsed acct_name
+    parsed=$(parse_provider_account "$input")
+    acct_name="${parsed#*|}"
+
+    is_third_party "$provider" || { log_warn "Native provider, no key needed"; return 0; }
+    key_exists "$provider" "$acct_name" || { log_error "No key exists. Use add-key."; return 1; }
+
+    log_info "Updating API key for $input"
+    printf "New API Key: "
+    read -rs api_key
+    echo ""
+    [[ -z "$api_key" ]] && { log_error "API key required"; return 1; }
+
+    store_api_key "$provider" "$acct_name" "$api_key"
+    log_success "API key updated"
+}
+
+# Delete API key
+cmd_delete_key() {
+    require_cmd gopass || return 1
+    local input="${1:-}"
+
+    if [[ -z "$input" ]]; then
+        require_cmd fzf || return 1
+        local existing
+        existing=$(build_accounts_with_keys)
+        [[ -z "$existing" ]] && { log_warn "No API keys to delete"; return 0; }
+
+        if ! input=$({
+            echo "$existing"
+            echo -e "${YELLOW}Back${NC}"
+        } | fzf --ansi --height=40% --border=rounded --header='Delete API Key'); then
+            return "$RC_EXIT"
+        fi
+        [[ -z "$input" ]] && return "$RC_EXIT"
+        [[ "$input" == "Back" ]] && return "$RC_BACK"
+    fi
+
+    local provider
+    provider=$(get_provider "$input")
+    local parsed acct_name
+    parsed=$(parse_provider_account "$input")
+    acct_name="${parsed#*|}"
+
+    key_exists "$provider" "$acct_name" || { log_error "No key exists"; return 1; }
+
+    log_warn "Delete API key for $input?"
+    printf "Continue? [y/N]: "
+    read -r confirm
+    [[ "$confirm" == "y" || "$confirm" == "Y" ]] && {
+        delete_api_key "$provider" "$acct_name"
+        log_success "API key deleted"
+    } || echo "Cancelled"
+}
+
+# Test connectivity
+cmd_test() {
+    local input="${1:-}"
+    if [[ -z "$input" ]]; then
+        if ! input=$(fzf_pick_account "Test Connectivity"); then
+            local rc=$?
+            if [[ $rc -eq $RC_BACK || $rc -eq $RC_EXIT ]]; then
+                return "$rc"
+            fi
+            return 1
+        fi
+    fi
+
+    is_configured_account "$input" || { log_error "Unknown account '$input'"; return 1; }
+
+    local provider config base_url
+    provider=$(get_provider "$input")
+    config=$(codex-token --config "$input")
+    base_url=$(echo "$config" | jq -r '.base_url // empty')
+    base_url=${base_url%/v1}
+    base_url=${base_url%/v1/}
+    base_url=${base_url%/}
+
+    if [[ -z "$base_url" ]]; then
+        log_warn "Native OpenAI provider"
+        log_success "Use 'codex' to authenticate via OAuth"
+        return 0
+    fi
+
+    require_cmd curl || return 1
+
+    log_info "Testing $input..."
+    echo "  Base URL: $base_url"
+
+    local parsed acct_name
+    parsed=$(parse_provider_account "$input")
+    acct_name="${parsed#*|}"
+
+    key_exists "$provider" "$acct_name" || {
+        log_fail "No API key"
+        return 1
+    }
+    log_success "Key found"
+
+    local token
+    token=$(get_api_key "$provider" "$acct_name") || { log_fail "Failed to decrypt"; return 1; }
+
+    echo "  Testing API..."
+
+    local model response http_code
+    model=$(echo "$config" | jq -r '.model // "unknown"')
+
+    # Codex schema indicates the Responses API at /v1/responses.
+    response=$(curl -sS -w "\n%{http_code}" --max-time 30 \
+        -X POST "$base_url/v1/responses" \
+        -H "Authorization: Bearer $token" \
+        -H "Content-Type: application/json" \
+        -d "{\"model\":\"$model\",\"input\":\"ping\"}" 2>&1)
+
+    http_code=$(echo "$response" | tail -n1)
+
+    case "$http_code" in
+        200) log_success "API OK" ;;
+        401|403) log_fail "Invalid API key"; return 1 ;;
+        429) log_warn "Rate limited"; http_code=200 ;;
+        *)
+            if [[ -z "$http_code" || "$http_code" == "000" ]]; then
+                log_fail "Network error"
+                return 1
+            fi
+            log_warn "HTTP $http_code" ;;
+    esac
+
+    if [[ "$http_code" != "200" ]]; then
+        return 1
+    fi
+
+    echo ""
+    log_success "Account $input is configured"
+}
+
+# List accounts
+cmd_list() {
+    local filter="${1:-}"
+    log_info "Configured accounts:"
+    echo ""
+
+    for account in "${ACCOUNTS[@]}"; do
+        local provider
+        provider=$(get_provider "$account")
+
+        [[ -n "$filter" && "$provider" != "$filter" ]] && continue
+
+        if is_third_party "$provider"; then
+            local parsed acct_name
+            parsed=$(parse_provider_account "$account")
+            acct_name="${parsed#*|}"
+            if key_exists "$provider" "$acct_name"; then
+                echo -e "  ${GREEN}${STATUS_OK}${NC} $account"
+            else
+                echo -e "  ${RED}${STATUS_ERROR}${NC} $account (no key)"
+            fi
+        else
+            echo -e "  ${GREEN}${STATUS_NATIVE}${NC} $account (native)"
+        fi
+    done
+}
+
+# Show current
+cmd_current() {
+    local account provider
+    account=$(get_current)
+    provider=$(get_provider "$account")
+    echo -e "Current: ${GREEN}${account}${NC} (${provider})"
+}
+
+# Show help
+show_help() {
+    cat << 'EOF'
+Codex CLI Account Manager
+
+Usage:
+  codex-manage                        Interactive menu
+  codex-manage switch [account]       Switch default account
+  codex-manage add-key [account]      Add API key
+  codex-manage update-key [account]   Update API key
+  codex-manage delete-key [account]   Delete API key
+  codex-manage test [account]         Test connectivity
+  codex-manage list [provider]        List accounts
+  codex-manage current                Show current account
+EOF
+}
+
+# Main
+main() {
+    local cmd="${1:-}"
+    shift || true
+
+    case "$cmd" in
+        help|--help|-h)
+            show_help
+            ;;
+        "")
+            require_cmd chezmoi jq fzf gopass || return 1
+            run_cmd fzf_menu
+            ;;
+        switch|sw)
+            require_cmd chezmoi jq || return 1
+            run_cmd cmd_switch "$@"
+            ;;
+        add-key|update-key|delete-key)
+            require_cmd chezmoi jq gopass || return 1
+            case "$cmd" in
+                add-key) run_cmd cmd_add_key "$@" ;;
+                update-key) run_cmd cmd_update_key "$@" ;;
+                delete-key) run_cmd cmd_delete_key "$@" ;;
+            esac
+            ;;
+        test)
+            require_cmd chezmoi jq gopass curl || return 1
+            run_cmd cmd_test "$@"
+            ;;
+        list|ls)
+            require_cmd chezmoi jq gopass || return 1
+            run_cmd cmd_list "$@"
+            ;;
+        current)
+            cmd_current
+            ;;
+        *)
+            log_error "Unknown: $cmd"
+            show_help
+            return 1
+            ;;
+    esac
+}
+
+main "$@"

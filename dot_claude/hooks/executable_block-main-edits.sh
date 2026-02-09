@@ -1,63 +1,60 @@
 #!/bin/bash
-# block-main-edits.sh - Prevent direct edits on protected branches
+# block-main-edits.sh - Confirm edits on protected branches
 # Hook type: PreToolUse (Write, Edit)
+#
+# Design goals (low-noise, unified output):
+# - ASK: only when editing non-allowed files on protected branches.
+# - Output: 2 lines max (LEVEL RULE_ID: reason + Next: remediation).
 
 set -euo pipefail
 
-# Handle case where stdin is unavailable or empty
+# Explicit escape hatch for intentional protected-branch maintenance.
+if [[ "${CLAUDE_ALLOW_PROTECTED_BRANCH_EDITS:-0}" == "1" ]]; then
+    exit 0
+fi
+
 input=$(cat 2>/dev/null) || true
-if [[ -z "$input" ]]; then
+[[ -n "$input" ]] || exit 0
+
+tool=$(echo "$input" | jq -r '.tool_name // ""' 2>/dev/null || echo "")
+if [[ "$tool" != "Write" && "$tool" != "Edit" && "$tool" != "MultiEdit" ]]; then
     exit 0
 fi
 
-tool=$(echo "$input" | jq -r '.tool_name // ""' 2>/dev/null)
-
-# Only check for Write and Edit tools
-if [[ "$tool" != "Write" && "$tool" != "Edit" ]]; then
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     exit 0
 fi
 
-# Check if we're in a git repository
-if ! git rev-parse --is-inside-work-tree &>/dev/null; then
-    exit 0
-fi
-
-# Get current branch
 branch=$(git branch --show-current 2>/dev/null || echo "")
+[[ -n "$branch" ]] || exit 0
 
-# Protected branches (main, master, develop, release/*)
-protected_branches="main master develop"
+file_path=$(echo "$input" | jq -r '.tool_input.file_path // .tool_input.path // ""' 2>/dev/null || echo "")
 
-for protected in $protected_branches; do
-    if [[ "$branch" == "$protected" ]]; then
-        # Get the file being edited
-        file_path=$(echo "$input" | jq -r '.tool_input.file_path // .tool_input.path // ""' 2>/dev/null)
+protected=false
+case "$branch" in
+main | master | develop | release/*)
+    protected=true
+    ;;
+esac
+[[ "$protected" == true ]] || exit 0
 
-        # Allow certain files even on protected branches
-        # (e.g., documentation, config that's meant to be edited directly)
-        allowed_patterns=(
-            "README.md"
-            "CHANGELOG.md"
-            ".claude/*"
-            "docs/*"
-        )
-
-        for pattern in "${allowed_patterns[@]}"; do
-            # shellcheck disable=SC2053 # Intentional glob matching
-            if [[ "$file_path" == $pattern ]]; then
-                exit 0
-            fi
-        done
-
-        echo "{\"decision\": \"block\", \"reason\": \"Direct edits on '$branch' branch are blocked. Create a feature branch first: git checkout -b feat/your-feature\"}"
+# Allow low-risk docs/config updates on protected branches.
+allowed_patterns=(
+    "README.md"
+    "CHANGELOG.md"
+    ".claude/*"
+    "docs/*"
+)
+for pattern in "${allowed_patterns[@]}"; do
+    # shellcheck disable=SC2053
+    if [[ "$file_path" == $pattern ]]; then
         exit 0
     fi
 done
 
-# Check for release branches
-if [[ "$branch" == release/* ]]; then
-    echo "{\"decision\": \"block\", \"reason\": \"Direct edits on release branches are blocked. Use hotfix branch if needed.\"}"
-    exit 0
-fi
+# Unified output: 2 lines (LEVEL RULE_ID: reason + Next: action)
+msg="ASK MAIN-EDIT: Editing '${file_path}' on protected branch '${branch}'.
+Next: git checkout -b fix/<topic> (or set CLAUDE_ALLOW_PROTECTED_BRANCH_EDITS=1)."
 
+jq -n --arg reason "$msg" '{decision:"ask", reason:$reason}'
 exit 0
