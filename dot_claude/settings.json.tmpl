@@ -140,10 +140,24 @@
 {{- if and $account (hasKey $account "opus_model") }}
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "{{ $account.opus_model }}",
 {{- end }}
-{{- /* timeout_ms: account -> defaults */ -}}
+{{- /* disable_nonessential_traffic: account -> provider -> defaults */ -}}
+{{- $disableTraffic := false -}}
+{{- if and $account (hasKey $account "disable_nonessential_traffic") -}}
+{{-   $disableTraffic = $account.disable_nonessential_traffic -}}
+{{- else if and $provider (hasKey $provider "disable_nonessential_traffic") -}}
+{{-   $disableTraffic = $provider.disable_nonessential_traffic -}}
+{{- else if hasKey $defaults "disable_nonessential_traffic" -}}
+{{-   $disableTraffic = $defaults.disable_nonessential_traffic -}}
+{{- end -}}
+{{- if $disableTraffic }}
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+{{- end }}
+{{- /* timeout_ms: account -> provider -> defaults */ -}}
 {{- $timeout := "" -}}
 {{- if and $account (hasKey $account "timeout_ms") -}}
 {{-   $timeout = $account.timeout_ms -}}
+{{- else if and $provider (hasKey $provider "timeout_ms") -}}
+{{-   $timeout = $provider.timeout_ms -}}
 {{- else if hasKey $defaults "timeout_ms" -}}
 {{-   $timeout = $defaults.timeout_ms -}}
 {{- end -}}

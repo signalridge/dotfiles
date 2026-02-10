@@ -94,7 +94,8 @@ get_account_config() {
             haiku_model: $account_cfg.haiku_model,
             sonnet_model: $account_cfg.sonnet_model,
             opus_model: $account_cfg.opus_model,
-            timeout_ms: ($account_cfg.timeout_ms // $defaults.timeout_ms)
+            timeout_ms: ($account_cfg.timeout_ms // $provider_cfg.timeout_ms // $defaults.timeout_ms),
+            disable_nonessential_traffic: ($account_cfg.disable_nonessential_traffic // $provider_cfg.disable_nonessential_traffic // $defaults.disable_nonessential_traffic)
         } | with_entries(select(.value != null))
     '
 }
