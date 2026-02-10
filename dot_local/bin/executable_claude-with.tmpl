@@ -227,16 +227,21 @@ main() {
         exit 0
     fi
 
-    require_cmd chezmoi jq claude || exit 1
+    require_cmd chezmoi jq claude claude-token || exit 1
 
     if [[ $# -eq 0 ]]; then
         require_cmd fzf || exit 1
         local result
         result=$(fzf_select) || exit 0
         local account="${result%%|*}"
-        local args="${result#*|}"
-        # shellcheck disable=SC2086
-        launch_claude "$account" $args
+        local args_str="${result#*|}"
+        local -a args=()
+        if [[ -n "$args_str" ]]; then
+            while IFS= read -r line; do
+                [[ -n "$line" ]] && args+=("$line")
+            done < <(split_cli_args "$args_str")
+        fi
+        launch_claude "$account" "${args[@]}"
         exit 0
     fi
 

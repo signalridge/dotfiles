@@ -25,36 +25,6 @@ source "$SCRIPT_DIR/lib/claude"
 : "${RC_BACK:=10}"
 : "${RC_EXIT:=130}"
 
-# Run a top-level command and normalize interactive navigation return codes.
-# When there is no parent menu, Back/ESC should simply exit successfully.
-run_cmd() {
-    if "$@"; then
-        return 0
-    else
-        local rc=$?
-        if [[ $rc -eq $RC_BACK || $rc -eq $RC_EXIT ]]; then
-            return 0
-        fi
-        return "$rc"
-    fi
-}
-
-# Escape value for TOML basic string context.
-escape_toml_string() {
-    local value="$1"
-    value=${value//\\/\\\\}
-    value=${value//\"/\\\"}
-    value=${value//$'\n'/ }
-    value=${value//$'\r'/ }
-    printf '%s' "$value"
-}
-
-validate_account_name() {
-    local name="$1"
-    [[ -n "$name" ]] || return 1
-    [[ "$name" =~ ^[A-Za-z0-9._-]+$ ]]
-}
-
 # Set account in chezmoi.toml
 set_chezmoi_account() {
     local account="$1"
@@ -78,20 +48,6 @@ set_chezmoi_account() {
         echo "claudeProviderAccount = \"$escaped_account\"" >> "$tmp_file"
     fi
     mv "$tmp_file" "$CHEZMOI_CONFIG"
-}
-
-# Build list of accounts with existing keys
-build_accounts_with_keys() {
-    for acct in "${ACCOUNTS[@]}"; do
-        local prov
-        prov=$(get_provider "$acct")
-        if is_third_party "$prov"; then
-            local parsed acct_name
-            parsed=$(parse_provider_account "$acct")
-            acct_name="${parsed#*|}"
-            key_exists "$prov" "$acct_name" && echo "$acct"
-        fi
-    done
 }
 
 # FZF interactive menu
@@ -210,19 +166,6 @@ cmd_switch() {
     echo ""
     log_success "Default set to $input"
     log_warn "Restart Claude Code to apply changes"
-}
-
-# Resolve provider default model from claude.yaml
-get_provider_default_model() {
-    local provider="$1"
-    PROVIDER_NAME="$provider" yq -r '.claude.providers[strenv(PROVIDER_NAME)].models[0] // ""' "$CLAUDE_YAML"
-}
-
-is_third_party_account() {
-    local account="$1"
-    local provider
-    provider=$(get_provider "$account")
-    is_third_party "$provider"
 }
 
 # Ensure third-party account model fields exist (fill missing only; never overwrite)

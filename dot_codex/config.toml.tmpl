@@ -32,7 +32,7 @@
 {{- if and $account (hasKey $account "model") }}
 model = "{{ $account.model }}"
 {{- else }}
-# model = "gpt-5-codex"
+# model = "gpt-5.2-codex"
 {{- end }}
 
 # Model provider (use custom provider if third-party)
@@ -45,6 +45,20 @@ approval_policy = "{{ $defaults.approval_policy }}"
 
 # Sandbox mode: read-only | workspace-write | danger-full-access
 sandbox_mode = "{{ $defaults.sandbox_mode }}"
+
+# Network access: enabled | disabled
+network_access = "{{ $defaults.network_access }}"
+
+# Disable response storage
+disable_response_storage = {{ $defaults.disable_response_storage }}
+
+# Windows WSL setup acknowledgement
+windows_wsl_setup_acknowledged = {{ $defaults.windows_wsl_setup_acknowledged }}
+
+# Suppress unstable feature warnings
+{{- if hasKey $defaults "suppress_unstable_features_warning" }}
+suppress_unstable_features_warning = {{ $defaults.suppress_unstable_features_warning }}
+{{- end }}
 
 # =============================================================================
 # Model Configuration
@@ -60,7 +74,9 @@ personality = "{{ $defaults.personality }}"
 model_verbosity = "{{ $defaults.model_verbosity }}"
 
 # Enable built-in web search tool
-web_search = "{{ if .codex.features.web_search }}live{{ else }}disabled{{ end }}"
+# NOTE: top-level `web_search` is deprecated; use [features].web_search_request
+
+# Experimental tool toggles (deprecated top-level keys removed)
 
 {{- if and (hasKey .codex "active_profile") (ne .codex.active_profile "") }}
 # Active profile
@@ -81,9 +97,30 @@ project_doc_max_bytes = {{ .codex.project_doc.max_bytes }}
 # Feature Flags
 # =============================================================================
 
+{{ $features := .codex.features }}
 [features]
-shell_tool = {{ .codex.features.shell_tool }}
-memory_tool = {{ .codex.features.memory_tool }}
+shell_tool = {{ $features.shell_tool }}
+memory_tool = {{ $features.memory_tool }}
+apply_patch_freeform = {{ $features.apply_patch_freeform }}
+unified_exec = {{ $features.unified_exec }}
+shell_snapshot = {{ $features.shell_snapshot }}
+runtime_metrics = {{ $features.runtime_metrics }}
+undo = {{ $features.undo }}
+request_rule = {{ $features.request_rule }}
+responses_websockets = {{ $features.responses_websockets }}
+remote_compaction = {{ $features.remote_compaction }}
+remote_models = {{ $features.remote_models }}
+skill_mcp_dependency_install = {{ $features.skill_mcp_dependency_install }}
+skill_env_var_dependency_prompt = {{ $features.skill_env_var_dependency_prompt }}
+web_search_request = {{ $features.web_search_request }}
+
+# =============================================================================
+# Tools
+# =============================================================================
+
+{{ $tools := .codex.tools }}
+[tools]
+view_image = {{ $tools.view_image }}
 
 # =============================================================================
 # History Settings
@@ -111,25 +148,44 @@ show_tooltips = {{ .codex.tui.show_tooltips }}
 [model_providers.{{ $name }}]
 name = "{{ $name | title }}"
 base_url = "{{ $config.base_url }}"
+{{- if hasKey $config "env_key" }}
+env_key = "{{ $config.env_key }}"
+{{- else }}
 env_key = "{{ upper $name }}_API_KEY"
+{{- end }}
+{{- if hasKey $config "wire_api" }}
+wire_api = "{{ $config.wire_api }}"
+{{- end }}
+{{- if hasKey $config "requires_openai_auth" }}
+requires_openai_auth = {{ $config.requires_openai_auth }}
+{{- end }}
 {{- end }}
 {{- end }}
 
 # =============================================================================
 # MCP Servers
 # =============================================================================
-{{- range $name, $config := .codex.mcp_servers }}
 
-[mcp_servers.{{ $name }}]
-command = "{{ $config.command }}"
-args = [{{ range $i, $arg := $config.args }}{{ if $i }}, {{ end }}"{{ $arg }}"{{ end }}]
-{{- if hasKey $config "env" }}
-[mcp_servers.{{ $name }}.env]
-{{- range $k, $v := $config.env }}
-{{ $k }} = "{{ $v }}"
-{{- end }}
-{{- end }}
-{{- end }}
+[mcp_servers.notion]
+command = "npx"
+args = ["-y", "@anthropic/mcp-server-notion"]
+[mcp_servers.notion.env]
+NOTION_API_KEY = "${NOTION_API_KEY}"
+
+[mcp_servers.postgres]
+command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-postgres"
+args = []
+
+[mcp_servers.slack]
+command = "npx"
+args = ["-y", "@anthropic/mcp-server-slack"]
+[mcp_servers.slack.env]
+SLACK_BOT_TOKEN = "${SLACK_BOT_TOKEN}"
+SLACK_TEAM_ID = "${SLACK_TEAM_ID}"
+
+[mcp_servers.tavily]
+command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily"
+args = []
 
 # =============================================================================
 # Profiles
@@ -145,7 +201,7 @@ approval_policy = "{{ $config.approval_policy }}"
 {{- end }}
 {{- if hasKey $config "web_search" }}
 {{- $ws := printf "%v" $config.web_search }}
-web_search = "{{ if or (eq $ws "live") (eq $ws "cached") (eq $ws "disabled") }}{{ $ws }}{{ else }}disabled{{ end }}"
+web_search_request = {{ if or (eq $ws "true") (eq $ws "live") (eq $ws "cached") }}true{{ else }}false{{ end }}
 {{- end }}
 {{- end }}
 
@@ -153,10 +209,23 @@ web_search = "{{ if or (eq $ws "live") (eq $ws "cached") (eq $ws "disabled") }}{
 # Shell Environment Policy
 # =============================================================================
 
+{{- $shellEnv := .codex.shell_environment_policy -}}
 [shell_environment_policy]
-inherit = "core"
-exclude = ["AWS_*", "AZURE_*", "GCP_*", "*_SECRET*", "*_TOKEN*", "*_KEY*"]
-ignore_default_excludes = false
+inherit = "{{ $shellEnv.inherit }}"
+exclude = [{{ range $i, $v := $shellEnv.exclude }}{{ if $i }}, {{ end }}"{{ $v }}"{{ end }}]
+ignore_default_excludes = {{ $shellEnv.ignore_default_excludes }}
+{{- if hasKey $shellEnv "experimental_use_profile" }}
+experimental_use_profile = {{ $shellEnv.experimental_use_profile }}
+{{- end }}
+{{- if hasKey $shellEnv "include_only" }}
+include_only = [{{ range $i, $v := $shellEnv.include_only }}{{ if $i }}, {{ end }}"{{ $v }}"{{ end }}]
+{{- end }}
+{{- if hasKey $shellEnv "set" }}
+[shell_environment_policy.set]
+{{- range $k, $v := $shellEnv.set }}
+{{ $k }} = "{{ $v }}"
+{{- end }}
+{{- end }}
 
 # =============================================================================
 # Sandbox Workspace Write Settings
