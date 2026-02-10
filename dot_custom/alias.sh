@@ -39,6 +39,10 @@ alias_if_cmd_exists "lazygit" "lg"
 alias_if_cmd_exists "claude-with" "ccw"
 alias_if_cmd_exists "claude-manage" "ccm"
 
+# Codex CLI provider tools
+alias_if_cmd_exists "codex-with" "cxw"
+alias_if_cmd_exists "codex-manage" "cxm"
+
 # ─────────────────────────────────────────────────────────────
 # Global Aliases (zsh only) - Expand anywhere in command line
 # Usage: cat file G error  =>  cat file | grep error

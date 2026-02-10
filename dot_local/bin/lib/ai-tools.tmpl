@@ -120,7 +120,97 @@ key_exists() {
     return 1
 }
 
+# Run a top-level command and normalize navigation return codes.
+run_cmd() {
+    if "$@"; then
+        return 0
+    else
+        local rc=$?
+        if [[ $rc -eq $RC_BACK || $rc -eq $RC_EXIT ]]; then
+            return 0
+        fi
+        return "$rc"
+    fi
+}
+
+# Escape value for TOML basic string context.
+escape_toml_string() {
+    local value="$1"
+    value=${value//\\/\\\\}
+    value=${value//\"/\\\"}
+    value=${value//$'\n'/ }
+    value=${value//$'\r'/ }
+    printf '%s' "$value"
+}
+
+validate_account_name() {
+    local name="$1"
+    [[ -n "$name" ]] || return 1
+    [[ "$name" =~ ^[A-Za-z0-9._-]+$ ]]
+}
+
+get_provider_default_model() {
+    local provider="$1"
+    chezmoi data --format json 2>/dev/null | jq -r \
+        --arg tool "$AI_TOOL_CONTEXT" \
+        --arg provider "$provider" \
+        '.[$tool].providers[$provider].models[0] // empty' 2>/dev/null
+}
+
+is_third_party_account() {
+    local account="$1"
+    local provider
+    provider=$(get_provider "$account")
+    is_third_party "$provider"
+}
+
+# Build list of accounts with existing keys
+build_accounts_with_keys() {
+    for acct in "${ACCOUNTS[@]}"; do
+        local prov
+        prov=$(get_provider "$acct")
+        if is_third_party "$prov"; then
+            local parsed acct_name
+            parsed=$(parse_provider_account "$acct")
+            acct_name="${parsed#*|}"
+            key_exists "$prov" "$acct_name" && echo "$acct"
+        fi
+    done
+}
+
 # ===== String Utilities =====
+
+# Split a CLI arg string into newline-delimited args.
+# Prefers python3/zsh for shell-like parsing; falls back to whitespace.
+split_cli_args() {
+    local input="$1"
+    [[ -z "$input" ]] && return 0
+
+    if command -v python3 &>/dev/null; then
+        python3 - "$input" <<'PY'
+import shlex
+import sys
+
+s = sys.argv[1]
+try:
+    parts = shlex.split(s)
+except ValueError:
+    parts = s.split()
+for p in parts:
+    print(p)
+PY
+        return 0
+    fi
+
+    if command -v zsh &>/dev/null; then
+        zsh -c 'print -rl -- ${(z)1}' -- "$input"
+        return 0
+    fi
+
+    local -a parts
+    read -r -a parts <<< "$input"
+    printf '%s\n' "${parts[@]}"
+}
 
 # Parse provider/account or account@provider format
 parse_provider_account() {

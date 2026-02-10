@@ -1,5 +1,6 @@
 # Claude Code local settings
 .claude
+.codex
 
 # OpenSpec working directory (generated state)
 openspec/

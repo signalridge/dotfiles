@@ -5,6 +5,9 @@
 # Usage:
 #   codex-manage                   # Interactive menu
 #   codex-manage switch [account]  # Switch default account
+#   codex-manage add-account       # Add new account
+#   codex-manage edit-account      # Edit account config
+#   codex-manage remove-account    # Remove account
 #   codex-manage add-key [account] # Add new API key
 #   codex-manage update-key [acct] # Update existing API key
 #   codex-manage delete-key [acct] # Delete API key
@@ -21,29 +24,6 @@ source "$SCRIPT_DIR/lib/codex"
 # Return codes
 : "${RC_BACK:=10}"
 : "${RC_EXIT:=130}"
-
-# Run a top-level command and normalize navigation return codes
-run_cmd() {
-    if "$@"; then
-        return 0
-    else
-        local rc=$?
-        if [[ $rc -eq $RC_BACK || $rc -eq $RC_EXIT ]]; then
-            return 0
-        fi
-        return "$rc"
-    fi
-}
-
-# Escape value for TOML basic string context.
-escape_toml_string() {
-    local value="$1"
-    value=${value//\\/\\\\}
-    value=${value//\"/\\\"}
-    value=${value//$'\n'/ }
-    value=${value//$'\r'/ }
-    printf '%s' "$value"
-}
 
 # Set Codex account in chezmoi.toml
 set_chezmoi_account() {
@@ -92,20 +72,6 @@ set_chezmoi_account() {
     fi
     mv "$tmp_file" "$CHEZMOI_CONFIG"
 }
-# Build list of accounts with existing keys
-build_accounts_with_keys() {
-    for acct in "${ACCOUNTS[@]}"; do
-        local prov
-        prov=$(get_provider "$acct")
-        if is_third_party "$prov"; then
-            local parsed acct_name
-            parsed=$(parse_provider_account "$acct")
-            acct_name="${parsed#*|}"
-            key_exists "$prov" "$acct_name" && echo "$acct"
-        fi
-    done
-}
-
 # FZF interactive menu
 fzf_menu() {
     while true; do
@@ -117,6 +83,9 @@ fzf_menu() {
         if ! selected=$({
             cat <<'MENU'
 switch         Change default account
+add-account    Add new account
+edit-account   Edit account config
+remove-account Remove account
 add-key        Add API key
 update-key     Update API key
 delete-key     Delete API key
@@ -133,14 +102,21 @@ MENU
                 echo -e "\033[1;34m━━━ $cmd ━━━\033[0m"
                 echo ""
                 case "$cmd" in
-                    switch)     echo "Switch the default account." ;;
-                    add-key)    echo "Add API key (must not exist)." ;;
-                    update-key) echo "Update existing API key." ;;
-                    delete-key) echo "Remove API key from gopass." ;;
-                    test)       echo "Test API connectivity." ;;
-                    list)       echo "Show all accounts." ;;
-                    quit)       echo "Exit to shell." ;;
+                    switch)         echo "Switch the default account." ;;
+                    add-account)    echo "Add a new account to codex.yaml." ;;
+                    edit-account)   echo "Edit account model settings." ;;
+                    remove-account) echo "Remove account from codex.yaml." ;;
+                    add-key)        echo "Add API key (must not exist)." ;;
+                    update-key)     echo "Update existing API key." ;;
+                    delete-key)     echo "Remove API key from gopass." ;;
+                    test)           echo "Test API connectivity." ;;
+                    list)           echo "Show all accounts." ;;
+                    quit)           echo "Exit to shell." ;;
                 esac
+                echo ""
+                echo -e "\033[1;34m━━━ Accounts ━━━\033[0m"
+                echo ""
+                codex-manage list 2>/dev/null | tail -n +3
             ' \
             --preview-window='right:50%:wrap' \
             --preview-label="[ Current: $current ]"
@@ -153,14 +129,17 @@ MENU
 
         local rc=0
         case "$cmd" in
-            switch)     cmd_switch || rc=$? ;;
-            add-key)    cmd_add_key || rc=$? ;;
-            update-key) cmd_update_key || rc=$? ;;
-            delete-key) cmd_delete_key || rc=$? ;;
-            test)       cmd_test || rc=$? ;;
-            list)       cmd_list || rc=$? ;;
-            quit)       return 0 ;;
-            *)          log_error "Unknown command: $cmd"; return 1 ;;
+            switch)         cmd_switch || rc=$? ;;
+            add-account)    cmd_add_account || rc=$? ;;
+            edit-account)   cmd_edit_account || rc=$? ;;
+            remove-account) cmd_remove_account || rc=$? ;;
+            add-key)        cmd_add_key || rc=$? ;;
+            update-key)     cmd_update_key || rc=$? ;;
+            delete-key)     cmd_delete_key || rc=$? ;;
+            test)           cmd_test || rc=$? ;;
+            list)           cmd_list || rc=$? ;;
+            quit)           return 0 ;;
+            *)              log_error "Unknown command: $cmd"; return 1 ;;
         esac
 
         case "$rc" in
@@ -208,6 +187,190 @@ cmd_switch() {
     echo ""
     log_success "Account set to $input"
     log_warn "Restart Codex to apply changes"
+}
+
+# Add account
+cmd_add_account() {
+    require_cmd fzf yq || return 1
+
+    log_info "Add New Account"
+    echo ""
+
+    # Select provider
+    local provider
+    if ! provider=$({
+        printf '%s\n' "${PROVIDERS[@]}"
+        echo -e "${YELLOW}Back${NC}"
+    } | fzf --ansi --height=40% --border=rounded --header="Select Provider"); then
+        return "$RC_EXIT"
+    fi
+    [[ -z "$provider" ]] && return "$RC_EXIT"
+    [[ "$provider" == "Back" ]] && return "$RC_BACK"
+
+    # Get account name
+    local account_name full_name
+    echo ""
+    if [[ "$provider" == "openai" ]]; then
+        printf "Account name (e.g., openai, work): "
+        read -r account_name
+        [[ -z "$account_name" ]] && return 1
+        full_name="$account_name"
+    else
+        printf 'Account name (will become %s@<name>): ' "$provider"
+        read -r account_name
+        [[ -z "$account_name" ]] && return 1
+        full_name="${provider}@${account_name}"
+    fi
+
+    if ! validate_account_name "$account_name"; then
+        log_error "Invalid account name (allowed: letters, numbers, dot, underscore, hyphen)"
+        return 1
+    fi
+
+    ACCOUNT_NAME="$full_name" yq -e '.codex.accounts[strenv(ACCOUNT_NAME)]' "$CHEZMOI_DATA" &>/dev/null && {
+        log_error "Account '$full_name' already exists"
+        return 1
+    }
+
+    # Get model
+    echo ""
+    local default_model model
+    default_model=$(get_provider_default_model "$provider")
+    [[ -n "$default_model" ]] && echo "Default model: $default_model"
+    printf "Model name (Enter to use default): "
+    read -r model
+    [[ -z "$model" ]] && model="$default_model"
+    [[ -z "$model" ]] && { log_error "Model is required"; return 1; }
+
+    # Add to YAML
+    echo ""
+    log_info "Adding account..."
+    ACCOUNT_NAME="$full_name" \
+    PROVIDER_NAME="$provider" \
+    MODEL_NAME="$model" \
+    yq -i '
+        .codex.accounts[strenv(ACCOUNT_NAME)] = {
+            "provider": strenv(PROVIDER_NAME),
+            "model": strenv(MODEL_NAME)
+        }
+    ' "$CHEZMOI_DATA"
+
+    log_success "Account '$full_name' added"
+
+    # Add API key for third-party
+    if is_third_party "$provider"; then
+        echo ""
+        printf "API Key (leave empty to skip): "
+        read -rs api_key
+        echo ""
+        if [[ -n "$api_key" ]]; then
+            store_api_key "$provider" "$account_name" "$api_key"
+            log_success "API key saved"
+        else
+            log_info "Skipped API key (run: codex-manage add-key $full_name)"
+        fi
+    fi
+
+    echo ""
+    log_info "Applying chezmoi..."
+    chezmoi apply
+    log_success "Done"
+}
+
+# Edit account
+cmd_edit_account() {
+    require_cmd yq || return 1
+
+    local input="${1:-}"
+    if [[ -z "$input" ]]; then
+        require_cmd fzf || return 1
+    fi
+    if [[ -z "$input" ]]; then
+        if ! input=$(fzf_pick_account "Edit Account" "plain"); then
+            local rc=$?
+            if [[ $rc -eq $RC_BACK || $rc -eq $RC_EXIT ]]; then
+                return "$rc"
+            fi
+            return 1
+        fi
+    fi
+
+    is_configured_account "$input" || { log_error "Unknown account '$input'"; return 1; }
+
+    log_info "Edit Account: $input"
+    echo ""
+
+    local current_model
+    current_model=$(ACCOUNT_NAME="$input" yq -r '.codex.accounts[strenv(ACCOUNT_NAME)].model // ""' "$CHEZMOI_DATA")
+
+    echo "Current model: $current_model"
+    printf "New model (Enter to keep): "
+    read -r new_model
+    [[ -z "$new_model" ]] && new_model="$current_model"
+    [[ -z "$new_model" ]] && { log_error "Model is required"; return 1; }
+
+    ACCOUNT_NAME="$input" \
+    NEW_MODEL="$new_model" \
+    yq -i '
+        .codex.accounts[strenv(ACCOUNT_NAME)].model = strenv(NEW_MODEL)
+    ' "$CHEZMOI_DATA"
+
+    echo ""
+    log_success "Account '$input' updated"
+    log_info "Applying chezmoi..."
+    chezmoi apply
+    log_success "Done"
+}
+
+# Remove account
+cmd_remove_account() {
+    require_cmd yq || return 1
+
+    local input="${1:-}"
+    if [[ -z "$input" ]]; then
+        require_cmd fzf || return 1
+    fi
+    if [[ -z "$input" ]]; then
+        if ! input=$(fzf_pick_account "Remove Account" "plain"); then
+            local rc=$?
+            if [[ $rc -eq $RC_BACK || $rc -eq $RC_EXIT ]]; then
+                return "$rc"
+            fi
+            return 1
+        fi
+    fi
+
+    is_configured_account "$input" || { log_error "Unknown account '$input'"; return 1; }
+
+    log_warn "Remove account '$input'?"
+    printf "This will delete it from codex.yaml. Continue? [y/N]: "
+    read -r confirm
+    [[ "$confirm" != "y" && "$confirm" != "Y" ]] && { echo "Cancelled"; return 0; }
+
+    local provider
+    provider=$(get_provider "$input")
+
+    ACCOUNT_NAME="$input" yq -i 'del(.codex.accounts[strenv(ACCOUNT_NAME)])' "$CHEZMOI_DATA"
+    log_success "Account removed"
+
+    if is_third_party "$provider"; then
+        local parsed acct_name
+        parsed=$(parse_provider_account "$input")
+        acct_name="${parsed#*|}"
+        if key_exists "$provider" "$acct_name"; then
+            printf "Also delete API key? [y/N]: "
+            read -r del_key
+            [[ "$del_key" == "y" || "$del_key" == "Y" ]] && {
+                delete_api_key "$provider" "$acct_name"
+                log_success "API key deleted"
+            }
+        fi
+    fi
+
+    echo ""
+    log_info "Applying chezmoi..."
+    chezmoi apply
+    log_success "Done"
 }
 
 # Add API key
@@ -466,6 +629,9 @@ Codex CLI Account Manager
 Usage:
   codex-manage                        Interactive menu
   codex-manage switch [account]       Switch default account
+  codex-manage add-account            Add new account
+  codex-manage edit-account [account] Edit account config
+  codex-manage remove-account [acct]  Remove account
   codex-manage add-key [account]      Add API key
   codex-manage update-key [account]   Update API key
   codex-manage delete-key [account]   Delete API key
@@ -492,6 +658,18 @@ main() {
             require_cmd chezmoi jq || return 1
             run_cmd cmd_switch "$@"
             ;;
+        add-account)
+            require_cmd chezmoi jq yq fzf || return 1
+            run_cmd cmd_add_account "$@"
+            ;;
+        edit-account)
+            require_cmd chezmoi jq yq || return 1
+            run_cmd cmd_edit_account "$@"
+            ;;
+        remove-account)
+            require_cmd chezmoi jq yq || return 1
+            run_cmd cmd_remove_account "$@"
+            ;;
         add-key|update-key|delete-key)
             require_cmd chezmoi jq gopass || return 1
             case "$cmd" in
@@ -509,6 +687,7 @@ main() {
             run_cmd cmd_list "$@"
             ;;
         current)
+            require_cmd chezmoi jq || return 1
             cmd_current
             ;;
         *)

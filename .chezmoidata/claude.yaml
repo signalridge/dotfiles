@@ -70,7 +70,7 @@ claude:
       disable_nonessential_traffic: true
       models:
         - ark-code-latest
-    wanxiaot:
+    naapi:
       base_url: https://na.wanxiaot.com
       timeout_ms: 300000
       disable_nonessential_traffic: true
@@ -80,6 +80,8 @@ claude:
         - claude-sonnet-4-5-20250929
         - claude-sonnet-4-5-20250929-thinking
         - claude-haiku-4-5-20251001
+        - gpt-5.2-codex
+        - gpt-5.3-codex
   # ===== Account Configurations =====
   # Format: provider or provider@account
   # Fields: model, small_model, haiku_model, sonnet_model, opus_model, timeout_ms
@@ -110,13 +112,13 @@ claude:
       haiku_model: kimi-k2.5
       sonnet_model: kimi-k2.5
       opus_model: kimi-k2.5
-    wanxiaot@private:
-      provider: wanxiaot
-      model: claude-opus-4-6
-      small_model: claude-sonnet-4-5-20250929
-      haiku_model: claude-haiku-4-5-20251001
-      sonnet_model: claude-sonnet-4-5-20250929
-      opus_model: claude-opus-4-6
+    naapi@private:
+      provider: naapi
+      model: gpt-5.2-codex
+      small_model: gpt-5.2-codex
+      haiku_model: gpt-5.2-codex
+      sonnet_model: gpt-5.2-codex
+      opus_model: gpt-5.2-codex
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
   # All skills are hardcoded in .chezmoiexternal.toml.tmpl

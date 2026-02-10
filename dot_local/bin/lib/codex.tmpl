@@ -67,11 +67,26 @@ ACCOUNT_PREVIEW='
     account=$(echo "$line" | sed "s/ ✓$//" | sed "s/^[✓✗○] //")
     echo -e "\033[1;34m━━━ $account ━━━\033[0m"
     echo ""
-    chezmoi data --format json 2>/dev/null | jq -r --arg acct "$account" "
-        .codex.accounts[\$acct] // {} |
-        \"Model:     \(.model // \"default\")\",
-        \"Provider:  \(.provider // \"auto\")\"
-    " 2>/dev/null || echo "Config not available"
+    config=$(codex-token --config "$account" 2>/dev/null)
+    if [[ -n "$config" ]]; then
+        echo "$config" | jq -r "
+            \"Model:     \(.model // \"default\")\",
+            \"Provider:  \(.provider // \"auto\")\",
+            (if .base_url then \"Base URL:  \(.base_url)\" else empty end)
+        " 2>/dev/null || echo "Config not available"
+    else
+        echo "Config not available"
+    fi
+    echo ""
+    if echo "$config" | jq -e '.base_url // empty' >/dev/null 2>&1; then
+        if codex-token --check "$account" 2>/dev/null; then
+            echo -e "\033[0;32m✓ Token ready\033[0m"
+        else
+            echo -e "\033[0;31m✗ No token (run: codex-manage add-key)\033[0m"
+        fi
+    else
+        echo -e "\033[0;36m○ Native OAuth\033[0m"
+    fi
 '
 
 # Generic account picker with Back option

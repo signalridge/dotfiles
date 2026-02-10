@@ -613,6 +613,174 @@ if [[ "$OSTYPE" == darwin* ]] && command -v aerospace &>/dev/null; then
 fi
 
 # ─────────────────────────────────────────────────────────────
+# Completion Functions for Custom Scripts
+# ─────────────────────────────────────────────────────────────
+
+# Account list helper for completions (avoid ANSI parsing)
+_ai_tool_accounts() {
+    local tool="$1"
+
+    if ! command -v chezmoi &>/dev/null || ! command -v jq &>/dev/null; then
+        return 0
+    fi
+
+    case "$tool" in
+    claude)
+        chezmoi data --format json 2>/dev/null | jq -r '.claude.accounts // {} | keys[]' 2>/dev/null
+        ;;
+    codex)
+        chezmoi data --format json 2>/dev/null | jq -r '.codex.accounts // {} | keys[]' 2>/dev/null
+        ;;
+    esac
+}
+
+# claude-manage completion
+_claude_manage() {
+    local curcontext="$curcontext" state line
+    typeset -A opt_args
+
+    local -a commands=(
+        'switch:Change default account'
+        'sw:Change default account (alias)'
+        'add-account:Add new account'
+        'edit-account:Edit account config'
+        'remove-account:Remove account'
+        'add-key:Add API key'
+        'update-key:Update API key'
+        'delete-key:Delete API key'
+        'test:Test connectivity'
+        'list:List accounts'
+        'ls:List accounts (alias)'
+        'current:Show current account'
+        'help:Show help'
+    )
+
+    _arguments -C \
+        '1: :->command' \
+        '*: :->account'
+
+    case "$state" in
+    command)
+        _describe -t commands 'claude-manage commands' commands
+        ;;
+    account)
+        case "${line[1]}" in
+        switch | sw | test | add-key | update-key | delete-key | edit-account | remove-account)
+            local -a accounts
+            local acct
+            while IFS= read -r acct; do
+                [[ -n "$acct" ]] && accounts+=("$acct")
+            done < <(_ai_tool_accounts claude)
+            _describe -t accounts 'accounts' accounts
+            ;;
+        esac
+        ;;
+    esac
+}
+
+# claude-with completion
+_claude_with() {
+    local curcontext="$curcontext"
+    typeset -A opt_args
+
+    local -a accounts
+    local acct
+    while IFS= read -r acct; do
+        [[ -n "$acct" ]] && accounts+=("$acct")
+    done < <(_ai_tool_accounts claude)
+
+    _arguments -C \
+        '1:account:->_accounts' \
+        '*:claude options:->options'
+
+    case "$state" in
+    _accounts)
+        _describe -t accounts 'accounts' accounts
+        ;;
+    esac
+}
+
+# codex-manage completion
+_codex_manage() {
+    local curcontext="$curcontext" state line
+    typeset -A opt_args
+
+    # shellcheck disable=SC2034
+    local -a commands=(
+        'switch:Change default account'
+        'sw:Change default account (alias)'
+        'add-account:Add new account'
+        'edit-account:Edit account config'
+        'remove-account:Remove account'
+        'add-key:Add API key'
+        'update-key:Update API key'
+        'delete-key:Delete API key'
+        'test:Test connectivity'
+        'list:List accounts'
+        'ls:List accounts (alias)'
+        'current:Show current account'
+        'help:Show help'
+    )
+
+    _arguments -C \
+        '1: :->command' \
+        '*: :->account'
+
+    case "$state" in
+    command)
+        _describe -t commands 'codex-manage commands' commands
+        ;;
+    account)
+        case "${line[1]}" in
+        switch | sw | test | add-key | update-key | delete-key | edit-account | remove-account)
+            local -a accounts
+            local acct
+            while IFS= read -r acct; do
+                [[ -n "$acct" ]] && accounts+=("$acct")
+            done < <(_ai_tool_accounts codex)
+            _describe -t accounts 'accounts' accounts
+            ;;
+        esac
+        ;;
+    esac
+}
+
+# codex-with completion
+_codex_with() {
+    local curcontext="$curcontext"
+    # shellcheck disable=SC2034
+    typeset -A opt_args
+
+    local -a accounts
+    local acct
+    while IFS= read -r acct; do
+        [[ -n "$acct" ]] && accounts+=("$acct")
+    done < <(_ai_tool_accounts codex)
+
+    _arguments -C \
+        '1:account:->_accounts' \
+        '*:codex options:->options'
+
+    case "$state" in
+    _accounts)
+        _describe -t accounts 'accounts' accounts
+        ;;
+    esac
+}
+
+# Register completions when in zsh
+if [[ -n "$ZSH_VERSION" ]]; then
+    compdef _claude_manage claude-manage 2>/dev/null
+    compdef _claude_manage ccm 2>/dev/null
+    compdef _claude_with claude-with 2>/dev/null
+    compdef _claude_with ccw 2>/dev/null
+    compdef _codex_manage codex-manage 2>/dev/null
+    compdef _codex_manage cxm 2>/dev/null
+    compdef _codex_with codex-with 2>/dev/null
+    compdef _codex_with cxw 2>/dev/null
+fi
+
+# ─────────────────────────────────────────────────────────────
 # Claude Code Integration
 # ─────────────────────────────────────────────────────────────
 

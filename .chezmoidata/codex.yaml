@@ -7,8 +7,8 @@ codex:
     # Native OpenAI (OAuth, no API key needed)
     openai:
       models:
-        - gpt-5-codex
-        - gpt-5
+        - gpt-5.2-codex
+        - gpt-5.2
     # Third-party OpenAI-compatible providers
     deepseek:
       base_url: https://api.deepseek.com/v1
@@ -35,35 +35,78 @@ codex:
       base_url: https://ark.cn-beijing.volces.com/api/v3
       models:
         - doubao-seed-1-6-thinking-250715
+    naapi:
+      base_url: https://na.wanxiaot.com/v1
+      wire_api: responses
+      requires_openai_auth: true
+      env_key: OPENAI_API_KEY
+      models:
+        - gpt-5.2
+        - gpt-5.2-codex
+        - gpt-5.3-codex
   # ===== Account Configurations =====
   # Format: provider or provider@account
   # Fields: model, provider(optional override)
   accounts:
     openai:
       provider: openai
-      model: gpt-5-codex
+      model: gpt-5.2-codex
     deepseek@smoke:
       provider: deepseek
       model: deepseek-chat
+    naapi@private:
+      provider: naapi
+      model: gpt-5.2
   # ===== Shared Skills =====
   # All skills are hardcoded in .chezmoiexternal.toml.tmpl
   # ===== Global Defaults =====
   defaults:
     # Approval policy: untrusted | on-failure | on-request | never
-    approval_policy: on-request
+    approval_policy: never
     # Sandbox mode: read-only | workspace-write | danger-full-access
-    sandbox_mode: workspace-write
+    sandbox_mode: danger-full-access
     # Model reasoning effort: none | minimal | low | medium | high | xhigh
-    model_reasoning_effort: high
+    model_reasoning_effort: xhigh
+    # Network access: enabled | disabled
+    network_access: enabled
+    # Disable response storage
+    disable_response_storage: true
+    # WSL setup acknowledgement
+    windows_wsl_setup_acknowledged: true
     # Personality: none | friendly | pragmatic
     personality: pragmatic
     # Model verbosity: low | medium | high
-    model_verbosity: medium
+    model_verbosity: high
+    # Web search mode: disabled | cached | live
+    # Deprecated in Codex config output; use features.web_search_request
+    # web_search: live
+    # Suppress unstable feature warnings
+    suppress_unstable_features_warning: true
   # ===== Feature Flags =====
   features:
     shell_tool: true
-    memory_tool: false
-    web_search: false
+    memory_tool: true
+    apply_patch_freeform: true
+    unified_exec: true
+    shell_snapshot: true
+    runtime_metrics: true
+    undo: true
+    request_rule: true
+    responses_websockets: true
+    remote_compaction: true
+    remote_models: true
+    skill_mcp_dependency_install: true
+    skill_env_var_dependency_prompt: true
+    web_search_request: true
+  # ===== Tool Toggles =====
+  tools:
+    view_image: true
+  # ===== Shell Environment Policy =====
+  shell_environment_policy:
+    inherit: all
+    exclude: []
+    ignore_default_excludes: true
+    experimental_use_profile: true
   # ===== History Settings =====
   history:
     # persistence: save-all | none
@@ -97,25 +140,4 @@ codex:
       web_search: live
       model_reasoning_effort: high
   # ===== MCP Servers =====
-  mcp_servers:
-    slack:
-      command: npx
-      args:
-        - "-y"
-        - "@anthropic/mcp-server-slack"
-      env:
-        SLACK_BOT_TOKEN: "${SLACK_BOT_TOKEN}"
-        SLACK_TEAM_ID: "${SLACK_TEAM_ID}"
-    notion:
-      command: npx
-      args:
-        - "-y"
-        - "@anthropic/mcp-server-notion"
-      env:
-        NOTION_API_KEY: "${NOTION_API_KEY}"
-    tavily:
-      command: ~/.local/bin/mcp-tavily
-      args: []
-    postgres:
-      command: ~/.local/bin/mcp-postgres
-      args: []
+  # Managed directly in dot_codex/config.toml.tmpl
