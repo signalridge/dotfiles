@@ -18,7 +18,7 @@ claude:
     # Native Anthropic (OAuth, no API key needed)
     anthropic:
       models:
-        - claude-opus-4-5-20251101
+        - claude-opus-4-6
         - claude-sonnet-4-5-20250929
         - claude-haiku-4-5-20251001
     # DeepSeek: https://api-docs.deepseek.com/guides/anthropic_api
@@ -59,8 +59,8 @@ claude:
     wanxiaot:
       base_url: https://na.wanxiaot.com
       models:
-        - claude-opus-4-5-20251101
-        - claude-opus-4-5-20251101-thinking
+        - claude-opus-4-6
+        - claude-opus-4-6-thinking
         - claude-sonnet-4-5-20250929
         - claude-sonnet-4-5-20250929-thinking
         - claude-haiku-4-5-20251001
@@ -70,12 +70,12 @@ claude:
   accounts:
     # Native Anthropic accounts (use OAuth)
     anthropic:
-      model: claude-opus-4-5-20251101
+      model: claude-opus-4-6
       small_model: claude-sonnet-4-5-20250929
     opus:
       provider: anthropic
-      model: claude-opus-4-5-20251101
-      small_model: claude-opus-4-5-20251101
+      model: claude-opus-4-6
+      small_model: claude-opus-4-6
     haiku:
       provider: anthropic
       model: claude-haiku-4-5-20251001
@@ -96,11 +96,11 @@ claude:
       opus_model: kimi-k2.5
     wanxiaot@private:
       provider: wanxiaot
-      model: gpt-5.3-codex
-      small_model: claude-opus-4-5-20251101
-      haiku_model: claude-opus-4-5-20251101
-      sonnet_model: claude-opus-4-5-20251101
-      opus_model: gpt-5.3-codex
+      model: gpt-5.2-codex
+      small_model: claude-opus-4-6
+      haiku_model: claude-opus-4-6
+      sonnet_model: claude-opus-4-6
+      opus_model: gpt-5.2-codex
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
   # All skills are hardcoded in .chezmoiexternal.toml.tmpl
