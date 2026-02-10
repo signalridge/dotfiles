@@ -9,6 +9,16 @@ cd "$HOME"
 echo ":: [05] Installing mise tools"
 
 if command -v mise &>/dev/null; then
+    # Ensure mise shims are available in this non-interactive shell.
+    eval "$(mise activate bash)"
+
+    # npm-backed tools need npm available during version resolution.
+    # Install node first if npm is still unavailable in this shell.
+    if ! command -v npm &>/dev/null; then
+        mise install --yes node
+        eval "$(mise activate bash)"
+    fi
+
     mise install --yes
 else
     echo "    Skipped (mise not found)"
