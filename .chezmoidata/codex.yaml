@@ -113,11 +113,6 @@ codex:
         - "@anthropic/mcp-server-notion"
       env:
         NOTION_API_KEY: "${NOTION_API_KEY}"
-    sequential-thinking:
-      command: npx
-      args:
-        - "-y"
-        - "@anthropic/mcp-server-sequential-thinking"
     tavily:
       command: ~/.local/bin/mcp-tavily
       args: []

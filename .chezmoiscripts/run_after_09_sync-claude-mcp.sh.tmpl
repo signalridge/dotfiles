@@ -137,10 +137,9 @@ ensure_user_mcp_json "slack" '{"command":"npx","args":["-y","@anthropic/mcp-serv
 ensure_user_mcp_json "slack-explorer" '{"command":"docker","args":["run","-i","--rm","--pull","always","ghcr.io/shibayu36/slack-explorer-mcp:latest"],"env":{"SLACK_USER_TOKEN":"${SLACK_USER_TOKEN}"}}'
 
 ensure_user_mcp_sse "notion" "https://mcp.notion.com/sse"
-ensure_user_mcp_json "sequential-thinking" '{"command":"npx","args":["-y","@anthropic/mcp-server-sequential-thinking"]}'
 ensure_user_mcp_json "playwright" '{"command":"npx","args":["-y","@playwright/mcp@latest"]}'
 ensure_user_mcp_json "context7" '{"command":"npx","args":["-y","@upstash/context7-mcp"]}'
 ensure_user_mcp_json "markitdown" '{"command":"uvx","args":["markitdown-mcp"]}'
 ensure_user_mcp_json "arxiv-mcp-server" '{"command":"uv","args":["tool","run","arxiv-mcp-server"]}'
-ensure_user_mcp_json "tavily" '{"command":"~/.local/bin/mcp-tavily","args":[]}'
-ensure_user_mcp_json "postgres" '{"command":"~/.local/bin/mcp-postgres","args":[]}'
+ensure_user_mcp_json "tavily" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily","args":[]}'
+ensure_user_mcp_json "postgres" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-postgres","args":[]}'
