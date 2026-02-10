@@ -10,8 +10,10 @@ claude:
   # API keys stored in gopass: claude-code/providers/{provider}/{account}/api_key
 
   # ===== Global Defaults =====
+  # Fallback when neither account nor provider specifies a value.
   defaults:
     timeout_ms: 600000
+    disable_nonessential_traffic: false
   # ===== Provider Definitions =====
   # Only base_url and available models list
   providers:
@@ -24,24 +26,32 @@ claude:
     # DeepSeek: https://api-docs.deepseek.com/guides/anthropic_api
     deepseek:
       base_url: https://api.deepseek.com/anthropic
+      timeout_ms: 300000
+      disable_nonessential_traffic: true
       models:
         - deepseek-chat
         - deepseek-reasoner
     # Kimi K2 (Moonshot): https://github.com/MoonshotAI/kimi-cli/blob/main/docs/en/configuration/providers.md
     kimi:
       base_url: https://api.kimi.com/coding
+      timeout_ms: 300000
+      disable_nonessential_traffic: true
       models:
         - kimi-k2.5
         - kimi-k2
     # GLM (Zhipu AI): https://docs.bigmodel.cn/cn/guide/develop/claude
     glm:
       base_url: https://open.bigmodel.cn/api/anthropic
+      timeout_ms: 300000
+      disable_nonessential_traffic: true
       models:
         - glm-4.7
         - glm-4.5-air
     # Qwen (Alibaba): https://help.aliyun.com/zh/model-studio/claude-code
     qwen:
       base_url: https://dashscope.aliyuncs.com/apps/anthropic
+      timeout_ms: 300000
+      disable_nonessential_traffic: true
       models:
         - qwen3-coder-plus
         - qwen3-max
@@ -49,15 +59,21 @@ claude:
     # MiniMax: https://platform.minimax.io/docs/coding-plan/claude-code
     minimax:
       base_url: https://api.minimax.io/anthropic
+      timeout_ms: 300000
+      disable_nonessential_traffic: true
       models:
         - MiniMax-M2.1
     # Doubao (ByteDance): https://www.volcengine.com/docs/82379/1928261
     doubao:
       base_url: https://ark.cn-beijing.volces.com/api/coding
+      timeout_ms: 300000
+      disable_nonessential_traffic: true
       models:
         - ark-code-latest
     wanxiaot:
       base_url: https://na.wanxiaot.com
+      timeout_ms: 300000
+      disable_nonessential_traffic: true
       models:
         - claude-opus-4-6
         - claude-opus-4-6-thinking
@@ -96,11 +112,11 @@ claude:
       opus_model: kimi-k2.5
     wanxiaot@private:
       provider: wanxiaot
-      model: gpt-5.2-codex
-      small_model: claude-opus-4-6
-      haiku_model: claude-opus-4-6
-      sonnet_model: claude-opus-4-6
-      opus_model: gpt-5.2-codex
+      model: claude-opus-4-6
+      small_model: claude-sonnet-4-5-20250929
+      haiku_model: claude-haiku-4-5-20251001
+      sonnet_model: claude-sonnet-4-5-20250929
+      opus_model: claude-opus-4-6
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
   # All skills are hardcoded in .chezmoiexternal.toml.tmpl

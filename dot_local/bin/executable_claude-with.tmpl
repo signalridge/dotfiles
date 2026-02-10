@@ -109,13 +109,15 @@ launch_claude() {
     [[ -n "$small_model" ]] && export ANTHROPIC_SMALL_FAST_MODEL="$small_model"
 
     # Optional settings
-    local timeout haiku sonnet opus
+    local timeout haiku sonnet opus disable_traffic
     timeout=$(echo "$config" | jq -r '.timeout_ms // empty')
     haiku=$(echo "$config" | jq -r '.haiku_model // empty')
     sonnet=$(echo "$config" | jq -r '.sonnet_model // empty')
     opus=$(echo "$config" | jq -r '.opus_model // empty')
+    disable_traffic=$(echo "$config" | jq -r '.disable_nonessential_traffic // empty')
 
     [[ -n "$timeout" ]] && export API_TIMEOUT_MS="$timeout"
+    [[ "$disable_traffic" == "true" ]] && export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC="1"
     [[ -n "$haiku" ]] && export ANTHROPIC_DEFAULT_HAIKU_MODEL="$haiku"
     [[ -n "$sonnet" ]] && export ANTHROPIC_DEFAULT_SONNET_MODEL="$sonnet"
     [[ -n "$opus" ]] && export ANTHROPIC_DEFAULT_OPUS_MODEL="$opus"
@@ -166,6 +168,7 @@ launch_claude() {
         --arg haiku "${haiku:-}" \
         --arg sonnet "${sonnet:-}" \
         --arg opus "${opus:-}" \
+        --arg disable_traffic "${disable_traffic:-}" \
         '(
             $base
             * {
@@ -178,7 +181,8 @@ launch_claude() {
                         ANTHROPIC_SMALL_FAST_MODEL: $small_model,
                         ANTHROPIC_DEFAULT_HAIKU_MODEL: $haiku,
                         ANTHROPIC_DEFAULT_SONNET_MODEL: $sonnet,
-                        ANTHROPIC_DEFAULT_OPUS_MODEL: $opus
+                        ANTHROPIC_DEFAULT_OPUS_MODEL: $opus,
+                        CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: (if $disable_traffic == "true" then "1" else "" end)
                     }
                 )
             }
