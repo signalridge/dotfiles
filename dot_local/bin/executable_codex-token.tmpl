@@ -19,6 +19,10 @@ CHECK_ONLY=false
 CONFIG_ONLY=false
 ACCOUNT=""
 
+validate_provider_name() {
+    local name="$1"
+    [[ -n "$name" && "$name" =~ ^[A-Za-z0-9._-]+$ ]]
+}
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --check)
@@ -61,6 +65,16 @@ fi
 PROVIDER=$(get_provider "$ACCOUNT")
 PARSED=$(parse_provider_account "$ACCOUNT")
 ACCT_NAME="${PARSED#*|}"
+
+# Validate names to prevent path traversal
+if ! validate_provider_name "$PROVIDER"; then
+    log_error "Invalid provider name '$PROVIDER'"
+    exit 1
+fi
+if ! validate_account_name "$ACCT_NAME"; then
+    log_error "Invalid account name '$ACCT_NAME'"
+    exit 1
+fi
 
 # Config mode: output account configuration
 if $CONFIG_ONLY; then

@@ -79,8 +79,9 @@ cmd_init() {
 
     # Clone repository
     log_info "Cloning keys repository..."
-    local clone_error
+    local clone_error=""
     clone_error=$(mktemp)
+    register_temp_file "$clone_error"
 
     if ! git clone "$KEYS_REPO" "$REPO_DIR" 2>"$clone_error"; then
         echo ""
@@ -235,6 +236,8 @@ cmd_select() {
     local pending_remove_file
     pending_add_file=$(mktemp)
     pending_remove_file=$(mktemp)
+    register_temp_file "$pending_add_file"
+    register_temp_file "$pending_remove_file"
 
     while true; do
         # Load current backup list
@@ -469,6 +472,7 @@ cmd_select() {
 
             local tmp
             tmp=$(mktemp)
+            register_temp_file "$tmp"
 
             # Build removal set (HOME-relative).
             local -A remove_set=()
@@ -622,6 +626,7 @@ EOF
 
         local list_file
         list_file=$(mktemp)
+        register_temp_file "$list_file"
         printf '%s\n' "${current_files[@]}" >"$list_file"
 
         local header="Select files to ADD (Tab: toggle, Ctrl-A: all, Ctrl-D: none, Ctrl-/: preview)"
@@ -684,6 +689,7 @@ EOF
     # Write clean list (only valid file paths)
     local tmp
     tmp=$(mktemp)
+    register_temp_file "$tmp"
 
     # Add existing valid files (write HOME-relative entries)
     for file in "${current_files[@]}"; do
@@ -803,6 +809,7 @@ cmd_remove() {
     # Remove from backup list (write clean list, HOME-relative)
     local tmp
     tmp=$(mktemp)
+    register_temp_file "$tmp"
 
     local -A remove_set=()
     while IFS= read -r file; do

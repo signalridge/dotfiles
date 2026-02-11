@@ -166,6 +166,9 @@ cmd_password() {
             # Create test file
             local test_file
             test_file=$(mktemp "${TMPDIR:-/tmp}/keys-manage-test.XXXXXX")
+            register_temp_file "$test_file"
+            register_temp_file "$test_file.enc"
+            register_temp_file "$test_file.dec"
             local test_content
             test_content="keys-manage password test $(date)"
             echo "$test_content" >"$test_file"
@@ -374,6 +377,9 @@ EOF
             # Create test file
             local test_file
             test_file=$(mktemp "${TMPDIR:-/tmp}/keys-manage-test.XXXXXX")
+            register_temp_file "$test_file"
+            register_temp_file "$test_file.enc"
+            register_temp_file "$test_file.dec"
             local test_content
             test_content="keys-manage password test $(date)"
             echo "$test_content" >"$test_file"

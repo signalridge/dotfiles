@@ -323,6 +323,7 @@ cmd_restore() {
 
     local temp_encrypted
     temp_encrypted=$(mktemp "${TMPDIR:-/tmp}/keys-restore.XXXXXX.enc")
+    register_temp_file "$temp_encrypted"
     local filename
     filename=$(basename "$target_path")
 

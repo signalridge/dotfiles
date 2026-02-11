@@ -92,7 +92,7 @@ codex:
     runtime_metrics: true
     undo: true
     request_rule: true
-    responses_websockets: true
+    responses_websockets: false
     remote_compaction: true
     remote_models: true
     skill_mcp_dependency_install: true

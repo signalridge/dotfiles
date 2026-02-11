@@ -61,7 +61,7 @@ source "$SCRIPT_DIR/lib/keys-manage/menu.sh"
 # ===== Main Entry Point =====
 
 main() {
-    trap clear_password_cache EXIT
+    trap 'clear_password_cache; cleanup_registered_temp_files' EXIT
 
     # Parse global options first
     while [[ $# -gt 0 ]]; do

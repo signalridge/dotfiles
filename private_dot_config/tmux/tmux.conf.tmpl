@@ -67,6 +67,9 @@ bind a copy-mode
 bind -T copy-mode-vi v send-keys -X begin-selection
 bind -T copy-mode-vi V send-keys -X select-line
 bind -T copy-mode-vi Escape send-keys -X cancel
+# Prefer current locale for clipboard copies without forcing LC_ALL
+bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel 'LC_CTYPE="${LC_CTYPE:-$LANG}" LANG="$LANG" pbcopy'
+bind -T copy-mode-vi Enter send-keys -X copy-pipe-and-cancel 'LC_CTYPE="${LC_CTYPE:-$LANG}" LANG="$LANG" pbcopy'
 set -g set-clipboard on
 
 # session management

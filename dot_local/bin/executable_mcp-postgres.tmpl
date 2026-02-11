@@ -22,4 +22,7 @@ if [[ -z "$PG_DSN" ]]; then
 fi
 
 # Reference server: read-only Postgres MCP
-exec npx @modelcontextprotocol/server-postgres "$PG_DSN" "$@"
+# Upstream server-postgres currently requires DSN as argv[1].
+# This means DSN may be visible in process listings on the local machine.
+log_warn "server-postgres requires DSN as argv; DSN may be visible in process list"
+exec npx -y @modelcontextprotocol/server-postgres@0.6.2 "$PG_DSN" "$@"

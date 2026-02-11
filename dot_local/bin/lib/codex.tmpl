@@ -24,6 +24,21 @@ get_current_provider() {
     get_provider "$current_account"
 }
 
+# Validate a TOML key segment (used for dasel selectors).
+validate_toml_segment() {
+    local segment="$1"
+    [[ -n "$segment" && "$segment" =~ ^[A-Za-z0-9_-]+$ ]]
+}
+
+validate_toml_path() {
+    local path="$1"
+    local segment
+    IFS='.' read -r -a segments <<< "$path"
+    for segment in "${segments[@]}"; do
+        validate_toml_segment "$segment" || return 1
+    done
+}
+
 # Build account list with status indicators
 build_account_list_with_status() {
     local current
@@ -78,7 +93,7 @@ ACCOUNT_PREVIEW='
         echo "Config not available"
     fi
     echo ""
-    if echo "$config" | jq -e '.base_url // empty' >/dev/null 2>&1; then
+    if echo "$config" | jq -e ".base_url // empty" >/dev/null 2>&1; then
         if codex-token --check "$account" 2>/dev/null; then
             echo -e "\033[0;32m✓ Token ready\033[0m"
         else
@@ -126,21 +141,35 @@ fzf_pick_account() {
 update_codex_config() {
     local key="$1"
     local value="$2"
+    local table="${3:-}"
 
     if [[ ! -f "$CODEX_CONFIG" ]]; then
         log_error "Codex config not found: $CODEX_CONFIG"
         return 1
     fi
 
-    local tmp_file
-    tmp_file=$(mktemp) || { log_error "Failed to create temp file"; return 1; }
+    require_cmd dasel || return 1
 
-    if grep -q "^${key}\s*=" "$CODEX_CONFIG"; then
-        sed "s/^${key}\s*=.*/${key} = \"${value}\"/" "$CODEX_CONFIG" > "$tmp_file"
-    else
-        cp "$CODEX_CONFIG" "$tmp_file"
-        echo "${key} = \"${value}\"" >> "$tmp_file"
+    if ! validate_toml_segment "$key"; then
+        log_error "Invalid TOML key '$key'"
+        return 1
+    fi
+    if [[ -n "$table" ]] && ! validate_toml_path "$table"; then
+        log_error "Invalid TOML table '$table'"
+        return 1
     fi
 
-    mv "$tmp_file" "$CODEX_CONFIG"
+    local selector=".$key"
+    if [[ -n "$table" ]]; then
+        selector=".$table.$key"
+    fi
+
+    if ! dasel put string -p toml -f "$CODEX_CONFIG" "$selector" "$value" >/dev/null; then
+        if [[ -n "$table" ]]; then
+            log_error "Failed to update codex config key '$key' in table '$table'"
+        else
+            log_error "Failed to update codex config key '$key'"
+        fi
+        return 1
+    fi
 }
