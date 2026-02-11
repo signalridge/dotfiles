@@ -1,6 +1,23 @@
 # shellcheck shell=bash
 # ===== Utility Functions =====
 
+# Track temp files for robust cleanup on interruption / early returns.
+_TEMP_FILES=()
+
+register_temp_file() {
+    local path="$1"
+    [[ -n "$path" ]] || return 0
+    _TEMP_FILES+=("$path")
+}
+
+cleanup_registered_temp_files() {
+    local path
+    for path in "${_TEMP_FILES[@]}"; do
+        [[ -n "$path" ]] && rm -f "$path" 2>/dev/null || true
+    done
+    _TEMP_FILES=()
+}
+
 # Log event to history
 log_event() {
     local event="$1"
@@ -124,6 +141,7 @@ normalize_backup_list_file() {
 
     local tmp
     tmp=$(mktemp)
+    register_temp_file "$tmp"
     iter_backup_list_rel | sort -u >"$tmp"
 
     if ! cmp -s "$tmp" "$BACKUP_LIST" 2>/dev/null; then
@@ -145,6 +163,7 @@ migrate_metadata_keys_to_rel() {
 
     local tmp
     tmp=$(mktemp)
+    register_temp_file "$tmp"
     if jq --arg home "$HOME" --argjson rels "$rels_json" '
         .files = (.files // {}) |
 
@@ -273,6 +292,7 @@ decrypt_control_file_to_tmp() {
 
     local tmp
     tmp=$(mktemp "${TMPDIR:-/tmp}/keys-control.XXXXXX")
+    register_temp_file "$tmp"
     if decrypt_file "$enc" "$tmp" "$password" 2>/dev/null; then
         printf '%s\n' "$tmp"
         return 0
@@ -700,6 +720,8 @@ detect_changes() {
     local temp_encrypted temp_decrypted
     temp_encrypted=$(mktemp "${TMPDIR:-/tmp}/keys-detect.XXXXXX.enc")
     temp_decrypted=$(mktemp "${TMPDIR:-/tmp}/keys-detect.XXXXXX")
+    register_temp_file "$temp_encrypted"
+    register_temp_file "$temp_decrypted"
 
     if git show "HEAD:$backup_file" >"$temp_encrypted" 2>/dev/null; then
         if decrypt_file "$temp_encrypted" "$temp_decrypted" "$password" 2>/dev/null; then
@@ -805,6 +827,7 @@ update_file_metadata() {
 
     local tmp
     tmp=$(mktemp)
+    register_temp_file "$tmp"
     jq \
         --arg key "$key" \
         --arg abs "$abs_key" \
@@ -846,6 +869,7 @@ remove_file_metadata() {
 
     local tmp
     tmp=$(mktemp)
+    register_temp_file "$tmp"
     if jq --arg key "$key" --arg abs "$abs_key" 'del(.files[$key]) | del(.files[$abs])' "$METADATA_FILE" >"$tmp" 2>/dev/null; then
         mv "$tmp" "$METADATA_FILE"
         return 0
@@ -977,6 +1001,7 @@ yazi_select_files() {
     # Create temp file for yazi output
     local tmpfile
     tmpfile=$(mktemp)
+    register_temp_file "$tmpfile"
 
     # Launch yazi with explicit tty redirection
     # This ensures yazi can access the terminal even when called from within FZF
@@ -1190,6 +1215,7 @@ safe_git_commit() {
     local commit_msg="$1"
     local commit_output
     commit_output=$(mktemp)
+    register_temp_file "$commit_output"
 
     if git commit -m "$commit_msg" 2>"$commit_output"; then
         rm -f "$commit_output"
@@ -1217,6 +1243,7 @@ safe_git_commit() {
 safe_git_push() {
     local push_output
     push_output=$(mktemp)
+    register_temp_file "$push_output"
 
     echo -n "Pushing to remote... "
     local push_timeout ssh_cmd
@@ -1269,6 +1296,7 @@ safe_git_push() {
 safe_git_pull() {
     local pull_output
     pull_output=$(mktemp)
+    register_temp_file "$pull_output"
 
     local pull_timeout ssh_cmd
     pull_timeout="${KEYS_GIT_PULL_TIMEOUT_SEC:-30}"
@@ -1568,6 +1596,7 @@ verify_file() {
     # Decrypt backup file to temp location for comparison
     local temp_decrypted
     temp_decrypted=$(mktemp "${TMPDIR:-/tmp}/keys-verify.XXXXXX")
+    register_temp_file "$temp_decrypted"
     if ! decrypt_file "$backup_file" "$temp_decrypted" "$password" 2>/dev/null; then
         rm -f "$temp_decrypted"
         return 3 # Decryption failed

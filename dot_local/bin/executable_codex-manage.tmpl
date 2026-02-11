@@ -558,11 +558,29 @@ cmd_test() {
     model=$(echo "$config" | jq -r '.model // "unknown"')
 
     # Codex schema indicates the Responses API at /v1/responses.
+    local header_file
+    header_file=$(mktemp) || { log_fail "Failed to create header temp file"; return 1; }
+    if ! chmod 600 "$header_file"; then
+        log_fail "Failed to secure header temp file"
+        rm -f "$header_file"
+        return 1
+    fi
+    if ! cat > "$header_file" <<EOF
+Authorization: Bearer $token
+Content-Type: application/json
+EOF
+    then
+        log_fail "Failed to write header file"
+        rm -f "$header_file"
+        return 1
+    fi
+
     response=$(curl -sS -w "\n%{http_code}" --max-time 30 \
         -X POST "$base_url/v1/responses" \
-        -H "Authorization: Bearer $token" \
-        -H "Content-Type: application/json" \
-        -d "{\"model\":\"$model\",\"input\":\"ping\"}" 2>&1)
+        -H @"$header_file" \
+        -d "{\"model\":\"$model\",\"input\":\"ping\"}" 2>&1 || true)
+
+    rm -f "$header_file"
 
     http_code=$(echo "$response" | tail -n1)
 

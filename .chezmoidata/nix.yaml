@@ -21,6 +21,7 @@ homepkgs:
     - gemini-cli
     - certbot
     - direnv # per-directory environment variables
+    - dasel
     - duf
     - dust
     - eza

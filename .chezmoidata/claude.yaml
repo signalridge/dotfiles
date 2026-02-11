@@ -114,11 +114,11 @@ claude:
       opus_model: kimi-k2.5
     naapi@private:
       provider: naapi
-      model: gpt-5.2-codex
-      small_model: gpt-5.2-codex
-      haiku_model: gpt-5.2-codex
-      sonnet_model: gpt-5.2-codex
-      opus_model: gpt-5.2-codex
+      model: gpt-5.3-codex
+      small_model: gpt-5.3-codex
+      haiku_model: gpt-5.3-codex
+      sonnet_model: gpt-5.3-codex
+      opus_model: gpt-5.3-codex
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
   # All skills are hardcoded in .chezmoiexternal.toml.tmpl
