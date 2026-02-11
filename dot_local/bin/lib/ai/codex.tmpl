@@ -11,6 +11,7 @@ source "$CODEX_LIB_DIR/core"
 
 # Codex-specific paths
 CODEX_CONFIG="${HOME}/.codex/config.toml"
+CODEX_AUTH="${HOME}/.codex/auth.json"
 
 # Get current Codex account from chezmoi data
 get_current() {
@@ -172,4 +173,53 @@ update_codex_config() {
         fi
         return 1
     fi
+}
+
+# Update Codex auth.json OPENAI_API_KEY while preserving tokens.
+# Args: key_value, use_null (true|false)
+update_codex_auth() {
+    local key_value="${1:-}"
+    local use_null="${2:-false}"
+
+    if [[ "$use_null" != "true" && -z "$key_value" ]]; then
+        log_error "Missing API key for Codex auth.json update"
+        return 1
+    fi
+
+    require_cmd jq || return 1
+
+    local auth_dir
+    auth_dir="$(dirname -- "$CODEX_AUTH")"
+    mkdir -p "$auth_dir" || { log_error "Failed to create $auth_dir"; return 1; }
+
+    local tmp_file
+    tmp_file="$(mktemp)" || { log_error "Failed to create temp file"; return 1; }
+
+    if [[ -f "$CODEX_AUTH" ]]; then
+        if [[ "$use_null" == "true" ]]; then
+            if ! jq '.OPENAI_API_KEY = null' "$CODEX_AUTH" > "$tmp_file"; then
+                rm -f "$tmp_file"
+                log_error "Failed to update $CODEX_AUTH"
+                return 1
+            fi
+        else
+            if ! jq --arg key "$key_value" '.OPENAI_API_KEY = $key' "$CODEX_AUTH" > "$tmp_file"; then
+                rm -f "$tmp_file"
+                log_error "Failed to update $CODEX_AUTH"
+                return 1
+            fi
+        fi
+    else
+        if [[ "$use_null" == "true" ]]; then
+            printf '{\n  "OPENAI_API_KEY": null\n}\n' > "$tmp_file"
+        else
+            if ! jq -n --arg key "$key_value" '{OPENAI_API_KEY: $key}' > "$tmp_file"; then
+                rm -f "$tmp_file"
+                log_error "Failed to create $CODEX_AUTH"
+                return 1
+            fi
+        fi
+    fi
+
+    mv "$tmp_file" "$CODEX_AUTH"
 }
