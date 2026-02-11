@@ -12,6 +12,8 @@ source "$CODEX_LIB_DIR/core"
 # Codex-specific paths
 CODEX_CONFIG="${HOME}/.codex/config.toml"
 CODEX_AUTH="${HOME}/.codex/auth.json"
+CODEX_AUTH_OPENAI="${HOME}/.codex/auth.openai.json"
+CODEX_AUTH="${HOME}/.codex/auth.json"
 
 # Get current Codex account from chezmoi data
 get_current() {
@@ -175,16 +177,32 @@ update_codex_config() {
     fi
 }
 
-# Update Codex auth.json OPENAI_API_KEY while preserving tokens.
-# Args: key_value, use_null (true|false)
-update_codex_auth() {
-    local key_value="${1:-}"
-    local use_null="${2:-false}"
-
-    if [[ "$use_null" != "true" && -z "$key_value" ]]; then
-        log_error "Missing API key for Codex auth.json update"
-        return 1
+# Backup OpenAI auth.json (contains tokens) before overwriting for third-party.
+backup_codex_auth_openai() {
+    if [[ ! -f "$CODEX_AUTH" ]]; then
+        return 0
     fi
+
+    require_cmd jq || return 1
+
+    if jq -e 'has("tokens") or has("refresh_token") or has("access_token") or has("id_token")' "$CODEX_AUTH" >/dev/null 2>&1; then
+        cp "$CODEX_AUTH" "$CODEX_AUTH_OPENAI"
+    fi
+}
+
+# Restore OpenAI auth.json from backup; if missing, delete auth.json.
+restore_codex_auth_openai() {
+    if [[ -f "$CODEX_AUTH_OPENAI" ]]; then
+        cp "$CODEX_AUTH_OPENAI" "$CODEX_AUTH"
+    else
+        rm -f "$CODEX_AUTH"
+    fi
+}
+
+# Write minimal auth.json with OPENAI_API_KEY only (no merge).
+write_codex_auth_key() {
+    local key_value="${1:-}"
+    [[ -n "$key_value" ]] || { log_error "Missing API key for Codex auth.json"; return 1; }
 
     require_cmd jq || return 1
 
@@ -195,30 +213,10 @@ update_codex_auth() {
     local tmp_file
     tmp_file="$(mktemp)" || { log_error "Failed to create temp file"; return 1; }
 
-    if [[ -f "$CODEX_AUTH" ]]; then
-        if [[ "$use_null" == "true" ]]; then
-            if ! jq '.OPENAI_API_KEY = null' "$CODEX_AUTH" > "$tmp_file"; then
-                rm -f "$tmp_file"
-                log_error "Failed to update $CODEX_AUTH"
-                return 1
-            fi
-        else
-            if ! jq --arg key "$key_value" '.OPENAI_API_KEY = $key' "$CODEX_AUTH" > "$tmp_file"; then
-                rm -f "$tmp_file"
-                log_error "Failed to update $CODEX_AUTH"
-                return 1
-            fi
-        fi
-    else
-        if [[ "$use_null" == "true" ]]; then
-            printf '{\n  "OPENAI_API_KEY": null\n}\n' > "$tmp_file"
-        else
-            if ! jq -n --arg key "$key_value" '{OPENAI_API_KEY: $key}' > "$tmp_file"; then
-                rm -f "$tmp_file"
-                log_error "Failed to create $CODEX_AUTH"
-                return 1
-            fi
-        fi
+    if ! jq -n --arg key "$key_value" '{OPENAI_API_KEY: $key}' > "$tmp_file"; then
+        rm -f "$tmp_file"
+        log_error "Failed to write $CODEX_AUTH"
+        return 1
     fi
 
     mv "$tmp_file" "$CODEX_AUTH"

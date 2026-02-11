@@ -184,21 +184,27 @@ cmd_switch() {
     log_info "Applying chezmoi templates..."
     chezmoi apply >/dev/null
     echo "  ✓ Updated ~/.codex/config.toml"
-    local api_key=""
-    local use_null="true"
     if is_third_party "$provider"; then
         require_cmd gopass || return 1
+        backup_codex_auth_openai || return 1
         local parsed acct_name
         parsed=$(parse_provider_account "$input")
         acct_name="${parsed#*|}"
+        local api_key
         api_key=$(get_api_key "$provider" "$acct_name") || {
             log_error "Failed to retrieve API key for $input"
             return 1
         }
-        use_null="false"
+        write_codex_auth_key "$api_key" || return 1
+        echo "  ✓ Updated ~/.codex/auth.json (OPENAI_API_KEY)"
+    else
+        restore_codex_auth_openai || return 1
+        if [[ -f "$CODEX_AUTH" ]]; then
+            echo "  ✓ Restored ~/.codex/auth.json"
+        else
+            echo "  ✓ Removed ~/.codex/auth.json (re-login required)"
+        fi
     fi
-    update_codex_auth "$api_key" "$use_null" || return 1
-    echo "  ✓ Updated ~/.codex/auth.json"
     echo ""
     log_success "Account set to $input"
     log_warn "Restart Codex to apply changes"
