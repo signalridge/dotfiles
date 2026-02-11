@@ -64,6 +64,7 @@ build_config_overrides() {
     model=$(echo "$config" | jq -r '.model // empty')
 
     [[ -z "$provider" ]] && provider="$account"
+    env_var="$(printf '%s' "$provider" | tr '[:lower:]' '[:upper:]')_API_KEY"
     requires_auth=false
     if provider_requires_openai_auth "$provider"; then
         requires_auth=true
@@ -79,7 +80,7 @@ build_config_overrides() {
     if [[ -n "$base_url" ]]; then
         overrides+=("-c" "model_providers.${provider}.base_url=${base_url}")
         if [[ "$requires_auth" != "true" ]]; then
-            overrides+=("-c" "model_providers.${provider}.env_key=OPENAI_API_KEY")
+            overrides+=("-c" "model_providers.${provider}.env_key=${env_var}")
         fi
     fi
 
@@ -108,6 +109,10 @@ launch_codex() {
     local requires_auth=false
     if provider_requires_openai_auth "$provider"; then
         requires_auth=true
+    fi
+    local env_var=""
+    if is_third_party "$provider" && [[ "$requires_auth" != "true" ]]; then
+        env_var="$(printf '%s' "$provider" | tr '[:lower:]' '[:upper:]')_API_KEY"
     fi
 
     if is_third_party "$provider" && [[ "$requires_auth" != "true" ]]; then
@@ -151,7 +156,7 @@ launch_codex() {
 
     # Launch with environment and overrides
     if [[ -n "$api_key" ]]; then
-        OPENAI_API_KEY="$api_key" exec codex "${overrides[@]}" "$@"
+        env "$env_var=$api_key" exec codex "${overrides[@]}" "$@"
     else
         exec codex "${overrides[@]}" "$@"
     fi
