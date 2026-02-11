@@ -49,11 +49,16 @@ gopass clone "$REPO_URL"
 # List all passwords
 gopass ls
 
-# Test reading a password
-gopass show claude-code/accounts/kimi@private/api_key
+# Test token helpers (AI tools)
+claude-token --check kimi@private
+codex-token --check deepseek@smoke
+```
 
-# Test claude-manage integration
-ccm list
+If you are migrating from legacy key paths, run:
+
+```bash
+ai-tools-migrate-keys --dry-run
+ai-tools-migrate-keys
 ```
 
 ## Configuration Details

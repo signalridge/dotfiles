@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+# AI Tools Gopass Namespace Migration
+# Move legacy claude-code paths to canonical ai-tools namespace
+#
+# Usage:
+#   ai-tools-migrate-keys [--dry-run] [--force]
+
+set -euo pipefail
+
+# shellcheck source=lib/ai-tools.tmpl
+# shellcheck disable=SC1091
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/ai-tools"
+
+DRY_RUN=false
+FORCE=false
+
+usage() {
+    cat <<'USAGE'
+AI Tools Gopass Namespace Migration
+
+Usage:
+  ai-tools-migrate-keys [--dry-run] [--force]
+
+Options:
+  --dry-run   Show what would be migrated without writing or deleting
+  --force     Overwrite canonical key if it already exists
+  -h, --help  Show help
+USAGE
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --force)
+            FORCE=true
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+require_cmd gopass || exit 1
+
+if ! prefix=$(gopass_prefix); then
+    exit 1
+fi
+
+log_header "AI Tools Gopass Migration"
+echo "  Canonical prefix: $prefix"
+if $DRY_RUN; then
+    echo "  Mode: dry-run"
+fi
+if $FORCE; then
+    echo "  Mode: force overwrite"
+fi
+
+LEGACY_PATHS=()
+LEGACY_TOKEN=""
+
+find_legacy_key() {
+    local provider="$1"
+    local account="$2"
+
+    LEGACY_PATHS=()
+    LEGACY_TOKEN=""
+
+    local path token
+    while IFS= read -r path; do
+        [[ -z "$path" ]] && continue
+        if token=$(run_with_timeout 3 gopass show -o "$path" 2>/dev/null); then
+            LEGACY_PATHS+=("$path")
+            if [[ -z "$LEGACY_TOKEN" ]]; then
+                LEGACY_TOKEN="$token"
+            elif [[ "$LEGACY_TOKEN" != "$token" ]]; then
+                log_warn "Multiple legacy keys differ for $provider/$account; using first"
+            fi
+        fi
+    done < <(legacy_api_key_path_candidates "$provider" "$account")
+
+    [[ ${#LEGACY_PATHS[@]} -gt 0 ]]
+}
+
+migrate_one() {
+    local provider="$1"
+    local account="$2"
+
+    if ! validate_provider_name "$provider"; then
+        log_warn "Skip invalid provider: $provider"
+        return 0
+    fi
+    [[ -n "$account" ]] || { log_warn "Skip empty account for $provider"; return 0; }
+
+    local target
+    if ! target=$(api_key_path "$provider" "$account"); then
+        log_warn "Skip $provider/$account (invalid target path)"
+        return 0
+    fi
+
+    if gopass list -f "$target" &>/dev/null; then
+        if ! $FORCE; then
+            log_info "Skip existing key: $provider/$account"
+            ((existing++)) || true
+            return 0
+        fi
+    fi
+
+    if ! find_legacy_key "$provider" "$account"; then
+        ((missing++)) || true
+        return 0
+    fi
+
+    if $DRY_RUN; then
+        log_info "Would move $provider/$account -> $target"
+        ((planned++)) || true
+        return 0
+    fi
+
+    if ! printf '%s' "$LEGACY_TOKEN" | gopass insert -f "$target" >/dev/null; then
+        log_warn "Failed to write canonical key for $provider/$account"
+        ((failed++)) || true
+        return 0
+    fi
+
+    local path
+    for path in "${LEGACY_PATHS[@]}"; do
+        gopass rm -f "$path" &>/dev/null || log_warn "Failed to remove legacy key: $path"
+    done
+
+    log_success "Migrated $provider/$account"
+    ((moved++)) || true
+}
+
+moved=0
+missing=0
+existing=0
+planned=0
+failed=0
+
+declare -A seen=()
+
+process_accounts() {
+    local tool="$1"
+    local -a accounts=()
+
+    case "$tool" in
+        codex) accounts=("${CODEX_ACCOUNTS[@]}") ;;
+        claude) accounts=("${CLAUDE_ACCOUNTS[@]}") ;;
+        *) return 0 ;;
+    esac
+
+    local account provider parsed acct_name key
+    for account in "${accounts[@]}"; do
+        AI_TOOL_CONTEXT="$tool"
+        provider=$(get_provider "$account")
+        parsed=$(parse_provider_account "$account")
+        acct_name="${parsed#*|}"
+        key="$provider|$acct_name"
+        if [[ -n "${seen[$key]:-}" ]]; then
+            continue
+        fi
+        seen[$key]=1
+        migrate_one "$provider" "$acct_name"
+    done
+}
+
+process_accounts codex
+process_accounts claude
+
+echo ""
+log_header "Migration Summary"
+if $DRY_RUN; then
+    echo "  Planned: $planned"
+fi
+echo "  Moved:   $moved"
+echo "  Missing: $missing"
+echo "  Exists:  $existing"
+echo "  Failed:  $failed"
+
+if [[ $failed -gt 0 ]]; then
+    exit 1
+fi
