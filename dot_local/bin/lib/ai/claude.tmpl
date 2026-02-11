@@ -7,7 +7,7 @@
 # Source shared AI tools library
 CLAUDE_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 AI_TOOL_CONTEXT="claude"
-source "$CLAUDE_LIB_DIR/ai-tools"
+source "$CLAUDE_LIB_DIR/core"
 
 # Claude-specific paths
 SETTINGS_FILE="${HOME}/.claude/settings.json"
