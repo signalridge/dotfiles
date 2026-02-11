@@ -12,7 +12,7 @@ set -euo pipefail
 
 # Source shared Claude library (includes common helpers).
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-source "$SCRIPT_DIR/lib/claude"
+source "$SCRIPT_DIR/lib/ai/claude"
 
 # Validate provider names (prevent path traversal).
 validate_provider_name() {
@@ -21,8 +21,7 @@ validate_provider_name() {
 }
 
 # Validate account names for gopass path safety.
-# Note: account keys are stored as "<provider>@<account>", so the account segment
-# must not contain '@' or '/'.
+# Account names are encoded for storage, but we still restrict to safe characters.
 validate_account_name() {
     local name="$1"
     [[ -n "$name" ]] || return 1

@@ -2,12 +2,12 @@
 # Codex CLI Shared Library
 # Common functions for codex-manage
 #
-# Usage: source lib/codex
+# Usage: source lib/ai/codex
 
 # Source shared AI tools library
 CODEX_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 AI_TOOL_CONTEXT="codex"
-source "$CODEX_LIB_DIR/ai-tools"
+source "$CODEX_LIB_DIR/core"
 
 # Codex-specific paths
 CODEX_CONFIG="${HOME}/.codex/config.toml"

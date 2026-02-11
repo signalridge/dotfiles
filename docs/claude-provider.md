@@ -135,12 +135,16 @@ claude:
 
 ## Data Storage
 
-| Data                   | Location                                                     |
-| ---------------------- | ------------------------------------------------------------ |
-| Provider definitions   | `.chezmoidata/claude.yaml` → `providers`                     |
-| Account configurations | `.chezmoidata/claude.yaml` → `accounts`                      |
-| API keys               | gopass: `claude-code/providers/{provider}/{account}/api_key` |
-| Default account        | `~/.config/chezmoi/chezmoi.toml` → `claudeProviderAccount`   |
+| Data                   | Location                                                                   |
+| ---------------------- | -------------------------------------------------------------------------- |
+| Provider definitions   | `.chezmoidata/claude.yaml` → `providers`                                   |
+| Account configurations | `.chezmoidata/claude.yaml` → `accounts`                                    |
+| API keys               | gopass: `<prefix>/providers/{provider}/accounts/{encoded_account}/api_key` |
+| Default account        | `~/.config/chezmoi/chezmoi.toml` → `claudeProviderAccount`                 |
+
+**Gopass namespace:** set `AI_TOOLS_GOPASS_PREFIX` to override the prefix (default: `ai-tools`).
+
+**Migration:** re-add keys with `claude-manage add-key` / `codex-manage add-key` to store them in the new namespace, then remove legacy entries after verifying.
 
 ## VS Code Integration
 

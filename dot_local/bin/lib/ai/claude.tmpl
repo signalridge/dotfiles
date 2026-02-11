@@ -2,12 +2,12 @@
 # Claude Code Shared Library
 # Common functions for claude-manage and claude-with
 #
-# Usage: source lib/claude
+# Usage: source lib/ai/claude
 
 # Source shared AI tools library
 CLAUDE_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 AI_TOOL_CONTEXT="claude"
-source "$CLAUDE_LIB_DIR/ai-tools"
+source "$CLAUDE_LIB_DIR/core"
 
 # Claude-specific paths
 SETTINGS_FILE="${HOME}/.claude/settings.json"

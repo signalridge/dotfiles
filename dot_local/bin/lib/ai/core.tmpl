@@ -2,11 +2,11 @@
 # AI Tools Shared Library
 # Common functions for Claude Code and Codex CLI management
 #
-# Usage: source lib/ai-tools
+# Usage: source lib/ai/core
 
 # Source common library
 AI_TOOLS_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-source "$AI_TOOLS_LIB_DIR/common"
+source "$AI_TOOLS_LIB_DIR/../common"
 
 # Paths
 CHEZMOI_CONFIG="${HOME}/.config/chezmoi/chezmoi.toml"
@@ -149,6 +149,39 @@ validate_account_name() {
     [[ "$name" =~ ^[A-Za-z0-9._-]+$ ]]
 }
 
+validate_provider_name() {
+    local name="$1"
+    [[ -n "$name" ]] || return 1
+    [[ "$name" =~ ^[A-Za-z0-9._-]+$ ]]
+}
+
+validate_gopass_segment() {
+    local segment="$1"
+    [[ -n "$segment" ]] || return 1
+    [[ "$segment" =~ ^[A-Za-z0-9._-]+$ ]] || return 1
+    [[ "$segment" != "." && "$segment" != ".." ]]
+}
+
+validate_gopass_prefix() {
+    local prefix="$1"
+    [[ -n "$prefix" ]] || return 1
+    local segment
+    local -a segments
+    IFS='/' read -r -a segments <<< "$prefix"
+    for segment in "${segments[@]}"; do
+        validate_gopass_segment "$segment" || return 1
+    done
+}
+
+gopass_prefix() {
+    local prefix="${AI_TOOLS_GOPASS_PREFIX:-ai-tools}"
+    if ! validate_gopass_prefix "$prefix"; then
+        log_error "Invalid AI_TOOLS_GOPASS_PREFIX: '$prefix'"
+        return 1
+    fi
+    printf '%s' "$prefix"
+}
+
 get_provider_default_model() {
     local provider="$1"
     chezmoi data --format json 2>/dev/null | jq -r \
@@ -237,37 +270,25 @@ encode_account_segment() {
 }
 
 # Gopass path functions
-api_key_path_v2() {
+api_key_path() {
     local provider="$1"
     local account="$2"
-    local encoded
-    encoded=$(encode_account_segment "$account")
-    printf 'claude-code/providers/%s/accounts/%s/api_key\n' "$provider" "$encoded"
-}
-
-api_key_path_v3() {
-    local provider="$1"
-    local account="$2"
-    if [[ "$account" == "default" ]]; then
-        printf 'claude-code/accounts/%s/api_key\n' "$provider"
-    else
-        printf 'claude-code/accounts/%s@%s/api_key\n' "$provider" "$account"
+    if ! validate_provider_name "$provider"; then
+        log_error "Invalid provider name '$provider'"
+        return 1
     fi
+    [[ -n "$account" ]] || { log_error "Invalid account name"; return 1; }
+
+    local prefix encoded
+    prefix=$(gopass_prefix) || return 1
+    encoded=$(encode_account_segment "$account")
+    printf '%s/providers/%s/accounts/%s/api_key\n' "$prefix" "$provider" "$encoded"
 }
 
 api_key_path_candidates() {
     local provider="$1"
     local account="$2"
-
-    api_key_path_v3 "$provider" "$account"
-    api_key_path_v2 "$provider" "$account"
-    if [[ "$account" =~ ^[A-Za-z0-9._-]+$ ]]; then
-        printf 'claude-code/providers/%s/%s/api_key\n' "$provider" "$account"
-    fi
-
-    if [[ "$account" == "default" ]]; then
-        printf 'claude-code/providers/%s/api_key\n' "$provider"
-    fi
+    api_key_path "$provider" "$account"
 }
 
 store_api_key() {
@@ -275,7 +296,7 @@ store_api_key() {
     local account="$2"
     local key_value="$3"
     local target
-    target=$(api_key_path_v3 "$provider" "$account")
+    target=$(api_key_path "$provider" "$account") || return 1
     printf '%s' "$key_value" | gopass insert -f "$target"
 }
 
@@ -283,24 +304,19 @@ delete_api_key() {
     local provider="$1"
     local account="$2"
     local path
-    while IFS= read -r path; do
-        [[ -z "$path" ]] && continue
-        gopass rm -f "$path" &>/dev/null || true
-    done < <(api_key_path_candidates "$provider" "$account")
+    path=$(api_key_path "$provider" "$account") || return 1
+    gopass rm -f "$path" &>/dev/null || true
 }
 
 # Retrieve API key from gopass
 get_api_key() {
     local provider="$1"
     local account="$2"
-    local path
-    while IFS= read -r path; do
-        [[ -z "$path" ]] && continue
-        local key
-        if key=$(run_with_timeout 3 gopass show -o "$path" 2>/dev/null); then
-            echo "$key"
-            return 0
-        fi
-    done < <(api_key_path_candidates "$provider" "$account")
+    local path key
+    path=$(api_key_path "$provider" "$account") || return 1
+    if key=$(run_with_timeout 3 gopass show -o "$path" 2>/dev/null); then
+        echo "$key"
+        return 0
+    fi
     return 1
 }
