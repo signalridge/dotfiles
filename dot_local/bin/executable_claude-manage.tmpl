@@ -16,12 +16,12 @@
 
 set -euo pipefail
 
-# shellcheck source=lib/claude.tmpl
+# shellcheck source=lib/ai/claude.tmpl
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-source "$SCRIPT_DIR/lib/claude"
+source "$SCRIPT_DIR/lib/ai/claude"
 
 # Return codes used for interactive navigation.
-# (Also defined in lib/claude, but keep here so this script is self-contained.)
+# (Also defined in lib/ai/claude, but keep here so this script is self-contained.)
 : "${RC_BACK:=10}"
 : "${RC_EXIT:=130}"
 

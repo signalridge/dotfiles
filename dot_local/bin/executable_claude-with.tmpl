@@ -15,9 +15,9 @@
 
 set -euo pipefail
 
-# shellcheck source=lib/claude.tmpl
+# shellcheck source=lib/ai/claude.tmpl
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-source "$SCRIPT_DIR/lib/claude"
+source "$SCRIPT_DIR/lib/ai/claude"
 
 # FZF picker with shortcuts
 fzf_select() {

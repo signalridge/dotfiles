@@ -16,10 +16,10 @@
 
 set -euo pipefail
 
-# shellcheck source=lib/codex.tmpl
+# shellcheck source=lib/ai/codex.tmpl
 # shellcheck disable=SC1091
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-source "$SCRIPT_DIR/lib/codex"
+source "$SCRIPT_DIR/lib/ai/codex"
 
 # Return codes
 : "${RC_BACK:=10}"

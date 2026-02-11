@@ -12,7 +12,7 @@ set -euo pipefail
 
 # Source shared Claude library (includes common helpers).
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-source "$SCRIPT_DIR/lib/claude"
+source "$SCRIPT_DIR/lib/ai/claude"
 
 # Validate provider names (prevent path traversal).
 validate_provider_name() {
