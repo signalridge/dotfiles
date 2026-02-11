@@ -291,39 +291,6 @@ api_key_path_candidates() {
     api_key_path "$provider" "$account"
 }
 
-legacy_api_key_path_v2() {
-    local provider="$1"
-    local account="$2"
-    local encoded
-    encoded=$(encode_account_segment "$account")
-    printf 'claude-code/providers/%s/accounts/%s/api_key\n' "$provider" "$encoded"
-}
-
-legacy_api_key_path_v3() {
-    local provider="$1"
-    local account="$2"
-    if [[ "$account" == "default" ]]; then
-        printf 'claude-code/accounts/%s/api_key\n' "$provider"
-    else
-        printf 'claude-code/accounts/%s@%s/api_key\n' "$provider" "$account"
-    fi
-}
-
-legacy_api_key_path_candidates() {
-    local provider="$1"
-    local account="$2"
-
-    legacy_api_key_path_v3 "$provider" "$account"
-    legacy_api_key_path_v2 "$provider" "$account"
-    if [[ "$account" =~ ^[A-Za-z0-9._-]+$ ]]; then
-        printf 'claude-code/providers/%s/%s/api_key\n' "$provider" "$account"
-    fi
-
-    if [[ "$account" == "default" ]]; then
-        printf 'claude-code/providers/%s/api_key\n' "$provider"
-    fi
-}
-
 store_api_key() {
     local provider="$1"
     local account="$2"

@@ -144,7 +144,7 @@ claude:
 
 **Gopass namespace:** set `AI_TOOLS_GOPASS_PREFIX` to override the prefix (default: `ai-tools`).
 
-**Migration:** run `ai-tools-migrate-keys` once to move legacy keys into the new namespace.
+**Migration:** re-add keys with `claude-manage add-key` / `codex-manage add-key` to store them in the new namespace, then remove legacy entries after verifying.
 
 ## VS Code Integration
 

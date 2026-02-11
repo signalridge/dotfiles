@@ -54,12 +54,7 @@ claude-token --check kimi@private
 codex-token --check deepseek@smoke
 ```
 
-If you are migrating from legacy key paths, run:
-
-```bash
-ai-tools-migrate-keys --dry-run
-ai-tools-migrate-keys
-```
+If you are migrating from legacy key paths, re-add keys via `claude-manage add-key` or `codex-manage add-key`.
 
 ## Configuration Details
 
