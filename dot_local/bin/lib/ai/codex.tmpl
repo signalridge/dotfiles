@@ -27,6 +27,19 @@ get_current_provider() {
     get_provider "$current_account"
 }
 
+# Check if provider requires OpenAI auth (uses auth.json instead of env_key).
+provider_requires_openai_auth() {
+    local provider="$1"
+    case "$provider" in
+{{- range $name, $config := .codex.providers }}
+{{- if and (hasKey $config "requires_openai_auth") $config.requires_openai_auth }}
+        {{ $name }}) return 0 ;;
+{{- end }}
+{{- end }}
+        *) return 1 ;;
+    esac
+}
+
 # Validate a TOML key segment (used for dasel selectors).
 validate_toml_segment() {
     local segment="$1"
