@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-# Trigger re-run when mise config changes.
-# trigger: {{ include "private_dot_config/mise/config.toml.tmpl" | sha256sum }}
+{{ $miseConfig := joinPath .chezmoi.homeDir ".config/mise/config.toml" -}}
+# mise config: {{ if stat $miseConfig }}{{ output "sha256sum" $miseConfig | trim }}{{ else }}n/a{{ end }}
 
 # chezmoi may be updating dot-directories (e.g. ~/.claude). If the current working
 # directory disappears mid-apply, mise will warn. Run mise from a stable dir.
