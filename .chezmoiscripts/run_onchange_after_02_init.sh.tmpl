@@ -3,6 +3,13 @@
 
 set -euo pipefail
 
+# Trigger re-run when nix-darwin inputs change.
+# trigger: {{ include "nix-config/flake.lock.tmpl" | sha256sum }}
+# trigger: {{ include "nix-config/flake.nix.tmpl" | sha256sum }}
+# trigger: {{ include "nix-config/modules/apps.nix.tmpl" | sha256sum }}
+# trigger: {{ include "nix-config/modules/system.nix.tmpl" | sha256sum }}
+# trigger: {{ include "nix-config/modules/host-users.nix" | sha256sum }}
+
 {{ $flake := joinPath .chezmoi.homeDir "nix-config/flake.nix" -}}
 {{- $lock := joinPath .chezmoi.homeDir "nix-config/flake.lock" -}}
 {{- $apps := joinPath .chezmoi.homeDir "nix-config/modules/apps.nix" -}}
