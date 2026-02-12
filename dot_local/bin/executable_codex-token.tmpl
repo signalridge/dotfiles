@@ -84,7 +84,7 @@ if $CONFIG_ONLY; then
         ($root.codex.accounts[$acct] // {}) |
         . + {
             provider: ($prov),
-            base_url: (($root.codex.providers[$prov].base_url // null) | if . == null then null else (sub("/v1/?$"; "") | sub("/+?$"; "")) end)
+            base_url: ($root.codex.providers[$prov].base_url // null)
         } |
         if .base_url == null then del(.base_url) else . end
     ' 2>/dev/null || echo "{}"
