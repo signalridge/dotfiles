@@ -11,6 +11,8 @@ source "$CODEX_LIB_DIR/core"
 
 # Codex-specific paths
 CODEX_CONFIG="${HOME}/.codex/config.toml"
+CODEX_AUTH_OPENAI="${HOME}/.codex/auth.openai.json"
+CODEX_AUTH="${HOME}/.codex/auth.json"
 
 # Get current Codex account from chezmoi data
 get_current() {
@@ -22,6 +24,19 @@ get_current_provider() {
     local current_account
     current_account=$(get_current)
     get_provider "$current_account"
+}
+
+# Check if provider requires OpenAI auth (uses auth.json instead of env_key).
+provider_requires_openai_auth() {
+    local provider="$1"
+    case "$provider" in
+{{- range $name, $config := .codex.providers }}
+{{- if and (hasKey $config "requires_openai_auth") $config.requires_openai_auth }}
+        {{ $name }}) return 0 ;;
+{{- end }}
+{{- end }}
+        *) return 1 ;;
+    esac
 }
 
 # Validate a TOML key segment (used for dasel selectors).
@@ -172,4 +187,49 @@ update_codex_config() {
         fi
         return 1
     fi
+}
+
+# Backup OpenAI auth.json (contains tokens) before overwriting for third-party.
+backup_codex_auth_openai() {
+    if [[ ! -f "$CODEX_AUTH" ]]; then
+        return 0
+    fi
+
+    require_cmd jq || return 1
+
+    if jq -e 'has("tokens") or has("refresh_token") or has("access_token") or has("id_token")' "$CODEX_AUTH" >/dev/null 2>&1; then
+        cp "$CODEX_AUTH" "$CODEX_AUTH_OPENAI"
+    fi
+}
+
+# Restore OpenAI auth.json from backup; if missing, delete auth.json.
+restore_codex_auth_openai() {
+    if [[ -f "$CODEX_AUTH_OPENAI" ]]; then
+        cp "$CODEX_AUTH_OPENAI" "$CODEX_AUTH"
+    else
+        rm -f "$CODEX_AUTH"
+    fi
+}
+
+# Write minimal auth.json with OPENAI_API_KEY only (no merge).
+write_codex_auth_key() {
+    local key_value="${1:-}"
+    [[ -n "$key_value" ]] || { log_error "Missing API key for Codex auth.json"; return 1; }
+
+    require_cmd jq || return 1
+
+    local auth_dir
+    auth_dir="$(dirname -- "$CODEX_AUTH")"
+    mkdir -p "$auth_dir" || { log_error "Failed to create $auth_dir"; return 1; }
+
+    local tmp_file
+    tmp_file="$(mktemp)" || { log_error "Failed to create temp file"; return 1; }
+
+    if ! jq -n --arg key "$key_value" '{OPENAI_API_KEY: $key}' > "$tmp_file"; then
+        rm -f "$tmp_file"
+        log_error "Failed to write $CODEX_AUTH"
+        return 1
+    fi
+
+    mv "$tmp_file" "$CODEX_AUTH"
 }

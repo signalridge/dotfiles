@@ -172,10 +172,14 @@ cmd_switch() {
     local provider
     provider=$(get_provider "$input")
 
-    if is_third_party "$provider" && ! codex-token --check "$input" 2>/dev/null; then
-        log_error "No API token for $input"
-        echo "Run: codex-manage add-key $input" >&2
-        return 1
+    if is_third_party "$provider"; then
+        if command -v gopass >/dev/null 2>&1; then
+            if ! codex-token --check "$input" 2>/dev/null; then
+                log_warn "No API token for $input (continuing without auth update)"
+            fi
+        else
+            log_warn "gopass not found (continuing without auth update)"
+        fi
     fi
 
     [[ "$(get_current)" == "$input" ]] && { log_warn "Already using '$input'"; return 0; }
@@ -184,6 +188,32 @@ cmd_switch() {
     log_info "Applying chezmoi templates..."
     chezmoi apply >/dev/null
     echo "  ✓ Updated ~/.codex/config.toml"
+    if is_third_party "$provider"; then
+        if command -v gopass >/dev/null 2>&1 && codex-token --check "$input" 2>/dev/null; then
+            backup_codex_auth_openai || return 1
+            local parsed acct_name
+            parsed=$(parse_provider_account "$input")
+            acct_name="${parsed#*|}"
+            local api_key
+            api_key=$(get_api_key "$provider" "$acct_name") || {
+                log_warn "Failed to retrieve API key (skipping auth.json update)"
+                api_key=""
+            }
+            if [[ -n "$api_key" ]]; then
+                write_codex_auth_key "$api_key" || return 1
+                echo "  ✓ Updated ~/.codex/auth.json (OPENAI_API_KEY)"
+            fi
+        else
+            log_warn "Skipping auth.json update for $input"
+        fi
+    else
+        restore_codex_auth_openai || return 1
+        if [[ -f "$CODEX_AUTH" ]]; then
+            echo "  ✓ Restored ~/.codex/auth.json"
+        else
+            echo "  ✓ Removed ~/.codex/auth.json (re-login required)"
+        fi
+    fi
     echo ""
     log_success "Account set to $input"
     log_warn "Restart Codex to apply changes"

@@ -37,9 +37,6 @@ codex:
         - doubao-seed-1-6-thinking-250715
     naapi:
       base_url: https://na.wanxiaot.com/v1
-      wire_api: responses
-      requires_openai_auth: true
-      env_key: OPENAI_API_KEY
       models:
         - gpt-5.2
         - gpt-5.2-codex

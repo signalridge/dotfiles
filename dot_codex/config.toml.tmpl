@@ -148,11 +148,6 @@ show_tooltips = {{ .codex.tui.show_tooltips }}
 [model_providers.{{ $name }}]
 name = "{{ $name | title }}"
 base_url = "{{ $config.base_url }}"
-{{- if hasKey $config "env_key" }}
-env_key = "{{ $config.env_key }}"
-{{- else }}
-env_key = "{{ upper $name }}_API_KEY"
-{{- end }}
 {{- if hasKey $config "wire_api" }}
 wire_api = "{{ $config.wire_api }}"
 {{- end }}
