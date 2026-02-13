@@ -23,7 +23,7 @@ model_provider = "{{ $providerName }}"
 {{- end }}
 
 # Approval policy: untrusted | on-failure | on-request | never
-approval_policy = "never"
+approval_policy = "on-request"
 
 # Sandbox mode: read-only | workspace-write | danger-full-access
 sandbox_mode = "danger-full-access"
@@ -181,7 +181,7 @@ model_reasoning_effort = "low"
 approval_policy = "never"
 
 [profiles.research]
-model_reasoning_effort = "high"
+model_reasoning_effort = "xhigh"
 web_search = "live"
 
 # =============================================================================
@@ -199,5 +199,5 @@ experimental_use_profile = true
 # =============================================================================
 
 [sandbox_workspace_write]
-network_access = true
+network_access = "enabled"
 exclude_slash_tmp = false
