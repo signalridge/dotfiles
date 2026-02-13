@@ -4,15 +4,12 @@
 #
 # Usage:
 #   claude-manage                   # Interactive menu
-#   claude-manage switch [account]  # Switch default account
-#   claude-manage add-account       # Add new account
-#   claude-manage edit-account      # Edit account config
-#   claude-manage remove-account    # Remove account
-#   claude-manage add-key [account] # Add new API key
-#   claude-manage update-key [acct] # Update existing API key
-#   claude-manage delete-key [acct] # Delete API key
-#   claude-manage test [account]    # Test connectivity
-#   claude-manage list [provider]   # List accounts
+#   claude-manage switch [account]         # Switch default account
+#   claude-manage create-account [account] # Create account (optionally with API key)
+#   claude-manage update-account [account] # Update account (optionally rotate API key)
+#   claude-manage remove-account [account] # Remove account (optionally delete API key)
+#   claude-manage test [account]           # Test connectivity
+#   claude-manage list [provider]          # List accounts
 
 set -euo pipefail
 
@@ -60,12 +57,9 @@ fzf_menu() {
         if ! selected=$({
             cat <<'MENU'
 switch         Change default account
-add-account    Add new account
-edit-account   Edit account config
-remove-account Remove account
-add-key        Add API key
-update-key     Update API key
-delete-key     Delete API key
+create-account Create account (and optional API key)
+update-account Update account (and optional API key)
+remove-account Remove account (and optional API key)
 test           Test connectivity
 list           Show all accounts
 MENU
@@ -80,12 +74,9 @@ MENU
                 echo ""
                 case "$cmd" in
                     switch)         echo "Switch the default account." ;;
-                    add-account)    echo "Add a new account to claude.yaml." ;;
-                    edit-account)   echo "Edit account model settings." ;;
-                    remove-account) echo "Remove account from claude.yaml." ;;
-                    add-key)        echo "Add API key (must not exist)." ;;
-                    update-key)     echo "Update existing API key." ;;
-                    delete-key)     echo "Remove API key from gopass." ;;
+                    create-account) echo "Create account (and optional API key)." ;;
+                    update-account) echo "Update account (and optional API key)." ;;
+                    remove-account) echo "Remove account (and optional API key)." ;;
                     test)           echo "Test API connectivity." ;;
                     list)           echo "Show all accounts." ;;
                     quit)           echo "Exit to shell." ;;
@@ -102,18 +93,15 @@ MENU
         fi
 
         local cmd
+        selected=$(normalize_menu_selection "$selected")
         cmd=$(echo "$selected" | awk '{print $1}')
 
-        # Run one command then exit. Only "Back" returns to this menu.
         local rc=0
         case "$cmd" in
             switch)         cmd_switch || rc=$? ;;
-            add-account)    cmd_add_account || rc=$? ;;
-            edit-account)   cmd_edit_account || rc=$? ;;
+            create-account) cmd_create_account || rc=$? ;;
+            update-account) cmd_update_account || rc=$? ;;
             remove-account) cmd_remove_account || rc=$? ;;
-            add-key)        cmd_add_key || rc=$? ;;
-            update-key)     cmd_update_key || rc=$? ;;
-            delete-key)     cmd_delete_key || rc=$? ;;
             test)           cmd_test || rc=$? ;;
             list)           cmd_list || rc=$? ;;
             quit)           return 0 ;;
@@ -124,7 +112,10 @@ MENU
             0) return 0 ;;
             "$RC_BACK") continue ;;
             "$RC_EXIT") return "$RC_EXIT" ;;
-            *) return "$rc" ;;
+            *)
+                log_error "Command '$cmd' failed (exit $rc)"
+                return "$rc"
+                ;;
         esac
     done
 }
@@ -133,7 +124,9 @@ MENU
 cmd_switch() {
     local input="${1:-}"
     if [[ -z "$input" ]]; then
-        if ! input=$(fzf_pick_account "Switch Account"); then
+        if input=$(fzf_pick_account "Switch Account"); then
+            :
+        else
             local rc=$?
             if [[ $rc -eq $RC_BACK || $rc -eq $RC_EXIT ]]; then
                 return "$rc"
@@ -142,7 +135,7 @@ cmd_switch() {
         fi
     fi
 
-    if ! is_configured_account "$input"; then
+    if ! is_runtime_account "$input"; then
         log_error "Unknown account '$input'"
         return 1
     fi
@@ -152,7 +145,7 @@ cmd_switch() {
 
     if is_third_party "$provider" && ! claude-token --check "$input" 2>/dev/null; then
         log_error "No API token for $input"
-        echo "Run: claude-manage add-key $input" >&2
+        echo "Run: claude-manage update-account $input" >&2
         return 1
     fi
 
@@ -218,8 +211,8 @@ ensure_third_party_account_models() {
     fi
 }
 
-# Add account
-cmd_add_account() {
+# Create account
+cmd_create_account() {
     require_cmd fzf yq || return 1
 
     log_info "Add New Account"
@@ -233,8 +226,9 @@ cmd_add_account() {
     } | fzf --ansi --height=40% --border=rounded --header="Select Provider"); then
         return "$RC_EXIT"
     fi
+    provider=$(normalize_menu_selection "$provider")
     [[ -z "$provider" ]] && return "$RC_EXIT"
-    [[ "$provider" == "Back" ]] && return "$RC_BACK"
+    is_back_selection "$provider" && return "$RC_BACK"
 
     # Get account name
     local account_name full_name
@@ -309,7 +303,7 @@ cmd_add_account() {
             store_api_key "$provider" "$account_name" "$api_key"
             log_success "API key saved"
         else
-            log_info "Skipped API key (run: claude-manage add-key $full_name)"
+            log_info "Skipped API key (run: claude-manage update-account $full_name)"
         fi
     fi
 
@@ -319,8 +313,8 @@ cmd_add_account() {
     log_success "Done"
 }
 
-# Edit account
-cmd_edit_account() {
+# Update account
+cmd_update_account() {
     require_cmd yq || return 1
 
     local input="${1:-}"
@@ -328,7 +322,9 @@ cmd_edit_account() {
         require_cmd fzf || return 1
     fi
     if [[ -z "$input" ]]; then
-        if ! input=$(fzf_pick_account "Edit Account" "plain"); then
+        if input=$(fzf_pick_account "Edit Account" "plain"); then
+            :
+        else
             local rc=$?
             if [[ $rc -eq $RC_BACK || $rc -eq $RC_EXIT ]]; then
                 return "$rc"
@@ -337,7 +333,7 @@ cmd_edit_account() {
         fi
     fi
 
-    is_configured_account "$input" || { log_error "Unknown account '$input'"; return 1; }
+    is_runtime_account "$input" || { log_error "Unknown account '$input'"; return 1; }
 
     log_info "Edit Account: $input"
     echo ""
@@ -385,7 +381,9 @@ cmd_remove_account() {
         require_cmd fzf || return 1
     fi
     if [[ -z "$input" ]]; then
-        if ! input=$(fzf_pick_account "Remove Account" "plain"); then
+        if input=$(fzf_pick_account "Remove Account" "plain"); then
+            :
+        else
             local rc=$?
             if [[ $rc -eq $RC_BACK || $rc -eq $RC_EXIT ]]; then
                 return "$rc"
@@ -394,18 +392,31 @@ cmd_remove_account() {
         fi
     fi
 
-    is_configured_account "$input" || { log_error "Unknown account '$input'"; return 1; }
+    is_runtime_account "$input" || { log_error "Unknown account '$input'"; return 1; }
+
+    local has_profile=0
+    if ACCOUNT_NAME="$input" yq -e '.claude.accounts[strenv(ACCOUNT_NAME)] // empty' "$CLAUDE_YAML" >/dev/null 2>&1; then
+        has_profile=1
+    fi
 
     log_warn "Remove account '$input'?"
-    printf "This will delete it from claude.yaml. Continue? [y/N]: "
+    if [[ "$has_profile" -eq 1 ]]; then
+        printf "This will delete it from claude.yaml. Continue? [y/N]: "
+    else
+        printf "No claude.yaml profile found; continue to manage API key only? [y/N]: "
+    fi
     read -r confirm
     [[ "$confirm" != "y" && "$confirm" != "Y" ]] && { echo "Cancelled"; return 0; }
 
     local provider
     provider=$(get_provider "$input")
 
-    ACCOUNT_NAME="$input" yq -i 'del(.claude.accounts[strenv(ACCOUNT_NAME)])' "$CLAUDE_YAML"
-    log_success "Account removed"
+    if [[ "$has_profile" -eq 1 ]]; then
+        ACCOUNT_NAME="$input" yq -i 'del(.claude.accounts[strenv(ACCOUNT_NAME)])' "$CLAUDE_YAML"
+        log_success "Account profile removed"
+    else
+        log_info "Skipped profile removal (not present in claude.yaml)"
+    fi
 
     if is_third_party "$provider"; then
         local parsed acct_name
@@ -421,10 +432,12 @@ cmd_remove_account() {
         fi
     fi
 
-    echo ""
-    log_info "Applying chezmoi..."
-    chezmoi apply
-    log_success "Done"
+    if [[ "$has_profile" -eq 1 ]]; then
+        echo ""
+        log_info "Applying chezmoi..."
+        chezmoi apply
+        log_success "Done"
+    fi
 }
 
 # Add API key
@@ -457,8 +470,9 @@ cmd_add_key() {
         } | fzf --ansi --height=40% --border=rounded --header='Add API Key'); then
             return "$RC_EXIT"
         fi
+        input=$(normalize_menu_selection "$input")
         [[ -z "$input" ]] && return "$RC_EXIT"
-        [[ "$input" == "Back" ]] && return "$RC_BACK"
+        is_back_selection "$input" && return "$RC_BACK"
     fi
 
     local provider
@@ -498,8 +512,9 @@ cmd_update_key() {
         } | fzf --ansi --height=40% --border=rounded --header='Update API Key'); then
             return "$RC_EXIT"
         fi
+        input=$(normalize_menu_selection "$input")
         [[ -z "$input" ]] && return "$RC_EXIT"
-        [[ "$input" == "Back" ]] && return "$RC_BACK"
+        is_back_selection "$input" && return "$RC_BACK"
     fi
 
     local provider
@@ -509,7 +524,7 @@ cmd_update_key() {
     acct_name="${parsed#*|}"
 
     is_third_party "$provider" || { log_warn "Native OAuth, no key needed"; return 0; }
-    key_exists "$provider" "$acct_name" || { log_error "No key exists. Use add-key."; return 1; }
+    key_exists "$provider" "$acct_name" || { log_error "No key exists. Use update-account."; return 1; }
 
     log_info "Updating API key for $input"
     printf "New API Key: "
@@ -539,8 +554,9 @@ cmd_delete_key() {
         } | fzf --ansi --height=40% --border=rounded --header='Delete API Key'); then
             return "$RC_EXIT"
         fi
+        input=$(normalize_menu_selection "$input")
         [[ -z "$input" ]] && return "$RC_EXIT"
-        [[ "$input" == "Back" ]] && return "$RC_BACK"
+        is_back_selection "$input" && return "$RC_BACK"
     fi
 
     local provider
@@ -564,7 +580,9 @@ cmd_delete_key() {
 cmd_test() {
     local input="${1:-}"
     if [[ -z "$input" ]]; then
-        if ! input=$(fzf_pick_account "Test Connectivity"); then
+        if input=$(fzf_pick_account "Test Connectivity"); then
+            :
+        else
             local rc=$?
             if [[ $rc -eq $RC_BACK || $rc -eq $RC_EXIT ]]; then
                 return "$rc"
@@ -573,7 +591,7 @@ cmd_test() {
         fi
     fi
 
-    is_configured_account "$input" || { log_error "Unknown account '$input'"; return 1; }
+    is_runtime_account "$input" || { log_error "Unknown account '$input'"; return 1; }
 
     local provider config base_url
     provider=$(get_provider "$input")
@@ -637,12 +655,18 @@ EOF
 }
 
 # List accounts
+list_claude_accounts() {
+    list_runtime_accounts
+}
+
 cmd_list() {
     local filter="${1:-}"
     log_info "Configured accounts:"
     echo ""
 
-    for account in "${ACCOUNTS[@]}"; do
+    local account
+    while IFS= read -r account; do
+        [[ -z "$account" ]] && continue
         local provider
         provider=$(get_provider "$account")
 
@@ -654,13 +678,11 @@ cmd_list() {
             acct_name="${parsed#*|}"
             if key_exists "$provider" "$acct_name"; then
                 echo -e "  ${GREEN}${STATUS_OK}${NC} $account"
-            else
-                echo -e "  ${RED}${STATUS_ERROR}${NC} $account (no key)"
             fi
         else
             echo -e "  ${GREEN}${STATUS_NATIVE}${NC} $account (native)"
         fi
-    done
+    done < <(list_claude_accounts)
 }
 
 # Show current
@@ -671,20 +693,24 @@ cmd_current() {
 # Show help
 show_help() {
     cat << 'EOF'
-Claude Code Account Manager
+Claude CLI Account Manager
 
 Usage:
-  claude-manage                        Interactive menu
-  claude-manage switch [account]       Switch default account
-  claude-manage add-account            Add new account
-  claude-manage edit-account [account] Edit account config
-  claude-manage remove-account [acct]  Remove account
-  claude-manage add-key [account]      Add API key
-  claude-manage update-key [account]   Update API key
-  claude-manage delete-key [account]   Delete API key
-  claude-manage test [account]         Test connectivity
-  claude-manage list [provider]        List accounts
-  claude-manage current                Show current account
+  claude-manage                               Interactive menu
+  claude-manage switch [account]              Switch default account
+  claude-manage create-account [account]      Create account (optionally with API key)
+  claude-manage update-account [account]      Update account (optionally rotate API key)
+  claude-manage remove-account [account]      Remove account (optionally delete API key)
+  claude-manage test [account]                Test connectivity
+  claude-manage list [provider]               List accounts
+  claude-manage current                       Show current account
+
+Compatibility aliases:
+  add-account -> create-account
+  edit-account -> update-account
+
+Legacy key-only commands (still supported):
+  add-key | update-key | delete-key
 EOF
 }
 
@@ -705,13 +731,13 @@ main() {
             require_cmd chezmoi jq || return 1
             run_cmd cmd_switch "$@"
             ;;
-        add-account)
+        create-account|add-account)
             require_cmd chezmoi jq yq fzf || return 1
-            run_cmd cmd_add_account "$@"
+            run_cmd cmd_create_account "$@"
             ;;
-        edit-account)
+        update-account|edit-account)
             require_cmd chezmoi jq yq || return 1
-            run_cmd cmd_edit_account "$@"
+            run_cmd cmd_update_account "$@"
             ;;
         remove-account)
             require_cmd chezmoi jq yq || return 1

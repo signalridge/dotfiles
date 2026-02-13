@@ -11,7 +11,7 @@ source "$AI_TOOLS_LIB_DIR/../common"
 # Paths
 CHEZMOI_CONFIG="${HOME}/.config/chezmoi/chezmoi.toml"
 CHEZMOI_DATA_CLAUDE="${HOME}/.local/share/chezmoi/.chezmoidata/claude.yaml"
-CHEZMOI_DATA_CODEX="${HOME}/.local/share/chezmoi/.chezmoidata/codex.yaml"
+CHEZMOI_DATA_CODEX=""
 
 # Tool context: claude | codex (set by caller before sourcing)
 : "${AI_TOOL_CONTEXT:=claude}"
@@ -20,14 +20,117 @@ CHEZMOI_DATA_CODEX="${HOME}/.local/share/chezmoi/.chezmoidata/codex.yaml"
 : "${RC_BACK:=10}"
 : "${RC_EXIT:=130}"
 
-# Available providers/accounts (templated from chezmoi data)
+# Available providers/accounts
 CLAUDE_PROVIDERS=({{- range $name, $_ := .claude.providers }} "{{ $name }}"{{- end }})
 CLAUDE_ACCOUNTS=({{- range $name, $_ := .claude.accounts }} "{{ $name }}"{{- end }})
-CODEX_PROVIDERS=({{- range $name, $_ := .codex.providers }} "{{ $name }}"{{- end }})
-CODEX_ACCOUNTS=({{- range $name, $_ := .codex.accounts }} "{{ $name }}"{{- end }})
+
+# Codex fallback providers/accounts (dynamic values loaded later when possible)
+CODEX_PROVIDERS=("openai")
+CODEX_ACCOUNTS=("openai")
+
+codex_config_file() {
+    printf '%s' "${HOME}/.codex/config.toml"
+}
+
+toml_get_first_string_value() {
+    local file="$1"
+    local key="$2"
+    [[ -f "$file" ]] || return 0
+
+    awk -v key="$key" '
+        $0 ~ "^[[:space:]]*" key "[[:space:]]*=[[:space:]]*\"" {
+            line=$0
+            sub("^[[:space:]]*" key "[[:space:]]*=[[:space:]]*\"", "", line)
+            sub(/".*$/, "", line)
+            print line
+            exit
+        }
+    ' "$file"
+}
+
+toml_get_model_provider() {
+    local file="$1"
+    toml_get_first_string_value "$file" "model_provider"
+}
+
+toml_get_provider_field() {
+    local file="$1"
+    local provider="$2"
+    local key="$3"
+    [[ -f "$file" ]] || return 0
+
+    awk -v provider="$provider" -v key="$key" '
+        $0 == "[model_providers." provider "]" { in_section=1; next }
+        /^\[/ { in_section=0 }
+        in_section {
+            pattern = "^[[:space:]]*" key "[[:space:]]*=[[:space:]]*\""
+            if ($0 ~ pattern) {
+                line=$0
+                sub(pattern, "", line)
+                sub(/".*$/, "", line)
+                print line
+                exit
+            }
+        }
+    ' "$file"
+}
+
+# Load Codex providers/accounts from rendered ~/.codex/config.toml when available.
+load_codex_runtime_config() {
+    local config_file
+    config_file=$(codex_config_file)
+    [[ -f "$config_file" ]] || return 0
+
+    local providers current_provider current_account
+    providers=$(awk '
+        /^\[model_providers\.[^]]+\]/ {
+            section=$0
+            sub(/^\[model_providers\./, "", section)
+            sub(/\]$/, "", section)
+            print section
+            next
+        }
+    ' "$config_file")
+
+    current_provider=$(toml_get_model_provider "$config_file")
+    [[ -z "$current_provider" ]] && current_provider="openai"
+
+    current_account="openai"
+    if command -v chezmoi &>/dev/null && command -v jq &>/dev/null; then
+        current_account=$(chezmoi data --format json 2>/dev/null | jq -r '.codexProviderAccount // "openai"' 2>/dev/null)
+        [[ -z "$current_account" || "$current_account" == "null" ]] && current_account="openai"
+    fi
+
+    if [[ -n "$providers" ]]; then
+        CODEX_PROVIDERS=("openai")
+        while IFS= read -r p; do
+            [[ -n "$p" ]] && CODEX_PROVIDERS+=("$p")
+        done <<< "$providers"
+    fi
+
+    CODEX_ACCOUNTS=("openai")
+
+    if [[ "$current_provider" != "openai" ]]; then
+        CODEX_ACCOUNTS+=("${current_provider}@private")
+    fi
+
+    if [[ "$current_account" != "openai" ]]; then
+        CODEX_ACCOUNTS+=("$current_account")
+    fi
+
+    local dedup=() a
+    for a in "${CODEX_ACCOUNTS[@]}"; do
+        [[ -z "$a" ]] && continue
+        if [[ " ${dedup[*]-} " != *" $a "* ]]; then
+            dedup+=("$a")
+        fi
+    done
+    CODEX_ACCOUNTS=("${dedup[@]}")
+}
 
 if [[ "$AI_TOOL_CONTEXT" == "codex" ]]; then
-    CHEZMOI_DATA="$CHEZMOI_DATA_CODEX"
+    CHEZMOI_DATA=""
+    load_codex_runtime_config
     PROVIDERS=("${CODEX_PROVIDERS[@]}")
     ACCOUNTS=("${CODEX_ACCOUNTS[@]}")
 else
@@ -40,16 +143,11 @@ fi
 get_provider() {
     local account="$1"
     if [[ "$AI_TOOL_CONTEXT" == "codex" ]]; then
-        case "$account" in
-{{- range $name, $config := .codex.accounts }}
-{{- if hasKey $config "provider" }}
-        "{{ $name }}") echo "{{ $config.provider }}" ;;
-{{- else }}
-        "{{ $name }}") echo "{{ (split "@" $name)._0 }}" ;;
-{{- end }}
-{{- end }}
-        *) echo "${account%%@*}" ;;
-        esac
+        if [[ "$account" == "openai" ]]; then
+            echo "openai"
+        else
+            echo "${account%%@*}"
+        fi
     else
         case "$account" in
 {{- range $name, $config := .claude.accounts }}
@@ -68,14 +166,19 @@ get_provider() {
 is_third_party() {
     local provider="$1"
     if [[ "$AI_TOOL_CONTEXT" == "codex" ]]; then
-        case "$provider" in
-{{- range $name, $config := .codex.providers }}
-{{- if hasKey $config "base_url" }}
-        {{ $name }}) return 0 ;;
-{{- end }}
-{{- end }}
-        *) return 1 ;;
-        esac
+        [[ "$provider" == "openai" ]] && return 1
+
+        local config_file base_url p
+        config_file=$(codex_config_file)
+        base_url=$(toml_get_provider_field "$config_file" "$provider" "base_url")
+        [[ -n "$base_url" ]] && return 0
+
+        for p in "${CODEX_PROVIDERS[@]}"; do
+            if [[ "$p" == "$provider" && "$p" != "openai" ]]; then
+                return 0
+            fi
+        done
+        return 1
     else
         case "$provider" in
 {{- range $name, $config := .claude.providers }}
@@ -88,22 +191,61 @@ is_third_party() {
     fi
 }
 
-# Check if provider is valid
-is_valid_provider() {
-    local provider="$1"
-    for p in "${PROVIDERS[@]}"; do
-        [[ "$p" == "$provider" ]] && return 0
+# Accounts available for runtime operations (switch/test/list/completion).
+list_runtime_accounts() {
+    local -a accounts=()
+    local account provider
+
+    if [[ "$AI_TOOL_CONTEXT" == "codex" ]]; then
+        accounts+=("openai")
+    else
+        for account in "${ACCOUNTS[@]}"; do
+            provider=$(get_provider "$account")
+            is_third_party "$provider" && continue
+            accounts+=("$account")
+        done
+    fi
+
+    while IFS= read -r account; do
+        [[ -n "$account" ]] && accounts+=("$account")
+    done < <(list_gopass_third_party_accounts)
+
+    local dedup=() a
+    for a in "${accounts[@]}"; do
+        [[ -z "$a" ]] && continue
+        if [[ " ${dedup[*]-} " != *" $a "* ]]; then
+            dedup+=("$a")
+        fi
     done
+
+    if [[ ${#dedup[@]} -gt 0 ]]; then
+        printf '%s\n' "${dedup[@]}"
+    fi
+}
+
+is_runtime_account() {
+    local target="$1"
+    local account
+    while IFS= read -r account; do
+        [[ -z "$account" ]] && continue
+        [[ "$account" == "$target" ]] && return 0
+    done < <(list_runtime_accounts)
     return 1
 }
 
-# Check if account is configured
-is_configured_account() {
-    local account="$1"
-    for a in "${ACCOUNTS[@]}"; do
-        [[ "$a" == "$account" ]] && return 0
-    done
-    return 1
+strip_ansi() {
+    local input="$1"
+    printf '%s' "$input" | sed -E $'s/\x1B\[[0-9;]*[mK]//g'
+}
+
+normalize_menu_selection() {
+    local input="$1"
+    strip_ansi "$input" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
+}
+
+is_back_selection() {
+    local input="$1"
+    [[ "$(normalize_menu_selection "$input")" == "Back" ]]
 }
 
 # Check if API key exists in gopass
@@ -174,16 +316,73 @@ validate_gopass_prefix() {
 }
 
 gopass_prefix() {
-    local prefix="${AI_TOOLS_GOPASS_PREFIX:-ai-tools}"
+    local prefix
+    case "$AI_TOOL_CONTEXT" in
+        codex)  prefix="codex" ;;
+        claude) prefix="claude" ;;
+        *)
+            log_error "Unsupported AI_TOOL_CONTEXT: '$AI_TOOL_CONTEXT'"
+            return 1
+            ;;
+    esac
+
     if ! validate_gopass_prefix "$prefix"; then
-        log_error "Invalid AI_TOOLS_GOPASS_PREFIX: '$prefix'"
+        log_error "Invalid gopass prefix: '$prefix'"
         return 1
     fi
     printf '%s' "$prefix"
 }
 
+gopass_prefix_candidates() {
+    local primary
+    primary=$(gopass_prefix) || return 1
+    printf '%s\n' "$primary"
+}
+
+codex_default_model_for_provider() {
+    local provider="$1"
+    case "$provider" in
+        openai) echo "gpt-5.3-codex" ;;
+        deepseek) echo "deepseek-chat" ;;
+        kimi) echo "kimi-k2-0711-preview" ;;
+        glm) echo "glm-4.5" ;;
+        qwen) echo "qwen3-coder-plus" ;;
+        minimax) echo "MiniMax-M2.1" ;;
+        doubao) echo "doubao-seed-1-6-thinking-250715" ;;
+        naapi) echo "gpt-5.2" ;;
+        harui) echo "gpt-5.2" ;;
+        *) echo "gpt-5.3-codex" ;;
+    esac
+}
+
 get_provider_default_model() {
     local provider="$1"
+    if [[ "$AI_TOOL_CONTEXT" == "codex" ]]; then
+        [[ -z "$provider" ]] && provider="openai"
+
+        local config_file current_provider model
+        config_file=$(codex_config_file)
+        current_provider=$(toml_get_model_provider "$config_file")
+        [[ -z "$current_provider" ]] && current_provider="openai"
+
+        if [[ "$provider" == "$current_provider" ]]; then
+            model=$(toml_get_first_string_value "$config_file" "model")
+            if [[ -n "$model" ]]; then
+                echo "$model"
+                return 0
+            fi
+        fi
+
+        model=$(toml_get_provider_field "$config_file" "$provider" "model")
+        if [[ -n "$model" ]]; then
+            echo "$model"
+            return 0
+        fi
+
+        codex_default_model_for_provider "$provider"
+        return 0
+    fi
+
     chezmoi data --format json 2>/dev/null | jq -r \
         --arg tool "$AI_TOOL_CONTEXT" \
         --arg provider "$provider" \
@@ -199,7 +398,9 @@ is_third_party_account() {
 
 # Build list of accounts with existing keys
 build_accounts_with_keys() {
-    for acct in "${ACCOUNTS[@]}"; do
+    local acct
+    while IFS= read -r acct; do
+        [[ -z "$acct" ]] && continue
         local prov
         prov=$(get_provider "$acct")
         if is_third_party "$prov"; then
@@ -208,7 +409,45 @@ build_accounts_with_keys() {
             acct_name="${parsed#*|}"
             key_exists "$prov" "$acct_name" && echo "$acct"
         fi
+    done < <(list_runtime_accounts)
+}
+
+# Discover third-party accounts that actually exist in gopass.
+list_gopass_third_party_accounts() {
+    command -v gopass >/dev/null 2>&1 || return 0
+
+    local provider prefix path encoded label account key_value
+    local -a accounts=()
+
+    for provider in "${PROVIDERS[@]}"; do
+        is_third_party "$provider" || continue
+
+        while IFS= read -r prefix; do
+            [[ -z "$prefix" ]] && continue
+
+            while IFS= read -r path; do
+                [[ -z "$path" ]] && continue
+                [[ "$path" == */api_key ]] || continue
+
+                encoded=$(basename "$(dirname "$path")")
+                label=$(decode_account_segment "$encoded" 2>/dev/null || true)
+                [[ -n "$label" ]] || continue
+                key_value=$(run_with_timeout 3 gopass show -o "$path" 2>/dev/null || true)
+                if [[ -z "$key_value" ]]; then
+                    continue
+                fi
+
+                account="${provider}@${label}"
+                if [[ " ${accounts[*]-} " != *" $account "* ]]; then
+                    accounts+=("$account")
+                fi
+            done < <(gopass list -f "$prefix/providers/${provider}/accounts" 2>/dev/null || true)
+        done < <(gopass_prefix_candidates)
     done
+
+    if [[ ${#accounts[@]} -gt 0 ]]; then
+        printf '%s\n' "${accounts[@]}"
+    fi
 }
 
 # ===== String Utilities =====
@@ -269,6 +508,30 @@ encode_account_segment() {
     fi
 }
 
+decode_account_segment() {
+    local input="$1"
+    [[ -n "$input" ]] || return 1
+
+    local padded="$input"
+    while (( ${#padded} % 4 != 0 )); do
+        padded+="="
+    done
+
+    if command -v python3 &>/dev/null; then
+        python3 - "$padded" <<'PY'
+import base64, sys
+s = sys.argv[1]
+try:
+    print(base64.urlsafe_b64decode(s.encode()).decode())
+except Exception:
+    sys.exit(1)
+PY
+        return $?
+    fi
+
+    printf '%s' "$padded" | tr '_-' '/+' | base64 -d 2>/dev/null
+}
+
 # Gopass path functions
 api_key_path() {
     local provider="$1"
@@ -288,7 +551,14 @@ api_key_path() {
 api_key_path_candidates() {
     local provider="$1"
     local account="$2"
-    api_key_path "$provider" "$account"
+    local encoded
+    encoded=$(encode_account_segment "$account")
+
+    local prefix
+    while IFS= read -r prefix; do
+        [[ -z "$prefix" ]] && continue
+        printf '%s/providers/%s/accounts/%s/api_key\n' "$prefix" "$provider" "$encoded"
+    done < <(gopass_prefix_candidates)
 }
 
 store_api_key() {
@@ -304,8 +574,10 @@ delete_api_key() {
     local provider="$1"
     local account="$2"
     local path
-    path=$(api_key_path "$provider" "$account") || return 1
-    gopass rm -f "$path" &>/dev/null || true
+    while IFS= read -r path; do
+        [[ -z "$path" ]] && continue
+        gopass rm -f "$path" &>/dev/null || true
+    done < <(api_key_path_candidates "$provider" "$account")
 }
 
 # Retrieve API key from gopass
@@ -313,10 +585,12 @@ get_api_key() {
     local provider="$1"
     local account="$2"
     local path key
-    path=$(api_key_path "$provider" "$account") || return 1
-    if key=$(run_with_timeout 3 gopass show -o "$path" 2>/dev/null); then
-        echo "$key"
-        return 0
-    fi
+    while IFS= read -r path; do
+        [[ -z "$path" ]] && continue
+        if key=$(run_with_timeout 3 gopass show -o "$path" 2>/dev/null); then
+            echo "$key"
+            return 0
+        fi
+    done < <(api_key_path_candidates "$provider" "$account")
     return 1
 }

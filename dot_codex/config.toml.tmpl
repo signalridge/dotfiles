@@ -3,159 +3,163 @@
 # Managed by chezmoi - do not edit directly
 # Run: chezmoi edit ~/.codex/config.toml
 
-# =============================================================================
-# Core Settings
-# =============================================================================
-
-{{- /* Get account from codexProviderAccount */ -}}
+{{- /* codexProviderAccount can be openai or provider@label */ -}}
 {{- $accountKey := "openai" -}}
 {{- if hasKey . "codexProviderAccount" -}}
 {{-   $accountKey = .codexProviderAccount -}}
 {{- end -}}
-
-{{- /* Get account config from codex.accounts */ -}}
-{{- $account := index .codex.accounts $accountKey -}}
-
-{{- /* Get provider name */ -}}
 {{- $providerName := (split "@" $accountKey)._0 -}}
-{{- if and $account (hasKey $account "provider") -}}
-{{-   $providerName = $account.provider -}}
+{{- $providerModel := "gpt-5.3-codex" -}}
+{{- if eq $providerName "deepseek" -}}
+{{-   $providerModel = "deepseek-chat" -}}
+{{- else if eq $providerName "kimi" -}}
+{{-   $providerModel = "kimi-k2-0711-preview" -}}
+{{- else if eq $providerName "glm" -}}
+{{-   $providerModel = "glm-4.5" -}}
+{{- else if eq $providerName "qwen" -}}
+{{-   $providerModel = "qwen3-coder-plus" -}}
+{{- else if eq $providerName "minimax" -}}
+{{-   $providerModel = "MiniMax-M2.1" -}}
+{{- else if eq $providerName "doubao" -}}
+{{-   $providerModel = "doubao-seed-1-6-thinking-250715" -}}
+{{- else if eq $providerName "naapi" -}}
+{{-   $providerModel = "gpt-5.2" -}}
+{{- else if eq $providerName "harui" -}}
+{{-   $providerModel = "gpt-5.2" -}}
 {{- end -}}
 
-{{- /* Get provider config */ -}}
-{{- $provider := index .codex.providers $providerName -}}
+# =============================================================================
+# Core Settings
+# =============================================================================
 
-{{- /* Get codex defaults */ -}}
-{{- $defaults := .codex.defaults -}}
+# Default model
+model = "{{ $providerModel }}"
 
-# Default model (from shared account config)
-{{- if and $account (hasKey $account "model") }}
-model = "{{ $account.model }}"
-{{- else }}
-# model = "gpt-5.2-codex"
-{{- end }}
-
-# Model provider (use custom provider if third-party)
-{{- if and $provider (hasKey $provider "base_url") }}
+# Model provider (only for third-party providers)
+{{- if ne $providerName "openai" }}
 model_provider = "{{ $providerName }}"
 {{- end }}
 
 # Approval policy: untrusted | on-failure | on-request | never
-approval_policy = "{{ $defaults.approval_policy }}"
+approval_policy = "never"
 
 # Sandbox mode: read-only | workspace-write | danger-full-access
-sandbox_mode = "{{ $defaults.sandbox_mode }}"
+sandbox_mode = "danger-full-access"
 
 # Network access: enabled | disabled
-network_access = "{{ $defaults.network_access }}"
+network_access = "enabled"
 
 # Disable response storage
-disable_response_storage = {{ $defaults.disable_response_storage }}
+disable_response_storage = true
 
 # Windows WSL setup acknowledgement
-windows_wsl_setup_acknowledged = {{ $defaults.windows_wsl_setup_acknowledged }}
+windows_wsl_setup_acknowledged = true
 
 # Suppress unstable feature warnings
-{{- if hasKey $defaults "suppress_unstable_features_warning" }}
-suppress_unstable_features_warning = {{ $defaults.suppress_unstable_features_warning }}
-{{- end }}
+suppress_unstable_features_warning = true
 
 # =============================================================================
 # Model Configuration
 # =============================================================================
 
 # Reasoning effort: none | minimal | low | medium | high | xhigh
-model_reasoning_effort = "{{ $defaults.model_reasoning_effort }}"
+model_reasoning_effort = "xhigh"
 
 # Personality: none | friendly | pragmatic
-personality = "{{ $defaults.personality }}"
+personality = "pragmatic"
 
 # Verbosity: low | medium | high
-model_verbosity = "{{ $defaults.model_verbosity }}"
+model_verbosity = "high"
 
-# Enable built-in web search tool
-# NOTE: top-level `web_search` is deprecated; use [features].web_search_request
-
-# Experimental tool toggles (deprecated top-level keys removed)
-
-{{- if and (hasKey .codex "active_profile") (ne .codex.active_profile "") }}
-# Active profile
-profile = "{{ .codex.active_profile }}"
-{{- end }}
+# Web search mode: disabled | cached | live
+web_search = "live"
 
 # =============================================================================
 # Project Documentation
 # =============================================================================
 
-# Fallback filenames for AGENTS.md discovery (supports CLAUDE.md for compatibility)
-project_doc_fallback_filenames = [{{ range $i, $f := .codex.project_doc.fallback_filenames }}{{ if $i }}, {{ end }}"{{ $f }}"{{ end }}]
-
-# Max bytes for combined AGENTS.md content
-project_doc_max_bytes = {{ .codex.project_doc.max_bytes }}
+project_doc_fallback_filenames = ["CLAUDE.md", "TEAM_GUIDE.md", ".agents.md", "CODEX.md"]
+project_doc_max_bytes = 65536
 
 # =============================================================================
 # Feature Flags
 # =============================================================================
 
-{{ $features := .codex.features }}
 [features]
-shell_tool = {{ $features.shell_tool }}
-memory_tool = {{ $features.memory_tool }}
-apply_patch_freeform = {{ $features.apply_patch_freeform }}
-unified_exec = {{ $features.unified_exec }}
-shell_snapshot = {{ $features.shell_snapshot }}
-runtime_metrics = {{ $features.runtime_metrics }}
-undo = {{ $features.undo }}
-request_rule = {{ $features.request_rule }}
-responses_websockets = {{ $features.responses_websockets }}
-remote_compaction = {{ $features.remote_compaction }}
-remote_models = {{ $features.remote_models }}
-skill_mcp_dependency_install = {{ $features.skill_mcp_dependency_install }}
-skill_env_var_dependency_prompt = {{ $features.skill_env_var_dependency_prompt }}
-web_search_request = {{ $features.web_search_request }}
+shell_tool = true
+memory_tool = true
+apply_patch_freeform = true
+unified_exec = true
+shell_snapshot = true
+runtime_metrics = true
+undo = true
+request_rule = true
+responses_websockets = false
+remote_compaction = true
+remote_models = true
+skill_mcp_dependency_install = true
+skill_env_var_dependency_prompt = true
 
 # =============================================================================
 # Tools
 # =============================================================================
 
-{{ $tools := .codex.tools }}
 [tools]
-view_image = {{ $tools.view_image }}
+view_image = true
 
 # =============================================================================
 # History Settings
 # =============================================================================
 
 [history]
-persistence = "{{ .codex.history.persistence }}"
-max_bytes = {{ .codex.history.max_bytes }}
+persistence = "save-all"
+max_bytes = 104857600
 
 # =============================================================================
 # TUI Settings
 # =============================================================================
 
 [tui]
-notifications = {{ .codex.tui.notifications }}
-animations = {{ .codex.tui.animations }}
-show_tooltips = {{ .codex.tui.show_tooltips }}
+notifications = true
+animations = true
+show_tooltips = true
 
 # =============================================================================
 # Model Providers (Third-Party)
 # =============================================================================
-{{- range $name, $config := .codex.providers }}
-{{- if hasKey $config "base_url" }}
 
-[model_providers.{{ $name }}]
-name = "{{ $name | title }}"
-base_url = "{{ $config.base_url }}"
-{{- if hasKey $config "wire_api" }}
-wire_api = "{{ $config.wire_api }}"
-{{- end }}
-{{- if hasKey $config "requires_openai_auth" }}
-requires_openai_auth = {{ $config.requires_openai_auth }}
-{{- end }}
-{{- end }}
-{{- end }}
+[model_providers.deepseek]
+name = "Deepseek"
+base_url = "https://api.deepseek.com/v1"
+
+[model_providers.doubao]
+name = "Doubao"
+base_url = "https://ark.cn-beijing.volces.com/api/v3"
+
+[model_providers.glm]
+name = "Glm"
+base_url = "https://open.bigmodel.cn/api/paas/v4"
+
+[model_providers.harui]
+name = "Harui"
+base_url = "https://codex.harui.edu.kg"
+wire_api = "responses"
+
+[model_providers.kimi]
+name = "Kimi"
+base_url = "https://api.moonshot.ai/v1"
+
+[model_providers.minimax]
+name = "Minimax"
+base_url = "https://api.minimax.io/v1"
+
+[model_providers.naapi]
+name = "Naapi"
+base_url = "https://na.wanxiaot.com/v1"
+
+[model_providers.qwen]
+name = "Qwen"
+base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 # =============================================================================
 # MCP Servers
@@ -185,42 +189,28 @@ args = []
 # =============================================================================
 # Profiles
 # =============================================================================
-{{- range $name, $config := .codex.profiles }}
 
-[profiles.{{ $name }}]
-{{- if hasKey $config "model_reasoning_effort" }}
-model_reasoning_effort = "{{ $config.model_reasoning_effort }}"
-{{- end }}
-{{- if hasKey $config "approval_policy" }}
-approval_policy = "{{ $config.approval_policy }}"
-{{- end }}
-{{- if hasKey $config "web_search" }}
-{{- $ws := printf "%v" $config.web_search }}
-web_search_request = {{ if or (eq $ws "true") (eq $ws "live") (eq $ws "cached") }}true{{ else }}false{{ end }}
-{{- end }}
-{{- end }}
+[profiles.deep-review]
+model_reasoning_effort = "xhigh"
+approval_policy = "on-request"
+
+[profiles.fast]
+model_reasoning_effort = "low"
+approval_policy = "never"
+
+[profiles.research]
+model_reasoning_effort = "high"
+web_search = "live"
 
 # =============================================================================
 # Shell Environment Policy
 # =============================================================================
 
-{{- $shellEnv := .codex.shell_environment_policy -}}
 [shell_environment_policy]
-inherit = "{{ $shellEnv.inherit }}"
-exclude = [{{ range $i, $v := $shellEnv.exclude }}{{ if $i }}, {{ end }}"{{ $v }}"{{ end }}]
-ignore_default_excludes = {{ $shellEnv.ignore_default_excludes }}
-{{- if hasKey $shellEnv "experimental_use_profile" }}
-experimental_use_profile = {{ $shellEnv.experimental_use_profile }}
-{{- end }}
-{{- if hasKey $shellEnv "include_only" }}
-include_only = [{{ range $i, $v := $shellEnv.include_only }}{{ if $i }}, {{ end }}"{{ $v }}"{{ end }}]
-{{- end }}
-{{- if hasKey $shellEnv "set" }}
-[shell_environment_policy.set]
-{{- range $k, $v := $shellEnv.set }}
-{{ $k }} = "{{ $v }}"
-{{- end }}
-{{- end }}
+inherit = "all"
+exclude = []
+ignore_default_excludes = true
+experimental_use_profile = true
 
 # =============================================================================
 # Sandbox Workspace Write Settings

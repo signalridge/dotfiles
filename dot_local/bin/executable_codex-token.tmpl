@@ -18,11 +18,6 @@ source "$SCRIPT_DIR/lib/ai/codex"
 CHECK_ONLY=false
 CONFIG_ONLY=false
 ACCOUNT=""
-
-validate_provider_name() {
-    local name="$1"
-    [[ -n "$name" && "$name" =~ ^[A-Za-z0-9._-]+$ ]]
-}
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --check)
@@ -76,18 +71,32 @@ if ! validate_account_name "$ACCT_NAME"; then
     exit 1
 fi
 
-# Config mode: output account configuration
+# Config mode: output account configuration from rendered ~/.codex/config.toml
 if $CONFIG_ONLY; then
-    # Get account config from chezmoi data
-    chezmoi data --format json 2>/dev/null | jq -r --arg acct "$ACCOUNT" --arg prov "$PROVIDER" '
-        . as $root |
-        ($root.codex.accounts[$acct] // {}) |
-        . + {
-            provider: ($prov),
-            base_url: ($root.codex.providers[$prov].base_url // null)
-        } |
-        if .base_url == null then del(.base_url) else . end
-    ' 2>/dev/null || echo "{}"
+    model=""
+    base_url=""
+    wire_api=""
+    provider="$PROVIDER"
+    config_file="$(codex_config_file)"
+    [[ -z "$provider" ]] && provider="openai"
+
+    if [[ ! -f "$config_file" ]]; then
+        echo "{}"
+        exit 0
+    fi
+
+    model=$(get_provider_default_model "$provider")
+
+    base_url=$(toml_get_provider_field "$config_file" "$provider" "base_url")
+    wire_api=$(toml_get_provider_field "$config_file" "$provider" "wire_api")
+
+    if [[ -n "$base_url" && -n "$wire_api" ]]; then
+        printf '{"provider":"%s","model":"%s","base_url":"%s","wire_api":"%s"}\n' "$provider" "$model" "$base_url" "$wire_api"
+    elif [[ -n "$base_url" ]]; then
+        printf '{"provider":"%s","model":"%s","base_url":"%s"}\n' "$provider" "$model" "$base_url"
+    else
+        printf '{"provider":"%s","model":"%s"}\n' "$provider" "$model"
+    fi
     exit 0
 fi
 

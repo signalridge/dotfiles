@@ -144,10 +144,34 @@ fgl() {
 # Usage: fga
 # ─────────────────────────────────────────────────────────────
 fga() {
-    local files
-    files=$(git status -s | fzf -m --preview 'git diff --color=always {2}' | awk '{print $2}')
-    if [[ -n "$files" ]]; then
-        echo "$files" | tr '\n' '\0' | xargs -0 git add
+    local selection
+    selection=$(
+        git -c core.quotepath=false status --short | fzf -m \
+            --preview '
+                line="{}"
+                path=${line#???}
+                case "$path" in
+                    *" -> "*) path=${path##* -> } ;;
+                esac
+                git diff --color=always -- "$path"
+            '
+    )
+
+    [[ -z "$selection" ]] && return 0
+
+    local -a files=()
+    local line path
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        path=${line#???}
+        case "$path" in
+        *" -> "*) path=${path##* -> } ;;
+        esac
+        [[ -n "$path" ]] && files+=("$path")
+    done <<<"$selection"
+
+    if [[ ${#files[@]} -gt 0 ]]; then
+        git add -- "${files[@]}"
         git status -s
     fi
 }
@@ -617,6 +641,18 @@ fi
 # ─────────────────────────────────────────────────────────────
 
 # Account list helper for completions (avoid ANSI parsing)
+_ai_tool_accounts_from_manage() {
+    local manage_cmd="$1"
+    command -v "$manage_cmd" &>/dev/null || return 1
+
+    "$manage_cmd" list 2>/dev/null |
+        sed -E $'s/\x1B\\[[0-9;]*[mK]//g' |
+        sed -n '3,$p' |
+        sed -E 's/^[[:space:]]*[✓✗○][[:space:]]+//' |
+        sed -E 's/[[:space:]]+\((native|no key)\)$//' |
+        awk 'NF { print $1 }'
+}
+
 _ai_tool_accounts() {
     local tool="$1"
 
@@ -626,10 +662,35 @@ _ai_tool_accounts() {
 
     case "$tool" in
     claude)
-        chezmoi data --format json 2>/dev/null | jq -r '.claude.accounts // {} | keys[]' 2>/dev/null
+        if ! _ai_tool_accounts_from_manage claude-manage; then
+            chezmoi data --format json 2>/dev/null | jq -r '.claude.accounts // {} | keys[]' 2>/dev/null
+        fi
         ;;
     codex)
-        chezmoi data --format json 2>/dev/null | jq -r '.codex.accounts // {} | keys[]' 2>/dev/null
+        if ! _ai_tool_accounts_from_manage codex-manage; then
+            {
+                printf '%s\n' "openai"
+
+                local current_codex_account
+                current_codex_account=$(chezmoi data --format json 2>/dev/null | jq -r '.codexProviderAccount // "openai"' 2>/dev/null)
+                if [[ -n "$current_codex_account" && "$current_codex_account" != "null" && "$current_codex_account" != "openai" ]]; then
+                    printf '%s\n' "$current_codex_account"
+                fi
+
+                if [[ -f "$HOME/.codex/config.toml" ]]; then
+                    awk '
+                        /^\[model_providers\.[^]]+\]/ {
+                            section=$0
+                            sub(/^\[model_providers\./, "", section)
+                            sub(/\]$/, "", section)
+                            if (section != "openai") {
+                                print section "@private"
+                            }
+                        }
+                    ' "$HOME/.codex/config.toml" 2>/dev/null
+                fi
+            } | awk '!seen[$0]++'
+        fi
         ;;
     esac
 }
@@ -642,7 +703,9 @@ _claude_manage() {
     local -a commands=(
         'switch:Change default account'
         'sw:Change default account (alias)'
+        'create-account:Create account'
         'add-account:Add new account'
+        'update-account:Update account'
         'edit-account:Edit account config'
         'remove-account:Remove account'
         'add-key:Add API key'
@@ -665,7 +728,7 @@ _claude_manage() {
         ;;
     account)
         case "${line[1]}" in
-        switch | sw | test | add-key | update-key | delete-key | edit-account | remove-account)
+        switch | sw | test | add-key | update-key | delete-key | edit-account | update-account | remove-account)
             local -a accounts
             local acct
             while IFS= read -r acct; do
@@ -709,7 +772,9 @@ _codex_manage() {
     local -a commands=(
         'switch:Change default account'
         'sw:Change default account (alias)'
+        'create-account:Create account'
         'add-account:Add new account'
+        'update-account:Update account'
         'edit-account:Edit account config'
         'remove-account:Remove account'
         'add-key:Add API key'
@@ -732,7 +797,7 @@ _codex_manage() {
         ;;
     account)
         case "${line[1]}" in
-        switch | sw | test | add-key | update-key | delete-key | edit-account | remove-account)
+        switch | sw | test | add-key | update-key | delete-key | edit-account | update-account | remove-account)
             local -a accounts
             local acct
             while IFS= read -r acct; do

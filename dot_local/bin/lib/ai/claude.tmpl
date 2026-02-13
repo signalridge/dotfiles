@@ -22,18 +22,22 @@ get_current() {
 build_account_list_with_status() {
     local current
     current=$(get_current)
-    for account in "${ACCOUNTS[@]}"; do
+    local account
+    while IFS= read -r account; do
+        [[ -z "$account" ]] && continue
         if [[ "$account" == "$current" ]]; then
             echo -e "${GREEN}$account ✓${NC}"
         else
             echo "$account"
         fi
-    done
+    done < <(list_runtime_accounts)
 }
 
 # Build account list with token status
 build_account_list_with_token() {
-    for account in "${ACCOUNTS[@]}"; do
+    local account
+    while IFS= read -r account; do
+        [[ -z "$account" ]] && continue
         local provider
         provider=$(get_provider "$account")
         if is_third_party "$provider"; then
@@ -45,12 +49,12 @@ build_account_list_with_token() {
         else
             echo -e "${CYAN}○${NC} $account"
         fi
-    done
+    done < <(list_runtime_accounts)
 }
 
 # Common preview script for account selection
 ACCOUNT_PREVIEW='
-    line=$(echo {} | sed "s/^[[:space:]]*//")
+    line=$(echo {} | sed "s/^[[:space:]]*//" | tr -d "\033" | sed -E "s/\[[0-9;]*[mK]//g")
     if [[ "$line" == "Back" ]]; then
         echo "Return to main menu"
         exit 0
@@ -68,7 +72,7 @@ ACCOUNT_PREVIEW='
         echo -e "\033[0;32m✓ Token ready\033[0m"
     else
         if claude-token --config "$account" 2>/dev/null | jq -e ".base_url // empty" >/dev/null 2>&1; then
-            echo -e "\033[0;31m✗ No token (run: claude-manage add-key)\033[0m"
+            echo -e "\033[0;31m✗ No token (run: claude-manage update-account $account)\033[0m"
         else
             echo -e "\033[0;36m○ Native OAuth\033[0m"
         fi
@@ -82,8 +86,8 @@ fzf_pick_account() {
     local current
     current=$(get_current)
 
-    local result
-    if ! result=$({
+    local result raw
+    if ! raw=$({
         case "$list_type" in
             token) build_account_list_with_token ;;
             plain) printf '%s\n' "${ACCOUNTS[@]}" ;;
@@ -100,8 +104,10 @@ fzf_pick_account() {
         return "$RC_EXIT"
     fi
 
+    result=$(normalize_menu_selection "$raw")
+
     [[ -z "$result" ]] && return "$RC_EXIT"
-    [[ "$result" == "Back" ]] && return "$RC_BACK"
+    is_back_selection "$result" && return "$RC_BACK"
 
     result=$(echo "$result" | sed 's/ ✓$//' | sed 's/^[[:space:]]*//')
     result=$(echo "$result" | sed 's/^[✓✗○] //')

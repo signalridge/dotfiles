@@ -55,7 +55,7 @@ fzf_select() {
 build_config_overrides() {
     local account="$1"
     local use_env_key="${2:-false}"
-    local provider base_url model env_var requires_auth
+    local provider base_url model env_var
 
     # Get config from chezmoi data
     local config
@@ -69,10 +69,6 @@ build_config_overrides() {
     if [[ "$env_var" =~ ^[0-9] ]]; then
         env_var="P_${env_var}"
     fi
-    requires_auth=false
-    if provider_requires_openai_auth "$provider"; then
-        requires_auth=true
-    fi
 
     # Build -c overrides
     local overrides=()
@@ -83,7 +79,7 @@ build_config_overrides() {
     # Set base_url if third-party
     if [[ -n "$base_url" ]]; then
         overrides+=("-c" "model_providers.${provider}.base_url=${base_url}")
-        if [[ "$requires_auth" != "true" && "$use_env_key" == "true" ]]; then
+        if [[ "$use_env_key" == "true" ]]; then
             overrides+=("-c" "model_providers.${provider}.env_key=${env_var}")
         fi
     fi
@@ -101,21 +97,17 @@ launch_codex() {
     local account="$1"
     shift
 
-    if ! is_configured_account "$account"; then
+    if ! is_runtime_account "$account"; then
         log_error "Unknown account '$account'"
         echo "Available accounts:" >&2
-        printf '  %s\n' "${ACCOUNTS[@]}" >&2
+        list_runtime_accounts | sed 's/^/  /' >&2 || true
         return 1
     fi
 
     local provider
     provider=$(get_provider "$account")
-    local requires_auth=false
-    if provider_requires_openai_auth "$provider"; then
-        requires_auth=true
-    fi
     local env_var=""
-    if is_third_party "$provider" && [[ "$requires_auth" != "true" ]]; then
+    if is_third_party "$provider"; then
         env_var="$(printf '%s' "$provider" | tr '[:lower:]' '[:upper:]' | tr -c 'A-Z0-9_' '_')_API_KEY"
         if [[ "$env_var" =~ ^[0-9] ]]; then
             env_var="P_${env_var}"
@@ -123,7 +115,7 @@ launch_codex() {
     fi
 
     local api_key=""
-    if is_third_party "$provider" && [[ "$requires_auth" != "true" ]]; then
+    if is_third_party "$provider"; then
         if command -v gopass >/dev/null 2>&1; then
             if codex-token --check "$account" 2>/dev/null; then
                 local parsed acct_name
