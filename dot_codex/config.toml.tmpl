@@ -9,31 +9,13 @@
 {{-   $accountKey = .codexProviderAccount -}}
 {{- end -}}
 {{- $providerName := (split "@" $accountKey)._0 -}}
-{{- $providerModel := "gpt-5.3-codex" -}}
-{{- if eq $providerName "deepseek" -}}
-{{-   $providerModel = "deepseek-chat" -}}
-{{- else if eq $providerName "kimi" -}}
-{{-   $providerModel = "kimi-k2-0711-preview" -}}
-{{- else if eq $providerName "glm" -}}
-{{-   $providerModel = "glm-4.5" -}}
-{{- else if eq $providerName "qwen" -}}
-{{-   $providerModel = "qwen3-coder-plus" -}}
-{{- else if eq $providerName "minimax" -}}
-{{-   $providerModel = "MiniMax-M2.1" -}}
-{{- else if eq $providerName "doubao" -}}
-{{-   $providerModel = "doubao-seed-1-6-thinking-250715" -}}
-{{- else if eq $providerName "naapi" -}}
-{{-   $providerModel = "gpt-5.2" -}}
-{{- else if eq $providerName "harui" -}}
-{{-   $providerModel = "gpt-5.2" -}}
-{{- end -}}
 
 # =============================================================================
 # Core Settings
 # =============================================================================
 
 # Default model
-model = "{{ $providerModel }}"
+model = "gpt-5.3-codex"
 
 # Model provider (only for third-party providers)
 {{- if ne $providerName "openai" }}
