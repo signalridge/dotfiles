@@ -339,15 +339,33 @@ gopass_prefix_candidates() {
     printf '%s\n' "$primary"
 }
 
+codex_default_model_for_provider() {
+    local provider="$1"
+    case "$provider" in
+        openai) echo "gpt-5.3-codex" ;;
+        deepseek) echo "deepseek-chat" ;;
+        kimi) echo "kimi-k2-0711-preview" ;;
+        glm) echo "glm-4.5" ;;
+        qwen) echo "qwen3-coder-plus" ;;
+        minimax) echo "MiniMax-M2.1" ;;
+        doubao) echo "doubao-seed-1-6-thinking-250715" ;;
+        naapi) echo "gpt-5.2" ;;
+        harui) echo "gpt-5.2" ;;
+        *) echo "gpt-5.3-codex" ;;
+    esac
+}
+
 get_provider_default_model() {
     local provider="$1"
     if [[ "$AI_TOOL_CONTEXT" == "codex" ]]; then
+        [[ -z "$provider" ]] && provider="openai"
+
         local config_file current_provider model
         config_file=$(codex_config_file)
         current_provider=$(toml_get_model_provider "$config_file")
         [[ -z "$current_provider" ]] && current_provider="openai"
 
-        if [[ "$provider" == "$current_provider" || "$provider" == "openai" ]]; then
+        if [[ "$provider" == "$current_provider" ]]; then
             model=$(toml_get_first_string_value "$config_file" "model")
             if [[ -n "$model" ]]; then
                 echo "$model"
@@ -355,18 +373,13 @@ get_provider_default_model() {
             fi
         fi
 
-        case "$provider" in
-            openai) echo "gpt-5.2-codex" ;;
-            deepseek) echo "deepseek-chat" ;;
-            kimi) echo "kimi-k2-0711-preview" ;;
-            glm) echo "glm-4.5" ;;
-            qwen) echo "qwen3-coder-plus" ;;
-            minimax) echo "MiniMax-M2.1" ;;
-            doubao) echo "doubao-seed-1-6-thinking-250715" ;;
-            naapi) echo "gpt-5.2" ;;
-            harui) echo "gpt-5.2" ;;
-            *) echo "" ;;
-        esac
+        model=$(toml_get_provider_field "$config_file" "$provider" "model")
+        if [[ -n "$model" ]]; then
+            echo "$model"
+            return 0
+        fi
+
+        codex_default_model_for_provider "$provider"
         return 0
     fi
 

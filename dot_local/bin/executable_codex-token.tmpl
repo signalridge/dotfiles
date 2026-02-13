@@ -76,9 +76,7 @@ if $CONFIG_ONLY; then
     model=""
     base_url=""
     wire_api=""
-    current_provider=""
     provider="$PROVIDER"
-    provider_model=""
     config_file="$(codex_config_file)"
     [[ -z "$provider" ]] && provider="openai"
 
@@ -87,15 +85,7 @@ if $CONFIG_ONLY; then
         exit 0
     fi
 
-    current_provider=$(toml_get_model_provider "$config_file")
-    [[ -z "$current_provider" ]] && current_provider="openai"
-    model=$(toml_get_first_string_value "$config_file" "model")
-
-    if [[ "$provider" != "$current_provider" && "$provider" != "openai" ]]; then
-        provider_model=$(get_provider_default_model "$provider")
-        [[ -n "$provider_model" ]] && model="$provider_model"
-    fi
-    [[ -z "$model" ]] && model=$(get_provider_default_model "$provider")
+    model=$(get_provider_default_model "$provider")
 
     base_url=$(toml_get_provider_field "$config_file" "$provider" "base_url")
     wire_api=$(toml_get_provider_field "$config_file" "$provider" "wire_api")
