@@ -66,10 +66,10 @@ launch_claude() {
     local account="$1"
     shift
 
-    if ! is_configured_account "$account"; then
+    if ! is_runtime_account "$account"; then
         log_error "Unknown account '$account'"
         echo "Available accounts:" >&2
-        printf '  %s\n' "${ACCOUNTS[@]}" >&2
+        list_runtime_accounts | sed 's/^/  /' >&2 || true
         return 1
     fi
 
@@ -95,7 +95,7 @@ launch_claude() {
         # Verify token exists before launching
         if ! claude-token --check "$account" 2>/dev/null; then
             log_error "No API token for $account"
-            echo -e "Run: ${YELLOW}claude-manage add-key $account${NC}" >&2
+            echo -e "Run: ${YELLOW}claude-manage update-account $account${NC}" >&2
             return 1
         fi
         export ANTHROPIC_BASE_URL="$base_url"

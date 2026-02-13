@@ -11,5 +11,8 @@ bash "$ROOT/tests/test_install_nix_arch.sh"
 bash "$ROOT/tests/test_chezmoiignore.sh"
 bash "$ROOT/tests/test_setup_gopass.sh"
 bash "$ROOT/tests/test_keys_manage_nonmenu.sh"
+bash "$ROOT/tests/test_ai_gopass_migrate.sh"
+bash "$ROOT/tests/test_manage_list_logic.sh"
+bash "$ROOT/tests/test_manage_menu_navigation.sh"
 
 echo "OK"

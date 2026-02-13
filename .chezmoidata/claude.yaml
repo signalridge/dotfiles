@@ -7,7 +7,7 @@ claude:
   #   - providers: Provider definitions (base_url + available models)
   #   - accounts: Account configurations (model selection + settings)
   #
-  # API keys stored in gopass: claude-code/providers/{provider}/{account}/api_key
+  # API keys stored in gopass: claude/providers/{provider}/accounts/{base64url(account)}/api_key
 
   # ===== Global Defaults =====
   # Fallback when neither account nor provider specifies a value.

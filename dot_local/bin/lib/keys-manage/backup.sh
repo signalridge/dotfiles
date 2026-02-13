@@ -403,18 +403,14 @@ cmd_select() {
             echo ""
 
             local to_remove
-            to_remove=$({
-                printf '%s\n' "${removable_files[@]}"
-                echo -e "${YELLOW}Back${NC}"
-            } | fzf_multi_select \
+            to_remove=$(printf '%s\n' "${removable_files[@]}" | fzf_multi_select \
                 "Tab: select to remove | Enter: confirm" \
-                "$FILE_PREVIEW")
+                "$FILE_PREVIEW") || {
+                echo ""
+                continue
+            }
 
             if [[ -n "$to_remove" ]]; then
-                if printf '%s\n' "$to_remove" | grep -qxF "Back"; then
-                    echo ""
-                    continue
-                fi
                 while IFS= read -r file; do
                     if [[ -n "$file" ]]; then
                         # Check if in pending add (cancel addition)
@@ -754,10 +750,7 @@ cmd_remove() {
 
     # FZF to select files to remove
     local to_remove
-    to_remove=$({
-        printf '%s\n' "${current_files[@]}"
-        echo -e "${YELLOW}Back${NC}"
-    } | fzf --ansi --multi \
+    to_remove=$(printf '%s\n' "${current_files[@]}" | fzf --ansi --multi \
         --height=50% \
         --border=rounded \
         --header="Select files to REMOVE (Tab: toggle, Ctrl-A: all, Ctrl-D: none, Ctrl-/: preview)" \
@@ -766,10 +759,6 @@ cmd_remove() {
         --bind='ctrl-/:toggle-preview' \
         --preview="
             file={}
-            if [[ \"\$file\" == \"Back\" ]]; then
-                echo \"Return to previous menu\"
-                exit 0
-            fi
             echo -e \"\033[1;31m━━━ WILL BE REMOVED ━━━\033[0m\"
             echo \"\"
             echo \"Path: \$file\"
@@ -783,10 +772,6 @@ cmd_remove() {
         log_warn "Selection cancelled"
         return 0
     }
-
-    if printf '%s\n' "$to_remove" | grep -qxF "Back"; then
-        return "$RC_BACK"
-    fi
 
     if [[ -z "$to_remove" ]]; then
         log_warn "No files selected"

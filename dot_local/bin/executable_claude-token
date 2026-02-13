@@ -14,20 +14,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/lib/ai/claude"
 
-# Validate provider names (prevent path traversal).
-validate_provider_name() {
-    local name="$1"
-    [[ -n "$name" && "$name" =~ ^[A-Za-z0-9._-]+$ ]]
-}
-
-# Validate account names for gopass path safety.
-# Account names are encoded for storage, but we still restrict to safe characters.
-validate_account_name() {
-    local name="$1"
-    [[ -n "$name" ]] || return 1
-    [[ "$name" =~ ^[A-Za-z0-9._-]+$ ]]
-}
-
 # Get current provider@account from chezmoi data
 # Supports override via _CLAUDE_OVERRIDE_ACCOUNT for ccw
 get_provider_account() {
@@ -64,14 +50,6 @@ get_actual_provider() {
     fi
 }
 
-# Check if provider has base_url (is third-party)
-is_third_party() {
-    local provider="$1"
-    local base_url
-    base_url=$(chezmoi data --format json 2>/dev/null | jq -r --arg provider "$provider" '.claude.providers[$provider].base_url // empty')
-    [[ -n "$base_url" ]]
-}
-
 # Get merged account config as JSON
 # Merges: defaults + provider.base_url + account settings
 get_account_config() {
@@ -97,40 +75,6 @@ get_account_config() {
             disable_nonessential_traffic: ($account_cfg.disable_nonessential_traffic // $provider_cfg.disable_nonessential_traffic // $defaults.disable_nonessential_traffic)
         } | with_entries(select(.value != null))
     '
-}
-
-# Check if token exists in gopass (non-interactive, with timeout)
-check_token_exists() {
-    local provider="$1"
-    local account="$2"
-
-    local path
-    while IFS= read -r path; do
-        [[ -z "$path" ]] && continue
-        if run_with_timeout 3 gopass list -f "$path" &>/dev/null; then
-            return 0
-        fi
-    done < <(api_key_path_candidates "$provider" "$account")
-
-    return 1
-}
-
-# Get token from gopass with timeout
-get_token() {
-    local provider="$1"
-    local account="$2"
-    local token
-
-    local path
-    while IFS= read -r path; do
-        [[ -z "$path" ]] && continue
-        if token=$(run_with_timeout 5 gopass show -o "$path" 2>/dev/null); then
-            echo "$token"
-            return 0
-        fi
-    done < <(api_key_path_candidates "$provider" "$account")
-
-    return 1
 }
 
 # Main
@@ -218,7 +162,7 @@ EOF
         check)
             # Silent check, exit code only
             if is_third_party "$provider"; then
-                check_token_exists "$provider" "$account"
+                key_exists "$provider" "$account"
             else
                 # Native Anthropic providers don't need tokens
                 exit 0
@@ -236,7 +180,7 @@ EOF
 
             # Third-party providers: get token from gopass
             local token
-            if ! token=$(get_token "$provider" "$account"); then
+            if ! token=$(get_api_key "$provider" "$account"); then
                 local display_name
                 if [[ "$account" == "default" ]]; then
                     display_name="${parsed%%|*}"
@@ -244,7 +188,7 @@ EOF
                     display_name="${parsed%%|*}@$account"
                 fi
                 log_error "API token not found for '$display_name'"
-                echo "Run: claude-manage add-key $display_name" >&2
+                echo "Run: claude-manage update-account $display_name" >&2
                 exit 1
             fi
 

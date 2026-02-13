@@ -1,0 +1,204 @@
+#!/usr/bin/env bash
+# Migrate AI tool API keys from legacy ai-tools/* gopass paths
+# to tool-specific roots: codex/* and claude/*.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=lib/common.tmpl
+source "$SCRIPT_DIR/lib/common"
+
+usage() {
+    cat <<'EOF'
+ai-gopass-migrate
+
+Migrate legacy gopass paths:
+  ai-tools/providers/{provider}/accounts/{encoded}/api_key
+  ai-tools/codex/providers/{provider}/accounts/{encoded}/api_key
+  ai-tools/claude/providers/{provider}/accounts/{encoded}/api_key
+
+to new paths:
+  codex/providers/{provider}/accounts/{encoded}/api_key
+  claude/providers/{provider}/accounts/{encoded}/api_key
+
+Options:
+  --apply      Apply migration (default: dry-run)
+  --cleanup    Remove legacy source entries after successful copy (requires --apply)
+  -h, --help   Show help
+
+Notes:
+  - Shared legacy keys under ai-tools/providers/... are copied to both codex and claude.
+  - Legacy tool-specific keys override shared keys on the same destination.
+EOF
+}
+
+APPLY=0
+CLEANUP=0
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --apply)
+            APPLY=1
+            ;;
+        --cleanup)
+            CLEANUP=1
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            usage
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+if [[ "$CLEANUP" -eq 1 && "$APPLY" -ne 1 ]]; then
+    log_error "--cleanup requires --apply"
+    exit 1
+fi
+
+require_cmd gopass || exit 1
+
+declare -a PLAN_OLD=()
+declare -a PLAN_NEW=()
+declare -a PLAN_REASON=()
+declare -A PLAN_SEEN=()
+
+add_plan_item() {
+    local old_path="$1"
+    local new_path="$2"
+    local reason="$3"
+    local key="${old_path}|${new_path}"
+    [[ -n "${PLAN_SEEN[$key]:-}" ]] && return 0
+    PLAN_SEEN["$key"]=1
+    PLAN_OLD+=("$old_path")
+    PLAN_NEW+=("$new_path")
+    PLAN_REASON+=("$reason")
+}
+
+parse_legacy_path() {
+    local prefix="$1"
+    local path="$2"
+    local base remainder provider rest encoded
+
+    base="${prefix}/providers/"
+    [[ "$path" == "$base"* ]] || return 1
+
+    remainder="${path#"$base"}"
+    provider="${remainder%%/*}"
+    [[ -n "$provider" ]] || return 1
+
+    rest="${remainder#"$provider/"}"
+    [[ "$rest" == "accounts/"*"/api_key" ]] || return 1
+
+    encoded="${rest#accounts/}"
+    encoded="${encoded%/api_key}"
+    [[ -n "$encoded" ]] || return 1
+    [[ "$encoded" != *"/"* ]] || return 1
+
+    printf '%s|%s\n' "$provider" "$encoded"
+}
+
+collect_prefix_to_tool() {
+    local src_prefix="$1"
+    local dst_tool="$2"
+    local reason="$3"
+    local src_base path parsed provider encoded target
+
+    src_base="${src_prefix}/providers"
+    while IFS= read -r path; do
+        [[ -z "$path" ]] && continue
+        [[ "$path" == */api_key ]] || continue
+
+        parsed=$(parse_legacy_path "$src_prefix" "$path") || continue
+        provider="${parsed%%|*}"
+        encoded="${parsed#*|}"
+        target="${dst_tool}/providers/${provider}/accounts/${encoded}/api_key"
+
+        add_plan_item "$path" "$target" "$reason"
+    done < <(gopass list -f "$src_base" 2>/dev/null || true)
+}
+
+# Shared keys first; tool-specific keys later (override destination if both exist).
+collect_prefix_to_tool "ai-tools" "codex" "shared->codex"
+collect_prefix_to_tool "ai-tools" "claude" "shared->claude"
+collect_prefix_to_tool "ai-tools/codex" "codex" "legacy-codex"
+collect_prefix_to_tool "ai-tools/claude" "claude" "legacy-claude"
+
+if [[ ${#PLAN_OLD[@]} -eq 0 ]]; then
+    log_info "No legacy ai-tools entries found."
+    exit 0
+fi
+
+log_header "AI gopass migration plan"
+for i in "${!PLAN_OLD[@]}"; do
+    printf '  %s -> %s (%s)\n' "${PLAN_OLD[$i]}" "${PLAN_NEW[$i]}" "${PLAN_REASON[$i]}"
+done
+echo ""
+
+if [[ "$APPLY" -ne 1 ]]; then
+    log_note "Dry-run only. Re-run with --apply to execute."
+    exit 0
+fi
+
+log_info "Applying migration..."
+
+migrated=0
+failed=0
+declare -A OLD_SUCCESS=()
+declare -A OLD_FAILED=()
+
+for i in "${!PLAN_OLD[@]}"; do
+    old_path="${PLAN_OLD[$i]}"
+    new_path="${PLAN_NEW[$i]}"
+
+    if ! value=$(run_with_timeout 5 gopass show -o "$old_path" 2>/dev/null); then
+        log_warn "Skip unreadable source: $old_path"
+        failed=$((failed + 1))
+        OLD_FAILED["$old_path"]=1
+        continue
+    fi
+    if [[ -z "$value" ]]; then
+        log_warn "Skip empty source: $old_path"
+        failed=$((failed + 1))
+        OLD_FAILED["$old_path"]=1
+        continue
+    fi
+
+    if printf '%s' "$value" | gopass insert -f "$new_path" >/dev/null 2>&1; then
+        migrated=$((migrated + 1))
+        OLD_SUCCESS["$old_path"]=1
+        printf '  migrated: %s -> %s\n' "$old_path" "$new_path"
+    else
+        log_warn "Failed to write target: $new_path"
+        failed=$((failed + 1))
+        OLD_FAILED["$old_path"]=1
+    fi
+done
+
+removed=0
+if [[ "$CLEANUP" -eq 1 ]]; then
+    log_info "Cleaning up migrated legacy entries..."
+    for old_path in "${!OLD_SUCCESS[@]}"; do
+        if [[ -n "${OLD_FAILED[$old_path]:-}" ]]; then
+            continue
+        fi
+        gopass rm -f "$old_path" >/dev/null 2>&1 || true
+        removed=$((removed + 1))
+        printf '  removed: %s\n' "$old_path"
+    done
+fi
+
+echo ""
+log_success "Migration finished"
+echo "  migrated: $migrated"
+echo "  failed:   $failed"
+echo "  removed:  $removed"
+
+if [[ "$failed" -gt 0 ]]; then
+    exit 1
+fi
