@@ -79,8 +79,9 @@ export JUSTFILE="${XDG_CONFIG_HOME:-$HOME/.config}/just/.justfile"
 # Must be set before sheldon loads the plugin
 # ─────────────────────────────────────────────────────────────
 export ZSH_TMUX_CONFIG="$HOME/.config/tmux/tmux.conf"
-# Disable tmux autostart in VSCode (avoids status bar stacking with Claude CLI)
-if [[ "$TERM_PROGRAM" == "vscode" ]]; then
+# Disable tmux autostart in non-TTY/nested/managed environments.
+# This prevents startup loops for tool-driven shells.
+if [[ "$TERM_PROGRAM" == "vscode" ]] || [[ -n "$TMUX" ]] || [[ ! -t 0 ]] || [[ ! -t 1 ]]; then
     export ZSH_TMUX_AUTOSTART=false
     export ZSH_TMUX_AUTOCONNECT=false
 else

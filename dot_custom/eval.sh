@@ -2,6 +2,9 @@
 # Shell initialization helpers
 # Conditionally eval commands only if the tool exists
 
+[[ -o interactive ]] || return 0
+[[ -t 0 && -t 1 ]] || return 0
+
 eval_if_cmd_exists() {
     local cmd="$1"
     shift
@@ -12,6 +15,22 @@ eval_if_cmd_exists() {
     fi
 }
 
+eval_if_mise_activate() {
+    local mise_cmd=""
+    local out=""
+    mise_cmd="$(command -v mise 2>/dev/null || true)"
+    [[ -n "$mise_cmd" ]] || return 0
+
+    # Skip aqua proxy wrapper for missing commands (can spawn repeated failures).
+    case "$mise_cmd" in
+    */aquaproj-aqua/bin/mise) return 0 ;;
+    esac
+
+    "$mise_cmd" --version >/dev/null 2>&1 || return 0
+    out="$("$mise_cmd" activate zsh 2>/dev/null || true)"
+    [[ -n "$out" ]] && eval "$out"
+}
+
 # Initialize shell tools
 eval_if_cmd_exists "starship" starship init zsh
 eval_if_cmd_exists "fzf" fzf --zsh
@@ -19,6 +38,6 @@ eval_if_cmd_exists "fzf" fzf --zsh
 eval_if_cmd_exists "sheldon" sheldon source
 eval_if_cmd_exists "navi" navi widget zsh
 eval_if_cmd_exists "zoxide" zoxide init zsh
-eval_if_cmd_exists "mise" mise activate zsh
+eval_if_mise_activate
 eval_if_cmd_exists "atuin" atuin init zsh
 eval_if_cmd_exists "direnv" direnv hook zsh

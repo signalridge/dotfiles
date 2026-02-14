@@ -14,11 +14,12 @@ nix:
       - mermaid-cli # mmdc - Mermaid diagram renderer (render-markdown.nvim dependency)
       - mosh
       - imagemagick # magick/convert - image processing (Snacks.image dependency)
-      - mise # runtime/tool version manager; required for npm:prettier and other mise backends
+      - mise # runtime/tool version manager
       - navi
       - ouch
       - pixi # fast Python/conda package manager
-      # pre-commit - via mise (nixpkgs version pulls Swift as dotnet dependency)
+      - pre-commit # Git hook framework
+      - nodePackages.prettier # JS/TS/JSON/YAML formatter
       - sheldon # shell plugin manager (prefer nix build over aqua binary on macOS)
       - openssh
       - openssl

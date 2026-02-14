@@ -20,8 +20,7 @@ jobs:
           use-gha-cache: true
       - name: Install tools
         run: |
-          nix profile install nixpkgs#treefmt nixpkgs#shfmt nixpkgs#shellcheck nixpkgs#statix nixpkgs#nixfmt nixpkgs#stylua nixpkgs#selene nixpkgs#chezmoi
-          npm install -g prettier@3.6.2
+          nix profile install nixpkgs#pre-commit nixpkgs#treefmt nixpkgs#shfmt nixpkgs#shellcheck nixpkgs#statix nixpkgs#nixfmt nixpkgs#stylua nixpkgs#selene nixpkgs#chezmoi nixpkgs#nodePackages.prettier
       - name: Setup chezmoi
         run: |
           mkdir -p ~/.config/chezmoi

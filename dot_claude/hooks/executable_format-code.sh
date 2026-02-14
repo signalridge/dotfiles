@@ -4,6 +4,24 @@
 
 set -euo pipefail
 
+# Hook runs in non-interactive shell: ensure stable tool PATH.
+[[ -d "$HOME/.nix-profile/bin" ]] && PATH="$HOME/.nix-profile/bin:$PATH"
+[[ -d "/opt/homebrew/bin" ]] && PATH="/opt/homebrew/bin:$PATH"
+[[ -d "$HOME/.local/share/aquaproj-aqua/bin" ]] && PATH="$PATH:$HOME/.local/share/aquaproj-aqua/bin"
+export PATH
+
+run_optional() {
+    local tool="$1"
+    shift
+
+    if command -v "$tool" >/dev/null 2>&1; then
+        "$tool" "$@" >/dev/null 2>&1 || true
+        return 0
+    fi
+
+    return 1
+}
+
 if ! command -v jq >/dev/null 2>&1; then
     exit 0
 fi
@@ -25,11 +43,7 @@ file_path=$(echo "$input" | jq -r '.tool_input.file_path // .tool_input.path // 
 
 case "$file_path" in
 *.nix)
-    if command -v nixfmt >/dev/null 2>&1; then
-        nixfmt "$file_path" >/dev/null 2>&1 || true
-    elif command -v alejandra >/dev/null 2>&1; then
-        alejandra "$file_path" >/dev/null 2>&1 || true
-    fi
+    run_optional nixfmt "$file_path" || run_optional alejandra "$file_path" || true
     ;;
 *.json)
     tmp_file="$(mktemp)"
@@ -40,29 +54,19 @@ case "$file_path" in
     fi
     ;;
 *.yaml | *.yml)
-    if command -v yq >/dev/null 2>&1; then
-        yq -i '.' "$file_path" >/dev/null 2>&1 || true
-    fi
+    run_optional yq -i '.' "$file_path" || true
     ;;
 *.sh | *.bash | *.zsh)
-    if command -v shfmt >/dev/null 2>&1; then
-        shfmt -w "$file_path" >/dev/null 2>&1 || true
-    fi
+    run_optional shfmt -w "$file_path" || true
     ;;
 *.go)
-    if command -v gofmt >/dev/null 2>&1; then
-        gofmt -w "$file_path" >/dev/null 2>&1 || true
-    fi
+    run_optional gofmt -w "$file_path" || true
     ;;
 *.lua)
-    if command -v stylua >/dev/null 2>&1; then
-        stylua "$file_path" >/dev/null 2>&1 || true
-    fi
+    run_optional stylua "$file_path" || true
     ;;
 *.ts | *.tsx | *.js | *.jsx)
-    if command -v prettier >/dev/null 2>&1; then
-        prettier --write "$file_path" >/dev/null 2>&1 || true
-    fi
+    run_optional prettier --write "$file_path" || true
     ;;
 esac
 

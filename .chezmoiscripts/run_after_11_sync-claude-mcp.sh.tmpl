@@ -7,7 +7,11 @@ set -euo pipefail
 
 echo ":: [11] Syncing Claude Code MCP servers"
 
-if ! command -v claude &>/dev/null; then
+# Ensure common install locations are discoverable in non-interactive shells.
+PATH="$HOME/.nix-profile/bin:/opt/homebrew/bin:$HOME/.local/share/aquaproj-aqua/bin:$PATH"
+claude_cmd="$(command -v claude 2>/dev/null || true)"
+
+if [[ -z "$claude_cmd" ]]; then
     echo "    Skipped (claude not found)"
     exit 0
 fi
@@ -94,12 +98,12 @@ ensure_user_mcp_json() {
         echo "    Exists: $name"
         ;;
     missing)
-        claude mcp add-json -s user "$name" "$json"
+        "$claude_cmd" mcp add-json -s user "$name" "$json"
         ;;
     mismatch)
         echo "    Updating: $name"
-        claude mcp remove -s user "$name" >/dev/null 2>&1 || true
-        claude mcp add-json -s user "$name" "$json"
+        "$claude_cmd" mcp remove -s user "$name" >/dev/null 2>&1 || true
+        "$claude_cmd" mcp add-json -s user "$name" "$json"
         ;;
     *)
         echo "    Skipped: $name (unknown check status: $status)"
@@ -119,12 +123,12 @@ ensure_user_mcp_sse() {
         echo "    Exists: $name"
         ;;
     missing)
-        claude mcp add --transport sse -s user "$name" "$url"
+        "$claude_cmd" mcp add --transport sse -s user "$name" "$url"
         ;;
     mismatch)
         echo "    Updating: $name"
-        claude mcp remove -s user "$name" >/dev/null 2>&1 || true
-        claude mcp add --transport sse -s user "$name" "$url"
+        "$claude_cmd" mcp remove -s user "$name" >/dev/null 2>&1 || true
+        "$claude_cmd" mcp add --transport sse -s user "$name" "$url"
         ;;
     *)
         echo "    Skipped: $name (unknown check status: $status)"

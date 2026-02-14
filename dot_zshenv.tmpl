@@ -1,59 +1,54 @@
-# ─────────────────────────────────────────────────────────────
-# PATH Configuration
-# ─────────────────────────────────────────────────────────────
-path_prepend_once() {
-    local p="$1"
-    [[ -n "$p" ]] || return 0
-    case ":$PATH:" in
-    *":$p:"*) ;;
-    *) PATH="$p:$PATH" ;;
-    esac
-}
+# Keep .zshenv side-effect free because it is loaded by every zsh process.
+# Do not run external commands here.
 
-path_promote_front() {
+# XDG Base Directory
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+
+path_remove() {
     local p="$1"
     [[ -n "$p" ]] || return 0
     PATH=":$PATH:"
     PATH="${PATH//:$p:/:}"
     PATH="${PATH#:}"
     PATH="${PATH%:}"
+}
+
+path_add_front() {
+    local p="$1"
+    [[ -n "$p" ]] || return 0
+    path_remove "$p"
     PATH="$p${PATH:+:$PATH}"
 }
 
-path_prepend_once "/opt/homebrew/bin"
-path_prepend_once "$HOME/.local/bin"
-path_prepend_once "$HOME/bin"
+path_add_back() {
+    local p="$1"
+    [[ -n "$p" ]] || return 0
+    path_remove "$p"
+    PATH="${PATH:+$PATH:}$p"
+}
 
-# Prefer user nix profile tools over aqua proxies for shared commands (e.g. mise).
-if [[ -d "$HOME/.nix-profile/bin" ]]; then
-    path_promote_front "$HOME/.nix-profile/bin"
-fi
+# PATH order: real package managers first, aqua last.
+[[ -d "$HOME/.nix-profile/bin" ]] && path_add_front "$HOME/.nix-profile/bin"
+[[ -d "/opt/homebrew/bin" ]] && path_add_front "/opt/homebrew/bin"
+[[ -d "$HOME/.local/bin" ]] && path_add_front "$HOME/.local/bin"
+[[ -d "$HOME/bin" ]] && path_add_front "$HOME/bin"
 
-# aqua managed tools
-AQUA_BIN_DIR="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
-if [[ -d "$AQUA_BIN_DIR" ]]; then
-    path_prepend_once "$AQUA_BIN_DIR"
-fi
+AQUA_BIN_DIR="${AQUA_ROOT_DIR:-${XDG_DATA_HOME}/aquaproj-aqua}/bin"
+[[ -d "$AQUA_BIN_DIR" ]] && path_add_back "$AQUA_BIN_DIR"
 
-# mise shims (needed for npm/pipx style tools like prettier)
-MISE_SHIMS_DIR="${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise}/shims"
-if [[ -d "$MISE_SHIMS_DIR" ]]; then
-    path_promote_front "$MISE_SHIMS_DIR"
-fi
+# Never expose mise shims at .zshenv phase.
+export MISE_SHIMS_DIR="${MISE_DATA_DIR:-${XDG_DATA_HOME}/mise}/shims"
+path_remove "$MISE_SHIMS_DIR"
+
 export PATH
 
-# ─────────────────────────────────────────────────────────────
-# XDG Base Directory
-# ─────────────────────────────────────────────────────────────
-export XDG_CONFIG_HOME="$HOME/.config"
-
 # aqua global config
-AQUA_CONFIG_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/aquaproj-aqua/aqua.yaml"
+AQUA_CONFIG_PATH="${XDG_CONFIG_HOME}/aquaproj-aqua/aqua.yaml"
 if [[ -f "$AQUA_CONFIG_PATH" ]]; then
     case ":${AQUA_GLOBAL_CONFIG:-}:" in
     *":${AQUA_CONFIG_PATH}:"*) ;;
-    *)
-        export AQUA_GLOBAL_CONFIG="${AQUA_CONFIG_PATH}${AQUA_GLOBAL_CONFIG:+:${AQUA_GLOBAL_CONFIG}}"
-        ;;
+    *) export AQUA_GLOBAL_CONFIG="${AQUA_CONFIG_PATH}${AQUA_GLOBAL_CONFIG:+:${AQUA_GLOBAL_CONFIG}}" ;;
     esac
 fi
