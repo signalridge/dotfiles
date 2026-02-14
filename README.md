@@ -1,6 +1,6 @@
 <div align="center">
 
-![header](https://capsule-render.vercel.app/api?type=waving&color=0:282a36,100:bd93f9&height=200&section=header&text=~/.dotfiles&fontSize=48&fontColor=f8f8f2&fontAlignY=30&desc=One%20command%20%C2%B7%20Full%20environment%20%C2%B7%20Zero%20hassle&descSize=16&descColor=8be9fd&descAlignY=55&animation=fadeIn)
+![header](https://capsule-render.vercel.app/api?type=waving&color=0:282a36,100:bd93f9&height=200&section=header&text=~/.dotfiles&fontSize=48&fontColor=f8f8f2&fontAlignY=30&desc=Chezmoi%20%C2%B7%20Nix%20%C2%B7%20AI%20tooling&descSize=16&descColor=8be9fd&descAlignY=55&animation=fadeIn)
 
 <p>
   <a href="https://github.com/signalridge/dotfiles/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/signalridge/dotfiles/ci.yml?style=for-the-badge&logo=github&label=CI"></a>&nbsp;
@@ -13,6 +13,7 @@
   <a href="https://github.com/twpayne/chezmoi"><img alt="chezmoi" src="https://img.shields.io/badge/chezmoi-4B91E2?style=for-the-badge&logo=chezmoi&logoColor=white"></a>&nbsp;
   <a href="https://github.com/LnL7/nix-darwin"><img alt="nix-darwin" src="https://img.shields.io/badge/nix--darwin-5277C3?style=for-the-badge&logo=nixos&logoColor=white"></a>&nbsp;
   <a href="https://www.anthropic.com/claude-code"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-191919?style=for-the-badge&logo=anthropic&logoColor=white"></a>&nbsp;
+  <a href="https://openai.com/index/introducing-codex/"><img alt="Codex CLI" src="https://img.shields.io/badge/Codex_CLI-111111?style=for-the-badge&logo=openai&logoColor=white"></a>&nbsp;
   <a href="https://brew.sh/"><img alt="Homebrew" src="https://img.shields.io/badge/Homebrew-FBB040?style=for-the-badge&logo=homebrew&logoColor=black"></a>
 </p>
 
@@ -24,81 +25,168 @@
 
 ---
 
-## ✨ Highlights
+## What This Repo Is
 
-- **Cross-platform**: One repo for macOS + Linux (`nix-darwin` + `flakey-profile`)
-- **One-command bootstrap**: From bare metal to full environment with a single `curl | sh`
-- **Claude Code integration**: 50+ plugins from multiple sources with automated sync
-- **Modern CLI**: Rust-based tools (eza, bat, ripgrep, fd, zoxide) replacing Unix classics
-- **Security-first**: `age` encryption with gopass-assisted key bootstrapping
+A reproducible personal workstation setup built around:
+
+- `chezmoi` for dotfiles, templating, and bootstrap orchestration
+- `Nix` for declarative packages (`nix-darwin` on macOS + `flakey-profile` on macOS/Linux)
+- `aqua` + `mise` for CLI/runtime pinning outside Nix where practical
+- Shared AI tooling for `Claude Code` and `Codex CLI`
+
+This is a real daily-driver setup, not a demo template. The README focuses on what is actually implemented in this repository today.
 
 ---
 
-## 💡 Why This Repo
+## Highlights
+
+- Unified bootstrap pipeline (`.chezmoiscripts/00..11`) with idempotent post-apply maintenance
+- Cross-platform package strategy:
+  - Nix user packages on macOS/Linux
+  - nix-darwin system config on macOS
+  - Homebrew/MAS integration on macOS
+- Shared AI skills marketplace sync to `~/.agents/skills` for both Claude and Codex
+- Multi-provider account switching for both toolchains:
+  - `claude-manage` / `claude-with`
+  - `codex-manage` / `codex-with`
+- Auto MCP sync for Claude on every `chezmoi apply`
+- Automated dependency upkeep via GitHub Actions (versions, flake locks, aqua packages)
+- OpenSpec-backed lifecycle for medium/large changes (`openspec/changes`, `openspec/specs`, `opsx-*`)
+
+---
+
+## Why This Repo
 
 - **Profiles everywhere**: `.chezmoidata/` drives `shared` / `work` / `private` packages across Nix, Homebrew, and MAS
-- **End-to-end bootstrap**: Nix installer auto-selects fastest Determinate mirror, chezmoi renders and applies templates in one flow
-- **macOS polish**: nix-darwin system defaults, Homebrew + MAS integration, post-apply update scripts
-- **Workflow guardrails**: pre-commit (shellcheck, markdownlint, prettier, Nix lint) + Claude Code hooks
-- **DX automation**: Justfile routines, fzf navigation helpers, AI-assisted commit messages
-- **CI parity**: Template rendering and `nix flake check` run on macOS + Linux
-- **Claude Code hooks**: Auto-format code, enforce uv over pip, block main branch edits
+- **End-to-end bootstrap**: staged scripts from `00` to `11` keep setup deterministic and composable
+- **macOS polish**: nix-darwin system defaults, Homebrew + MAS integration, post-apply maintenance scripts
+- **Workflow guardrails**: pre-commit checks + Claude hooks to reduce risky edits and command misuse
+- **DX automation**: Justfile routines, fzf navigation helpers, AI-assisted commit flows
+- **CI parity**: template rendering and `nix flake check` on macOS + Linux matrix
+- **Dual AI stack**: both Claude Code and Codex CLI are managed declaratively in one repo
 
 ---
 
-## 🎯 Motivation
+## Motivation
 
-Setting up a new development machine is tedious: dozens of packages to install, countless tools to configure, and years of tweaks to remember. This repository solves that with **fully declarative configuration** - every package, setting, and dotfile defined in code, **reproducible** across any machine with one command.
+Setting up a new development machine is tedious: dozens of packages to install, many tools to configure, and years of shell/runtime tweaks to remember.
 
-**Core principles:**
+This repository solves that with a declarative baseline and practical bootstrap pipeline, so one repo can recreate a working environment across machines with predictable outcomes.
 
-- **Reproducibility** — Same environment on any machine, every time
-- **Declarative** — Everything defined in code, version controlled
-- **Modular** — Profile-based customization for work/personal/headless
-- **AI-augmented** — Claude Code integration for development workflows
-- **Security-first** — Encrypted secrets with gopass integration
+Core principles:
 
----
-
-## 📑 Table of Contents
-
-- [🚀 Quick Start](#quick-start)
-- [🧩 Architecture](#architecture)
-- [🤖 Claude Code Integration](#claude-code-integration)
-- [⚡ Tool Chains](#tool-chains)
-- [🔧 Shell Functions](#shell-functions)
-- [📦 Package Management](#package-management)
-- [🔄 Daily Operations](#daily-operations)
-- [👤 Multi-Profile Configuration](#multi-profile-configuration)
-- [🔐 Security & Secrets](#security)
-- [🙏 Acknowledgements](#acknowledgements)
+- **Reproducibility**: same setup logic, same versioned data, repeatable outcomes
+- **Declarative first**: package and tool configuration lives in tracked YAML/templates
+- **Modular profiles**: work/private/headless behavior is data-driven, not hardcoded forks
+- **AI-augmented workflows**: managed prompts, hooks, skills, and provider switching
+- **Security layering**: separate mechanisms for dotfile secrets, password store, and key backups
 
 ---
 
-> [!WARNING]
-> **Review before running!** This repository contains scripts that will modify your system configuration.
-> Fork this repository and customize it for your own needs.
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [First Run Prompts](#first-run-prompts)
+- [Architecture](#architecture)
+- [Repository Map](#repository-map)
+- [Bootstrap Flow (What Actually Runs)](#bootstrap-flow-what-actually-runs)
+- [Daily Operations](#daily-operations)
+- [Claude Code Integration](#claude-code-integration)
+- [AI Tooling (Claude + Codex)](#ai-tooling-claude--codex)
+- [Tool Chains](#tool-chains)
+- [Shell Functions](#shell-functions)
+- [Package Management](#package-management)
+- [Multi-Profile Configuration](#multi-profile-configuration)
+- [Security & Secrets](#security--secrets)
+- [CI and Automation](#ci-and-automation)
+- [Change Management (OpenSpec)](#change-management-openspec)
+- [Additional Docs](#additional-docs)
+- [Acknowledgements](#acknowledgements)
+- [Stats](#stats)
+- [License](#license)
 
 ---
 
-<a id="quick-start"></a>
+## Architecture
 
-## 🚀 Quick Start
+This repository combines `chezmoi` templating with Nix-based package management and AI tooling overlays:
 
-**Option 1: Run init script directly from GitHub (fast, NOT pinned)**
+- `chezmoi`: source-of-truth orchestration for scripts/templates
+- `nix-darwin` (macOS): system-level configuration
+- `flakey-profile` (macOS/Linux): user package profile
+- `aqua` + `mise`: CLI/runtime tooling layer outside Nix where needed
+- `dot_claude` + `dot_codex`: tool-specific global guidance and configuration
 
-> [!WARNING]
-> Running `curl | sh` executes code directly from the internet.
-> Prefer the pinned/reviewed options below if you want auditability.
+| Component     | macOS          | Linux          |
+| ------------- | -------------- | -------------- |
+| Dotfiles      | chezmoi        | chezmoi        |
+| System Config | nix-darwin     | N/A            |
+| User Packages | flakey-profile | flakey-profile |
+| GUI Apps      | Homebrew/MAS   | N/A            |
 
-```bash
-curl -fsLS https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | sh
+---
+
+## Repository Map
+
+```text
+.
+├── .chezmoidata/
+│   ├── nix.yaml                # Nix package sets (shared/work/private)
+│   ├── homebrew.yaml           # Homebrew taps/brews/casks/MAS apps
+│   ├── claude.yaml             # Claude provider + account model settings
+│   ├── versions.yaml           # Pinned tool/plugin revisions
+│   ├── aerospace.yaml          # Aerospace WM data
+│   └── hammerspoon.yaml        # Hammerspoon data
+├── .chezmoiscripts/            # Bootstrap + maintenance pipeline (00..11)
+├── nix-config/
+│   ├── flake.nix.tmpl
+│   └── modules/
+│       ├── system.nix.tmpl     # nix-darwin system config
+│       ├── apps.nix.tmpl       # Homebrew + MAS wiring
+│       ├── profile.nix.tmpl    # flakey-profile package profile
+│       └── host-users.nix
+├── dot_local/bin/              # CLI wrappers (Claude/Codex/keys/MCP)
+├── dot_claude/                 # Claude global instructions/hooks/templates
+├── dot_codex/                  # Codex global instructions/config/prompts
+├── private_dot_config/         # Tool configs (tmux, mise, aqua, gopass, ...)
+├── docs/                       # Focused guides
+└── tests/                      # Bootstrap/script regression tests
 ```
 
-**Option 1b: Pinned ref + review (recommended for auditability)**
+---
 
-> `--ref` maps to `chezmoi init --branch`, so prefer tags/branches here.
-> If you want to pin to an exact commit SHA, use Option 3.
+## Bootstrap Flow (What Actually Runs)
+
+The `chezmoi` script chain is staged and numbered:
+
+1. `00` install Nix (Determinate installer with arch/mirror detection)
+2. `01` optionally restore encrypted keys-manage files (`useEncryption=true`)
+3. `02` macOS: apply nix-darwin system configuration
+4. `03` switch flakey-profile package profile
+5. `04` bootstrap gopass store (interactive clone)
+6. `05` install pinned aqua installer/version
+7. `06` install tools from `private_dot_config/aquaproj-aqua/aqua.yaml`
+8. `07` install runtimes/tools via `mise`
+9. `08` install pinned nix-index database
+10. `09` macOS: install/update Paperlib
+11. `10` periodic Homebrew update/upgrade (7-day interval)
+12. `11` sync Claude MCP servers (add/update only when needed)
+
+---
+
+## Quick Start
+
+> [!WARNING]
+> This repository modifies shell, package managers, and system settings.
+> Fork and review before running on a machine you care about.
+
+### Option 1: Run `init.sh` directly
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | sh
+```
+
+### Option 2: Pin to a tag/branch and review first
 
 ```bash
 REF="<tag-or-branch>"
@@ -107,149 +195,160 @@ shasum -a 256 init.sh || sha256sum init.sh
 sh init.sh --ref "${REF}"
 ```
 
-**Option 2: Install chezmoi and init**
-
-```bash
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply signalridge
-```
-
-**Option 3: Clone and run locally (best for pinning to a commit SHA)**
+### Option 3: Clone and run locally (best auditability)
 
 ```bash
 git clone https://github.com/signalridge/dotfiles.git
 cd dotfiles
-git checkout <commit-or-tag>
+git checkout <tag-or-commit>
 ./init.sh
 ```
 
-This will automatically:
+### Useful `init.sh` flags
 
-1. Install Nix (Determinate Systems installer)
-2. (If `useEncryption` enabled) Restore `~/.ssh/main` and other keys-manage managed files (prompts for decryption password)
-3. Apply all dotfiles and configurations
-4. Sync Claude Code plugins from marketplace
-
-> [!IMPORTANT]
-> **First-time users**: When prompted for `useEncryption`, answer **No** (default).
-> The encryption setup is specific to the repo owner. If you need encryption, modify:
->
-> - `.chezmoiscripts/run_before_01_setup-encryption-key.sh.tmpl`: Restore/ensure encryption keys from a `keys-manage` encrypted backup repo
-> - `.chezmoi.toml.tmpl`: Update `keysRepository`, and update `identity` / `recipientsFile` paths in `[age]` section
-
-After installation, restart your terminal. For macOS, run `just darwin` to activate nix-darwin configuration.
+```bash
+./init.sh --repo signalridge/dotfiles
+./init.sh --ref v1.2.3
+./init.sh --depth 1
+./init.sh --ssh
+```
 
 ---
 
-<a id="architecture"></a>
+## First Run Prompts
 
-## 🧩 Architecture
+`chezmoi` data prompts include:
 
-```
-~/.dotfiles/
-├── .chezmoidata/           # Modular data configuration
-│   ├── base.yaml           # Core settings
-│   ├── claude.yaml         # Claude Code plugin configuration
-│   └── versions.yaml       # Pinned tool versions
-├── .chezmoiscripts/        # Bootstrap & sync scripts
-├── dot_claude/             # Claude Code configuration
-│   ├── agents/             # AI agent definitions
-│   ├── commands/           # Slash commands
-│   ├── skills/             # Auto-knowledge skills
-│   ├── hooks/              # Git & code hooks
-│   └── context/            # Reference documentation
-├── nix-config/             # Nix flake configuration
-│   └── modules/            # nix-darwin / flakey-profile modules
-└── dot_custom/             # Shell functions & aliases
-```
+- `work` (work machine switch)
+- `headless` (container/server without full desktop assumptions)
+- `useEncryption` (enable encrypted key restore flow)
+- `installMasApps` (macOS App Store apps)
+- `claudeProviderAccount` / `codexProviderAccount`
 
-**chezmoi** manages dotfiles across machines with templating, secrets, and platform-specific conditionals.
-
-**nix-darwin** (macOS) provides declarative system configuration through Nix, managing system packages, Homebrew, and macOS preferences.
-
-**flakey-profile** (Linux) provides declarative package management using the same Nix flake, focused on user packages.
-
-| Component     | macOS          | Linux          |
-| ------------- | -------------- | -------------- |
-| Dotfiles      | chezmoi        | chezmoi        |
-| System Config | nix-darwin     | N/A            |
-| User Packages | flakey-profile | flakey-profile |
-| GUI Apps      | Homebrew Cask  | N/A            |
+For most first-time users of this repo: keep `useEncryption = false` unless you have your own keys-manage backup repo and key material.
 
 ---
 
-<a id="claude-code-integration"></a>
+## Daily Operations
 
-## 🤖 Claude Code Integration
+The generated global Justfile lives at `~/.config/just/.justfile`.
 
-This dotfiles includes a comprehensive Claude Code setup with automated plugin management.
+### Chezmoi
+
+```bash
+just apply
+just diff
+just update
+just re-add
+```
+
+### Nix
+
+```bash
+just up
+just upp nixpkgs
+just gc
+just verify
+just optimize
+```
+
+### macOS (`nix-darwin`)
+
+```bash
+just darwin
+just darwin-check
+just darwin-build
+```
+
+### Tests
+
+```bash
+bash tests/run.sh
+pre-commit run --all-files
+```
+
+---
+
+## Claude Code Integration
 
 ### Plugin System
 
-Plugins are automatically downloaded via `.chezmoiexternal.toml.tmpl` from multiple sources:
+Skills are synced via `.chezmoiexternal.toml.tmpl` from:
 
-| Source                                                    | Description                                          |
-| --------------------------------------------------------- | ---------------------------------------------------- |
-| [wshobson/agents](https://github.com/wshobson/agents)     | Selected community skills (shared to Claude/Codex)   |
-| [anthropics/skills](https://github.com/anthropics/skills) | Official document processing (pdf, docx, pptx, xlsx) |
-| [obra/superpowers](https://github.com/obra/superpowers)   | Selected OpenSpec-complementary workflow skills      |
+- [wshobson/agents](https://github.com/wshobson/agents)
+- [anthropics/skills](https://github.com/anthropics/skills)
+- [obra/superpowers](https://github.com/obra/superpowers)
 
-```yaml
-# Skills source of truth: .chezmoiexternal.toml.tmpl
-# - wshobson/agents: selected plugins, skills-only, synced to ~/.agents/skills/<plugin>/
-# - anthropics/skills: selected skills, synced to ~/.agents/skills/anthropics/<skill>/
-# - obra/superpowers: selected skills-only, synced to ~/.agents/skills/superpowers/
-
-# superpowers included skills:
-# - brainstorming
-# - test-driven-development
-# - systematic-debugging
-# - verification-before-completion
-# - requesting-code-review
-# - receiving-code-review
-```
-
-chezmoi external automatically:
-
-- Downloads enabled shared skills on `chezmoi apply`
-- Keeps skills in shared path `~/.agents/skills` for both Claude and Codex
-- Updates when plugin/skill configuration changes
+They are normalized into `~/.agents/skills` and shared by Claude/Codex.
 
 ### Quality Protocols
 
-Built-in quality assurance inspired by SuperClaude:
-
-| Protocol             | Purpose                                         |
-| -------------------- | ----------------------------------------------- |
-| **Confidence Check** | Pre-implementation assessment (HIGH/MEDIUM/LOW) |
-| **Self-Check**       | Post-implementation verification with evidence  |
+The managed instruction stack includes explicit quality discipline patterns (for example: pre-implementation confidence checks and evidence-first verification after implementation), primarily delivered via shared skills and project-level guardrails.
 
 ### Provider Management
 
-Switch between Claude providers (Anthropic, DeepSeek, Kimi, etc.) with FZF-powered tools:
+`claude-manage`, `claude-with`, and `claude-token` provide account switching and provider/account-scoped model routing from `.chezmoidata/claude.yaml` + gopass-backed keys.
 
-```bash
-claude-manage                   # FZF manager for default provider & API keys
-claude-manage add-key kimi      # Add API key to gopass
-```
-
-See [docs/claude-provider.md](docs/claude-provider.md) for full documentation.
+See: `docs/claude-provider.md`.
 
 ### Hooks
 
-| Hook                    | Trigger          | Action                                      |
-| ----------------------- | ---------------- | ------------------------------------------- |
-| `format-code.sh`        | After Edit/Write | Auto-format Nix, JSON, YAML, Shell, Go, Lua |
-| `enforce-uv.sh`         | On pip commands  | Redirect to `uv` for Python                 |
-| `block-main-edits.sh`   | On file edit     | Prevent direct edits to main branch         |
-| `block-git-rewrites.sh` | On git commands  | Block force push and history rewrites       |
+Claude hooks in `dot_claude/hooks/` provide workflow guardrails and formatting automation, including:
+
+- `block-git-rewrites.sh`
+- `block-main-edits.sh`
+- `format-code.sh`
+- `format-python.sh`
 
 ---
 
-<a id="tool-chains"></a>
+## AI Tooling (Claude + Codex)
 
-## ⚡ Tool Chains
+### Shared Skill Distribution
 
-This setup replaces traditional Unix tools with modern, Rust-based alternatives.
+`chezmoi external` syncs selected skills from:
+
+- `wshobson/agents`
+- `anthropics/skills`
+- `obra/superpowers`
+
+They are normalized into `~/.agents/skills` and shared by Claude/Codex.
+
+### Account + Provider Control
+
+```bash
+# Claude
+claude-manage
+claude-manage list
+claude-manage switch anthropic
+claude-with kimi@private -- --resume
+
+# Codex
+codex-manage
+codex-manage list
+codex-manage switch openai
+codex-with deepseek@private "explain this file"
+```
+
+### Token Helpers
+
+```bash
+claude-token --check kimi@private
+codex-token --check deepseek@private
+```
+
+### MCP Integration
+
+- Claude MCP entries are reconciled by `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl`.
+- Wrapper commands provided in this repo:
+  - `~/.local/bin/mcp-tavily`
+  - `~/.local/bin/mcp-postgres`
+
+---
+
+## Tool Chains
+
+This setup keeps the original modern CLI stack and shell ergonomics.
 
 ### Modern CLI Replacements
 
@@ -267,7 +366,7 @@ This setup replaces traditional Unix tools with modern, Rust-based alternatives.
 | --------------------------------------------------- | ----------------------------------------- |
 | [starship](https://github.com/starship/starship)    | Minimal, blazing-fast prompt              |
 | [sheldon](https://github.com/rossmacarthur/sheldon) | Fast zsh plugin manager                   |
-| [atuin](https://github.com/atuinsh/atuin)           | Magical shell history with fuzzy search   |
+| [atuin](https://github.com/atuinsh/atuin)           | Shell history with fuzzy search           |
 | [direnv](https://github.com/direnv/direnv)          | Per-directory environment variables       |
 | [fzf](https://github.com/junegunn/fzf)              | Fuzzy finder for files, history, and more |
 
@@ -276,15 +375,13 @@ This setup replaces traditional Unix tools with modern, Rust-based alternatives.
 | Tool                                                | Role                                              |
 | --------------------------------------------------- | ------------------------------------------------- |
 | [mise](https://github.com/jdx/mise)                 | Polyglot runtime manager (Node, Python, Go, Rust) |
-| [lazygit](https://github.com/jesseduffield/lazygit) | Beautiful terminal UI for git                     |
-| [yazi](https://github.com/sxyazi/yazi)              | Blazing fast terminal file manager                |
-| [tmux](https://github.com/tmux/tmux)                | Terminal multiplexer with floating panes          |
+| [lazygit](https://github.com/jesseduffield/lazygit) | Terminal UI for git                               |
+| [yazi](https://github.com/sxyazi/yazi)              | Fast terminal file manager                        |
+| [tmux](https://github.com/tmux/tmux)                | Terminal multiplexer                              |
 
 ---
 
-<a id="shell-functions"></a>
-
-## 🔧 Shell Functions
+## Shell Functions
 
 ### Project Navigation
 
@@ -313,9 +410,7 @@ create_py_project   # Quick Python project setup with uv
 
 ---
 
-<a id="package-management"></a>
-
-## 📦 Package Management
+## Package Management
 
 | Source         | Platform     | Description                 |
 | -------------- | ------------ | --------------------------- |
@@ -323,34 +418,11 @@ create_py_project   # Quick Python project setup with uv
 | Homebrew casks | macOS only   | GUI applications            |
 | Mac App Store  | macOS only   | App Store exclusives        |
 
-All package lists are defined in `.chezmoidata/` with support for shared, work-only, and private-only packages.
+Package lists live in `.chezmoidata/` and support `shared` / `work` / `private` segmentation.
 
 ---
 
-<a id="daily-operations"></a>
-
-## 🔄 Daily Operations
-
-```bash
-# Chezmoi operations
-just apply          # Apply dotfile changes
-just diff           # Show pending changes
-
-# Nix operations
-just up             # Update all flake inputs
-just switch         # Switch flakey-profile (rebuild packages)
-just darwin         # Rebuild nix-darwin (macOS)
-
-# Maintenance
-just gc             # Garbage collect nix store
-just full-upgrade   # Complete system upgrade
-```
-
----
-
-<a id="multi-profile-configuration"></a>
-
-## 👤 Multi-Profile Configuration
+## Multi-Profile Configuration
 
 ```bash
 # For work machines
@@ -365,23 +437,74 @@ chezmoi init --apply --promptBool headless=true signalridge
 
 ---
 
-<a id="security"></a>
+## Security & Secrets
 
-## 🔐 Security & Secrets
+This repo uses multiple layers with different purposes:
 
-This repo uses `age` encryption for private files. Chezmoi decrypts using `~/.ssh/main` (private key) and `~/.ssh/main.pub` (recipient).
+1. `chezmoi` secret decryption via `age` command wrapper and `~/.ssh/main`
+2. `gopass` configured with `age` backend for API key/password storage
+3. `keys-manage` encrypted backup repo using OpenSSL PBKDF2 (`AES-256-CBC`)
+4. Claude hook guardrails to block risky git/history-rewrite flows
 
-On first apply, bootstrap scripts will:
+See:
 
-1. Install Nix
-2. Install `age` + `gopass` via nix
-3. Fetch the key from gopass (or prompt for manual setup)
+- `docs/keys-manage-guide.md`
+- `docs/gopass-new-device-setup.md`
+- `docs/claude-provider.md`
 
 ---
 
-<a id="acknowledgements"></a>
+## CI and Automation
 
-## 🙏 Acknowledgements
+### Validation
+
+- `.github/workflows/ci.yml`
+  - pre-commit checks
+  - template render validation
+  - `nix flake check` (macOS + Linux matrix)
+
+- `.github/workflows/tests.yml`
+  - manual bootstrap/script test suite (`bash tests/run.sh`)
+
+### Automated Upkeep
+
+- `.github/workflows/scheduler.yml` (twice weekly trigger)
+- `.github/workflows/update-versions.yml`
+- `.github/workflows/update-flake-lock.yml`
+- `.github/workflows/update-aqua-packages.yml`
+
+---
+
+## Change Management (OpenSpec)
+
+> [!IMPORTANT]
+> OpenSpec is the source of truth for medium/large changes in this repository.
+
+- Change artifacts live under `openspec/changes/<change-name>/` (`proposal.md`, `design.md`, `tasks.md`, delta specs).
+- Main capability specs live under `openspec/specs/<capability>/spec.md`.
+- Completed changes are archived under `openspec/changes/archive/`.
+- If `opsx-*` wrappers are installed, they map to the same OpenSpec lifecycle.
+
+Typical workflow:
+
+```bash
+openspec new change <change-name>
+openspec status --change <change-name>
+# then continue with opsx-* wrappers or openspec instructions/apply/verify/archive
+```
+
+---
+
+## Additional Docs
+
+- `docs/claude-provider.md`
+- `docs/keys-manage-guide.md`
+- `docs/gopass-new-device-setup.md`
+- `docs/tmux.md`
+
+---
+
+## Acknowledgements
 
 - [chezmoi](https://github.com/twpayne/chezmoi) - Dotfiles manager
 - [nix-darwin](https://github.com/LnL7/nix-darwin) - Declarative macOS configuration
@@ -389,16 +512,16 @@ On first apply, bootstrap scripts will:
 - [wshobson/agents](https://github.com/wshobson/agents) - Claude Code plugins marketplace
 - [anthropics/skills](https://github.com/anthropics/skills) - Official Claude Code skills
 - [obra/superpowers](https://github.com/obra/superpowers) - Advanced workflow patterns
-- [Dracula Theme](https://draculatheme.com/) - Beautiful dark theme
+- [Dracula Theme](https://draculatheme.com/) - Theme palette for terminal and fzf styling
 
 ---
 
-## 📈 Stats
+## Stats
 
 ![Alt](https://repobeats.axiom.co/api/embed/81ef9a8c511918fc0eece9bd09bb46ba78eefd0c.svg "Repobeats analytics image")
 
 ---
 
-## 📝 License
+## License
 
-MIT License
+MIT

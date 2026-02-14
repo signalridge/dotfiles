@@ -1,6 +1,6 @@
 <div align="center">
 
-![header](https://capsule-render.vercel.app/api?type=waving&color=0:282a36,100:bd93f9&height=200&section=header&text=~/.dotfiles&fontSize=48&fontColor=f8f8f2&fontAlignY=30&desc=One%20command%20%C2%B7%20Full%20environment%20%C2%B7%20Zero%20hassle&descSize=16&descColor=8be9fd&descAlignY=55&animation=fadeIn)
+![header](https://capsule-render.vercel.app/api?type=waving&color=0:282a36,100:bd93f9&height=200&section=header&text=~/.dotfiles&fontSize=48&fontColor=f8f8f2&fontAlignY=30&desc=Chezmoi%20%C2%B7%20Nix%20%C2%B7%20AI%20tooling&descSize=16&descColor=8be9fd&descAlignY=55&animation=fadeIn)
 
 <p>
   <a href="https://github.com/signalridge/dotfiles/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/signalridge/dotfiles/ci.yml?style=for-the-badge&logo=github&label=CI"></a>&nbsp;
@@ -13,6 +13,7 @@
   <a href="https://github.com/twpayne/chezmoi"><img alt="chezmoi" src="https://img.shields.io/badge/chezmoi-4B91E2?style=for-the-badge&logo=chezmoi&logoColor=white"></a>&nbsp;
   <a href="https://github.com/LnL7/nix-darwin"><img alt="nix-darwin" src="https://img.shields.io/badge/nix--darwin-5277C3?style=for-the-badge&logo=nixos&logoColor=white"></a>&nbsp;
   <a href="https://www.anthropic.com/claude-code"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-191919?style=for-the-badge&logo=anthropic&logoColor=white"></a>&nbsp;
+  <a href="https://openai.com/index/introducing-codex/"><img alt="Codex CLI" src="https://img.shields.io/badge/Codex_CLI-111111?style=for-the-badge&logo=openai&logoColor=white"></a>&nbsp;
   <a href="https://brew.sh/"><img alt="Homebrew" src="https://img.shields.io/badge/Homebrew-FBB040?style=for-the-badge&logo=homebrew&logoColor=black"></a>
 </p>
 
@@ -24,203 +25,328 @@
 
 ---
 
-## ✨ 亮点
+## 这个仓库是什么
 
-- **跨平台**：同一套配置支持 macOS + Linux（`nix-darwin` + `flakey-profile`）
-- **一键引导**：从裸机到完整环境，只需一条 `curl | sh`
-- **Claude Code 集成**：50+ 多来源插件，自动同步更新
-- **现代 CLI**：Rust 工具链（eza、bat、ripgrep、fd、zoxide）替代传统 Unix 命令
-- **安全优先**：`age` 加密 + gopass 辅助密钥引导
+这是一个可复现的个人开发环境仓库，核心由以下组件组成：
 
----
+- `chezmoi`：管理 dotfiles、模板和 bootstrap 编排
+- `Nix`：声明式包管理（macOS 用 `nix-darwin`，macOS/Linux 都用 `flakey-profile`）
+- `aqua` + `mise`：补充 Nix 之外的 CLI 与 runtime 版本固定
+- `Claude Code` + `Codex CLI`：共享 AI 工具链
 
-## 💡 为什么选择这个仓库
-
-- **Profile 全覆盖**：`.chezmoidata/` 驱动 `shared` / `work` / `private` 包，贯穿 Nix、Homebrew、MAS
-- **端到端引导**：Nix 安装器自动选择最快的 Determinate 镜像，chezmoi 一次性渲染并应用模板
-- **macOS 打磨**：nix-darwin 系统偏好、Homebrew + MAS 集成、应用后更新脚本
-- **工作流护栏**：pre-commit（shellcheck、markdownlint、prettier、Nix lint）+ Claude Code hooks
-- **DX 自动化**：Justfile 升级/清理、fzf 导航、AI 辅助提交信息
-- **CI 一致性**：macOS + Linux 双平台模板渲染与 `nix flake check`
-- **Claude Code Hooks**：自动格式化代码、强制使用 uv 替代 pip、阻止直接编辑 main 分支
+这不是展示型模板，而是日常真实使用的配置。本文档只描述仓库当前已经实现的能力。
 
 ---
 
-## 🎯 设计理念
+## 亮点
 
-搭建一台新的开发机器很繁琐：几十个软件包要装、无数工具要配置、还有多年积累的小调整要记住。本仓库通过**完全声明式配置**解决这个问题——所有软件包、设置、dotfiles 都以代码定义，一条命令即可在任意机器上**完全复现**。
-
-**核心原则：**
-
-- **可复现性** — 任何机器、每一次，都是相同的环境
-- **声明式** — 一切定义在代码中，版本控制
-- **模块化** — 基于 Profile 的定制：工作/个人/无头服务器
-- **AI 增强** — Claude Code 集成，提升开发工作流
-- **安全优先** — 加密 secrets，集成 gopass
-
----
-
-## 📑 目录
-
-- [🚀 快速开始](#quick-start)
-- [🧩 架构](#architecture)
-- [🤖 Claude Code 集成](#claude-code-integration)
-- [⚡ 工具链](#tool-chains)
-- [🔧 Shell 函数](#shell-functions)
-- [📦 包管理](#package-management)
-- [🔄 日常操作](#daily-operations)
-- [👤 多 Profile 配置](#multi-profile-configuration)
-- [🔐 安全与加密](#security)
-- [🙏 致谢](#acknowledgements)
+- 统一 bootstrap 流程（`.chezmoiscripts/00..11`），并带有幂等维护步骤
+- 跨平台包管理策略：
+  - macOS/Linux 共用 Nix user packages
+  - macOS 使用 `nix-darwin` 管理系统配置
+  - macOS 集成 Homebrew / MAS
+- 共享 AI skills 自动同步到 `~/.agents/skills`（Claude 与 Codex 共用）
+- Claude/Codex 双栈 provider 切换：
+  - `claude-manage` / `claude-with`
+  - `codex-manage` / `codex-with`
+- 每次 `chezmoi apply` 自动对齐 Claude MCP 配置
+- GitHub Actions 自动维护依赖版本（versions、flake lock、aqua packages）
+- OpenSpec 管理中大型改动生命周期（`openspec/changes`、`openspec/specs`、`opsx-*`）
 
 ---
 
-> [!WARNING]
-> **运行前请先阅读！** 本仓库包含会修改系统配置的脚本。
-> 建议先 Fork 本仓库，再按自己的需求进行定制。
+## 为什么选择这个仓库
+
+- **Profile 全覆盖**：`.chezmoidata/` 统一驱动 `shared` / `work` / `private`，覆盖 Nix、Homebrew、MAS
+- **端到端引导**：`00..11` 阶段脚本把安装、配置、工具同步串成稳定流水线
+- **macOS 打磨**：nix-darwin 系统项、Homebrew / MAS 联动、应用后维护脚本
+- **工作流护栏**：pre-commit + Claude hooks 组合，降低危险操作概率
+- **DX 自动化**：Justfile、fzf 导航、AI 辅助提交流程
+- **CI 一致性**：模板渲染与 `nix flake check` 在 macOS/Linux 双平台验证
+- **双 AI 栈**：Claude Code 与 Codex CLI 在一套配置里协同维护
 
 ---
 
-<a id="quick-start"></a>
+## 设计理念
 
-## 🚀 快速开始
+新机器初始化成本高，且容易“装得出来但用不顺”。本仓库目标不是最小示例，而是让真实开发环境可重复落地。
 
-**方式一：直接运行 init 脚本（推荐）**
+核心原则：
 
-```bash
-curl -fsLS https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | sh
-```
-
-**方式二：安装 chezmoi 并 init**
-
-```bash
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply signalridge
-```
-
-**方式三：克隆到本地执行**
-
-```bash
-git clone https://github.com/signalridge/dotfiles.git
-cd dotfiles && ./init.sh
-```
-
-上述命令会自动完成：
-
-1. 安装 Nix（Determinate Systems 安装器）
-2. （若启用 `useEncryption`）从 keys-manage 加密备份仓库恢复 `~/.ssh/main` 等文件（会提示输入解密密码）
-3. 应用所有 dotfiles 和配置
-4. 同步 Claude Code 插件
-
-> [!IMPORTANT]
-> **首次使用者**：当提示 `useEncryption` 时，请选择 **No**（默认值）。
-> 加密设置仅适用于仓库所有者。如需启用加密，请修改：
->
-> - `.chezmoiscripts/run_before_01_setup-encryption-key.sh.tmpl`：从 `keys-manage` 加密备份仓库恢复/确保加密密钥
-> - `.chezmoi.toml.tmpl`：更新 `keysRepository`，并更新 `[age]` 部分的 `identity` / `recipientsFile` 路径
-
-安装完成后，重启终端。macOS 用户运行 `just darwin` 激活 nix-darwin 配置。
+- **可复现**：同一套配置数据，多机器结果一致
+- **声明式优先**：包、工具、配置都落在可追踪文件中
+- **模块化 Profile**：work/private/headless 用数据切换，不靠分叉脚本
+- **AI 增强工作流**：prompts、skills、hooks、provider 管理统一纳管
+- **分层安全**：dotfiles secrets、password store、key backup 各自独立机制
 
 ---
 
-<a id="architecture"></a>
+## 目录
 
-## 🧩 架构
+- [快速开始](#快速开始)
+- [首次运行会询问什么](#首次运行会询问什么)
+- [架构](#架构)
+- [仓库结构](#仓库结构)
+- [Bootstrap 流程（实际执行顺序）](#bootstrap-流程实际执行顺序)
+- [日常操作](#日常操作)
+- [Claude Code 集成](#claude-code-集成)
+- [AI 工具链（Claude + Codex）](#ai-工具链claude--codex)
+- [工具链](#工具链)
+- [Shell 函数](#shell-函数)
+- [包管理](#包管理)
+- [多 Profile 配置](#多-profile-配置)
+- [安全与加密](#安全与加密)
+- [CI 与自动化](#ci-与自动化)
+- [变更管理（OpenSpec）](#变更管理openspec)
+- [更多文档](#更多文档)
+- [致谢](#致谢)
+- [统计](#统计)
+- [许可证](#许可证)
 
-```
-~/.dotfiles/
-├── .chezmoidata/           # 模块化数据配置
-│   ├── base.yaml           # 核心设置
-│   ├── claude.yaml         # Claude Code 插件配置
-│   └── versions.yaml       # 工具版本锁定
-├── .chezmoiscripts/        # 引导与同步脚本
-├── dot_claude/             # Claude Code 配置
-│   ├── agents/             # AI 代理定义
-│   ├── commands/           # 斜杠命令
-│   ├── skills/             # 自动知识技能
-│   ├── hooks/              # Git 与代码 Hooks
-│   └── context/            # 参考文档
-├── nix-config/             # Nix flake 配置
-│   └── modules/            # nix-darwin / flakey-profile 模块
-└── dot_custom/             # Shell 函数与别名
-```
+---
 
-**chezmoi** 跨机器管理 dotfiles，支持模板、加密和平台条件判断。
+## 架构
 
-**nix-darwin**（macOS）提供声明式系统配置，管理系统包、Homebrew 和 macOS 偏好设置。
+仓库整体架构由 `chezmoi` + Nix 主干 + AI 工具层构成：
 
-**flakey-profile**（Linux）使用同一 Nix flake 提供声明式包管理，专注于用户包。
+- `chezmoi`：模板与脚本编排中枢
+- `nix-darwin`（macOS）：系统层声明式配置
+- `flakey-profile`（macOS/Linux）：用户包 Profile
+- `aqua` + `mise`：Nix 外 CLI/runtime 管理层
+- `dot_claude` + `dot_codex`：两套 AI 工具的全局策略与配置
 
 | 组件     | macOS          | Linux          |
 | -------- | -------------- | -------------- |
 | Dotfiles | chezmoi        | chezmoi        |
 | 系统配置 | nix-darwin     | N/A            |
 | 用户包   | flakey-profile | flakey-profile |
-| GUI 应用 | Homebrew Cask  | N/A            |
+| GUI 应用 | Homebrew/MAS   | N/A            |
 
 ---
 
-<a id="claude-code-integration"></a>
+## 仓库结构
 
-## 🤖 Claude Code 集成
+```text
+.
+├── .chezmoidata/
+│   ├── nix.yaml                # Nix 包集合（shared/work/private）
+│   ├── homebrew.yaml           # Homebrew taps/brews/casks/MAS apps
+│   ├── claude.yaml             # Claude provider 与 account 模型配置
+│   ├── versions.yaml           # 工具与插件版本固定
+│   ├── aerospace.yaml          # Aerospace WM 数据
+│   └── hammerspoon.yaml        # Hammerspoon 数据
+├── .chezmoiscripts/            # Bootstrap 与维护脚本链（00..11）
+├── nix-config/
+│   ├── flake.nix.tmpl
+│   └── modules/
+│       ├── system.nix.tmpl     # nix-darwin 系统配置
+│       ├── apps.nix.tmpl       # Homebrew + MAS 连接层
+│       ├── profile.nix.tmpl    # flakey-profile 包配置
+│       └── host-users.nix
+├── dot_local/bin/              # CLI 封装脚本（Claude/Codex/keys/MCP）
+├── dot_claude/                 # Claude 全局指令、hooks、模板
+├── dot_codex/                  # Codex 全局指令、配置、prompts
+├── private_dot_config/         # 工具配置（tmux、mise、aqua、gopass 等）
+├── docs/                       # 专项文档
+└── tests/                      # bootstrap/脚本回归测试
+```
 
-本 dotfiles 包含完整的 Claude Code 配置与自动化插件管理。
+---
+
+## Bootstrap 流程（实际执行顺序）
+
+`chezmoi` 脚本按编号阶段执行：
+
+1. `00` 安装 Nix（Determinate installer + 架构/镜像检测）
+2. `01` 可选恢复 keys-manage 加密文件（`useEncryption=true`）
+3. `02` macOS：应用 nix-darwin 系统配置
+4. `03` 切换 flakey-profile 包配置
+5. `04` 初始化 gopass store（交互式 clone）
+6. `05` 安装固定版本的 aqua installer/aqua
+7. `06` 根据 `private_dot_config/aquaproj-aqua/aqua.yaml` 安装工具
+8. `07` 通过 `mise` 安装 runtime 与工具
+9. `08` 下载固定版本 nix-index 数据库
+10. `09` macOS：安装/更新 Paperlib
+11. `10` 周期性 Homebrew 更新（7 天间隔）
+12. `11` 同步 Claude MCP servers（仅缺失/不一致时更新）
+
+---
+
+## 快速开始
+
+> [!WARNING]
+> 本仓库会修改 shell、包管理器和系统配置。
+> 建议先 Fork 并审阅，再用于生产机器。
+
+### 方式 1：直接运行 `init.sh`
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | sh
+```
+
+### 方式 2：固定 tag/branch 并先审阅
+
+```bash
+REF="<tag-or-branch>"
+curl -fsSLo init.sh "https://raw.githubusercontent.com/signalridge/dotfiles/${REF}/init.sh"
+shasum -a 256 init.sh || sha256sum init.sh
+sh init.sh --ref "${REF}"
+```
+
+### 方式 3：本地 clone 后执行（审计性最佳）
+
+```bash
+git clone https://github.com/signalridge/dotfiles.git
+cd dotfiles
+git checkout <tag-or-commit>
+./init.sh
+```
+
+### `init.sh` 常用参数
+
+```bash
+./init.sh --repo signalridge/dotfiles
+./init.sh --ref v1.2.3
+./init.sh --depth 1
+./init.sh --ssh
+```
+
+---
+
+## 首次运行会询问什么
+
+`chezmoi` 交互项包含：
+
+- `work`（是否工作机）
+- `headless`（是否无 GUI 场景）
+- `useEncryption`（是否启用加密密钥恢复流）
+- `installMasApps`（是否安装 MAS 应用）
+- `claudeProviderAccount` / `codexProviderAccount`
+
+对大多数首次使用者：除非你已经有自己的 keys-manage 备份仓库与密钥材料，否则建议保持 `useEncryption = false`。
+
+---
+
+## 日常操作
+
+全局 Justfile 会生成到 `~/.config/just/.justfile`。
+
+### Chezmoi
+
+```bash
+just apply
+just diff
+just update
+just re-add
+```
+
+### Nix
+
+```bash
+just up
+just upp nixpkgs
+just gc
+just verify
+just optimize
+```
+
+### macOS（`nix-darwin`）
+
+```bash
+just darwin
+just darwin-check
+just darwin-build
+```
+
+### 测试
+
+```bash
+bash tests/run.sh
+pre-commit run --all-files
+```
+
+---
+
+## Claude Code 集成
 
 ### 插件系统
 
-插件通过 `.chezmoiexternal.toml.tmpl` 从多个来源自动下载：
+skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 
-| 来源                                                      | 说明                                  |
-| --------------------------------------------------------- | ------------------------------------- |
-| [wshobson/agents](https://github.com/wshobson/agents)     | 精选社区 skills（Claude/Codex 共享）  |
-| [anthropics/skills](https://github.com/anthropics/skills) | 官方文档处理（pdf、docx、pptx、xlsx） |
-| [obra/superpowers](https://github.com/obra/superpowers)   | 精选 OpenSpec 互补工作流 skills       |
+- [wshobson/agents](https://github.com/wshobson/agents)
+- [anthropics/skills](https://github.com/anthropics/skills)
+- [obra/superpowers](https://github.com/obra/superpowers)
 
-```yaml
-# skills 的单一真源：.chezmoiexternal.toml.tmpl
-# - wshobson/agents：精选插件，仅同步 skills 到 ~/.agents/skills/<plugin>/
-# - anthropics/skills：精选 skills，同步到 ~/.agents/skills/anthropics/<skill>/
-# - obra/superpowers：仅同步精选 skills 到 ~/.agents/skills/superpowers/
-
-# superpowers（白名单）包含：
-# - brainstorming
-# - test-driven-development
-# - systematic-debugging
-# - verification-before-completion
-# - requesting-code-review
-# - receiving-code-review
-```
-
-chezmoi external 会自动：
-
-- 在 `chezmoi apply` 时下载启用的共享 skills
-- 将 skills 维护在 `~/.agents/skills`，供 Claude 与 Codex 共用
-- 在插件/skill 配置变更时自动更新
+同步后统一落到 `~/.agents/skills`，可被 Claude/Codex 共用。
 
 ### 质量协议
 
-内置质量保证（灵感来自 SuperClaude）：
+当前指令与 skills 体系内置了质量约束（例如实现前置信度检查、实现后基于证据的自检），并配合项目 guardrails 约束高风险变更。
 
-| 协议                 | 用途                          |
-| -------------------- | ----------------------------- |
-| **Confidence Check** | 实现前评估（HIGH/MEDIUM/LOW） |
-| **Self-Check**       | 实现后验证（附带证据）        |
+### Provider 管理
+
+`claude-manage`、`claude-with`、`claude-token` 共同实现 account 切换、provider 路由与模型映射；配置源来自 `.chezmoidata/claude.yaml`，密钥通过 gopass 管理。
+
+详见：`docs/claude-provider.md`。
 
 ### Hooks
 
-| Hook                    | 触发时机      | 动作                                 |
-| ----------------------- | ------------- | ------------------------------------ |
-| `format-code.sh`        | Edit/Write 后 | 自动格式化 Nix、JSON、YAML、Shell 等 |
-| `enforce-uv.sh`         | pip 命令时    | 重定向到 `uv`                        |
-| `block-main-edits.sh`   | 文件编辑时    | 阻止直接编辑 main 分支               |
-| `block-git-rewrites.sh` | git 命令时    | 阻止 force push 和历史重写           |
+`dot_claude/hooks/` 提供了流程护栏与格式化自动化，核心包括：
+
+- `block-git-rewrites.sh`
+- `block-main-edits.sh`
+- `format-code.sh`
+- `format-python.sh`
 
 ---
 
-<a id="tool-chains"></a>
+## AI 工具链（Claude + Codex）
 
-## ⚡ 工具链
+### 共享 Skills 分发
 
-用现代 Rust 工具替代传统 Unix 命令。
+`chezmoi external` 会同步这些来源的精选 skills：
+
+- `wshobson/agents`
+- `anthropics/skills`
+- `obra/superpowers`
+
+最终统一到 `~/.agents/skills`，由 Claude 与 Codex 共同使用。
+
+### Account 与 Provider 管理
+
+```bash
+# Claude
+claude-manage
+claude-manage list
+claude-manage switch anthropic
+claude-with kimi@private -- --resume
+
+# Codex
+codex-manage
+codex-manage list
+codex-manage switch openai
+codex-with deepseek@private "explain this file"
+```
+
+### Token Helpers
+
+```bash
+claude-token --check kimi@private
+codex-token --check deepseek@private
+```
+
+### MCP 集成
+
+- Claude MCP 由 `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl` 自动对齐。
+- 仓库提供 MCP wrapper：
+  - `~/.local/bin/mcp-tavily`
+  - `~/.local/bin/mcp-postgres`
+
+---
+
+## 工具链
+
+当前仓库仍保留你原有的现代 CLI 与 shell 体验栈。
 
 ### 现代 CLI 替代
 
@@ -236,26 +362,24 @@ chezmoi external 会自动：
 
 | 工具                                                | 作用                   |
 | --------------------------------------------------- | ---------------------- |
-| [starship](https://github.com/starship/starship)    | 极简、飞快的提示符     |
-| [sheldon](https://github.com/rossmacarthur/sheldon) | 快速 zsh 插件管理器    |
+| [starship](https://github.com/starship/starship)    | 极简、快速的提示符     |
+| [sheldon](https://github.com/rossmacarthur/sheldon) | zsh 插件管理器         |
 | [atuin](https://github.com/atuinsh/atuin)           | 支持模糊搜索的命令历史 |
 | [direnv](https://github.com/direnv/direnv)          | 按目录自动加载环境变量 |
 | [fzf](https://github.com/junegunn/fzf)              | 文件/历史等模糊查找器  |
 
 ### 开发工具
 
-| 工具                                                | 作用                                    |
-| --------------------------------------------------- | --------------------------------------- |
-| [mise](https://github.com/jdx/mise)                 | 多语言运行时管理（Node/Python/Go/Rust） |
-| [lazygit](https://github.com/jesseduffield/lazygit) | 终端 Git UI                             |
-| [yazi](https://github.com/sxyazi/yazi)              | 超快的终端文件管理器                    |
-| [tmux](https://github.com/tmux/tmux)                | 终端复用器（支持浮动窗格）              |
+| 工具                                                | 作用                                       |
+| --------------------------------------------------- | ------------------------------------------ |
+| [mise](https://github.com/jdx/mise)                 | 多语言 runtime 管理（Node/Python/Go/Rust） |
+| [lazygit](https://github.com/jesseduffield/lazygit) | 终端 Git UI                                |
+| [yazi](https://github.com/sxyazi/yazi)              | 高性能终端文件管理器                       |
+| [tmux](https://github.com/tmux/tmux)                | 终端复用器                                 |
 
 ---
 
-<a id="shell-functions"></a>
-
-## 🔧 Shell 函数
+## Shell 函数
 
 ### 项目跳转
 
@@ -268,7 +392,7 @@ dotcd               # 跳转到 chezmoi 源目录
 ### Git 工作流
 
 ```bash
-fgc                 # 模糊切换 git 分支（带预览）
+fgc                 # 模糊切换 git 分支
 fgl                 # 模糊浏览 git log
 fga                 # 模糊 git add（选择文件）
 aicommit            # 使用 AI 生成提交信息
@@ -284,9 +408,7 @@ create_py_project   # 使用 uv 快速初始化 Python 项目
 
 ---
 
-<a id="package-management"></a>
-
-## 📦 包管理
+## 包管理
 
 | 来源           | 平台         | 说明               |
 | -------------- | ------------ | ------------------ |
@@ -294,34 +416,11 @@ create_py_project   # 使用 uv 快速初始化 Python 项目
 | Homebrew casks | 仅 macOS     | GUI 应用           |
 | Mac App Store  | 仅 macOS     | App Store 独占应用 |
 
-所有软件包清单都在 `.chezmoidata/` 中定义，支持 shared / work-only / private-only 分类。
+包清单统一定义在 `.chezmoidata/`，并按 `shared` / `work` / `private` 分层。
 
 ---
 
-<a id="daily-operations"></a>
-
-## 🔄 日常操作
-
-```bash
-# Chezmoi 操作
-just apply          # 应用 dotfiles 变更
-just diff           # 查看待应用的差异
-
-# Nix 操作
-just up             # 更新所有 flake 输入
-just switch         # 切换 flakey-profile（重建软件包）
-just darwin         # 重建 nix-darwin（macOS）
-
-# 维护
-just gc             # 清理 nix store
-just full-upgrade   # 完整系统升级
-```
-
----
-
-<a id="multi-profile-configuration"></a>
-
-## 👤 多 Profile 配置
+## 多 Profile 配置
 
 ```bash
 # 工作机器
@@ -336,23 +435,74 @@ chezmoi init --apply --promptBool headless=true signalridge
 
 ---
 
-<a id="security"></a>
+## 安全与加密
 
-## 🔐 安全与加密
+这个仓库是多层安全模型，不同层负责不同目标：
 
-本仓库使用 `age` 加密私密文件。Chezmoi 使用 `~/.ssh/main`（私钥）和 `~/.ssh/main.pub`（接收者）进行解密。
+1. `chezmoi` secrets 解密：`age` wrapper + `~/.ssh/main`
+2. `gopass` 使用 `age` backend 存储 API keys / passwords
+3. `keys-manage` 使用 OpenSSL PBKDF2（`AES-256-CBC`）做备份仓库加密
+4. Claude hooks 作为操作护栏，阻止高风险 git/history rewrite 行为
 
-首次 apply 时，引导脚本会：
+详见：
 
-1. 安装 Nix
-2. 通过 Nix 安装 `age` + `op`
-3. 从 gopass 获取密钥（或提示手动设置）
+- `docs/keys-manage-guide.md`
+- `docs/gopass-new-device-setup.md`
+- `docs/claude-provider.md`
 
 ---
 
-<a id="acknowledgements"></a>
+## CI 与自动化
 
-## 🙏 致谢
+### 校验流水线
+
+- `.github/workflows/ci.yml`
+  - pre-commit 校验
+  - 模板渲染校验
+  - `nix flake check`（macOS + Linux 矩阵）
+
+- `.github/workflows/tests.yml`
+  - 手动触发 bootstrap/脚本测试（`bash tests/run.sh`）
+
+### 自动维护
+
+- `.github/workflows/scheduler.yml`（每周两次触发）
+- `.github/workflows/update-versions.yml`
+- `.github/workflows/update-flake-lock.yml`
+- `.github/workflows/update-aqua-packages.yml`
+
+---
+
+## 变更管理（OpenSpec）
+
+> [!IMPORTANT]
+> 在本仓库中，OpenSpec 是中大型改动的事实来源（source of truth）。
+
+- 变更产物位于 `openspec/changes/<change-name>/`（`proposal.md`、`design.md`、`tasks.md`、delta specs）。
+- 主规范位于 `openspec/specs/<capability>/spec.md`。
+- 完成后的变更归档到 `openspec/changes/archive/`。
+- 如已安装 `opsx-*` 包装命令，可按同一 OpenSpec 生命周期执行。
+
+典型流程：
+
+```bash
+openspec new change <change-name>
+openspec status --change <change-name>
+# 然后使用 opsx-* 或 openspec instructions/apply/verify/archive
+```
+
+---
+
+## 更多文档
+
+- `docs/claude-provider.md`
+- `docs/keys-manage-guide.md`
+- `docs/gopass-new-device-setup.md`
+- `docs/tmux.md`
+
+---
+
+## 致谢
 
 - [chezmoi](https://github.com/twpayne/chezmoi) - Dotfiles 管理器
 - [nix-darwin](https://github.com/LnL7/nix-darwin) - 声明式 macOS 配置
@@ -360,16 +510,16 @@ chezmoi init --apply --promptBool headless=true signalridge
 - [wshobson/agents](https://github.com/wshobson/agents) - Claude Code 插件 marketplace
 - [anthropics/skills](https://github.com/anthropics/skills) - 官方 Claude Code skills
 - [obra/superpowers](https://github.com/obra/superpowers) - 高级工作流模式
-- [Dracula Theme](https://draculatheme.com/) - 漂亮的深色主题
+- [Dracula Theme](https://draculatheme.com/) - 终端与 fzf 主题灵感来源
 
 ---
 
-## 📈 统计
+## 统计
 
 ![Alt](https://repobeats.axiom.co/api/embed/81ef9a8c511918fc0eece9bd09bb46ba78eefd0c.svg "Repobeats analytics image")
 
 ---
 
-## 📝 许可证
+## 许可证
 
-MIT License
+MIT

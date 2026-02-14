@@ -1,6 +1,6 @@
 <div align="center">
 
-![header](https://capsule-render.vercel.app/api?type=waving&color=0:282a36,100:bd93f9&height=200&section=header&text=~/.dotfiles&fontSize=48&fontColor=f8f8f2&fontAlignY=30&desc=One%20command%20%C2%B7%20Full%20environment%20%C2%B7%20Zero%20hassle&descSize=16&descColor=8be9fd&descAlignY=55&animation=fadeIn)
+![header](https://capsule-render.vercel.app/api?type=waving&color=0:282a36,100:bd93f9&height=200&section=header&text=~/.dotfiles&fontSize=48&fontColor=f8f8f2&fontAlignY=30&desc=Chezmoi%20%C2%B7%20Nix%20%C2%B7%20AI%20tooling&descSize=16&descColor=8be9fd&descAlignY=55&animation=fadeIn)
 
 <p>
   <a href="https://github.com/signalridge/dotfiles/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/signalridge/dotfiles/ci.yml?style=for-the-badge&logo=github&label=CI"></a>&nbsp;
@@ -13,6 +13,7 @@
   <a href="https://github.com/twpayne/chezmoi"><img alt="chezmoi" src="https://img.shields.io/badge/chezmoi-4B91E2?style=for-the-badge&logo=chezmoi&logoColor=white"></a>&nbsp;
   <a href="https://github.com/LnL7/nix-darwin"><img alt="nix-darwin" src="https://img.shields.io/badge/nix--darwin-5277C3?style=for-the-badge&logo=nixos&logoColor=white"></a>&nbsp;
   <a href="https://www.anthropic.com/claude-code"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-191919?style=for-the-badge&logo=anthropic&logoColor=white"></a>&nbsp;
+  <a href="https://openai.com/index/introducing-codex/"><img alt="Codex CLI" src="https://img.shields.io/badge/Codex_CLI-111111?style=for-the-badge&logo=openai&logoColor=white"></a>&nbsp;
   <a href="https://brew.sh/"><img alt="Homebrew" src="https://img.shields.io/badge/Homebrew-FBB040?style=for-the-badge&logo=homebrew&logoColor=black"></a>
 </p>
 
@@ -24,203 +25,330 @@
 
 ---
 
-## ✨ ハイライト
+## このリポジトリについて
 
-- **クロスプラットフォーム**：macOS + Linux を 1 つの構成で管理（`nix-darwin` + `flakey-profile`）
-- **ワンコマンドブートストラップ**：ベアメタルから完全環境まで `curl | sh` 一発で
-- **Claude Code 統合**：50 以上のマルチソースプラグイン、自動同期更新
-- **モダン CLI**：Rust ツールチェーン（eza、bat、ripgrep、fd、zoxide）で Unix クラシックを置き換え
-- **セキュリティ優先**：`age` 暗号化 + gopass アシスト付きキーブートストラップ
+これは、再現可能な個人向け開発環境を管理するための dotfiles リポジトリです。中核は次の構成です。
 
----
+- `chezmoi`: dotfiles 管理、テンプレート展開、ブートストラップのオーケストレーション
+- `Nix`: 宣言的パッケージ管理（macOS は `nix-darwin`、macOS/Linux 共通で `flakey-profile`）
+- `aqua` + `mise`: 必要に応じて Nix 外で CLI/ランタイムをピン留め
+- `Claude Code` と `Codex CLI`: 共有 AI ツールチェーン
 
-## 💡 なぜこのリポジトリか
-
-- **プロファイルを横断**：`.chezmoidata/` が `shared` / `work` / `private` パッケージを Nix・Homebrew・MAS で統一管理
-- **エンドツーエンドブートストラップ**：Nix インストーラが最速の Determinate ミラーを自動選択、chezmoi が一括でテンプレートを適用
-- **macOS チューニング**：nix-darwin のシステム設定、Homebrew + MAS 統合、適用後の更新スクリプト
-- **ワークフローガードレール**：pre-commit（shellcheck、markdownlint、prettier、Nix lint）+ Claude Code hooks
-- **DX 自動化**：Justfile のアップグレード/クリーンアップ、fzf ナビゲーション、AI アシストコミットメッセージ
-- **CI 一貫性**：macOS + Linux でテンプレートレンダリングと `nix flake check` を実行
-- **Claude Code Hooks**：コード自動フォーマット、pip の代わりに uv を強制、main ブランチへの直接編集をブロック
+これはデモ用テンプレートではなく、日常運用している実構成です。README では、このリポジトリで現在実装されている内容のみを扱います。
 
 ---
 
-## 🎯 設計思想
+## ハイライト
 
-新しい開発マシンのセットアップは面倒です：数十のパッケージをインストールし、無数のツールを設定し、長年の調整を思い出す必要があります。このリポジトリは**完全に宣言的な設定**でこの問題を解決します——すべてのパッケージ、設定、dotfiles がコードで定義され、1 コマンドで任意のマシンに**完全再現**できます。
-
-**コア原則：**
-
-- **再現性** — どのマシンでも、毎回同じ環境
-- **宣言的** — すべてコードで定義、バージョン管理
-- **モジュラー** — プロファイルベースのカスタマイズ：仕事/個人/ヘッドレス
-- **AI 拡張** — Claude Code 統合で開発ワークフローを強化
-- **セキュリティ優先** — 暗号化されたシークレット、gopass 統合
-
----
-
-## 📑 目次
-
-- [🚀 クイックスタート](#quick-start)
-- [🧩 アーキテクチャ](#architecture)
-- [🤖 Claude Code 統合](#claude-code-integration)
-- [⚡ ツールチェーン](#tool-chains)
-- [🔧 シェル関数](#shell-functions)
-- [📦 パッケージ管理](#package-management)
-- [🔄 日常操作](#daily-operations)
-- [👤 マルチプロファイル設定](#multi-profile-configuration)
-- [🔐 セキュリティとシークレット](#security)
-- [🙏 謝辞](#acknowledgements)
+- `.chezmoiscripts/00..11` による統一ブートストラップパイプライン（再実行しても破綻しにくい設計）
+- クロスプラットフォームなパッケージ戦略：
+  - macOS/Linux 共通の Nix ユーザーパッケージ
+  - macOS の `nix-darwin` システム設定
+  - macOS の Homebrew / MAS 連携
+- Claude/Codex 共通 Skills を `~/.agents/skills` へ自動同期
+- Claude/Codex 両方で Provider 切替をサポート：
+  - `claude-manage` / `claude-with`
+  - `codex-manage` / `codex-with`
+- `chezmoi apply` のたびに Claude MCP を自動同期
+- GitHub Actions による依存更新の自動化（versions、flake lock、aqua packages）
+- OpenSpec による中〜大規模変更のライフサイクル管理（`openspec/changes`、`openspec/specs`、`opsx-*`）
 
 ---
 
-> [!WARNING]
-> **実行前に必ず確認してください！** このリポジトリにはシステム設定を変更するスクリプトが含まれます。
-> まず Fork して、自分の環境に合わせてカスタマイズしてください。
+## なぜこのリポジトリか
+
+- **プロファイル横断管理**: `.chezmoidata/` が `shared` / `work` / `private` を駆動し、Nix・Homebrew・MAS を横断して一元管理
+- **エンドツーエンドブートストラップ**: `00..11` の段階実行で、初期化を再現可能かつ段階的に組み合わせられる形で維持
+- **macOS 向け最適化**: nix-darwin のシステム既定、Homebrew + MAS 連携、適用後の保守スクリプト
+- **ワークフローガードレール**: pre-commit と Claude Hooks で危険な編集やコマンド誤用を抑止
+- **DX 自動化**: Justfile ルーチン、fzf ナビゲーション、AI 補助コミットフロー
+- **CI 整合性**: テンプレートレンダリングと `nix flake check` を macOS/Linux マトリクスで検証
+- **AI 二系統対応**: Claude Code と Codex CLI を 1 つのリポジトリで宣言的に管理
 
 ---
 
-<a id="quick-start"></a>
+## 設計思想
 
-## 🚀 クイックスタート
+新しい開発マシンのセットアップは、導入するパッケージも設定項目も多く、過去の調整を再現するだけで手間がかかります。
 
-**方法 1: GitHub から init スクリプトを直接実行（推奨）**
+このリポジトリは、宣言的なベースラインと実用的なブートストラップパイプラインを組み合わせることで、複数マシン間でも予測可能な結果で作業環境を再構築できるようにしています。
 
-```bash
-curl -fsLS https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | sh
-```
+コア原則：
 
-**方法 2: chezmoi をインストールして init**
-
-```bash
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply signalridge
-```
-
-**方法 3: クローンしてローカルで実行**
-
-```bash
-git clone https://github.com/signalridge/dotfiles.git
-cd dotfiles && ./init.sh
-```
-
-上記コマンドで自動的に：
-
-1. Nix をインストール（Determinate Systems インストーラ）
-2. （`useEncryption` が有効な場合）keys-manage の暗号化バックアップリポジトリから `~/.ssh/main` などを復元（復号パスワードを入力）
-3. すべての dotfiles と設定を適用
-4. Claude Code プラグインを同期
-
-> [!IMPORTANT]
-> **初めて使う方へ**：`useEncryption` を聞かれたら **No**（デフォルト）を選択してください。
-> 暗号化設定はリポジトリ所有者専用です。暗号化が必要な場合は以下を修正してください：
->
-> - `.chezmoiscripts/run_before_01_setup-encryption-key.sh.tmpl`：`keys-manage` の暗号化バックアップから暗号鍵を復元/確認
-> - `.chezmoi.toml.tmpl`：`keysRepository` を更新し、`[age]` セクションの `identity` / `recipientsFile` パスを更新
-
-インストール後、ターミナルを再起動してください。macOS では `just darwin` で nix-darwin 設定を有効化します。
+- **再現性**: 同じセットアップロジックとバージョン化データから同じ結果を得る
+- **宣言的構成を優先**: パッケージ/ツール設定は追跡可能な YAML/テンプレートへ集約
+- **モジュラープロファイル**: work/private/headless の挙動をハードコードではなくデータで切替
+- **AI 拡張ワークフロー**: prompts、hooks、skills、Provider 切替を一体運用
+- **セキュリティの層分離**: dotfile secrets、password store、key backup を用途別に分離管理
 
 ---
 
-<a id="architecture"></a>
+## 目次
 
-## 🧩 アーキテクチャ
+- [クイックスタート](#クイックスタート)
+- [初回プロンプト](#初回プロンプト)
+- [アーキテクチャ](#アーキテクチャ)
+- [リポジトリ構成](#リポジトリ構成)
+- [Bootstrap フロー（実際の実行順）](#bootstrap-フロー実際の実行順)
+- [日常運用](#日常運用)
+- [Claude Code 統合](#claude-code-統合)
+- [AI ツールチェーン（Claude + Codex）](#ai-ツールチェーンclaude--codex)
+- [ツールチェーン](#ツールチェーン)
+- [シェル関数](#シェル関数)
+- [パッケージ管理](#パッケージ管理)
+- [マルチプロファイル設定](#マルチプロファイル設定)
+- [セキュリティとシークレット](#セキュリティとシークレット)
+- [CI と自動化](#ci-と自動化)
+- [変更管理（OpenSpec）](#変更管理openspec)
+- [関連ドキュメント](#関連ドキュメント)
+- [謝辞](#謝辞)
+- [統計](#統計)
+- [ライセンス](#ライセンス)
 
-```
-~/.dotfiles/
-├── .chezmoidata/           # モジュラーデータ設定
-│   ├── base.yaml           # コア設定
-│   ├── claude.yaml         # Claude Code プラグイン設定
-│   └── versions.yaml       # ツールバージョン固定
-├── .chezmoiscripts/        # ブートストラップ・同期スクリプト
-├── dot_claude/             # Claude Code 設定
-│   ├── agents/             # AI エージェント定義
-│   ├── commands/           # スラッシュコマンド
-│   ├── skills/             # 自動知識スキル
-│   ├── hooks/              # Git・コード Hooks
-│   └── context/            # リファレンスドキュメント
-├── nix-config/             # Nix flake 設定
-│   └── modules/            # nix-darwin / flakey-profile モジュール
-└── dot_custom/             # シェル関数・エイリアス
-```
+---
 
-**chezmoi** は複数マシン間で dotfiles を管理し、テンプレート、暗号化、プラットフォーム条件分岐をサポートします。
+## アーキテクチャ
 
-**nix-darwin**（macOS）は Nix による宣言的システム設定を提供し、システムパッケージ、Homebrew、macOS 設定を管理します。
+このリポジトリは、`chezmoi` のテンプレート管理を中核に、Nix ベースのパッケージ管理と AI ツール層を重ねた構成です。
 
-**flakey-profile**（Linux）は同じ Nix flake を使って宣言的パッケージ管理を提供し、ユーザーパッケージに焦点を当てます。
+- `chezmoi`: スクリプト/テンプレートの唯一の構成ソース（source of truth）
+- `nix-darwin`（macOS）: システムレベル構成
+- `flakey-profile`（macOS/Linux）: ユーザーパッケージプロファイル
+- `aqua` + `mise`: 必要に応じた Nix 外 CLI/ランタイムレイヤー
+- `dot_claude` + `dot_codex`: ツール別のグローバル指針と設定
 
 | コンポーネント     | macOS          | Linux          |
 | ------------------ | -------------- | -------------- |
 | Dotfiles           | chezmoi        | chezmoi        |
 | システム設定       | nix-darwin     | N/A            |
 | ユーザーパッケージ | flakey-profile | flakey-profile |
-| GUI アプリ         | Homebrew Cask  | N/A            |
+| GUI アプリ         | Homebrew/MAS   | N/A            |
 
 ---
 
-<a id="claude-code-integration"></a>
+## リポジトリ構成
 
-## 🤖 Claude Code 統合
+```text
+.
+├── .chezmoidata/
+│   ├── nix.yaml                # Nix パッケージ定義（shared/work/private）
+│   ├── homebrew.yaml           # Homebrew taps/brews/casks/MAS apps
+│   ├── claude.yaml             # Claude Provider と account モデル設定
+│   ├── versions.yaml           # ツール/プラグインのピン留め
+│   ├── aerospace.yaml          # Aerospace WM データ
+│   └── hammerspoon.yaml        # Hammerspoon データ
+├── .chezmoiscripts/            # ブートストラップ/保守パイプライン（00..11）
+├── nix-config/
+│   ├── flake.nix.tmpl
+│   └── modules/
+│       ├── system.nix.tmpl     # nix-darwin システム設定
+│       ├── apps.nix.tmpl       # Homebrew + MAS 連携
+│       ├── profile.nix.tmpl    # flakey-profile パッケージ設定
+│       └── host-users.nix
+├── dot_local/bin/              # CLI ラッパー（Claude/Codex/keys/MCP）
+├── dot_claude/                 # Claude グローバル指示、hooks、テンプレート
+├── dot_codex/                  # Codex グローバル指示、設定、prompts
+├── private_dot_config/         # 各種ツール設定（tmux、mise、aqua、gopass など）
+├── docs/                       # 個別ガイド
+└── tests/                      # ブートストラップ/スクリプトの回帰テスト
+```
 
-この dotfiles には、自動化されたプラグイン管理を備えた包括的な Claude Code セットアップが含まれています。
+---
+
+## Bootstrap フロー（実際の実行順）
+
+`chezmoi` スクリプトは番号順で実行されます。
+
+1. `00` Nix をインストール（Determinate installer + アーキ/ミラー判定）
+2. `01` 必要に応じて keys-manage 暗号化ファイルを復元（`useEncryption=true`）
+3. `02` macOS: nix-darwin 設定を適用
+4. `03` flakey-profile を切り替え
+5. `04` gopass ストアを初期化（対話式 clone）
+6. `05` ピン留め済みの aqua installer/aqua をインストール
+7. `06` `private_dot_config/aquaproj-aqua/aqua.yaml` に基づいてツールを導入
+8. `07` `mise` でランタイム/ツールを導入
+9. `08` ピン留め済み nix-index DB を導入
+10. `09` macOS: Paperlib をインストール/更新
+11. `10` Homebrew 更新（7 日間隔）
+12. `11` Claude MCP サーバーを同期（差分時のみ更新）
+
+---
+
+## クイックスタート
+
+> [!WARNING]
+> このリポジトリはシェル、パッケージマネージャ、システム設定を変更します。
+> 本番利用前に Fork して内容を確認してください。
+
+### 方法 1: `init.sh` を直接実行
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | sh
+```
+
+### 方法 2: タグ/ブランチを固定して確認後に実行
+
+```bash
+REF="<tag-or-branch>"
+curl -fsSLo init.sh "https://raw.githubusercontent.com/signalridge/dotfiles/${REF}/init.sh"
+shasum -a 256 init.sh || sha256sum init.sh
+sh init.sh --ref "${REF}"
+```
+
+### 方法 3: ローカル clone から実行（監査しやすさが最も高い）
+
+```bash
+git clone https://github.com/signalridge/dotfiles.git
+cd dotfiles
+git checkout <tag-or-commit>
+./init.sh
+```
+
+### `init.sh` の主要オプション
+
+```bash
+./init.sh --repo signalridge/dotfiles
+./init.sh --ref v1.2.3
+./init.sh --depth 1
+./init.sh --ssh
+```
+
+---
+
+## 初回プロンプト
+
+`chezmoi` 初期プロンプトの主な項目：
+
+- `work`（業務マシンかどうか）
+- `headless`（GUI を前提にしない環境かどうか）
+- `useEncryption`（暗号化キー復元フローを有効化するか）
+- `installMasApps`（MAS アプリを導入するか）
+- `claudeProviderAccount` / `codexProviderAccount`
+
+このリポジトリを初回利用する場合、keys-manage バックアップと鍵を自分で用意していない限り、`useEncryption = false` を推奨します。
+
+---
+
+## 日常運用
+
+グローバル Justfile は `~/.config/just/.justfile` に生成されます。
+
+### Chezmoi
+
+```bash
+just apply
+just diff
+just update
+just re-add
+```
+
+### Nix
+
+```bash
+just up
+just upp nixpkgs
+just gc
+just verify
+just optimize
+```
+
+### macOS（`nix-darwin`）
+
+```bash
+just darwin
+just darwin-check
+just darwin-build
+```
+
+### テスト
+
+```bash
+bash tests/run.sh
+pre-commit run --all-files
+```
+
+---
+
+## Claude Code 統合
 
 ### プラグインシステム
 
-プラグインは `.chezmoiexternal.toml.tmpl` を通じて複数のソースから自動ダウンロードされます：
+Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期されます。
 
-| ソース                                                    | 説明                                             |
-| --------------------------------------------------------- | ------------------------------------------------ |
-| [wshobson/agents](https://github.com/wshobson/agents)     | 厳選したコミュニティ skills（Claude/Codex 共有） |
-| [anthropics/skills](https://github.com/anthropics/skills) | 公式ドキュメント処理（pdf、docx、pptx、xlsx）    |
-| [obra/superpowers](https://github.com/obra/superpowers)   | 厳選した OpenSpec 補完ワークフロー skills        |
+- [wshobson/agents](https://github.com/wshobson/agents)
+- [anthropics/skills](https://github.com/anthropics/skills)
+- [obra/superpowers](https://github.com/obra/superpowers)
 
-```yaml
-# skills の単一ソース: .chezmoiexternal.toml.tmpl
-# - wshobson/agents: 選択したプラグイン（skills のみ）を ~/.agents/skills/<plugin>/ に同期
-# - anthropics/skills: 選択した skills を ~/.agents/skills/anthropics/<skill>/ に同期
-# - obra/superpowers: 選択した skills のみを ~/.agents/skills/superpowers/ に同期
-
-# superpowers の包含スキル（ホワイトリスト）:
-# - brainstorming
-# - test-driven-development
-# - systematic-debugging
-# - verification-before-completion
-# - requesting-code-review
-# - receiving-code-review
-```
-
-chezmoi external が自動的に：
-
-- `chezmoi apply` 時に有効な共有 skills をダウンロード
-- skills を `~/.agents/skills` に保持し、Claude/Codex で共有
-- プラグイン/skill 設定変更時に自動更新
+同期先は `~/.agents/skills` で、Claude/Codex の両方で利用します。
 
 ### 品質プロトコル
 
-SuperClaude にインスパイアされた組み込み品質保証：
+このリポジトリの instructions/skills 構成には、実装前の確認と実装後のエビデンス重視検証を含む品質ルールが組み込まれています。
 
-| プロトコル           | 目的                          |
-| -------------------- | ----------------------------- |
-| **Confidence Check** | 実装前評価（HIGH/MEDIUM/LOW） |
-| **Self-Check**       | 実装後検証（エビデンス付き）  |
+### Provider 管理
+
+`claude-manage`、`claude-with`、`claude-token` により、アカウント切替、Provider ごとのモデルルーティング、キー参照を管理します。設定ソースは `.chezmoidata/claude.yaml`、API key は gopass で管理されます。
+
+詳細：`docs/claude-provider.md`。
 
 ### Hooks
 
-| Hook                    | トリガー       | アクション                                    |
-| ----------------------- | -------------- | --------------------------------------------- |
-| `format-code.sh`        | Edit/Write 後  | Nix、JSON、YAML、Shell などを自動フォーマット |
-| `enforce-uv.sh`         | pip コマンド時 | `uv` へリダイレクト                           |
-| `block-main-edits.sh`   | ファイル編集時 | main ブランチへの直接編集をブロック           |
-| `block-git-rewrites.sh` | git コマンド時 | force push と履歴書き換えをブロック           |
+`dot_claude/hooks/` にはワークフローガードと自動整形 Hooks が含まれます。主なもの：
+
+- `block-git-rewrites.sh`
+- `block-main-edits.sh`
+- `format-code.sh`
+- `format-python.sh`
 
 ---
 
-<a id="tool-chains"></a>
+## AI ツールチェーン（Claude + Codex）
 
-## ⚡ ツールチェーン
+### 共有 Skills 配布
 
-従来の Unix ツールをモダンな Rust 製代替ツールに置き換えます。
+`chezmoi external` が以下から選択した Skills を同期します。
+
+- `wshobson/agents`
+- `anthropics/skills`
+- `obra/superpowers`
+
+同期先は `~/.agents/skills` で、Claude/Codex の両方から利用します。
+
+### Account / Provider 管理
+
+```bash
+# Claude
+claude-manage
+claude-manage list
+claude-manage switch anthropic
+claude-with kimi@private -- --resume
+
+# Codex
+codex-manage
+codex-manage list
+codex-manage switch openai
+codex-with deepseek@private "explain this file"
+```
+
+### Token Helpers
+
+```bash
+claude-token --check kimi@private
+codex-token --check deepseek@private
+```
+
+### MCP 連携
+
+- Claude MCP は `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl` によって自動同期されます。
+- このリポジトリは次の MCP ラッパーを提供します：
+  - `~/.local/bin/mcp-tavily`
+  - `~/.local/bin/mcp-postgres`
+
+---
+
+## ツールチェーン
+
+このセットアップは、従来から使っているモダン CLI スタックとシェル操作性を維持しています。
 
 ### モダン CLI 置き換え
 
@@ -228,40 +356,38 @@ SuperClaude にインスパイアされた組み込み品質保証：
 | ------ | ------------------------------------------------ | --------------------------------- |
 | `ls`   | [eza](https://github.com/eza-community/eza)      | Git 連携、アイコン、ツリービュー  |
 | `cat`  | [bat](https://github.com/sharkdp/bat)            | シンタックスハイライト、Git 連携  |
-| `grep` | [ripgrep](https://github.com/BurntSushi/ripgrep) | 超高速な正規表現検索              |
+| `grep` | [ripgrep](https://github.com/BurntSushi/ripgrep) | 高速な正規表現検索                |
 | `find` | [fd](https://github.com/sharkdp/fd)              | 直感的な構文、`.gitignore` を尊重 |
-| `cd`   | [zoxide](https://github.com/ajeetdsouza/zoxide)  | スマートなディレクトリジャンプ    |
+| `cd`   | [zoxide](https://github.com/ajeetdsouza/zoxide)  | スマートなディレクトリ移動        |
 
 ### シェル環境
 
-| ツール                                              | 役割                             |
-| --------------------------------------------------- | -------------------------------- |
-| [starship](https://github.com/starship/starship)    | 最小・高速なプロンプト           |
-| [sheldon](https://github.com/rossmacarthur/sheldon) | 高速 zsh プラグインマネージャ    |
-| [atuin](https://github.com/atuinsh/atuin)           | あいまい検索付きシェル履歴       |
-| [direnv](https://github.com/direnv/direnv)          | ディレクトリ単位の環境変数管理   |
-| [fzf](https://github.com/junegunn/fzf)              | ファイル・履歴などのあいまい検索 |
+| ツール                                              | 役割                            |
+| --------------------------------------------------- | ------------------------------- |
+| [starship](https://github.com/starship/starship)    | 軽量で高速なプロンプト          |
+| [sheldon](https://github.com/rossmacarthur/sheldon) | 高速な zsh プラグイン管理       |
+| [atuin](https://github.com/atuinsh/atuin)           | あいまい検索付き履歴管理        |
+| [direnv](https://github.com/direnv/direnv)          | ディレクトリ単位の環境変数管理  |
+| [fzf](https://github.com/junegunn/fzf)              | ファイル/履歴などのあいまい検索 |
 
 ### 開発ツール
 
-| ツール                                              | 役割                                             |
-| --------------------------------------------------- | ------------------------------------------------ |
-| [mise](https://github.com/jdx/mise)                 | 多言語ランタイム管理（Node/Python/Go/Rust）      |
-| [lazygit](https://github.com/jesseduffield/lazygit) | 美しい Git TUI                                   |
-| [yazi](https://github.com/sxyazi/yazi)              | 超高速ターミナルファイルマネージャ               |
-| [tmux](https://github.com/tmux/tmux)                | フローティングペイン対応ターミナルマルチプレクサ |
+| ツール                                              | 役割                                        |
+| --------------------------------------------------- | ------------------------------------------- |
+| [mise](https://github.com/jdx/mise)                 | 多言語ランタイム管理（Node/Python/Go/Rust） |
+| [lazygit](https://github.com/jesseduffield/lazygit) | ターミナル Git UI                           |
+| [yazi](https://github.com/sxyazi/yazi)              | 高速ターミナルファイルマネージャ            |
+| [tmux](https://github.com/tmux/tmux)                | ターミナルマルチプレクサ                    |
 
 ---
 
-<a id="shell-functions"></a>
-
-## 🔧 シェル関数
+## シェル関数
 
 ### プロジェクト移動
 
 ```bash
 dev                 # FZF ベースのプロジェクト選択（ghq）
-mkcd <dir>          # ディレクトリ作成して cd
+mkcd <dir>          # ディレクトリを作成して移動
 dotcd               # chezmoi ソースへ移動
 ```
 
@@ -284,9 +410,7 @@ create_py_project   # uv で Python プロジェクトを作成
 
 ---
 
-<a id="package-management"></a>
-
-## 📦 パッケージ管理
+## パッケージ管理
 
 | ソース         | プラットフォーム | 説明                         |
 | -------------- | ---------------- | ---------------------------- |
@@ -294,34 +418,11 @@ create_py_project   # uv で Python プロジェクトを作成
 | Homebrew casks | macOS のみ       | GUI アプリ                   |
 | Mac App Store  | macOS のみ       | App Store 限定               |
 
-パッケージ一覧は `.chezmoidata/` に定義され、shared / work-only / private-only の分類に対応しています。
+パッケージ一覧は `.chezmoidata/` に定義され、`shared` / `work` / `private` 分離に対応しています。
 
 ---
 
-<a id="daily-operations"></a>
-
-## 🔄 日常操作
-
-```bash
-# Chezmoi 操作
-just apply          # dotfiles 変更を適用
-just diff           # 未適用差分を表示
-
-# Nix 操作
-just up             # flake 入力をすべて更新
-just switch         # flakey-profile を切り替え（パッケージ再ビルド）
-just darwin         # nix-darwin を再ビルド（macOS）
-
-# メンテナンス
-just gc             # nix store をクリーンアップ
-just full-upgrade   # 完全アップグレード
-```
-
----
-
-<a id="multi-profile-configuration"></a>
-
-## 👤 マルチプロファイル設定
+## マルチプロファイル設定
 
 ```bash
 # 仕事用マシン
@@ -336,40 +437,91 @@ chezmoi init --apply --promptBool headless=true signalridge
 
 ---
 
-<a id="security"></a>
+## セキュリティとシークレット
 
-## 🔐 セキュリティとシークレット
+このリポジトリは目的別に複数のレイヤーを使い分けています。
 
-このリポジトリは `age` でプライベートファイルを暗号化します。Chezmoi は `~/.ssh/main`（秘密鍵）と `~/.ssh/main.pub`（受信者）で復号します。
+1. `chezmoi` secrets の復号：`age` ラッパー + `~/.ssh/main`
+2. `gopass` は `age` backend で API key/password を管理
+3. `keys-manage` は OpenSSL PBKDF2（`AES-256-CBC`）でバックアップを暗号化
+4. Claude Hooks により危険な git/history rewrite 操作をガード
 
-初回 `apply` 時、ブートストラップスクリプトが：
+詳細：
 
-1. Nix をインストール
-2. Nix 経由で `age` + `op` をインストール
-3. gopass から鍵を取得（または手動セットアップを案内）
+- `docs/keys-manage-guide.md`
+- `docs/gopass-new-device-setup.md`
+- `docs/claude-provider.md`
 
 ---
 
-<a id="acknowledgements"></a>
+## CI と自動化
 
-## 🙏 謝辞
+### 検証
+
+- `.github/workflows/ci.yml`
+  - pre-commit
+  - テンプレートレンダリング検証
+  - `nix flake check`（macOS + Linux マトリクス）
+
+- `.github/workflows/tests.yml`
+  - 手動実行のブートストラップ/スクリプトテスト（`bash tests/run.sh`）
+
+### 定期メンテナンス
+
+- `.github/workflows/scheduler.yml`（週 2 回トリガー）
+- `.github/workflows/update-versions.yml`
+- `.github/workflows/update-flake-lock.yml`
+- `.github/workflows/update-aqua-packages.yml`
+
+---
+
+## 変更管理（OpenSpec）
+
+> [!IMPORTANT]
+> このリポジトリでは、中〜大規模変更において OpenSpec が source of truth です。
+
+- 変更アーティファクトは `openspec/changes/<change-name>/`（`proposal.md`、`design.md`、`tasks.md`、delta specs）に配置されます。
+- メイン仕様は `openspec/specs/<capability>/spec.md` に配置されます。
+- 完了した変更は `openspec/changes/archive/` にアーカイブされます。
+- `opsx-*` ラッパーが使える環境では、同じ OpenSpec ライフサイクルをそのまま実行できます。
+
+典型的な流れ：
+
+```bash
+openspec new change <change-name>
+openspec status --change <change-name>
+# その後は opsx-* または openspec instructions/apply/verify/archive を使用
+```
+
+---
+
+## 関連ドキュメント
+
+- `docs/claude-provider.md`
+- `docs/keys-manage-guide.md`
+- `docs/gopass-new-device-setup.md`
+- `docs/tmux.md`
+
+---
+
+## 謝辞
 
 - [chezmoi](https://github.com/twpayne/chezmoi) - Dotfiles マネージャ
 - [nix-darwin](https://github.com/LnL7/nix-darwin) - 宣言的 macOS 設定
 - [flakey-profile](https://github.com/lf-/flakey-profile) - クロスプラットフォーム Nix プロファイル管理
-- [wshobson/agents](https://github.com/wshobson/agents) - Claude Code プラグイン marketplace
-- [anthropics/skills](https://github.com/anthropics/skills) - 公式 Claude Code skills
+- [wshobson/agents](https://github.com/wshobson/agents) - Claude Code 向けプラグイン集
+- [anthropics/skills](https://github.com/anthropics/skills) - 公式 Claude Code スキル集
 - [obra/superpowers](https://github.com/obra/superpowers) - 高度なワークフローパターン
-- [Dracula Theme](https://draculatheme.com/) - 美しいダークテーマ
+- [Dracula Theme](https://draculatheme.com/) - ターミナル / fzf テーマのベース
 
 ---
 
-## 📈 統計
+## 統計
 
 ![Alt](https://repobeats.axiom.co/api/embed/81ef9a8c511918fc0eece9bd09bb46ba78eefd0c.svg "Repobeats analytics image")
 
 ---
 
-## 📝 ライセンス
+## ライセンス
 
-MIT License
+MIT
