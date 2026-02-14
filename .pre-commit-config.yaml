@@ -26,7 +26,7 @@ repos:
         pass_filenames: false
         files: \.(sh|nix|lua|md|json|yaml|yml)$
         exclude: \.tmpl$
-        entry: mise exec -- treefmt
+        entry: treefmt
       #####################################
       # Lint: shell scripts (non-template)
       # Requires: shellcheck
@@ -36,7 +36,7 @@ repos:
         language: system
         types: [shell]
         exclude: (\.tmpl$|\.zsh$)
-        entry: mise exec -- shellcheck --severity=warning
+        entry: shellcheck --severity=warning
       #####################################
       # Lint: Lua files (non-template)
       # Requires: selene
@@ -46,7 +46,7 @@ repos:
         language: system
         files: \.lua$
         exclude: (\.tmpl$|Spoons/)
-        entry: mise exec -- selene
+        entry: selene
       #####################################
       # Lint: Nix files (non-template)
       # Requires: statix
@@ -57,7 +57,7 @@ repos:
         pass_filenames: false
         files: \.nix$
         exclude: \.tmpl$
-        entry: mise exec -- statix check nix-config/
+        entry: statix check nix-config/
       #####################################
       # Template: render + format check + lint
       # Requires: chezmoi, treefmt, shellcheck, selene, statix
@@ -74,13 +74,7 @@ repos:
             tmpdir=$(mktemp -d)
             trap "rm -rf $tmpdir" EXIT
 
-            run_tool() {
-              if command -v mise >/dev/null 2>&1; then
-                mise exec -- "$@"
-              else
-                "$@"
-              fi
-            }
+            run_tool() { "$@"; }
 
             # Copy required config files (fail if missing)
             for cfg in treefmt.toml stylua.toml selene.toml; do

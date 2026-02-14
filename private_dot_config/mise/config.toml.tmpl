@@ -31,17 +31,11 @@ lua = "5.4"
 "pipx:mac-cleanup" = "latest"
 {{ end -}}
 
-# pre-commit (avoid Swift compilation from nixpkgs dotnet dependency)
-pre-commit = "latest"
-
 # OpenSpec CLI managed declaratively via mise npm backend
 "npm:@fission-ai/openspec" = "1.1.1"
 
 # Gemini CLI managed via npm backend (replaces nix gemini-cli)
 "npm:@google/gemini-cli" = "latest"
-
-# Prettier managed by Node.js ecosystem (replaces nix nodePackages.prettier)
-"npm:prettier" = "latest"
 
 [settings]
 # Keep auto_install enabled for normal mise workflow.

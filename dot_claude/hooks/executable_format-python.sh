@@ -10,22 +10,12 @@ set -euo pipefail
 [[ -d "$HOME/.local/share/aquaproj-aqua/bin" ]] && PATH="$PATH:$HOME/.local/share/aquaproj-aqua/bin"
 export PATH
 
-MISE_CMD=""
-if command -v mise >/dev/null 2>&1; then
-    MISE_CMD="$(command -v mise)"
-fi
-
 run_optional() {
     local tool="$1"
     shift
 
     if command -v "$tool" >/dev/null 2>&1; then
         "$tool" "$@" >/dev/null 2>&1 || true
-        return 0
-    fi
-
-    if [[ -n "$MISE_CMD" ]]; then
-        "$MISE_CMD" exec -- "$tool" "$@" >/dev/null 2>&1 || return 1
         return 0
     fi
 
