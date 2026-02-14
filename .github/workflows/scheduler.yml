@@ -27,9 +27,9 @@ jobs:
 
           # Monday (1) and Thursday (4) workflows
           if [[ "$DAY_OF_WEEK" == "1" || "$DAY_OF_WEEK" == "4" ]] || [[ "$FORCE" == "true" ]]; then
-            echo "trigger_weekly=true" >> $GITHUB_OUTPUT
+            echo "trigger_weekly=true" >> "$GITHUB_OUTPUT"
           else
-            echo "trigger_weekly=false" >> $GITHUB_OUTPUT
+            echo "trigger_weekly=false" >> "$GITHUB_OUTPUT"
           fi
       # Weekly workflows (Monday and Thursday)
       - name: Trigger update-flake-lock
@@ -55,5 +55,5 @@ jobs:
           echo "Triggered update-aqua-packages.yml"
       - name: Summary
         run: |
-          echo "## Scheduler Results" >> $GITHUB_STEP_SUMMARY
-          echo "- Weekly workflows: ${{ steps.check.outputs.trigger_weekly }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Scheduler Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Weekly workflows: ${{ steps.check.outputs.trigger_weekly }}" >> "$GITHUB_STEP_SUMMARY"

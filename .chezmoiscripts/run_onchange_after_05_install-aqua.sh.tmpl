@@ -6,6 +6,7 @@ echo ":: [05] Installing aqua"
 
 # --- Version (pinned in .chezmoidata/versions.yaml, auto-updated by GitHub Actions) ---
 AQUA_INSTALLER_VERSION="${AQUA_INSTALLER_VERSION:-{{ .versions.aquaInstaller }}}"
+AQUA_INSTALLER_SHA256="{{ .versions.aquaInstallerSha256 }}"
 AQUA_PINNED_VERSION="{{ .versions.aquaVersion }}"
 AQUA_TARGET_VERSION="${AQUA_VERSION:-$AQUA_PINNED_VERSION}"
 
@@ -26,6 +27,23 @@ normalize_version() {
     # Strip optional leading "v" for comparison (v2.56.6 vs 2.56.6)
     local version="${1:-}"
     echo "${version#v}"
+}
+
+calc_sha256() {
+    local file="$1"
+    if command -v sha256sum &>/dev/null; then
+        sha256sum "$file" | awk '{print $1}'
+        return 0
+    fi
+    if command -v shasum &>/dev/null; then
+        shasum -a 256 "$file" | awk '{print $1}'
+        return 0
+    fi
+    if command -v openssl &>/dev/null; then
+        openssl dgst -sha256 "$file" | awk '{print $2}'
+        return 0
+    fi
+    return 1
 }
 
 detect_aqua_cmd() {
@@ -59,25 +77,45 @@ if aqua_cmd="$(detect_aqua_cmd)"; then
     fi
 fi
 
-# Official install flow:
-#   curl -sSfL https://raw.githubusercontent.com/aquaproj/aqua-installer/<version>/aqua-installer | bash
-# Optional:
-#   ... | bash -s -- -v <aqua-version>
+if [[ -z "${AQUA_INSTALLER_SHA256:-}" ]]; then
+    echo "    Error: AQUA_INSTALLER_SHA256 is empty"
+    exit 1
+fi
+
+installer_file="$(mktemp "${TMPDIR:-/tmp}/aqua-installer.XXXXXX")"
+cleanup() {
+    rm -f "$installer_file"
+}
+trap cleanup EXIT
+
 if command -v curl &>/dev/null; then
-    if [[ -n "$AQUA_TARGET_VERSION" ]]; then
-        curl -sSfL "$AQUA_INSTALLER_URL" | bash -s -- -v "$AQUA_TARGET_VERSION"
-    else
-        curl -sSfL "$AQUA_INSTALLER_URL" | bash
-    fi
+    curl -fsSL "$AQUA_INSTALLER_URL" -o "$installer_file"
 elif command -v wget &>/dev/null; then
-    if [[ -n "$AQUA_TARGET_VERSION" ]]; then
-        wget -qO- "$AQUA_INSTALLER_URL" | bash -s -- -v "$AQUA_TARGET_VERSION"
-    else
-        wget -qO- "$AQUA_INSTALLER_URL" | bash
-    fi
+    wget -qO "$installer_file" "$AQUA_INSTALLER_URL"
 else
     echo "    Error: curl or wget is required to install aqua"
     exit 1
+fi
+
+if ! installer_sha256="$(calc_sha256 "$installer_file")"; then
+    echo "    Error: no SHA-256 tool is available (need sha256sum/shasum/openssl)"
+    exit 1
+fi
+
+expected_sha256="$(echo "$AQUA_INSTALLER_SHA256" | tr '[:upper:]' '[:lower:]')"
+actual_sha256="$(echo "$installer_sha256" | tr '[:upper:]' '[:lower:]')"
+if [[ "$actual_sha256" != "$expected_sha256" ]]; then
+    echo "    Error: aqua-installer checksum mismatch"
+    echo "    expected: $expected_sha256"
+    echo "    actual:   $actual_sha256"
+    exit 1
+fi
+
+chmod +x "$installer_file"
+if [[ -n "$AQUA_TARGET_VERSION" ]]; then
+    "$installer_file" -v "$AQUA_TARGET_VERSION"
+else
+    "$installer_file"
 fi
 
 if aqua_cmd="$(detect_aqua_cmd)"; then

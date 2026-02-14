@@ -142,8 +142,7 @@ command = "code"
 args = ["--wait"]
 
 [diff]
-# Keep apply robust even when optional pager tools are absent.
-pager = "less"
+pager = "delta --paging=never"
 
 [merge]
 command = "bash"
