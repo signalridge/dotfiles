@@ -10,6 +10,9 @@
 dot_zshrc linguist-language=Shell
 dot_zshenv.tmpl linguist-language=Shell
 dot_zprofile.tmpl linguist-language=Shell
+dot_local/bin/executable_*.tmpl linguist-language=Shell
+dot_local/bin/lib/*.tmpl linguist-language=Shell
+dot_local/bin/lib/**/*.tmpl linguist-language=Shell
 private_dot_config/tmux/tmux.conf.tmpl linguist-language=Shell
 
 # Nix
@@ -27,6 +30,7 @@ private_dot_config/tmux/tmux.conf.tmpl linguist-language=Shell
 
 # JSON (data type, need detectable to show in stats)
 *.json linguist-language=JSON linguist-detectable=true
+*.json.tmpl linguist-language=JSON linguist-detectable=true
 
 # Lua
 *.lua linguist-language=Lua
@@ -34,8 +38,11 @@ private_dot_config/tmux/tmux.conf.tmpl linguist-language=Shell
 
 # Other
 Justfile.tmpl linguist-language=Makefile
+private_dot_config/just/dot_justfile.tmpl linguist-language=Makefile
 **/config.tmpl linguist-language=INI
+*.ini.tmpl linguist-language=INI
 private_dot_config/nix/nix.conf linguist-language=INI
+dot_gitconfig.tmpl linguist-language=INI
 private_dot_config/bat/config linguist-language=Shell
 private_dot_config/ghostty/config linguist-language=INI
 private_dot_config/git/ignore linguist-language=Git-Ignore
@@ -43,7 +50,11 @@ private_dot_config/git/message linguist-documentation
 
 # Exclude from stats
 *.md linguist-documentation
+*.md.tmpl linguist-documentation
 *.lock linguist-generated
+dot_claude/commands/symlink_core.tmpl linguist-generated
+dot_claude/symlink_skills.tmpl linguist-generated
+dot_codex/symlink_skills.tmpl linguist-generated
 private_dot_config/nvim/lazy-lock.json linguist-generated
 nix-config/flake.lock.tmpl linguist-generated
 private_dot_config/hammerspoon/Spoons/** linguist-vendored
