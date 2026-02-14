@@ -1,0 +1,73 @@
+---
+registries:
+  - type: standard
+    ref: v4.470.0 # renovate: depName=aquaproj/aqua-registry
+
+packages:
+  - name: nektos/act@v0.2.84
+  - name: FiloSottile/age@v1.3.1
+  - name: asciinema/asciinema@v3.1.0
+  - name: atuinsh/atuin@v18.12.1
+  - name: sharkdp/bat@v0.26.1
+  - name: eth-p/bat-extras@v2024.08.24
+    # aqua update can downgrade to v20200408 due semver ordering;
+    # keep a known-good release pinned.
+    update:
+      enabled: false
+  - name: anthropics/claude-code@v2.1.42
+  - name: openai/codex@rust-v0.101.0
+  - name: direnv/direnv@v2.37.1
+  - name: TomWright/dasel@v3.2.2
+  - name: muesli/duf@v0.9.1
+  - name: bootandy/dust@v1.2.4
+  - name: dandavison/delta@0.18.2
+  - name: Wilfred/difftastic@0.67.0
+  - name: eza-community/eza@0.23.4
+  - name: fastfetch-cli/fastfetch@2.59.0
+  - name: sharkdp/fd@v10.3.0
+  - name: junegunn/fzf@v0.67.0
+  - name: gopasspw/gopass@v1.16.1
+  - name: cli/cli@v2.86.0
+  - name: dlvhdr/gh-dash@v4.22.0
+  - name: x-motemen/ghq@v1.9.3
+  - name: git-lfs/git-lfs@v3.7.1
+  - name: charmbracelet/glow@v2.1.1
+  - name: sharkdp/hyperfine@v1.20.0
+  - name: jqlang/jq@jq-1.8.1
+  - name: casey/just@1.46.0
+  - name: jesseduffield/lazygit@v0.59.0
+  - name: jdx/mise@v2026.2.11
+  - name: neovim/neovim@v0.11.6
+  - name: LuaLS/lua-language-server@3.17.1
+  - name: denisidoro/navi@v2.24.0
+  - name: tree-sitter/tree-sitter@v0.26.5
+  - name: rclone/rclone@v1.73.0
+  - name: o2sh/onefetch@2.26.1
+  - name: ouch-org/ouch@0.6.1
+  - name: ip7z/7zip@26.00
+  - name: Nukesor/pueue/pueue@v4.0.2
+  - name: BurntSushi/ripgrep@15.1.0
+  - name: phiresky/ripgrep-all@v0.10.10
+  - name: chmln/sd@v1.0.0
+  - name: joshmedeski/sesh@v2.22.0
+  - name: skim-rs/skim@v3.2.0
+  - name: rossmacarthur/sheldon@0.8.5
+  - name: starship/starship@v1.24.2
+  - name: JohnnyMorganz/StyLua@v2.3.1
+  - name: Kampfkarren/selene@0.30.0
+  - name: koalaman/shellcheck@v0.11.0
+  - name: mvdan/sh@v3.12.0
+  - name: rhysd/actionlint@v1.7.10
+  - name: golangci/golangci-lint@v2.9.0
+  - name: goreleaser/goreleaser@v2.13.3
+  - name: numtide/treefmt@v2.4.0
+  - name: tldr-pages/tlrc@v1.12.0
+  - name: XAMPPRocky/tokei@14.0.0
+  - name: dduan/tre@v0.4.0
+  - name: yarnpkg/berry
+    version: "@yarnpkg/cli/4.12.0"
+  - name: sxyazi/yazi@v26.1.22
+  - name: mikefarah/yq@v4.52.4
+  - name: ajeetdsouza/zoxide@v0.9.9
+  - name: derailed/k9s@v0.50.18
+  - name: terraform-linters/tflint@v0.61.0

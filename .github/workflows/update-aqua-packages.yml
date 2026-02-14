@@ -1,0 +1,66 @@
+name: Update aqua packages
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  update:
+    name: Update aqua.yaml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Install aqua (official installer)
+        run: |
+          set -euo pipefail
+
+          aqua_installer="$(awk '/^[[:space:]]*aquaInstaller:/ {print $2; exit}' .chezmoidata/versions.yaml)"
+          aqua_installer_sha256="$(awk '/^[[:space:]]*aquaInstallerSha256:/ {print $2; exit}' .chezmoidata/versions.yaml)"
+          aqua_version="$(awk '/^[[:space:]]*aquaVersion:/ {print $2; exit}' .chezmoidata/versions.yaml)"
+
+          if [[ -z "$aqua_installer" ]] || [[ -z "$aqua_installer_sha256" ]] || [[ -z "$aqua_version" ]]; then
+            echo "Failed to parse aqua versions from .chezmoidata/versions.yaml" >&2
+            exit 1
+          fi
+
+          curl -fsSL "https://raw.githubusercontent.com/aquaproj/aqua-installer/${aqua_installer}/aqua-installer" -o aqua-installer
+          echo "${aqua_installer_sha256}  aqua-installer" | sha256sum -c -
+          chmod +x aqua-installer
+          ./aqua-installer -v "${aqua_version}"
+          echo "${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin" >> "$GITHUB_PATH"
+
+      - name: Update private_dot_config/aquaproj-aqua/aqua.yaml
+        env:
+          AQUA_GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          aqua --version
+          AQUA_CONFIG=private_dot_config/aquaproj-aqua/aqua.yaml aqua update -p
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet private_dot_config/aquaproj-aqua/aqua.yaml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get current date
+        if: steps.changes.outputs.changed == 'true'
+        id: date
+        run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR
+        if: steps.changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          commit-message: "chore(aqua): update pinned packages"
+          title: "chore(aqua): update pinned packages (${{ steps.date.outputs.date }})"
+          branch: update-aqua-packages
+          labels: dependencies,automation,aqua
+          body: |
+            Automated `aqua update -p` for `private_dot_config/aquaproj-aqua/aqua.yaml`.

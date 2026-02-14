@@ -1,8 +1,8 @@
 name: Scheduler
 on:
   schedule:
-    # Run weekly on Monday at 00:00 UTC
-    - cron: "0 0 * * 1"
+    # Run twice weekly on Monday and Thursday at 00:00 UTC
+    - cron: "0 0 * * 1,4"
   workflow_dispatch:
     inputs:
       force:
@@ -22,16 +22,16 @@ jobs:
           DAY_OF_WEEK=$(date -u +%u)  # 1=Monday, 7=Sunday
           FORCE="${{ github.event.inputs.force || 'false' }}"
 
-          echo "Day of week: $DAY_OF_WEEK (1=Monday)"
+          echo "Day of week: $DAY_OF_WEEK (1=Monday, 4=Thursday)"
           echo "Force: $FORCE"
 
-          # Monday (1) workflows
-          if [[ "$DAY_OF_WEEK" == "1" ]] || [[ "$FORCE" == "true" ]]; then
-            echo "trigger_weekly=true" >> $GITHUB_OUTPUT
+          # Monday (1) and Thursday (4) workflows
+          if [[ "$DAY_OF_WEEK" == "1" || "$DAY_OF_WEEK" == "4" ]] || [[ "$FORCE" == "true" ]]; then
+            echo "trigger_weekly=true" >> "$GITHUB_OUTPUT"
           else
-            echo "trigger_weekly=false" >> $GITHUB_OUTPUT
+            echo "trigger_weekly=false" >> "$GITHUB_OUTPUT"
           fi
-      # Weekly workflows (Monday)
+      # Weekly workflows (Monday and Thursday)
       - name: Trigger update-flake-lock
         if: steps.check.outputs.trigger_weekly == 'true'
         env:
@@ -46,7 +46,14 @@ jobs:
         run: |
           gh workflow run update-versions.yml --repo ${{ github.repository }}
           echo "Triggered update-versions.yml"
+      - name: Trigger update-aqua-packages
+        if: steps.check.outputs.trigger_weekly == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run update-aqua-packages.yml --repo ${{ github.repository }}
+          echo "Triggered update-aqua-packages.yml"
       - name: Summary
         run: |
-          echo "## Scheduler Results" >> $GITHUB_STEP_SUMMARY
-          echo "- Weekly workflows: ${{ steps.check.outputs.trigger_weekly }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Scheduler Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Weekly workflows: ${{ steps.check.outputs.trigger_weekly }}" >> "$GITHUB_STEP_SUMMARY"

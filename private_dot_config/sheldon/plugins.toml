@@ -53,10 +53,6 @@ github = 'MichaelAquilina/zsh-you-should-use'
 apply = ["defer"]
 github = "b4b4r07/enhancd"
 
-[plugins.diff-so-fancy]
-apply = ["defer"]
-github = "so-fancy/diff-so-fancy"
-
 [plugins.zsh-terraform]
 apply = ["defer"]
 github = 'macunha1/zsh-terraform'

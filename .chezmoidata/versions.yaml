@@ -4,6 +4,9 @@
 versions:
   nixInstaller: v3.15.2
   nixVersion: v2.33.1
+  aquaInstaller: v4.0.4
+  aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
+  aquaVersion: v2.56.6
   nixIndexDb: 2026-02-05-175827
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: 5d65aa10638bcc1b390738e11f9bff213f61955a

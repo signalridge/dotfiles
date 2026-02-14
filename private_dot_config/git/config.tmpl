@@ -18,12 +18,17 @@
     rebase = true
 
 [core]
-    pager = diff-so-fancy | less --tabs=4 -RF
+    pager = delta
     editor = nvim
     excludesFile = ~/.config/git/ignore
 
 [interactive]
-    diffFilter = diff-so-fancy --patch
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true
+    line-numbers = true
+    side-by-side = false
 
 [commit]
     template = ~/.config/git/message
@@ -66,6 +71,11 @@
 
     # Open lazygit
     ui = "!lazygit"
+
+    # Structured diff tools (difftastic)
+    dft = -c diff.external=difft diff --ext-diff
+    dfs = -c diff.external=difft show --ext-diff
+    dfl = -c diff.external=difft log -p --ext-diff
 
     # Show branches sorted by last commit date
     branches = for-each-ref --sort=-committerdate refs/heads/ --format='%(color:blue)%(committerdate:relative)%(color:reset) %(color:green)%(refname:short)%(color:reset) %(color:yellow)%(authorname)%(color:reset)'

@@ -5,7 +5,7 @@ set -euo pipefail
 # Sync Claude Code MCP servers on every chezmoi apply.
 # Fast path: only add when missing, avoid remove+add churn.
 
-echo ":: [09] Syncing Claude Code MCP servers"
+echo ":: [11] Syncing Claude Code MCP servers"
 
 if ! command -v claude &>/dev/null; then
     echo "    Skipped (claude not found)"

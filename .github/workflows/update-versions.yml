@@ -17,8 +17,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
+
           nix_installer=$(gh release view --repo DeterminateSystems/nix-installer --json tagName -q '.tagName')
           nix_version=$(gh release view --repo DeterminateSystems/nix --json tagName -q '.tagName')
+          aqua_installer=$(gh release view --repo aquaproj/aqua-installer --json tagName -q '.tagName')
+          aqua_installer_sha256=$(curl -fsSL -L "https://raw.githubusercontent.com/aquaproj/aqua-installer/${aqua_installer}/aqua-installer" | sha256sum | awk '{print $1}')
+          aqua_version=$(gh release view --repo aquaproj/aqua --json tagName -q '.tagName')
           nix_index_db=$(gh release view --repo nix-community/nix-index-database --json tagName -q '.tagName')
           # paperlib tag format: release-electron-X.Y.Z -> extract X.Y.Z
           paperlib=$(gh release view --repo Future-Scholars/paperlib --json tagName -q '.tagName' | sed 's/release-electron-//')
@@ -30,20 +35,28 @@ jobs:
           claude_anthropics_skills_rev=$(gh api repos/anthropics/skills/commits/main -q '.sha')
           claude_anthropics_skills_sha256=$(curl -fsSL -L "https://github.com/anthropics/skills/archive/${claude_anthropics_skills_rev}.tar.gz" | sha256sum | awk '{print $1}')
 
-          echo "nix_installer=$nix_installer" >> "$GITHUB_OUTPUT"
-          echo "nix_version=$nix_version" >> "$GITHUB_OUTPUT"
-          echo "nix_index_db=$nix_index_db" >> "$GITHUB_OUTPUT"
-          echo "paperlib=$paperlib" >> "$GITHUB_OUTPUT"
-          echo "claude_wshobson_agents_rev=$claude_wshobson_agents_rev" >> "$GITHUB_OUTPUT"
-          echo "claude_wshobson_agents_sha256=$claude_wshobson_agents_sha256" >> "$GITHUB_OUTPUT"
-          echo "claude_superpowers_rev=$claude_superpowers_rev" >> "$GITHUB_OUTPUT"
-          echo "claude_superpowers_sha256=$claude_superpowers_sha256" >> "$GITHUB_OUTPUT"
-          echo "claude_anthropics_skills_rev=$claude_anthropics_skills_rev" >> "$GITHUB_OUTPUT"
-          echo "claude_anthropics_skills_sha256=$claude_anthropics_skills_sha256" >> "$GITHUB_OUTPUT"
+          {
+            echo "nix_installer=$nix_installer"
+            echo "nix_version=$nix_version"
+            echo "aqua_installer=$aqua_installer"
+            echo "aqua_installer_sha256=$aqua_installer_sha256"
+            echo "aqua_version=$aqua_version"
+            echo "nix_index_db=$nix_index_db"
+            echo "paperlib=$paperlib"
+            echo "claude_wshobson_agents_rev=$claude_wshobson_agents_rev"
+            echo "claude_wshobson_agents_sha256=$claude_wshobson_agents_sha256"
+            echo "claude_superpowers_rev=$claude_superpowers_rev"
+            echo "claude_superpowers_sha256=$claude_superpowers_sha256"
+            echo "claude_anthropics_skills_rev=$claude_anthropics_skills_rev"
+            echo "claude_anthropics_skills_sha256=$claude_anthropics_skills_sha256"
+          } >> "$GITHUB_OUTPUT"
       - name: Update .chezmoidata/versions.yaml
         run: |
           sed -i 's/nixInstaller: .*/nixInstaller: ${{ steps.versions.outputs.nix_installer }}/' .chezmoidata/versions.yaml
           sed -i 's/nixVersion: .*/nixVersion: ${{ steps.versions.outputs.nix_version }}/' .chezmoidata/versions.yaml
+          sed -i 's/aquaInstaller: .*/aquaInstaller: ${{ steps.versions.outputs.aqua_installer }}/' .chezmoidata/versions.yaml
+          sed -i 's/aquaInstallerSha256: .*/aquaInstallerSha256: ${{ steps.versions.outputs.aqua_installer_sha256 }}/' .chezmoidata/versions.yaml
+          sed -i 's/aquaVersion: .*/aquaVersion: ${{ steps.versions.outputs.aqua_version }}/' .chezmoidata/versions.yaml
           sed -i 's/nixIndexDb: .*/nixIndexDb: ${{ steps.versions.outputs.nix_index_db }}/' .chezmoidata/versions.yaml
           sed -i 's/paperlib: .*/paperlib: ${{ steps.versions.outputs.paperlib }}/' .chezmoidata/versions.yaml
           sed -i 's/claudeWshobsonAgentsRev: .*/claudeWshobsonAgentsRev: ${{ steps.versions.outputs.claude_wshobson_agents_rev }}/' .chezmoidata/versions.yaml
@@ -80,5 +93,8 @@ jobs:
             |---------|---------|
             | nix-installer | `${{ steps.versions.outputs.nix_installer }}` |
             | nix | `${{ steps.versions.outputs.nix_version }}` |
+            | aqua-installer | `${{ steps.versions.outputs.aqua_installer }}` |
+            | aqua-installer sha256 | `${{ steps.versions.outputs.aqua_installer_sha256 }}` |
+            | aqua | `${{ steps.versions.outputs.aqua_version }}` |
             | nix-index-database | `${{ steps.versions.outputs.nix_index_db }}` |
             | paperlib | `${{ steps.versions.outputs.paperlib }}` |

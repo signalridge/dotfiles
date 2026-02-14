@@ -1,0 +1,40 @@
+#!/bin/bash
+
+set -euo pipefail
+
+{{ $aquaConfig := joinPath .chezmoi.homeDir ".config/aquaproj-aqua/aqua.yaml" -}}
+# aqua config: {{ if stat $aquaConfig }}{{ output "sha256sum" $aquaConfig | trim }}{{ else }}n/a{{ end }}
+# weekly trigger: {{ output "date" "+%G-%V" | trim }}
+
+echo ":: [06] Installing aqua tools"
+
+aqua_bin_dir="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
+if [[ -d "$aqua_bin_dir" ]]; then
+    export PATH="$aqua_bin_dir:$PATH"
+fi
+
+source_aqua_config="{{ joinPath .chezmoi.sourceDir "private_dot_config/aquaproj-aqua/aqua.yaml" }}"
+AQUA_CONFIG_PATH="$HOME/.config/aquaproj-aqua/aqua.yaml"
+if [[ -f "$AQUA_CONFIG_PATH" ]]; then
+    :
+elif [[ -f "$source_aqua_config" ]]; then
+    AQUA_CONFIG_PATH="$source_aqua_config"
+else
+    echo "    Skipped (aqua config not found)"
+    exit 0
+fi
+
+export AQUA_GLOBAL_CONFIG="$AQUA_CONFIG_PATH"
+export AQUA_CONFIG="$AQUA_CONFIG_PATH"
+
+aqua_cmd=""
+if command -v aqua &>/dev/null; then
+    aqua_cmd="$(command -v aqua)"
+elif [[ -x "$aqua_bin_dir/aqua" ]]; then
+    aqua_cmd="$aqua_bin_dir/aqua"
+else
+    echo "    Skipped (aqua not found)"
+    exit 0
+fi
+
+"$aqua_cmd" install
