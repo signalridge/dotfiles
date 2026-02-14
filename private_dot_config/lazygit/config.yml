@@ -160,12 +160,14 @@ gui:
 # Config relating to git
 git:
   # Pager configuration:
-  # 1) delta for daily reviews
-  # 2) difftastic for structural diffs (cycle with "|")
+  # 1) difftastic for structured code diffs
+  # 2) delta for text-oriented review
+  # 3) less as final fallback
   pagers:
-    - pager: 'delta --paging=never --line-numbers --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"'
     - externalDiffCommand: difft --color=always
       colorArg: never
+    - pager: 'delta --config ~/.config/delta/config --paging=never --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"'
+    - pager: "less -FRX"
   # Config relating to committing
   commit:
     # If true, pass '--signoff' flag when committing

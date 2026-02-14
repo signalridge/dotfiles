@@ -18,17 +18,12 @@
     rebase = true
 
 [core]
-    pager = delta
+    pager = sh -c 'delta --config ~/.config/delta/config --paging=never || less -FRX'
     editor = nvim
     excludesFile = ~/.config/git/ignore
 
 [interactive]
-    diffFilter = delta --color-only
-
-[delta]
-    navigate = true
-    line-numbers = true
-    side-by-side = false
+    diffFilter = sh -c 'delta --config ~/.config/delta/config --color-only || cat'
 
 [commit]
     template = ~/.config/git/message
@@ -38,6 +33,7 @@
     conflictstyle = zdiff3
 
 [diff]
+    external = difft
     algorithm = histogram
     colorMoved = default
 
@@ -72,7 +68,7 @@
     # Open lazygit
     ui = "!lazygit"
 
-    # Structured diff tools (difftastic)
+    # Structured diff tools (difftastic, force ext-diff where needed)
     dft = -c diff.external=difft diff --ext-diff
     dfs = -c diff.external=difft show --ext-diff
     dfl = -c diff.external=difft log -p --ext-diff

@@ -42,7 +42,7 @@ zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-preview '[[ $group == "[p
 zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-flags --preview-window=down:4:wrap
 
 # Git previews
-zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview 'git diff $word | delta 2>/dev/null || git diff $word'
+zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview 'git -c diff.external=difft diff --ext-diff $word 2>/dev/null || git diff $word | delta --config ~/.config/delta/config 2>/dev/null || git diff $word'
 zstyle ':fzf-tab:complete:git-log:*' fzf-preview 'git log --oneline --color=always $word | head -20'
 zstyle ':fzf-tab:complete:git-checkout:*' fzf-preview 'git log --oneline --color=always $word | head -20'
 zstyle ':fzf-tab:complete:git-show:*' fzf-preview 'git show --color=always $word | head -100'
