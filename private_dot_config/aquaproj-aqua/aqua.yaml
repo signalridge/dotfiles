@@ -9,7 +9,11 @@ packages:
   - name: asciinema/asciinema@v3.1.0
   - name: atuinsh/atuin@v18.12.1
   - name: sharkdp/bat@v0.26.1
-  - name: eth-p/bat-extras@v20200408
+  - name: eth-p/bat-extras@v2024.08.24
+    # aqua update can downgrade to v20200408 due semver ordering;
+    # keep a known-good release pinned.
+    update:
+      enabled: false
   - name: anthropics/claude-code@v2.1.42
   - name: openai/codex@rust-v0.101.0
   - name: direnv/direnv@v2.37.1
