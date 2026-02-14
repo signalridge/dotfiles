@@ -5,15 +5,15 @@ registries:
 
 packages:
 {{- range .aqua.packages.shared }}
-  - name: {{ if contains "@" . }}{{ . | quote }}{{ else }}{{ printf "%s@latest" . | quote }}{{ end }}
+  - name: {{ . | quote }}
 {{- end }}
 {{- if .work }}
 {{- range .aqua.packages.work }}
-  - name: {{ if contains "@" . }}{{ . | quote }}{{ else }}{{ printf "%s@latest" . | quote }}{{ end }}
+  - name: {{ . | quote }}
 {{- end }}
 {{- end }}
 {{- if .private }}
 {{- range .aqua.packages.private }}
-  - name: {{ if contains "@" . }}{{ . | quote }}{{ else }}{{ printf "%s@latest" . | quote }}{{ end }}
+  - name: {{ . | quote }}
 {{- end }}
 {{- end }}
