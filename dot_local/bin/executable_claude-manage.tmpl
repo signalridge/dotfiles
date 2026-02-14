@@ -643,12 +643,34 @@ EOF
     http_code=$(echo "$response" | tail -n1)
 
     case "$http_code" in
-        200) log_success "API OK" ;;
-        401) log_fail "Invalid API key"; return 1 ;;
-        403) log_fail "Access forbidden"; return 1 ;;
-        429) log_warn "Rate limited" ;;
-        *)   log_warn "HTTP $http_code" ;;
+        200)
+            log_success "API OK"
+            ;;
+        401)
+            log_fail "Invalid API key"
+            return 1
+            ;;
+        403)
+            log_fail "Access forbidden"
+            return 1
+            ;;
+        429)
+            log_warn "Rate limited"
+            http_code=200
+            ;;
+        *)
+            if [[ -z "$http_code" || "$http_code" == "000" ]]; then
+                log_fail "Network error"
+            else
+                log_fail "HTTP $http_code"
+            fi
+            return 1
+            ;;
     esac
+
+    if [[ "$http_code" != "200" ]]; then
+        return 1
+    fi
 
     echo ""
     log_success "Account $input is working"

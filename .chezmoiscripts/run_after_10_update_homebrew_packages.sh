@@ -10,7 +10,13 @@ CURRENT_TIME=$(date +%s)
 LAST_UPDATE=0
 UPDATE_INTERVAL=$((7 * 86400)) # 7 days
 
-[[ -f "$LAST_UPDATE_FILE" ]] && LAST_UPDATE=$(cat "$LAST_UPDATE_FILE")
+mkdir -p "$(dirname "$LAST_UPDATE_FILE")"
+if [[ -f "$LAST_UPDATE_FILE" ]]; then
+    LAST_UPDATE_RAW="$(cat "$LAST_UPDATE_FILE" 2>/dev/null || true)"
+    if [[ "$LAST_UPDATE_RAW" =~ ^[0-9]+$ ]]; then
+        LAST_UPDATE="$LAST_UPDATE_RAW"
+    fi
+fi
 DAYS_AGO=$(((CURRENT_TIME - LAST_UPDATE) / 86400))
 
 echo ":: [10] Updating Homebrew packages"
