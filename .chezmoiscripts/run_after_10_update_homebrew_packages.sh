@@ -15,18 +15,9 @@ DAYS_AGO=$(((CURRENT_TIME - LAST_UPDATE) / 86400))
 
 echo ":: [10] Updating Homebrew packages"
 
-brew_cmd=""
-for candidate in \
-    "/opt/homebrew/bin/brew" \
-    "/home/linuxbrew/.linuxbrew/bin/brew"; do
-    if [[ -x "$candidate" ]]; then
-        brew_cmd="$candidate"
-        break
-    fi
-done
-if [[ -z "$brew_cmd" ]] && command -v brew >/dev/null 2>&1; then
-    brew_cmd="$(command -v brew)"
-fi
+# Ensure common Homebrew locations are discoverable in non-interactive shells.
+PATH="/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin:$PATH"
+brew_cmd="$(command -v brew 2>/dev/null || true)"
 if [[ -z "$brew_cmd" ]]; then
     echo "    Skipped (brew not found)"
     exit 0
