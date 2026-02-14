@@ -26,10 +26,14 @@ jobs:
             exit 1
           fi
 
-          curl -fsSL "https://raw.githubusercontent.com/aquaproj/aqua-installer/${aqua_installer}/aqua-installer" -o aqua-installer
-          echo "${aqua_installer_sha256}  aqua-installer" | sha256sum -c -
-          chmod +x aqua-installer
-          ./aqua-installer -v "${aqua_version}"
+          installer_dir="$(mktemp -d)"
+          trap 'rm -rf "$installer_dir"' EXIT
+          installer_path="${installer_dir}/aqua-installer"
+
+          curl -fsSL "https://raw.githubusercontent.com/aquaproj/aqua-installer/${aqua_installer}/aqua-installer" -o "${installer_path}"
+          echo "${aqua_installer_sha256}  ${installer_path}" | sha256sum -c -
+          chmod +x "${installer_path}"
+          "${installer_path}" -v "${aqua_version}"
           echo "${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin" >> "$GITHUB_PATH"
 
       - name: Update private_dot_config/aquaproj-aqua/aqua.yaml
@@ -58,6 +62,8 @@ jobs:
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          add-paths: |
+            private_dot_config/aquaproj-aqua/aqua.yaml
           commit-message: "chore(aqua): update pinned packages"
           title: "chore(aqua): update pinned packages (${{ steps.date.outputs.date }})"
           branch: update-aqua-packages
