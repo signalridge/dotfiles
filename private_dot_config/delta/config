@@ -1,0 +1,29 @@
+[delta]
+    navigate = true
+    line-numbers = true
+    side-by-side = false
+    dark = true
+    syntax-theme = Dracula
+
+    # Keep headers readable while preserving syntax colors in hunks.
+    commit-style = raw
+    file-style = "bold #8BE9FD"
+    file-decoration-style = "#6272A4 ul"
+    hunk-header-style = "file line-number syntax"
+    hunk-header-file-style = "bold #BD93F9"
+    hunk-header-line-number-style = "#8BE9FD"
+    hunk-header-decoration-style = "#6272A4 box"
+
+    # Low-glare add/remove backgrounds with stronger emphasis on changed tokens.
+    plus-style = "syntax #1C3A2A"
+    plus-emph-style = "syntax bold #2A5A3F"
+    minus-style = "syntax #4A2631"
+    minus-emph-style = "syntax bold #6A3342"
+
+    # Keep line numbers informative without overpowering content.
+    line-numbers-left-style = "#6272A4"
+    line-numbers-right-style = "#6272A4"
+    line-numbers-plus-style = "#50FA7B"
+    line-numbers-minus-style = "#FF6E93"
+    line-numbers-left-format = "{nm:>4}│"
+    line-numbers-right-format = "{np:>4}│"
