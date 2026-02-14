@@ -15,18 +15,35 @@ DAYS_AGO=$(((CURRENT_TIME - LAST_UPDATE) / 86400))
 
 echo ":: [10] Updating Homebrew packages"
 
+brew_cmd=""
+for candidate in \
+    "/opt/homebrew/bin/brew" \
+    "/home/linuxbrew/.linuxbrew/bin/brew"; do
+    if [[ -x "$candidate" ]]; then
+        brew_cmd="$candidate"
+        break
+    fi
+done
+if [[ -z "$brew_cmd" ]] && command -v brew >/dev/null 2>&1; then
+    brew_cmd="$(command -v brew)"
+fi
+if [[ -z "$brew_cmd" ]]; then
+    echo "    Skipped (brew not found)"
+    exit 0
+fi
+
 if ((CURRENT_TIME - LAST_UPDATE > UPDATE_INTERVAL)); then
     echo "    Last update: ${DAYS_AGO} days ago, checking for updates..."
-    brew update
+    "$brew_cmd" update
     echo "$CURRENT_TIME" >"$LAST_UPDATE_FILE"
 
-    outdated=$(brew outdated --greedy)
+    outdated=$("$brew_cmd" outdated --greedy)
     if [[ -z "$outdated" ]]; then
         echo "    All packages up to date"
     else
         echo "    Upgrading outdated packages..."
-        brew upgrade --greedy
-        brew cleanup
+        "$brew_cmd" upgrade --greedy
+        "$brew_cmd" cleanup
     fi
 else
     echo "    Skipped (last update: ${DAYS_AGO} days ago)"

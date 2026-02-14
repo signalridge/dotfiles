@@ -8,6 +8,10 @@
 
 set -euo pipefail
 
+if ! command -v jq >/dev/null 2>&1; then
+    exit 0
+fi
+
 # Explicit escape hatch for intentional protected-branch maintenance.
 if [[ "${CLAUDE_ALLOW_PROTECTED_BRANCH_EDITS:-0}" == "1" ]]; then
     exit 0

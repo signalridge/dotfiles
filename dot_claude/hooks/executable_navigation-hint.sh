@@ -10,6 +10,10 @@
 
 set -euo pipefail
 
+if ! command -v jq >/dev/null 2>&1; then
+    exit 0
+fi
+
 DEDUP_DIR="${TMPDIR:-/tmp}/claude-hints"
 DEDUP_TTL=600 # 10 minutes
 
