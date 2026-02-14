@@ -65,7 +65,7 @@ packages:
   - name: XAMPPRocky/tokei@14.0.0
   - name: dduan/tre@v0.4.0
   - name: yarnpkg/berry
-    version: '@yarnpkg/cli/4.12.0'
+    version: "@yarnpkg/cli/4.12.0"
   - name: sxyazi/yazi@v26.1.22
   - name: mikefarah/yq@v4.52.4
   - name: ajeetdsouza/zoxide@v0.9.9
