@@ -22,6 +22,18 @@ find_mise_cmd() {
 
 MISE_CMD="$(find_mise_cmd)"
 
+find_aqua_cmd() {
+    local aqua_cmd=""
+    if [[ -x "$HOME/.local/share/aquaproj-aqua/bin/aqua" ]]; then
+        aqua_cmd="$HOME/.local/share/aquaproj-aqua/bin/aqua"
+    elif command -v aqua >/dev/null 2>&1; then
+        aqua_cmd="$(command -v aqua)"
+    fi
+    printf '%s\n' "$aqua_cmd"
+}
+
+AQUA_CMD="$(find_aqua_cmd)"
+
 find_tool_cmd() {
     local tool="$1"
     if command -v "$tool" >/dev/null 2>&1; then
@@ -50,6 +62,15 @@ run_optional() {
 
     resolved="$(find_tool_cmd "$tool" || true)"
     if [[ -n "$resolved" ]]; then
+        # aqua tool links are proxies and require a usable aqua command.
+        if [[ "$resolved" == *"/aquaproj-aqua/bin/"* ]] && [[ "$resolved" != *"/aquaproj-aqua/bin/aqua" ]]; then
+            if [[ -n "$AQUA_CMD" ]]; then
+                "$AQUA_CMD" exec -- "$tool" "$@" >/dev/null 2>&1 || return 1
+                return 0
+            fi
+            return 1
+        fi
+
         "$resolved" "$@" >/dev/null 2>&1 || true
         return 0
     fi
