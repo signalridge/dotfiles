@@ -33,7 +33,6 @@ packages:
   - name: jqlang/jq@jq-1.8.1
   - name: casey/just@1.46.0
   - name: jesseduffield/lazygit@v0.59.0
-  - name: jdx/mise@v2026.2.11
   - name: neovim/neovim@v0.11.6
   - name: LuaLS/lua-language-server@3.17.1
   - name: tree-sitter/tree-sitter@v0.26.5

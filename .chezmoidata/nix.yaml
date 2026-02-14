@@ -14,6 +14,7 @@ nix:
       - mermaid-cli # mmdc - Mermaid diagram renderer (render-markdown.nvim dependency)
       - mosh
       - imagemagick # magick/convert - image processing (Snacks.image dependency)
+      - mise # runtime/tool version manager; required for npm:prettier and other mise backends
       - navi
       - ouch
       - pixi # fast Python/conda package manager
