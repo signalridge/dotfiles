@@ -9,6 +9,12 @@ if command -v locale >/dev/null 2>&1; then
     fi
 fi
 
+# aqua managed tools
+AQUA_BIN_DIR="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
+if [[ -d "$AQUA_BIN_DIR" ]]; then
+    export PATH="$AQUA_BIN_DIR:$PATH"
+fi
+
 # bat theme (fzf config is in ~/.custom/exports.sh)
 export BAT_THEME="Dracula"
 

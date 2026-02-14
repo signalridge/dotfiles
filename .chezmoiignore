@@ -32,8 +32,8 @@ nix-config/modules/host-users.nix
 
 # macOS-specific scripts (target paths)
 .chezmoiscripts/02_init.sh
-.chezmoiscripts/07_install-paperlib.sh
-.chezmoiscripts/08_update_homebrew_packages.sh
+.chezmoiscripts/09_install-paperlib.sh
+.chezmoiscripts/10_update_homebrew_packages.sh
 
 # macOS-only GUI apps (target paths)
 .config/aerospace/

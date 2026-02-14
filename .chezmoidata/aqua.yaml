@@ -1,0 +1,66 @@
+aqua:
+  # Packages managed by aqua (split by profile groups)
+  packages:
+    shared:
+      - nektos/act
+      - FiloSottile/age
+      - asciinema/asciinema
+      - atuinsh/atuin
+      - sharkdp/bat
+      - eth-p/bat-extras # replaces bat-extras.*
+      - anthropics/claude-code
+      - openai/codex
+      - direnv/direnv
+      - TomWright/dasel
+      - muesli/duf
+      - bootandy/dust
+      - eza-community/eza
+      - fastfetch-cli/fastfetch
+      - sharkdp/fd
+      - junegunn/fzf
+      - gopasspw/gopass
+      - cli/cli
+      - dlvhdr/gh-dash
+      - x-motemen/ghq
+      - git-lfs/git-lfs
+      - charmbracelet/glow
+      - sharkdp/hyperfine
+      - jqlang/jq
+      - casey/just
+      - jesseduffield/lazygit
+      - jdx/mise
+      - neovim/neovim
+      - LuaLS/lua-language-server
+      - denisidoro/navi
+      - tree-sitter/tree-sitter
+      - rclone/rclone
+      - o2sh/onefetch
+      - ouch-org/ouch
+      - ip7z/7zip # command is `7zz`
+      - Nukesor/pueue/pueue # pueue CLI
+      - BurntSushi/ripgrep
+      - phiresky/ripgrep-all
+      - chmln/sd
+      - joshmedeski/sesh
+      - skim-rs/skim
+      - rossmacarthur/sheldon
+      - starship/starship
+      - JohnnyMorganz/StyLua
+      - Kampfkarren/selene
+      - koalaman/shellcheck
+      - mvdan/sh # shfmt
+      - rhysd/actionlint
+      - golangci/golangci-lint
+      - goreleaser/goreleaser
+      - numtide/treefmt
+      - tldr-pages/tlrc
+      - XAMPPRocky/tokei
+      - dduan/tre # tre-command
+      - yarnpkg/berry # yarn-berry
+      - sxyazi/yazi
+      - mikefarah/yq # yq-go
+      - ajeetdsouza/zoxide
+      - derailed/k9s
+    work:
+      - terraform-linters/tflint
+    private: []

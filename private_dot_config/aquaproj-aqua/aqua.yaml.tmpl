@@ -1,0 +1,19 @@
+---
+registries:
+  - type: standard
+    ref: v4.470.0 # renovate: depName=aquaproj/aqua-registry
+
+packages:
+{{- range .aqua.packages.shared }}
+  - name: {{ if contains "@" . }}{{ . | quote }}{{ else }}{{ printf "%s@latest" . | quote }}{{ end }}
+{{- end }}
+{{- if .work }}
+{{- range .aqua.packages.work }}
+  - name: {{ if contains "@" . }}{{ . | quote }}{{ else }}{{ printf "%s@latest" . | quote }}{{ end }}
+{{- end }}
+{{- end }}
+{{- if .private }}
+{{- range .aqua.packages.private }}
+  - name: {{ if contains "@" . }}{{ . | quote }}{{ else }}{{ printf "%s@latest" . | quote }}{{ end }}
+{{- end }}
+{{- end }}

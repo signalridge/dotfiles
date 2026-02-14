@@ -9,7 +9,13 @@ set -euo pipefail
 # directory disappears mid-apply, mise will warn. Run mise from a stable dir.
 cd "$HOME"
 
-echo ":: [05] Installing mise tools"
+# Ensure aqua-managed binaries are discoverable for this non-interactive shell.
+aqua_bin_dir="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
+if [[ -d "$aqua_bin_dir" ]]; then
+    export PATH="$aqua_bin_dir:$PATH"
+fi
+
+echo ":: [07] Installing mise tools"
 
 if command -v mise &>/dev/null; then
     # Ensure mise shims are available in this non-interactive shell.

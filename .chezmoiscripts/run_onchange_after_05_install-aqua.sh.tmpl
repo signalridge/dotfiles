@@ -1,0 +1,94 @@
+#!/bin/bash
+
+set -euo pipefail
+
+echo ":: [05] Installing aqua"
+
+# --- Version (pinned in .chezmoidata/versions.yaml, auto-updated by GitHub Actions) ---
+AQUA_INSTALLER_VERSION="${AQUA_INSTALLER_VERSION:-{{ .versions.aquaInstaller }}}"
+AQUA_PINNED_VERSION="{{ .versions.aquaVersion }}"
+AQUA_TARGET_VERSION="${AQUA_VERSION:-$AQUA_PINNED_VERSION}"
+
+AQUA_BIN_DIR="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
+AQUA_BIN="${AQUA_BIN_DIR}/aqua"
+
+case "$(uname -s)" in
+Darwin | Linux) ;;
+*)
+    echo "    Skipped (unsupported OS: $(uname -s))"
+    exit 0
+    ;;
+esac
+
+AQUA_INSTALLER_URL="https://raw.githubusercontent.com/aquaproj/aqua-installer/${AQUA_INSTALLER_VERSION}/aqua-installer"
+
+normalize_version() {
+    # Strip optional leading "v" for comparison (v2.56.6 vs 2.56.6)
+    local version="${1:-}"
+    echo "${version#v}"
+}
+
+detect_aqua_cmd() {
+    if command -v aqua &>/dev/null; then
+        command -v aqua
+        return 0
+    fi
+    if [[ -x "$AQUA_BIN" ]]; then
+        echo "$AQUA_BIN"
+        return 0
+    fi
+    return 1
+}
+
+current_aqua_version() {
+    local cmd="$1"
+    # "aqua -v" output: aqua version 2.56.6 (...)
+    "$cmd" -v 2>/dev/null | awk '{print $3}'
+}
+
+aqua_cmd=""
+if aqua_cmd="$(detect_aqua_cmd)"; then
+    current_version="$(current_aqua_version "$aqua_cmd")"
+    current_normalized="$(normalize_version "$current_version")"
+    target_normalized="$(normalize_version "$AQUA_TARGET_VERSION")"
+    echo "    current: ${current_version:-unknown}, pinned: ${AQUA_TARGET_VERSION}"
+
+    if [[ -n "$AQUA_TARGET_VERSION" ]] && [[ "$current_normalized" == "$target_normalized" ]]; then
+        echo "    Skipped (already on pinned version)"
+        exit 0
+    fi
+fi
+
+# Official install flow:
+#   curl -sSfL https://raw.githubusercontent.com/aquaproj/aqua-installer/<version>/aqua-installer | bash
+# Optional:
+#   ... | bash -s -- -v <aqua-version>
+if command -v curl &>/dev/null; then
+    if [[ -n "$AQUA_TARGET_VERSION" ]]; then
+        curl -sSfL "$AQUA_INSTALLER_URL" | bash -s -- -v "$AQUA_TARGET_VERSION"
+    else
+        curl -sSfL "$AQUA_INSTALLER_URL" | bash
+    fi
+elif command -v wget &>/dev/null; then
+    if [[ -n "$AQUA_TARGET_VERSION" ]]; then
+        wget -qO- "$AQUA_INSTALLER_URL" | bash -s -- -v "$AQUA_TARGET_VERSION"
+    else
+        wget -qO- "$AQUA_INSTALLER_URL" | bash
+    fi
+else
+    echo "    Error: curl or wget is required to install aqua"
+    exit 1
+fi
+
+if aqua_cmd="$(detect_aqua_cmd)"; then
+    installed_version="$(current_aqua_version "$aqua_cmd")"
+    echo "    Installed: ${installed_version:-unknown}"
+else
+    echo "    Error: aqua installation failed (command not found after install)"
+    exit 1
+fi
+
+if [[ ! -x "$AQUA_BIN" ]]; then
+    echo "    Error: aqua installation failed (binary not found at ${AQUA_BIN})"
+    exit 1
+fi

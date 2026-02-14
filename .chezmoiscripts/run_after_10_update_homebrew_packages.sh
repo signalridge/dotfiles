@@ -13,7 +13,7 @@ UPDATE_INTERVAL=$((7 * 86400)) # 7 days
 [[ -f "$LAST_UPDATE_FILE" ]] && LAST_UPDATE=$(cat "$LAST_UPDATE_FILE")
 DAYS_AGO=$(((CURRENT_TIME - LAST_UPDATE) / 86400))
 
-echo ":: [08] Updating Homebrew packages"
+echo ":: [10] Updating Homebrew packages"
 
 if ((CURRENT_TIME - LAST_UPDATE > UPDATE_INTERVAL)); then
     echo "    Last update: ${DAYS_AGO} days ago, checking for updates..."

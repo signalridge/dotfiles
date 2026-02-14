@@ -19,6 +19,8 @@ jobs:
         run: |
           nix_installer=$(gh release view --repo DeterminateSystems/nix-installer --json tagName -q '.tagName')
           nix_version=$(gh release view --repo DeterminateSystems/nix --json tagName -q '.tagName')
+          aqua_installer=$(gh release view --repo aquaproj/aqua-installer --json tagName -q '.tagName')
+          aqua_version=$(gh release view --repo aquaproj/aqua --json tagName -q '.tagName')
           nix_index_db=$(gh release view --repo nix-community/nix-index-database --json tagName -q '.tagName')
           # paperlib tag format: release-electron-X.Y.Z -> extract X.Y.Z
           paperlib=$(gh release view --repo Future-Scholars/paperlib --json tagName -q '.tagName' | sed 's/release-electron-//')
@@ -32,6 +34,8 @@ jobs:
 
           echo "nix_installer=$nix_installer" >> "$GITHUB_OUTPUT"
           echo "nix_version=$nix_version" >> "$GITHUB_OUTPUT"
+          echo "aqua_installer=$aqua_installer" >> "$GITHUB_OUTPUT"
+          echo "aqua_version=$aqua_version" >> "$GITHUB_OUTPUT"
           echo "nix_index_db=$nix_index_db" >> "$GITHUB_OUTPUT"
           echo "paperlib=$paperlib" >> "$GITHUB_OUTPUT"
           echo "claude_wshobson_agents_rev=$claude_wshobson_agents_rev" >> "$GITHUB_OUTPUT"
@@ -44,6 +48,8 @@ jobs:
         run: |
           sed -i 's/nixInstaller: .*/nixInstaller: ${{ steps.versions.outputs.nix_installer }}/' .chezmoidata/versions.yaml
           sed -i 's/nixVersion: .*/nixVersion: ${{ steps.versions.outputs.nix_version }}/' .chezmoidata/versions.yaml
+          sed -i 's/aquaInstaller: .*/aquaInstaller: ${{ steps.versions.outputs.aqua_installer }}/' .chezmoidata/versions.yaml
+          sed -i 's/aquaVersion: .*/aquaVersion: ${{ steps.versions.outputs.aqua_version }}/' .chezmoidata/versions.yaml
           sed -i 's/nixIndexDb: .*/nixIndexDb: ${{ steps.versions.outputs.nix_index_db }}/' .chezmoidata/versions.yaml
           sed -i 's/paperlib: .*/paperlib: ${{ steps.versions.outputs.paperlib }}/' .chezmoidata/versions.yaml
           sed -i 's/claudeWshobsonAgentsRev: .*/claudeWshobsonAgentsRev: ${{ steps.versions.outputs.claude_wshobson_agents_rev }}/' .chezmoidata/versions.yaml
@@ -80,5 +86,7 @@ jobs:
             |---------|---------|
             | nix-installer | `${{ steps.versions.outputs.nix_installer }}` |
             | nix | `${{ steps.versions.outputs.nix_version }}` |
+            | aqua-installer | `${{ steps.versions.outputs.aqua_installer }}` |
+            | aqua | `${{ steps.versions.outputs.aqua_version }}` |
             | nix-index-database | `${{ steps.versions.outputs.nix_index_db }}` |
             | paperlib | `${{ steps.versions.outputs.paperlib }}` |

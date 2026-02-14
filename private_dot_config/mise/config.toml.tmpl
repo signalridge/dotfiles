@@ -23,6 +23,9 @@ go = "latest"
 # Rust
 rust = "latest"
 
+# Lua 5.4 runtime (replaces nix lua5_4)
+lua = "5.4"
+
 {{ if eq .chezmoi.os "darwin" -}}
 # Python CLI tools (via pipx) - macOS only
 "pipx:mac-cleanup" = "latest"
@@ -33,6 +36,12 @@ pre-commit = "latest"
 
 # OpenSpec CLI managed declaratively via mise npm backend
 "npm:@fission-ai/openspec" = "1.1.1"
+
+# Gemini CLI managed via npm backend (replaces nix gemini-cli)
+"npm:@google/gemini-cli" = "latest"
+
+# Prettier managed by Node.js ecosystem (replaces nix nodePackages.prettier)
+"npm:prettier" = "latest"
 
 [settings]
 # Automatically install tools when entering directory
