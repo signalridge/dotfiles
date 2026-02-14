@@ -1,11 +1,16 @@
+# Normalize line endings at the VCS layer (editors are handled by .editorconfig).
+* text=auto eol=lf
+
+# Encrypted artifacts must never be treated as text/diffable files.
+*.age binary
+
 # Shell
 *.sh linguist-language=Shell
 *.sh.tmpl linguist-language=Shell
 dot_zshrc linguist-language=Shell
 dot_zshenv.tmpl linguist-language=Shell
 dot_zprofile.tmpl linguist-language=Shell
-*.conf linguist-language=Shell
-*.conf.tmpl linguist-language=Shell
+private_dot_config/tmux/tmux.conf.tmpl linguist-language=Shell
 
 # Nix
 *.nix linguist-language=Nix
@@ -30,6 +35,7 @@ dot_zprofile.tmpl linguist-language=Shell
 # Other
 Justfile.tmpl linguist-language=Makefile
 **/config.tmpl linguist-language=INI
+private_dot_config/nix/nix.conf linguist-language=INI
 private_dot_config/bat/config linguist-language=Shell
 private_dot_config/ghostty/config linguist-language=INI
 private_dot_config/git/ignore linguist-language=Git-Ignore
@@ -38,3 +44,6 @@ private_dot_config/git/message linguist-documentation
 # Exclude from stats
 *.md linguist-documentation
 *.lock linguist-generated
+private_dot_config/nvim/lazy-lock.json linguist-generated
+nix-config/flake.lock.tmpl linguist-generated
+private_dot_config/hammerspoon/Spoons/** linguist-vendored
