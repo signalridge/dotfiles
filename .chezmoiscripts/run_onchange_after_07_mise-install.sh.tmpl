@@ -9,45 +9,48 @@ set -euo pipefail
 # directory disappears mid-apply, mise will warn. Run mise from a stable dir.
 cd "$HOME"
 
-# Ensure aqua-managed binaries are discoverable for this non-interactive shell.
-aqua_bin_dir="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
-if [[ -d "$aqua_bin_dir" ]]; then
-    export PATH="$aqua_bin_dir:$PATH"
-fi
-
-source_aqua_config="{{ joinPath .chezmoi.sourceDir "private_dot_config/aquaproj-aqua/aqua.yaml" }}"
-AQUA_CONFIG_PATH="$HOME/.config/aquaproj-aqua/aqua.yaml"
-if [[ -f "$AQUA_CONFIG_PATH" ]]; then
-    :
-elif [[ -f "$source_aqua_config" ]]; then
-    AQUA_CONFIG_PATH="$source_aqua_config"
-fi
-if [[ -f "$AQUA_CONFIG_PATH" ]]; then
-    # aqua-proxy resolves commands from this config in non-interactive shells.
-    export AQUA_GLOBAL_CONFIG="$AQUA_CONFIG_PATH"
-    export AQUA_CONFIG="$AQUA_CONFIG_PATH"
+# Ensure nix profile tools are discoverable for this non-interactive shell.
+{{ include ".chezmoitemplates/shell/source_nix_env.sh" }}
+if [[ -d "$HOME/.nix-profile/bin" ]]; then
+    export PATH="$HOME/.nix-profile/bin:$PATH"
 fi
 
 echo ":: [07] Installing mise tools"
 
-if command -v mise &>/dev/null; then
-    if ! mise --version &>/dev/null; then
-        echo "    Skipped (mise proxy unavailable)"
+mise_cmd="$HOME/.nix-profile/bin/mise"
+mise_runner=()
+if [[ -x "$mise_cmd" ]]; then
+    mise_runner=("$mise_cmd")
+elif command -v mise &>/dev/null; then
+    found_mise="$(command -v mise)"
+    if [[ "$found_mise" != *"/aquaproj-aqua/bin/mise" ]]; then
+        mise_runner=("$found_mise")
+    fi
+fi
+
+if [[ ${#mise_runner[@]} -eq 0 ]]; then
+    if command -v nix &>/dev/null; then
+        mise_runner=(nix run nixpkgs#mise --)
+    else
+        echo "    Skipped (mise and nix not found)"
         exit 0
     fi
+fi
 
-    # Ensure mise shims are available in this non-interactive shell.
-    eval "$(mise activate bash)"
-
-    # npm-backed tools need npm available during version resolution.
-    # Install node first if npm is still unavailable in this shell.
-    if ! command -v npm &>/dev/null; then
-        mise install --yes node
-        eval "$(mise activate bash)"
-    fi
-
-    mise install --yes
-else
-    echo "    Skipped (mise not found)"
+if ! "${mise_runner[@]}" --version &>/dev/null; then
+    echo "    Skipped (mise command unavailable)"
     exit 0
 fi
+
+# Ensure mise shims are available in this non-interactive shell.
+eval "$("${mise_runner[@]}" activate bash)"
+
+# npm-backed tools need npm available during version resolution.
+# Install node first if npm is still unavailable in this shell.
+if ! command -v npm &>/dev/null; then
+    "${mise_runner[@]}" install --yes node
+    eval "$("${mise_runner[@]}" activate bash)"
+fi
+
+"${mise_runner[@]}" install --yes
+"${mise_runner[@]}" reshim --yes

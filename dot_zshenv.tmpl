@@ -10,14 +10,35 @@ path_prepend_once() {
     esac
 }
 
+path_promote_front() {
+    local p="$1"
+    [[ -n "$p" ]] || return 0
+    PATH=":$PATH:"
+    PATH="${PATH//:$p:/:}"
+    PATH="${PATH#:}"
+    PATH="${PATH%:}"
+    PATH="$p${PATH:+:$PATH}"
+}
+
 path_prepend_once "/opt/homebrew/bin"
 path_prepend_once "$HOME/.local/bin"
 path_prepend_once "$HOME/bin"
+
+# Prefer user nix profile tools over aqua proxies for shared commands (e.g. mise).
+if [[ -d "$HOME/.nix-profile/bin" ]]; then
+    path_promote_front "$HOME/.nix-profile/bin"
+fi
 
 # aqua managed tools
 AQUA_BIN_DIR="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
 if [[ -d "$AQUA_BIN_DIR" ]]; then
     path_prepend_once "$AQUA_BIN_DIR"
+fi
+
+# mise shims (needed for npm/pipx style tools like prettier)
+MISE_SHIMS_DIR="${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise}/shims"
+if [[ -d "$MISE_SHIMS_DIR" ]]; then
+    path_promote_front "$MISE_SHIMS_DIR"
 fi
 export PATH
 

@@ -4,11 +4,6 @@ if tty -s 2>/dev/null; then
     export GPG_TTY=$(tty)
 fi
 
-# mise activation (tool shims)
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate zsh)"
-fi
-
 # SSH agent: macOS uses Keychain, Linux starts ssh-agent
 if [[ "$OSTYPE" == linux* ]] && [[ -z "$SSH_AUTH_SOCK" ]]; then
     eval "$(ssh-agent -s)" > /dev/null
