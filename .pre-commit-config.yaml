@@ -26,7 +26,7 @@ repos:
         pass_filenames: false
         files: \.(sh|nix|lua|md|json|yaml|yml)$
         exclude: \.tmpl$
-        entry: treefmt
+        entry: mise exec -- treefmt
       #####################################
       # Lint: shell scripts (non-template)
       # Requires: shellcheck
@@ -36,7 +36,7 @@ repos:
         language: system
         types: [shell]
         exclude: (\.tmpl$|\.zsh$)
-        entry: shellcheck --severity=warning
+        entry: mise exec -- shellcheck --severity=warning
       #####################################
       # Lint: Lua files (non-template)
       # Requires: selene
@@ -46,7 +46,7 @@ repos:
         language: system
         files: \.lua$
         exclude: (\.tmpl$|Spoons/)
-        entry: selene
+        entry: mise exec -- selene
       #####################################
       # Lint: Nix files (non-template)
       # Requires: statix
@@ -57,7 +57,7 @@ repos:
         pass_filenames: false
         files: \.nix$
         exclude: \.tmpl$
-        entry: statix check nix-config/
+        entry: mise exec -- statix check nix-config/
       #####################################
       # Template: render + format check + lint
       # Requires: chezmoi, treefmt, shellcheck, selene, statix
@@ -73,6 +73,14 @@ repos:
             set -e
             tmpdir=$(mktemp -d)
             trap "rm -rf $tmpdir" EXIT
+
+            run_tool() {
+              if command -v mise >/dev/null 2>&1; then
+                mise exec -- "$@"
+              else
+                "$@"
+              fi
+            }
 
             # Copy required config files (fail if missing)
             for cfg in treefmt.toml stylua.toml selene.toml; do
@@ -147,27 +155,27 @@ repos:
             # Format check
             echo "Checking format with treefmt..."
             if [[ -f treefmt.toml ]]; then
-              treefmt --fail-on-change || { echo "❌ Format check failed"; exit 1; }
+              run_tool treefmt --fail-on-change || { echo "❌ Format check failed"; exit 1; }
             fi
 
             # Lint shell scripts (fail on errors)
             echo "Linting shell scripts..."
             shfiles=$(ls *.sh 2>/dev/null || true)
             if [[ -n "$shfiles" ]]; then
-              shellcheck --severity=warning $shfiles
+              run_tool shellcheck --severity=warning $shfiles
             fi
 
             # Lint Lua files (warn only - many false positives for hs/vim globals)
             echo "Linting Lua files..."
             luafiles=$(ls *.lua 2>/dev/null || true)
             if [[ -n "$luafiles" ]] && [[ -f selene.toml ]]; then
-              selene $luafiles || echo "⚠️  Selene warnings (non-blocking)"
+              run_tool selene $luafiles || echo "⚠️  Selene warnings (non-blocking)"
             fi
 
             # Lint Nix files (warn only)
             echo "Linting Nix files..."
             if [[ -f flake.nix ]]; then
-              statix check . || echo "⚠️  Statix warnings (non-blocking)"
+              run_tool statix check . || echo "⚠️  Statix warnings (non-blocking)"
             fi
 
             echo "✅ All template checks passed!"
