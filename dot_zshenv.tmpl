@@ -1,11 +1,38 @@
 # ─────────────────────────────────────────────────────────────
 # PATH Configuration
 # ─────────────────────────────────────────────────────────────
-export PATH="/opt/homebrew/bin:$PATH"
-export PATH="$HOME/.local/bin:$PATH"
-export PATH="$HOME/bin:$PATH"
+path_prepend_once() {
+    local p="$1"
+    [[ -n "$p" ]] || return 0
+    case ":$PATH:" in
+    *":$p:"*) ;;
+    *) PATH="$p:$PATH" ;;
+    esac
+}
+
+path_prepend_once "/opt/homebrew/bin"
+path_prepend_once "$HOME/.local/bin"
+path_prepend_once "$HOME/bin"
+
+# aqua managed tools
+AQUA_BIN_DIR="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
+if [[ -d "$AQUA_BIN_DIR" ]]; then
+    path_prepend_once "$AQUA_BIN_DIR"
+fi
+export PATH
 
 # ─────────────────────────────────────────────────────────────
 # XDG Base Directory
 # ─────────────────────────────────────────────────────────────
 export XDG_CONFIG_HOME="$HOME/.config"
+
+# aqua global config
+AQUA_CONFIG_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/aquaproj-aqua/aqua.yaml"
+if [[ -f "$AQUA_CONFIG_PATH" ]]; then
+    case ":${AQUA_GLOBAL_CONFIG:-}:" in
+    *":${AQUA_CONFIG_PATH}:"*) ;;
+    *)
+        export AQUA_GLOBAL_CONFIG="${AQUA_CONFIG_PATH}${AQUA_GLOBAL_CONFIG:+:${AQUA_GLOBAL_CONFIG}}"
+        ;;
+    esac
+fi
