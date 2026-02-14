@@ -5,27 +5,39 @@
   "schedule": ["after 1am and before 5am"],
   "prHourlyLimit": 2,
   "prConcurrentLimit": 5,
-  "automerge": true,
-  "automergeType": "pr",
-  "platformAutomerge": true,
+  "dependencyDashboard": true,
+  "automerge": false,
+  "platformAutomerge": false,
   "lockFileMaintenance": {
-    "enabled": true,
-    "schedule": ["after 1am and before 3am every weekend"]
+    "enabled": false
   },
   "nix": {
-    "enabled": true
+    "enabled": false
   },
   "packageRules": [
     {
-      "description": "Auto-merge nix flake updates",
+      "description": "Nix updates are managed by repository-owned workflows",
       "matchManagers": ["nix"],
-      "automerge": true,
-      "automergeSchedule": ["after 1am and before 5am"]
+      "enabled": false
     },
     {
-      "description": "Group all nix updates together",
-      "matchManagers": ["nix"],
-      "groupName": "nix dependencies"
+      "description": "Group GitHub Actions non-major updates",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "github actions non-major"
+    },
+    {
+      "description": "Automerge safe GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Require manual review for major updates",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
     }
   ]
 }

@@ -1,0 +1,65 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  trivy:
+    name: Trivy Filesystem Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run Trivy vulnerability scanner (filesystem)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+
+      - name: Upload Trivy SARIF report
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy
+
+  gitleaks:
+    name: Gitleaks Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          VERSION="8.24.2"
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" \
+            | tar -xz
+          install -m 0755 gitleaks /usr/local/bin/gitleaks
+
+      - name: Run gitleaks and generate SARIF
+        continue-on-error: true
+        run: |
+          gitleaks detect \
+            --source . \
+            --redact \
+            --report-format sarif \
+            --report-path gitleaks-results.sarif
+
+      - name: Upload Gitleaks SARIF report
+        uses: github/codeql-action/upload-sarif@v4
+        if: always() && hashFiles('gitleaks-results.sarif') != ''
+        with:
+          sarif_file: gitleaks-results.sarif
+          category: gitleaks

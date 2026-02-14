@@ -1,0 +1,45 @@
+name: PR Title Check
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  statuses: write
+
+jobs:
+  validate:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Conventional Commit format
+        uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            perf
+            refactor
+            deps
+            security
+            revert
+            docs
+            style
+            chore
+            test
+            ci
+            build
+          requireScope: false
+          subjectPattern: ^.+$
+          subjectPatternError: |
+            PR title must follow Conventional Commits format:
+            <type>(<scope>): <description>
+
+            Examples:
+              feat: add new feature
+              fix(api): resolve timeout issue
+              chore(ci): update workflow
+          wip: true
