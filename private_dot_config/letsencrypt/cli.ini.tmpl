@@ -1,0 +1,4 @@
+# Use user-writable paths so certbot can run without root privileges.
+config-dir = {{ joinPath .chezmoi.homeDir ".local/state/letsencrypt/config" }}
+work-dir = {{ joinPath .chezmoi.homeDir ".local/state/letsencrypt/work" }}
+logs-dir = {{ joinPath .chezmoi.homeDir ".local/state/letsencrypt/logs" }}

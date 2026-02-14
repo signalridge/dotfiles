@@ -14,6 +14,10 @@ AQUA_BIN_DIR="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqu
 if [[ -d "$AQUA_BIN_DIR" ]]; then
     export PATH="$AQUA_BIN_DIR:$PATH"
 fi
+AQUA_CONFIG_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/aquaproj-aqua/aqua.yaml"
+if [[ -f "$AQUA_CONFIG_PATH" ]]; then
+    export AQUA_GLOBAL_CONFIG="$AQUA_CONFIG_PATH"
+fi
 
 # bat theme (fzf config is in ~/.custom/exports.sh)
 export BAT_THEME="Dracula"

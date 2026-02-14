@@ -142,7 +142,8 @@ command = "code"
 args = ["--wait"]
 
 [diff]
-pager = "diff-so-fancy"
+# Keep apply robust even when optional pager tools are absent.
+pager = "less"
 
 [merge]
 command = "bash"
@@ -152,6 +153,7 @@ args = [
 ]
 
 [age]
-command = "age"
+# Use a wrapper command so decryption can bootstrap age automatically.
+command = "{{ .chezmoi.sourceDir }}/.chezmoitemplates/shell/age_command_wrapper.sh"
 identity = "~/.ssh/main"
 recipientsFile = "~/.ssh/main.pub"

@@ -159,10 +159,13 @@ gui:
   switchTabsWithPanelJumpKeys: false
 # Config relating to git
 git:
-  # Pager configuration (diff-so-fancy)
+  # Pager configuration:
+  # 1) delta for daily reviews
+  # 2) difftastic for structural diffs (cycle with "|")
   pagers:
-    - colorArg: always
-      pager: diff-so-fancy
+    - pager: 'delta --paging=never --line-numbers --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"'
+    - externalDiffCommand: difft --color=always
+      colorArg: never
   # Config relating to committing
   commit:
     # If true, pass '--signoff' flag when committing
