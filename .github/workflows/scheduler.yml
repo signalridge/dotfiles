@@ -46,6 +46,13 @@ jobs:
         run: |
           gh workflow run update-versions.yml --repo ${{ github.repository }}
           echo "Triggered update-versions.yml"
+      - name: Trigger update-aqua-packages
+        if: steps.check.outputs.trigger_weekly == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run update-aqua-packages.yml --repo ${{ github.repository }}
+          echo "Triggered update-aqua-packages.yml"
       - name: Summary
         run: |
           echo "## Scheduler Results" >> $GITHUB_STEP_SUMMARY
