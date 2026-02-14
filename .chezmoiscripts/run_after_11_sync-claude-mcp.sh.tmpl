@@ -7,19 +7,9 @@ set -euo pipefail
 
 echo ":: [11] Syncing Claude Code MCP servers"
 
-claude_cmd=""
-for candidate in \
-    "$HOME/.local/share/aquaproj-aqua/bin/claude" \
-    "$HOME/.nix-profile/bin/claude" \
-    "/opt/homebrew/bin/claude"; do
-    if [[ -x "$candidate" ]]; then
-        claude_cmd="$candidate"
-        break
-    fi
-done
-if [[ -z "$claude_cmd" ]] && command -v claude &>/dev/null; then
-    claude_cmd="$(command -v claude)"
-fi
+# Ensure common install locations are discoverable in non-interactive shells.
+PATH="$HOME/.nix-profile/bin:/opt/homebrew/bin:$HOME/.local/share/aquaproj-aqua/bin:$PATH"
+claude_cmd="$(command -v claude 2>/dev/null || true)"
 
 if [[ -z "$claude_cmd" ]]; then
     echo "    Skipped (claude not found)"

@@ -74,8 +74,6 @@ repos:
             tmpdir=$(mktemp -d)
             trap "rm -rf $tmpdir" EXIT
 
-            run_tool() { "$@"; }
-
             # Copy required config files (fail if missing)
             for cfg in treefmt.toml stylua.toml selene.toml; do
               if [[ -f "$cfg" ]]; then
@@ -149,27 +147,27 @@ repos:
             # Format check
             echo "Checking format with treefmt..."
             if [[ -f treefmt.toml ]]; then
-              run_tool treefmt --fail-on-change || { echo "❌ Format check failed"; exit 1; }
+              treefmt --fail-on-change || { echo "❌ Format check failed"; exit 1; }
             fi
 
             # Lint shell scripts (fail on errors)
             echo "Linting shell scripts..."
             shfiles=$(ls *.sh 2>/dev/null || true)
             if [[ -n "$shfiles" ]]; then
-              run_tool shellcheck --severity=warning $shfiles
+              shellcheck --severity=warning $shfiles
             fi
 
             # Lint Lua files (warn only - many false positives for hs/vim globals)
             echo "Linting Lua files..."
             luafiles=$(ls *.lua 2>/dev/null || true)
             if [[ -n "$luafiles" ]] && [[ -f selene.toml ]]; then
-              run_tool selene $luafiles || echo "⚠️  Selene warnings (non-blocking)"
+              selene $luafiles || echo "⚠️  Selene warnings (non-blocking)"
             fi
 
             # Lint Nix files (warn only)
             echo "Linting Nix files..."
             if [[ -f flake.nix ]]; then
-              run_tool statix check . || echo "⚠️  Statix warnings (non-blocking)"
+              statix check . || echo "⚠️  Statix warnings (non-blocking)"
             fi
 
             echo "✅ All template checks passed!"
