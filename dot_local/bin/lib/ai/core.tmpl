@@ -320,6 +320,7 @@ gopass_prefix() {
     case "$AI_TOOL_CONTEXT" in
         codex)  prefix="codex" ;;
         claude) prefix="claude" ;;
+        opencode) prefix="opencode" ;;
         *)
             log_error "Unsupported AI_TOOL_CONTEXT: '$AI_TOOL_CONTEXT'"
             return 1
@@ -413,37 +414,40 @@ build_accounts_with_keys() {
 }
 
 # Discover third-party accounts that actually exist in gopass.
+# Canonical key path is "<tool>/<provider>/<account>/api_key".
 list_gopass_third_party_accounts() {
     command -v gopass >/dev/null 2>&1 || return 0
 
-    local provider prefix path encoded label account key_value
+    local prefix path provider label account key_value
     local -a accounts=()
 
-    for provider in "${PROVIDERS[@]}"; do
-        is_third_party "$provider" || continue
+    while IFS= read -r prefix; do
+        [[ -z "$prefix" ]] && continue
 
-        while IFS= read -r prefix; do
-            [[ -z "$prefix" ]] && continue
+        while IFS= read -r path; do
+            [[ -z "$path" ]] && continue
+            [[ "$path" =~ ^${prefix}/([^/]+)/([^/]+)/api_key$ ]] || continue
 
-            while IFS= read -r path; do
-                [[ -z "$path" ]] && continue
-                [[ "$path" == */api_key ]] || continue
+            provider="${BASH_REMATCH[1]}"
+            label="${BASH_REMATCH[2]}"
+            validate_provider_name "$provider" || continue
+            validate_account_name "$label" || continue
+            is_third_party "$provider" || continue
 
-                encoded=$(basename "$(dirname "$path")")
-                label=$(decode_account_segment "$encoded" 2>/dev/null || true)
-                [[ -n "$label" ]] || continue
-                key_value=$(run_with_timeout 3 gopass show -o "$path" 2>/dev/null || true)
-                if [[ -z "$key_value" ]]; then
-                    continue
-                fi
+            key_value=$(run_with_timeout 3 gopass show -o "$path" 2>/dev/null || true)
+            [[ -n "$key_value" ]] || continue
 
+            if [[ "$label" == "default" ]]; then
+                account="$provider"
+            else
                 account="${provider}@${label}"
-                if [[ " ${accounts[*]-} " != *" $account "* ]]; then
-                    accounts+=("$account")
-                fi
-            done < <(gopass list -f "$prefix/providers/${provider}/accounts" 2>/dev/null || true)
-        done < <(gopass_prefix_candidates)
-    done
+            fi
+
+            if [[ " ${accounts[*]-} " != *" $account "* ]]; then
+                accounts+=("$account")
+            fi
+        done < <(gopass list -f "$prefix" 2>/dev/null || true)
+    done < <(gopass_prefix_candidates)
 
     if [[ ${#accounts[@]} -gt 0 ]]; then
         printf '%s\n' "${accounts[@]}"
@@ -498,40 +502,6 @@ parse_provider_account() {
     fi
 }
 
-# Normalize account names for gopass path safety.
-encode_account_segment() {
-    local input="$1"
-    if command -v base64 &>/dev/null; then
-        printf '%s' "$input" | base64 | tr -d '\n=' | tr '+/' '-_'
-    else
-        printf '%s' "$input" | openssl base64 -A | tr -d '=' | tr '+/' '-_'
-    fi
-}
-
-decode_account_segment() {
-    local input="$1"
-    [[ -n "$input" ]] || return 1
-
-    local padded="$input"
-    while (( ${#padded} % 4 != 0 )); do
-        padded+="="
-    done
-
-    if command -v python3 &>/dev/null; then
-        python3 - "$padded" <<'PY'
-import base64, sys
-s = sys.argv[1]
-try:
-    print(base64.urlsafe_b64decode(s.encode()).decode())
-except Exception:
-    sys.exit(1)
-PY
-        return $?
-    fi
-
-    printf '%s' "$padded" | tr '_-' '/+' | base64 -d 2>/dev/null
-}
-
 # Gopass path functions
 api_key_path() {
     local provider="$1"
@@ -540,25 +510,29 @@ api_key_path() {
         log_error "Invalid provider name '$provider'"
         return 1
     fi
-    [[ -n "$account" ]] || { log_error "Invalid account name"; return 1; }
+    if ! validate_gopass_segment "$account"; then
+        log_error "Invalid account name '$account'"
+        return 1
+    fi
 
-    local prefix encoded
+    local prefix
     prefix=$(gopass_prefix) || return 1
-    encoded=$(encode_account_segment "$account")
-    printf '%s/providers/%s/accounts/%s/api_key\n' "$prefix" "$provider" "$encoded"
+    printf '%s/%s/%s/api_key\n' "$prefix" "$provider" "$account"
 }
 
 api_key_path_candidates() {
     local provider="$1"
     local account="$2"
-    local encoded
-    encoded=$(encode_account_segment "$account")
+    if ! validate_provider_name "$provider"; then
+        log_error "Invalid provider name '$provider'"
+        return 1
+    fi
+    if ! validate_gopass_segment "$account"; then
+        log_error "Invalid account name '$account'"
+        return 1
+    fi
 
-    local prefix
-    while IFS= read -r prefix; do
-        [[ -z "$prefix" ]] && continue
-        printf '%s/providers/%s/accounts/%s/api_key\n' "$prefix" "$provider" "$encoded"
-    done < <(gopass_prefix_candidates)
+    api_key_path "$provider" "$account"
 }
 
 store_api_key() {
