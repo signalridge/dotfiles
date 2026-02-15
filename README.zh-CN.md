@@ -32,7 +32,7 @@
 - `chezmoi`：管理 dotfiles、模板和 bootstrap 编排
 - `Nix`：声明式包管理（macOS 用 `nix-darwin`，macOS/Linux 都用 `flakey-profile`）
 - `aqua` + `mise`：补充 Nix 之外的 CLI 与 runtime 版本固定
-- `Claude Code` + `Codex CLI`：共享 AI 工具链
+- `Claude Code` + `Codex CLI` + `OpenCode`：共享 AI 工具链
 
 这不是展示型模板，而是日常真实使用的配置。本文档只描述仓库当前已经实现的能力。
 
@@ -45,10 +45,12 @@
   - macOS/Linux 共用 Nix user packages
   - macOS 使用 `nix-darwin` 管理系统配置
   - macOS 集成 Homebrew / MAS
-- 共享 AI skills 自动同步到 `~/.agents/skills`（Claude 与 Codex 共用）
-- Claude/Codex 双栈 provider 切换：
+- 共享 AI skills 自动同步到 `~/.agents/skills`（Claude、Codex、OpenCode 共用）
+- Claude/Codex/OpenCode 三栈 provider 切换：
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
+  - `opencode-manage` / `opencode-with`
+- 声明式管理 `OpenCode + oh-my-opencode` 全局配置，并启用 native-only（禁用 Claude compatibility）护栏
 - 每次 `chezmoi apply` 自动对齐 Claude MCP 配置
 - GitHub Actions 自动维护依赖版本（versions、flake lock、aqua packages）
 - OpenSpec 管理中大型改动生命周期（`openspec/changes`、`openspec/specs`、`opsx-*`）
@@ -63,7 +65,7 @@
 - **工作流护栏**：pre-commit + Claude hooks 组合，降低危险操作概率
 - **DX 自动化**：Justfile、fzf 导航、AI 辅助提交流程
 - **CI 一致性**：模板渲染与 `nix flake check` 在 macOS/Linux 双平台验证
-- **双 AI 栈**：Claude Code 与 Codex CLI 在一套配置里协同维护
+- **三 AI 栈**：Claude Code、Codex CLI 与 OpenCode 在一套配置里协同维护
 
 ---
 
@@ -90,7 +92,8 @@
 - [Bootstrap 流程（实际执行顺序）](#bootstrap-流程实际执行顺序)
 - [日常操作](#日常操作)
 - [Claude Code 集成](#claude-code-集成)
-- [AI 工具链（Claude + Codex）](#ai-工具链claude--codex)
+- [OpenCode 集成](#opencode-集成)
+- [AI 工具链（Claude + Codex + OpenCode）](#ai-工具链claude--codex--opencode)
 - [工具链](#工具链)
 - [Shell 函数](#shell-函数)
 - [包管理](#包管理)
@@ -113,7 +116,7 @@
 - `nix-darwin`（macOS）：系统层声明式配置
 - `flakey-profile`（macOS/Linux）：用户包 Profile
 - `aqua` + `mise`：Nix 外 CLI/runtime 管理层
-- `dot_claude` + `dot_codex`：两套 AI 工具的全局策略与配置
+- `dot_claude` + `dot_codex` + `private_dot_config/opencode`：AI 工具全局策略与配置
 
 | 组件     | macOS          | Linux          |
 | -------- | -------------- | -------------- |
@@ -143,7 +146,7 @@
 │       ├── apps.nix.tmpl       # Homebrew + MAS 连接层
 │       ├── profile.nix.tmpl    # flakey-profile 包配置
 │       └── host-users.nix
-├── dot_local/bin/              # CLI 封装脚本（Claude/Codex/keys/MCP）
+├── dot_local/bin/              # CLI 封装脚本（Claude/Codex/OpenCode/keys/MCP）
 ├── dot_claude/                 # Claude 全局指令、hooks、模板
 ├── dot_codex/                  # Codex 全局指令、配置、prompts
 ├── private_dot_config/         # 工具配置（tmux、mise、aqua、gopass 等）
@@ -221,7 +224,7 @@ git checkout <tag-or-commit>
 - `headless`（是否无 GUI 场景）
 - `useEncryption`（是否启用加密密钥恢复流）
 - `installMasApps`（是否安装 MAS 应用）
-- `claudeProviderAccount` / `codexProviderAccount`
+- `claudeProviderAccount` / `codexProviderAccount` / `opencodeProviderAccount`
 
 对大多数首次使用者：除非你已经有自己的 keys-manage 备份仓库与密钥材料，否则建议保持 `useEncryption = false`。
 
@@ -277,7 +280,7 @@ skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 - [anthropics/skills](https://github.com/anthropics/skills)
 - [obra/superpowers](https://github.com/obra/superpowers)
 
-同步后统一落到 `~/.agents/skills`，可被 Claude/Codex 共用。
+同步后统一落到 `~/.agents/skills`，可被 Claude/Codex/OpenCode 共用。
 
 ### 质量协议
 
@@ -300,7 +303,76 @@ skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 
 ---
 
-## AI 工具链（Claude + Codex）
+## OpenCode 集成
+
+### 配置归属边界
+
+OpenCode 配置由以下模板声明式管理：
+
+- `private_dot_config/opencode/opencode.jsonc.tmpl`
+- `private_dot_config/opencode/oh-my-opencode.jsonc.tmpl`
+
+渲染到：
+
+- `~/.config/opencode/opencode.jsonc`
+- `~/.config/opencode/oh-my-opencode.jsonc`
+
+默认 provider/account 由 `~/.config/chezmoi/chezmoi.toml` 的 `opencodeProviderAccount` 驱动。
+
+### Workflow wrappers
+
+OpenCode 也提供与 Claude/Codex 一致的三件套：
+
+- `opencode-manage`（`ocm`）：account 生命周期管理（`switch/create/update/remove/test/list/current`）
+- `opencode-with`（`ocw`）：临时 account 上下文启动
+- `opencode-token`：wrapper 与自动化使用的 key/config helper
+
+### Native-only 策略（禁用 Claude compatibility bridge）
+
+`oh-my-opencode` 中与 Claude compatibility 相关入口被显式关闭：
+
+- `claude_code.mcp = false`
+- `claude_code.commands = false`
+- `claude_code.skills = false`
+- `claude_code.agents = false`
+- `claude_code.hooks = false`
+- `claude_code.plugins = false`
+- `disabled_hooks` 包含 `claude-code-hooks`
+- `sisyphus.tasks.claude_code_compat = false`
+
+这保证 OpenCode 工作流不依赖 `~/.claude/*`。
+
+### OpenCode 内的 OpenSpec 集成
+
+OpenCode plugin 顺序固定为：
+
+```json
+"plugin": ["oh-my-opencode", "opencode-plugin-openspec"]
+```
+
+这样既保留 `oh-my-opencode` orchestration，又能在 OpenCode 内启用 `openspec-plan` agent 做 OpenSpec 规划。
+
+### 运行时确认策略
+
+默认将敏感操作设为 `ask`：
+
+- `edit`
+- `bash`
+- `external_directory`
+- `webfetch`
+- `websearch`
+- `codesearch`
+- `lsp`
+- `task`
+- `skill`
+
+该策略同时覆盖 OpenCode 主流程和默认 `oh-my-opencode` orchestration 流程（除非某个 agent 显式覆盖）。
+
+详见：`docs/opencode-provider.md`。
+
+---
+
+## AI 工具链（Claude + Codex + OpenCode）
 
 ### 共享 Skills 分发
 
@@ -310,7 +382,7 @@ skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 - `anthropics/skills`
 - `obra/superpowers`
 
-最终统一到 `~/.agents/skills`，由 Claude 与 Codex 共同使用。
+最终统一到 `~/.agents/skills`，由 Claude、Codex、OpenCode 共同使用。
 
 ### Account 与 Provider 管理
 
@@ -326,6 +398,11 @@ codex-manage
 codex-manage list
 codex-manage switch openai
 codex-with deepseek@private "explain this file"
+
+# OpenCode
+opencode-manage
+opencode-manage switch openai
+opencode-with deepseek@private
 ```
 
 ### Token Helpers
@@ -333,11 +410,13 @@ codex-with deepseek@private "explain this file"
 ```bash
 claude-token --check kimi@private
 codex-token --check deepseek@private
+opencode-token --check qwen@private
 ```
 
 ### MCP 集成
 
 - Claude MCP 由 `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl` 自动对齐。
+- OpenCode 的 MCP/plugin 行为由 `~/.config/opencode/opencode.jsonc` 与 `~/.config/opencode/oh-my-opencode.jsonc` 原生管理。
 - 仓库提供 MCP wrapper：
   - `~/.local/bin/mcp-tavily`
   - `~/.local/bin/mcp-postgres`
@@ -449,6 +528,7 @@ chezmoi init --apply --promptBool headless=true signalridge
 - `docs/keys-manage-guide.md`
 - `docs/gopass-new-device-setup.md`
 - `docs/claude-provider.md`
+- `docs/opencode-provider.md`
 
 ---
 
@@ -496,6 +576,7 @@ openspec status --change <change-name>
 ## 更多文档
 
 - `docs/claude-provider.md`
+- `docs/opencode-provider.md`
 - `docs/keys-manage-guide.md`
 - `docs/gopass-new-device-setup.md`
 - `docs/tmux.md`

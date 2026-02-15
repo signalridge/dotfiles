@@ -309,6 +309,16 @@ PATH="$BASE_PATH" "$BIN/claude-manage" test qwen@beta >/dev/null
 PATH="$BASE_PATH" "$BIN/codex-with" deepseek@alpha --version >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-with" qwen@beta --version >/dev/null
 
+# doctor: parity diagnostics should be available in both tools.
+codex_doctor="$(PATH="$BASE_PATH" "$BIN/codex-manage" doctor | strip_ansi)"
+claude_doctor="$(PATH="$BASE_PATH" "$BIN/claude-manage" doctor | strip_ansi)"
+assert_contains "$codex_doctor" "Codex Workflow Doctor"
+assert_contains "$codex_doctor" "current selector: glm@ghost (glm)"
+assert_contains "$codex_doctor" "Summary:"
+assert_contains "$claude_doctor" "Claude Workflow Doctor"
+assert_contains "$claude_doctor" "current selector: anthropic (anthropic)"
+assert_contains "$claude_doctor" "Summary:"
+
 # Canonical write path should be tool-specific.
 codex_api_path="$(
     PATH="$BASE_PATH" bash -c "source '$BIN/lib/ai/codex'; api_key_path deepseek alpha"

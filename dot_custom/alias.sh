@@ -43,6 +43,10 @@ alias_if_cmd_exists "claude-manage" "ccm"
 alias_if_cmd_exists "codex-with" "cxw"
 alias_if_cmd_exists "codex-manage" "cxm"
 
+# OpenCode provider tools
+alias_if_cmd_exists "opencode-with" "ocw"
+alias_if_cmd_exists "opencode-manage" "ocm"
+
 # ─────────────────────────────────────────────────────────────
 # Global Aliases (zsh only) - Expand anywhere in command line
 # Usage: cat file G error  =>  cat file | grep error

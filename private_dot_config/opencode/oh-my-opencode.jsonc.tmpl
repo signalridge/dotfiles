@@ -1,0 +1,150 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  "auto_update": false,
+  "claude_code": {
+    "mcp": false,
+    "commands": false,
+    "skills": false,
+    "agents": false,
+    "hooks": false,
+    "plugins": false
+  },
+  "disabled_hooks": [
+    "claude-code-hooks"
+  ],
+  "disabled_mcps": [],
+  "disabled_agents": [],
+  "disabled_skills": [],
+  "disabled_commands": [],
+  "disabled_tools": [],
+  "sisyphus_agent": {
+    "disabled": false,
+    "default_builder_enabled": false,
+    "planner_enabled": true,
+    "replace_plan": true
+  },
+  "sisyphus": {
+    "tasks": {
+      "storage_path": ".sisyphus/tasks",
+      "claude_code_compat": false
+    }
+  },
+  "agents": {
+    "atlas": {
+      "category": "ultrabrain"
+    },
+    "sisyphus-junior": {
+      "category": "deep"
+    },
+    "prometheus": {
+      "category": "unspecified-high"
+    }
+  },
+  "categories": {
+    "visual-engineering": {
+      "description": "Visual implementation and UI-heavy work.",
+      "model": "google/gemini-3-pro"
+    },
+    "ultrabrain": {
+      "description": "Highest-depth orchestration and architecture reasoning.",
+      "model": "openai/gpt-5.3-codex",
+      "variant": "xhigh"
+    },
+    "deep": {
+      "description": "Deep implementation and debugging tasks.",
+      "model": "openai/gpt-5.3-codex",
+      "variant": "medium"
+    },
+    "artistry": {
+      "description": "Creative writing and design-oriented output.",
+      "model": "google/gemini-3-pro",
+      "variant": "high"
+    },
+    "quick": {
+      "description": "Fast low-latency utility tasks.",
+      "model": "anthropic/claude-haiku-4-5"
+    },
+    "unspecified-low": {
+      "description": "Fallback low-effort work not matching dedicated categories.",
+      "model": "anthropic/claude-sonnet-4-5"
+    },
+    "unspecified-high": {
+      "description": "Fallback high-effort work not matching dedicated categories.",
+      "model": "anthropic/claude-opus-4-6",
+      "variant": "max"
+    },
+    "writing": {
+      "description": "Writing and documentation focused tasks.",
+      "model": "google/gemini-3-flash"
+    }
+  },
+  "skills": {
+    "sources": [
+      { "path": ".agents/skills", "recursive": true }
+    ]
+  },
+  "background_task": {
+    "defaultConcurrency": 4,
+    "staleTimeoutMs": 180000,
+    "messageStalenessTimeoutMs": 600000,
+    "providerConcurrency": {
+      "anthropic": 2,
+      "openai": 4,
+      "google": 4
+    },
+    "modelConcurrency": {
+      "anthropic/claude-opus-4-6": 1,
+      "openai/gpt-5.3-codex": 2
+    }
+  },
+  "browser_automation_engine": {
+    "provider": "playwright"
+  },
+  "websearch": {
+    "provider": "tavily"
+  },
+  "notification": {
+    "force_enable": true
+  },
+  "tmux": {
+    "enabled": true,
+    "layout": "main-vertical",
+    "main_pane_size": 60,
+    "main_pane_min_width": 120,
+    "agent_pane_min_width": 40
+  },
+  "experimental": {
+    "truncate_all_tool_outputs": false,
+    "aggressive_truncation": false,
+    "auto_resume": false,
+    "preemptive_compaction": false,
+    "dynamic_context_pruning": {
+      "enabled": true,
+      "notification": "detailed",
+      "turn_protection": {
+        "enabled": true,
+        "turns": 4
+      },
+      "strategies": {
+        "deduplication": {
+          "enabled": true
+        },
+        "supersede_writes": {
+          "enabled": true,
+          "aggressive": false
+        },
+        "purge_errors": {
+          "enabled": true,
+          "turns": 6
+        }
+      }
+    },
+    "task_system": true,
+    "plugin_load_timeout_ms": 15000,
+    "safe_hook_creation": true
+  },
+  "git_master": {
+    "commit_footer": true,
+    "include_co_authored_by": true
+  }
+}

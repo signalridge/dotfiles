@@ -135,16 +135,20 @@ claude:
 
 ## Data Storage
 
-| Data                   | Location                                                                   |
-| ---------------------- | -------------------------------------------------------------------------- |
-| Provider definitions   | `.chezmoidata/claude.yaml` → `providers`                                   |
-| Account configurations | `.chezmoidata/claude.yaml` → `accounts`                                    |
-| API keys               | gopass: `<prefix>/providers/{provider}/accounts/{encoded_account}/api_key` |
-| Default account        | `~/.config/chezmoi/chezmoi.toml` → `claudeProviderAccount`                 |
+| Data                   | Location                                                                 |
+| ---------------------- | ------------------------------------------------------------------------ |
+| Provider definitions   | `.chezmoidata/claude.yaml` → `providers`                                 |
+| Account configurations | `.chezmoidata/claude.yaml` → `accounts`                                  |
+| API keys               | gopass: `claude/providers/{provider}/accounts/{encoded_account}/api_key` |
+| Default account        | `~/.config/chezmoi/chezmoi.toml` → `claudeProviderAccount`               |
 
-**Gopass namespace:** set `AI_TOOLS_GOPASS_PREFIX` to override the prefix (default: `ai-tools`).
+**Namespace policy:** prefixes are tool-scoped and fixed by wrapper context:
 
-**Migration:** re-add keys with `claude-manage add-key` / `codex-manage add-key` to store them in the new namespace, then remove legacy entries after verifying.
+- `claude` wrappers -> `claude/...`
+- `codex` wrappers -> `codex/...`
+- `opencode` wrappers -> `opencode/...`
+
+**Migration:** re-add keys with `claude-manage add-key` / `codex-manage add-key` / `opencode-manage add-key` to store them in canonical tool paths, then remove legacy entries after verifying with `*-token --check`.
 
 ## VS Code Integration
 

@@ -32,7 +32,7 @@ A reproducible personal workstation setup built around:
 - `chezmoi` for dotfiles, templating, and bootstrap orchestration
 - `Nix` for declarative packages (`nix-darwin` on macOS + `flakey-profile` on macOS/Linux)
 - `aqua` + `mise` for CLI/runtime pinning outside Nix where practical
-- Shared AI tooling for `Claude Code` and `Codex CLI`
+- Shared AI tooling for `Claude Code`, `Codex CLI`, and `OpenCode`
 
 This is a real daily-driver setup, not a demo template. The README focuses on what is actually implemented in this repository today.
 
@@ -45,10 +45,12 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
   - Nix user packages on macOS/Linux
   - nix-darwin system config on macOS
   - Homebrew/MAS integration on macOS
-- Shared AI skills marketplace sync to `~/.agents/skills` for both Claude and Codex
-- Multi-provider account switching for both toolchains:
+- Shared AI skills marketplace sync to `~/.agents/skills` for Claude/Codex/OpenCode
+- Multi-provider account switching across all managed AI toolchains:
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
+  - `opencode-manage` / `opencode-with`
+- Declarative `OpenCode + oh-my-opencode` global config with native-only (no-Claude-compat) guardrails
 - Auto MCP sync for Claude on every `chezmoi apply`
 - Automated dependency upkeep via GitHub Actions (versions, flake locks, aqua packages)
 - OpenSpec-backed lifecycle for medium/large changes (`openspec/changes`, `openspec/specs`, `opsx-*`)
@@ -63,7 +65,7 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 - **Workflow guardrails**: pre-commit checks + Claude hooks to reduce risky edits and command misuse
 - **DX automation**: Justfile routines, fzf navigation helpers, AI-assisted commit flows
 - **CI parity**: template rendering and `nix flake check` on macOS + Linux matrix
-- **Dual AI stack**: both Claude Code and Codex CLI are managed declaratively in one repo
+- **Triple AI stack**: Claude Code, Codex CLI, and OpenCode are managed declaratively in one repo
 
 ---
 
@@ -92,7 +94,8 @@ Core principles:
 - [Bootstrap Flow (What Actually Runs)](#bootstrap-flow-what-actually-runs)
 - [Daily Operations](#daily-operations)
 - [Claude Code Integration](#claude-code-integration)
-- [AI Tooling (Claude + Codex)](#ai-tooling-claude--codex)
+- [OpenCode Integration](#opencode-integration)
+- [AI Tooling (Claude + Codex + OpenCode)](#ai-tooling-claude--codex--opencode)
 - [Tool Chains](#tool-chains)
 - [Shell Functions](#shell-functions)
 - [Package Management](#package-management)
@@ -115,7 +118,7 @@ This repository combines `chezmoi` templating with Nix-based package management 
 - `nix-darwin` (macOS): system-level configuration
 - `flakey-profile` (macOS/Linux): user package profile
 - `aqua` + `mise`: CLI/runtime tooling layer outside Nix where needed
-- `dot_claude` + `dot_codex`: tool-specific global guidance and configuration
+- `dot_claude` + `dot_codex` + `private_dot_config/opencode`: tool-specific global guidance and configuration
 
 | Component     | macOS          | Linux          |
 | ------------- | -------------- | -------------- |
@@ -145,7 +148,7 @@ This repository combines `chezmoi` templating with Nix-based package management 
 │       ├── apps.nix.tmpl       # Homebrew + MAS wiring
 │       ├── profile.nix.tmpl    # flakey-profile package profile
 │       └── host-users.nix
-├── dot_local/bin/              # CLI wrappers (Claude/Codex/keys/MCP)
+├── dot_local/bin/              # CLI wrappers (Claude/Codex/OpenCode/keys/MCP)
 ├── dot_claude/                 # Claude global instructions/hooks/templates
 ├── dot_codex/                  # Codex global instructions/config/prompts
 ├── private_dot_config/         # Tool configs (tmux, mise, aqua, gopass, ...)
@@ -223,7 +226,7 @@ git checkout <tag-or-commit>
 - `headless` (container/server without full desktop assumptions)
 - `useEncryption` (enable encrypted key restore flow)
 - `installMasApps` (macOS App Store apps)
-- `claudeProviderAccount` / `codexProviderAccount`
+- `claudeProviderAccount` / `codexProviderAccount` / `opencodeProviderAccount`
 
 For most first-time users of this repo: keep `useEncryption = false` unless you have your own keys-manage backup repo and key material.
 
@@ -279,7 +282,7 @@ Skills are synced via `.chezmoiexternal.toml.tmpl` from:
 - [anthropics/skills](https://github.com/anthropics/skills)
 - [obra/superpowers](https://github.com/obra/superpowers)
 
-They are normalized into `~/.agents/skills` and shared by Claude/Codex.
+They are normalized into `~/.agents/skills` and shared by Claude/Codex/OpenCode.
 
 ### Quality Protocols
 
@@ -302,7 +305,76 @@ Claude hooks in `dot_claude/hooks/` provide workflow guardrails and formatting a
 
 ---
 
-## AI Tooling (Claude + Codex)
+## OpenCode Integration
+
+### Configuration Ownership
+
+OpenCode is managed declaratively through:
+
+- `private_dot_config/opencode/opencode.jsonc.tmpl`
+- `private_dot_config/opencode/oh-my-opencode.jsonc.tmpl`
+
+Rendered targets:
+
+- `~/.config/opencode/opencode.jsonc`
+- `~/.config/opencode/oh-my-opencode.jsonc`
+
+Provider/account defaults are data-driven via `opencodeProviderAccount` in `~/.config/chezmoi/chezmoi.toml`.
+
+### Workflow Wrappers
+
+OpenCode now has the same workflow shape as Claude/Codex:
+
+- `opencode-manage` (`ocm`): account lifecycle (`switch/create/update/remove/test/list/current`)
+- `opencode-with` (`ocw`): temporary account-scoped launch
+- `opencode-token`: key/config helper for wrappers and automation
+
+### Native-Only Policy (No Claude Compatibility Bridge)
+
+`oh-my-opencode` compatibility ingestion is explicitly disabled:
+
+- `claude_code.mcp = false`
+- `claude_code.commands = false`
+- `claude_code.skills = false`
+- `claude_code.agents = false`
+- `claude_code.hooks = false`
+- `claude_code.plugins = false`
+- `disabled_hooks` includes `claude-code-hooks`
+- `sisyphus.tasks.claude_code_compat = false`
+
+This keeps OpenCode runtime behavior independent from `~/.claude/*`.
+
+### OpenSpec Integration in OpenCode
+
+OpenCode plugin order is pinned to:
+
+```json
+"plugin": ["oh-my-opencode", "opencode-plugin-openspec"]
+```
+
+This preserves oh-my-opencode orchestration while enabling `openspec-plan` agent injection for OpenSpec planning workflow in OpenCode.
+
+### Runtime Confirmation Baseline
+
+OpenCode permissions are pinned to require confirmation (`ask`) for:
+
+- `edit`
+- `bash`
+- `external_directory`
+- `webfetch`
+- `websearch`
+- `codesearch`
+- `lsp`
+- `task`
+- `skill`
+
+This applies to primary OpenCode flow and the default oh-my-opencode orchestration flow unless an agent overrides those permissions.
+
+See: `docs/opencode-provider.md`.
+
+---
+
+## AI Tooling (Claude + Codex + OpenCode)
 
 ### Shared Skill Distribution
 
@@ -312,7 +384,7 @@ Claude hooks in `dot_claude/hooks/` provide workflow guardrails and formatting a
 - `anthropics/skills`
 - `obra/superpowers`
 
-They are normalized into `~/.agents/skills` and shared by Claude/Codex.
+They are normalized into `~/.agents/skills` and shared by Claude/Codex/OpenCode.
 
 ### Account + Provider Control
 
@@ -328,6 +400,11 @@ codex-manage
 codex-manage list
 codex-manage switch openai
 codex-with deepseek@private "explain this file"
+
+# OpenCode (data-driven default account/provider)
+opencode-manage
+opencode-manage switch openai
+opencode-with deepseek@private
 ```
 
 ### Token Helpers
@@ -335,11 +412,13 @@ codex-with deepseek@private "explain this file"
 ```bash
 claude-token --check kimi@private
 codex-token --check deepseek@private
+opencode-token --check qwen@private
 ```
 
 ### MCP Integration
 
 - Claude MCP entries are reconciled by `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl`.
+- OpenCode MCP/plugin behavior is managed natively via `~/.config/opencode/opencode.jsonc` and `~/.config/opencode/oh-my-opencode.jsonc`.
 - Wrapper commands provided in this repo:
   - `~/.local/bin/mcp-tavily`
   - `~/.local/bin/mcp-postgres`
@@ -451,6 +530,7 @@ See:
 - `docs/keys-manage-guide.md`
 - `docs/gopass-new-device-setup.md`
 - `docs/claude-provider.md`
+- `docs/opencode-provider.md`
 
 ---
 
@@ -498,6 +578,7 @@ openspec status --change <change-name>
 ## Additional Docs
 
 - `docs/claude-provider.md`
+- `docs/opencode-provider.md`
 - `docs/keys-manage-guide.md`
 - `docs/gopass-new-device-setup.md`
 - `docs/tmux.md`

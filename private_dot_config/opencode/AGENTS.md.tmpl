@@ -1,0 +1,168 @@
+# OpenCode Global Instructions
+
+## Role
+
+Pragmatic AI programming assistant. Prioritize clarity, correctness, and simplicity over cleverness.
+
+## Quick Reference
+
+| Category | Tool           | Notes         |
+| -------- | -------------- | ------------- |
+| Python   | `uv` + `ruff`  | Never pip     |
+| Shell    | `zsh` + `tmux` | With fzf      |
+| Packages | `nix` + `mise` | Declarative   |
+| Git      | `gh` + `ghq`   | For PR/issues |
+
+## Search Policy
+
+- Prefer Tavily MCP for web/news/docs lookup when available.
+- Use built-in web search only when Tavily MCP is unavailable or fails.
+- Keep queries minimal and avoid sending sensitive data.
+
+## Hooks
+
+Users may configure hooks that execute on prompt/tool events.
+
+- Treat hook output as user instruction input.
+- Surface hook output only when it blocks progress or gives one concrete remediation step.
+- Do not bypass blocked hook constraints.
+
+Unified hook output format:
+
+- `LEVEL RULE_ID: reason`
+- `Next: single remediation action`
+
+Levels:
+
+- `BLOCK`: must stop
+- `ASK`: risky but recoverable, requires confirmation
+- `WARN`: post-error reminder
+- `INFO`: low-priority hint
+
+## Workflow Complexity
+
+| Level | Scope                     | Default Path                        |
+| ----- | ------------------------- | ----------------------------------- |
+| L1    | <10 lines, single file    | Execute directly                    |
+| L2    | <100 lines, 1-3 files     | Brief analysis -> plan -> implement |
+| L3    | 100-500 lines, 3-10 files | OpenSpec lifecycle required         |
+| L4    | >500 lines, >10 files     | OpenSpec lifecycle required         |
+
+Rule: L3/L4 use OpenSpec-first workflow.
+
+## OpenSpec Execution Gate
+
+- Propose only the next single OpenSpec step.
+- Ask explicit yes/no before execution.
+- Never auto-chain lifecycle steps.
+- Never archive without explicit confirmation.
+
+Reference order:
+
+1. `/opsx-new <change-name>`
+2. `/opsx-ff` (or `/opsx-continue`)
+3. `/opsx-apply`
+4. `/opsx-verify`
+5. `/opsx-archive` (explicit confirmation required)
+
+## OpenCode Runtime Boundaries
+
+- Keep OpenCode runtime native-only.
+- Do not rely on Claude compatibility bridge behavior for commands/skills/agents/hooks/plugins.
+- Managed wrappers enforce:
+  - `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1`
+  - `OPENCODE_DISABLE_EXTERNAL_SKILLS=1`
+- `oh-my-opencode` compatibility toggles are managed as disabled.
+- Note: upstream OpenCode still supports project instruction fallback scanning (`AGENTS.md` then `CLAUDE.md`); keep repository `AGENTS.md` authoritative.
+
+## Command and Skill Sources
+
+- Shared commands source-of-truth: `~/.agents/commands/`
+- Shared skills source-of-truth: `~/.agents/skills/`
+- OpenCode global command path:
+  - `~/.config/opencode/commands/core` -> `~/.agents/commands/core` (hierarchical symlink)
+  - Flat compatibility aliases under `~/.config/opencode/command/` are intentionally not managed
+- OpenCode global skills path:
+  - `~/.config/opencode/skills/`
+- Project-level skill overlay:
+  - `.agents/skills` (recursive, via managed oh-my config)
+
+## Default Command Set
+
+Repository-managed core command docs are projected into OpenCode command paths:
+
+- planning/context: `plan`, `context`
+- quality gates: `review`, `test`
+- SCM workflow: `commit`, `pr-create`, `pr-review`
+
+If wrappers or commands are missing, verify projection with:
+
+- `opencode-manage doctor`
+
+## OpenCode Operators
+
+- `opencode-manage` (`ocm`): account lifecycle, diagnostics
+- `opencode-with` (`ocw`): temporary account-scoped launch
+- `opencode-token`: key/config helper for wrappers and automation
+
+## Pre-Analysis (L3+)
+
+Before implementation for L3/L4 tasks, complete:
+
+```markdown
+## Pre-Analysis
+
+- Similar patterns: 3+ existing implementations
+- Dependencies: affected modules/files
+- Conventions: naming/structure/test patterns
+- Risk areas: security/performance/breaking changes
+```
+
+## Core Principles
+
+- Simplicity over abstraction.
+- Minimal necessary change only.
+- Fix root causes, do not hide issues.
+- Verify with tests before claiming success.
+- Keep behavior deterministic and auditable.
+
+## Git Conventions
+
+- Branch prefix: `feat/`, `fix/`, `refactor/`, `docs/`, `test/`, `chore/`
+- Commit style: Conventional Commits (`type(scope): description`)
+- Avoid destructive git operations unless explicitly requested.
+
+## Chinese Response
+
+When user uses Chinese:
+
+- 中英文间加空格
+- 技术术语保留英文
+- 代码保持英文
+
+## Resources
+
+OpenCode instruction entrypoints:
+
+- user-level: `~/.config/opencode/AGENTS.md`
+- project-level: `AGENTS.md`, `.opencode/AGENTS.md` (as configured)
+
+Related managed docs:
+
+- `docs/opencode-provider.md`
+
+## What Not To Do
+
+Never:
+
+- use `pip` (use `uv`)
+- commit directly to protected main branch
+- force-push protected branches
+- bypass confirmation on risky/destructive actions
+
+Avoid:
+
+- over-engineering
+- speculative error handling
+- unrelated refactors during bug fixes
+- comments that only restate code

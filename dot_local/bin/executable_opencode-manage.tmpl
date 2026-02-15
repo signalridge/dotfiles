@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
-# Codex CLI Account Manager
+# OpenCode Account Manager
 # Manage accounts and API keys with fzf interface
 #
 # Usage:
-#   codex-manage                   # Interactive menu
-#   codex-manage switch [account]         Switch default account
-#   codex-manage create-account [account] Create account (optionally with API key)
-#   codex-manage update-account [account] Update account (optionally rotate API key)
-#   codex-manage remove-account [account] Remove account (optionally delete API key)
-#   codex-manage test [account]           Test connectivity
-#   codex-manage list [provider]          List accounts
-#   codex-manage doctor                   Run workflow diagnostics
+#   opencode-manage                          # Interactive menu
+#   opencode-manage switch [account]         Switch default account
+#   opencode-manage create-account [account] Create account (optionally with API key)
+#   opencode-manage update-account [account] Update account (optionally rotate API key)
+#   opencode-manage remove-account [account] Remove account (optionally delete API key)
+#   opencode-manage test [account]           Test connectivity
+#   opencode-manage list [provider]          List accounts
+#   opencode-manage doctor                   Run workflow diagnostics
 
 set -euo pipefail
 
-# shellcheck source=lib/ai/codex.tmpl
+# shellcheck source=lib/ai/opencode.tmpl
 # shellcheck disable=SC1091
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-source "$SCRIPT_DIR/lib/ai/codex"
+source "$SCRIPT_DIR/lib/ai/opencode"
 
 # Return codes
 : "${RC_BACK:=10}"
 : "${RC_EXIT:=130}"
 
-# Set Codex account in chezmoi.toml
+# Set OpenCode account in chezmoi.toml
 set_chezmoi_account() {
     local account="$1"
     local escaped_account
@@ -31,17 +31,24 @@ set_chezmoi_account() {
     local tmp_file
     tmp_file=$(mktemp) || { log_error "Failed to create temp file"; return 1; }
 
-    if grep -q "^codexProviderAccount = " "$CHEZMOI_CONFIG"; then
-        sed "s/^codexProviderAccount = .*/codexProviderAccount = \"$escaped_account\"/" "$CHEZMOI_CONFIG" > "$tmp_file"
+    if grep -q "^opencodeProviderAccount = " "$CHEZMOI_CONFIG"; then
+        sed "s/^opencodeProviderAccount = .*/opencodeProviderAccount = \"$escaped_account\"/" "$CHEZMOI_CONFIG" > "$tmp_file"
+    elif grep -q "^codexProviderAccount = " "$CHEZMOI_CONFIG"; then
+        awk -v line="opencodeProviderAccount = \"$escaped_account\"" '
+            BEGIN { inserted = 0 }
+            { print }
+            /^codexProviderAccount = / && inserted == 0 { print line; inserted = 1 }
+            END { if (inserted == 0) print line }
+        ' "$CHEZMOI_CONFIG" > "$tmp_file"
     elif grep -q "^claudeProviderAccount = " "$CHEZMOI_CONFIG"; then
-        awk -v line="codexProviderAccount = \"$escaped_account\"" '
+        awk -v line="opencodeProviderAccount = \"$escaped_account\"" '
             BEGIN { inserted = 0 }
             { print }
             /^claudeProviderAccount = / && inserted == 0 { print line; inserted = 1 }
             END { if (inserted == 0) print line }
         ' "$CHEZMOI_CONFIG" > "$tmp_file"
     elif grep -q "^\[data\]" "$CHEZMOI_CONFIG"; then
-        awk -v line="codexProviderAccount = \"$escaped_account\"" '
+        awk -v line="opencodeProviderAccount = \"$escaped_account\"" '
             BEGIN { inserted = 0; in_data = 0 }
             /^\[data\]$/ { in_data = 1; print; next }
             /^\[/ {
@@ -65,11 +72,12 @@ set_chezmoi_account() {
         {
             echo ""
             echo "[data]"
-            echo "codexProviderAccount = \"$escaped_account\""
+            echo "opencodeProviderAccount = \"$escaped_account\""
         } >> "$tmp_file"
     fi
     mv "$tmp_file" "$CHEZMOI_CONFIG"
 }
+
 # FZF interactive menu
 fzf_menu() {
     while true; do
@@ -92,7 +100,7 @@ MENU
         } | fzf --ansi \
             --height=50% \
             --border=rounded \
-            --header="Codex Account Manager" \
+            --header="OpenCode Account Manager" \
             --preview='
                 cmd=$(echo {} | awk "{print \$1}")
                 echo -e "\033[1;34m━━━ $cmd ━━━\033[0m"
@@ -110,7 +118,7 @@ MENU
                 echo ""
                 echo -e "\033[1;34m━━━ Accounts ━━━\033[0m"
                 echo ""
-                codex-manage list 2>/dev/null | tail -n +3
+                opencode-manage list 2>/dev/null | tail -n +3
             ' \
             --preview-window='right:50%:wrap' \
             --preview-label="[ Current: $current ]"
@@ -172,11 +180,11 @@ cmd_switch() {
 
     if is_third_party "$provider"; then
         if command -v gopass >/dev/null 2>&1; then
-            if ! codex-token --check "$input" 2>/dev/null; then
-                log_warn "No API token for $input (continuing without auth update)"
+            if ! opencode-token --check "$input" 2>/dev/null; then
+                log_warn "No API token for $input (continuing without token)"
             fi
         else
-            log_warn "gopass not found (continuing without auth update)"
+            log_warn "gopass not found (continuing without token)"
         fi
     fi
 
@@ -184,37 +192,11 @@ cmd_switch() {
     set_chezmoi_account "$input"
     echo "  ✓ Updated chezmoi.toml"
     log_info "Applying chezmoi templates..."
-    chezmoi apply --verbose --no-scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
-    echo "  ✓ Updated ~/.codex/config.toml"
-    if is_third_party "$provider"; then
-        if command -v gopass >/dev/null 2>&1 && codex-token --check "$input" 2>/dev/null; then
-            backup_codex_auth_openai || return 1
-            local parsed acct_name
-            parsed=$(parse_provider_account "$input")
-            acct_name="${parsed#*|}"
-            local api_key
-            api_key=$(get_api_key "$provider" "$acct_name") || {
-                log_warn "Failed to retrieve API key (skipping auth.json update)"
-                api_key=""
-            }
-            if [[ -n "$api_key" ]]; then
-                write_codex_auth_key "$api_key" || return 1
-                echo "  ✓ Updated ~/.codex/auth.json (OPENAI_API_KEY)"
-            fi
-        else
-            log_warn "Skipping auth.json update for $input"
-        fi
-    else
-        restore_codex_auth_openai || return 1
-        if [[ -f "$CODEX_AUTH" ]]; then
-            echo "  ✓ Restored ~/.codex/auth.json"
-        else
-            echo "  ✓ Removed ~/.codex/auth.json (re-login required)"
-        fi
-    fi
+    chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG" "$SCRIPT_DIR/lib/ai/core"
+    echo "  ✓ Updated ~/.config/opencode/opencode.jsonc"
     echo ""
     log_success "Account set to $input"
-    log_warn "Restart Codex to apply changes"
+    log_warn "Restart OpenCode to apply changes"
 }
 
 # Create account
@@ -233,9 +215,9 @@ cmd_create_account() {
     is_back_selection "$provider" && return "$RC_BACK"
 
     local account_label full_name
-    if [[ "$provider" == "openai" ]]; then
-        account_label="openai"
-        full_name="openai"
+    if is_opencode_native_provider "$provider"; then
+        account_label="$provider"
+        full_name="$provider"
     else
         printf 'Account label (default: private): '
         read -r account_label
@@ -244,10 +226,11 @@ cmd_create_account() {
         full_name="${provider}@${account_label}"
     fi
 
-    if [[ "$provider" == "openai" ]]; then
+    if is_opencode_native_provider "$provider"; then
         set_chezmoi_account "$full_name"
-        chezmoi apply --verbose --no-scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
-        log_success "Account created and switched: $full_name (OAuth)"
+        chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG" "$SCRIPT_DIR/lib/ai/core"
+        log_success "Account created and switched: $full_name (native auth)"
+        log_info "Use: opencode auth login $provider"
         return 0
     fi
 
@@ -266,7 +249,7 @@ cmd_create_account() {
     fi
 
     set_chezmoi_account "$full_name"
-    chezmoi apply --verbose --no-scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
+    chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG" "$SCRIPT_DIR/lib/ai/core"
     log_success "Account created and switched: $full_name"
 }
 
@@ -291,11 +274,12 @@ cmd_update_account() {
     provider=$(get_provider "$input")
 
     set_chezmoi_account "$input"
-    chezmoi apply --verbose --no-scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
+    chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG" "$SCRIPT_DIR/lib/ai/core"
     log_success "Switched to $input"
 
-    if [[ "$provider" == "openai" ]]; then
-        log_info "openai uses OAuth, no API key update"
+    if is_opencode_native_provider "$provider"; then
+        log_info "$provider uses native auth"
+        log_info "Run: opencode auth login $provider"
         return 0
     fi
 
@@ -343,18 +327,20 @@ cmd_remove_account() {
     parsed=$(parse_provider_account "$input")
     acct_name="${parsed#*|}"
 
-    printf "Also delete API key for $input? [y/N]: "
-    read -r del_key
-    if [[ "$del_key" == "y" || "$del_key" == "Y" ]]; then
-        if key_exists "$provider" "$acct_name"; then
-            delete_api_key "$provider" "$acct_name"
-            log_success "API key deleted"
-        else
-            log_info "No API key found"
+    if is_third_party "$provider"; then
+        printf "Also delete API key for $input? [y/N]: "
+        read -r del_key
+        if [[ "$del_key" == "y" || "$del_key" == "Y" ]]; then
+            if key_exists "$provider" "$acct_name"; then
+                delete_api_key "$provider" "$acct_name"
+                log_success "API key deleted"
+            else
+                log_info "No API key found"
+            fi
         fi
     fi
 
-    log_warn "Account profile is template-managed; to fully remove, update dot_codex/config.toml.tmpl"
+    log_warn "Account profile is template-managed; to fully remove, update private_dot_config/opencode/opencode.jsonc.tmpl"
 }
 
 # Add API key
@@ -365,7 +351,9 @@ cmd_add_key() {
     if [[ -z "$input" ]]; then
         require_cmd fzf || return 1
         local needs_key=()
-        for acct in "${ACCOUNTS[@]}"; do
+        local acct
+        while IFS= read -r acct; do
+            [[ -z "$acct" ]] && continue
             local prov
             prov=$(get_provider "$acct")
             if is_third_party "$prov"; then
@@ -374,7 +362,7 @@ cmd_add_key() {
                 acct_name="${parsed#*|}"
                 key_exists "$prov" "$acct_name" || needs_key+=("$acct")
             fi
-        done
+        done < <(list_runtime_accounts)
 
         [[ ${#needs_key[@]} -eq 0 ]] && {
             log_warn "All accounts already have API keys"
@@ -409,7 +397,7 @@ cmd_add_key() {
 
     store_api_key "$provider" "$acct_name" "$api_key"
     log_success "API key saved"
-    log_info "Tip: run 'codex-manage test $input' to verify"
+    log_info "Tip: run 'opencode-manage test $input' to verify"
 }
 
 # Update API key
@@ -511,15 +499,15 @@ cmd_test() {
 
     local provider config base_url
     provider=$(get_provider "$input")
-    config=$(codex-token --config "$input")
+    config=$(opencode-token --config "$input")
     base_url=$(echo "$config" | jq -r '.base_url // empty')
     base_url=${base_url%/v1}
     base_url=${base_url%/v1/}
     base_url=${base_url%/}
 
     if [[ -z "$base_url" ]]; then
-        log_warn "Native OpenAI provider"
-        log_success "Use 'codex' to authenticate via OAuth"
+        log_warn "Native provider: $provider"
+        log_success "Use 'opencode auth login $provider' to verify credentials"
         return 0
     fi
 
@@ -543,11 +531,7 @@ cmd_test() {
 
     echo "  Testing API..."
 
-    local model wire_api response http_code
-    model=$(echo "$config" | jq -r '.model // "unknown"')
-    wire_api=$(echo "$config" | jq -r '.wire_api // "responses"')
-
-    local header_file
+    local header_file models_response models_code
     header_file=$(mktemp) || { log_fail "Failed to create header temp file"; return 1; }
     if ! chmod 600 "$header_file"; then
         log_fail "Failed to secure header temp file"
@@ -564,90 +548,36 @@ EOF
         return 1
     fi
 
-    # Prefer /v1/models to validate auth/connectivity without model execution.
-    local models_response models_code
     models_response=$(curl -sS -w "\n%{http_code}" --max-time 30 \
         -X GET "$base_url/v1/models" \
         -H @"$header_file" 2>&1 || true)
     models_code=$(echo "$models_response" | tail -n1)
 
+    rm -f "$header_file"
+
     case "$models_code" in
         200)
-            rm -f "$header_file"
             log_success "API OK (/v1/models)"
-            echo ""
-            log_success "Account $input is configured"
-            return 0
             ;;
         401|403)
-            rm -f "$header_file"
             log_fail "Invalid API key"
             return 1
             ;;
         429)
-            rm -f "$header_file"
-            log_warn "Rate limited on /v1/models"
-            echo ""
-            log_success "Account $input is configured"
-            return 0
-            ;;
-        404|405)
-            log_warn "/v1/models not supported; probing inference endpoint"
+            log_warn "Rate limited"
             ;;
         *)
             if [[ -z "$models_code" || "$models_code" == "000" ]]; then
-                rm -f "$header_file"
                 log_fail "Network error"
-                return 1
+            else
+                log_fail "HTTP $models_code"
             fi
-            log_warn "/v1/models returned HTTP $models_code; probing inference endpoint"
+            return 1
             ;;
     esac
-
-    local endpoint payload
-    case "$wire_api" in
-        chat_completions|chat)
-            endpoint="/v1/chat/completions"
-            payload="{\"model\":\"$model\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":1}"
-            ;;
-        *)
-            endpoint="/v1/responses"
-            payload="{\"model\":\"$model\",\"input\":\"ping\"}"
-            ;;
-    esac
-
-    response=$(curl -sS -w "\n%{http_code}" --max-time 30 \
-        -X POST "$base_url$endpoint" \
-        -H @"$header_file" \
-        -d "$payload" 2>&1 || true)
-
-    rm -f "$header_file"
-
-    http_code=$(echo "$response" | tail -n1)
-
-    case "$http_code" in
-        200) log_success "API OK" ;;
-        401|403) log_fail "Invalid API key"; return 1 ;;
-        429) log_warn "Rate limited"; http_code=200 ;;
-        *)
-            if [[ -z "$http_code" || "$http_code" == "000" ]]; then
-                log_fail "Network error"
-                return 1
-            fi
-            log_warn "HTTP $http_code" ;;
-    esac
-
-    if [[ "$http_code" != "200" ]]; then
-        return 1
-    fi
 
     echo ""
     log_success "Account $input is configured"
-}
-
-# Build Codex list accounts: native + third-party accounts present in gopass.
-list_codex_accounts() {
-    list_runtime_accounts
 }
 
 # List accounts
@@ -674,7 +604,7 @@ cmd_list() {
         else
             echo -e "  ${GREEN}${STATUS_NATIVE}${NC} $account (native)"
         fi
-    done < <(list_codex_accounts)
+    done < <(list_runtime_accounts)
 }
 
 # Show current
@@ -706,51 +636,108 @@ cmd_doctor() {
         fail=$((fail + 1))
     }
 
-    log_header "Codex Workflow Doctor"
+    log_header "OpenCode Workflow Doctor"
 
     echo "Runtime commands:"
-    if command -v codex >/dev/null 2>&1; then pass "codex found"; else note_fail "codex not found"; fi
+    if command -v opencode >/dev/null 2>&1; then pass "opencode found"; else note_fail "opencode not found"; fi
     if command -v jq >/dev/null 2>&1; then pass "jq found"; else note_fail "jq not found"; fi
     if command -v chezmoi >/dev/null 2>&1; then pass "chezmoi found"; else note_fail "chezmoi not found"; fi
     if command -v gopass >/dev/null 2>&1; then pass "gopass found"; else note_warn "gopass missing (third-party keys unavailable)"; fi
     echo ""
 
     echo "Rendered configs:"
-    if [[ -f "$CODEX_CONFIG" ]]; then
-        pass "~/.codex/config.toml present"
-        local model_provider
-        model_provider=$(toml_get_model_provider "$CODEX_CONFIG")
-        if [[ -n "$model_provider" ]]; then
-            pass "model_provider resolved (${model_provider})"
+    if [[ -f "$OPENCODE_CONFIG" ]]; then
+        if jq -e . "$OPENCODE_CONFIG" >/dev/null 2>&1; then
+            pass "~/.config/opencode/opencode.jsonc is valid JSON"
         else
-            note_warn "model_provider missing in ~/.codex/config.toml"
+            note_fail "~/.config/opencode/opencode.jsonc is not valid JSON"
         fi
     else
-        note_fail "~/.codex/config.toml missing"
+        note_fail "~/.config/opencode/opencode.jsonc missing"
+    fi
+
+    if [[ -f "$OPENCODE_OHMY_CONFIG" ]]; then
+        if jq -e . "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+            pass "~/.config/opencode/oh-my-opencode.jsonc is valid JSON"
+        else
+            note_fail "~/.config/opencode/oh-my-opencode.jsonc is not valid JSON"
+        fi
+    else
+        note_warn "~/.config/opencode/oh-my-opencode.jsonc missing"
     fi
 
     local user_agents
-    user_agents="${HOME}/.codex/AGENTS.md"
+    user_agents="${HOME}/.config/opencode/AGENTS.md"
     if [[ -f "$user_agents" ]]; then
-        pass "~/.codex/AGENTS.md present"
+        pass "~/.config/opencode/AGENTS.md present"
     else
-        note_warn "~/.codex/AGENTS.md missing"
+        note_warn "~/.config/opencode/AGENTS.md missing"
+    fi
+    echo ""
+
+    echo "Plugin and policy checks:"
+    if [[ -f "$OPENCODE_CONFIG" ]] && jq -e '.plugin | index("oh-my-opencode") != null' "$OPENCODE_CONFIG" >/dev/null 2>&1; then
+        pass "oh-my-opencode plugin configured"
+    else
+        note_warn "oh-my-opencode plugin not configured"
+    fi
+
+    if [[ -f "$OPENCODE_CONFIG" ]] && jq -e '.plugin | index("opencode-plugin-openspec") != null' "$OPENCODE_CONFIG" >/dev/null 2>&1; then
+        pass "opencode-plugin-openspec configured"
+    else
+        note_warn "opencode-plugin-openspec not configured"
+    fi
+
+    local -a claude_bridge_toggles=(mcp commands skills agents hooks plugins)
+    local claude_bridge_policy_ok=true
+    if [[ -f "$OPENCODE_OHMY_CONFIG" ]]; then
+        local toggle
+        for toggle in "${claude_bridge_toggles[@]}"; do
+            if jq -e --arg key "$toggle" '.claude_code[$key] == false' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+                pass "claude_code.${toggle} disabled"
+            else
+                note_warn "claude_code.${toggle} not disabled"
+                claude_bridge_policy_ok=false
+            fi
+        done
+    else
+        claude_bridge_policy_ok=false
+    fi
+
+    if [[ "$claude_bridge_policy_ok" == true ]]; then
+        pass "no-Claude compatibility bridge policy active"
+    else
+        note_warn "no-Claude compatibility bridge policy not fully active"
+    fi
+
+    if [[ -f "$OPENCODE_OHMY_CONFIG" ]] && jq -e '.disabled_hooks | index("claude-code-hooks") != null' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+        pass "claude-code-hooks disabled"
+    else
+        note_warn "claude-code-hooks disable policy missing"
     fi
     echo ""
 
     echo "Commands and skills projection:"
-    local prompt_count
-    prompt_count=$(find "${HOME}/.codex/prompts" -maxdepth 1 -name 'core-*.md' 2>/dev/null | wc -l | tr -d ' ')
-    if [[ "${prompt_count:-0}" -ge 7 ]]; then
-        pass "core prompt links present (${prompt_count})"
+    if [[ -L "${HOME}/.config/opencode/commands/core" ]]; then
+        pass "~/.config/opencode/commands/core symlink exists"
     else
-        note_warn "core prompt links incomplete (${prompt_count:-0})"
+        note_warn "~/.config/opencode/commands/core symlink missing"
     fi
 
-    if [[ -L "${HOME}/.codex/skills" ]]; then
-        pass "~/.codex/skills symlink exists"
+    if [[ -L "${HOME}/.config/opencode/skills" ]]; then
+        pass "~/.config/opencode/skills symlink exists"
     else
-        note_warn "~/.codex/skills symlink missing"
+        note_warn "~/.config/opencode/skills symlink missing"
+    fi
+
+    if [[ -f "$OPENCODE_OHMY_CONFIG" ]] && jq -e '.skills.sources | type == "array" and length >= 1' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+        if jq -e '.skills.sources[]? | select(type=="object" and .path==".agents/skills" and .recursive==true)' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+            pass "oh-my recursive .agents/skills source configured"
+        else
+            note_warn "oh-my recursive .agents/skills source not configured"
+        fi
+    else
+        note_warn "oh-my skills.sources missing"
     fi
     echo ""
 
@@ -761,13 +748,13 @@ cmd_doctor() {
     pass "current selector: ${account} (${provider})"
 
     if is_third_party "$provider"; then
-        if codex-token --check "$account" >/dev/null 2>&1; then
+        if opencode-token --check "$account" >/dev/null 2>&1; then
             pass "API key available for ${account}"
         else
             note_warn "API key missing for ${account}"
         fi
     else
-        note_warn "${provider} uses native auth; run: codex login"
+        note_warn "${provider} uses native auth; run: opencode auth login ${provider}"
     fi
 
     echo ""
@@ -778,18 +765,18 @@ cmd_doctor() {
 # Show help
 show_help() {
     cat << 'EOF'
-Codex CLI Account Manager
+OpenCode Account Manager
 
 Usage:
-  codex-manage                               Interactive menu
-  codex-manage switch [account]              Switch default account
-  codex-manage create-account [account]      Create account (optionally with API key)
-  codex-manage update-account [account]      Update account (optionally rotate API key)
-  codex-manage remove-account [account]      Remove account (optionally delete API key)
-  codex-manage test [account]                Test connectivity
-  codex-manage list [provider]               List accounts
-  codex-manage doctor                        Run workflow diagnostics
-  codex-manage current                       Show current account
+  opencode-manage                               Interactive menu
+  opencode-manage switch [account]              Switch default account
+  opencode-manage create-account [account]      Create account (optionally with API key)
+  opencode-manage update-account [account]      Update account (optionally rotate API key)
+  opencode-manage remove-account [account]      Remove account (optionally delete API key)
+  opencode-manage test [account]                Test connectivity
+  opencode-manage list [provider]               List accounts
+  opencode-manage current                       Show current account
+  opencode-manage doctor                        Run workflow diagnostics
 
 Compatibility aliases:
   add-account -> create-account

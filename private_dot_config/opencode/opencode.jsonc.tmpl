@@ -1,0 +1,214 @@
+{{- $accountKey := "openai" -}}
+{{- if hasKey . "opencodeProviderAccount" -}}
+{{-   $accountKey = .opencodeProviderAccount -}}
+{{- end -}}
+{{- $providerName := (split "@" $accountKey)._0 -}}
+{{- $resolvedProvider := "openai" -}}
+{{- $model := "gpt-5.3-codex" -}}
+{{- if eq $providerName "anthropic" -}}
+{{-   $resolvedProvider = "anthropic" -}}
+{{-   $model = "claude-sonnet-4-5" -}}
+{{- else if eq $providerName "google" -}}
+{{-   $resolvedProvider = "google" -}}
+{{-   $model = "gemini-3-pro" -}}
+{{- else if eq $providerName "deepseek" -}}
+{{-   $resolvedProvider = "deepseek" -}}
+{{-   $model = "deepseek-chat" -}}
+{{- else if eq $providerName "doubao" -}}
+{{-   $resolvedProvider = "doubao" -}}
+{{-   $model = "ark-code-latest" -}}
+{{- else if eq $providerName "glm" -}}
+{{-   $resolvedProvider = "glm" -}}
+{{-   $model = "glm-4.7" -}}
+{{- else if eq $providerName "harui" -}}
+{{-   $resolvedProvider = "harui" -}}
+{{-   $model = "gpt-5.3-codex" -}}
+{{- else if eq $providerName "kimi" -}}
+{{-   $resolvedProvider = "kimi" -}}
+{{-   $model = "kimi-k2.5" -}}
+{{- else if eq $providerName "minimax" -}}
+{{-   $resolvedProvider = "minimax" -}}
+{{-   $model = "MiniMax-M2.1" -}}
+{{- else if eq $providerName "naapi" -}}
+{{-   $resolvedProvider = "naapi" -}}
+{{-   $model = "gpt-5.3-codex" -}}
+{{- else if eq $providerName "qwen" -}}
+{{-   $resolvedProvider = "qwen" -}}
+{{-   $model = "qwen3-coder-plus" -}}
+{{- else if eq $providerName "opencode" -}}
+{{-   $resolvedProvider = "opencode" -}}
+{{-   $model = "gpt-5.3-codex" -}}
+{{- end -}}
+{{- $modelRef := printf "%s/%s" $resolvedProvider $model -}}
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": {{ $modelRef | quote }},
+  "small_model": {{ $modelRef | quote }},
+  "instructions": [
+    "AGENTS.md",
+    ".opencode/AGENTS.md"
+  ],
+  "default_agent": "build",
+  "watcher": {
+    "ignore": [
+      "**/.git/**",
+      "**/node_modules/**",
+      "**/.direnv/**",
+      "**/.cache/**",
+      "**/.sisyphus/**"
+    ]
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 16384
+  },
+  "provider": {
+    "deepseek": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "DeepSeek",
+      "env": ["DEEPSEEK_API_KEY"],
+      "options": {
+        "baseURL": "https://api.deepseek.com/v1"
+      },
+      "models": {
+        "deepseek-chat": {
+          "name": "DeepSeek Chat"
+        },
+        "deepseek-reasoner": {
+          "name": "DeepSeek Reasoner"
+        }
+      }
+    },
+    "doubao": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Doubao",
+      "env": ["ARK_API_KEY"],
+      "options": {
+        "baseURL": "https://ark.cn-beijing.volces.com/api/v3"
+      },
+      "models": {
+        "ark-code-latest": {
+          "name": "Doubao Ark Code Latest"
+        }
+      }
+    },
+    "glm": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "GLM",
+      "env": ["ZHIPU_API_KEY"],
+      "options": {
+        "baseURL": "https://open.bigmodel.cn/api/paas/v4"
+      },
+      "models": {
+        "glm-4.7": {
+          "name": "GLM 4.7"
+        },
+        "glm-4.5-air": {
+          "name": "GLM 4.5 Air"
+        }
+      }
+    },
+    "harui": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Harui",
+      "env": ["HARUI_API_KEY"],
+      "options": {
+        "baseURL": "https://codex.harui.edu.kg"
+      },
+      "models": {
+        "gpt-5.3-codex": {
+          "name": "GPT-5.3 Codex"
+        },
+        "gpt-5.2-codex": {
+          "name": "GPT-5.2 Codex"
+        }
+      }
+    },
+    "kimi": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Kimi",
+      "env": ["MOONSHOT_API_KEY"],
+      "options": {
+        "baseURL": "https://api.moonshot.ai/v1"
+      },
+      "models": {
+        "kimi-k2.5": {
+          "name": "Kimi K2.5"
+        },
+        "kimi-k2": {
+          "name": "Kimi K2"
+        }
+      }
+    },
+    "minimax": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "MiniMax",
+      "env": ["MINIMAX_API_KEY"],
+      "options": {
+        "baseURL": "https://api.minimax.io/v1"
+      },
+      "models": {
+        "MiniMax-M2.1": {
+          "name": "MiniMax M2.1"
+        }
+      }
+    },
+    "naapi": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "NAAPI",
+      "env": ["NAAPI_API_KEY"],
+      "options": {
+        "baseURL": "https://na.wanxiaot.com/v1"
+      },
+      "models": {
+        "gpt-5.3-codex": {
+          "name": "GPT-5.3 Codex"
+        },
+        "gpt-5.2-codex": {
+          "name": "GPT-5.2 Codex"
+        }
+      }
+    },
+    "qwen": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Qwen",
+      "env": ["DASHSCOPE_API_KEY"],
+      "options": {
+        "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      },
+      "models": {
+        "qwen3-coder-plus": {
+          "name": "Qwen3 Coder Plus"
+        },
+        "qwen3-max": {
+          "name": "Qwen3 Max"
+        },
+        "qwen-flash": {
+          "name": "Qwen Flash"
+        }
+      }
+    }
+  },
+  "skills": {
+    "paths": [
+      ".agents/skills"
+    ]
+  },
+  "plugin": [
+    "oh-my-opencode",
+    "opencode-plugin-openspec"
+  ],
+  "permission": {
+    "edit": "ask",
+    "bash": "ask",
+    "external_directory": "ask",
+    "webfetch": "ask",
+    "websearch": "ask",
+    "codesearch": "ask",
+    "lsp": "ask",
+    "task": "ask",
+    "skill": "ask",
+    "doom_loop": "ask"
+  }
+}
