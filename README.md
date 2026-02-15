@@ -46,10 +46,10 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
   - nix-darwin system config on macOS
   - Homebrew/MAS integration on macOS
 - Shared AI skills marketplace sync to `~/.agents/skills` for Claude/Codex/OpenCode
-- Multi-provider account switching across all managed AI toolchains:
+- Multi-provider account switching for managed wrappers, plus native OpenCode account selection:
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
-  - `opencode-manage` / `opencode-with`
+  - OpenCode via `opencode` + `opencodeProviderAccount`
 - Declarative `OpenCode + oh-my-opencode` global config with native-only (no-Claude-compat) guardrails
 - Auto MCP sync for Claude on every `chezmoi apply`
 - Automated dependency upkeep via GitHub Actions (versions, flake locks, aqua packages)
@@ -321,13 +321,12 @@ Rendered targets:
 
 Provider/account defaults are data-driven via `opencodeProviderAccount` in `~/.config/chezmoi/chezmoi.toml`.
 
-### Workflow Wrappers
+### OpenCode Native Mode
 
-OpenCode now has the same workflow shape as Claude/Codex:
+Use native `opencode` directly:
 
-- `opencode-manage` (`ocm`): account lifecycle (`switch/create/update/remove/test/list/current`)
-- `opencode-with` (`ocw`): temporary account-scoped launch
-- `opencode-token`: key/config helper for wrappers and automation
+- Default selector: `opencodeProviderAccount` in `~/.config/chezmoi/chezmoi.toml`
+- Third-party key path: `opencode/{provider}/{account}/api_key`
 
 ### Native-Only Policy (No Claude Compatibility Bridge)
 
@@ -401,10 +400,8 @@ codex-manage list
 codex-manage switch openai
 codex-with deepseek@private "explain this file"
 
-# OpenCode (data-driven default account/provider)
-opencode-manage
-opencode-manage switch openai
-opencode-with deepseek@private
+# OpenCode (native CLI + data-driven default account/provider)
+opencode run -m harui/gpt-5.3-codex "say ok"
 ```
 
 ### Token Helpers
@@ -412,7 +409,7 @@ opencode-with deepseek@private
 ```bash
 claude-token --check kimi@private
 codex-token --check deepseek@private
-opencode-token --check qwen@private
+gopass show -o opencode/harui/private/api_key >/dev/null
 ```
 
 ### MCP Integration

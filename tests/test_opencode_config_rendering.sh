@@ -43,14 +43,19 @@ assert_file_contains() {
 }
 
 render_opencode() {
-    local account="$1"
-    local output="$2"
-    local override_data
-    override_data="$(jq -cn --arg account "$account" '{opencodeProviderAccount: $account}')"
+    local output="$1"
+    local override_data="${2:-}"
+    if [[ -n "$override_data" ]]; then
+        chezmoi execute-template \
+            --source "$ROOT" \
+            --override-data "$override_data" \
+            <"$ROOT/private_dot_config/opencode/opencode.jsonc.tmpl" \
+            >"$output"
+        return 0
+    fi
 
     chezmoi execute-template \
         --source "$ROOT" \
-        --override-data "$override_data" \
         <"$ROOT/private_dot_config/opencode/opencode.jsonc.tmpl" \
         >"$output"
 }
@@ -76,31 +81,70 @@ render_oh_my_opencode() {
 }
 
 OPENCODE_DEFAULT="$TMP_ROOT/opencode-default.jsonc"
-OPENCODE_DEEPSEEK="$TMP_ROOT/opencode-deepseek.jsonc"
-OPENCODE_HARUI="$TMP_ROOT/opencode-harui.jsonc"
 OH_MY_OPENCODE="$TMP_ROOT/oh-my-opencode.jsonc"
 OH_MY_OPENCODE_COMPAT="$TMP_ROOT/oh-my-opencode-compat.jsonc"
 OH_MY_OPENCODE_UNKNOWN_MODE="$TMP_ROOT/oh-my-opencode-unknown.jsonc"
+OPENCODE_ACCOUNT_PATH="$TMP_ROOT/opencode-account-path.jsonc"
+OPENCODE_INVALID_ACCOUNT="$TMP_ROOT/opencode-invalid-account.jsonc"
 
-render_opencode "openai" "$OPENCODE_DEFAULT"
-render_opencode "deepseek@private" "$OPENCODE_DEEPSEEK"
-render_opencode "harui@private" "$OPENCODE_HARUI"
+render_opencode "$OPENCODE_DEFAULT"
 render_oh_my_opencode "$OH_MY_OPENCODE"
 render_oh_my_opencode "$OH_MY_OPENCODE_COMPAT" "compat"
 render_oh_my_opencode "$OH_MY_OPENCODE_UNKNOWN_MODE" "unexpected"
 
+ACCOUNT_BIN="$TMP_ROOT/account-bin"
+mkdir -p "$ACCOUNT_BIN"
+
+cat >"$ACCOUNT_BIN/gopass" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+cmd="${1:-}"
+shift || true
+case "$cmd" in
+    list)
+        target="${1:-}"
+        [[ "$target" == "-f" ]] && target="${2:-}"
+        if [[ "$target" == "opencode/harui/private/api_key" ]]; then
+            exit 0
+        fi
+        exit 1
+        ;;
+    show)
+        target="${1:-}"
+        if [[ "$target" == "--password" || "$target" == "-o" ]]; then
+            target="${2:-}"
+        fi
+        if [[ "$target" == "opencode/harui/private/api_key" ]]; then
+            printf '%s' "stub-account-key"
+            exit 0
+        fi
+        exit 1
+        ;;
+    *)
+        exit 1
+        ;;
+esac
+EOF
+chmod +x "$ACCOUNT_BIN/gopass"
+
+HARUI_PRIVATE_OVERRIDE="$(jq -cn '{opencodeProviderAccount:"harui@private"}')"
+PATH="$ACCOUNT_BIN:$PATH" render_opencode "$OPENCODE_ACCOUNT_PATH" "$HARUI_PRIVATE_OVERRIDE"
+INVALID_OVERRIDE="$(jq -cn '{opencodeProviderAccount:"harui@private'\''oops"}')"
+PATH="$ACCOUNT_BIN:$PATH" render_opencode "$OPENCODE_INVALID_ACCOUNT" "$INVALID_OVERRIDE"
+
 assert_jq "$OPENCODE_DEFAULT" '.plugin == ["oh-my-opencode", "opencode-plugin-openspec"]'
 assert_jq "$OPENCODE_DEFAULT" '.plugin | length == 2'
-assert_jq "$OPENCODE_DEFAULT" '.model == "openai/gpt-5.3-codex" and .small_model == "openai/gpt-5.3-codex"'
-assert_jq "$OPENCODE_DEEPSEEK" '.model == "deepseek/deepseek-chat" and .small_model == "deepseek/deepseek-chat"'
-assert_jq "$OPENCODE_HARUI" '.model == "harui/gpt-5.3-codex" and .small_model == "harui/gpt-5.3-codex"'
+assert_jq "$OPENCODE_DEFAULT" '.theme == "dracula"'
+assert_jq "$OPENCODE_DEFAULT" '.model == .small_model'
 assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].agent == "build"'
 assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].template | length > 0'
 assert_jq "$OPENCODE_DEFAULT" '.command["spec-verify"].description | length > 0'
 assert_jq "$OPENCODE_DEFAULT" '.default_agent == "build"'
-assert_jq "$OPENCODE_DEFAULT" '.agent.build.model == "openai/gpt-5.3-codex"'
+assert_jq "$OPENCODE_DEFAULT" '.agent.build.model == .model'
 assert_jq "$OPENCODE_DEFAULT" '.agent.build.variant == "medium"'
+assert_jq "$OPENCODE_DEFAULT" '.agent.build.options.store == false'
 assert_jq "$OPENCODE_DEFAULT" '.agent.plan.variant == "high"'
+assert_jq "$OPENCODE_DEFAULT" '.agent.plan.options.store == false'
 assert_jq "$OPENCODE_DEFAULT" '.instructions | index("AGENTS.md") != null'
 assert_jq "$OPENCODE_DEFAULT" '.watcher.ignore | index("**/.git/**") != null'
 assert_jq "$OPENCODE_DEFAULT" '.lsp["rust-analyzer"].command == ["rust-analyzer"]'
@@ -114,13 +158,23 @@ assert_jq "$OPENCODE_DEFAULT" '.share == "manual"'
 assert_jq "$OPENCODE_DEFAULT" '.autoupdate == "notify"'
 assert_jq "$OPENCODE_DEFAULT" '.tui.diff_style == "auto"'
 assert_jq "$OPENCODE_DEFAULT" '.tui.scroll_acceleration.enabled == true'
+assert_jq "$OPENCODE_DEFAULT" '(.provider | has("openai_default")) == false'
+assert_jq "$OPENCODE_DEFAULT" '(.provider | has("openai_work")) == false'
+assert_jq "$OPENCODE_DEFAULT" '(.provider | has("openai_private")) == false'
 assert_jq "$OPENCODE_DEFAULT" '.provider.deepseek.env == ["DEEPSEEK_API_KEY"]'
+assert_jq "$OPENCODE_DEFAULT" '.provider.deepseek.models["deepseek-chat"].options.store == false'
+assert_jq "$OPENCODE_DEFAULT" '(.provider.deepseek.models["deepseek-chat"].variants | has("xhigh")) == true'
 assert_jq "$OPENCODE_DEFAULT" '.provider.harui.env == ["HARUI_API_KEY"]'
-assert_jq "$OPENCODE_DEFAULT" '.provider.harui.options.baseURL == "https://codex.harui.edu.kg"'
+assert_jq "$OPENCODE_DEFAULT" '.provider.harui.npm == "@ai-sdk/openai"'
+assert_jq "$OPENCODE_DEFAULT" '.provider.harui.options.baseURL == "https://codex.harui.edu.kg/v1"'
+assert_jq "$OPENCODE_DEFAULT" '.provider.harui.models["gpt-5.3-codex"].options.store == false'
 assert_jq "$OPENCODE_DEFAULT" '.provider.qwen.env == ["DASHSCOPE_API_KEY"]'
+assert_jq "$OPENCODE_DEFAULT" '(.provider.qwen.models["qwen3-max"].variants | has("medium")) == true'
 assert_jq "$OPENCODE_DEFAULT" '.provider.kimi.options.baseURL == "https://api.moonshot.ai/v1"'
 assert_jq "$OPENCODE_DEFAULT" '.skills.paths | index(".agents/skills") != null'
 assert_jq "$OPENCODE_DEFAULT" '.skills.paths | length == 1'
+assert_jq "$OPENCODE_ACCOUNT_PATH" '.provider.harui.options.apiKey == "stub-account-key"'
+assert_jq "$OPENCODE_INVALID_ACCOUNT" '(.provider.harui.options | has("apiKey")) == false'
 
 assert_jq "$OPENCODE_DEFAULT" '.permission.edit == "ask"'
 assert_jq "$OPENCODE_DEFAULT" '.permission.bash == "ask"'

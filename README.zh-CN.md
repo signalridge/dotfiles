@@ -46,10 +46,10 @@
   - macOS 使用 `nix-darwin` 管理系统配置
   - macOS 集成 Homebrew / MAS
 - 共享 AI skills 自动同步到 `~/.agents/skills`（Claude、Codex、OpenCode 共用）
-- Claude/Codex/OpenCode 三栈 provider 切换：
+- Claude/Codex wrapper 的 provider 切换，加上 OpenCode 原生 account 选择：
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
-  - `opencode-manage` / `opencode-with`
+  - OpenCode 使用 `opencode` + `opencodeProviderAccount`
 - 声明式管理 `OpenCode + oh-my-opencode` 全局配置，并启用 native-only（禁用 Claude compatibility）护栏
 - 每次 `chezmoi apply` 自动对齐 Claude MCP 配置
 - GitHub Actions 自动维护依赖版本（versions、flake lock、aqua packages）
@@ -319,13 +319,12 @@ OpenCode 配置由以下模板声明式管理：
 
 默认 provider/account 由 `~/.config/chezmoi/chezmoi.toml` 的 `opencodeProviderAccount` 驱动。
 
-### Workflow wrappers
+### OpenCode 原生模式
 
-OpenCode 也提供与 Claude/Codex 一致的三件套：
+请直接使用原生 `opencode`：
 
-- `opencode-manage`（`ocm`）：account 生命周期管理（`switch/create/update/remove/test/list/current`）
-- `opencode-with`（`ocw`）：临时 account 上下文启动
-- `opencode-token`：wrapper 与自动化使用的 key/config helper
+- 默认选择器：`~/.config/chezmoi/chezmoi.toml` 中的 `opencodeProviderAccount`
+- 第三方 key 路径：`opencode/{provider}/{account}/api_key`
 
 ### Native-only 策略（禁用 Claude compatibility bridge）
 
@@ -399,10 +398,8 @@ codex-manage list
 codex-manage switch openai
 codex-with deepseek@private "explain this file"
 
-# OpenCode
-opencode-manage
-opencode-manage switch openai
-opencode-with deepseek@private
+# OpenCode（原生 CLI + data 驱动默认 account/provider）
+opencode run -m harui/gpt-5.3-codex "say ok"
 ```
 
 ### Token Helpers
@@ -410,7 +407,7 @@ opencode-with deepseek@private
 ```bash
 claude-token --check kimi@private
 codex-token --check deepseek@private
-opencode-token --check qwen@private
+gopass show -o opencode/harui/private/api_key >/dev/null
 ```
 
 ### MCP 集成

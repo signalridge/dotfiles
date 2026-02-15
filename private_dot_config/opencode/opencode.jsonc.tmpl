@@ -1,8 +1,14 @@
 {{- $accountKey := "openai" -}}
 {{- if hasKey . "opencodeProviderAccount" -}}
 {{-   $accountKey = .opencodeProviderAccount -}}
+{{- else if hasKey . "codexProviderAccount" -}}
+{{-   $accountKey = .codexProviderAccount -}}
 {{- end -}}
 {{- $providerName := (split "@" $accountKey)._0 -}}
+{{- $accountLabel := "default" -}}
+{{- if contains "@" $accountKey -}}
+{{-   $accountLabel = (split "@" $accountKey)._1 -}}
+{{- end -}}
 {{- $resolvedProvider := "openai" -}}
 {{- $model := "gpt-5.3-codex" -}}
 {{- if eq $providerName "anthropic" -}}
@@ -40,8 +46,32 @@
 {{-   $model = "gpt-5.3-codex" -}}
 {{- end -}}
 {{- $modelRef := printf "%s/%s" $resolvedProvider $model -}}
+{{- $selectedApiPath := "" -}}
+{{- if and (regexMatch "^[A-Za-z0-9._-]+$" $providerName) (regexMatch "^[A-Za-z0-9._-]+$" $accountLabel) -}}
+{{-   $selectedApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $providerName $accountLabel -}}
+{{-   $selectedApiPath = (output "sh" "-c" $selectedApiPathCmd) | trim -}}
+{{- end -}}
+{{- $selectedApiKey := "" -}}
+{{- if ne $selectedApiPath "" -}}{{- $selectedApiKey = gopass $selectedApiPath -}}{{- end -}}
+{{- $deepseekApiKey := "" -}}
+{{- if and (eq $providerName "deepseek") (ne $selectedApiKey "") -}}{{- $deepseekApiKey = $selectedApiKey -}}{{- end -}}
+{{- $doubaoApiKey := "" -}}
+{{- if and (eq $providerName "doubao") (ne $selectedApiKey "") -}}{{- $doubaoApiKey = $selectedApiKey -}}{{- end -}}
+{{- $glmApiKey := "" -}}
+{{- if and (eq $providerName "glm") (ne $selectedApiKey "") -}}{{- $glmApiKey = $selectedApiKey -}}{{- end -}}
+{{- $haruiApiKey := "" -}}
+{{- if and (eq $providerName "harui") (ne $selectedApiKey "") -}}{{- $haruiApiKey = $selectedApiKey -}}{{- end -}}
+{{- $kimiApiKey := "" -}}
+{{- if and (eq $providerName "kimi") (ne $selectedApiKey "") -}}{{- $kimiApiKey = $selectedApiKey -}}{{- end -}}
+{{- $minimaxApiKey := "" -}}
+{{- if and (eq $providerName "minimax") (ne $selectedApiKey "") -}}{{- $minimaxApiKey = $selectedApiKey -}}{{- end -}}
+{{- $naapiApiKey := "" -}}
+{{- if and (eq $providerName "naapi") (ne $selectedApiKey "") -}}{{- $naapiApiKey = $selectedApiKey -}}{{- end -}}
+{{- $qwenApiKey := "" -}}
+{{- if and (eq $providerName "qwen") (ne $selectedApiKey "") -}}{{- $qwenApiKey = $selectedApiKey -}}{{- end -}}
 {
   "$schema": "https://opencode.ai/config.json",
+  "theme": "dracula",
   "model": {{ $modelRef | quote }},
   "small_model": {{ $modelRef | quote }},
   "instructions": [
@@ -65,11 +95,17 @@
     "build": {
       "model": {{ $modelRef | quote }},
       "variant": "medium",
+      "options": {
+        "store": false
+      },
       "description": "Default implementation agent for daily coding work."
     },
     "plan": {
       "model": {{ $modelRef | quote }},
       "variant": "high",
+      "options": {
+        "store": false
+      },
       "description": "Planning agent for multi-step and spec-first tasks."
     }
   },
@@ -142,14 +178,33 @@
       "name": "DeepSeek",
       "env": ["DEEPSEEK_API_KEY"],
       "options": {
-        "baseURL": "https://api.deepseek.com/v1"
+        "baseURL": "https://api.deepseek.com/v1"{{- if ne $deepseekApiKey "" }},
+        "apiKey": {{ $deepseekApiKey | quote }}{{- end }}
       },
       "models": {
         "deepseek-chat": {
-          "name": "DeepSeek Chat"
+          "name": "DeepSeek Chat",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         },
         "deepseek-reasoner": {
-          "name": "DeepSeek Reasoner"
+          "name": "DeepSeek Reasoner",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         }
       }
     },
@@ -158,11 +213,21 @@
       "name": "Doubao",
       "env": ["ARK_API_KEY"],
       "options": {
-        "baseURL": "https://ark.cn-beijing.volces.com/api/v3"
+        "baseURL": "https://ark.cn-beijing.volces.com/api/v3"{{- if ne $doubaoApiKey "" }},
+        "apiKey": {{ $doubaoApiKey | quote }}{{- end }}
       },
       "models": {
         "ark-code-latest": {
-          "name": "Doubao Ark Code Latest"
+          "name": "Doubao Ark Code Latest",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         }
       }
     },
@@ -171,30 +236,68 @@
       "name": "GLM",
       "env": ["ZHIPU_API_KEY"],
       "options": {
-        "baseURL": "https://open.bigmodel.cn/api/paas/v4"
+        "baseURL": "https://open.bigmodel.cn/api/paas/v4"{{- if ne $glmApiKey "" }},
+        "apiKey": {{ $glmApiKey | quote }}{{- end }}
       },
       "models": {
         "glm-4.7": {
-          "name": "GLM 4.7"
+          "name": "GLM 4.7",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         },
         "glm-4.5-air": {
-          "name": "GLM 4.5 Air"
+          "name": "GLM 4.5 Air",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         }
       }
     },
     "harui": {
-      "npm": "@ai-sdk/openai-compatible",
+      "npm": "@ai-sdk/openai",
       "name": "Harui",
       "env": ["HARUI_API_KEY"],
       "options": {
-        "baseURL": "https://codex.harui.edu.kg"
+        "baseURL": "https://codex.harui.edu.kg/v1"{{- if ne $haruiApiKey "" }},
+        "apiKey": {{ $haruiApiKey | quote }}{{- end }}
       },
       "models": {
         "gpt-5.3-codex": {
-          "name": "GPT-5.3 Codex"
+          "name": "GPT-5.3 Codex",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         },
         "gpt-5.2-codex": {
-          "name": "GPT-5.2 Codex"
+          "name": "GPT-5.2 Codex",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         }
       }
     },
@@ -203,14 +306,33 @@
       "name": "Kimi",
       "env": ["MOONSHOT_API_KEY"],
       "options": {
-        "baseURL": "https://api.moonshot.ai/v1"
+        "baseURL": "https://api.moonshot.ai/v1"{{- if ne $kimiApiKey "" }},
+        "apiKey": {{ $kimiApiKey | quote }}{{- end }}
       },
       "models": {
         "kimi-k2.5": {
-          "name": "Kimi K2.5"
+          "name": "Kimi K2.5",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         },
         "kimi-k2": {
-          "name": "Kimi K2"
+          "name": "Kimi K2",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         }
       }
     },
@@ -219,11 +341,21 @@
       "name": "MiniMax",
       "env": ["MINIMAX_API_KEY"],
       "options": {
-        "baseURL": "https://api.minimax.io/v1"
+        "baseURL": "https://api.minimax.io/v1"{{- if ne $minimaxApiKey "" }},
+        "apiKey": {{ $minimaxApiKey | quote }}{{- end }}
       },
       "models": {
         "MiniMax-M2.1": {
-          "name": "MiniMax M2.1"
+          "name": "MiniMax M2.1",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         }
       }
     },
@@ -232,14 +364,33 @@
       "name": "NAAPI",
       "env": ["NAAPI_API_KEY"],
       "options": {
-        "baseURL": "https://na.wanxiaot.com/v1"
+        "baseURL": "https://na.wanxiaot.com/v1"{{- if ne $naapiApiKey "" }},
+        "apiKey": {{ $naapiApiKey | quote }}{{- end }}
       },
       "models": {
         "gpt-5.3-codex": {
-          "name": "GPT-5.3 Codex"
+          "name": "GPT-5.3 Codex",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         },
         "gpt-5.2-codex": {
-          "name": "GPT-5.2 Codex"
+          "name": "GPT-5.2 Codex",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         }
       }
     },
@@ -248,17 +399,45 @@
       "name": "Qwen",
       "env": ["DASHSCOPE_API_KEY"],
       "options": {
-        "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1"{{- if ne $qwenApiKey "" }},
+        "apiKey": {{ $qwenApiKey | quote }}{{- end }}
       },
       "models": {
         "qwen3-coder-plus": {
-          "name": "Qwen3 Coder Plus"
+          "name": "Qwen3 Coder Plus",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         },
         "qwen3-max": {
-          "name": "Qwen3 Max"
+          "name": "Qwen3 Max",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         },
         "qwen-flash": {
-          "name": "Qwen Flash"
+          "name": "Qwen Flash",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "low": {},
+            "medium": {},
+            "high": {},
+            "xhigh": {}
+          }
         }
       }
     }

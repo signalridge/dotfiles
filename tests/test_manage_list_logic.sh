@@ -73,7 +73,7 @@ cat >"$STUB/chezmoi" <<'EOF'
 set -euo pipefail
 if [[ "${1:-}" == "data" ]]; then
     cat <<'JSON'
-{"claudeProviderAccount":"anthropic","codexProviderAccount":"glm@ghost"}
+{"claudeProviderAccount":"qwen@beta","codexProviderAccount":"deepseek@private"}
 JSON
     exit 0
 fi
@@ -97,26 +97,16 @@ case "$cmd" in
             target="${2:-}"
         fi
         case "$target" in
-            codex/providers/deepseek/accounts)
-                echo "codex/providers/deepseek/accounts/YWxwaGE/api_key"
+            codex)
+                echo "codex/deepseek/private/api_key"
                 exit 0
                 ;;
-            codex/providers/kimi/accounts)
-                echo "codex/providers/kimi/accounts/bGVnYWN5/api_key"
+            claude)
+                echo "claude/qwen/beta/api_key"
                 exit 0
                 ;;
-            claude/providers/qwen/accounts)
-                echo "claude/providers/qwen/accounts/YmV0YQ/api_key"
-                exit 0
-                ;;
-            claude/providers/kimi/accounts)
-                echo "claude/providers/kimi/accounts/bGVnYWN5/api_key"
-                exit 0
-                ;;
-            codex/providers/deepseek/accounts/YWxwaGE/api_key|\
-            codex/providers/kimi/accounts/bGVnYWN5/api_key|\
-            claude/providers/qwen/accounts/YmV0YQ/api_key|\
-            claude/providers/kimi/accounts/bGVnYWN5/api_key)
+            codex/deepseek/private/api_key|\
+            claude/qwen/beta/api_key)
                 exit 0
                 ;;
             *)
@@ -130,10 +120,8 @@ case "$cmd" in
             target="${2:-}"
         fi
         case "$target" in
-            codex/providers/deepseek/accounts/YWxwaGE/api_key|\
-            codex/providers/kimi/accounts/bGVnYWN5/api_key|\
-            claude/providers/qwen/accounts/YmV0YQ/api_key|\
-            claude/providers/kimi/accounts/bGVnYWN5/api_key)
+            codex/deepseek/private/api_key|\
+            claude/qwen/beta/api_key)
                 echo "test-key"
                 exit 0
                 ;;
@@ -194,6 +182,9 @@ cat >"$STUB/curl" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 args="$*"
+if [[ "${CURL_FORCE_FAIL_MESSAGES:-0}" == "1" && "$args" == *"/v1/messages"* ]]; then
+    exit 7
+fi
 if [[ "$args" == *"/v1/models"* ]]; then
     cat <<'OUT'
 {"object":"list","data":[]}
@@ -280,10 +271,9 @@ claude_list="$(PATH="$BASE_PATH" "$BIN/claude-manage" list | strip_ansi)"
 
 # codex-manage list: native + valid third-party for codex path only.
 assert_contains "$codex_list" "openai (native)"
-assert_contains "$codex_list" "deepseek@alpha"
-assert_contains "$codex_list" "kimi@legacy"
+assert_contains "$codex_list" "deepseek@private"
+assert_not_contains "$codex_list" "kimi"
 assert_not_contains "$codex_list" "qwen@beta"
-assert_not_contains "$codex_list" "glm@ghost"
 assert_not_contains "$codex_list" "(no key)"
 
 # claude-manage list: native accounts + valid third-party for claude path only.
@@ -291,33 +281,38 @@ assert_contains "$claude_list" "anthropic (native)"
 assert_contains "$claude_list" "opus (native)"
 assert_contains "$claude_list" "haiku (native)"
 assert_contains "$claude_list" "qwen@beta"
-assert_contains "$claude_list" "kimi@legacy"
-assert_not_contains "$claude_list" "deepseek@alpha"
+assert_not_contains "$claude_list" "qwen@private"
+assert_not_contains "$claude_list" "kimi"
+assert_not_contains "$claude_list" "deepseek"
 assert_not_contains "$claude_list" "doubao@private"
 assert_not_contains "$claude_list" "naapi@private"
 assert_not_contains "$claude_list" "(no key)"
 
 # list-visible runtime accounts must be operable for switch.
-PATH="$BASE_PATH" "$BIN/codex-manage" switch deepseek@alpha >/dev/null
+PATH="$BASE_PATH" "$BIN/codex-manage" switch deepseek@private >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-manage" switch qwen@beta >/dev/null
 
 # list-visible runtime accounts must be operable for test.
-PATH="$BASE_PATH" "$BIN/codex-manage" test deepseek@alpha >/dev/null
+PATH="$BASE_PATH" "$BIN/codex-manage" test deepseek@private >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-manage" test qwen@beta >/dev/null
 
+# claude-manage test should report network error gracefully when curl fails.
+claude_fail_output="$(CURL_FORCE_FAIL_MESSAGES=1 PATH="$BASE_PATH" "$BIN/claude-manage" test qwen@beta 2>&1 || true)"
+assert_contains "$claude_fail_output" "Network error"
+
 # list-visible runtime accounts must be operable for launcher entrypoints.
-PATH="$BASE_PATH" "$BIN/codex-with" deepseek@alpha --version >/dev/null
+PATH="$BASE_PATH" "$BIN/codex-with" deepseek@private --version >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-with" qwen@beta --version >/dev/null
 
 # doctor: parity diagnostics should be available in both tools.
 codex_doctor="$(PATH="$BASE_PATH" "$BIN/codex-manage" doctor | strip_ansi)"
 claude_doctor="$(PATH="$BASE_PATH" "$BIN/claude-manage" doctor | strip_ansi)"
 assert_contains "$codex_doctor" "Codex Workflow Doctor"
-assert_contains "$codex_doctor" "current selector: glm@ghost (glm)"
+assert_contains "$codex_doctor" "current selector: deepseek@private (deepseek)"
 assert_contains "$codex_doctor" "Summary:"
 assert_not_contains "$codex_doctor" "\\033["
 assert_contains "$claude_doctor" "Claude Workflow Doctor"
-assert_contains "$claude_doctor" "current selector: anthropic (anthropic)"
+assert_contains "$claude_doctor" "current selector: qwen@beta (qwen)"
 assert_contains "$claude_doctor" "Summary:"
 assert_not_contains "$claude_doctor" "\\033["
 
@@ -328,21 +323,25 @@ codex_api_path="$(
 claude_api_path="$(
     PATH="$BASE_PATH" bash -c "source '$BIN/lib/ai/claude'; api_key_path deepseek alpha"
 )"
-assert_equals "$codex_api_path" "codex/providers/deepseek/accounts/YWxwaGE/api_key"
-assert_equals "$claude_api_path" "claude/providers/deepseek/accounts/YWxwaGE/api_key"
+opencode_api_path="$(
+    PATH="$BASE_PATH" AI_TOOL_CONTEXT=opencode bash -c "source '$BIN/lib/ai/core'; api_key_path deepseek alpha"
+)"
+assert_equals "$codex_api_path" "codex/deepseek/alpha/api_key"
+assert_equals "$claude_api_path" "claude/deepseek/alpha/api_key"
+assert_equals "$opencode_api_path" "opencode/deepseek/alpha/api_key"
 
-# Candidate paths are now single canonical path per tool.
+# Candidate paths use provider/account canonical path only.
 codex_candidates="$(
-    PATH="$BASE_PATH" bash -c "source '$BIN/lib/ai/codex'; api_key_path_candidates kimi legacy"
+    PATH="$BASE_PATH" bash -c "source '$BIN/lib/ai/codex'; api_key_path_candidates kimi private"
 )"
 claude_candidates="$(
-    PATH="$BASE_PATH" bash -c "source '$BIN/lib/ai/claude'; api_key_path_candidates kimi legacy"
+    PATH="$BASE_PATH" bash -c "source '$BIN/lib/ai/claude'; api_key_path_candidates kimi private"
 )"
-assert_equals "$codex_candidates" "codex/providers/kimi/accounts/bGVnYWN5/api_key"
-assert_equals "$claude_candidates" "claude/providers/kimi/accounts/bGVnYWN5/api_key"
+assert_equals "$codex_candidates" $'codex/kimi/private/api_key'
+assert_equals "$claude_candidates" $'claude/kimi/private/api_key'
 
 # Store operations always write to tool-specific canonical path.
 PATH="$BASE_PATH" bash -c "source '$BIN/lib/ai/codex'; store_api_key deepseek alpha sk-test"
-assert_equals "$(tail -n1 "$INSERT_LOG")" "codex/providers/deepseek/accounts/YWxwaGE/api_key"
+assert_equals "$(tail -n1 "$INSERT_LOG")" "codex/deepseek/alpha/api_key"
 
 echo "test_manage_list_logic: OK"
