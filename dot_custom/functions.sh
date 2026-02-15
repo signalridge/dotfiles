@@ -692,27 +692,6 @@ _ai_tool_accounts() {
             } | awk '!seen[$0]++'
         fi
         ;;
-    opencode)
-        if ! _ai_tool_accounts_from_manage opencode-manage; then
-            {
-                local current_opencode_account
-                current_opencode_account=$(chezmoi data --format json 2>/dev/null | jq -r '.opencodeProviderAccount // "openai"' 2>/dev/null)
-                if [[ -n "$current_opencode_account" && "$current_opencode_account" != "null" ]]; then
-                    printf '%s\n' "$current_opencode_account"
-                fi
-
-                printf '%s\n' "openai" "anthropic" "google" "opencode"
-
-                if [[ -f "$HOME/.config/opencode/opencode.jsonc" ]]; then
-                    jq -r '
-                        .provider // {} | keys[] |
-                        select(. != "openai" and . != "anthropic" and . != "google" and . != "opencode") |
-                        . + "@private"
-                    ' "$HOME/.config/opencode/opencode.jsonc" 2>/dev/null
-                fi
-            } | awk '!seen[$0]++'
-        fi
-        ;;
     esac
 }
 
@@ -856,78 +835,6 @@ _codex_with() {
     esac
 }
 
-# opencode-manage completion
-_opencode_manage() {
-    local curcontext="$curcontext" state line
-    # shellcheck disable=SC2034
-    typeset -A opt_args
-
-    # shellcheck disable=SC2034
-    local -a commands=(
-        'switch:Change default account'
-        'sw:Change default account (alias)'
-        'create-account:Create account'
-        'add-account:Add new account'
-        'update-account:Update account'
-        'edit-account:Edit account config'
-        'remove-account:Remove account'
-        'add-key:Add API key'
-        'update-key:Update API key'
-        'delete-key:Delete API key'
-        'test:Test connectivity'
-        'list:List accounts'
-        'ls:List accounts (alias)'
-        'doctor:Run workflow diagnostics'
-        'current:Show current account'
-        'help:Show help'
-    )
-
-    _arguments -C \
-        '1: :->command' \
-        '*: :->account'
-
-    case "$state" in
-    command)
-        _describe -t commands 'opencode-manage commands' commands
-        ;;
-    account)
-        case "${line[1]}" in
-        switch | sw | test | add-key | update-key | delete-key | edit-account | update-account | remove-account)
-            local -a accounts
-            local acct
-            while IFS= read -r acct; do
-                [[ -n "$acct" ]] && accounts+=("$acct")
-            done < <(_ai_tool_accounts opencode)
-            _describe -t accounts 'accounts' accounts
-            ;;
-        esac
-        ;;
-    esac
-}
-
-# opencode-with completion
-_opencode_with() {
-    local curcontext="$curcontext"
-    # shellcheck disable=SC2034
-    typeset -A opt_args
-
-    local -a accounts
-    local acct
-    while IFS= read -r acct; do
-        [[ -n "$acct" ]] && accounts+=("$acct")
-    done < <(_ai_tool_accounts opencode)
-
-    _arguments -C \
-        '1:account:->_accounts' \
-        '*:opencode options:->options'
-
-    case "$state" in
-    _accounts)
-        _describe -t accounts 'accounts' accounts
-        ;;
-    esac
-}
-
 # Register completions when in zsh
 if [[ -n "$ZSH_VERSION" ]]; then
     compdef _claude_manage claude-manage 2>/dev/null
@@ -938,10 +845,6 @@ if [[ -n "$ZSH_VERSION" ]]; then
     compdef _codex_manage cxm 2>/dev/null
     compdef _codex_with codex-with 2>/dev/null
     compdef _codex_with cxw 2>/dev/null
-    compdef _opencode_manage opencode-manage 2>/dev/null
-    compdef _opencode_manage ocm 2>/dev/null
-    compdef _opencode_with opencode-with 2>/dev/null
-    compdef _opencode_with ocw 2>/dev/null
 fi
 
 # ─────────────────────────────────────────────────────────────

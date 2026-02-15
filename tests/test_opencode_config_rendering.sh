@@ -223,11 +223,19 @@ assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" "## Open
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" "## OpenCode Runtime Boundaries"
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" "## Command and Skill Sources"
 
-opencode_manage_completion_block="$(awk '/^_opencode_manage\(\)/,/^}/' "$ROOT/dot_custom/functions.sh")"
-if ! grep -Fq "'doctor:Run workflow diagnostics'" <<<"$opencode_manage_completion_block"; then
-    echo "assertion failed: opencode completion is missing doctor subcommand" >&2
-    echo "--- _opencode_manage block ---" >&2
-    echo "$opencode_manage_completion_block" >&2
+theme_file="$ROOT/private_dot_config/opencode/themes/dracula.json"
+test -f "$theme_file" || {
+    echo "missing managed opencode theme asset: $theme_file" >&2
+    exit 1
+}
+
+if ! jq -e . "$theme_file" >/dev/null 2>&1; then
+    echo "assertion failed: opencode theme file is not valid JSON: $theme_file" >&2
+    exit 1
+fi
+
+if awk '/^_opencode_manage\(\)/,/^}/' "$ROOT/dot_custom/functions.sh" | grep -q .; then
+    echo "assertion failed: opencode manage completion should not be defined" >&2
     exit 1
 fi
 
