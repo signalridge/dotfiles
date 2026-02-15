@@ -69,9 +69,6 @@ Reference order:
 
 - Default profile is strict native-only mode.
 - Do not rely on Claude compatibility bridge behavior unless operator explicitly sets `opencodeCompatibilityMode = "compat"`.
-- In strict mode, managed wrappers enforce:
-  - `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1`
-  - `OPENCODE_DISABLE_EXTERNAL_SKILLS=1`
 - In strict mode, `oh-my-opencode` compatibility toggles are managed as disabled.
 - In compat mode, compatibility ingress is enabled intentionally for commands/skills/agents/hooks/plugins.
 - Note: upstream OpenCode still supports project instruction fallback scanning (`AGENTS.md` then `CLAUDE.md`); keep repository `AGENTS.md` authoritative.
@@ -96,15 +93,14 @@ Repository-managed core command docs are projected into OpenCode command paths:
 - quality gates: `review`, `test`
 - SCM workflow: `commit`, `pr-create`, `pr-review`
 
-If wrappers or commands are missing, verify projection with:
+If commands are missing, verify projection with:
 
-- `opencode-manage doctor`
+- `ls ~/.config/opencode/commands/core`
 
 ## OpenCode Operators
 
-- `opencode-manage` (`ocm`): account lifecycle, diagnostics
-- `opencode-with` (`ocw`): temporary account-scoped launch
-- `opencode-token`: key/config helper for wrappers and automation
+- Use native `opencode` CLI for provider and session management.
+- Use `claude-manage doctor` / `codex-manage doctor` for cross-tool diagnostics in this repo.
 
 ## Pre-Analysis (L3+)
 

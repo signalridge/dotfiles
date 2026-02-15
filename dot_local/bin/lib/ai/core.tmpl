@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # AI Tools Shared Library
-# Common functions for Claude Code, Codex CLI, and OpenCode management
+# Common functions for Claude Code and Codex CLI management
 #
 # Usage: source lib/ai/core
 
@@ -12,9 +12,8 @@ source "$AI_TOOLS_LIB_DIR/../common"
 CHEZMOI_CONFIG="${HOME}/.config/chezmoi/chezmoi.toml"
 CHEZMOI_DATA_CLAUDE="${HOME}/.local/share/chezmoi/.chezmoidata/claude.yaml"
 CHEZMOI_DATA_CODEX=""
-CHEZMOI_DATA_OPENCODE=""
 
-# Tool context: claude | codex | opencode (set by caller before sourcing)
+# Tool context: claude | codex (set by caller before sourcing)
 : "${AI_TOOL_CONTEXT:=claude}"
 
 # Return codes used for interactive navigation.
@@ -29,17 +28,8 @@ CLAUDE_ACCOUNTS=({{- range $name, $_ := .claude.accounts }} "{{ $name }}"{{- end
 CODEX_PROVIDERS=("openai")
 CODEX_ACCOUNTS=("openai")
 
-# OpenCode fallback providers/accounts (dynamic values loaded later when possible)
-OPENCODE_PROVIDERS=("openai" "anthropic" "google" "opencode")
-OPENCODE_ACCOUNTS=("openai")
-OPENCODE_NATIVE_PROVIDERS=("openai" "anthropic" "google" "github-copilot" "opencode")
-
 codex_config_file() {
     printf '%s' "${HOME}/.codex/config.toml"
-}
-
-opencode_config_file() {
-    printf '%s' "${HOME}/.config/opencode/opencode.jsonc"
 }
 
 toml_get_first_string_value() {
@@ -138,115 +128,26 @@ load_codex_runtime_config() {
     CODEX_ACCOUNTS=("${dedup[@]}")
 }
 
-is_opencode_native_provider() {
-    local provider="$1"
-    local p
-    for p in "${OPENCODE_NATIVE_PROVIDERS[@]}"; do
-        [[ "$p" == "$provider" ]] && return 0
-    done
-    return 1
-}
-
-json_get_first_object_key() {
-    local file="$1"
-    local expr="$2"
-    [[ -f "$file" ]] || return 0
-    command -v jq >/dev/null 2>&1 || return 0
-    jq -r "$expr | keys[0] // empty" "$file" 2>/dev/null
-}
-
-json_get_string() {
-    local file="$1"
-    local expr="$2"
-    [[ -f "$file" ]] || return 0
-    command -v jq >/dev/null 2>&1 || return 0
-    jq -r "$expr // empty" "$file" 2>/dev/null
-}
-
-load_opencode_runtime_config() {
-    local config_file current_account current_provider providers
-    config_file=$(opencode_config_file)
-
-    current_account="openai"
-    if command -v chezmoi &>/dev/null && command -v jq &>/dev/null; then
-        current_account=$(chezmoi data --format json 2>/dev/null | jq -r '.opencodeProviderAccount // "openai"' 2>/dev/null)
-        [[ -z "$current_account" || "$current_account" == "null" ]] && current_account="openai"
-    fi
-    current_provider="${current_account%%@*}"
-    [[ -z "$current_provider" ]] && current_provider="openai"
-
-    OPENCODE_PROVIDERS=("openai" "anthropic" "google" "opencode")
-
-    if [[ -f "$config_file" ]] && command -v jq >/dev/null 2>&1; then
-        providers=$(jq -r '.provider // {} | keys[]' "$config_file" 2>/dev/null || true)
-        while IFS= read -r p; do
-            [[ -z "$p" ]] && continue
-            if [[ " ${OPENCODE_PROVIDERS[*]-} " != *" $p "* ]]; then
-                OPENCODE_PROVIDERS+=("$p")
-            fi
-        done <<< "$providers"
-
-        local model_provider
-        model_provider=$(jq -r '.model // empty' "$config_file" 2>/dev/null | cut -d/ -f1)
-        if [[ -n "$model_provider" && " ${OPENCODE_PROVIDERS[*]-} " != *" $model_provider "* ]]; then
-            OPENCODE_PROVIDERS+=("$model_provider")
-        fi
-    fi
-
-    if [[ " ${OPENCODE_PROVIDERS[*]-} " != *" $current_provider "* ]]; then
-        OPENCODE_PROVIDERS+=("$current_provider")
-    fi
-
-    OPENCODE_ACCOUNTS=()
-    local provider
-    for provider in "${OPENCODE_PROVIDERS[@]}"; do
-        if is_opencode_native_provider "$provider"; then
-            OPENCODE_ACCOUNTS+=("$provider")
-        else
-            OPENCODE_ACCOUNTS+=("${provider}@private")
-        fi
-    done
-    OPENCODE_ACCOUNTS+=("$current_account")
-
-    local dedup=() a
-    for a in "${OPENCODE_ACCOUNTS[@]}"; do
-        [[ -z "$a" || "$a" == "null" ]] && continue
-        if [[ " ${dedup[*]-} " != *" $a "* ]]; then
-            dedup+=("$a")
-        fi
-    done
-    OPENCODE_ACCOUNTS=("${dedup[@]}")
-}
-
-case "$AI_TOOL_CONTEXT" in
-    codex)
-        CHEZMOI_DATA="$CHEZMOI_DATA_CODEX"
-        load_codex_runtime_config
-        PROVIDERS=("${CODEX_PROVIDERS[@]}")
-        ACCOUNTS=("${CODEX_ACCOUNTS[@]}")
-        ;;
-    opencode)
-        CHEZMOI_DATA="$CHEZMOI_DATA_OPENCODE"
-        load_opencode_runtime_config
-        PROVIDERS=("${OPENCODE_PROVIDERS[@]}")
-        ACCOUNTS=("${OPENCODE_ACCOUNTS[@]}")
-        ;;
-    *)
-        CHEZMOI_DATA="$CHEZMOI_DATA_CLAUDE"
-        PROVIDERS=("${CLAUDE_PROVIDERS[@]}")
-        ACCOUNTS=("${CLAUDE_ACCOUNTS[@]}")
-        ;;
-esac
+if [[ "$AI_TOOL_CONTEXT" == "codex" ]]; then
+    CHEZMOI_DATA=""
+    load_codex_runtime_config
+    PROVIDERS=("${CODEX_PROVIDERS[@]}")
+    ACCOUNTS=("${CODEX_ACCOUNTS[@]}")
+else
+    CHEZMOI_DATA="$CHEZMOI_DATA_CLAUDE"
+    PROVIDERS=("${CLAUDE_PROVIDERS[@]}")
+    ACCOUNTS=("${CLAUDE_ACCOUNTS[@]}")
+fi
 
 # Get provider for an account
 get_provider() {
     local account="$1"
-    if [[ "$AI_TOOL_CONTEXT" == "codex" || "$AI_TOOL_CONTEXT" == "opencode" ]]; then
-        if [[ "$AI_TOOL_CONTEXT" == "codex" && "$account" == "openai" ]]; then
+    if [[ "$AI_TOOL_CONTEXT" == "codex" ]]; then
+        if [[ "$account" == "openai" ]]; then
             echo "openai"
-            return 0
+        else
+            echo "${account%%@*}"
         fi
-        echo "${account%%@*}"
     else
         case "$account" in
 {{- range $name, $config := .claude.accounts }}
@@ -278,26 +179,6 @@ is_third_party() {
             fi
         done
         return 1
-    elif [[ "$AI_TOOL_CONTEXT" == "opencode" ]]; then
-        is_opencode_native_provider "$provider" && return 1
-
-        local config_file base_url p
-        config_file=$(opencode_config_file)
-        if [[ -f "$config_file" ]] && command -v jq >/dev/null 2>&1; then
-            base_url=$(jq -r --arg provider "$provider" '.provider[$provider].options.baseURL // empty' "$config_file" 2>/dev/null)
-            [[ -n "$base_url" ]] && return 0
-
-            p=$(jq -r --arg provider "$provider" '.provider[$provider] | type // empty' "$config_file" 2>/dev/null)
-            [[ "$p" == "object" ]] && return 0
-        fi
-
-        for p in "${OPENCODE_PROVIDERS[@]}"; do
-            if [[ "$p" == "$provider" ]]; then
-                is_opencode_native_provider "$provider" && return 1
-                return 0
-            fi
-        done
-        return 1
     else
         case "$provider" in
 {{- range $name, $config := .claude.providers }}
@@ -313,38 +194,16 @@ is_third_party() {
 # Accounts available for runtime operations (switch/test/list/completion).
 list_runtime_accounts() {
     local -a accounts=()
-    local account provider current_selector
+    local account provider
 
     if [[ "$AI_TOOL_CONTEXT" == "codex" ]]; then
         accounts+=("openai")
-    elif [[ "$AI_TOOL_CONTEXT" == "opencode" ]]; then
-        for account in "${ACCOUNTS[@]}"; do
-            provider=$(get_provider "$account")
-            is_third_party "$provider" && continue
-            accounts+=("$account")
-        done
     else
         for account in "${ACCOUNTS[@]}"; do
             provider=$(get_provider "$account")
             is_third_party "$provider" && continue
             accounts+=("$account")
         done
-    fi
-
-    # Always include the currently selected account from chezmoi data, even when a
-    # third-party account has no stored key yet. This keeps switch/list UX stable.
-    if command -v chezmoi >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-        case "$AI_TOOL_CONTEXT" in
-            opencode)
-                current_selector=$(chezmoi data --format json 2>/dev/null | jq -r '.opencodeProviderAccount // .opencodeProvider // "openai"' 2>/dev/null)
-                ;;
-            *)
-                current_selector=""
-                ;;
-        esac
-        if [[ -n "$current_selector" && "$current_selector" != "null" ]]; then
-            accounts+=("$current_selector")
-        fi
     fi
 
     while IFS= read -r account; do
@@ -461,7 +320,6 @@ gopass_prefix() {
     case "$AI_TOOL_CONTEXT" in
         codex)  prefix="codex" ;;
         claude) prefix="claude" ;;
-        opencode) prefix="opencode" ;;
         *)
             log_error "Unsupported AI_TOOL_CONTEXT: '$AI_TOOL_CONTEXT'"
             return 1
@@ -497,24 +355,6 @@ codex_default_model_for_provider() {
     esac
 }
 
-opencode_default_model_for_provider() {
-    local provider="$1"
-    case "$provider" in
-        openai|opencode) echo "gpt-5.3-codex" ;;
-        anthropic) echo "claude-sonnet-4-5" ;;
-        google) echo "gemini-3-pro" ;;
-        deepseek) echo "deepseek-chat" ;;
-        kimi) echo "kimi-k2.5" ;;
-        glm) echo "glm-4.7" ;;
-        qwen) echo "qwen3-coder-plus" ;;
-        minimax) echo "MiniMax-M2.1" ;;
-        doubao) echo "ark-code-latest" ;;
-        naapi) echo "gpt-5.3-codex" ;;
-        harui) echo "gpt-5.3-codex" ;;
-        *) echo "gpt-5.3-codex" ;;
-    esac
-}
-
 get_provider_default_model() {
     local provider="$1"
     if [[ "$AI_TOOL_CONTEXT" == "codex" ]]; then
@@ -540,34 +380,6 @@ get_provider_default_model() {
         fi
 
         codex_default_model_for_provider "$provider"
-        return 0
-    elif [[ "$AI_TOOL_CONTEXT" == "opencode" ]]; then
-        [[ -z "$provider" ]] && provider="openai"
-
-        local config_file model full_model key_model
-        config_file=$(opencode_config_file)
-
-        if [[ -f "$config_file" ]] && command -v jq >/dev/null 2>&1; then
-            full_model=$(jq -r '.model // empty' "$config_file" 2>/dev/null)
-            if [[ "$full_model" == "$provider/"* ]]; then
-                echo "${full_model#*/}"
-                return 0
-            fi
-
-            model=$(jq -r --arg provider "$provider" '.provider[$provider].model // empty' "$config_file" 2>/dev/null)
-            if [[ -n "$model" ]]; then
-                echo "$model"
-                return 0
-            fi
-
-            key_model=$(jq -r --arg provider "$provider" '.provider[$provider].models | keys[0] // empty' "$config_file" 2>/dev/null)
-            if [[ -n "$key_model" ]]; then
-                echo "$key_model"
-                return 0
-            fi
-        fi
-
-        opencode_default_model_for_provider "$provider"
         return 0
     fi
 

@@ -6,7 +6,6 @@ ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 FILES=(
     "$ROOT/dot_local/bin/executable_claude-manage.tmpl"
     "$ROOT/dot_local/bin/executable_codex-manage.tmpl"
-    "$ROOT/dot_local/bin/executable_opencode-manage.tmpl"
 )
 
 for f in "${FILES[@]}"; do
