@@ -40,6 +40,9 @@ lua = "5.4"
 # Gemini CLI managed via npm backend (replaces nix gemini-cli)
 "npm:@google/gemini-cli" = "latest"
 
+# Happy CLI managed via npm backend (installs `happy` and `happy-mcp`)
+"npm:happy-coder" = "latest"
+
 [settings]
 # Keep auto_install enabled for normal mise workflow.
 # Process storms were caused by shell PATH/init ordering, not this flag.
