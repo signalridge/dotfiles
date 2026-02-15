@@ -88,12 +88,9 @@ Managed `opencode.jsonc` also keeps explicit project instruction discovery:
 
 OpenCode and oh-my-opencode are wired to shared repository assets without Claude compatibility bridge:
 
-- OpenCode command projection has two managed layers:
-  - Flat compatibility aliases:
-    - `~/.config/opencode/command/core-*.md` -> `~/.agents/commands/core/*.md`
-  - Native hierarchical mirror:
-    - `~/.config/opencode/commands` -> `~/.agents/commands`
-  - This keeps current command naming behavior while enabling future command namespace layering from the shared command tree.
+- OpenCode command projection uses a single hierarchical symlink (same pattern as Claude):
+  - `~/.config/opencode/commands/core` -> `~/.agents/commands/core`
+  - Commands are discovered as `core/commit`, `core/review`, etc. via OpenCode's native `{command,commands}/**/*.md` glob.
 - OpenCode global skills are projected explicitly:
   - `~/.config/opencode/skills` -> `~/.agents/skills`
 - OpenCode `skills.paths` keeps project-local overlay:
@@ -107,17 +104,17 @@ This allows reuse of existing skill/command ecosystem across Claude/Codex/OpenCo
 
 Cross-tool parity status against current managed Claude Code/Codex workflow:
 
-| Capability                                               | Claude Code               | Codex                     | OpenCode + oh-my                             | Status                                 |
-| -------------------------------------------------------- | ------------------------- | ------------------------- | -------------------------------------------- | -------------------------------------- |
-| Account lifecycle (`manage/with/token`)                  | yes                       | yes                       | yes                                          | parity                                 |
-| Shell alias/completion (`ccm/ccw`, `cxm/cxw`, `ocm/ocw`) | yes                       | yes                       | yes                                          | parity                                 |
-| Wrapper diagnostics (`*-manage doctor`)                  | yes                       | yes                       | yes                                          | parity                                 |
-| Shared command source (`~/.agents/commands/core`)        | directory symlink         | flat prompt links         | flat aliases + layered mirror                | parity (with OpenCode-native layering) |
-| Shared skills source (`~/.agents/skills`)                | symlink                   | symlink                   | global projection + project recursive source | parity                                 |
-| Third-party provider families                            | broad                     | broad (includes `harui`)  | broad (includes `harui`)                     | parity                                 |
-| User-level instruction file                              | `~/.claude/CLAUDE.md`     | `~/.codex/AGENTS.md`      | `~/.config/opencode/AGENTS.md`               | parity                                 |
-| OpenSpec workflow availability                           | wrappers (when generated) | wrappers (when generated) | plugin + managed command ecosystem           | parity with tool-specific entrypoints  |
-| Runtime no-Claude isolation                              | n/a                       | n/a                       | enabled (`claude_code.*=false` + env flags)  | intentional delta                      |
+| Capability                                               | Claude Code               | Codex                     | OpenCode + oh-my                             | Status                                |
+| -------------------------------------------------------- | ------------------------- | ------------------------- | -------------------------------------------- | ------------------------------------- |
+| Account lifecycle (`manage/with/token`)                  | yes                       | yes                       | yes                                          | parity                                |
+| Shell alias/completion (`ccm/ccw`, `cxm/cxw`, `ocm/ocw`) | yes                       | yes                       | yes                                          | parity                                |
+| Wrapper diagnostics (`*-manage doctor`)                  | yes                       | yes                       | yes                                          | parity                                |
+| Shared command source (`~/.agents/commands/core`)        | directory symlink         | flat prompt links         | directory symlink (same as Claude)           | parity                                |
+| Shared skills source (`~/.agents/skills`)                | symlink                   | symlink                   | global projection + project recursive source | parity                                |
+| Third-party provider families                            | broad                     | broad (includes `harui`)  | broad (includes `harui`)                     | parity                                |
+| User-level instruction file                              | `~/.claude/CLAUDE.md`     | `~/.codex/AGENTS.md`      | `~/.config/opencode/AGENTS.md`               | parity                                |
+| OpenSpec workflow availability                           | wrappers (when generated) | wrappers (when generated) | plugin + managed command ecosystem           | parity with tool-specific entrypoints |
+| Runtime no-Claude isolation                              | n/a                       | n/a                       | enabled (`claude_code.*=false` + env flags)  | intentional delta                     |
 
 ## Community Patterns Review
 
@@ -131,7 +128,7 @@ Representative community sources reviewed (via `ghq` clone):
 Patterns accepted into managed defaults:
 
 - explicit user-level `~/.config/opencode/AGENTS.md` baseline
-- layered command topology (`command/` compatibility + `commands/` mirror)
+- hierarchical command symlink (matching Claude's directory symlink pattern)
 - explicit global skills projection + recursive project skills source
 - dedicated diagnostics entrypoint and completion parity (`claude-manage/codex-manage/opencode-manage doctor`)
 
@@ -219,11 +216,10 @@ opencode-with deepseek@private --help >/dev/null
 # One-shot workflow diagnostics
 opencode-manage doctor
 
-# Verify command projection files exist
-ls ~/.config/opencode/command/core-*.md
+# Verify command projection symlink
+readlink ~/.config/opencode/commands/core
 
-# Verify layered command mirror and global skills projection
-readlink ~/.config/opencode/commands
+# Verify global skills projection
 readlink ~/.config/opencode/skills
 
 # Verify user-level AGENTS baseline
@@ -258,7 +254,7 @@ Managed paths remain:
 
 - `private_dot_config/opencode/opencode.jsonc.tmpl` -> `~/.config/opencode/opencode.jsonc`
 - `private_dot_config/opencode/oh-my-opencode.jsonc.tmpl` -> `~/.config/opencode/oh-my-opencode.jsonc`
-- `private_dot_config/opencode/symlink_commands.tmpl` -> `~/.config/opencode/commands`
+- `private_dot_config/opencode/commands/symlink_core.tmpl` -> `~/.config/opencode/commands/core`
 - `private_dot_config/opencode/symlink_skills.tmpl` -> `~/.config/opencode/skills`
 
 These are intentionally not merged into Claude/Codex config directories to keep OpenCode runtime boundaries explicit.

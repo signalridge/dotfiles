@@ -79,9 +79,8 @@ Reference order:
 
 - Shared commands source-of-truth: `~/.agents/commands/`
 - Shared skills source-of-truth: `~/.agents/skills/`
-- OpenCode global command paths:
-  - `~/.config/opencode/command/` (compatibility aliases)
-  - `~/.config/opencode/commands/` (layered mirror)
+- OpenCode global command path:
+  - `~/.config/opencode/commands/core` -> `~/.agents/commands/core` (hierarchical symlink)
 - OpenCode global skills path:
   - `~/.config/opencode/skills/`
 - Project-level skill overlay:

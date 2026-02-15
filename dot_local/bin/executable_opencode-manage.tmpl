@@ -718,24 +718,16 @@ cmd_doctor() {
     echo ""
 
     echo "Commands and skills projection:"
-    if [[ -L "${HOME}/.config/opencode/commands" ]]; then
-        pass "~/.config/opencode/commands symlink exists"
+    if [[ -L "${HOME}/.config/opencode/commands/core" ]]; then
+        pass "~/.config/opencode/commands/core symlink exists"
     else
-        note_warn "~/.config/opencode/commands symlink missing"
+        note_warn "~/.config/opencode/commands/core symlink missing"
     fi
 
     if [[ -L "${HOME}/.config/opencode/skills" ]]; then
         pass "~/.config/opencode/skills symlink exists"
     else
         note_warn "~/.config/opencode/skills symlink missing"
-    fi
-
-    local core_count
-    core_count=$(find "${HOME}/.config/opencode/command" -maxdepth 1 -name 'core-*.md' 2>/dev/null | wc -l | tr -d ' ')
-    if [[ "${core_count:-0}" -ge 7 ]]; then
-        pass "core command compatibility aliases present (${core_count})"
-    else
-        note_warn "core command compatibility aliases incomplete (${core_count:-0})"
     fi
 
     if [[ -f "$OPENCODE_OHMY_CONFIG" ]] && jq -e '.skills.sources | type == "array" and length >= 1' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then

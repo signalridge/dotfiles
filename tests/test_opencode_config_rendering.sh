@@ -137,15 +137,8 @@ assert_jq "$OH_MY_OPENCODE" '.experimental.task_system == true'
 assert_jq "$OH_MY_OPENCODE" '.experimental.plugin_load_timeout_ms == 15000'
 assert_jq "$OH_MY_OPENCODE" '.experimental.safe_hook_creation == true'
 
-for f in commit context plan pr-create pr-review review test; do
-    test -f "$ROOT/private_dot_config/opencode/command/symlink_core-${f}.md.tmpl" || {
-        echo "missing opencode command projection template: $f" >&2
-        exit 1
-    }
-done
-
-test -f "$ROOT/private_dot_config/opencode/symlink_commands.tmpl" || {
-    echo "missing opencode layered command mirror template" >&2
+test -f "$ROOT/private_dot_config/opencode/commands/symlink_core.tmpl" || {
+    echo "missing opencode commands/core symlink template" >&2
     exit 1
 }
 
