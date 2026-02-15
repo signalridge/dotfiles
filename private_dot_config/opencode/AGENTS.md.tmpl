@@ -67,12 +67,13 @@ Reference order:
 
 ## OpenCode Runtime Boundaries
 
-- Keep OpenCode runtime native-only.
-- Do not rely on Claude compatibility bridge behavior for commands/skills/agents/hooks/plugins.
-- Managed wrappers enforce:
+- Default profile is strict native-only mode.
+- Do not rely on Claude compatibility bridge behavior unless operator explicitly sets `opencodeCompatibilityMode = "compat"`.
+- In strict mode, managed wrappers enforce:
   - `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1`
   - `OPENCODE_DISABLE_EXTERNAL_SKILLS=1`
-- `oh-my-opencode` compatibility toggles are managed as disabled.
+- In strict mode, `oh-my-opencode` compatibility toggles are managed as disabled.
+- In compat mode, compatibility ingress is enabled intentionally for commands/skills/agents/hooks/plugins.
 - Note: upstream OpenCode still supports project instruction fallback scanning (`AGENTS.md` then `CLAUDE.md`); keep repository `AGENTS.md` authoritative.
 
 ## Command and Skill Sources

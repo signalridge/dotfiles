@@ -158,7 +158,7 @@ cmd_switch() {
     log_info "Setting default to $input..."
     set_chezmoi_account "$input"
     echo "  ✓ Updated chezmoi.toml"
-    chezmoi apply --verbose --no-scripts "$SETTINGS_FILE" "$SCRIPT_DIR/lib/ai/core"
+    chezmoi apply --verbose --exclude scripts "$SETTINGS_FILE" "$SCRIPT_DIR/lib/ai/core"
     echo "  ✓ Applied chezmoi"
     echo ""
     log_success "Default set to $input"
@@ -313,7 +313,7 @@ cmd_create_account() {
 
     echo ""
     log_info "Applying chezmoi..."
-    chezmoi apply --verbose --no-scripts "$SETTINGS_FILE" "$SCRIPT_DIR/lib/ai/core"
+    chezmoi apply --verbose --exclude scripts "$SETTINGS_FILE" "$SCRIPT_DIR/lib/ai/core"
     log_success "Done"
 }
 
@@ -372,7 +372,7 @@ cmd_update_account() {
     echo ""
     log_success "Account '$input' updated"
     log_info "Applying chezmoi..."
-    chezmoi apply --verbose --no-scripts "$SETTINGS_FILE" "$SCRIPT_DIR/lib/ai/core"
+    chezmoi apply --verbose --exclude scripts "$SETTINGS_FILE" "$SCRIPT_DIR/lib/ai/core"
     log_success "Done"
 }
 
@@ -439,7 +439,7 @@ cmd_remove_account() {
     if [[ "$has_profile" -eq 1 ]]; then
         echo ""
         log_info "Applying chezmoi..."
-        chezmoi apply --verbose --no-scripts "$SETTINGS_FILE" "$SCRIPT_DIR/lib/ai/core"
+        chezmoi apply --verbose --exclude scripts "$SETTINGS_FILE" "$SCRIPT_DIR/lib/ai/core"
         log_success "Done"
     fi
 }

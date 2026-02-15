@@ -83,6 +83,11 @@ cat >"$HOME/.config/opencode/oh-my-opencode.jsonc" <<'EOF'
     "plugins": false
   },
   "disabled_hooks": ["claude-code-hooks"],
+  "sisyphus": {
+    "tasks": {
+      "claude_code_compat": false
+    }
+  },
   "skills": {
     "sources": [
       { "path": ".agents/skills", "recursive": true }
@@ -100,8 +105,9 @@ cat >"$STUB/chezmoi" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 if [[ "${1:-}" == "data" ]]; then
-    cat <<'JSON'
-{"claudeProviderAccount":"anthropic","codexProviderAccount":"openai","opencodeProviderAccount":"deepseek@private"}
+    mode="${OPENCODE_COMPAT_MODE:-strict}"
+    cat <<JSON
+{"claudeProviderAccount":"anthropic","codexProviderAccount":"openai","opencodeProviderAccount":"deepseek@private","opencodeCompatibilityMode":"$mode"}
 JSON
     exit 0
 fi
@@ -271,8 +277,9 @@ assert_contains "$(cat "$HOME/.config/chezmoi/chezmoi.toml")" "opencodeProviderA
 doctor_out="$(PATH="$BASE_PATH" "$BIN/opencode-manage" doctor | sed -E $'s/\x1B\\[[0-9;]*[mK]//g')"
 assert_contains "$doctor_out" "OpenCode Workflow Doctor"
 assert_contains "$doctor_out" "current selector: deepseek@private (deepseek)"
-assert_contains "$doctor_out" "claude_code.mcp disabled"
-assert_contains "$doctor_out" "no-Claude compatibility bridge policy active"
+assert_contains "$doctor_out" "compatibility profile validated (strict)"
+assert_contains "$doctor_out" "built-in MCP enabled: context7"
+assert_contains "$doctor_out" "all category/agent model providers are routable"
 assert_contains "$doctor_out" "Summary:"
 assert_not_contains "$doctor_out" "\\033["
 
@@ -282,6 +289,14 @@ env_dump="$(cat "$CAPTURE_ENV")"
 assert_contains "$env_dump" "OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1"
 assert_contains "$env_dump" "OPENCODE_DISABLE_EXTERNAL_SKILLS=1"
 assert_contains "$env_dump" "DEEPSEEK_API_KEY=test-key"
+assert_equals "$(grep '^OPENCODE_CONFIG_CONTENT=' "$CAPTURE_ENV" | sed 's/^OPENCODE_CONFIG_CONTENT=//g' | jq -r '.model')" "deepseek/deepseek-chat"
+
+# compat mode should not force strict isolation flags
+OPENCODE_COMPAT_MODE=compat PATH="$BASE_PATH" "$BIN/opencode-with" deepseek@alpha run "hello-compat" >/dev/null
+env_dump_compat="$(cat "$CAPTURE_ENV")"
+assert_not_contains "$env_dump_compat" "OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1"
+assert_not_contains "$env_dump_compat" "OPENCODE_DISABLE_EXTERNAL_SKILLS=1"
+assert_contains "$env_dump_compat" "DEEPSEEK_API_KEY=test-key"
 assert_equals "$(grep '^OPENCODE_CONFIG_CONTENT=' "$CAPTURE_ENV" | sed 's/^OPENCODE_CONFIG_CONTENT=//g' | jq -r '.model')" "deepseek/deepseek-chat"
 
 # Canonical write path should be tool-specific.

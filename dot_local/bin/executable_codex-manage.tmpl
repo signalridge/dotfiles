@@ -184,7 +184,7 @@ cmd_switch() {
     set_chezmoi_account "$input"
     echo "  ✓ Updated chezmoi.toml"
     log_info "Applying chezmoi templates..."
-    chezmoi apply --verbose --no-scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
+    chezmoi apply --verbose --exclude scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
     echo "  ✓ Updated ~/.codex/config.toml"
     if is_third_party "$provider"; then
         if command -v gopass >/dev/null 2>&1 && codex-token --check "$input" 2>/dev/null; then
@@ -246,7 +246,7 @@ cmd_create_account() {
 
     if [[ "$provider" == "openai" ]]; then
         set_chezmoi_account "$full_name"
-        chezmoi apply --verbose --no-scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
+        chezmoi apply --verbose --exclude scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
         log_success "Account created and switched: $full_name (OAuth)"
         return 0
     fi
@@ -266,7 +266,7 @@ cmd_create_account() {
     fi
 
     set_chezmoi_account "$full_name"
-    chezmoi apply --verbose --no-scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
+    chezmoi apply --verbose --exclude scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
     log_success "Account created and switched: $full_name"
 }
 
@@ -291,7 +291,7 @@ cmd_update_account() {
     provider=$(get_provider "$input")
 
     set_chezmoi_account "$input"
-    chezmoi apply --verbose --no-scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
+    chezmoi apply --verbose --exclude scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
     log_success "Switched to $input"
 
     if [[ "$provider" == "openai" ]]; then

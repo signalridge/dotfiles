@@ -1,22 +1,37 @@
+{{- $compatMode := "strict" -}}
+{{- if hasKey . "opencodeCompatibilityMode" -}}
+{{-   $compatMode = lower (printf "%v" .opencodeCompatibilityMode) -}}
+{{- end -}}
+{{- $compatEnabled := eq $compatMode "compat" -}}
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "auto_update": false,
   "claude_code": {
     "mcp": false,
-    "commands": false,
-    "skills": false,
-    "agents": false,
-    "hooks": false,
-    "plugins": false
+    "commands": {{ if $compatEnabled }}true{{ else }}false{{ end }},
+    "skills": {{ if $compatEnabled }}true{{ else }}false{{ end }},
+    "agents": {{ if $compatEnabled }}true{{ else }}false{{ end }},
+    "hooks": {{ if $compatEnabled }}true{{ else }}false{{ end }},
+    "plugins": {{ if $compatEnabled }}true{{ else }}false{{ end }}
   },
   "disabled_hooks": [
-    "claude-code-hooks"
+{{- if not $compatEnabled }}
+    "claude-code-hooks",
+{{- end }}
+    "startup-toast"
   ],
   "disabled_mcps": [],
   "disabled_agents": [],
   "disabled_skills": [],
   "disabled_commands": [],
-  "disabled_tools": [],
+  "comment_checker": {
+    "custom_prompt": "Prefer actionable comments tied to concrete code lines; avoid generic praise."
+  },
+  "ralph_loop": {
+    "enabled": false,
+    "default_max_iterations": 120,
+    "state_dir": ".sisyphus/ralph-loop"
+  },
   "sisyphus_agent": {
     "disabled": false,
     "default_builder_enabled": false,
@@ -26,10 +41,16 @@
   "sisyphus": {
     "tasks": {
       "storage_path": ".sisyphus/tasks",
-      "claude_code_compat": false
+      "claude_code_compat": {{ if $compatEnabled }}true{{ else }}false{{ end }}
     }
   },
   "agents": {
+    "build": {
+      "category": "deep"
+    },
+    "plan": {
+      "category": "ultrabrain"
+    },
     "atlas": {
       "category": "ultrabrain"
     },
@@ -48,12 +69,15 @@
     "ultrabrain": {
       "description": "Highest-depth orchestration and architecture reasoning.",
       "model": "openai/gpt-5.3-codex",
-      "variant": "xhigh"
+      "variant": "xhigh",
+      "reasoningEffort": "xhigh",
+      "textVerbosity": "medium"
     },
     "deep": {
       "description": "Deep implementation and debugging tasks.",
       "model": "openai/gpt-5.3-codex",
-      "variant": "medium"
+      "variant": "medium",
+      "reasoningEffort": "medium"
     },
     "artistry": {
       "description": "Creative writing and design-oriented output.",
@@ -62,7 +86,8 @@
     },
     "quick": {
       "description": "Fast low-latency utility tasks.",
-      "model": "anthropic/claude-haiku-4-5"
+      "model": "anthropic/claude-haiku-4-5",
+      "textVerbosity": "low"
     },
     "unspecified-low": {
       "description": "Fallback low-effort work not matching dedicated categories.",
@@ -75,7 +100,8 @@
     },
     "writing": {
       "description": "Writing and documentation focused tasks.",
-      "model": "google/gemini-3-flash"
+      "model": "google/gemini-3-flash",
+      "textVerbosity": "high"
     }
   },
   "skills": {

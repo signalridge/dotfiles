@@ -44,9 +44,14 @@ Aliases:
   - `opencode/providers/{provider}/accounts/{base64url(label)}/api_key`
 - Default account is controlled by `opencodeProviderAccount` in chezmoi data.
 
-## Native-Only Runtime Policy
+## Runtime Compatibility Profiles
 
-`oh-my-opencode` Claude compatibility ingestion is hard-disabled:
+Managed OpenCode supports two compatibility profiles via chezmoi data:
+
+- `opencodeCompatibilityMode = "strict"` (default)
+- `opencodeCompatibilityMode = "compat"`
+
+Strict mode keeps Claude compatibility ingress disabled:
 
 ```json
 "claude_code": {
@@ -59,7 +64,7 @@ Aliases:
 }
 ```
 
-Additional guardrails:
+Additional strict-mode guardrails:
 
 - `disabled_hooks` includes `"claude-code-hooks"`
 - `sisyphus.tasks.claude_code_compat = false`
@@ -68,6 +73,18 @@ Additional guardrails:
   - `OPENCODE_DISABLE_EXTERNAL_SKILLS=1`
 
 This prevents implicit `~/.claude` prompt/skill ingestion and keeps runtime behavior deterministic.
+
+Compat mode intentionally relaxes only compatibility ingress controls:
+
+- `claude_code.commands/skills/agents/hooks/plugins = true`
+- `disabled_hooks` no longer disables `claude-code-hooks`
+- `sisyphus.tasks.claude_code_compat = true`
+- `opencode-with` does not force strict isolation flags
+
+Recommended usage:
+
+- Use `strict` for deterministic no-Claude boundaries.
+- Use `compat` only when you explicitly need Claude settings/hooks/commands/skills ingestion.
 
 Scope note (upstream behavior): OpenCode still has project instruction fallback (`AGENTS.md` then `CLAUDE.md`). Managed policy keeps `AGENTS.md` as the authoritative project instruction file.
 
@@ -105,17 +122,17 @@ This allows reuse of existing skill/command ecosystem across Claude/Codex/OpenCo
 
 Cross-tool parity status against current managed Claude Code/Codex workflow:
 
-| Capability                                               | Claude Code               | Codex                     | OpenCode + oh-my                             | Status                                |
-| -------------------------------------------------------- | ------------------------- | ------------------------- | -------------------------------------------- | ------------------------------------- |
-| Account lifecycle (`manage/with/token`)                  | yes                       | yes                       | yes                                          | parity                                |
-| Shell alias/completion (`ccm/ccw`, `cxm/cxw`, `ocm/ocw`) | yes                       | yes                       | yes                                          | parity                                |
-| Wrapper diagnostics (`*-manage doctor`)                  | yes                       | yes                       | yes                                          | parity                                |
-| Shared command source (`~/.agents/commands/core`)        | directory symlink         | flat prompt links         | directory symlink (same as Claude)           | parity                                |
-| Shared skills source (`~/.agents/skills`)                | symlink                   | symlink                   | global projection + project recursive source | parity                                |
-| Third-party provider families                            | broad                     | broad (includes `harui`)  | broad (includes `harui`)                     | parity                                |
-| User-level instruction file                              | `~/.claude/CLAUDE.md`     | `~/.codex/AGENTS.md`      | `~/.config/opencode/AGENTS.md`               | parity                                |
-| OpenSpec workflow availability                           | wrappers (when generated) | wrappers (when generated) | plugin + managed command ecosystem           | parity with tool-specific entrypoints |
-| Runtime no-Claude isolation                              | n/a                       | n/a                       | enabled (`claude_code.*=false` + env flags)  | intentional delta                     |
+| Capability                                               | Claude Code               | Codex                     | OpenCode + oh-my                                                              | Status                                |
+| -------------------------------------------------------- | ------------------------- | ------------------------- | ----------------------------------------------------------------------------- | ------------------------------------- |
+| Account lifecycle (`manage/with/token`)                  | yes                       | yes                       | yes                                                                           | parity                                |
+| Shell alias/completion (`ccm/ccw`, `cxm/cxw`, `ocm/ocw`) | yes                       | yes                       | yes                                                                           | parity                                |
+| Wrapper diagnostics (`*-manage doctor`)                  | yes                       | yes                       | yes                                                                           | parity                                |
+| Shared command source (`~/.agents/commands/core`)        | directory symlink         | flat prompt links         | directory symlink (same as Claude)                                            | parity                                |
+| Shared skills source (`~/.agents/skills`)                | symlink                   | symlink                   | global projection + project recursive source                                  | parity                                |
+| Third-party provider families                            | broad                     | broad (includes `harui`)  | broad (includes `harui`)                                                      | parity                                |
+| User-level instruction file                              | `~/.claude/CLAUDE.md`     | `~/.codex/AGENTS.md`      | `~/.config/opencode/AGENTS.md`                                                | parity                                |
+| OpenSpec workflow availability                           | wrappers (when generated) | wrappers (when generated) | plugin + managed command ecosystem                                            | parity with tool-specific entrypoints |
+| Runtime no-Claude isolation                              | n/a                       | n/a                       | default strict mode (`claude_code.*=false` + env flags), optional compat mode | intentional default                   |
 
 ## Community Patterns Review
 
@@ -145,10 +162,16 @@ Patterns intentionally not adopted:
 Managed templates pin a curated (not maximal) advanced profile:
 
 - `opencode.jsonc`:
+  - `agent` profile (`build` + `plan`)
+  - `command` templates for local workflow operations
   - `instructions`
   - `default_agent`
   - `watcher.ignore`
+  - `lsp` server definitions
+  - `formatter` definitions
   - `compaction`
+  - `share` + `autoupdate` policy
+  - `tui` behavior tuning
 - `oh-my-opencode.jsonc`:
   - explicit `sisyphus_agent` + `sisyphus.tasks`
   - category routing + selected `agents` overrides
@@ -181,6 +204,16 @@ Pinned `experimental` policy:
 }
 ```
 
+## Chezmoi Compatibility
+
+All managed AI account scripts use:
+
+```bash
+chezmoi apply --exclude scripts ...
+```
+
+`--no-scripts` is intentionally not used because current managed `chezmoi` versions reject that flag.
+
 ## Plugin Chain and OpenSpec
 
 OpenCode plugin order is pinned:
@@ -209,14 +242,20 @@ Sensitive operations default to confirmation (`ask`):
 
 ```bash
 # Render-level checks
-jq '.default_agent, .watcher.ignore, .compaction' ~/.config/opencode/opencode.jsonc
+jq '.default_agent, .agent, .command, .watcher.ignore, .lsp, .formatter, .compaction, .share, .autoupdate, .tui' ~/.config/opencode/opencode.jsonc
 jq '.claude_code, .disabled_hooks, .sisyphus.tasks, .websearch, .experimental' ~/.config/opencode/oh-my-opencode.jsonc
+
+# Check selected compatibility profile from chezmoi data
+chezmoi data --format json | jq -r '.opencodeCompatibilityMode // "strict"'
 
 # Runtime isolation checks (wrapper path)
 opencode-with deepseek@private --help >/dev/null
 
 # One-shot workflow diagnostics
 opencode-manage doctor
+
+# Inspect resolved executable readiness from doctor output
+opencode-manage doctor | rg 'lsp binary|formatter binary|Summary'
 
 # If you switch websearch to Tavily, ensure key exists first
 test -n "$TAVILY_API_KEY"

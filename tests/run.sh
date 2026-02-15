@@ -15,6 +15,7 @@ bash "$ROOT/tests/test_opencode_config_rendering.sh"
 bash "$ROOT/tests/test_opencode_wrapper_workflow.sh"
 bash "$ROOT/tests/test_codex_model_selection.sh"
 bash "$ROOT/tests/test_manage_list_logic.sh"
+bash "$ROOT/tests/test_manage_chezmoi_apply_flags.sh"
 bash "$ROOT/tests/test_manage_menu_navigation.sh"
 
 echo "OK"
