@@ -153,6 +153,7 @@ Managed templates pin a curated (not maximal) advanced profile:
   - explicit `sisyphus_agent` + `sisyphus.tasks`
   - category routing + selected `agents` overrides
   - explicit `background_task`, `tmux`, `websearch`, browser engine
+  - default `websearch.provider = "exa"` (no hard startup dependency on `TAVILY_API_KEY`)
   - explicit disable-control governance (`disabled_hooks` + selected `disabled_*`)
   - explicit `experimental` matrix
 
@@ -209,13 +210,16 @@ Sensitive operations default to confirmation (`ask`):
 ```bash
 # Render-level checks
 jq '.default_agent, .watcher.ignore, .compaction' ~/.config/opencode/opencode.jsonc
-jq '.claude_code, .disabled_hooks, .sisyphus.tasks, .experimental' ~/.config/opencode/oh-my-opencode.jsonc
+jq '.claude_code, .disabled_hooks, .sisyphus.tasks, .websearch, .experimental' ~/.config/opencode/oh-my-opencode.jsonc
 
 # Runtime isolation checks (wrapper path)
 opencode-with deepseek@private --help >/dev/null
 
 # One-shot workflow diagnostics
 opencode-manage doctor
+
+# If you switch websearch to Tavily, ensure key exists first
+test -n "$TAVILY_API_KEY"
 
 # Verify command projection symlink
 readlink ~/.config/opencode/commands/core

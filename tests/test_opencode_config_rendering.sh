@@ -116,7 +116,7 @@ assert_jq "$OH_MY_OPENCODE" '.categories.quick.model == "anthropic/claude-haiku-
 assert_jq "$OH_MY_OPENCODE" '.categories.quick.description | length > 0'
 assert_jq "$OH_MY_OPENCODE" '.background_task.defaultConcurrency == 4'
 assert_jq "$OH_MY_OPENCODE" '.tmux.enabled == true'
-assert_jq "$OH_MY_OPENCODE" '.websearch.provider == "tavily"'
+assert_jq "$OH_MY_OPENCODE" '.websearch.provider == "exa"'
 assert_jq "$OH_MY_OPENCODE" '.skills.sources | length == 1'
 assert_jq "$OH_MY_OPENCODE" '.skills.sources[0].path == ".agents/skills"'
 assert_jq "$OH_MY_OPENCODE" '.skills.sources[0].recursive == true'

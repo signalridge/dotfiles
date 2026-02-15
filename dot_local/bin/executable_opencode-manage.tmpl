@@ -328,7 +328,7 @@ cmd_remove_account() {
     acct_name="${parsed#*|}"
 
     if is_third_party "$provider"; then
-        printf "Also delete API key for $input? [y/N]: "
+        printf 'Also delete API key for %s? [y/N]: ' "$input"
         read -r del_key
         if [[ "$del_key" == "y" || "$del_key" == "Y" ]]; then
             if key_exists "$provider" "$acct_name"; then
@@ -688,6 +688,22 @@ cmd_doctor() {
         note_warn "opencode-plugin-openspec not configured"
     fi
 
+    if [[ -f "$OPENCODE_OHMY_CONFIG" ]]; then
+        local websearch_provider
+        websearch_provider=$(jq -r '.websearch.provider // "exa"' "$OPENCODE_OHMY_CONFIG" 2>/dev/null)
+        if [[ "$websearch_provider" == "tavily" ]]; then
+            if [[ -n "${TAVILY_API_KEY:-}" ]]; then
+                pass "websearch provider: tavily (TAVILY_API_KEY set)"
+            else
+                note_warn "websearch provider is tavily but TAVILY_API_KEY is not set"
+            fi
+        elif [[ -n "$websearch_provider" ]]; then
+            pass "websearch provider: ${websearch_provider}"
+        else
+            note_warn "websearch provider not configured"
+        fi
+    fi
+
     local -a claude_bridge_toggles=(mcp commands skills agents hooks plugins)
     local claude_bridge_policy_ok=true
     if [[ -f "$OPENCODE_OHMY_CONFIG" ]]; then
@@ -758,7 +774,7 @@ cmd_doctor() {
     fi
 
     echo ""
-    echo "Summary: ${GREEN}${ok} ok${NC}, ${YELLOW}${warn} warning${NC}, ${RED}${fail} failed${NC}"
+    echo -e "Summary: ${GREEN}${ok} ok${NC}, ${YELLOW}${warn} warning${NC}, ${RED}${fail} failed${NC}"
     [[ $fail -eq 0 ]]
 }
 
