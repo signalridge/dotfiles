@@ -14,6 +14,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/lib/ai/opencode"
 
+get_compatibility_mode() {
+    local mode="strict"
+    mode=$(chezmoi data --format json 2>/dev/null | jq -r '.opencodeCompatibilityMode // "strict"' 2>/dev/null || echo "strict")
+    case "$mode" in
+        compat) echo "compat" ;;
+        *) echo "strict" ;;
+    esac
+}
+
 merge_config_content() {
     local override="$1"
     if [[ -z "${OPENCODE_CONFIG_CONTENT:-}" ]]; then
@@ -114,23 +123,37 @@ launch_opencode() {
     local override merged
     override=$(jq -cn --arg model "$model_ref" '{model: $model, small_model: $model}')
     merged=$(merge_config_content "$override")
+    local compat_mode
+    compat_mode=$(get_compatibility_mode)
 
     echo -e "${GREEN}Launching opencode with ${CYAN}$account${NC}"
     echo -e "  Model: ${model_ref}"
     if [[ -n "$base_url" ]]; then
         echo -e "  URL:   ${base_url}"
     fi
+    echo -e "  Mode:  ${compat_mode}"
     echo ""
 
-    # Runtime isolation:
-    # - disable implicit ~/.claude/CLAUDE.md ingestion
-    # - disable unmanaged external skill scan (.claude/.agents), then rely on config-declared skills.paths
+    # strict mode keeps no-Claude isolation; compat mode allows Claude compatibility ingress.
     if [[ -n "$api_key" && -n "$env_var" ]]; then
+        if [[ "$compat_mode" == "compat" ]]; then
+            exec env \
+                OPENCODE_CONFIG_CONTENT="$merged" \
+                "$env_var=$api_key" \
+                opencode "$@"
+        fi
+
         exec env \
             OPENCODE_DISABLE_CLAUDE_CODE_PROMPT="1" \
             OPENCODE_DISABLE_EXTERNAL_SKILLS="1" \
             OPENCODE_CONFIG_CONTENT="$merged" \
             "$env_var=$api_key" \
+            opencode "$@"
+    fi
+
+    if [[ "$compat_mode" == "compat" ]]; then
+        exec env \
+            OPENCODE_CONFIG_CONTENT="$merged" \
             opencode "$@"
     fi
 

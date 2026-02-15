@@ -57,6 +57,18 @@ render_opencode() {
 
 render_oh_my_opencode() {
     local output="$1"
+    local mode="${2:-}"
+    if [[ -n "$mode" ]]; then
+        local override_data
+        override_data="$(jq -cn --arg mode "$mode" '{opencodeCompatibilityMode: $mode}')"
+        chezmoi execute-template \
+            --source "$ROOT" \
+            --override-data "$override_data" \
+            <"$ROOT/private_dot_config/opencode/oh-my-opencode.jsonc.tmpl" \
+            >"$output"
+        return 0
+    fi
+
     chezmoi execute-template \
         --source "$ROOT" \
         <"$ROOT/private_dot_config/opencode/oh-my-opencode.jsonc.tmpl" \
@@ -67,11 +79,15 @@ OPENCODE_DEFAULT="$TMP_ROOT/opencode-default.jsonc"
 OPENCODE_DEEPSEEK="$TMP_ROOT/opencode-deepseek.jsonc"
 OPENCODE_HARUI="$TMP_ROOT/opencode-harui.jsonc"
 OH_MY_OPENCODE="$TMP_ROOT/oh-my-opencode.jsonc"
+OH_MY_OPENCODE_COMPAT="$TMP_ROOT/oh-my-opencode-compat.jsonc"
+OH_MY_OPENCODE_UNKNOWN_MODE="$TMP_ROOT/oh-my-opencode-unknown.jsonc"
 
 render_opencode "openai" "$OPENCODE_DEFAULT"
 render_opencode "deepseek@private" "$OPENCODE_DEEPSEEK"
 render_opencode "harui@private" "$OPENCODE_HARUI"
 render_oh_my_opencode "$OH_MY_OPENCODE"
+render_oh_my_opencode "$OH_MY_OPENCODE_COMPAT" "compat"
+render_oh_my_opencode "$OH_MY_OPENCODE_UNKNOWN_MODE" "unexpected"
 
 assert_jq "$OPENCODE_DEFAULT" '.plugin == ["oh-my-opencode", "opencode-plugin-openspec"]'
 assert_jq "$OPENCODE_DEFAULT" '.plugin | length == 2'
@@ -159,6 +175,20 @@ assert_jq "$OH_MY_OPENCODE" '.experimental.dynamic_context_pruning.strategies.pu
 assert_jq "$OH_MY_OPENCODE" '.experimental.task_system == true'
 assert_jq "$OH_MY_OPENCODE" '.experimental.plugin_load_timeout_ms == 15000'
 assert_jq "$OH_MY_OPENCODE" '.experimental.safe_hook_creation == true'
+
+assert_jq "$OH_MY_OPENCODE_COMPAT" '.claude_code.commands == true'
+assert_jq "$OH_MY_OPENCODE_COMPAT" '.claude_code.skills == true'
+assert_jq "$OH_MY_OPENCODE_COMPAT" '.claude_code.agents == true'
+assert_jq "$OH_MY_OPENCODE_COMPAT" '.claude_code.hooks == true'
+assert_jq "$OH_MY_OPENCODE_COMPAT" '.claude_code.plugins == true'
+assert_jq "$OH_MY_OPENCODE_COMPAT" '.claude_code.mcp == false'
+assert_jq "$OH_MY_OPENCODE_COMPAT" '.disabled_hooks | index("claude-code-hooks") == null'
+assert_jq "$OH_MY_OPENCODE_COMPAT" '.disabled_hooks | index("startup-toast") != null'
+assert_jq "$OH_MY_OPENCODE_COMPAT" '.sisyphus.tasks.claude_code_compat == true'
+
+assert_jq "$OH_MY_OPENCODE_UNKNOWN_MODE" '.claude_code.commands == false'
+assert_jq "$OH_MY_OPENCODE_UNKNOWN_MODE" '.disabled_hooks | index("claude-code-hooks") != null'
+assert_jq "$OH_MY_OPENCODE_UNKNOWN_MODE" '.sisyphus.tasks.claude_code_compat == false'
 
 test -f "$ROOT/private_dot_config/opencode/commands/symlink_core.tmpl" || {
     echo "missing opencode commands/core symlink template" >&2

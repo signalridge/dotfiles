@@ -790,32 +790,57 @@ cmd_doctor() {
         fi
     fi
 
-    local -a claude_bridge_toggles=(mcp commands skills agents hooks plugins)
-    local claude_bridge_policy_ok=true
+    local expected_mode="strict"
+    expected_mode=$(chezmoi data --format json 2>/dev/null | jq -r '.opencodeCompatibilityMode // "strict"' 2>/dev/null || echo "strict")
+    [[ "$expected_mode" == "compat" ]] || expected_mode="strict"
+
+    local -a claude_bridge_toggles=(commands skills agents hooks plugins)
+    local compat_policy_ok=true
     if [[ -f "$OPENCODE_OHMY_CONFIG" ]]; then
-        local toggle
+        local toggle expected_bool actual_bool
         for toggle in "${claude_bridge_toggles[@]}"; do
-            if jq -e --arg key "$toggle" '.claude_code[$key] == false' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
-                pass "claude_code.${toggle} disabled"
+            expected_bool="false"
+            [[ "$expected_mode" == "compat" ]] && expected_bool="true"
+            actual_bool=$(jq -r --arg key "$toggle" '.claude_code[$key] // false' "$OPENCODE_OHMY_CONFIG" 2>/dev/null || echo "false")
+            if [[ "$actual_bool" == "$expected_bool" ]]; then
+                pass "claude_code.${toggle} matches ${expected_mode} mode (${actual_bool})"
             else
-                note_warn "claude_code.${toggle} not disabled"
-                claude_bridge_policy_ok=false
+                note_warn "claude_code.${toggle} is ${actual_bool}, expected ${expected_bool} (${expected_mode} mode)"
+                compat_policy_ok=false
             fi
         done
+
+        if jq -e --argjson expected "$( [[ "$expected_mode" == "compat" ]] && echo true || echo false )" \
+            '.sisyphus.tasks.claude_code_compat == $expected' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+            pass "sisyphus.tasks.claude_code_compat matches ${expected_mode} mode"
+        else
+            note_warn "sisyphus.tasks.claude_code_compat does not match ${expected_mode} mode"
+            compat_policy_ok=false
+        fi
+
+        if [[ "$expected_mode" == "strict" ]]; then
+            if jq -e '.disabled_hooks | index("claude-code-hooks") != null' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+                pass "claude-code-hooks disabled (strict mode)"
+            else
+                note_warn "claude-code-hooks should be disabled in strict mode"
+                compat_policy_ok=false
+            fi
+        else
+            if jq -e '.disabled_hooks | index("claude-code-hooks") == null' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+                pass "claude-code-hooks enabled (compat mode)"
+            else
+                note_warn "claude-code-hooks is disabled but compat mode expects it enabled"
+                compat_policy_ok=false
+            fi
+        fi
     else
-        claude_bridge_policy_ok=false
+        compat_policy_ok=false
     fi
 
-    if [[ "$claude_bridge_policy_ok" == true ]]; then
-        pass "no-Claude compatibility bridge policy active"
+    if [[ "$compat_policy_ok" == true ]]; then
+        pass "compatibility profile validated (${expected_mode})"
     else
-        note_warn "no-Claude compatibility bridge policy not fully active"
-    fi
-
-    if [[ -f "$OPENCODE_OHMY_CONFIG" ]] && jq -e '.disabled_hooks | index("claude-code-hooks") != null' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
-        pass "claude-code-hooks disabled"
-    else
-        note_warn "claude-code-hooks disable policy missing"
+        note_warn "compatibility profile drift detected (${expected_mode})"
     fi
     echo ""
 
@@ -840,6 +865,57 @@ cmd_doctor() {
         fi
     else
         note_warn "oh-my skills.sources missing"
+    fi
+    echo ""
+
+    echo "MCP and model routing checks:"
+    if [[ -f "$OPENCODE_OHMY_CONFIG" ]]; then
+        local mcp
+        for mcp in websearch context7 grep_app; do
+            if jq -e --arg m "$mcp" '.disabled_mcps | index($m) != null' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+                note_warn "built-in MCP disabled: ${mcp}"
+            else
+                pass "built-in MCP enabled: ${mcp}"
+            fi
+        done
+    else
+        note_warn "unable to inspect built-in MCP state (oh-my config missing)"
+    fi
+
+    if [[ -f "$OPENCODE_CONFIG" && -f "$OPENCODE_OHMY_CONFIG" ]]; then
+        local -a supported_providers=(openai anthropic google opencode github-copilot)
+        local p
+        while IFS= read -r p; do
+            [[ -z "$p" ]] && continue
+            if [[ " ${supported_providers[*]-} " != *" $p "* ]]; then
+                supported_providers+=("$p")
+            fi
+        done < <(jq -r '.provider // {} | keys[]' "$OPENCODE_CONFIG" 2>/dev/null || true)
+
+        local provider_missing=0
+        while IFS= read -r p; do
+            [[ -z "$p" ]] && continue
+            if [[ " ${supported_providers[*]-} " == *" $p "* ]]; then
+                pass "model provider available: ${p}"
+            else
+                note_warn "model provider missing from OpenCode config: ${p}"
+                provider_missing=$((provider_missing + 1))
+            fi
+        done < <(jq -r '
+            [
+              ((.categories // {}) | to_entries[]?.value.model // empty),
+              ((.agents // {}) | to_entries[]?.value.model // empty)
+            ]
+            | map(select(type=="string" and length > 0))
+            | map(split("/")[0])
+            | unique[]
+        ' "$OPENCODE_OHMY_CONFIG" 2>/dev/null)
+
+        if [[ $provider_missing -eq 0 ]]; then
+            pass "all category/agent model providers are routable"
+        else
+            note_warn "some category/agent model providers are not routable (${provider_missing})"
+        fi
     fi
     echo ""
 
