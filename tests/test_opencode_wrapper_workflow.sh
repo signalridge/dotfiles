@@ -236,6 +236,16 @@ assert_contains() {
     fi
 }
 
+assert_not_contains() {
+    local haystack="$1"
+    local needle="$2"
+    if grep -Fq "$needle" <<<"$haystack"; then
+        echo "expected output to NOT contain: $needle" >&2
+        echo "$haystack" >&2
+        exit 1
+    fi
+}
+
 # opencode-token config resolution
 cfg="$(PATH="$BASE_PATH" "$BIN/opencode-token" --config deepseek@private)"
 assert_equals "$(echo "$cfg" | jq -r '.provider')" "deepseek"
@@ -264,6 +274,7 @@ assert_contains "$doctor_out" "current selector: deepseek@private (deepseek)"
 assert_contains "$doctor_out" "claude_code.mcp disabled"
 assert_contains "$doctor_out" "no-Claude compatibility bridge policy active"
 assert_contains "$doctor_out" "Summary:"
+assert_not_contains "$doctor_out" "\\033["
 
 # opencode-with should inject runtime isolation flags, model override, and provider key
 PATH="$BASE_PATH" "$BIN/opencode-with" deepseek@alpha run "hello" >/dev/null

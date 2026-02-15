@@ -315,9 +315,11 @@ claude_doctor="$(PATH="$BASE_PATH" "$BIN/claude-manage" doctor | strip_ansi)"
 assert_contains "$codex_doctor" "Codex Workflow Doctor"
 assert_contains "$codex_doctor" "current selector: glm@ghost (glm)"
 assert_contains "$codex_doctor" "Summary:"
+assert_not_contains "$codex_doctor" "\\033["
 assert_contains "$claude_doctor" "Claude Workflow Doctor"
 assert_contains "$claude_doctor" "current selector: anthropic (anthropic)"
 assert_contains "$claude_doctor" "Summary:"
+assert_not_contains "$claude_doctor" "\\033["
 
 # Canonical write path should be tool-specific.
 codex_api_path="$(

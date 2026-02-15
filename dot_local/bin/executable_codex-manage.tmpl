@@ -343,7 +343,7 @@ cmd_remove_account() {
     parsed=$(parse_provider_account "$input")
     acct_name="${parsed#*|}"
 
-    printf "Also delete API key for $input? [y/N]: "
+    printf 'Also delete API key for %s? [y/N]: ' "$input"
     read -r del_key
     if [[ "$del_key" == "y" || "$del_key" == "Y" ]]; then
         if key_exists "$provider" "$acct_name"; then
@@ -771,7 +771,7 @@ cmd_doctor() {
     fi
 
     echo ""
-    echo "Summary: ${GREEN}${ok} ok${NC}, ${YELLOW}${warn} warning${NC}, ${RED}${fail} failed${NC}"
+    echo -e "Summary: ${GREEN}${ok} ok${NC}, ${YELLOW}${warn} warning${NC}, ${RED}${fail} failed${NC}"
     [[ $fail -eq 0 ]]
 }
 

@@ -804,7 +804,7 @@ cmd_doctor() {
     fi
 
     echo ""
-    echo "Summary: ${GREEN}${ok} ok${NC}, ${YELLOW}${warn} warning${NC}, ${RED}${fail} failed${NC}"
+    echo -e "Summary: ${GREEN}${ok} ok${NC}, ${YELLOW}${warn} warning${NC}, ${RED}${fail} failed${NC}"
     [[ $fail -eq 0 ]]
 }
 
