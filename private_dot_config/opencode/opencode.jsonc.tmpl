@@ -48,7 +48,31 @@
     "AGENTS.md",
     ".opencode/AGENTS.md"
   ],
+  "command": {
+    "doctor-all": {
+      "description": "Run all AI workflow diagnostics and summarize findings.",
+      "agent": "build",
+      "template": "Run `claude-manage doctor`, `codex-manage doctor`, and `opencode-manage doctor`. Report failures first, then warnings, then concrete remediation steps."
+    },
+    "spec-verify": {
+      "description": "Validate current OpenSpec change and repository tests.",
+      "agent": "build",
+      "template": "Run `openspec validate --changes <change-name>` and `bash tests/run.sh`. Report failing commands with likely root causes."
+    }
+  },
   "default_agent": "build",
+  "agent": {
+    "build": {
+      "model": {{ $modelRef | quote }},
+      "variant": "medium",
+      "description": "Default implementation agent for daily coding work."
+    },
+    "plan": {
+      "model": {{ $modelRef | quote }},
+      "variant": "high",
+      "description": "Planning agent for multi-step and spec-first tasks."
+    }
+  },
   "watcher": {
     "ignore": [
       "**/.git/**",
@@ -58,10 +82,59 @@
       "**/.sisyphus/**"
     ]
   },
+  "lsp": {
+    "rust-analyzer": {
+      "command": ["rust-analyzer"],
+      "extensions": [".rs"]
+    },
+    "lua-language-server": {
+      "command": ["lua-language-server"],
+      "extensions": [".lua"]
+    },
+    "typescript-language-server": {
+      "command": ["typescript-language-server", "--stdio"],
+      "extensions": [".ts", ".tsx", ".js", ".jsx"],
+      "disabled": true
+    },
+    "basedpyright": {
+      "command": ["basedpyright-langserver", "--stdio"],
+      "extensions": [".py"],
+      "disabled": true
+    }
+  },
+  "formatter": {
+    "rustfmt": {
+      "command": ["rustfmt"],
+      "extensions": [".rs"]
+    },
+    "ruff-format": {
+      "command": ["ruff", "format"],
+      "extensions": [".py"]
+    },
+    "prettier": {
+      "command": ["prettier", "--write"],
+      "extensions": [".js", ".jsx", ".ts", ".tsx", ".json", ".md", ".yaml", ".yml"],
+      "disabled": true
+    },
+    "stylua": {
+      "command": ["stylua"],
+      "extensions": [".lua"],
+      "disabled": true
+    }
+  },
   "compaction": {
     "auto": true,
     "prune": true,
     "reserved": 16384
+  },
+  "share": "manual",
+  "autoupdate": "notify",
+  "tui": {
+    "diff_style": "auto",
+    "scroll_speed": 2.5,
+    "scroll_acceleration": {
+      "enabled": true
+    }
   },
   "provider": {
     "deepseek": {

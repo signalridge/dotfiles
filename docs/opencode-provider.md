@@ -145,10 +145,16 @@ Patterns intentionally not adopted:
 Managed templates pin a curated (not maximal) advanced profile:
 
 - `opencode.jsonc`:
+  - `agent` profile (`build` + `plan`)
+  - `command` templates for local workflow operations
   - `instructions`
   - `default_agent`
   - `watcher.ignore`
+  - `lsp` server definitions
+  - `formatter` definitions
   - `compaction`
+  - `share` + `autoupdate` policy
+  - `tui` behavior tuning
 - `oh-my-opencode.jsonc`:
   - explicit `sisyphus_agent` + `sisyphus.tasks`
   - category routing + selected `agents` overrides
@@ -181,6 +187,16 @@ Pinned `experimental` policy:
 }
 ```
 
+## Chezmoi Compatibility
+
+All managed AI account scripts use:
+
+```bash
+chezmoi apply --exclude scripts ...
+```
+
+`--no-scripts` is intentionally not used because current managed `chezmoi` versions reject that flag.
+
 ## Plugin Chain and OpenSpec
 
 OpenCode plugin order is pinned:
@@ -209,7 +225,7 @@ Sensitive operations default to confirmation (`ask`):
 
 ```bash
 # Render-level checks
-jq '.default_agent, .watcher.ignore, .compaction' ~/.config/opencode/opencode.jsonc
+jq '.default_agent, .agent, .command, .watcher.ignore, .lsp, .formatter, .compaction, .share, .autoupdate, .tui' ~/.config/opencode/opencode.jsonc
 jq '.claude_code, .disabled_hooks, .sisyphus.tasks, .websearch, .experimental' ~/.config/opencode/oh-my-opencode.jsonc
 
 # Runtime isolation checks (wrapper path)
@@ -217,6 +233,9 @@ opencode-with deepseek@private --help >/dev/null
 
 # One-shot workflow diagnostics
 opencode-manage doctor
+
+# Inspect resolved executable readiness from doctor output
+opencode-manage doctor | rg 'lsp binary|formatter binary|Summary'
 
 # If you switch websearch to Tavily, ensure key exists first
 test -n "$TAVILY_API_KEY"
