@@ -46,8 +46,11 @@
 {{-   $model = "gpt-5.3-codex" -}}
 {{- end -}}
 {{- $modelRef := printf "%s/%s" $resolvedProvider $model -}}
-{{- $selectedApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $providerName $accountLabel -}}
-{{- $selectedApiPath := (output "sh" "-c" $selectedApiPathCmd) | trim -}}
+{{- $selectedApiPath := "" -}}
+{{- if and (regexMatch "^[A-Za-z0-9._-]+$" $providerName) (regexMatch "^[A-Za-z0-9._-]+$" $accountLabel) -}}
+{{-   $selectedApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $providerName $accountLabel -}}
+{{-   $selectedApiPath = (output "sh" "-c" $selectedApiPathCmd) | trim -}}
+{{- end -}}
 {{- $selectedApiKey := "" -}}
 {{- if ne $selectedApiPath "" -}}{{- $selectedApiKey = gopass $selectedApiPath -}}{{- end -}}
 {{- $deepseekApiKey := "" -}}

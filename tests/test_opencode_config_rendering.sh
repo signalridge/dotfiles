@@ -85,6 +85,7 @@ OH_MY_OPENCODE="$TMP_ROOT/oh-my-opencode.jsonc"
 OH_MY_OPENCODE_COMPAT="$TMP_ROOT/oh-my-opencode-compat.jsonc"
 OH_MY_OPENCODE_UNKNOWN_MODE="$TMP_ROOT/oh-my-opencode-unknown.jsonc"
 OPENCODE_ACCOUNT_PATH="$TMP_ROOT/opencode-account-path.jsonc"
+OPENCODE_INVALID_ACCOUNT="$TMP_ROOT/opencode-invalid-account.jsonc"
 
 render_opencode "$OPENCODE_DEFAULT"
 render_oh_my_opencode "$OH_MY_OPENCODE"
@@ -128,6 +129,8 @@ chmod +x "$ACCOUNT_BIN/gopass"
 
 HARUI_PRIVATE_OVERRIDE="$(jq -cn '{opencodeProviderAccount:"harui@private"}')"
 PATH="$ACCOUNT_BIN:$PATH" render_opencode "$OPENCODE_ACCOUNT_PATH" "$HARUI_PRIVATE_OVERRIDE"
+INVALID_OVERRIDE="$(jq -cn '{opencodeProviderAccount:"harui@private'\''oops"}')"
+PATH="$ACCOUNT_BIN:$PATH" render_opencode "$OPENCODE_INVALID_ACCOUNT" "$INVALID_OVERRIDE"
 
 assert_jq "$OPENCODE_DEFAULT" '.plugin == ["oh-my-opencode", "opencode-plugin-openspec"]'
 assert_jq "$OPENCODE_DEFAULT" '.plugin | length == 2'
@@ -171,6 +174,7 @@ assert_jq "$OPENCODE_DEFAULT" '.provider.kimi.options.baseURL == "https://api.mo
 assert_jq "$OPENCODE_DEFAULT" '.skills.paths | index(".agents/skills") != null'
 assert_jq "$OPENCODE_DEFAULT" '.skills.paths | length == 1'
 assert_jq "$OPENCODE_ACCOUNT_PATH" '.provider.harui.options.apiKey == "stub-account-key"'
+assert_jq "$OPENCODE_INVALID_ACCOUNT" '(.provider.harui.options | has("apiKey")) == false'
 
 assert_jq "$OPENCODE_DEFAULT" '.permission.edit == "ask"'
 assert_jq "$OPENCODE_DEFAULT" '.permission.bash == "ask"'
