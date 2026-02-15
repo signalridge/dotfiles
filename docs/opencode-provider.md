@@ -91,6 +91,7 @@ OpenCode and oh-my-opencode are wired to shared repository assets without Claude
 - OpenCode command projection uses a single hierarchical symlink (same pattern as Claude):
   - `~/.config/opencode/commands/core` -> `~/.agents/commands/core`
   - Commands are discovered as `core/commit`, `core/review`, etc. via OpenCode's native `{command,commands}/**/*.md` glob.
+  - Flat compatibility aliases under `~/.config/opencode/command/` are intentionally not managed.
 - OpenCode global skills are projected explicitly:
   - `~/.config/opencode/skills` -> `~/.agents/skills`
 - OpenCode `skills.paths` keeps project-local overlay:

@@ -142,6 +142,20 @@ test -f "$ROOT/private_dot_config/opencode/commands/symlink_core.tmpl" || {
     exit 1
 }
 
+assert_file_contains "$ROOT/private_dot_config/opencode/commands/symlink_core.tmpl" ".agents/commands/core"
+
+if [[ -f "$ROOT/private_dot_config/opencode/symlink_commands.tmpl" ]]; then
+    echo "assertion failed: legacy commands root symlink template should not exist" >&2
+    exit 1
+fi
+
+if [[ -d "$ROOT/private_dot_config/opencode/command" ]] &&
+    find "$ROOT/private_dot_config/opencode/command" -type f -name '*.tmpl' | grep -q .; then
+    echo "assertion failed: flat compatibility command aliases should not be managed" >&2
+    find "$ROOT/private_dot_config/opencode/command" -type f -name '*.tmpl' >&2
+    exit 1
+fi
+
 test -f "$ROOT/private_dot_config/opencode/symlink_skills.tmpl" || {
     echo "missing opencode global skills projection template" >&2
     exit 1
