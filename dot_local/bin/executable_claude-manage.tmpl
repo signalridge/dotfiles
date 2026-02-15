@@ -630,18 +630,27 @@ cmd_test() {
     local model response http_code
     model=$(echo "$config" | jq -r '.model // "unknown"')
     local header_file
-    header_file=$(mktemp)
-    chmod 600 "$header_file"
-    cat > "$header_file" <<EOF
+    header_file=$(mktemp) || { log_fail "Failed to create header temp file"; return 1; }
+    if ! chmod 600 "$header_file"; then
+        log_fail "Failed to secure header temp file"
+        rm -f "$header_file"
+        return 1
+    fi
+    if ! cat > "$header_file" <<EOF
 x-api-key: $token
 anthropic-version: 2023-06-01
 Content-Type: application/json
 EOF
+    then
+        log_fail "Failed to write header file"
+        rm -f "$header_file"
+        return 1
+    fi
 
     response=$(curl -sS -w "\n%{http_code}" --max-time 30 \
         -X POST "$base_url/v1/messages" \
         -H @"$header_file" \
-        -d "{\"model\":\"$model\",\"max_tokens\":1,\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}" 2>&1)
+        -d "{\"model\":\"$model\",\"max_tokens\":1,\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}" 2>&1 || true)
     rm -f "$header_file"
 
     http_code=$(echo "$response" | tail -n1)
@@ -663,7 +672,7 @@ EOF
             http_code=200
             ;;
         *)
-            if [[ -z "$http_code" || "$http_code" == "000" ]]; then
+            if [[ -z "$http_code" || "$http_code" == "000" || ! "$http_code" =~ ^[0-9]{3}$ ]]; then
                 log_fail "Network error"
             else
                 log_fail "HTTP $http_code"

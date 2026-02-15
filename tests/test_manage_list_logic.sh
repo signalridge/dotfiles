@@ -182,6 +182,9 @@ cat >"$STUB/curl" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 args="$*"
+if [[ "${CURL_FORCE_FAIL_MESSAGES:-0}" == "1" && "$args" == *"/v1/messages"* ]]; then
+    exit 7
+fi
 if [[ "$args" == *"/v1/models"* ]]; then
     cat <<'OUT'
 {"object":"list","data":[]}
@@ -292,6 +295,10 @@ PATH="$BASE_PATH" "$BIN/claude-manage" switch qwen@beta >/dev/null
 # list-visible runtime accounts must be operable for test.
 PATH="$BASE_PATH" "$BIN/codex-manage" test deepseek@private >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-manage" test qwen@beta >/dev/null
+
+# claude-manage test should report network error gracefully when curl fails.
+claude_fail_output="$(CURL_FORCE_FAIL_MESSAGES=1 PATH="$BASE_PATH" "$BIN/claude-manage" test qwen@beta 2>&1 || true)"
+assert_contains "$claude_fail_output" "Network error"
 
 # list-visible runtime accounts must be operable for launcher entrypoints.
 PATH="$BASE_PATH" "$BIN/codex-with" deepseek@private --version >/dev/null
