@@ -192,7 +192,7 @@ cmd_switch() {
     set_chezmoi_account "$input"
     echo "  ✓ Updated chezmoi.toml"
     log_info "Applying chezmoi templates..."
-    chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG"
+    chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG" "$SCRIPT_DIR/lib/ai/core"
     echo "  ✓ Updated ~/.config/opencode/opencode.jsonc"
     echo ""
     log_success "Account set to $input"
@@ -228,7 +228,7 @@ cmd_create_account() {
 
     if is_opencode_native_provider "$provider"; then
         set_chezmoi_account "$full_name"
-        chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG"
+        chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG" "$SCRIPT_DIR/lib/ai/core"
         log_success "Account created and switched: $full_name (native auth)"
         log_info "Use: opencode auth login $provider"
         return 0
@@ -249,7 +249,7 @@ cmd_create_account() {
     fi
 
     set_chezmoi_account "$full_name"
-    chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG"
+    chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG" "$SCRIPT_DIR/lib/ai/core"
     log_success "Account created and switched: $full_name"
 }
 
@@ -274,7 +274,7 @@ cmd_update_account() {
     provider=$(get_provider "$input")
 
     set_chezmoi_account "$input"
-    chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG"
+    chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG" "$SCRIPT_DIR/lib/ai/core"
     log_success "Switched to $input"
 
     if is_opencode_native_provider "$provider"; then
