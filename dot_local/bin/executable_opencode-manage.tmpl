@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
-# Claude Code Account Manager
+# OpenCode Account Manager
 # Manage accounts and API keys with fzf interface
 #
 # Usage:
-#   claude-manage                   # Interactive menu
-#   claude-manage switch [account]         # Switch default account
-#   claude-manage create-account [account] # Create account (optionally with API key)
-#   claude-manage update-account [account] # Update account (optionally rotate API key)
-#   claude-manage remove-account [account] # Remove account (optionally delete API key)
-#   claude-manage test [account]           # Test connectivity
-#   claude-manage list [provider]          # List accounts
-#   claude-manage doctor                   # Run workflow diagnostics
+#   opencode-manage                          # Interactive menu
+#   opencode-manage switch [account]         Switch default account
+#   opencode-manage create-account [account] Create account (optionally with API key)
+#   opencode-manage update-account [account] Update account (optionally rotate API key)
+#   opencode-manage remove-account [account] Remove account (optionally delete API key)
+#   opencode-manage test [account]           Test connectivity
+#   opencode-manage list [provider]          List accounts
+#   opencode-manage doctor                   Run workflow diagnostics
 
 set -euo pipefail
 
-# shellcheck source=lib/ai/claude.tmpl
+# shellcheck source=lib/ai/opencode.tmpl
+# shellcheck disable=SC1091
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-source "$SCRIPT_DIR/lib/ai/claude"
+source "$SCRIPT_DIR/lib/ai/opencode"
 
-# Return codes used for interactive navigation.
-# (Also defined in lib/ai/claude, but keep here so this script is self-contained.)
+# Return codes
 : "${RC_BACK:=10}"
 : "${RC_EXIT:=130}"
 
-# Set account in chezmoi.toml
+# Set OpenCode account in chezmoi.toml
 set_chezmoi_account() {
     local account="$1"
     local escaped_account
@@ -31,19 +31,49 @@ set_chezmoi_account() {
     local tmp_file
     tmp_file=$(mktemp) || { log_error "Failed to create temp file"; return 1; }
 
-    if grep -q "^claudeProviderAccount = " "$CHEZMOI_CONFIG"; then
-        sed "s/^claudeProviderAccount = .*/claudeProviderAccount = \"$escaped_account\"/" "$CHEZMOI_CONFIG" > "$tmp_file"
-    elif grep -q "^claudeProvider = " "$CHEZMOI_CONFIG"; then
-        # Keep claudeProvider intact; insert claudeProviderAccount after it.
-        awk -v line="claudeProviderAccount = \"$escaped_account\"" '
+    if grep -q "^opencodeProviderAccount = " "$CHEZMOI_CONFIG"; then
+        sed "s/^opencodeProviderAccount = .*/opencodeProviderAccount = \"$escaped_account\"/" "$CHEZMOI_CONFIG" > "$tmp_file"
+    elif grep -q "^codexProviderAccount = " "$CHEZMOI_CONFIG"; then
+        awk -v line="opencodeProviderAccount = \"$escaped_account\"" '
             BEGIN { inserted = 0 }
             { print }
-            /^claudeProvider = / && inserted == 0 { print line; inserted = 1 }
+            /^codexProviderAccount = / && inserted == 0 { print line; inserted = 1 }
             END { if (inserted == 0) print line }
+        ' "$CHEZMOI_CONFIG" > "$tmp_file"
+    elif grep -q "^claudeProviderAccount = " "$CHEZMOI_CONFIG"; then
+        awk -v line="opencodeProviderAccount = \"$escaped_account\"" '
+            BEGIN { inserted = 0 }
+            { print }
+            /^claudeProviderAccount = / && inserted == 0 { print line; inserted = 1 }
+            END { if (inserted == 0) print line }
+        ' "$CHEZMOI_CONFIG" > "$tmp_file"
+    elif grep -q "^\[data\]" "$CHEZMOI_CONFIG"; then
+        awk -v line="opencodeProviderAccount = \"$escaped_account\"" '
+            BEGIN { inserted = 0; in_data = 0 }
+            /^\[data\]$/ { in_data = 1; print; next }
+            /^\[/ {
+                if (in_data == 1 && inserted == 0) {
+                    print line
+                    inserted = 1
+                }
+                in_data = 0
+                print
+                next
+            }
+            { print }
+            END {
+                if (in_data == 1 && inserted == 0) {
+                    print line
+                }
+            }
         ' "$CHEZMOI_CONFIG" > "$tmp_file"
     else
         cp "$CHEZMOI_CONFIG" "$tmp_file"
-        echo "claudeProviderAccount = \"$escaped_account\"" >> "$tmp_file"
+        {
+            echo ""
+            echo "[data]"
+            echo "opencodeProviderAccount = \"$escaped_account\""
+        } >> "$tmp_file"
     fi
     mv "$tmp_file" "$CHEZMOI_CONFIG"
 }
@@ -55,6 +85,7 @@ fzf_menu() {
         current=$(get_current)
 
         local selected
+        # shellcheck disable=SC2016
         if ! selected=$({
             cat <<'MENU'
 switch         Change default account
@@ -69,7 +100,7 @@ MENU
         } | fzf --ansi \
             --height=50% \
             --border=rounded \
-            --header="Account Manager" \
+            --header="OpenCode Account Manager" \
             --preview='
                 cmd=$(echo {} | awk "{print \$1}")
                 echo -e "\033[1;34m━━━ $cmd ━━━\033[0m"
@@ -87,7 +118,7 @@ MENU
                 echo ""
                 echo -e "\033[1;34m━━━ Accounts ━━━\033[0m"
                 echo ""
-                claude-manage list 2>/dev/null | tail -n +3
+                opencode-manage list 2>/dev/null | tail -n +3
             ' \
             --preview-window='right:50%:wrap' \
             --preview-label="[ Current: $current ]"
@@ -147,82 +178,31 @@ cmd_switch() {
     local provider
     provider=$(get_provider "$input")
 
-    if is_third_party "$provider" && ! claude-token --check "$input" 2>/dev/null; then
-        log_error "No API token for $input"
-        echo "Run: claude-manage update-account $input" >&2
-        return 1
+    if is_third_party "$provider"; then
+        if command -v gopass >/dev/null 2>&1; then
+            if ! opencode-token --check "$input" 2>/dev/null; then
+                log_warn "No API token for $input (continuing without token)"
+            fi
+        else
+            log_warn "gopass not found (continuing without token)"
+        fi
     fi
 
     [[ "$(get_current)" == "$input" ]] && { log_warn "Already using '$input'"; return 0; }
-
-    log_info "Setting default to $input..."
     set_chezmoi_account "$input"
     echo "  ✓ Updated chezmoi.toml"
-    chezmoi apply --verbose --no-scripts "$SETTINGS_FILE" "$SCRIPT_DIR/lib/ai/core"
-    echo "  ✓ Applied chezmoi"
+    log_info "Applying chezmoi templates..."
+    chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG"
+    echo "  ✓ Updated ~/.config/opencode/opencode.jsonc"
     echo ""
-    log_success "Default set to $input"
-    log_warn "Restart Claude Code to apply changes"
-}
-
-# Ensure third-party account model fields exist (fill missing only; never overwrite)
-ensure_third_party_account_models() {
-    local account="$1"
-    local provider
-    provider=$(get_provider "$account")
-
-    if ! is_third_party "$provider"; then
-        return 0
-    fi
-
-    local default_model
-    default_model=$(get_provider_default_model "$provider")
-
-    ACCOUNT_NAME="$account" DEFAULT_MODEL="$default_model" yq -i '
-      .claude.accounts[strenv(ACCOUNT_NAME)] as $acct |
-      .claude.accounts[strenv(ACCOUNT_NAME)].model = (
-        ($acct.model // "") as $m |
-        if $m == "" then (($acct.small_model // strenv(DEFAULT_MODEL) // "") as $s | if $s == "" then null else $s end) else $m end
-      ) |
-      .claude.accounts[strenv(ACCOUNT_NAME)].small_model = (
-        ($acct.small_model // "") as $s |
-        if $s == "" then (($acct.model // strenv(DEFAULT_MODEL) // "") as $m | if $m == "" then null else $m end) else $s end
-      ) |
-      .claude.accounts[strenv(ACCOUNT_NAME)].sonnet_model = (
-        ($acct.sonnet_model // "") as $v |
-        if $v == "" then (($acct.small_model // $acct.model // strenv(DEFAULT_MODEL) // "") as $d | if $d == "" then null else $d end) else $v end
-      ) |
-      .claude.accounts[strenv(ACCOUNT_NAME)].opus_model = (
-        ($acct.opus_model // "") as $v |
-        if $v == "" then (($acct.model // $acct.small_model // strenv(DEFAULT_MODEL) // "") as $d | if $d == "" then null else $d end) else $v end
-      ) |
-      .claude.accounts[strenv(ACCOUNT_NAME)].haiku_model = (
-        ($acct.haiku_model // "") as $v |
-        if $v == "" then (($acct.small_model // $acct.model // strenv(DEFAULT_MODEL) // "") as $d | if $d == "" then null else $d end) else $v end
-      )
-    ' "$CLAUDE_YAML"
-
-    if ! ACCOUNT_NAME="$account" yq -e '
-      .claude.accounts[strenv(ACCOUNT_NAME)] as $acct |
-      ($acct.model // "") != "" and
-      ($acct.small_model // "") != "" and
-      ($acct.sonnet_model // "") != "" and
-      ($acct.opus_model // "") != "" and
-      ($acct.haiku_model // "") != ""
-    ' "$CLAUDE_YAML" >/dev/null; then
-        log_error "Failed to ensure required third-party model fields for '$account'"
-        return 1
-    fi
+    log_success "Account set to $input"
+    log_warn "Restart OpenCode to apply changes"
 }
 
 # Create account
 cmd_create_account() {
-    require_cmd fzf yq || return 1
+    require_cmd gopass || return 1
 
-    log_info "Add New Account"
-    echo ""
-
-    # Select provider
     local provider
     if ! provider=$({
         printf '%s\n' "${PROVIDERS[@]}"
@@ -234,99 +214,50 @@ cmd_create_account() {
     [[ -z "$provider" ]] && return "$RC_EXIT"
     is_back_selection "$provider" && return "$RC_BACK"
 
-    # Get account name
-    local account_name full_name
-    echo ""
-    if [[ "$provider" == "anthropic" ]]; then
-        printf "Account name (e.g., sonnet, opus): "
-        read -r account_name
-        [[ -z "$account_name" ]] && return 1
-        full_name="$account_name"
+    local account_label full_name
+    if is_opencode_native_provider "$provider"; then
+        account_label="$provider"
+        full_name="$provider"
     else
-        printf 'Account name (will become %s@<name>): ' "$provider"
-        read -r account_name
-        [[ -z "$account_name" ]] && return 1
-        full_name="${provider}@${account_name}"
+        printf 'Account label (default: private): '
+        read -r account_label
+        [[ -z "$account_label" ]] && account_label="private"
+        validate_account_name "$account_label" || { log_error "Invalid label"; return 1; }
+        full_name="${provider}@${account_label}"
     fi
 
-    if ! validate_account_name "$account_name"; then
-        log_error "Invalid account name (allowed: letters, numbers, dot, underscore, hyphen)"
-        return 1
+    if is_opencode_native_provider "$provider"; then
+        set_chezmoi_account "$full_name"
+        chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG"
+        log_success "Account created and switched: $full_name (native auth)"
+        log_info "Use: opencode auth login $provider"
+        return 0
     fi
 
-    ACCOUNT_NAME="$full_name" yq -e '.claude.accounts[strenv(ACCOUNT_NAME)]' "$CLAUDE_YAML" &>/dev/null && {
-        log_error "Account '$full_name' already exists"
-        return 1
-    }
+    local parsed acct_name
+    parsed=$(parse_provider_account "$full_name")
+    acct_name="${parsed#*|}"
 
-    # Get model
+    printf "API Key (optional): "
+    read -rs api_key
     echo ""
-    local model small_model
-    if is_third_party "$provider"; then
-        model=$(get_provider_default_model "$provider")
-        [[ -z "$model" ]] && model="$provider"
-        small_model="$model"
-        log_info "Using provider default model: $model"
+    if [[ -n "$api_key" ]]; then
+        store_api_key "$provider" "$acct_name" "$api_key"
+        log_success "API key saved"
     else
-        printf "Model name: "
-        read -r model
-        [[ -z "$model" ]] && { log_error "Model is required"; return 1; }
-
-        printf "Small model (Enter to use same): "
-        read -r small_model
-        [[ -z "$small_model" ]] && small_model="$model"
+        log_info "Skipped API key"
     fi
 
-    # Add to YAML
-    echo ""
-    log_info "Adding account..."
-    ACCOUNT_NAME="$full_name" \
-    PROVIDER_NAME="$provider" \
-    MODEL_NAME="$model" \
-    SMALL_MODEL_NAME="$small_model" \
-    yq -i '
-        .claude.accounts[strenv(ACCOUNT_NAME)] = {
-            "provider": strenv(PROVIDER_NAME),
-            "model": strenv(MODEL_NAME),
-            "small_model": strenv(SMALL_MODEL_NAME)
-        }
-    ' "$CLAUDE_YAML"
-
-    if is_third_party "$provider"; then
-        ensure_third_party_account_models "$full_name"
-    fi
-    log_success "Account '$full_name' added"
-
-    # Add API key for third-party
-    if is_third_party "$provider"; then
-        echo ""
-        printf "API Key (leave empty to skip): "
-        read -rs api_key
-        echo ""
-        if [[ -n "$api_key" ]]; then
-            store_api_key "$provider" "$account_name" "$api_key"
-            log_success "API key saved"
-        else
-            log_info "Skipped API key (run: claude-manage update-account $full_name)"
-        fi
-    fi
-
-    echo ""
-    log_info "Applying chezmoi..."
-    chezmoi apply --verbose --no-scripts "$SETTINGS_FILE" "$SCRIPT_DIR/lib/ai/core"
-    log_success "Done"
+    set_chezmoi_account "$full_name"
+    chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG"
+    log_success "Account created and switched: $full_name"
 }
 
 # Update account
 cmd_update_account() {
-    require_cmd yq || return 1
-
     local input="${1:-}"
     if [[ -z "$input" ]]; then
-        require_cmd fzf || return 1
-    fi
-    if [[ -z "$input" ]]; then
-        if input=$(fzf_pick_account "Edit Account" "plain"); then
+        if input=$(fzf_pick_account "Update Account"); then
             :
         else
             local rc=$?
@@ -339,53 +270,39 @@ cmd_update_account() {
 
     is_runtime_account "$input" || { log_error "Unknown account '$input'"; return 1; }
 
-    log_info "Edit Account: $input"
-    echo ""
+    local provider parsed acct_name
+    provider=$(get_provider "$input")
 
-    local current_model current_small
-    current_model=$(ACCOUNT_NAME="$input" yq -r '.claude.accounts[strenv(ACCOUNT_NAME)].model // ""' "$CLAUDE_YAML")
-    current_small=$(ACCOUNT_NAME="$input" yq -r '.claude.accounts[strenv(ACCOUNT_NAME)].small_model // ""' "$CLAUDE_YAML")
+    set_chezmoi_account "$input"
+    chezmoi apply --verbose --no-scripts "$OPENCODE_CONFIG"
+    log_success "Switched to $input"
 
-    echo "Current model: $current_model"
-    printf "New model (Enter to keep): "
-    read -r new_model
-    [[ -z "$new_model" ]] && new_model="$current_model"
-
-    echo "Current small_model: $current_small"
-    printf "New small_model (Enter to keep): "
-    read -r new_small
-    [[ -z "$new_small" ]] && new_small="$current_small"
-
-    ACCOUNT_NAME="$input" \
-    NEW_MODEL="$new_model" \
-    NEW_SMALL="$new_small" \
-    yq -i '
-        .claude.accounts[strenv(ACCOUNT_NAME)].model = strenv(NEW_MODEL) |
-        .claude.accounts[strenv(ACCOUNT_NAME)].small_model = strenv(NEW_SMALL)
-    ' "$CLAUDE_YAML"
-
-    if is_third_party_account "$input"; then
-        ensure_third_party_account_models "$input"
-        log_info "Ensured third-party model fields (fill missing only)"
+    if is_opencode_native_provider "$provider"; then
+        log_info "$provider uses native auth"
+        log_info "Run: opencode auth login $provider"
+        return 0
     fi
 
-    echo ""
-    log_success "Account '$input' updated"
-    log_info "Applying chezmoi..."
-    chezmoi apply --verbose --no-scripts "$SETTINGS_FILE" "$SCRIPT_DIR/lib/ai/core"
-    log_success "Done"
+    parsed=$(parse_provider_account "$input")
+    acct_name="${parsed#*|}"
+
+    printf "Update API key now? [y/N]: "
+    read -r yes
+    if [[ "$yes" == "y" || "$yes" == "Y" ]]; then
+        printf "New API Key: "
+        read -rs api_key
+        echo ""
+        [[ -z "$api_key" ]] && { log_error "API key required"; return 1; }
+        store_api_key "$provider" "$acct_name" "$api_key"
+        log_success "API key updated"
+    fi
 }
 
 # Remove account
 cmd_remove_account() {
-    require_cmd yq || return 1
-
     local input="${1:-}"
     if [[ -z "$input" ]]; then
-        require_cmd fzf || return 1
-    fi
-    if [[ -z "$input" ]]; then
-        if input=$(fzf_pick_account "Remove Account" "plain"); then
+        if input=$(fzf_pick_account "Remove Account"); then
             :
         else
             local rc=$?
@@ -398,50 +315,32 @@ cmd_remove_account() {
 
     is_runtime_account "$input" || { log_error "Unknown account '$input'"; return 1; }
 
-    local has_profile=0
-    if ACCOUNT_NAME="$input" yq -e '.claude.accounts[strenv(ACCOUNT_NAME)] // empty' "$CLAUDE_YAML" >/dev/null 2>&1; then
-        has_profile=1
+    local current
+    current=$(get_current)
+    if [[ "$input" == "$current" ]]; then
+        log_error "Cannot remove current account. Switch first."
+        return 1
     fi
 
-    log_warn "Remove account '$input'?"
-    if [[ "$has_profile" -eq 1 ]]; then
-        printf "This will delete it from claude.yaml. Continue? [y/N]: "
-    else
-        printf "No claude.yaml profile found; continue to manage API key only? [y/N]: "
-    fi
-    read -r confirm
-    [[ "$confirm" != "y" && "$confirm" != "Y" ]] && { echo "Cancelled"; return 0; }
-
-    local provider
+    local provider parsed acct_name
     provider=$(get_provider "$input")
-
-    if [[ "$has_profile" -eq 1 ]]; then
-        ACCOUNT_NAME="$input" yq -i 'del(.claude.accounts[strenv(ACCOUNT_NAME)])' "$CLAUDE_YAML"
-        log_success "Account profile removed"
-    else
-        log_info "Skipped profile removal (not present in claude.yaml)"
-    fi
+    parsed=$(parse_provider_account "$input")
+    acct_name="${parsed#*|}"
 
     if is_third_party "$provider"; then
-        local parsed acct_name
-        parsed=$(parse_provider_account "$input")
-        acct_name="${parsed#*|}"
-        if key_exists "$provider" "$acct_name"; then
-            printf "Also delete API key? [y/N]: "
-            read -r del_key
-            [[ "$del_key" == "y" || "$del_key" == "Y" ]] && {
+        printf "Also delete API key for $input? [y/N]: "
+        read -r del_key
+        if [[ "$del_key" == "y" || "$del_key" == "Y" ]]; then
+            if key_exists "$provider" "$acct_name"; then
                 delete_api_key "$provider" "$acct_name"
                 log_success "API key deleted"
-            }
+            else
+                log_info "No API key found"
+            fi
         fi
     fi
 
-    if [[ "$has_profile" -eq 1 ]]; then
-        echo ""
-        log_info "Applying chezmoi..."
-        chezmoi apply --verbose --no-scripts "$SETTINGS_FILE" "$SCRIPT_DIR/lib/ai/core"
-        log_success "Done"
-    fi
+    log_warn "Account profile is template-managed; to fully remove, update private_dot_config/opencode/opencode.jsonc.tmpl"
 }
 
 # Add API key
@@ -452,7 +351,9 @@ cmd_add_key() {
     if [[ -z "$input" ]]; then
         require_cmd fzf || return 1
         local needs_key=()
-        for acct in "${ACCOUNTS[@]}"; do
+        local acct
+        while IFS= read -r acct; do
+            [[ -z "$acct" ]] && continue
             local prov
             prov=$(get_provider "$acct")
             if is_third_party "$prov"; then
@@ -461,7 +362,7 @@ cmd_add_key() {
                 acct_name="${parsed#*|}"
                 key_exists "$prov" "$acct_name" || needs_key+=("$acct")
             fi
-        done
+        done < <(list_runtime_accounts)
 
         [[ ${#needs_key[@]} -eq 0 ]] && {
             log_warn "All accounts already have API keys"
@@ -485,7 +386,7 @@ cmd_add_key() {
     parsed=$(parse_provider_account "$input")
     acct_name="${parsed#*|}"
 
-    is_third_party "$provider" || { log_warn "Native OAuth, no key needed"; return 0; }
+    is_third_party "$provider" || { log_warn "Native provider, no key needed"; return 0; }
     key_exists "$provider" "$acct_name" && { log_error "Key already exists. Use update-key."; return 1; }
 
     log_info "Adding API key for $input"
@@ -496,7 +397,7 @@ cmd_add_key() {
 
     store_api_key "$provider" "$acct_name" "$api_key"
     log_success "API key saved"
-    log_info "Tip: run 'claude-manage test $input' to verify"
+    log_info "Tip: run 'opencode-manage test $input' to verify"
 }
 
 # Update API key
@@ -527,7 +428,7 @@ cmd_update_key() {
     parsed=$(parse_provider_account "$input")
     acct_name="${parsed#*|}"
 
-    is_third_party "$provider" || { log_warn "Native OAuth, no key needed"; return 0; }
+    is_third_party "$provider" || { log_warn "Native provider, no key needed"; return 0; }
     key_exists "$provider" "$acct_name" || { log_error "No key exists. Use update-account."; return 1; }
 
     log_info "Updating API key for $input"
@@ -538,7 +439,6 @@ cmd_update_key() {
 
     store_api_key "$provider" "$acct_name" "$api_key"
     log_success "API key updated"
-    log_info "Tip: run 'claude-manage test $input' to verify"
 }
 
 # Delete API key
@@ -599,14 +499,17 @@ cmd_test() {
 
     local provider config base_url
     provider=$(get_provider "$input")
-    config=$(claude-token --config "$input")
+    config=$(opencode-token --config "$input")
     base_url=$(echo "$config" | jq -r '.base_url // empty')
+    base_url=${base_url%/v1}
+    base_url=${base_url%/v1/}
+    base_url=${base_url%/}
 
-    [[ -z "$base_url" ]] && {
-        log_warn "Native Anthropic (OAuth)"
-        log_success "No API key needed"
+    if [[ -z "$base_url" ]]; then
+        log_warn "Native provider: $provider"
+        log_success "Use 'opencode auth login $provider' to verify credentials"
         return 0
-    }
+    fi
 
     require_cmd curl || return 1
 
@@ -624,67 +527,60 @@ cmd_test() {
     log_success "Key found"
 
     local token
-    token=$(claude-token "$input" 2>/dev/null) || { log_fail "Failed to decrypt"; return 1; }
+    token=$(get_api_key "$provider" "$acct_name") || { log_fail "Failed to decrypt"; return 1; }
 
     echo "  Testing API..."
-    local model response http_code
-    model=$(echo "$config" | jq -r '.model // "unknown"')
-    local header_file
-    header_file=$(mktemp)
-    chmod 600 "$header_file"
-    cat > "$header_file" <<EOF
-x-api-key: $token
-anthropic-version: 2023-06-01
+
+    local header_file models_response models_code
+    header_file=$(mktemp) || { log_fail "Failed to create header temp file"; return 1; }
+    if ! chmod 600 "$header_file"; then
+        log_fail "Failed to secure header temp file"
+        rm -f "$header_file"
+        return 1
+    fi
+    if ! cat > "$header_file" <<EOF
+Authorization: Bearer $token
 Content-Type: application/json
 EOF
+    then
+        log_fail "Failed to write header file"
+        rm -f "$header_file"
+        return 1
+    fi
 
-    response=$(curl -sS -w "\n%{http_code}" --max-time 30 \
-        -X POST "$base_url/v1/messages" \
-        -H @"$header_file" \
-        -d "{\"model\":\"$model\",\"max_tokens\":1,\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}" 2>&1)
+    models_response=$(curl -sS -w "\n%{http_code}" --max-time 30 \
+        -X GET "$base_url/v1/models" \
+        -H @"$header_file" 2>&1 || true)
+    models_code=$(echo "$models_response" | tail -n1)
+
     rm -f "$header_file"
 
-    http_code=$(echo "$response" | tail -n1)
-
-    case "$http_code" in
+    case "$models_code" in
         200)
-            log_success "API OK"
+            log_success "API OK (/v1/models)"
             ;;
-        401)
+        401|403)
             log_fail "Invalid API key"
-            return 1
-            ;;
-        403)
-            log_fail "Access forbidden"
             return 1
             ;;
         429)
             log_warn "Rate limited"
-            http_code=200
             ;;
         *)
-            if [[ -z "$http_code" || "$http_code" == "000" ]]; then
+            if [[ -z "$models_code" || "$models_code" == "000" ]]; then
                 log_fail "Network error"
             else
-                log_fail "HTTP $http_code"
+                log_fail "HTTP $models_code"
             fi
             return 1
             ;;
     esac
 
-    if [[ "$http_code" != "200" ]]; then
-        return 1
-    fi
-
     echo ""
-    log_success "Account $input is working"
+    log_success "Account $input is configured"
 }
 
 # List accounts
-list_claude_accounts() {
-    list_runtime_accounts
-}
-
 cmd_list() {
     local filter="${1:-}"
     log_info "Configured accounts:"
@@ -708,12 +604,15 @@ cmd_list() {
         else
             echo -e "  ${GREEN}${STATUS_NATIVE}${NC} $account (native)"
         fi
-    done < <(list_claude_accounts)
+    done < <(list_runtime_accounts)
 }
 
 # Show current
 cmd_current() {
-    echo -e "Current: ${GREEN}$(get_current)${NC}"
+    local account provider
+    account=$(get_current)
+    provider=$(get_provider "$account")
+    echo -e "Current: ${GREEN}${account}${NC} (${provider})"
 }
 
 # Run workflow diagnostics
@@ -737,53 +636,116 @@ cmd_doctor() {
         fail=$((fail + 1))
     }
 
-    log_header "Claude Workflow Doctor"
+    log_header "OpenCode Workflow Doctor"
 
     echo "Runtime commands:"
-    if command -v claude >/dev/null 2>&1; then pass "claude found"; else note_fail "claude not found"; fi
+    if command -v opencode >/dev/null 2>&1; then pass "opencode found"; else note_fail "opencode not found"; fi
     if command -v jq >/dev/null 2>&1; then pass "jq found"; else note_fail "jq not found"; fi
     if command -v chezmoi >/dev/null 2>&1; then pass "chezmoi found"; else note_fail "chezmoi not found"; fi
-    if command -v yq >/dev/null 2>&1; then pass "yq found"; else note_warn "yq missing (account metadata checks reduced)"; fi
     if command -v gopass >/dev/null 2>&1; then pass "gopass found"; else note_warn "gopass missing (third-party keys unavailable)"; fi
     echo ""
 
     echo "Rendered configs:"
-    if [[ -f "$SETTINGS_FILE" ]]; then
-        if jq -e . "$SETTINGS_FILE" >/dev/null 2>&1; then
-            pass "~/.claude/settings.json is valid JSON"
+    if [[ -f "$OPENCODE_CONFIG" ]]; then
+        if jq -e . "$OPENCODE_CONFIG" >/dev/null 2>&1; then
+            pass "~/.config/opencode/opencode.jsonc is valid JSON"
         else
-            note_fail "~/.claude/settings.json is not valid JSON"
+            note_fail "~/.config/opencode/opencode.jsonc is not valid JSON"
         fi
     else
-        note_warn "~/.claude/settings.json missing"
+        note_fail "~/.config/opencode/opencode.jsonc missing"
     fi
 
-    if [[ -f "$CLAUDE_YAML" ]]; then
-        pass "~/.local/share/chezmoi/.chezmoidata/claude.yaml present"
+    if [[ -f "$OPENCODE_OHMY_CONFIG" ]]; then
+        if jq -e . "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+            pass "~/.config/opencode/oh-my-opencode.jsonc is valid JSON"
+        else
+            note_fail "~/.config/opencode/oh-my-opencode.jsonc is not valid JSON"
+        fi
     else
-        note_warn "~/.local/share/chezmoi/.chezmoidata/claude.yaml missing"
+        note_warn "~/.config/opencode/oh-my-opencode.jsonc missing"
     fi
 
-    if [[ -f "${HOME}/.claude/CLAUDE.md" ]]; then
-        pass "~/.claude/CLAUDE.md present"
+    local user_agents
+    user_agents="${HOME}/.config/opencode/AGENTS.md"
+    if [[ -f "$user_agents" ]]; then
+        pass "~/.config/opencode/AGENTS.md present"
     else
-        note_warn "~/.claude/CLAUDE.md missing"
+        note_warn "~/.config/opencode/AGENTS.md missing"
+    fi
+    echo ""
+
+    echo "Plugin and policy checks:"
+    if [[ -f "$OPENCODE_CONFIG" ]] && jq -e '.plugin | index("oh-my-opencode") != null' "$OPENCODE_CONFIG" >/dev/null 2>&1; then
+        pass "oh-my-opencode plugin configured"
+    else
+        note_warn "oh-my-opencode plugin not configured"
+    fi
+
+    if [[ -f "$OPENCODE_CONFIG" ]] && jq -e '.plugin | index("opencode-plugin-openspec") != null' "$OPENCODE_CONFIG" >/dev/null 2>&1; then
+        pass "opencode-plugin-openspec configured"
+    else
+        note_warn "opencode-plugin-openspec not configured"
+    fi
+
+    local -a claude_bridge_toggles=(mcp commands skills agents hooks plugins)
+    local claude_bridge_policy_ok=true
+    if [[ -f "$OPENCODE_OHMY_CONFIG" ]]; then
+        local toggle
+        for toggle in "${claude_bridge_toggles[@]}"; do
+            if jq -e --arg key "$toggle" '.claude_code[$key] == false' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+                pass "claude_code.${toggle} disabled"
+            else
+                note_warn "claude_code.${toggle} not disabled"
+                claude_bridge_policy_ok=false
+            fi
+        done
+    else
+        claude_bridge_policy_ok=false
+    fi
+
+    if [[ "$claude_bridge_policy_ok" == true ]]; then
+        pass "no-Claude compatibility bridge policy active"
+    else
+        note_warn "no-Claude compatibility bridge policy not fully active"
+    fi
+
+    if [[ -f "$OPENCODE_OHMY_CONFIG" ]] && jq -e '.disabled_hooks | index("claude-code-hooks") != null' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+        pass "claude-code-hooks disabled"
+    else
+        note_warn "claude-code-hooks disable policy missing"
     fi
     echo ""
 
     echo "Commands and skills projection:"
-    local cmd_count
-    cmd_count=$(find "${HOME}/.claude/commands/core" -maxdepth 1 -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
-    if [[ "${cmd_count:-0}" -ge 7 ]]; then
-        pass "core command docs present (${cmd_count})"
+    if [[ -L "${HOME}/.config/opencode/commands" ]]; then
+        pass "~/.config/opencode/commands symlink exists"
     else
-        note_warn "core command docs incomplete (${cmd_count:-0})"
+        note_warn "~/.config/opencode/commands symlink missing"
     fi
 
-    if [[ -L "${HOME}/.claude/skills" ]]; then
-        pass "~/.claude/skills symlink exists"
+    if [[ -L "${HOME}/.config/opencode/skills" ]]; then
+        pass "~/.config/opencode/skills symlink exists"
     else
-        note_warn "~/.claude/skills symlink missing"
+        note_warn "~/.config/opencode/skills symlink missing"
+    fi
+
+    local core_count
+    core_count=$(find "${HOME}/.config/opencode/command" -maxdepth 1 -name 'core-*.md' 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "${core_count:-0}" -ge 7 ]]; then
+        pass "core command compatibility aliases present (${core_count})"
+    else
+        note_warn "core command compatibility aliases incomplete (${core_count:-0})"
+    fi
+
+    if [[ -f "$OPENCODE_OHMY_CONFIG" ]] && jq -e '.skills.sources | type == "array" and length >= 1' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+        if jq -e '.skills.sources[]? | select(type=="object" and .path==".agents/skills" and .recursive==true)' "$OPENCODE_OHMY_CONFIG" >/dev/null 2>&1; then
+            pass "oh-my recursive .agents/skills source configured"
+        else
+            note_warn "oh-my recursive .agents/skills source not configured"
+        fi
+    else
+        note_warn "oh-my skills.sources missing"
     fi
     echo ""
 
@@ -794,13 +756,13 @@ cmd_doctor() {
     pass "current selector: ${account} (${provider})"
 
     if is_third_party "$provider"; then
-        if claude-token --check "$account" >/dev/null 2>&1; then
+        if opencode-token --check "$account" >/dev/null 2>&1; then
             pass "API key available for ${account}"
         else
             note_warn "API key missing for ${account}"
         fi
     else
-        note_warn "${provider} uses native OAuth/session auth"
+        note_warn "${provider} uses native auth; run: opencode auth login ${provider}"
     fi
 
     echo ""
@@ -811,18 +773,18 @@ cmd_doctor() {
 # Show help
 show_help() {
     cat << 'EOF'
-Claude CLI Account Manager
+OpenCode Account Manager
 
 Usage:
-  claude-manage                               Interactive menu
-  claude-manage switch [account]              Switch default account
-  claude-manage create-account [account]      Create account (optionally with API key)
-  claude-manage update-account [account]      Update account (optionally rotate API key)
-  claude-manage remove-account [account]      Remove account (optionally delete API key)
-  claude-manage test [account]                Test connectivity
-  claude-manage list [provider]               List accounts
-  claude-manage doctor                        Run workflow diagnostics
-  claude-manage current                       Show current account
+  opencode-manage                               Interactive menu
+  opencode-manage switch [account]              Switch default account
+  opencode-manage create-account [account]      Create account (optionally with API key)
+  opencode-manage update-account [account]      Update account (optionally rotate API key)
+  opencode-manage remove-account [account]      Remove account (optionally delete API key)
+  opencode-manage test [account]                Test connectivity
+  opencode-manage list [provider]               List accounts
+  opencode-manage current                       Show current account
+  opencode-manage doctor                        Run workflow diagnostics
 
 Compatibility aliases:
   add-account -> create-account
@@ -851,19 +813,31 @@ main() {
             run_cmd cmd_switch "$@"
             ;;
         create-account|add-account)
-            require_cmd chezmoi jq yq fzf || return 1
+            require_cmd chezmoi jq gopass fzf || return 1
             run_cmd cmd_create_account "$@"
             ;;
         update-account|edit-account)
-            require_cmd chezmoi jq yq || return 1
+            if [[ $# -eq 0 ]]; then
+                require_cmd chezmoi jq gopass fzf || return 1
+            else
+                require_cmd chezmoi jq gopass || return 1
+            fi
             run_cmd cmd_update_account "$@"
             ;;
         remove-account)
-            require_cmd chezmoi jq yq || return 1
+            if [[ $# -eq 0 ]]; then
+                require_cmd chezmoi jq gopass fzf || return 1
+            else
+                require_cmd chezmoi jq gopass || return 1
+            fi
             run_cmd cmd_remove_account "$@"
             ;;
         add-key|update-key|delete-key)
-            require_cmd chezmoi jq gopass || return 1
+            if [[ $# -eq 0 ]]; then
+                require_cmd chezmoi jq gopass fzf || return 1
+            else
+                require_cmd chezmoi jq gopass || return 1
+            fi
             case "$cmd" in
                 add-key) run_cmd cmd_add_key "$@" ;;
                 update-key) run_cmd cmd_update_key "$@" ;;

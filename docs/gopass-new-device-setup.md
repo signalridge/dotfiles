@@ -54,7 +54,7 @@ claude-token --check kimi@private
 codex-token --check deepseek@smoke
 ```
 
-If you are migrating from legacy key paths, re-add keys via `claude-manage add-key` or `codex-manage add-key`.
+If you are migrating from legacy key paths, re-add keys via `claude-manage add-key`, `codex-manage add-key`, or `opencode-manage add-key`, then verify with `*-token --check`.
 
 ## Configuration Details
 
