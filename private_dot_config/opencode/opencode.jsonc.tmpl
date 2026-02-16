@@ -5,12 +5,8 @@
 {{- $providerApiKeys := dict -}}
 {{- range $providerKey := $providerKeys -}}
 {{-   $providerApiPath := printf "opencode/%s/api_key" (replace "@" "/" $providerKey) -}}
-{{-   $providerExistsCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='%s'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '1'; fi" $providerApiPath -}}
-{{-   if eq ((output "sh" "-c" $providerExistsCmd) | trim) "1" -}}
-{{-     $_ := set $providerApiKeys $providerKey (gopass $providerApiPath) -}}
-{{-   else -}}
-{{-     $_ := set $providerApiKeys $providerKey "" -}}
-{{-   end -}}
+{{-   $providerApiKeyCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='%s'; if gopass list -f \"$p\" >/dev/null 2>&1; then gopass show --password \"$p\" | head -n 1; fi" $providerApiPath -}}
+{{-   $_ := set $providerApiKeys $providerKey ((output "sh" "-c" $providerApiKeyCmd) | trim) -}}
 {{- end -}}
 {
   "$schema": "https://opencode.ai/config.json",
