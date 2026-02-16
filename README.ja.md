@@ -46,10 +46,10 @@
   - macOS の `nix-darwin` システム設定
   - macOS の Homebrew / MAS 連携
 - Claude/Codex/OpenCode 共通 Skills を `~/.agents/skills` へ自動同期
-- Claude/Codex ラッパーの Provider 切替と、OpenCode ネイティブ account 選択をサポート：
+- Claude/Codex ラッパーの Provider 切替と、OpenCode ネイティブ provider 切替をサポート：
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
-  - OpenCode は `opencode` + `opencodeProviderAccount`
+  - OpenCode はネイティブ `opencode`（provider key は設定でレンダリング）
 - `OpenCode + oh-my-opencode` のグローバル設定を宣言的に管理（Claude compatibility 無効化のガード付き）
 - `chezmoi apply` のたびに Claude MCP を自動同期
 - GitHub Actions による依存更新の自動化（versions、flake lock、aqua packages）
@@ -226,7 +226,7 @@ git checkout <tag-or-commit>
 - `headless`（GUI を前提にしない環境かどうか）
 - `useEncryption`（暗号化キー復元フローを有効化するか）
 - `installMasApps`（MAS アプリを導入するか）
-- `claudeProviderAccount` / `codexProviderAccount` / `opencodeProviderAccount`
+- `claudeProviderAccount` / `codexProviderAccount`
 
 このリポジトリを初回利用する場合、keys-manage バックアップと鍵を自分で用意していない限り、`useEncryption = false` を推奨します。
 
@@ -319,14 +319,13 @@ OpenCode 設定は次のテンプレートで宣言的に管理します。
 - `~/.config/opencode/opencode.jsonc`
 - `~/.config/opencode/oh-my-opencode.jsonc`
 
-デフォルトの provider/account は `~/.config/chezmoi/chezmoi.toml` の `opencodeProviderAccount` で制御します。
+OpenCode の key レンダリングは `provider@private` 命名（例: `harui@private`）を使い、gopass から provider key を解決します。
 
 ### OpenCode ネイティブモード
 
 `opencode` を直接利用してください。
 
-- 既定セレクタ: `~/.config/chezmoi/chezmoi.toml` の `opencodeProviderAccount`
-- サードパーティ key パス: `opencode/{provider}/{account}/api_key`
+- key パス: `opencode/{provider}/private/api_key`
 
 ### Native-only ポリシー（Claude compatibility bridge を無効化）
 
@@ -400,8 +399,8 @@ codex-manage list
 codex-manage switch openai
 codex-with deepseek@private "explain this file"
 
-# OpenCode（ネイティブ CLI + data 駆動の既定 account/provider）
-opencode run -m harui/gpt-5.3-codex "say ok"
+# OpenCode（ネイティブ CLI + provider key レンダリング）
+opencode run -m harui@private/gpt-5.3-codex "say ok"
 ```
 
 ### Token Helpers

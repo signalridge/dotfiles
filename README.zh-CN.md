@@ -46,10 +46,10 @@
   - macOS 使用 `nix-darwin` 管理系统配置
   - macOS 集成 Homebrew / MAS
 - 共享 AI skills 自动同步到 `~/.agents/skills`（Claude、Codex、OpenCode 共用）
-- Claude/Codex wrapper 的 provider 切换，加上 OpenCode 原生 account 选择：
+- Claude/Codex wrapper 的 provider 切换，加上 OpenCode 原生 provider 切换：
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
-  - OpenCode 使用 `opencode` + `opencodeProviderAccount`
+  - OpenCode 使用原生 `opencode`（provider key 由配置渲染）
 - 声明式管理 `OpenCode + oh-my-opencode` 全局配置，并启用 native-only（禁用 Claude compatibility）护栏
 - 每次 `chezmoi apply` 自动对齐 Claude MCP 配置
 - GitHub Actions 自动维护依赖版本（versions、flake lock、aqua packages）
@@ -224,7 +224,7 @@ git checkout <tag-or-commit>
 - `headless`（是否无 GUI 场景）
 - `useEncryption`（是否启用加密密钥恢复流）
 - `installMasApps`（是否安装 MAS 应用）
-- `claudeProviderAccount` / `codexProviderAccount` / `opencodeProviderAccount`
+- `claudeProviderAccount` / `codexProviderAccount`
 
 对大多数首次使用者：除非你已经有自己的 keys-manage 备份仓库与密钥材料，否则建议保持 `useEncryption = false`。
 
@@ -317,14 +317,13 @@ OpenCode 配置由以下模板声明式管理：
 - `~/.config/opencode/opencode.jsonc`
 - `~/.config/opencode/oh-my-opencode.jsonc`
 
-默认 provider/account 由 `~/.config/chezmoi/chezmoi.toml` 的 `opencodeProviderAccount` 驱动。
+OpenCode 的 key 渲染使用 `provider@private` 命名（如 `harui@private`），并从 gopass 解析 provider key。
 
 ### OpenCode 原生模式
 
 请直接使用原生 `opencode`：
 
-- 默认选择器：`~/.config/chezmoi/chezmoi.toml` 中的 `opencodeProviderAccount`
-- 第三方 key 路径：`opencode/{provider}/{account}/api_key`
+- key 路径：`opencode/{provider}/private/api_key`
 
 ### Native-only 策略（禁用 Claude compatibility bridge）
 
@@ -398,8 +397,8 @@ codex-manage list
 codex-manage switch openai
 codex-with deepseek@private "explain this file"
 
-# OpenCode（原生 CLI + data 驱动默认 account/provider）
-opencode run -m harui/gpt-5.3-codex "say ok"
+# OpenCode（原生 CLI + provider key 渲染）
+opencode run -m harui@private/gpt-5.3-codex "say ok"
 ```
 
 ### Token Helpers

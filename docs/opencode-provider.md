@@ -6,7 +6,7 @@ OpenCode in this repository is managed in native mode.
 
 - `opencode-manage`, `opencode-with`, and `opencode-token` are removed.
 - Use the native `opencode` CLI directly.
-- Provider/account default is controlled by `opencodeProviderAccount` in `~/.config/chezmoi/chezmoi.toml`.
+- Key rendering uses `provider@private` naming (for example `harui@private`) and resolves provider keys accordingly.
 
 ## Managed Files
 
@@ -16,9 +16,9 @@ OpenCode in this repository is managed in native mode.
 
 ## Key Storage
 
-Third-party provider keys are stored in gopass under:
+Provider keys are stored in gopass under:
 
-- `opencode/{provider}/{account}/api_key`
+- `opencode/{provider}/private/api_key`
 
 Examples:
 
@@ -31,7 +31,7 @@ gopass show -o opencode/kimi/private/api_key
 
 ```bash
 # Native OpenCode invocation
-opencode run -m harui/gpt-5.3-codex "say ok"
+opencode run -m harui@private/gpt-5.3-codex "say ok"
 
 # Verify config rendering after template changes
 bash tests/test_opencode_config_rendering.sh

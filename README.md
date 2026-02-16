@@ -46,10 +46,10 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
   - nix-darwin system config on macOS
   - Homebrew/MAS integration on macOS
 - Shared AI skills marketplace sync to `~/.agents/skills` for Claude/Codex/OpenCode
-- Multi-provider account switching for managed wrappers, plus native OpenCode account selection:
+- Multi-provider account switching for managed wrappers, plus native OpenCode provider switching:
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
-  - OpenCode via `opencode` + `opencodeProviderAccount`
+  - OpenCode via native `opencode` (provider keys rendered in config)
 - Declarative `OpenCode + oh-my-opencode` global config with native-only (no-Claude-compat) guardrails
 - Auto MCP sync for Claude on every `chezmoi apply`
 - Automated dependency upkeep via GitHub Actions (versions, flake locks, aqua packages)
@@ -226,7 +226,7 @@ git checkout <tag-or-commit>
 - `headless` (container/server without full desktop assumptions)
 - `useEncryption` (enable encrypted key restore flow)
 - `installMasApps` (macOS App Store apps)
-- `claudeProviderAccount` / `codexProviderAccount` / `opencodeProviderAccount`
+- `claudeProviderAccount` / `codexProviderAccount`
 
 For most first-time users of this repo: keep `useEncryption = false` unless you have your own keys-manage backup repo and key material.
 
@@ -319,14 +319,13 @@ Rendered targets:
 - `~/.config/opencode/opencode.jsonc`
 - `~/.config/opencode/oh-my-opencode.jsonc`
 
-Provider/account defaults are data-driven via `opencodeProviderAccount` in `~/.config/chezmoi/chezmoi.toml`.
+OpenCode key rendering uses `provider@private` naming (for example `harui@private`) and resolves provider keys from gopass.
 
 ### OpenCode Native Mode
 
 Use native `opencode` directly:
 
-- Default selector: `opencodeProviderAccount` in `~/.config/chezmoi/chezmoi.toml`
-- Third-party key path: `opencode/{provider}/{account}/api_key`
+- Key path: `opencode/{provider}/private/api_key`
 
 ### Native-Only Policy (No Claude Compatibility Bridge)
 
@@ -400,8 +399,8 @@ codex-manage list
 codex-manage switch openai
 codex-with deepseek@private "explain this file"
 
-# OpenCode (native CLI + data-driven default account/provider)
-opencode run -m harui/gpt-5.3-codex "say ok"
+# OpenCode (native CLI + provider-based key rendering)
+opencode run -m harui@private/gpt-5.3-codex "say ok"
 ```
 
 ### Token Helpers
