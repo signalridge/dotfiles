@@ -319,13 +319,13 @@ OpenCode 設定は次のテンプレートで宣言的に管理します。
 - `~/.config/opencode/opencode.jsonc`
 - `~/.config/opencode/oh-my-opencode.jsonc`
 
-OpenCode の key レンダリングは account 非依存で、gopass から provider ごとの key を直接読み込みます。
+OpenCode の key レンダリングは `provider@private` 命名（例: `harui@private`）を使い、gopass から provider key を解決します。
 
 ### OpenCode ネイティブモード
 
 `opencode` を直接利用してください。
 
-- key パス: `opencode/{provider}/api_key`
+- key パス: `opencode/{provider}/private/api_key`
 
 ### Native-only ポリシー（Claude compatibility bridge を無効化）
 
@@ -408,7 +408,7 @@ opencode run -m harui/gpt-5.3-codex "say ok"
 ```bash
 claude-token --check kimi@private
 codex-token --check deepseek@private
-gopass show -o opencode/harui/api_key >/dev/null
+gopass show -o opencode/harui/private/api_key >/dev/null
 ```
 
 ### MCP 連携

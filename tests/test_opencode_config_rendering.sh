@@ -103,7 +103,7 @@ case "$cmd" in
     list)
         target="${1:-}"
         [[ "$target" == "-f" ]] && target="${2:-}"
-        if [[ "$target" == "opencode/harui/api_key" || "$target" == "opencode/deepseek/api_key" || "$target" == "opencode/openai/api_key" ]]; then
+        if [[ "$target" == "opencode/harui/private/api_key" || "$target" == "opencode/deepseek/private/api_key" || "$target" == "opencode/openai/private/api_key" ]]; then
             exit 0
         fi
         exit 1
@@ -113,15 +113,15 @@ case "$cmd" in
         if [[ "$target" == "--password" || "$target" == "-o" ]]; then
             target="${2:-}"
         fi
-        if [[ "$target" == "opencode/harui/api_key" ]]; then
+        if [[ "$target" == "opencode/harui/private/api_key" ]]; then
             printf '%s' "stub-account-key"
             exit 0
         fi
-        if [[ "$target" == "opencode/deepseek/api_key" ]]; then
+        if [[ "$target" == "opencode/deepseek/private/api_key" ]]; then
             printf '%s' "stub-deepseek-key"
             exit 0
         fi
-        if [[ "$target" == "opencode/openai/api_key" ]]; then
+        if [[ "$target" == "opencode/openai/private/api_key" ]]; then
             printf '%s' "stub-openai-key"
             exit 0
         fi

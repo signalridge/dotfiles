@@ -6,7 +6,7 @@ OpenCode in this repository is managed in native mode.
 
 - `opencode-manage`, `opencode-with`, and `opencode-token` are removed.
 - Use the native `opencode` CLI directly.
-- Key rendering is account-agnostic and provider-based.
+- Key rendering uses `provider@private` naming (for example `harui@private`) and resolves provider keys accordingly.
 
 ## Managed Files
 
@@ -18,13 +18,13 @@ OpenCode in this repository is managed in native mode.
 
 Provider keys are stored in gopass under:
 
-- `opencode/{provider}/api_key`
+- `opencode/{provider}/private/api_key`
 
 Examples:
 
 ```bash
-gopass show -o opencode/harui/api_key
-gopass show -o opencode/kimi/api_key
+gopass show -o opencode/harui/private/api_key
+gopass show -o opencode/kimi/private/api_key
 ```
 
 ## Usage

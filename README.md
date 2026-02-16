@@ -319,13 +319,13 @@ Rendered targets:
 - `~/.config/opencode/opencode.jsonc`
 - `~/.config/opencode/oh-my-opencode.jsonc`
 
-OpenCode key rendering is account-agnostic and reads provider keys directly from gopass.
+OpenCode key rendering uses `provider@private` naming (for example `harui@private`) and resolves provider keys from gopass.
 
 ### OpenCode Native Mode
 
 Use native `opencode` directly:
 
-- Key path: `opencode/{provider}/api_key`
+- Key path: `opencode/{provider}/private/api_key`
 
 ### Native-Only Policy (No Claude Compatibility Bridge)
 
@@ -408,7 +408,7 @@ opencode run -m harui/gpt-5.3-codex "say ok"
 ```bash
 claude-token --check kimi@private
 codex-token --check deepseek@private
-gopass show -o opencode/harui/api_key >/dev/null
+gopass show -o opencode/harui/private/api_key >/dev/null
 ```
 
 ### MCP Integration

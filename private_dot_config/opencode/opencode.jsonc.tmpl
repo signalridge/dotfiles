@@ -1,39 +1,57 @@
 {{- $resolvedProvider := "harui" -}}
 {{- $model := "gpt-5.3-codex" -}}
 {{- $modelRef := printf "%s/%s" $resolvedProvider $model -}}
-{{- $openaiApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/openai/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $openaiName := "openai@private" -}}
+{{- $openaiParts := split "@" $openaiName -}}
+{{- $openaiApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $openaiParts._0 $openaiParts._1 -}}
 {{- $openaiApiPath := (output "sh" "-c" $openaiApiPathCmd) | trim -}}
 {{- $openaiApiKey := "" -}}
 {{- if ne $openaiApiPath "" -}}{{- $openaiApiKey = gopass $openaiApiPath -}}{{- end -}}
-{{- $deepseekApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/deepseek/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $deepseekName := "deepseek@private" -}}
+{{- $deepseekParts := split "@" $deepseekName -}}
+{{- $deepseekApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $deepseekParts._0 $deepseekParts._1 -}}
 {{- $deepseekApiPath := (output "sh" "-c" $deepseekApiPathCmd) | trim -}}
 {{- $deepseekApiKey := "" -}}
 {{- if ne $deepseekApiPath "" -}}{{- $deepseekApiKey = gopass $deepseekApiPath -}}{{- end -}}
-{{- $doubaoApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/doubao/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $doubaoName := "doubao@private" -}}
+{{- $doubaoParts := split "@" $doubaoName -}}
+{{- $doubaoApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $doubaoParts._0 $doubaoParts._1 -}}
 {{- $doubaoApiPath := (output "sh" "-c" $doubaoApiPathCmd) | trim -}}
 {{- $doubaoApiKey := "" -}}
 {{- if ne $doubaoApiPath "" -}}{{- $doubaoApiKey = gopass $doubaoApiPath -}}{{- end -}}
-{{- $glmApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/glm/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $glmName := "glm@private" -}}
+{{- $glmParts := split "@" $glmName -}}
+{{- $glmApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $glmParts._0 $glmParts._1 -}}
 {{- $glmApiPath := (output "sh" "-c" $glmApiPathCmd) | trim -}}
 {{- $glmApiKey := "" -}}
 {{- if ne $glmApiPath "" -}}{{- $glmApiKey = gopass $glmApiPath -}}{{- end -}}
-{{- $haruiApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/harui/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $haruiName := "harui@private" -}}
+{{- $haruiParts := split "@" $haruiName -}}
+{{- $haruiApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $haruiParts._0 $haruiParts._1 -}}
 {{- $haruiApiPath := (output "sh" "-c" $haruiApiPathCmd) | trim -}}
 {{- $haruiApiKey := "" -}}
 {{- if ne $haruiApiPath "" -}}{{- $haruiApiKey = gopass $haruiApiPath -}}{{- end -}}
-{{- $kimiApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/kimi/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $kimiName := "kimi@private" -}}
+{{- $kimiParts := split "@" $kimiName -}}
+{{- $kimiApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $kimiParts._0 $kimiParts._1 -}}
 {{- $kimiApiPath := (output "sh" "-c" $kimiApiPathCmd) | trim -}}
 {{- $kimiApiKey := "" -}}
 {{- if ne $kimiApiPath "" -}}{{- $kimiApiKey = gopass $kimiApiPath -}}{{- end -}}
-{{- $minimaxApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/minimax/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $minimaxName := "minimax@private" -}}
+{{- $minimaxParts := split "@" $minimaxName -}}
+{{- $minimaxApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $minimaxParts._0 $minimaxParts._1 -}}
 {{- $minimaxApiPath := (output "sh" "-c" $minimaxApiPathCmd) | trim -}}
 {{- $minimaxApiKey := "" -}}
 {{- if ne $minimaxApiPath "" -}}{{- $minimaxApiKey = gopass $minimaxApiPath -}}{{- end -}}
-{{- $naapiApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/naapi/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $naapiName := "naapi@private" -}}
+{{- $naapiParts := split "@" $naapiName -}}
+{{- $naapiApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $naapiParts._0 $naapiParts._1 -}}
 {{- $naapiApiPath := (output "sh" "-c" $naapiApiPathCmd) | trim -}}
 {{- $naapiApiKey := "" -}}
 {{- if ne $naapiApiPath "" -}}{{- $naapiApiKey = gopass $naapiApiPath -}}{{- end -}}
-{{- $qwenApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/qwen/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $qwenName := "qwen@private" -}}
+{{- $qwenParts := split "@" $qwenName -}}
+{{- $qwenApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $qwenParts._0 $qwenParts._1 -}}
 {{- $qwenApiPath := (output "sh" "-c" $qwenApiPathCmd) | trim -}}
 {{- $qwenApiKey := "" -}}
 {{- if ne $qwenApiPath "" -}}{{- $qwenApiKey = gopass $qwenApiPath -}}{{- end -}}
