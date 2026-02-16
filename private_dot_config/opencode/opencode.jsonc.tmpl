@@ -4,22 +4,14 @@
 {{- $providerKeys := list "openai@private" "deepseek@private" "doubao@private" "glm@private" "harui@private" "kimi@private" "minimax@private" "naapi@private" "qwen@private" -}}
 {{- $providerApiKeys := dict -}}
 {{- range $providerKey := $providerKeys -}}
-{{-   $providerApiPathFromKey := printf "opencode/%s/api_key" (replace "@" "/" $providerKey) -}}
-{{-   $providerApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='%s'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $providerApiPathFromKey -}}
-{{-   $providerApiPath := (output "sh" "-c" $providerApiPathCmd) | trim -}}
-{{-   $providerApiKey := "" -}}
-{{-   if ne $providerApiPath "" -}}{{- $providerApiKey = gopass $providerApiPath -}}{{- end -}}
-{{-   $_ := set $providerApiKeys $providerKey $providerApiKey -}}
+{{-   $providerApiPath := printf "opencode/%s/api_key" (replace "@" "/" $providerKey) -}}
+{{-   $providerExistsCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='%s'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '1'; fi" $providerApiPath -}}
+{{-   if eq ((output "sh" "-c" $providerExistsCmd) | trim) "1" -}}
+{{-     $_ := set $providerApiKeys $providerKey (gopass $providerApiPath) -}}
+{{-   else -}}
+{{-     $_ := set $providerApiKeys $providerKey "" -}}
+{{-   end -}}
 {{- end -}}
-{{- $openaiApiKey := get $providerApiKeys "openai@private" -}}
-{{- $deepseekApiKey := get $providerApiKeys "deepseek@private" -}}
-{{- $doubaoApiKey := get $providerApiKeys "doubao@private" -}}
-{{- $glmApiKey := get $providerApiKeys "glm@private" -}}
-{{- $haruiApiKey := get $providerApiKeys "harui@private" -}}
-{{- $kimiApiKey := get $providerApiKeys "kimi@private" -}}
-{{- $minimaxApiKey := get $providerApiKeys "minimax@private" -}}
-{{- $naapiApiKey := get $providerApiKeys "naapi@private" -}}
-{{- $qwenApiKey := get $providerApiKeys "qwen@private" -}}
 {
   "$schema": "https://opencode.ai/config.json",
   "theme": "dracula",
@@ -128,8 +120,8 @@
       "npm": "@ai-sdk/openai",
       "name": "openai@private",
       "env": ["OPENAI_API_KEY"],
-      "options": { {{- if ne $openaiApiKey "" }}
-        "apiKey": {{ $openaiApiKey | quote }} {{- end }}
+      "options": { {{- if ne (get $providerApiKeys "openai@private") "" }}
+        "apiKey": {{ get $providerApiKeys "openai@private" | quote }} {{- end }}
       }
     },
     "deepseek@private": {
@@ -137,8 +129,8 @@
       "name": "deepseek@private",
       "env": ["DEEPSEEK_API_KEY"],
       "options": {
-        "baseURL": "https://api.deepseek.com/v1"{{- if ne $deepseekApiKey "" }},
-        "apiKey": {{ $deepseekApiKey | quote }}{{- end }}
+        "baseURL": "https://api.deepseek.com/v1"{{- if ne (get $providerApiKeys "deepseek@private") "" }},
+        "apiKey": {{ get $providerApiKeys "deepseek@private" | quote }}{{- end }}
       },
       "models": {
         "deepseek-chat": {
@@ -172,8 +164,8 @@
       "name": "doubao@private",
       "env": ["ARK_API_KEY"],
       "options": {
-        "baseURL": "https://ark.cn-beijing.volces.com/api/v3"{{- if ne $doubaoApiKey "" }},
-        "apiKey": {{ $doubaoApiKey | quote }}{{- end }}
+        "baseURL": "https://ark.cn-beijing.volces.com/api/v3"{{- if ne (get $providerApiKeys "doubao@private") "" }},
+        "apiKey": {{ get $providerApiKeys "doubao@private" | quote }}{{- end }}
       },
       "models": {
         "ark-code-latest": {
@@ -195,8 +187,8 @@
       "name": "glm@private",
       "env": ["ZHIPU_API_KEY"],
       "options": {
-        "baseURL": "https://open.bigmodel.cn/api/paas/v4"{{- if ne $glmApiKey "" }},
-        "apiKey": {{ $glmApiKey | quote }}{{- end }}
+        "baseURL": "https://open.bigmodel.cn/api/paas/v4"{{- if ne (get $providerApiKeys "glm@private") "" }},
+        "apiKey": {{ get $providerApiKeys "glm@private" | quote }}{{- end }}
       },
       "models": {
         "glm-4.7": {
@@ -230,8 +222,8 @@
       "name": "harui@private",
       "env": ["HARUI_API_KEY"],
       "options": {
-        "baseURL": "https://codex.harui.edu.kg/v1"{{- if ne $haruiApiKey "" }},
-        "apiKey": {{ $haruiApiKey | quote }}{{- end }}
+        "baseURL": "https://codex.harui.edu.kg/v1"{{- if ne (get $providerApiKeys "harui@private") "" }},
+        "apiKey": {{ get $providerApiKeys "harui@private" | quote }}{{- end }}
       },
       "models": {
         "gpt-5.3-codex": {
@@ -265,8 +257,8 @@
       "name": "kimi@private",
       "env": ["MOONSHOT_API_KEY"],
       "options": {
-        "baseURL": "https://api.moonshot.ai/v1"{{- if ne $kimiApiKey "" }},
-        "apiKey": {{ $kimiApiKey | quote }}{{- end }}
+        "baseURL": "https://api.moonshot.ai/v1"{{- if ne (get $providerApiKeys "kimi@private") "" }},
+        "apiKey": {{ get $providerApiKeys "kimi@private" | quote }}{{- end }}
       },
       "models": {
         "kimi-k2.5": {
@@ -300,8 +292,8 @@
       "name": "minimax@private",
       "env": ["MINIMAX_API_KEY"],
       "options": {
-        "baseURL": "https://api.minimax.io/v1"{{- if ne $minimaxApiKey "" }},
-        "apiKey": {{ $minimaxApiKey | quote }}{{- end }}
+        "baseURL": "https://api.minimax.io/v1"{{- if ne (get $providerApiKeys "minimax@private") "" }},
+        "apiKey": {{ get $providerApiKeys "minimax@private" | quote }}{{- end }}
       },
       "models": {
         "MiniMax-M2.1": {
@@ -323,8 +315,8 @@
       "name": "naapi@private",
       "env": ["NAAPI_API_KEY"],
       "options": {
-        "baseURL": "https://na.wanxiaot.com/v1"{{- if ne $naapiApiKey "" }},
-        "apiKey": {{ $naapiApiKey | quote }}{{- end }}
+        "baseURL": "https://na.wanxiaot.com/v1"{{- if ne (get $providerApiKeys "naapi@private") "" }},
+        "apiKey": {{ get $providerApiKeys "naapi@private" | quote }}{{- end }}
       },
       "models": {
         "gpt-5.3-codex": {
@@ -358,8 +350,8 @@
       "name": "qwen@private",
       "env": ["DASHSCOPE_API_KEY"],
       "options": {
-        "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1"{{- if ne $qwenApiKey "" }},
-        "apiKey": {{ $qwenApiKey | quote }}{{- end }}
+        "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1"{{- if ne (get $providerApiKeys "qwen@private") "" }},
+        "apiKey": {{ get $providerApiKeys "qwen@private" | quote }}{{- end }}
       },
       "models": {
         "qwen3-coder-plus": {
