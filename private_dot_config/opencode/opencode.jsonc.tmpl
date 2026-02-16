@@ -1,106 +1,40 @@
-{{- $accountKey := "openai" -}}
-{{- if hasKey . "opencodeProviderAccount" -}}
-{{-   $accountKey = .opencodeProviderAccount -}}
-{{- else if hasKey . "codexProviderAccount" -}}
-{{-   $accountKey = .codexProviderAccount -}}
-{{- end -}}
-{{- $providerName := (split "@" $accountKey)._0 -}}
-{{- $accountLabel := "default" -}}
-{{- if contains "@" $accountKey -}}
-{{-   $accountLabel = (split "@" $accountKey)._1 -}}
-{{- end -}}
-{{- $resolvedProvider := "openai" -}}
+{{- $resolvedProvider := "harui" -}}
 {{- $model := "gpt-5.3-codex" -}}
-{{- if eq $providerName "anthropic" -}}
-{{-   $resolvedProvider = "anthropic" -}}
-{{-   $model = "claude-sonnet-4-5" -}}
-{{- else if eq $providerName "google" -}}
-{{-   $resolvedProvider = "google" -}}
-{{-   $model = "gemini-3-pro" -}}
-{{- else if eq $providerName "deepseek" -}}
-{{-   $resolvedProvider = "deepseek" -}}
-{{-   $model = "deepseek-chat" -}}
-{{- else if eq $providerName "doubao" -}}
-{{-   $resolvedProvider = "doubao" -}}
-{{-   $model = "ark-code-latest" -}}
-{{- else if eq $providerName "glm" -}}
-{{-   $resolvedProvider = "glm" -}}
-{{-   $model = "glm-4.7" -}}
-{{- else if eq $providerName "harui" -}}
-{{-   $resolvedProvider = "harui" -}}
-{{-   $model = "gpt-5.3-codex" -}}
-{{- else if eq $providerName "kimi" -}}
-{{-   $resolvedProvider = "kimi" -}}
-{{-   $model = "kimi-k2.5" -}}
-{{- else if eq $providerName "minimax" -}}
-{{-   $resolvedProvider = "minimax" -}}
-{{-   $model = "MiniMax-M2.1" -}}
-{{- else if eq $providerName "naapi" -}}
-{{-   $resolvedProvider = "naapi" -}}
-{{-   $model = "gpt-5.3-codex" -}}
-{{- else if eq $providerName "qwen" -}}
-{{-   $resolvedProvider = "qwen" -}}
-{{-   $model = "qwen3-coder-plus" -}}
-{{- else if eq $providerName "opencode" -}}
-{{-   $resolvedProvider = "opencode" -}}
-{{-   $model = "gpt-5.3-codex" -}}
-{{- end -}}
 {{- $modelRef := printf "%s/%s" $resolvedProvider $model -}}
-{{- $accountLabelValid := regexMatch "^[A-Za-z0-9._-]+$" $accountLabel -}}
-{{- $deepseekApiPath := "" -}}
-{{- if $accountLabelValid -}}
-{{-   $deepseekApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/deepseek/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
-{{-   $deepseekApiPath = (output "sh" "-c" $deepseekApiPathCmd) | trim -}}
-{{- end -}}
+{{- $openaiApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/openai/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $openaiApiPath := (output "sh" "-c" $openaiApiPathCmd) | trim -}}
+{{- $openaiApiKey := "" -}}
+{{- if ne $openaiApiPath "" -}}{{- $openaiApiKey = gopass $openaiApiPath -}}{{- end -}}
+{{- $deepseekApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/deepseek/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $deepseekApiPath := (output "sh" "-c" $deepseekApiPathCmd) | trim -}}
 {{- $deepseekApiKey := "" -}}
 {{- if ne $deepseekApiPath "" -}}{{- $deepseekApiKey = gopass $deepseekApiPath -}}{{- end -}}
-{{- $doubaoApiPath := "" -}}
-{{- if $accountLabelValid -}}
-{{-   $doubaoApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/doubao/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
-{{-   $doubaoApiPath = (output "sh" "-c" $doubaoApiPathCmd) | trim -}}
-{{- end -}}
+{{- $doubaoApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/doubao/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $doubaoApiPath := (output "sh" "-c" $doubaoApiPathCmd) | trim -}}
 {{- $doubaoApiKey := "" -}}
 {{- if ne $doubaoApiPath "" -}}{{- $doubaoApiKey = gopass $doubaoApiPath -}}{{- end -}}
-{{- $glmApiPath := "" -}}
-{{- if $accountLabelValid -}}
-{{-   $glmApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/glm/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
-{{-   $glmApiPath = (output "sh" "-c" $glmApiPathCmd) | trim -}}
-{{- end -}}
+{{- $glmApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/glm/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $glmApiPath := (output "sh" "-c" $glmApiPathCmd) | trim -}}
 {{- $glmApiKey := "" -}}
 {{- if ne $glmApiPath "" -}}{{- $glmApiKey = gopass $glmApiPath -}}{{- end -}}
-{{- $haruiApiPath := "" -}}
-{{- if $accountLabelValid -}}
-{{-   $haruiApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/harui/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
-{{-   $haruiApiPath = (output "sh" "-c" $haruiApiPathCmd) | trim -}}
-{{- end -}}
+{{- $haruiApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/harui/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $haruiApiPath := (output "sh" "-c" $haruiApiPathCmd) | trim -}}
 {{- $haruiApiKey := "" -}}
 {{- if ne $haruiApiPath "" -}}{{- $haruiApiKey = gopass $haruiApiPath -}}{{- end -}}
-{{- $kimiApiPath := "" -}}
-{{- if $accountLabelValid -}}
-{{-   $kimiApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/kimi/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
-{{-   $kimiApiPath = (output "sh" "-c" $kimiApiPathCmd) | trim -}}
-{{- end -}}
+{{- $kimiApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/kimi/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $kimiApiPath := (output "sh" "-c" $kimiApiPathCmd) | trim -}}
 {{- $kimiApiKey := "" -}}
 {{- if ne $kimiApiPath "" -}}{{- $kimiApiKey = gopass $kimiApiPath -}}{{- end -}}
-{{- $minimaxApiPath := "" -}}
-{{- if $accountLabelValid -}}
-{{-   $minimaxApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/minimax/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
-{{-   $minimaxApiPath = (output "sh" "-c" $minimaxApiPathCmd) | trim -}}
-{{- end -}}
+{{- $minimaxApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/minimax/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $minimaxApiPath := (output "sh" "-c" $minimaxApiPathCmd) | trim -}}
 {{- $minimaxApiKey := "" -}}
 {{- if ne $minimaxApiPath "" -}}{{- $minimaxApiKey = gopass $minimaxApiPath -}}{{- end -}}
-{{- $naapiApiPath := "" -}}
-{{- if $accountLabelValid -}}
-{{-   $naapiApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/naapi/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
-{{-   $naapiApiPath = (output "sh" "-c" $naapiApiPathCmd) | trim -}}
-{{- end -}}
+{{- $naapiApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/naapi/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $naapiApiPath := (output "sh" "-c" $naapiApiPathCmd) | trim -}}
 {{- $naapiApiKey := "" -}}
 {{- if ne $naapiApiPath "" -}}{{- $naapiApiKey = gopass $naapiApiPath -}}{{- end -}}
-{{- $qwenApiPath := "" -}}
-{{- if $accountLabelValid -}}
-{{-   $qwenApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/qwen/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
-{{-   $qwenApiPath = (output "sh" "-c" $qwenApiPathCmd) | trim -}}
-{{- end -}}
+{{- $qwenApiPathCmd := "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/qwen/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%s' \"$p\"; fi" -}}
+{{- $qwenApiPath := (output "sh" "-c" $qwenApiPathCmd) | trim -}}
 {{- $qwenApiKey := "" -}}
 {{- if ne $qwenApiPath "" -}}{{- $qwenApiKey = gopass $qwenApiPath -}}{{- end -}}
 {
@@ -207,6 +141,14 @@
     }
   },
   "provider": {
+    "openai": {
+      "npm": "@ai-sdk/openai",
+      "name": "OpenAI",
+      "env": ["OPENAI_API_KEY"],
+      "options": { {{- if ne $openaiApiKey "" }}
+        "apiKey": {{ $openaiApiKey | quote }} {{- end }}
+      }
+    },
     "deepseek": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "DeepSeek",
