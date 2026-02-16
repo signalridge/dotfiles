@@ -34,6 +34,8 @@ jobs:
           claude_superpowers_sha256=$(curl -fsSL -L "https://github.com/obra/superpowers/archive/${claude_superpowers_rev}.tar.gz" | sha256sum | awk '{print $1}')
           claude_anthropics_skills_rev=$(gh api repos/anthropics/skills/commits/main -q '.sha')
           claude_anthropics_skills_sha256=$(curl -fsSL -L "https://github.com/anthropics/skills/archive/${claude_anthropics_skills_rev}.tar.gz" | sha256sum | awk '{print $1}')
+          ui_ux_pro_max_skill_rev=$(gh api repos/nextlevelbuilder/ui-ux-pro-max-skill/commits/main -q '.sha')
+          ui_ux_pro_max_skill_sha256=$(curl -fsSL -L "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/${ui_ux_pro_max_skill_rev}.tar.gz" | sha256sum | awk '{print $1}')
 
           {
             echo "nix_installer=$nix_installer"
@@ -49,6 +51,8 @@ jobs:
             echo "claude_superpowers_sha256=$claude_superpowers_sha256"
             echo "claude_anthropics_skills_rev=$claude_anthropics_skills_rev"
             echo "claude_anthropics_skills_sha256=$claude_anthropics_skills_sha256"
+            echo "ui_ux_pro_max_skill_rev=$ui_ux_pro_max_skill_rev"
+            echo "ui_ux_pro_max_skill_sha256=$ui_ux_pro_max_skill_sha256"
           } >> "$GITHUB_OUTPUT"
       - name: Update .chezmoidata/versions.yaml
         run: |
@@ -65,6 +69,8 @@ jobs:
           sed -i 's/claudeSuperpowersSha256: .*/claudeSuperpowersSha256: ${{ steps.versions.outputs.claude_superpowers_sha256 }}/' .chezmoidata/versions.yaml
           sed -i 's/claudeAnthropicsSkillsRev: .*/claudeAnthropicsSkillsRev: ${{ steps.versions.outputs.claude_anthropics_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/claudeAnthropicsSkillsSha256: .*/claudeAnthropicsSkillsSha256: ${{ steps.versions.outputs.claude_anthropics_skills_sha256 }}/' .chezmoidata/versions.yaml
+          sed -i 's/uiUxProMaxSkillRev: .*/uiUxProMaxSkillRev: ${{ steps.versions.outputs.ui_ux_pro_max_skill_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/uiUxProMaxSkillSha256: .*/uiUxProMaxSkillSha256: ${{ steps.versions.outputs.ui_ux_pro_max_skill_sha256 }}/' .chezmoidata/versions.yaml
       - name: Check for changes
         id: changes
         run: |

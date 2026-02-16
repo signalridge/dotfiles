@@ -105,3 +105,35 @@
     refreshPeriod = "168h"
 
 {{ end }}
+
+# ------------------------------------------------------------------------------
+# nextlevelbuilder/ui-ux-pro-max-skill (skills only)
+# - Shared UI/UX design intelligence skill for Claude + Codex + OpenCode
+# - Keep SKILL.md and runtime assets in ~/.agents/skills/
+# ------------------------------------------------------------------------------
+[".agents/skills/ui-ux-pro-max"]
+    type = "archive"
+    url = "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/{{ $.versions.uiUxProMaxSkillRev }}.tar.gz"
+    checksum.sha256 = "{{ $.versions.uiUxProMaxSkillSha256 }}"
+    exact = false
+    stripComponents = 4
+    include = ["ui-ux-pro-max-skill-*/.claude/skills/ui-ux-pro-max/SKILL.md"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ui-ux-pro-max/data"]
+    type = "archive"
+    url = "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/{{ $.versions.uiUxProMaxSkillRev }}.tar.gz"
+    checksum.sha256 = "{{ $.versions.uiUxProMaxSkillSha256 }}"
+    exact = true
+    stripComponents = 4
+    include = ["ui-ux-pro-max-skill-*/src/ui-ux-pro-max/data/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ui-ux-pro-max/scripts"]
+    type = "archive"
+    url = "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/{{ $.versions.uiUxProMaxSkillRev }}.tar.gz"
+    checksum.sha256 = "{{ $.versions.uiUxProMaxSkillSha256 }}"
+    exact = true
+    stripComponents = 4
+    include = ["ui-ux-pro-max-skill-*/src/ui-ux-pro-max/scripts/**"]
+    refreshPeriod = "168h"
