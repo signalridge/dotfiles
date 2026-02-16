@@ -1,26 +1,25 @@
-{{- $resolvedProvider := "harui" -}}
+{{- $resolvedProvider := "harui@private" -}}
 {{- $model := "gpt-5.3-codex" -}}
 {{- $modelRef := printf "%s/%s" $resolvedProvider $model -}}
-{{- $providerNames := list "openai" "deepseek" "doubao" "glm" "harui" "kimi" "minimax" "naapi" "qwen" -}}
+{{- $providerKeys := list "openai@private" "deepseek@private" "doubao@private" "glm@private" "harui@private" "kimi@private" "minimax@private" "naapi@private" "qwen@private" -}}
 {{- $providerApiKeys := dict -}}
-{{- range $providerName := $providerNames -}}
-{{-   $providerAccountName := printf "%s@private" $providerName -}}
-{{-   $providerAccountParts := split "@" $providerAccountName -}}
-{{-   $providerApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $providerAccountParts._0 $providerAccountParts._1 -}}
+{{- range $providerKey := $providerKeys -}}
+{{-   $providerApiPathFromKey := printf "opencode/%s/api_key" (replace "@" "/" $providerKey) -}}
+{{-   $providerApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='%s'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $providerApiPathFromKey -}}
 {{-   $providerApiPath := (output "sh" "-c" $providerApiPathCmd) | trim -}}
 {{-   $providerApiKey := "" -}}
 {{-   if ne $providerApiPath "" -}}{{- $providerApiKey = gopass $providerApiPath -}}{{- end -}}
-{{-   $_ := set $providerApiKeys $providerName $providerApiKey -}}
+{{-   $_ := set $providerApiKeys $providerKey $providerApiKey -}}
 {{- end -}}
-{{- $openaiApiKey := get $providerApiKeys "openai" -}}
-{{- $deepseekApiKey := get $providerApiKeys "deepseek" -}}
-{{- $doubaoApiKey := get $providerApiKeys "doubao" -}}
-{{- $glmApiKey := get $providerApiKeys "glm" -}}
-{{- $haruiApiKey := get $providerApiKeys "harui" -}}
-{{- $kimiApiKey := get $providerApiKeys "kimi" -}}
-{{- $minimaxApiKey := get $providerApiKeys "minimax" -}}
-{{- $naapiApiKey := get $providerApiKeys "naapi" -}}
-{{- $qwenApiKey := get $providerApiKeys "qwen" -}}
+{{- $openaiApiKey := get $providerApiKeys "openai@private" -}}
+{{- $deepseekApiKey := get $providerApiKeys "deepseek@private" -}}
+{{- $doubaoApiKey := get $providerApiKeys "doubao@private" -}}
+{{- $glmApiKey := get $providerApiKeys "glm@private" -}}
+{{- $haruiApiKey := get $providerApiKeys "harui@private" -}}
+{{- $kimiApiKey := get $providerApiKeys "kimi@private" -}}
+{{- $minimaxApiKey := get $providerApiKeys "minimax@private" -}}
+{{- $naapiApiKey := get $providerApiKeys "naapi@private" -}}
+{{- $qwenApiKey := get $providerApiKeys "qwen@private" -}}
 {
   "$schema": "https://opencode.ai/config.json",
   "theme": "dracula",
@@ -125,17 +124,17 @@
     }
   },
   "provider": {
-    "openai": {
+    "openai@private": {
       "npm": "@ai-sdk/openai",
-      "name": "OpenAI",
+      "name": "openai@private",
       "env": ["OPENAI_API_KEY"],
       "options": { {{- if ne $openaiApiKey "" }}
         "apiKey": {{ $openaiApiKey | quote }} {{- end }}
       }
     },
-    "deepseek": {
+    "deepseek@private": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "DeepSeek",
+      "name": "deepseek@private",
       "env": ["DEEPSEEK_API_KEY"],
       "options": {
         "baseURL": "https://api.deepseek.com/v1"{{- if ne $deepseekApiKey "" }},
@@ -168,9 +167,9 @@
         }
       }
     },
-    "doubao": {
+    "doubao@private": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Doubao",
+      "name": "doubao@private",
       "env": ["ARK_API_KEY"],
       "options": {
         "baseURL": "https://ark.cn-beijing.volces.com/api/v3"{{- if ne $doubaoApiKey "" }},
@@ -191,9 +190,9 @@
         }
       }
     },
-    "glm": {
+    "glm@private": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "GLM",
+      "name": "glm@private",
       "env": ["ZHIPU_API_KEY"],
       "options": {
         "baseURL": "https://open.bigmodel.cn/api/paas/v4"{{- if ne $glmApiKey "" }},
@@ -226,9 +225,9 @@
         }
       }
     },
-    "harui": {
+    "harui@private": {
       "npm": "@ai-sdk/openai",
-      "name": "Harui",
+      "name": "harui@private",
       "env": ["HARUI_API_KEY"],
       "options": {
         "baseURL": "https://codex.harui.edu.kg/v1"{{- if ne $haruiApiKey "" }},
@@ -261,9 +260,9 @@
         }
       }
     },
-    "kimi": {
+    "kimi@private": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Kimi",
+      "name": "kimi@private",
       "env": ["MOONSHOT_API_KEY"],
       "options": {
         "baseURL": "https://api.moonshot.ai/v1"{{- if ne $kimiApiKey "" }},
@@ -296,9 +295,9 @@
         }
       }
     },
-    "minimax": {
+    "minimax@private": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "MiniMax",
+      "name": "minimax@private",
       "env": ["MINIMAX_API_KEY"],
       "options": {
         "baseURL": "https://api.minimax.io/v1"{{- if ne $minimaxApiKey "" }},
@@ -319,9 +318,9 @@
         }
       }
     },
-    "naapi": {
+    "naapi@private": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "NAAPI",
+      "name": "naapi@private",
       "env": ["NAAPI_API_KEY"],
       "options": {
         "baseURL": "https://na.wanxiaot.com/v1"{{- if ne $naapiApiKey "" }},
@@ -354,9 +353,9 @@
         }
       }
     },
-    "qwen": {
+    "qwen@private": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Qwen",
+      "name": "qwen@private",
       "env": ["DASHSCOPE_API_KEY"],
       "options": {
         "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1"{{- if ne $qwenApiKey "" }},

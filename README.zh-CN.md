@@ -398,7 +398,7 @@ codex-manage switch openai
 codex-with deepseek@private "explain this file"
 
 # OpenCode（原生 CLI + provider key 渲染）
-opencode run -m harui/gpt-5.3-codex "say ok"
+opencode run -m harui@private/gpt-5.3-codex "say ok"
 ```
 
 ### Token Helpers

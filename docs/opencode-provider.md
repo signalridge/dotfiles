@@ -31,7 +31,7 @@ gopass show -o opencode/kimi/private/api_key
 
 ```bash
 # Native OpenCode invocation
-opencode run -m harui/gpt-5.3-codex "say ok"
+opencode run -m harui@private/gpt-5.3-codex "say ok"
 
 # Verify config rendering after template changes
 bash tests/test_opencode_config_rendering.sh

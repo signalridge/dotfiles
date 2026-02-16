@@ -400,7 +400,7 @@ codex-manage switch openai
 codex-with deepseek@private "explain this file"
 
 # OpenCode（ネイティブ CLI + provider key レンダリング）
-opencode run -m harui/gpt-5.3-codex "say ok"
+opencode run -m harui@private/gpt-5.3-codex "say ok"
 ```
 
 ### Token Helpers
