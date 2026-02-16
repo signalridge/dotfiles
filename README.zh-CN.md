@@ -279,6 +279,7 @@ skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 - [wshobson/agents](https://github.com/wshobson/agents)
 - [anthropics/skills](https://github.com/anthropics/skills)
 - [obra/superpowers](https://github.com/obra/superpowers)
+- 社区多语言 Humanizer 套件（`humanizer-en`、`stop-slop-en`、`humanizer-zh`、`humanizer-ja`）
 
 同步后统一落到 `~/.agents/skills`，可被 Claude/Codex/OpenCode 共用。
 
@@ -379,6 +380,7 @@ OpenCode plugin 顺序固定为：
 - `wshobson/agents`
 - `anthropics/skills`
 - `obra/superpowers`
+- 多语言 Humanizer 社区来源（`humanizer-en`、`stop-slop-en`、`humanizer-zh`、`humanizer-ja`）
 
 最终统一到 `~/.agents/skills`，由 Claude、Codex、OpenCode 共同使用。
 

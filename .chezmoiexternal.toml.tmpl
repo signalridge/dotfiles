@@ -137,3 +137,62 @@
     stripComponents = 4
     include = ["ui-ux-pro-max-skill-*/src/ui-ux-pro-max/scripts/**"]
     refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# Multilingual Humanizer pack (language-suffixed flat layout)
+# - Shared for Claude + Codex + OpenCode under ~/.agents/skills/
+# - Keep direct, predictable names:
+#   - humanizer-en
+#   - stop-slop-en
+#   - humanizer-zh
+#   - humanizer-ja
+# - Commit-pinned via revisions in .chezmoidata/versions.yaml
+# ------------------------------------------------------------------------------
+
+[".agents/skills/humanizer-en"]
+    type = "archive"
+    url = "https://github.com/blader/humanizer/archive/{{ $.versions.humanizerEnRev }}.tar.gz"
+    exact = true
+    stripComponents = 1
+    include = [
+      "humanizer-*/SKILL.md",
+      "humanizer-*/README.md"
+    ]
+    refreshPeriod = "168h"
+
+[".agents/skills/stop-slop-en"]
+    type = "archive"
+    url = "https://github.com/hardikpandya/stop-slop/archive/{{ $.versions.stopSlopEnRev }}.tar.gz"
+    exact = true
+    stripComponents = 1
+    include = [
+      "stop-slop-*/SKILL.md",
+      "stop-slop-*/README.md",
+      "stop-slop-*/references/**",
+      "stop-slop-*/LICENSE"
+    ]
+    refreshPeriod = "168h"
+
+[".agents/skills/humanizer-zh"]
+    type = "archive"
+    url = "https://github.com/op7418/Humanizer-zh/archive/{{ $.versions.humanizerZhRev }}.tar.gz"
+    exact = true
+    stripComponents = 1
+    include = [
+      "Humanizer-zh-*/SKILL.md",
+      "Humanizer-zh-*/README.md",
+      "Humanizer-zh-*/LICENSE"
+    ]
+    refreshPeriod = "168h"
+
+[".agents/skills/humanizer-ja"]
+    type = "archive"
+    url = "https://github.com/kgraph57/humanizer-ja/archive/{{ $.versions.humanizerJaRev }}.tar.gz"
+    exact = true
+    stripComponents = 1
+    include = [
+      "humanizer-ja-*/SKILL.md",
+      "humanizer-ja-*/README.md",
+      "humanizer-ja-*/LICENSE"
+    ]
+    refreshPeriod = "168h"

@@ -17,3 +17,7 @@ versions:
   claudeAnthropicsSkillsSha256: 294568844992768a95ee994d0cc4cc7afd7d02f89cca9061a917fe8c98048808
   uiUxProMaxSkillRev: 6623f12b4058d09618c89cffb2de59a47c45f999
   uiUxProMaxSkillSha256: 3b8bcfca56e387f89d0ff24e3ab81cbf70adafac41156ad62c4f862cee17fba5
+  humanizerEnRev: c78047bd4300e5a995d37ae8c7684aa2d53326cd
+  stopSlopEnRev: 65d52b35d7243427ac646e83eae5a9b0709aa191
+  humanizerZhRev: 91f3d394db8419c20d67ebe22a96cf8fee0a404b
+  humanizerJaRev: 1b850cfe8529f7836025b2edd15b3d64447f8fb6
