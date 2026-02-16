@@ -46,29 +46,63 @@
 {{-   $model = "gpt-5.3-codex" -}}
 {{- end -}}
 {{- $modelRef := printf "%s/%s" $resolvedProvider $model -}}
-{{- $selectedApiPath := "" -}}
-{{- if and (regexMatch "^[A-Za-z0-9._-]+$" $providerName) (regexMatch "^[A-Za-z0-9._-]+$" $accountLabel) -}}
-{{-   $selectedApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/%s/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $providerName $accountLabel -}}
-{{-   $selectedApiPath = (output "sh" "-c" $selectedApiPathCmd) | trim -}}
+{{- $accountLabelValid := regexMatch "^[A-Za-z0-9._-]+$" $accountLabel -}}
+{{- $deepseekApiPath := "" -}}
+{{- if $accountLabelValid -}}
+{{-   $deepseekApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/deepseek/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
+{{-   $deepseekApiPath = (output "sh" "-c" $deepseekApiPathCmd) | trim -}}
 {{- end -}}
-{{- $selectedApiKey := "" -}}
-{{- if ne $selectedApiPath "" -}}{{- $selectedApiKey = gopass $selectedApiPath -}}{{- end -}}
 {{- $deepseekApiKey := "" -}}
-{{- if and (eq $providerName "deepseek") (ne $selectedApiKey "") -}}{{- $deepseekApiKey = $selectedApiKey -}}{{- end -}}
+{{- if ne $deepseekApiPath "" -}}{{- $deepseekApiKey = gopass $deepseekApiPath -}}{{- end -}}
+{{- $doubaoApiPath := "" -}}
+{{- if $accountLabelValid -}}
+{{-   $doubaoApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/doubao/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
+{{-   $doubaoApiPath = (output "sh" "-c" $doubaoApiPathCmd) | trim -}}
+{{- end -}}
 {{- $doubaoApiKey := "" -}}
-{{- if and (eq $providerName "doubao") (ne $selectedApiKey "") -}}{{- $doubaoApiKey = $selectedApiKey -}}{{- end -}}
+{{- if ne $doubaoApiPath "" -}}{{- $doubaoApiKey = gopass $doubaoApiPath -}}{{- end -}}
+{{- $glmApiPath := "" -}}
+{{- if $accountLabelValid -}}
+{{-   $glmApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/glm/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
+{{-   $glmApiPath = (output "sh" "-c" $glmApiPathCmd) | trim -}}
+{{- end -}}
 {{- $glmApiKey := "" -}}
-{{- if and (eq $providerName "glm") (ne $selectedApiKey "") -}}{{- $glmApiKey = $selectedApiKey -}}{{- end -}}
+{{- if ne $glmApiPath "" -}}{{- $glmApiKey = gopass $glmApiPath -}}{{- end -}}
+{{- $haruiApiPath := "" -}}
+{{- if $accountLabelValid -}}
+{{-   $haruiApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/harui/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
+{{-   $haruiApiPath = (output "sh" "-c" $haruiApiPathCmd) | trim -}}
+{{- end -}}
 {{- $haruiApiKey := "" -}}
-{{- if and (eq $providerName "harui") (ne $selectedApiKey "") -}}{{- $haruiApiKey = $selectedApiKey -}}{{- end -}}
+{{- if ne $haruiApiPath "" -}}{{- $haruiApiKey = gopass $haruiApiPath -}}{{- end -}}
+{{- $kimiApiPath := "" -}}
+{{- if $accountLabelValid -}}
+{{-   $kimiApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/kimi/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
+{{-   $kimiApiPath = (output "sh" "-c" $kimiApiPathCmd) | trim -}}
+{{- end -}}
 {{- $kimiApiKey := "" -}}
-{{- if and (eq $providerName "kimi") (ne $selectedApiKey "") -}}{{- $kimiApiKey = $selectedApiKey -}}{{- end -}}
+{{- if ne $kimiApiPath "" -}}{{- $kimiApiKey = gopass $kimiApiPath -}}{{- end -}}
+{{- $minimaxApiPath := "" -}}
+{{- if $accountLabelValid -}}
+{{-   $minimaxApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/minimax/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
+{{-   $minimaxApiPath = (output "sh" "-c" $minimaxApiPathCmd) | trim -}}
+{{- end -}}
 {{- $minimaxApiKey := "" -}}
-{{- if and (eq $providerName "minimax") (ne $selectedApiKey "") -}}{{- $minimaxApiKey = $selectedApiKey -}}{{- end -}}
+{{- if ne $minimaxApiPath "" -}}{{- $minimaxApiKey = gopass $minimaxApiPath -}}{{- end -}}
+{{- $naapiApiPath := "" -}}
+{{- if $accountLabelValid -}}
+{{-   $naapiApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/naapi/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
+{{-   $naapiApiPath = (output "sh" "-c" $naapiApiPathCmd) | trim -}}
+{{- end -}}
 {{- $naapiApiKey := "" -}}
-{{- if and (eq $providerName "naapi") (ne $selectedApiKey "") -}}{{- $naapiApiKey = $selectedApiKey -}}{{- end -}}
+{{- if ne $naapiApiPath "" -}}{{- $naapiApiKey = gopass $naapiApiPath -}}{{- end -}}
+{{- $qwenApiPath := "" -}}
+{{- if $accountLabelValid -}}
+{{-   $qwenApiPathCmd := printf "command -v gopass >/dev/null 2>&1 || exit 0; p='opencode/qwen/%s/api_key'; if gopass list -f \"$p\" >/dev/null 2>&1; then printf '%%s' \"$p\"; fi" $accountLabel -}}
+{{-   $qwenApiPath = (output "sh" "-c" $qwenApiPathCmd) | trim -}}
+{{- end -}}
 {{- $qwenApiKey := "" -}}
-{{- if and (eq $providerName "qwen") (ne $selectedApiKey "") -}}{{- $qwenApiKey = $selectedApiKey -}}{{- end -}}
+{{- if ne $qwenApiPath "" -}}{{- $qwenApiKey = gopass $qwenApiPath -}}{{- end -}}
 {
   "$schema": "https://opencode.ai/config.json",
   "theme": "dracula",

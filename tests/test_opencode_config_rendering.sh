@@ -104,7 +104,7 @@ case "$cmd" in
     list)
         target="${1:-}"
         [[ "$target" == "-f" ]] && target="${2:-}"
-        if [[ "$target" == "opencode/harui/private/api_key" ]]; then
+        if [[ "$target" == "opencode/harui/private/api_key" || "$target" == "opencode/deepseek/private/api_key" ]]; then
             exit 0
         fi
         exit 1
@@ -116,6 +116,10 @@ case "$cmd" in
         fi
         if [[ "$target" == "opencode/harui/private/api_key" ]]; then
             printf '%s' "stub-account-key"
+            exit 0
+        fi
+        if [[ "$target" == "opencode/deepseek/private/api_key" ]]; then
+            printf '%s' "stub-deepseek-key"
             exit 0
         fi
         exit 1
@@ -174,6 +178,7 @@ assert_jq "$OPENCODE_DEFAULT" '.provider.kimi.options.baseURL == "https://api.mo
 assert_jq "$OPENCODE_DEFAULT" '.skills.paths | index(".agents/skills") != null'
 assert_jq "$OPENCODE_DEFAULT" '.skills.paths | length == 1'
 assert_jq "$OPENCODE_ACCOUNT_PATH" '.provider.harui.options.apiKey == "stub-account-key"'
+assert_jq "$OPENCODE_ACCOUNT_PATH" '.provider.deepseek.options.apiKey == "stub-deepseek-key"'
 assert_jq "$OPENCODE_INVALID_ACCOUNT" '(.provider.harui.options | has("apiKey")) == false'
 
 assert_jq "$OPENCODE_DEFAULT" '.permission.edit == "ask"'
