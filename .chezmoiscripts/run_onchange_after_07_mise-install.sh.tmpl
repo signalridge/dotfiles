@@ -17,40 +17,22 @@ fi
 
 echo ":: [07] Installing mise tools"
 
+# Only use nix-installed mise — no aqua/other fallbacks.
 mise_cmd="$HOME/.nix-profile/bin/mise"
-mise_runner=()
-if [[ -x "$mise_cmd" ]]; then
-    mise_runner=("$mise_cmd")
-elif command -v mise &>/dev/null; then
-    found_mise="$(command -v mise)"
-    if [[ "$found_mise" != *"/aquaproj-aqua/bin/mise" ]]; then
-        mise_runner=("$found_mise")
-    fi
-fi
-
-if [[ ${#mise_runner[@]} -eq 0 ]]; then
-    if command -v nix &>/dev/null; then
-        mise_runner=(nix run nixpkgs#mise --)
-    else
-        echo "    Skipped (mise and nix not found)"
-        exit 0
-    fi
-fi
-
-if ! "${mise_runner[@]}" --version &>/dev/null; then
-    echo "    Skipped (mise command unavailable)"
+if [[ ! -x "$mise_cmd" ]]; then
+    echo "    Skipped (mise not found in nix profile)"
     exit 0
 fi
 
 # Ensure mise shims are available in this non-interactive shell.
-eval "$("${mise_runner[@]}" activate bash)"
+eval "$("$mise_cmd" activate bash)"
 
 # npm-backed tools need npm available during version resolution.
 # Install node first if npm is still unavailable in this shell.
 if ! command -v npm &>/dev/null; then
-    "${mise_runner[@]}" install --yes node
-    eval "$("${mise_runner[@]}" activate bash)"
+    "$mise_cmd" install --yes node
+    eval "$("$mise_cmd" activate bash)"
 fi
 
-"${mise_runner[@]}" install --yes
-"${mise_runner[@]}" reshim --yes
+"$mise_cmd" install --yes
+"$mise_cmd" reshim
