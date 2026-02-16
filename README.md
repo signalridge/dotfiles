@@ -281,6 +281,7 @@ Skills are synced via `.chezmoiexternal.toml.tmpl` from:
 - [wshobson/agents](https://github.com/wshobson/agents)
 - [anthropics/skills](https://github.com/anthropics/skills)
 - [obra/superpowers](https://github.com/obra/superpowers)
+- community multilingual Humanizer pack (`humanizer-en`, `stop-slop-en`, `humanizer-zh`, `humanizer-ja`)
 
 They are normalized into `~/.agents/skills` and shared by Claude/Codex/OpenCode.
 
@@ -381,6 +382,7 @@ See: `docs/opencode-provider.md`.
 - `wshobson/agents`
 - `anthropics/skills`
 - `obra/superpowers`
+- multilingual Humanizer community sources (`humanizer-en`, `stop-slop-en`, `humanizer-zh`, `humanizer-ja`)
 
 They are normalized into `~/.agents/skills` and shared by Claude/Codex/OpenCode.
 
