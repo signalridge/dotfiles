@@ -16,74 +16,64 @@ if [[ -z "$claude_cmd" ]]; then
     exit 0
 fi
 
+if ! command -v jq &>/dev/null; then
+    echo "    Skipped (jq not found)"
+    exit 0
+fi
+
+CLAUDE_JSON="$HOME/.claude.json"
+
 check_user_mcp_json() {
     local name="$1"
     local expected_json="$2"
-    python3 - "$name" "$expected_json" <<'PY'
-import json
-import os
-import sys
 
-name = sys.argv[1]
-expected = json.loads(sys.argv[2])
-path = os.path.expanduser("~/.claude.json")
+    if [[ ! -f "$CLAUDE_JSON" ]]; then
+        echo "missing"
+        return 0
+    fi
 
-try:
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-except Exception:
-    print("missing")
-    sys.exit(0)
+    local server
+    server="$(jq -e --arg n "$name" '.mcpServers[$n]' "$CLAUDE_JSON" 2>/dev/null)" || {
+        echo "missing"
+        return 0
+    }
 
-server = data.get("mcpServers", {}).get(name)
-if not server:
-    print("missing")
-    sys.exit(0)
+    local actual_cmp expected_cmp actual_type
+    actual_cmp="$(jq -cS '{command, args: (.args // []), env: (.env // {})}' <<<"$server")"
+    expected_cmp="$(jq -cS '{command, args: (.args // []), env: (.env // {})}' <<<"$expected_json")"
+    actual_type="$(jq -r '.type // "stdio"' <<<"$server")"
 
-actual_cmp = {
-    "command": server.get("command"),
-    "args": server.get("args", []),
-    "env": server.get("env", {}),
-}
-expected_cmp = {
-    "command": expected.get("command"),
-    "args": expected.get("args", []),
-    "env": expected.get("env", {}),
-}
-actual_type = server.get("type", "stdio")
-
-print("match" if actual_type == "stdio" and actual_cmp == expected_cmp else "mismatch")
-PY
+    if [[ "$actual_type" == "stdio" && "$actual_cmp" == "$expected_cmp" ]]; then
+        echo "match"
+    else
+        echo "mismatch"
+    fi
 }
 
 check_user_mcp_sse() {
     local name="$1"
     local expected_url="$2"
-    python3 - "$name" "$expected_url" <<'PY'
-import json
-import os
-import sys
 
-name = sys.argv[1]
-expected_url = sys.argv[2]
-path = os.path.expanduser("~/.claude.json")
+    if [[ ! -f "$CLAUDE_JSON" ]]; then
+        echo "missing"
+        return 0
+    fi
 
-try:
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-except Exception:
-    print("missing")
-    sys.exit(0)
+    local server
+    server="$(jq -e --arg n "$name" '.mcpServers[$n]' "$CLAUDE_JSON" 2>/dev/null)" || {
+        echo "missing"
+        return 0
+    }
 
-server = data.get("mcpServers", {}).get(name)
-if not server:
-    print("missing")
-    sys.exit(0)
+    local actual_type actual_url
+    actual_type="$(jq -r '.type // "stdio"' <<<"$server")"
+    actual_url="$(jq -r '.url // empty' <<<"$server")"
 
-actual_type = server.get("type", "stdio")
-actual_url = server.get("url")
-print("match" if actual_type == "sse" and actual_url == expected_url else "mismatch")
-PY
+    if [[ "$actual_type" == "sse" && "$actual_url" == "$expected_url" ]]; then
+        echo "match"
+    else
+        echo "mismatch"
+    fi
 }
 
 ensure_user_mcp_json() {
