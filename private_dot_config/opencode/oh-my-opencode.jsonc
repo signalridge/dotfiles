@@ -1,23 +1,16 @@
-{{- $compatMode := "strict" -}}
-{{- if hasKey . "opencodeCompatibilityMode" -}}
-{{-   $compatMode = lower (printf "%v" .opencodeCompatibilityMode) -}}
-{{- end -}}
-{{- $compatEnabled := eq $compatMode "compat" -}}
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "auto_update": false,
   "claude_code": {
     "mcp": false,
-    "commands": {{ if $compatEnabled }}true{{ else }}false{{ end }},
-    "skills": {{ if $compatEnabled }}true{{ else }}false{{ end }},
-    "agents": {{ if $compatEnabled }}true{{ else }}false{{ end }},
-    "hooks": {{ if $compatEnabled }}true{{ else }}false{{ end }},
-    "plugins": {{ if $compatEnabled }}true{{ else }}false{{ end }}
+    "commands": false,
+    "skills": false,
+    "agents": false,
+    "hooks": false,
+    "plugins": false
   },
   "disabled_hooks": [
-{{- if not $compatEnabled }}
     "claude-code-hooks",
-{{- end }}
     "startup-toast"
   ],
   "disabled_mcps": [],
@@ -41,7 +34,7 @@
   "sisyphus": {
     "tasks": {
       "storage_path": ".sisyphus/tasks",
-      "claude_code_compat": {{ if $compatEnabled }}true{{ else }}false{{ end }}
+      "claude_code_compat": false
     }
   },
   "agents": {
