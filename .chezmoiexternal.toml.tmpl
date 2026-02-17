@@ -29,13 +29,11 @@
 # ------------------------------------------------------------------------------
 {{- $wshobsonPlugins := list
   "developer-essentials"
-  "debugging-toolkit"
   "python-development"
   "backend-development"
   "systems-programming"
   "security-scanning"
   "documentation-generation"
-  "comprehensive-review"
   "llm-application-dev"
   "data-engineering"
   "machine-learning-ops"
@@ -43,10 +41,8 @@
   "frontend-mobile-development"
   "shell-scripting"
   "observability-monitoring"
-  "deployment-strategies"
   "cloud-infrastructure"
   "cicd-automation"
-  "api-testing-observability"
   "kubernetes-operations"
 }}
 {{- range $plugin := $wshobsonPlugins }}
@@ -92,7 +88,23 @@
 # Skills go to .agents/skills/anthropics/{skill}/ (Shared)
 # - Hardcoded skill list
 # ------------------------------------------------------------------------------
-{{- $anthropicsSkills := list "pdf" "docx" "pptx" "xlsx" "skill-creator" "mcp-builder" "canvas-design" }}
+{{- $anthropicsSkills := list
+  "pdf"
+  "docx"
+  "pptx"
+  "xlsx"
+  "skill-creator"
+  "mcp-builder"
+  "canvas-design"
+  "webapp-testing"
+  "doc-coauthoring"
+  "internal-comms"
+  "brand-guidelines"
+  "theme-factory"
+  "web-artifacts-builder"
+  "algorithmic-art"
+  "slack-gif-creator"
+}}
 
 {{- range $skill := $anthropicsSkills }}
 [".agents/skills/anthropics/{{ $skill }}"]
@@ -105,6 +117,257 @@
     refreshPeriod = "168h"
 
 {{ end }}
+
+# ------------------------------------------------------------------------------
+# Ecosystem skills pack (official upstream, cross-domain)
+# - Namespace: .agents/skills/ecosystem/
+# - Keep this focused on high-signal, actively maintained skills
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# openai/skills curated set
+# ------------------------------------------------------------------------------
+{{- $openaiCuratedSkills := list
+  "gh-fix-ci"
+  "gh-address-comments"
+  "sentry"
+  "playwright"
+  "vercel-deploy"
+  "render-deploy"
+  "cloudflare-deploy"
+  "security-best-practices"
+  "security-threat-model"
+  "security-ownership-map"
+  "jupyter-notebook"
+  "screenshot"
+  "speech"
+  "transcribe"
+  "netlify-deploy"
+}}
+{{- range $skill := $openaiCuratedSkills }}
+[".agents/skills/ecosystem/openai/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/openai/skills/archive/{{ $.versions.openaiSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 4
+    include = ["skills-*/skills/.curated/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+
+{{- end }}
+
+# ------------------------------------------------------------------------------
+# getsentry/skills engineering set
+# ------------------------------------------------------------------------------
+{{- $getsentrySkills := list
+  "find-bugs"
+  "code-review"
+  "iterate-pr"
+  "security-review"
+  "create-pr"
+  "commit"
+  "code-simplifier"
+  "skill-scanner"
+}}
+{{- range $skill := $getsentrySkills }}
+[".agents/skills/ecosystem/getsentry/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/getsentry/skills/archive/{{ $.versions.getsentrySkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/sentry-skills/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+
+{{- end }}
+
+# ------------------------------------------------------------------------------
+# trailofbits/skills security review and static analysis set
+# ------------------------------------------------------------------------------
+[".agents/skills/ecosystem/trailofbits/differential-review"]
+    type = "archive"
+    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/differential-review/skills/differential-review/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ecosystem/trailofbits/codeql"]
+    type = "archive"
+    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/static-analysis/skills/codeql/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ecosystem/trailofbits/semgrep"]
+    type = "archive"
+    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/static-analysis/skills/semgrep/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ecosystem/trailofbits/sarif-parsing"]
+    type = "archive"
+    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/static-analysis/skills/sarif-parsing/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ecosystem/trailofbits/insecure-defaults"]
+    type = "archive"
+    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/insecure-defaults/skills/insecure-defaults/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ecosystem/trailofbits/property-based-testing"]
+    type = "archive"
+    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/property-based-testing/skills/property-based-testing/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ecosystem/trailofbits/audit-context-building"]
+    type = "archive"
+    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/audit-context-building/skills/audit-context-building/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ecosystem/trailofbits/second-opinion"]
+    type = "archive"
+    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/second-opinion/skills/second-opinion/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ecosystem/trailofbits/sharp-edges"]
+    type = "archive"
+    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/sharp-edges/skills/sharp-edges/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ecosystem/trailofbits/using-gh-cli"]
+    type = "archive"
+    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/gh-cli/skills/using-gh-cli/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ecosystem/trailofbits/modern-python"]
+    type = "archive"
+    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/modern-python/skills/modern-python/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ecosystem/trailofbits/variant-analysis"]
+    type = "archive"
+    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/variant-analysis/skills/variant-analysis/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# cloudflare/skills platform set
+# ------------------------------------------------------------------------------
+{{- $cloudflareSkills := list
+  "wrangler"
+  "workers-best-practices"
+  "web-perf"
+}}
+{{- range $skill := $cloudflareSkills }}
+[".agents/skills/ecosystem/cloudflare/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/cloudflare/skills/archive/{{ $.versions.cloudflareSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["skills-*/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+
+{{- end }}
+
+# ------------------------------------------------------------------------------
+# vercel-labs/agent-skills frontend set
+# ------------------------------------------------------------------------------
+{{- $vercelSkills := list
+  "react-best-practices"
+  "composition-patterns"
+  "web-design-guidelines"
+  "react-native-skills"
+}}
+{{- range $skill := $vercelSkills }}
+[".agents/skills/ecosystem/vercel-labs/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/vercel-labs/agent-skills/archive/{{ $.versions.vercelLabsAgentSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["agent-skills-*/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+
+{{- end }}
+
+# ------------------------------------------------------------------------------
+# supabase/agent-skills database best practices
+# ------------------------------------------------------------------------------
+[".agents/skills/ecosystem/supabase/supabase-postgres-best-practices"]
+    type = "archive"
+    url = "https://github.com/supabase/agent-skills/archive/{{ $.versions.supabaseAgentSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["agent-skills-*/skills/supabase-postgres-best-practices/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# expo/skills deployment workflows
+# ------------------------------------------------------------------------------
+[".agents/skills/ecosystem/expo/expo-deployment"]
+    type = "archive"
+    url = "https://github.com/expo/skills/archive/{{ $.versions.expoSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/expo-deployment/skills/expo-deployment/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/ecosystem/expo/expo-cicd-workflows"]
+    type = "archive"
+    url = "https://github.com/expo/skills/archive/{{ $.versions.expoSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["skills-*/plugins/expo-deployment/skills/expo-cicd-workflows/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# microsoft/skills azure deployment workflow
+# ------------------------------------------------------------------------------
+[".agents/skills/ecosystem/microsoft/azd-deployment"]
+    type = "archive"
+    url = "https://github.com/microsoft/skills/archive/{{ $.versions.microsoftSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 4
+    include = ["skills-*/.github/skills/azd-deployment/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# sickn33/antigravity-awesome-skills aws deployment workflow (non-MCP)
+# ------------------------------------------------------------------------------
+[".agents/skills/ecosystem/sickn33/aws-serverless"]
+    type = "archive"
+    url = "https://github.com/sickn33/antigravity-awesome-skills/archive/{{ $.versions.sickn33AntigravitySkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["antigravity-awesome-skills-*/skills/aws-serverless/**"]
+    refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
 # nextlevelbuilder/ui-ux-pro-max-skill (skills only)
@@ -139,17 +402,17 @@
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
-# Multilingual Humanizer pack (language-suffixed flat layout)
-# - Shared for Claude + Codex + OpenCode under ~/.agents/skills/
-# - Keep direct, predictable names:
-#   - humanizer-en
-#   - stop-slop-en
-#   - humanizer-zh
-#   - humanizer-ja
+# Multilingual Humanizer pack (multilingual namespace layout)
+# - Shared for Claude + Codex + OpenCode under ~/.agents/skills/multilingual/
+# - Keep stable language-suffixed names:
+#   - multilingual/humanizer-en
+#   - multilingual/stop-slop-en
+#   - multilingual/humanizer-zh
+#   - multilingual/humanizer-ja
 # - Commit-pinned via revisions in .chezmoidata/versions.yaml
 # ------------------------------------------------------------------------------
 
-[".agents/skills/humanizer-en"]
+[".agents/skills/multilingual/humanizer-en"]
     type = "archive"
     url = "https://github.com/blader/humanizer/archive/{{ $.versions.humanizerEnRev }}.tar.gz"
     exact = true
@@ -160,7 +423,7 @@
     ]
     refreshPeriod = "168h"
 
-[".agents/skills/stop-slop-en"]
+[".agents/skills/multilingual/stop-slop-en"]
     type = "archive"
     url = "https://github.com/hardikpandya/stop-slop/archive/{{ $.versions.stopSlopEnRev }}.tar.gz"
     exact = true
@@ -173,7 +436,7 @@
     ]
     refreshPeriod = "168h"
 
-[".agents/skills/humanizer-zh"]
+[".agents/skills/multilingual/humanizer-zh"]
     type = "archive"
     url = "https://github.com/op7418/Humanizer-zh/archive/{{ $.versions.humanizerZhRev }}.tar.gz"
     exact = true
@@ -185,7 +448,7 @@
     ]
     refreshPeriod = "168h"
 
-[".agents/skills/humanizer-ja"]
+[".agents/skills/multilingual/humanizer-ja"]
     type = "archive"
     url = "https://github.com/kgraph57/humanizer-ja/archive/{{ $.versions.humanizerJaRev }}.tar.gz"
     exact = true
