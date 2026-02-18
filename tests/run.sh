@@ -3,6 +3,10 @@ set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
+# Tests rewrite HOME to isolated temp dirs. Ensure chezmoi follows those per-test
+# configs instead of any runner-provided global XDG config path.
+unset XDG_CONFIG_HOME || true
+
 echo "== Running bootstrap tests =="
 
 python3 "$ROOT/tests/test_setup_encryption_key.py"
