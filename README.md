@@ -313,7 +313,7 @@ Claude hooks in `dot_claude/hooks/` provide workflow guardrails and formatting a
 OpenCode is managed declaratively through:
 
 - `private_dot_config/opencode/opencode.jsonc.tmpl`
-- `private_dot_config/opencode/oh-my-opencode.jsonc.tmpl`
+- `private_dot_config/opencode/oh-my-opencode.jsonc`
 
 Rendered targets:
 

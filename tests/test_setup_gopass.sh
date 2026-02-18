@@ -21,6 +21,7 @@ trap cleanup EXIT
 
 export HOME="$TMP_ROOT/home"
 mkdir -p "$HOME/.config/chezmoi"
+export XDG_CONFIG_HOME="$HOME/.config"
 
 GOPASS_REPO="git@example.com:example/password-store.git"
 cat >"$HOME/.config/chezmoi/chezmoi.toml" <<EOF
@@ -30,7 +31,7 @@ gopassRepository = "$GOPASS_REPO"
 EOF
 
 RENDERED="$TMP_ROOT/setup-gopass.sh"
-chezmoi execute-template --source "$ROOT" <"$TMPL" >"$RENDERED"
+chezmoi execute-template --config "$HOME/.config/chezmoi/chezmoi.toml" --source "$ROOT" <"$TMPL" >"$RENDERED"
 
 mkdir -p "$HOME/.ssh"
 echo "dummy" >"$HOME/.ssh/main"

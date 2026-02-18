@@ -44,9 +44,17 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="8.24.2"
-          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" \
-            | tar -xz
+          ASSET="gitleaks_${VERSION}_linux_x64.tar.gz"
+          CHECKSUMS="gitleaks_${VERSION}_checksums.txt"
+          BASE_URL="https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}"
+
+          curl -fsSL -o "${ASSET}" "${BASE_URL}/${ASSET}"
+          curl -fsSL -o "${CHECKSUMS}" "${BASE_URL}/${CHECKSUMS}"
+          grep " ${ASSET}$" "${CHECKSUMS}" | sha256sum -c -
+
+          tar -xzf "${ASSET}" gitleaks
           install -m 0755 gitleaks /usr/local/bin/gitleaks
+          rm -f "${ASSET}" "${CHECKSUMS}" gitleaks
 
       - name: Run gitleaks and generate SARIF
         continue-on-error: true
