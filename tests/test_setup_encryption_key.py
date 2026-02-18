@@ -166,6 +166,9 @@ def gen_ssh_keypair(dir_path: pathlib.Path, name: str) -> pathlib.Path:
 def make_keys_repo(repo_dir: pathlib.Path, home: pathlib.Path, key_src: pathlib.Path):
     repo_dir.mkdir(parents=True, exist_ok=True)
     git(["init", "-b", "main"], repo_dir)
+    # Configure identity per test repo so commits work in clean CI environments.
+    git(["config", "user.name", "CI Test"], repo_dir)
+    git(["config", "user.email", "ci-test@example.com"], repo_dir)
 
     backup_files = repo_dir / "backup-files"
     backup_list = repo_dir / "backup-list.txt"
