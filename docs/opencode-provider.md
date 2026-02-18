@@ -11,7 +11,7 @@ OpenCode in this repository is managed in native mode.
 ## Managed Files
 
 - `~/.config/opencode/opencode.jsonc` from `private_dot_config/opencode/opencode.jsonc.tmpl`
-- `~/.config/opencode/oh-my-opencode.jsonc` from `private_dot_config/opencode/oh-my-opencode.jsonc.tmpl`
+- `~/.config/opencode/oh-my-opencode.jsonc` from `private_dot_config/opencode/oh-my-opencode.jsonc`
 - `~/.config/opencode/AGENTS.md` from `private_dot_config/opencode/AGENTS.md.tmpl`
 
 ## Key Storage

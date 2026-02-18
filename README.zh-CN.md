@@ -311,7 +311,7 @@ skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 OpenCode 配置由以下模板声明式管理：
 
 - `private_dot_config/opencode/opencode.jsonc.tmpl`
-- `private_dot_config/opencode/oh-my-opencode.jsonc.tmpl`
+- `private_dot_config/opencode/oh-my-opencode.jsonc`
 
 渲染到：
 
