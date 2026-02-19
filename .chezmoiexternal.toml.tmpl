@@ -402,6 +402,17 @@
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
+# signalridge custom skills (managed in dedicated repos)
+# ------------------------------------------------------------------------------
+[".agents/skills/ecosystem/signalridge/zig-development-playbook"]
+    type = "archive"
+    url = "https://github.com/signalridge/zig-development-playbook-skill/archive/{{ $.versions.zigDevelopmentPlaybookSkillRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["zig-development-playbook-skill-*/skills/zig-development-playbook/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
 # Multilingual Humanizer pack (multilingual namespace layout)
 # - Shared for Claude + Codex + OpenCode under ~/.agents/skills/multilingual/
 # - Keep stable language-suffixed names:
