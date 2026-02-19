@@ -2,8 +2,8 @@
 # Pinned versions (auto-updated by GitHub Actions)
 # ─────────────────────────────────────────────────────────────────────────────
 versions:
-  nixInstaller: v3.15.2
-  nixVersion: v2.33.1
+  nixInstaller: v3.16.0
+  nixVersion: v2.33.2
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
   aquaVersion: v2.56.6
@@ -11,8 +11,8 @@ versions:
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: 5d65aa10638bcc1b390738e11f9bff213f61955a
   claudeWshobsonAgentsSha256: 74849975802e1edef58572c344a14068fc936027e417548e95d0a6ef7feefc54
-  claudeSuperpowersRev: e16d611eee14ac4c3253b4bf4c55a98d905c2e64
-  claudeSuperpowersSha256: c89f74300d70d4aaffe9fc95157ffb200f3708facb989746cdd4042cd5352d6e
+  claudeSuperpowersRev: a0b9ecce2b25aa7d703138f17650540c2e8b2cde
+  claudeSuperpowersSha256: 28de66230068b0786694ace09b17f7d86a07859b7310bd424e9f1372e997ca63
   claudeAnthropicsSkillsRev: 1ed29a03dc852d30fa6ef2ca53a67dc2c2c2c563
   claudeAnthropicsSkillsSha256: 294568844992768a95ee994d0cc4cc7afd7d02f89cca9061a917fe8c98048808
   uiUxProMaxSkillRev: 6623f12b4058d09618c89cffb2de59a47c45f999
