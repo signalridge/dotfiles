@@ -318,6 +318,25 @@
 {{- end }}
 
 # ------------------------------------------------------------------------------
+# vercel-labs/next-skills next.js set
+# ------------------------------------------------------------------------------
+{{- $vercelNextSkills := list
+  "next-best-practices"
+  "next-upgrade"
+  "next-cache-components"
+}}
+{{- range $skill := $vercelNextSkills }}
+[".agents/skills/ecosystem/vercel-labs/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/vercel-labs/next-skills/archive/{{ $.versions.vercelLabsNextSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["next-skills-*/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+
+{{- end }}
+
+# ------------------------------------------------------------------------------
 # supabase/agent-skills database best practices
 # ------------------------------------------------------------------------------
 [".agents/skills/ecosystem/supabase/supabase-postgres-best-practices"]

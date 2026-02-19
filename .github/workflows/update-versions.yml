@@ -36,6 +36,17 @@ jobs:
           claude_anthropics_skills_sha256=$(curl -fsSL -L "https://github.com/anthropics/skills/archive/${claude_anthropics_skills_rev}.tar.gz" | sha256sum | awk '{print $1}')
           ui_ux_pro_max_skill_rev=$(gh api repos/nextlevelbuilder/ui-ux-pro-max-skill/commits/main -q '.sha')
           ui_ux_pro_max_skill_sha256=$(curl -fsSL -L "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/${ui_ux_pro_max_skill_rev}.tar.gz" | sha256sum | awk '{print $1}')
+          openai_skills_rev=$(gh api repos/openai/skills/commits/main -q '.sha')
+          getsentry_skills_rev=$(gh api repos/getsentry/skills/commits/main -q '.sha')
+          trailofbits_skills_rev=$(gh api repos/trailofbits/skills/commits/main -q '.sha')
+          cloudflare_skills_rev=$(gh api repos/cloudflare/skills/commits/main -q '.sha')
+          vercel_labs_agent_skills_rev=$(gh api repos/vercel-labs/agent-skills/commits/main -q '.sha')
+          vercel_labs_next_skills_rev=$(gh api repos/vercel-labs/next-skills/commits/main -q '.sha')
+          supabase_agent_skills_rev=$(gh api repos/supabase/agent-skills/commits/main -q '.sha')
+          expo_skills_rev=$(gh api repos/expo/skills/commits/main -q '.sha')
+          microsoft_skills_rev=$(gh api repos/microsoft/skills/commits/main -q '.sha')
+          sickn33_antigravity_skills_rev=$(gh api repos/sickn33/antigravity-awesome-skills/commits/main -q '.sha')
+          zig_development_playbook_skill_rev=$(gh api repos/signalridge/zig-development-playbook-skill/commits/main -q '.sha')
           humanizer_en_rev=$(gh api repos/blader/humanizer/commits/main -q '.sha')
           stop_slop_en_rev=$(gh api repos/hardikpandya/stop-slop/commits/main -q '.sha')
           humanizer_zh_rev=$(gh api repos/op7418/Humanizer-zh/commits/main -q '.sha')
@@ -57,6 +68,17 @@ jobs:
             echo "claude_anthropics_skills_sha256=$claude_anthropics_skills_sha256"
             echo "ui_ux_pro_max_skill_rev=$ui_ux_pro_max_skill_rev"
             echo "ui_ux_pro_max_skill_sha256=$ui_ux_pro_max_skill_sha256"
+            echo "openai_skills_rev=$openai_skills_rev"
+            echo "getsentry_skills_rev=$getsentry_skills_rev"
+            echo "trailofbits_skills_rev=$trailofbits_skills_rev"
+            echo "cloudflare_skills_rev=$cloudflare_skills_rev"
+            echo "vercel_labs_agent_skills_rev=$vercel_labs_agent_skills_rev"
+            echo "vercel_labs_next_skills_rev=$vercel_labs_next_skills_rev"
+            echo "supabase_agent_skills_rev=$supabase_agent_skills_rev"
+            echo "expo_skills_rev=$expo_skills_rev"
+            echo "microsoft_skills_rev=$microsoft_skills_rev"
+            echo "sickn33_antigravity_skills_rev=$sickn33_antigravity_skills_rev"
+            echo "zig_development_playbook_skill_rev=$zig_development_playbook_skill_rev"
             echo "humanizer_en_rev=$humanizer_en_rev"
             echo "stop_slop_en_rev=$stop_slop_en_rev"
             echo "humanizer_zh_rev=$humanizer_zh_rev"
@@ -79,6 +101,17 @@ jobs:
           sed -i 's/claudeAnthropicsSkillsSha256: .*/claudeAnthropicsSkillsSha256: ${{ steps.versions.outputs.claude_anthropics_skills_sha256 }}/' .chezmoidata/versions.yaml
           sed -i 's/uiUxProMaxSkillRev: .*/uiUxProMaxSkillRev: ${{ steps.versions.outputs.ui_ux_pro_max_skill_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/uiUxProMaxSkillSha256: .*/uiUxProMaxSkillSha256: ${{ steps.versions.outputs.ui_ux_pro_max_skill_sha256 }}/' .chezmoidata/versions.yaml
+          sed -i 's/openaiSkillsRev: .*/openaiSkillsRev: ${{ steps.versions.outputs.openai_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/getsentrySkillsRev: .*/getsentrySkillsRev: ${{ steps.versions.outputs.getsentry_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/trailofbitsSkillsRev: .*/trailofbitsSkillsRev: ${{ steps.versions.outputs.trailofbits_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/cloudflareSkillsRev: .*/cloudflareSkillsRev: ${{ steps.versions.outputs.cloudflare_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/vercelLabsAgentSkillsRev: .*/vercelLabsAgentSkillsRev: ${{ steps.versions.outputs.vercel_labs_agent_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/vercelLabsNextSkillsRev: .*/vercelLabsNextSkillsRev: ${{ steps.versions.outputs.vercel_labs_next_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/supabaseAgentSkillsRev: .*/supabaseAgentSkillsRev: ${{ steps.versions.outputs.supabase_agent_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/expoSkillsRev: .*/expoSkillsRev: ${{ steps.versions.outputs.expo_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/microsoftSkillsRev: .*/microsoftSkillsRev: ${{ steps.versions.outputs.microsoft_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/sickn33AntigravitySkillsRev: .*/sickn33AntigravitySkillsRev: ${{ steps.versions.outputs.sickn33_antigravity_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/zigDevelopmentPlaybookSkillRev: .*/zigDevelopmentPlaybookSkillRev: ${{ steps.versions.outputs.zig_development_playbook_skill_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/humanizerEnRev: .*/humanizerEnRev: ${{ steps.versions.outputs.humanizer_en_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/stopSlopEnRev: .*/stopSlopEnRev: ${{ steps.versions.outputs.stop_slop_en_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/humanizerZhRev: .*/humanizerZhRev: ${{ steps.versions.outputs.humanizer_zh_rev }}/' .chezmoidata/versions.yaml
@@ -116,6 +149,17 @@ jobs:
             | aqua | `${{ steps.versions.outputs.aqua_version }}` |
             | nix-index-database | `${{ steps.versions.outputs.nix_index_db }}` |
             | paperlib | `${{ steps.versions.outputs.paperlib }}` |
+            | openai/skills | `${{ steps.versions.outputs.openai_skills_rev }}` |
+            | getsentry/skills | `${{ steps.versions.outputs.getsentry_skills_rev }}` |
+            | trailofbits/skills | `${{ steps.versions.outputs.trailofbits_skills_rev }}` |
+            | cloudflare/skills | `${{ steps.versions.outputs.cloudflare_skills_rev }}` |
+            | vercel-labs/agent-skills | `${{ steps.versions.outputs.vercel_labs_agent_skills_rev }}` |
+            | vercel-labs/next-skills | `${{ steps.versions.outputs.vercel_labs_next_skills_rev }}` |
+            | supabase/agent-skills | `${{ steps.versions.outputs.supabase_agent_skills_rev }}` |
+            | expo/skills | `${{ steps.versions.outputs.expo_skills_rev }}` |
+            | microsoft/skills | `${{ steps.versions.outputs.microsoft_skills_rev }}` |
+            | sickn33/antigravity-awesome-skills | `${{ steps.versions.outputs.sickn33_antigravity_skills_rev }}` |
+            | signalridge/zig-development-playbook-skill | `${{ steps.versions.outputs.zig_development_playbook_skill_rev }}` |
             | humanizer-en | `${{ steps.versions.outputs.humanizer_en_rev }}` |
             | stop-slop-en | `${{ steps.versions.outputs.stop_slop_en_rev }}` |
             | humanizer-zh | `${{ steps.versions.outputs.humanizer_zh_rev }}` |
