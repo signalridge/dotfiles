@@ -337,6 +337,8 @@ OpenCode 的 key 渲染使用 `provider@private` 命名（如 `harui@private`）
 - `claude_code.hooks = false`
 - `claude_code.plugins = false`
 - `disabled_hooks` 包含 `claude-code-hooks`
+- `disabled_agents` 包含 `sisyphus`
+- `sisyphus_agent.disabled = true`
 - `sisyphus.tasks.claude_code_compat = false`
 
 这保证 OpenCode 工作流不依赖 `~/.claude/*`。
