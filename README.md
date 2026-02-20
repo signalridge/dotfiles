@@ -339,6 +339,8 @@ Use native `opencode` directly:
 - `claude_code.hooks = false`
 - `claude_code.plugins = false`
 - `disabled_hooks` includes `claude-code-hooks`
+- `disabled_agents` includes `sisyphus`
+- `sisyphus_agent.disabled = true`
 - `sisyphus.tasks.claude_code_compat = false`
 
 This keeps OpenCode runtime behavior independent from `~/.claude/*`.

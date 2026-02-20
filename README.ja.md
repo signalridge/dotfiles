@@ -339,6 +339,8 @@ OpenCode の key レンダリングは `provider@private` 命名（例: `harui@p
 - `claude_code.hooks = false`
 - `claude_code.plugins = false`
 - `disabled_hooks` に `claude-code-hooks` を追加
+- `disabled_agents` に `sisyphus` を追加
+- `sisyphus_agent.disabled = true`
 - `sisyphus.tasks.claude_code_compat = false`
 
 これにより OpenCode の動作は `~/.claude/*` へ依存しません。
