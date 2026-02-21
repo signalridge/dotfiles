@@ -304,7 +304,29 @@ assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'Tavily 
 # --- Task 6.1: spec-verify syntax ---
 assert_file_contains "$ROOT/private_dot_config/opencode/opencode.jsonc.tmpl" 'openspec validate <change-name>'
 
-# --- Task 6.2: AGENTS opsx syntax consistency ---
+# --- Task 6.2: C0-C3 routing anchors ---
+for f in "$ROOT/dot_claude/CLAUDE.md.tmpl" "$ROOT/dot_codex/AGENTS.md.tmpl" "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl"; do
+    assert_file_contains "$f" 'C0'
+    assert_file_contains "$f" 'C1'
+    assert_file_contains "$f" 'C2'
+    assert_file_contains "$f" 'C3'
+    assert_file_contains "$f" 'DiscoveryScore'
+    assert_file_contains "$f" 'ControlScore'
+    assert_file_contains "$f" 'Intake Card'
+    assert_file_contains "$f" 'If C3 and (I = 2 or R = 2)'
+done
+
+# --- Task 6.3: Spec-Kit bootstrap anchors ---
+for f in "$ROOT/dot_claude/CLAUDE.md.tmpl" "$ROOT/dot_codex/AGENTS.md.tmpl" "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl"; do
+    assert_file_contains "$f" 'specify init --here --ai claude --script sh'
+    assert_file_contains "$f" 'specify init --here --ai codex --script sh'
+    assert_file_contains "$f" 'specify init --here --ai opencode --script sh'
+done
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'export CODEX_HOME="$PWD/.codex"'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'export CODEX_HOME="$PWD/.codex"'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'export CODEX_HOME="$PWD/.codex"'
+
+# --- Task 6.4: AGENTS opsx syntax consistency ---
 # Codex AGENTS: hyphen form only (except disambiguation note)
 assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" '/opsx-new'
 assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" '/opsx-archive'
@@ -317,11 +339,11 @@ assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Cross-t
 assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" '/opsx:new'
 assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" '/opsx:archive'
 
-# --- Task 6.3: Guardrails references resolve (inline) ---
+# --- Task 6.5: Guardrails references resolve (inline) ---
 assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" '## Guardrails'
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '## Guardrails'
 
-# --- Task 6.4: Guardrails machine anchors ---
+# --- Task 6.6: Guardrails machine anchors ---
 for f in "$ROOT/dot_codex/AGENTS.md.tmpl" "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl"; do
     assert_file_contains "$f" 'Authentication'
     assert_file_contains "$f" 'Authorization'
@@ -335,13 +357,13 @@ for f in "$ROOT/dot_codex/AGENTS.md.tmpl" "$ROOT/private_dot_config/opencode/AGE
     assert_file_contains "$f" 'explicit confirmation'
 done
 
-# --- Task 6.5: Sisyphus planner residue absent ---
+# --- Task 6.7: Sisyphus planner residue absent ---
 assert_jq "$OH_MY_OPENCODE" '.sisyphus_agent.disabled == true'
 assert_jq "$OH_MY_OPENCODE" '(.sisyphus_agent | has("planner_enabled")) | not'
 assert_jq "$OH_MY_OPENCODE" '(.sisyphus_agent | has("replace_plan")) | not'
 assert_jq "$OH_MY_OPENCODE" '(.sisyphus_agent | has("default_builder_enabled")) | not'
 
-# --- Task 6.6: OpenSpec versioning posture explicit ---
+# --- Task 6.8: OpenSpec versioning posture explicit ---
 # .gitignore ignores the entire OpenSpec workspace by default
 assert_file_contains "$ROOT/.gitignore" 'openspec/'
 assert_ignored_path "openspec/changes/active-change/.probe"
@@ -372,6 +394,14 @@ assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'No assi
 
 # --- Task 3.4: Command-surface compatibility ---
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '.opencode/command/'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'routing/planning/context: `route`, `plan`, `context`'
+
+# --- Task 4.1/4.3: Spec-Kit install + diagnostics anchors ---
+assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" '"pipx:specify-cli"'
+assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'specify check'
+assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'specify check'
+assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'specify check passed'
+assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'specify check passed'
 
 # --- worktree-first-ai-workflow: baseline ignore rule ---
 assert_file_contains "$ROOT/.gitignore" '.worktrees/'
@@ -393,13 +423,24 @@ assert_file_contains "$ROOT/dot_custom/functions.sh" 'Path collision:'
 assert_file_contains "$ROOT/dot_custom/functions.sh" 'Nested worktree creation is not supported.'
 
 # --- worktree-first-ai-workflow: policy anchors ---
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Worktree Gate (L2+)'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Worktree Gate (L2+)'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Worktree Gate (L2+)'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Worktree Gate (C1+)'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Worktree Gate (C1+)'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Worktree Gate (C1+)'
 
 # --- worktree-first-ai-workflow: cross-tool shared command projection ---
+test -f "$ROOT/dot_agents/commands/core/route.md" || {
+    echo "missing core route command" >&2
+    exit 1
+}
 assert_file_contains "$ROOT/dot_agents/commands/core/worktree.md" 'wt-new'
 assert_file_contains "$ROOT/dot_agents/commands/core/worktree.md" 'one-task-one-branch-one-worktree'
+assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" '/opsx:new <change-name>'
+assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" '/opsx-new <change-name>'
+assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" 'openspec init --tools <tool>'
+assert_file_contains "$ROOT/dot_agents/commands/core/test.md" '/opsx:verify'
+assert_file_contains "$ROOT/dot_agents/commands/core/test.md" '/opsx-verify'
 assert_file_contains "$ROOT/dot_codex/prompts/symlink_core-worktree.md.tmpl" '.agents/commands/core/worktree.md'
+assert_file_contains "$ROOT/dot_agents/commands/core/route.md" '## Intake Card'
+assert_file_contains "$ROOT/dot_codex/prompts/symlink_core-route.md.tmpl" '.agents/commands/core/route.md'
 
 echo "test_opencode_config_rendering: OK"
