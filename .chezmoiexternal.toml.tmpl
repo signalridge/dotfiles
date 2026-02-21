@@ -32,11 +32,9 @@
   "python-development"
   "backend-development"
   "systems-programming"
-  "security-scanning"
   "documentation-generation"
   "llm-application-dev"
   "data-engineering"
-  "machine-learning-ops"
   "javascript-typescript"
   "frontend-mobile-development"
   "shell-scripting"
@@ -151,6 +149,30 @@
     exact = true
     stripComponents = 4
     include = ["skills-*/skills/.curated/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+
+{{- end }}
+
+# ------------------------------------------------------------------------------
+# huggingface/skills ML workflow set
+# ------------------------------------------------------------------------------
+{{- $huggingfaceSkills := list
+  "hugging-face-datasets"
+  "hugging-face-evaluation"
+  "hugging-face-jobs"
+  "hugging-face-model-trainer"
+  "hugging-face-paper-publisher"
+  "hugging-face-tool-builder"
+  "hugging-face-trackio"
+  "hugging-face-cli"
+}}
+{{- range $skill := $huggingfaceSkills }}
+[".agents/skills/ecosystem/huggingface/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/huggingface/skills/archive/{{ $.versions.huggingfaceSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["skills-*/skills/{{ $skill }}/**"]
     refreshPeriod = "168h"
 
 {{- end }}

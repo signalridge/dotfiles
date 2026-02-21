@@ -18,6 +18,7 @@ versions:
   uiUxProMaxSkillRev: 6623f12b4058d09618c89cffb2de59a47c45f999
   uiUxProMaxSkillSha256: 3b8bcfca56e387f89d0ff24e3ab81cbf70adafac41156ad62c4f862cee17fba5
   openaiSkillsRev: 4ab6e0fd99c6667163bc34173e3ed3a3fed75ebc
+  huggingfaceSkillsRev: 3f4f55d6264b7baddec94031eeda70780d7e9189
   getsentrySkillsRev: 5d49db8eb2a8ff33949855f11529558158935b25
   trailofbitsSkillsRev: b9ac28c21411543cff198f9d9e4e8f806f43ec91
   cloudflareSkillsRev: 426c3b406b3d3ef2ad3ca9bc2d3f41dd5be32ba0
