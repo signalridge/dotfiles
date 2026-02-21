@@ -34,7 +34,7 @@ assert_jq() {
 assert_file_contains() {
     local file="$1"
     local needle="$2"
-    if ! grep -Fq "$needle" "$file"; then
+    if ! grep -Fq -- "$needle" "$file"; then
         echo "assertion failed: expected '$file' to contain: $needle" >&2
         echo "--- file: $file ---" >&2
         cat "$file" >&2
@@ -133,6 +133,8 @@ assert_jq "$OPENCODE_DEFAULT" '.model == .small_model'
 assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].agent == "build"'
 assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].template | length > 0'
 assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].template | contains("opencode mcp list")'
+assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].template | contains("mcp.context7")'
+assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].template | contains("mcp.serena")'
 assert_jq "$OPENCODE_DEFAULT" '.command["spec-verify"].description | length > 0'
 assert_jq "$OPENCODE_DEFAULT" '.default_agent == "build"'
 assert_jq "$OPENCODE_DEFAULT" '.agent.build.model == .model'
@@ -171,6 +173,15 @@ assert_jq "$OPENCODE_DEFAULT" '.skills.paths | length == 1'
 assert_jq "$OPENCODE_DEFAULT" '.mcp.tavily.type == "local"'
 assert_jq "$OPENCODE_DEFAULT" '.mcp.tavily.enabled == true'
 assert_jq "$OPENCODE_DEFAULT" '.mcp.tavily.command[0] | endswith("/.local/bin/mcp-tavily")'
+assert_jq "$OPENCODE_DEFAULT" '.mcp.context7.type == "local"'
+assert_jq "$OPENCODE_DEFAULT" '.mcp.context7.enabled == true'
+assert_jq "$OPENCODE_DEFAULT" '.mcp.context7.command[0] | endswith("/.local/bin/mcp-context7")'
+assert_jq "$OPENCODE_DEFAULT" '.mcp.serena.type == "local"'
+assert_jq "$OPENCODE_DEFAULT" '.mcp.serena.enabled == true'
+assert_jq "$OPENCODE_DEFAULT" '.mcp.serena.command | index("git+https://github.com/oraios/serena@v0.1.4") != null'
+assert_jq "$OPENCODE_DEFAULT" '.mcp.serena.command | index("--context") != null'
+assert_jq "$OPENCODE_DEFAULT" '.mcp.serena.command | index("ide") != null'
+assert_jq "$OPENCODE_DEFAULT" '.mcp.serena.command | index("--project-from-cwd") != null'
 assert_jq "$OPENCODE_WITH_GOPASS" '.provider["harui@private"].options.apiKey == "stub-account-key"'
 assert_jq "$OPENCODE_WITH_GOPASS" '.provider["deepseek@private"].options.apiKey == "stub-deepseek-key"'
 assert_jq "$OPENCODE_WITH_GOPASS" '.provider["openai@private"].options.apiKey == "stub-openai-key"'
@@ -297,9 +308,36 @@ if ! grep -Fq "'doctor:Run workflow diagnostics'" <<<"$codex_manage_completion_b
     exit 1
 fi
 
-assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" '[mcp_servers.tavily]'
+assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'check_mcp_server "tavily" "Tavily"'
 assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'section found but command is missing'
-assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'Tavily MCP command executable'
+assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'MCP command executable'
+assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'check_mcp_server "context7" "Context7"'
+assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'check_mcp_server "serena" "Serena"'
+assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'tri-MCP readiness unknown'
+
+assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '[mcp_servers.context7]'
+assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '[mcp_servers.serena]'
+assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" 'git+https://github.com/oraios/serena@v0.1.4'
+assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '"--context", "codex"'
+assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" 'startup_timeout_sec = 30'
+
+assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl" 'ensure_user_mcp_json "context7"'
+assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl" '/.local/bin/mcp-context7'
+assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl" 'ensure_user_mcp_json "serena"'
+assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl" '--context","claude-code"'
+
+test -f "$ROOT/dot_local/bin/executable_mcp-context7.tmpl" || {
+    echo "missing managed context7 wrapper template" >&2
+    exit 1
+}
+assert_file_contains "$ROOT/dot_local/bin/executable_mcp-context7.tmpl" 'CONTEXT7_API_KEY'
+assert_file_contains "$ROOT/dot_local/bin/executable_mcp-context7.tmpl" 'context7/api_key'
+assert_file_contains "$ROOT/dot_local/bin/executable_mcp-context7.tmpl" '@upstash/context7-mcp@2.1.1'
+assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'Search and MCP readiness:'
+assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'check_user_mcp "context7" "Context7"'
+assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'check_user_mcp "serena" "Serena"'
+assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" 'node = "lts"'
+assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" 'uv = "latest"'
 
 # --- Task 6.1: spec-verify syntax ---
 assert_file_contains "$ROOT/private_dot_config/opencode/opencode.jsonc.tmpl" 'openspec validate <change-name>'
@@ -352,6 +390,13 @@ assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'ignores `openspec/` by de
 # --- Task 8.4: Tavily-first anchor wording ---
 assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Tavily MCP'
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Tavily MCP'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Tavily MCP'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Context7 MCP'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Serena MCP'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Context7 MCP'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Serena MCP'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Context7 MCP'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Serena MCP'
 
 # --- Task 9.4: Research subagent model routes explicit ---
 assert_jq "$OH_MY_OPENCODE" '.agents.librarian.category == "deep"'
@@ -401,5 +446,18 @@ assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Worktre
 assert_file_contains "$ROOT/dot_agents/commands/core/worktree.md" 'wt-new'
 assert_file_contains "$ROOT/dot_agents/commands/core/worktree.md" 'one-task-one-branch-one-worktree'
 assert_file_contains "$ROOT/dot_codex/prompts/symlink_core-worktree.md.tmpl" '.agents/commands/core/worktree.md'
+
+# --- serena-context7-mcp-integration: tri-MCP routing anchors ---
+assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'Tri-MCP Routing Policy'
+assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'Library/framework/API docs'
+assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'Context7'
+assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'Tavily'
+assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'Serena'
+assert_file_contains "$ROOT/README.md" 'Task -> MCP Routing'
+assert_file_contains "$ROOT/README.md" 'mcp-context7'
+assert_file_contains "$ROOT/README.zh-CN.md" '任务 -> MCP 路由'
+assert_file_contains "$ROOT/README.zh-CN.md" 'mcp-context7'
+assert_file_contains "$ROOT/README.ja.md" 'タスク -> MCP ルーティング'
+assert_file_contains "$ROOT/README.ja.md" 'mcp-context7'
 
 echo "test_opencode_config_rendering: OK"

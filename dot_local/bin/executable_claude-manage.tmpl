@@ -796,6 +796,65 @@ cmd_doctor() {
     fi
     echo ""
 
+    echo "Search and MCP readiness:"
+    local claude_state_json
+    claude_state_json="${HOME}/.claude.json"
+    if [[ -f "$claude_state_json" ]]; then
+        if jq -e . "$claude_state_json" >/dev/null 2>&1; then
+            pass "~/.claude.json is valid JSON"
+        else
+            note_warn "~/.claude.json is not valid JSON (tri-MCP checks limited)"
+        fi
+
+        check_user_mcp() {
+            local name="$1"
+            local label="$2"
+            local missing_msg="$3"
+            local server
+            server="$(jq -c --arg n "$name" '.mcpServers[$n] // empty' "$claude_state_json" 2>/dev/null || true)"
+
+            if [[ -z "$server" ]]; then
+                note_warn "$missing_msg"
+                return 0
+            fi
+
+            pass "${label} MCP configured in ~/.claude.json"
+
+            local mcp_type
+            mcp_type="$(jq -r '.type // "stdio"' <<<"$server" 2>/dev/null || echo "stdio")"
+            if [[ "$mcp_type" != "stdio" ]]; then
+                pass "${label} MCP transport is ${mcp_type}"
+                return 0
+            fi
+
+            local mcp_cmd
+            mcp_cmd="$(jq -r '.command // empty' <<<"$server" 2>/dev/null || true)"
+            if [[ -z "$mcp_cmd" ]]; then
+                note_warn "${label} MCP command missing in ~/.claude.json"
+                return 0
+            fi
+
+            if [[ "$mcp_cmd" == */* ]]; then
+                if [[ -x "$mcp_cmd" ]]; then
+                    pass "${label} MCP command executable (${mcp_cmd})"
+                else
+                    note_warn "${label} MCP command not executable (${mcp_cmd})"
+                fi
+            elif command -v "$mcp_cmd" >/dev/null 2>&1; then
+                pass "${label} MCP command available in PATH (${mcp_cmd})"
+            else
+                note_warn "${label} MCP command not found in PATH (${mcp_cmd})"
+            fi
+        }
+
+        check_user_mcp "tavily" "Tavily" "Tavily MCP not configured in ~/.claude.json; web/news lookup falls back"
+        check_user_mcp "context7" "Context7" "Context7 MCP not configured in ~/.claude.json; docs lookup falls back"
+        check_user_mcp "serena" "Serena" "Serena MCP not configured in ~/.claude.json; semantic navigation falls back"
+    else
+        note_warn "~/.claude.json missing; tri-MCP readiness unknown"
+    fi
+    echo ""
+
     echo "Account and auth state:"
     local account provider
     account=$(get_current)

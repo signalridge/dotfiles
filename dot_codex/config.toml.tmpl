@@ -153,9 +153,18 @@ args = ["-y", "@anthropic/mcp-server-notion"]
 [mcp_servers.notion.env]
 NOTION_API_KEY = "${NOTION_API_KEY}"
 
+[mcp_servers.context7]
+command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-context7"
+args = []
+
 [mcp_servers.postgres]
 command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-postgres"
 args = []
+
+[mcp_servers.serena]
+command = "uvx"
+args = ["--from", "git+https://github.com/oraios/serena@v0.1.4", "serena", "start-mcp-server", "--context", "codex", "--project-from-cwd", "--open-web-dashboard", "false"]
+startup_timeout_sec = 30
 
 [mcp_servers.slack]
 command = "npx"

@@ -420,8 +420,17 @@ gopass show -o opencode/harui/private/api_key >/dev/null
 - Claude MCP entries are reconciled by `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl`.
 - OpenCode MCP/plugin behavior is managed natively via `~/.config/opencode/opencode.jsonc` and `~/.config/opencode/oh-my-opencode.jsonc`.
 - Wrapper commands provided in this repo:
+  - `~/.local/bin/mcp-context7`
   - `~/.local/bin/mcp-tavily`
   - `~/.local/bin/mcp-postgres`
+
+#### Task -> MCP Routing
+
+| Task type                  | Primary MCP | Fallback                      |
+| -------------------------- | ----------- | ----------------------------- |
+| Library/framework/API docs | Context7    | Tavily -> built-in web search |
+| Web/news/general research  | Tavily      | built-in web search           |
+| Symbolic code navigation   | Serena      | repo grep/codesearch + LSP    |
 
 ---
 

@@ -14,7 +14,23 @@ Analyze the relevant code area before implementation.
 1. Identify target files and boundaries.
 2. Capture dependencies and calling paths.
 3. Note conventions that must be preserved.
-4. For L3/L4 work, suggest `/opsx:new` as the next step and ask for explicit yes/no confirmation before execution.
+4. For L3/L4 work, suggest the tool-appropriate OpenSpec start command (`/opsx-new` in Codex/OpenCode, `/opsx:new` in Claude) and ask for explicit yes/no confirmation before execution.
+
+## Tri-MCP Routing Policy
+
+When additional retrieval is needed during context analysis, use this priority map:
+
+| Task Type                                  | Primary MCP | Fallback                         |
+| ------------------------------------------ | ----------- | -------------------------------- |
+| Library/framework/API docs                 | Context7    | Tavily, then built-in web search |
+| General web/news/background                | Tavily      | Built-in web search              |
+| Symbolic code navigation/refactor planning | Serena      | repo grep/codesearch + LSP       |
+
+Notes:
+
+- Prefer deterministic routing over ad-hoc tool switching.
+- Keep queries minimal and avoid sensitive data.
+- Runtime prerequisites are `node` + `uv` managed via `mise`.
 
 ## Output
 

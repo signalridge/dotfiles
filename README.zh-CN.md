@@ -418,8 +418,17 @@ gopass show -o opencode/harui/private/api_key >/dev/null
 - Claude MCP 由 `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl` 自动对齐。
 - OpenCode 的 MCP/plugin 行为由 `~/.config/opencode/opencode.jsonc` 与 `~/.config/opencode/oh-my-opencode.jsonc` 原生管理。
 - 仓库提供 MCP wrapper：
+  - `~/.local/bin/mcp-context7`
   - `~/.local/bin/mcp-tavily`
   - `~/.local/bin/mcp-postgres`
+
+#### 任务 -> MCP 路由
+
+| 任务类型                   | 首选 MCP | 回退路径                   |
+| -------------------------- | -------- | -------------------------- |
+| 库 / 框架 / API 文档       | Context7 | Tavily -> 内置 web search  |
+| 通用网页 / 新闻 / 背景调研 | Tavily   | 内置 web search            |
+| 语义级代码导航             | Serena   | repo grep/codesearch + LSP |
 
 ---
 
