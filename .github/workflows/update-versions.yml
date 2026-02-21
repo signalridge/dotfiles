@@ -37,6 +37,7 @@ jobs:
           ui_ux_pro_max_skill_rev=$(gh api repos/nextlevelbuilder/ui-ux-pro-max-skill/commits/main -q '.sha')
           ui_ux_pro_max_skill_sha256=$(curl -fsSL -L "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/${ui_ux_pro_max_skill_rev}.tar.gz" | sha256sum | awk '{print $1}')
           openai_skills_rev=$(gh api repos/openai/skills/commits/main -q '.sha')
+          huggingface_skills_rev=$(gh api repos/huggingface/skills/commits/main -q '.sha')
           getsentry_skills_rev=$(gh api repos/getsentry/skills/commits/main -q '.sha')
           trailofbits_skills_rev=$(gh api repos/trailofbits/skills/commits/main -q '.sha')
           cloudflare_skills_rev=$(gh api repos/cloudflare/skills/commits/main -q '.sha')
@@ -69,6 +70,7 @@ jobs:
             echo "ui_ux_pro_max_skill_rev=$ui_ux_pro_max_skill_rev"
             echo "ui_ux_pro_max_skill_sha256=$ui_ux_pro_max_skill_sha256"
             echo "openai_skills_rev=$openai_skills_rev"
+            echo "huggingface_skills_rev=$huggingface_skills_rev"
             echo "getsentry_skills_rev=$getsentry_skills_rev"
             echo "trailofbits_skills_rev=$trailofbits_skills_rev"
             echo "cloudflare_skills_rev=$cloudflare_skills_rev"
@@ -102,6 +104,7 @@ jobs:
           sed -i 's/uiUxProMaxSkillRev: .*/uiUxProMaxSkillRev: ${{ steps.versions.outputs.ui_ux_pro_max_skill_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/uiUxProMaxSkillSha256: .*/uiUxProMaxSkillSha256: ${{ steps.versions.outputs.ui_ux_pro_max_skill_sha256 }}/' .chezmoidata/versions.yaml
           sed -i 's/openaiSkillsRev: .*/openaiSkillsRev: ${{ steps.versions.outputs.openai_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/huggingfaceSkillsRev: .*/huggingfaceSkillsRev: ${{ steps.versions.outputs.huggingface_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/getsentrySkillsRev: .*/getsentrySkillsRev: ${{ steps.versions.outputs.getsentry_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/trailofbitsSkillsRev: .*/trailofbitsSkillsRev: ${{ steps.versions.outputs.trailofbits_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/cloudflareSkillsRev: .*/cloudflareSkillsRev: ${{ steps.versions.outputs.cloudflare_skills_rev }}/' .chezmoidata/versions.yaml
@@ -150,6 +153,7 @@ jobs:
             | nix-index-database | `${{ steps.versions.outputs.nix_index_db }}` |
             | paperlib | `${{ steps.versions.outputs.paperlib }}` |
             | openai/skills | `${{ steps.versions.outputs.openai_skills_rev }}` |
+            | huggingface/skills | `${{ steps.versions.outputs.huggingface_skills_rev }}` |
             | getsentry/skills | `${{ steps.versions.outputs.getsentry_skills_rev }}` |
             | trailofbits/skills | `${{ steps.versions.outputs.trailofbits_skills_rev }}` |
             | cloudflare/skills | `${{ steps.versions.outputs.cloudflare_skills_rev }}` |
