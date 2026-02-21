@@ -41,7 +41,7 @@ Levels:
 - `WARN`: post-error reminder (user already hit an issue)
 - `INFO`: navigation hint (low priority)
 
-> Note: Codex CLI may not support hooks in the same way as Claude Code. These conventions apply when hooks are available.
+> **Runtime boundary:** Codex has limited runtime hook capability (notify-oriented), not Claude-equivalent multi-event policy gating. Guardrails and high-risk operation constraints are instruction-enforced. Explicit confirmation-first behavior is required for high-risk operations (archive, rewrite, destructive changes).
 
 ---
 
@@ -80,7 +80,9 @@ Preference for L3/L4:
 - Prefer `/opsx-*` wrappers when available.
 - If wrappers are missing/outdated, run `openspec update` (Codex prompts are global: `~/.codex/prompts/`).
 - If the repo is not OpenSpec-initialized (workspace + skills), run `openspec init` at repo root.
-- `/plan` and `/opsx-*` are not command conflicts; the key difference is wrapper availability and syntax (`/opsx:<id>` in Claude vs `/opsx-<id>` in Codex).
+- `/plan` and `/opsx-*` are not command conflicts; they serve different workflow levels (L1/L2 vs L3/L4).
+
+> **Cross-tool syntax note:** Claude Code uses colon form (`/opsx:*`). Codex uses hyphen form (`/opsx-*`) matching actual prompt file naming. The workflow is equivalent.
 
 - **L1 (<10 lines, single file)**: implement directly; run tests; commit (use your normal project test runner and `git commit`, unless you have Codex-specific skills configured).
 - **L2 (<100 lines, 1-3 files)**: brief analysis → (`/plan` if configured, or `superpowers:writing-plans`) → implement → tests → commit (same note: use your normal tooling; do not assume slash commands like `/test` or `/commit`).
@@ -123,8 +125,8 @@ Then re-run the intended `/opsx-*` step.
 
 ### Version control note (gitignore)
 
-If the repo ignores `openspec/changes/`, OpenSpec planning artifacts (proposal/design/tasks/delta specs) will **not** be version-controlled.
-This is fine for local solo workflows, but it reduces team review/auditability.
+This repository ignores `openspec/` by default.
+OpenSpec artifacts are treated as local working state and are not version-controlled unless ignore rules are intentionally changed.
 
 ---
 
@@ -138,8 +140,31 @@ Before implementing L3+ tasks, complete:
 - **Similar patterns**: [3+ existing implementations]
 - **Dependencies**: [affected modules/files]
 - **Conventions**: [naming, structure, test patterns]
-- **Risk areas**: [security, performance, breaking changes]
+- **Risk areas**: [guardrails triggered? see Guardrails section above]
 ```
+
+---
+
+## Guardrails
+
+Sensitive areas requiring special handling:
+
+| Category             | Examples                                   | Risk Level |
+| -------------------- | ------------------------------------------ | ---------- |
+| **Authentication**   | Login, OAuth, JWT, sessions, tokens        | Critical   |
+| **Authorization**    | Permissions, roles, ACLs, policies         | Critical   |
+| **Financial**        | Billing, payments, subscriptions, invoices | Critical   |
+| **Security**         | Encryption, hashing, secrets, credentials  | Critical   |
+| **Data Schema**      | Database migrations, model changes         | High       |
+| **External APIs**    | Public endpoints, webhooks, integrations   | High       |
+| **Irreversible Ops** | Data deletion, migrations, deployments     | High       |
+| **PII/Privacy**      | User data, GDPR, personal information      | High       |
+
+**Post-change report required:** Files → Changes → Reason → Impact → Rollback
+
+High-risk operations (archive, rewrite, destructive changes) require explicit confirmation before execution.
+
+> Note: Codex has limited runtime hook capability (notify-oriented). Guardrails are instruction-enforced, not runtime-gated. Explicit confirmation-first behavior is required for high-risk operations.
 
 ---
 

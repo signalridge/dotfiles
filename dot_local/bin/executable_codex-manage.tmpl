@@ -747,10 +747,75 @@ cmd_doctor() {
         note_warn "core prompt links incomplete (${prompt_count:-0})"
     fi
 
+    local opsx_count
+    opsx_count=$(find "${HOME}/.codex/prompts" -maxdepth 1 -name 'opsx-*.md' 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "${opsx_count:-0}" -ge 5 ]]; then
+        pass "opsx wrapper prompts present (${opsx_count})"
+    else
+        note_warn "opsx wrapper prompts incomplete (${opsx_count:-0}); run: openspec update"
+    fi
+
     if [[ -L "${HOME}/.codex/skills" ]]; then
         pass "~/.codex/skills symlink exists"
     else
         note_warn "~/.codex/skills symlink missing"
+    fi
+    echo ""
+
+    echo "Search and MCP readiness:"
+    if [[ -f "$CODEX_CONFIG" ]]; then
+        if awk '
+            BEGIN { in_tavily = 0; has_section = 0; has_command = 0 }
+            /^\[mcp_servers\.tavily\]/ { in_tavily = 1; has_section = 1; next }
+            /^\[/ && in_tavily { in_tavily = 0 }
+            in_tavily && /^[[:space:]]*command[[:space:]]*=/ { has_command = 1 }
+            END {
+                if (!has_section) exit 1
+                if (!has_command) exit 2
+                exit 0
+            }
+        ' "$CODEX_CONFIG"; then
+            pass "Tavily MCP configured in config.toml"
+            local tavily_cmd
+            tavily_cmd=$(awk '
+                BEGIN { in_tavily = 0 }
+                /^\[mcp_servers\.tavily\]/ { in_tavily = 1; next }
+                /^\[/ && in_tavily { in_tavily = 0 }
+                in_tavily && /^[[:space:]]*command[[:space:]]*=/ {
+                    line = $0
+                    sub(/^[^=]*=[[:space:]]*/, "", line)
+                    print line
+                    exit
+                }
+            ' "$CODEX_CONFIG")
+            tavily_cmd="${tavily_cmd%%#*}"
+            tavily_cmd="${tavily_cmd#"${tavily_cmd%%[![:space:]]*}"}"
+            tavily_cmd="${tavily_cmd%"${tavily_cmd##*[![:space:]]}"}"
+            tavily_cmd="${tavily_cmd%\"}"
+            tavily_cmd="${tavily_cmd#\"}"
+            tavily_cmd="${tavily_cmd%\'}"
+            tavily_cmd="${tavily_cmd#\'}"
+            if [[ -n "$tavily_cmd" ]]; then
+                if [[ "$tavily_cmd" == */* ]]; then
+                    if [[ -x "$tavily_cmd" ]]; then
+                        pass "Tavily MCP command executable (${tavily_cmd})"
+                    else
+                        note_warn "Tavily MCP command not executable (${tavily_cmd})"
+                    fi
+                elif command -v "$tavily_cmd" >/dev/null 2>&1; then
+                    pass "Tavily MCP command available in PATH (${tavily_cmd})"
+                else
+                    note_warn "Tavily MCP command not found in PATH (${tavily_cmd})"
+                fi
+            fi
+        else
+            case $? in
+                2) note_warn "Tavily MCP section found but command is missing; check [mcp_servers.tavily]" ;;
+                *) note_warn "Tavily MCP not configured; search falls back to built-in" ;;
+            esac
+        fi
+    else
+        note_warn "Codex config missing; Tavily MCP readiness unknown"
     fi
     echo ""
 

@@ -2,7 +2,7 @@
 .claude
 .codex
 
-# OpenSpec working directory (generated state)
+# OpenSpec workspace (generated/local working state)
 openspec/
 
 # macOS
