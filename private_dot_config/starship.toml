@@ -1,5 +1,6 @@
 # Use the color palette
 palette = "dracula"
+right_format = "$custom.worktree"
 
 # Define Dracula color palette
 [palettes.dracula]
@@ -23,6 +24,21 @@ error_symbol = "[❯](bold red)"
 # Command duration
 [cmd_duration]
 style = "bold yellow"
+
+[custom.worktree]
+command = '''
+top="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+case "$top" in
+    */.worktrees/*)
+        name="${top#*"/.worktrees/"}"
+        printf "wt:%s" "$name"
+        ;;
+esac
+'''
+when = "git rev-parse --is-inside-work-tree >/dev/null 2>&1"
+format = "[$output]($style)"
+style = "bold purple"
+shell = ["bash", "--noprofile", "--norc"]
 
 # Username
 [username]

@@ -373,4 +373,33 @@ assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'No assi
 # --- Task 3.4: Command-surface compatibility ---
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '.opencode/command/'
 
+# --- worktree-first-ai-workflow: baseline ignore rule ---
+assert_file_contains "$ROOT/.gitignore" '.worktrees/'
+assert_ignored_path ".worktrees/.probe"
+
+# --- worktree-first-ai-workflow: prompt visibility (scheme 1) ---
+assert_file_contains "$ROOT/private_dot_config/starship.toml" '[custom.worktree]'
+assert_file_contains "$ROOT/private_dot_config/starship.toml" 'right_format'
+assert_file_contains "$ROOT/private_dot_config/starship.toml" '.worktrees/'
+assert_file_contains "$ROOT/private_dot_config/starship.toml" 'wt:'
+
+# --- worktree-first-ai-workflow: helper anchors ---
+assert_file_contains "$ROOT/dot_custom/functions.sh" 'wt-new()'
+assert_file_contains "$ROOT/dot_custom/functions.sh" 'wt-go()'
+assert_file_contains "$ROOT/dot_custom/functions.sh" 'wt-ls()'
+assert_file_contains "$ROOT/dot_custom/functions.sh" 'wt-rm()'
+assert_file_contains "$ROOT/dot_custom/functions.sh" 'wt-prune()'
+assert_file_contains "$ROOT/dot_custom/functions.sh" 'Path collision:'
+assert_file_contains "$ROOT/dot_custom/functions.sh" 'Nested worktree creation is not supported.'
+
+# --- worktree-first-ai-workflow: policy anchors ---
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Worktree Gate (L2+)'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Worktree Gate (L2+)'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Worktree Gate (L2+)'
+
+# --- worktree-first-ai-workflow: cross-tool shared command projection ---
+assert_file_contains "$ROOT/dot_agents/commands/core/worktree.md" 'wt-new'
+assert_file_contains "$ROOT/dot_agents/commands/core/worktree.md" 'one-task-one-branch-one-worktree'
+assert_file_contains "$ROOT/dot_codex/prompts/symlink_core-worktree.md.tmpl" '.agents/commands/core/worktree.md'
+
 echo "test_opencode_config_rendering: OK"

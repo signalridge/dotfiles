@@ -5,6 +5,9 @@
 # OpenSpec workspace (generated/local working state)
 openspec/
 
+# Git worktrees (project-local isolated workspaces)
+.worktrees/
+
 # macOS
 .DS_Store
 .AppleDouble

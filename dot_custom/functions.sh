@@ -579,6 +579,257 @@ git-cleanup() {
 }
 
 # ─────────────────────────────────────────────────────────────
+# Git Worktree Utilities
+# ─────────────────────────────────────────────────────────────
+
+_wt_repo_root() {
+    local common_dir=""
+    common_dir="$(git rev-parse --git-common-dir 2>/dev/null)" || return 1
+    if [[ "$common_dir" != /* ]]; then
+        common_dir="$(cd "$common_dir" 2>/dev/null && pwd -P)" || return 1
+    fi
+    case "$common_dir" in
+    */.git) dirname "$common_dir" ;;
+    *) git rev-parse --show-toplevel 2>/dev/null ;;
+    esac
+}
+
+_wt_in_linked_worktree() {
+    local git_dir=""
+    local common_dir=""
+    git_dir="$(git rev-parse --absolute-git-dir 2>/dev/null)" || return 1
+    common_dir="$(git rev-parse --git-common-dir 2>/dev/null)" || return 1
+    if [[ "$common_dir" != /* ]]; then
+        common_dir="$(cd "$common_dir" 2>/dev/null && pwd -P)" || return 1
+    fi
+    [[ "$git_dir" != "$common_dir" ]]
+}
+
+_wt_list_paths() {
+    local repo="$1"
+    git -C "$repo" worktree list --porcelain 2>/dev/null | awk '/^worktree / { print substr($0, 10) }'
+}
+
+_wt_branch_paths() {
+    local repo="$1"
+    git -C "$repo" worktree list --porcelain 2>/dev/null | awk '
+        /^worktree / {
+            path = substr($0, 10)
+            next
+        }
+        /^branch / {
+            branch = substr($0, 8)
+            sub(/^refs\/heads\//, "", branch)
+            print branch "\t" path
+        }
+    '
+}
+
+_wt_is_member() {
+    local repo="$1"
+    local path="$2"
+    _wt_list_paths "$repo" | grep -Fx -- "$path" >/dev/null 2>&1
+}
+
+_wt_resolve_selector() {
+    local repo="$1"
+    local selector="$2"
+    local candidate=""
+
+    [[ -n "$selector" ]] || return 1
+
+    if [[ -d "$selector" ]]; then
+        candidate="$(cd "$selector" 2>/dev/null && pwd -P)" || return 1
+        _wt_is_member "$repo" "$candidate" && {
+            echo "$candidate"
+            return 0
+        }
+        return 1
+    fi
+
+    candidate="$repo/.worktrees/$selector"
+    _wt_is_member "$repo" "$candidate" && {
+        echo "$candidate"
+        return 0
+    }
+
+    candidate="$(_wt_branch_paths "$repo" | awk -F '\t' -v b="$selector" '$1 == b { print $2; exit }')"
+    [[ -n "$candidate" ]] && {
+        echo "$candidate"
+        return 0
+    }
+
+    candidate="$(_wt_list_paths "$repo" | awk -F '/' -v n="$selector" '$NF == n { print; exit }')"
+    [[ -n "$candidate" ]] && {
+        echo "$candidate"
+        return 0
+    }
+
+    return 1
+}
+
+wt-new() {
+    local branch="${1:-}"
+    local base="${2:-}"
+
+    if [[ -z "$branch" ]]; then
+        echo "Usage: wt-new <branch> [base-ref]"
+        return 1
+    fi
+
+    local repo
+    repo="$(_wt_repo_root)" || {
+        echo "Not in a git repository"
+        return 1
+    }
+
+    if _wt_in_linked_worktree; then
+        echo "Nested worktree creation is not supported. Run wt-new from primary workspace."
+        return 1
+    fi
+
+    local target="$repo/.worktrees/$branch"
+    mkdir -p "$(dirname "$target")"
+
+    if [[ -e "$target" ]]; then
+        if _wt_is_member "$repo" "$target"; then
+            echo "Worktree already exists: $target"
+            cd "$target" || return 1
+            return 0
+        fi
+        echo "Path collision: $target exists but is not a worktree for this repository."
+        return 1
+    fi
+
+    local start_ref="$base"
+    if [[ -z "$start_ref" ]]; then
+        if git -C "$repo" rev-parse --verify --quiet origin/main >/dev/null; then
+            start_ref="origin/main"
+        elif git -C "$repo" rev-parse --verify --quiet main >/dev/null; then
+            start_ref="main"
+        fi
+    fi
+
+    if git -C "$repo" show-ref --verify --quiet "refs/heads/$branch"; then
+        git -C "$repo" worktree add "$target" "$branch" || return 1
+    elif [[ -n "$start_ref" ]]; then
+        git -C "$repo" worktree add "$target" -b "$branch" "$start_ref" || return 1
+    else
+        git -C "$repo" worktree add "$target" -b "$branch" || return 1
+    fi
+
+    cd "$target" || return 1
+}
+
+wt-go() {
+    local repo
+    repo="$(_wt_repo_root)" || {
+        echo "Not in a git repository"
+        return 1
+    }
+
+    local selector="${1:-}"
+    local target=""
+
+    if [[ -z "$selector" ]]; then
+        if ! command -v fzf >/dev/null 2>&1; then
+            echo "Usage: wt-go <branch|path> (or install fzf for interactive selection)"
+            return 1
+        fi
+        target="$(_wt_list_paths "$repo" | fzf --header='Select worktree')"
+    else
+        target="$(_wt_resolve_selector "$repo" "$selector")" || {
+            echo "Worktree not found: $selector"
+            return 1
+        }
+    fi
+
+    [[ -n "$target" ]] || return 1
+    cd "$target" || return 1
+}
+
+wt-ls() {
+    local repo
+    repo="$(_wt_repo_root)" || {
+        echo "Not in a git repository"
+        return 1
+    }
+    git -C "$repo" worktree list
+}
+
+wt-rm() {
+    local repo
+    repo="$(_wt_repo_root)" || {
+        echo "Not in a git repository"
+        return 1
+    }
+
+    local force=false
+    local selector=""
+    local arg
+    for arg in "$@"; do
+        case "$arg" in
+        --force | -f) force=true ;;
+        *)
+            if [[ -n "$selector" ]]; then
+                echo "Usage: wt-rm [--force] <branch|path>"
+                return 1
+            fi
+            selector="$arg"
+            ;;
+        esac
+    done
+
+    local target=""
+    if [[ -z "$selector" ]]; then
+        if ! command -v fzf >/dev/null 2>&1; then
+            echo "Usage: wt-rm [--force] <branch|path> (or install fzf for interactive selection)"
+            return 1
+        fi
+        target="$(_wt_list_paths "$repo" | fzf --header='Select worktree to remove')"
+    else
+        target="$(_wt_resolve_selector "$repo" "$selector")" || {
+            echo "Worktree not found: $selector"
+            return 1
+        }
+    fi
+
+    [[ -n "$target" ]] || return 1
+
+    local current
+    current="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+    if [[ "$target" == "$current" ]]; then
+        echo "Cannot remove current worktree: $target"
+        return 1
+    fi
+
+    if ! $force; then
+        printf "Remove worktree '%s'? [y/N] " "$target"
+        local confirm
+        read -r confirm
+        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+            echo "Cancelled."
+            return 0
+        fi
+    fi
+
+    if $force; then
+        git -C "$repo" worktree remove --force "$target"
+    else
+        git -C "$repo" worktree remove "$target"
+    fi
+}
+
+wt-prune() {
+    local repo
+    repo="$(_wt_repo_root)" || {
+        echo "Not in a git repository"
+        return 1
+    }
+    git -C "$repo" worktree prune
+}
+
+# ─────────────────────────────────────────────────────────────
 # Quick Directory Operations
 # ─────────────────────────────────────────────────────────────
 

@@ -52,6 +52,14 @@ Levels:
 
 Rule: L3/L4 use OpenSpec-first workflow.
 
+## Worktree Gate (L2+)
+
+- For L2+ work, default to a dedicated `git worktree` under `.worktrees/<branch>`.
+- Enforce `one-task-one-branch-one-worktree` as the default execution model.
+- If currently in the primary workspace, create/switch to a worktree before implementation (`wt-new <branch>` or `git worktree add ...`).
+- L1 quick edits may remain in primary workspace when isolation overhead is unnecessary.
+- Worktree cleanup is confirmation-first; avoid force-removal unless explicitly requested.
+
 ## OpenSpec Execution Gate
 
 - Propose only the next single OpenSpec step.
@@ -99,6 +107,7 @@ Repository-managed core command docs are projected into OpenCode command paths:
 - planning/context: `plan`, `context`
 - quality gates: `review`, `test`
 - SCM workflow: `commit`, `pr-create`, `pr-review`
+- workspace isolation: `worktree`
 
 If commands are missing, verify projection with:
 
