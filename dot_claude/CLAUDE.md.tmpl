@@ -56,6 +56,16 @@ Levels:
 
 ---
 
+## Worktree Gate (L2+)
+
+- For L2+ work, default to a dedicated `git worktree` under `.worktrees/<branch>`.
+- Enforce `one-task-one-branch-one-worktree` as the default execution model.
+- If currently in the primary workspace, create/switch to a worktree before implementation (`wt-new <branch>` or `git worktree add ...`).
+- L1 quick edits may remain in primary workspace when isolation overhead is unnecessary.
+- Worktree cleanup is confirmation-first; avoid force-removal unless explicitly requested.
+
+---
+
 ## OpenSpec-first Orchestration (L3/L4)
 
 OpenSpec is the single workflow backbone and source of truth for L3/L4 work.
@@ -105,6 +115,7 @@ Do **not** hand-write or maintain `/opsx:*` prompt files in dotfiles (or by copy
 - `/pr:pr-create` (`core/pr-create`)
 - `/pr:pr-review` (`core/pr-review`)
 - `/plan` (`core/plan`, L1/L2 lightweight planning entry; use OpenSpec for L3/L4)
+- `/worktree` (`core/worktree`, shared worktree workflow guidance)
 
 ### OpenSpec commands (L3/L4)
 
