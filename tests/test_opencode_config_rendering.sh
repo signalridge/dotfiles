@@ -42,6 +42,17 @@ assert_file_contains() {
     fi
 }
 
+assert_file_not_contains() {
+    local file="$1"
+    local needle="$2"
+    if grep -Fq -- "$needle" "$file"; then
+        echo "assertion failed: expected '$file' to not contain: $needle" >&2
+        echo "--- file: $file ---" >&2
+        cat "$file" >&2
+        exit 1
+    fi
+}
+
 assert_ignored_path() {
     local path="$1"
     if ! git -C "$ROOT" check-ignore -q "$path"; then
@@ -308,12 +319,9 @@ if ! grep -Fq "'doctor:Run workflow diagnostics'" <<<"$codex_manage_completion_b
     exit 1
 fi
 
-assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'check_mcp_server "tavily" "Tavily"'
-assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'section found but command is missing'
-assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'MCP command executable'
-assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'check_mcp_server "context7" "Context7"'
-assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'check_mcp_server "serena" "Serena"'
-assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'tri-MCP readiness unknown'
+assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'Search and MCP readiness:'
+assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'check_mcp_server "tavily" "Tavily"'
+assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'tri-MCP readiness unknown'
 
 assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '[mcp_servers.context7]'
 assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '[mcp_servers.serena]'
@@ -333,9 +341,9 @@ test -f "$ROOT/dot_local/bin/executable_mcp-context7.tmpl" || {
 assert_file_contains "$ROOT/dot_local/bin/executable_mcp-context7.tmpl" 'CONTEXT7_API_KEY'
 assert_file_contains "$ROOT/dot_local/bin/executable_mcp-context7.tmpl" 'context7/api_key'
 assert_file_contains "$ROOT/dot_local/bin/executable_mcp-context7.tmpl" '@upstash/context7-mcp@2.1.1'
-assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'Search and MCP readiness:'
-assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'check_user_mcp "context7" "Context7"'
-assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'check_user_mcp "serena" "Serena"'
+assert_file_not_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'Search and MCP readiness:'
+assert_file_not_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'check_user_mcp "context7" "Context7"'
+assert_file_not_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'check_user_mcp "serena" "Serena"'
 assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" 'node = "lts"'
 assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" 'uv = "latest"'
 
