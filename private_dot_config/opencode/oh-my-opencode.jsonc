@@ -28,10 +28,7 @@
     "state_dir": ".sisyphus/ralph-loop"
   },
   "sisyphus_agent": {
-    "disabled": true,
-    "default_builder_enabled": false,
-    "planner_enabled": true,
-    "replace_plan": true
+    "disabled": true
   },
   "sisyphus": {
     "tasks": {
@@ -51,6 +48,18 @@
     },
     "prometheus": {
       "category": "unspecified-high"
+    },
+    "librarian": {
+      "category": "deep",
+      "model": "openai/gpt-5.3-codex"
+    },
+    "explore": {
+      "category": "deep",
+      "model": "openai/gpt-5.3-codex"
+    },
+    "oracle": {
+      "category": "ultrabrain",
+      "model": "openai/gpt-5.3-codex"
     }
   },
   "categories": {

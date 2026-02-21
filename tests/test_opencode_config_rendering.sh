@@ -7,7 +7,7 @@ require_cmd() {
     command -v "$1" >/dev/null 2>&1
 }
 
-for c in bash chezmoi jq; do
+for c in bash chezmoi git jq; do
     require_cmd "$c" || {
         echo "SKIP: missing dependency: $c" >&2
         exit 0
@@ -38,6 +38,15 @@ assert_file_contains() {
         echo "assertion failed: expected '$file' to contain: $needle" >&2
         echo "--- file: $file ---" >&2
         cat "$file" >&2
+        exit 1
+    fi
+}
+
+assert_ignored_path() {
+    local path="$1"
+    if ! git -C "$ROOT" check-ignore -q "$path"; then
+        echo "assertion failed: expected path to be ignored: $path" >&2
+        git -C "$ROOT" check-ignore -v "$path" >&2 || true
         exit 1
     fi
 }
@@ -123,6 +132,7 @@ assert_jq "$OPENCODE_DEFAULT" '.theme == "dracula"'
 assert_jq "$OPENCODE_DEFAULT" '.model == .small_model'
 assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].agent == "build"'
 assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].template | length > 0'
+assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].template | contains("opencode mcp list")'
 assert_jq "$OPENCODE_DEFAULT" '.command["spec-verify"].description | length > 0'
 assert_jq "$OPENCODE_DEFAULT" '.default_agent == "build"'
 assert_jq "$OPENCODE_DEFAULT" '.agent.build.model == .model'
@@ -158,6 +168,9 @@ assert_jq "$OPENCODE_DEFAULT" '(.provider["qwen@private"].models["qwen3-max"].va
 assert_jq "$OPENCODE_DEFAULT" '.provider["kimi@private"].options.baseURL == "https://api.moonshot.ai/v1"'
 assert_jq "$OPENCODE_DEFAULT" '.skills.paths | index(".agents/skills") != null'
 assert_jq "$OPENCODE_DEFAULT" '.skills.paths | length == 1'
+assert_jq "$OPENCODE_DEFAULT" '.mcp.tavily.type == "local"'
+assert_jq "$OPENCODE_DEFAULT" '.mcp.tavily.enabled == true'
+assert_jq "$OPENCODE_DEFAULT" '.mcp.tavily.command[0] | endswith("/.local/bin/mcp-tavily")'
 assert_jq "$OPENCODE_WITH_GOPASS" '.provider["harui@private"].options.apiKey == "stub-account-key"'
 assert_jq "$OPENCODE_WITH_GOPASS" '.provider["deepseek@private"].options.apiKey == "stub-deepseek-key"'
 assert_jq "$OPENCODE_WITH_GOPASS" '.provider["openai@private"].options.apiKey == "stub-openai-key"'
@@ -283,5 +296,81 @@ if ! grep -Fq "'doctor:Run workflow diagnostics'" <<<"$codex_manage_completion_b
     echo "$codex_manage_completion_block" >&2
     exit 1
 fi
+
+assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" '[mcp_servers.tavily]'
+assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'section found but command is missing'
+assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'Tavily MCP command executable'
+
+# --- Task 6.1: spec-verify syntax ---
+assert_file_contains "$ROOT/private_dot_config/opencode/opencode.jsonc.tmpl" 'openspec validate <change-name>'
+
+# --- Task 6.2: AGENTS opsx syntax consistency ---
+# Codex AGENTS: hyphen form only (except disambiguation note)
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" '/opsx-new'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" '/opsx-archive'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Cross-tool syntax note'
+# OpenCode AGENTS: hyphen form
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '/opsx-new'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '/opsx-archive'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Cross-tool syntax note'
+# Claude AGENTS: colon form
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" '/opsx:new'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" '/opsx:archive'
+
+# --- Task 6.3: Guardrails references resolve (inline) ---
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" '## Guardrails'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '## Guardrails'
+
+# --- Task 6.4: Guardrails machine anchors ---
+for f in "$ROOT/dot_codex/AGENTS.md.tmpl" "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl"; do
+    assert_file_contains "$f" 'Authentication'
+    assert_file_contains "$f" 'Authorization'
+    assert_file_contains "$f" 'Financial'
+    assert_file_contains "$f" 'Security'
+    assert_file_contains "$f" 'Data Schema'
+    assert_file_contains "$f" 'External APIs'
+    assert_file_contains "$f" 'Irreversible Ops'
+    assert_file_contains "$f" 'PII/Privacy'
+    assert_file_contains "$f" 'Post-change report required'
+    assert_file_contains "$f" 'explicit confirmation'
+done
+
+# --- Task 6.5: Sisyphus planner residue absent ---
+assert_jq "$OH_MY_OPENCODE" '.sisyphus_agent.disabled == true'
+assert_jq "$OH_MY_OPENCODE" '(.sisyphus_agent | has("planner_enabled")) | not'
+assert_jq "$OH_MY_OPENCODE" '(.sisyphus_agent | has("replace_plan")) | not'
+assert_jq "$OH_MY_OPENCODE" '(.sisyphus_agent | has("default_builder_enabled")) | not'
+
+# --- Task 6.6: OpenSpec versioning posture explicit ---
+# .gitignore ignores the entire OpenSpec workspace by default
+assert_file_contains "$ROOT/.gitignore" 'openspec/'
+assert_ignored_path "openspec/changes/active-change/.probe"
+assert_ignored_path "openspec/changes/archive/.probe"
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'ignores `openspec/` by default'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'ignores `openspec/` by default'
+
+# --- Task 8.4: Tavily-first anchor wording ---
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Tavily MCP'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Tavily MCP'
+
+# --- Task 9.4: Research subagent model routes explicit ---
+assert_jq "$OH_MY_OPENCODE" '.agents.librarian.category == "deep"'
+assert_jq "$OH_MY_OPENCODE" '.agents.explore.category == "deep"'
+assert_jq "$OH_MY_OPENCODE" '.agents.oracle.category == "ultrabrain"'
+assert_jq "$OH_MY_OPENCODE" '.agents.librarian.model == "openai/gpt-5.3-codex"'
+assert_jq "$OH_MY_OPENCODE" '.agents.explore.model == "openai/gpt-5.3-codex"'
+assert_jq "$OH_MY_OPENCODE" '.agents.oracle.model == "openai/gpt-5.3-codex"'
+
+# --- Task 2.3: Runtime boundary wording machine-checkable ---
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'limited runtime hook capability'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'OPENCODE_DISABLE_CLAUDE_CODE=1'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'AGENTS -> CLAUDE fallback'
+
+# --- Task 9.2/9.3: Subagent execution diagnostics ---
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'background-first'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'No assistant or tool response found'
+
+# --- Task 3.4: Command-surface compatibility ---
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '.opencode/command/'
 
 echo "test_opencode_config_rendering: OK"
