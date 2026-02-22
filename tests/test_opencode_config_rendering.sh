@@ -368,16 +368,20 @@ assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" 'uv = "lat
 # --- Task 6.1: spec-verify syntax ---
 assert_file_contains "$ROOT/private_dot_config/opencode/opencode.jsonc.tmpl" 'openspec validate <change-name>'
 
-# --- Task 6.2: C0-C3 routing anchors ---
+# --- Task 6.2: C1-C4 routing anchors ---
 for f in "$ROOT/dot_claude/CLAUDE.md.tmpl" "$ROOT/dot_codex/AGENTS.md.tmpl" "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl"; do
-    assert_file_contains "$f" 'C0'
+    assert_file_not_contains "$f" 'C0/C1/C2/C3'
+    assert_file_not_contains "$f" 'Category: C0 | C1 | C2 | C3'
+    assert_file_not_contains "$f" 'Read-only request -> `C0`'
     assert_file_contains "$f" 'C1'
     assert_file_contains "$f" 'C2'
     assert_file_contains "$f" 'C3'
+    assert_file_contains "$f" 'C4'
     assert_file_contains "$f" 'DiscoveryScore'
     assert_file_contains "$f" 'ControlScore'
     assert_file_contains "$f" 'Intake Card'
-    assert_file_contains "$f" 'If C3 and (I = 2 or R = 2)'
+    assert_file_contains "$f" 'If category is `C3` or `C4`'
+    assert_file_contains "$f" 'Else `I = 2` and `R = 2` -> `C4`'
 done
 
 # --- Task 6.3: Spec-Kit bootstrap anchors ---
@@ -503,9 +507,9 @@ assert_file_contains "$ROOT/dot_custom/functions.sh" 'Path collision:'
 assert_file_contains "$ROOT/dot_custom/functions.sh" 'Nested worktree creation is not supported.'
 
 # --- worktree-first-ai-workflow: policy anchors ---
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Worktree Gate (C1+)'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Worktree Gate (C1+)'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Worktree Gate (C1+)'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Worktree Gate (C2+)'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Worktree Gate (C2+)'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Worktree Gate (C2+)'
 
 # --- worktree-first-ai-workflow: cross-tool shared command projection ---
 test -f "$ROOT/dot_agents/commands/core/route.md" || {
@@ -519,6 +523,7 @@ assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" '/opsx-new <change
 assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" 'openspec init --tools <tool>'
 assert_file_contains "$ROOT/dot_agents/commands/core/test.md" '/opsx:verify'
 assert_file_contains "$ROOT/dot_agents/commands/core/test.md" '/opsx-verify'
+assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'If category is `C4`, suggest Spec-Kit bootstrap first'
 assert_file_contains "$ROOT/dot_codex/prompts/symlink_core-worktree.md.tmpl" '.agents/commands/core/worktree.md'
 assert_file_contains "$ROOT/dot_agents/commands/core/route.md" '## Intake Card'
 assert_file_contains "$ROOT/dot_codex/prompts/symlink_core-route.md.tmpl" '.agents/commands/core/route.md'

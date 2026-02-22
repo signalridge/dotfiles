@@ -53,7 +53,7 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 - Declarative `OpenCode + oh-my-opencode` global config with native-only (no-Claude-compat) guardrails
 - Auto MCP sync for Claude on every `chezmoi apply`
 - Automated dependency upkeep via GitHub Actions (versions, flake locks, aqua packages)
-- `C0/C1/C2/C3` routing: direct flow for `C0/C1`, OpenSpec governance for `C2`, Spec-Kit bootstrap for `C3`
+- `C1/C2/C3/C4` routing: advisory in `C1`, direct small-change flow in `C2`, OpenSpec governance for `C3`, Spec-Kit bootstrap + OpenSpec implementation for `C4`
 
 ---
 
@@ -102,7 +102,7 @@ Core principles:
 - [Multi-Profile Configuration](#multi-profile-configuration)
 - [Security & Secrets](#security--secrets)
 - [CI and Automation](#ci-and-automation)
-- [Workflow Routing (C0-C3)](#workflow-routing-c0-c3)
+- [Workflow Routing (C1-C4)](#workflow-routing-c1-c4)
 - [Additional Docs](#additional-docs)
 - [Acknowledgements](#acknowledgements)
 - [Stats](#stats)
@@ -564,26 +564,27 @@ See:
 
 ---
 
-## Workflow Routing (C0-C3)
+## Workflow Routing (C1-C4)
 
 > [!IMPORTANT]
-> This repository routes implementation by `C0/C1/C2/C3` classification before coding.
+> This repository routes implementation by `C1/C2/C3/C4` classification before coding.
 
-| Category | Intent                        | Primary Path                                 |
-| -------- | ----------------------------- | -------------------------------------------- |
-| `C0`     | Advisory/read-only request    | Analyze and report only                      |
-| `C1`     | Deterministic direct change   | Implement directly with lightweight planning |
-| `C2`     | Incremental governed change   | OpenSpec lifecycle                           |
-| `C3`     | New initiative/high ambiguity | Spec-Kit first, then implementation          |
+| Category | Intent                     | Primary Path                                 |
+| -------- | -------------------------- | -------------------------------------------- |
+| `C1`     | Advisory/read-only request | Analyze and report only                      |
+| `C2`     | Small deterministic change | Implement directly with lightweight planning |
+| `C3`     | Medium governed change     | OpenSpec lifecycle                           |
+| `C4`     | New/major initiative       | Spec-Kit first, then OpenSpec implementation |
 
 Boundary and ownership:
 
-- `C0/C1` do not require OpenSpec or Spec-Kit.
-- OpenSpec governs execution and verification for `C2` and governed `C3`.
-- Spec-Kit is used to bootstrap and structure `C3` discovery in the target project.
-- If `C3` and (`I = 2` or `R = 2`), switch to governed mode and enter OpenSpec gate before coding.
+- `C1` is advisory only and does not include file changes.
+- `C2` small deterministic changes do not require OpenSpec or Spec-Kit.
+- OpenSpec governs execution and verification for `C3` and `C4` implementation.
+- Spec-Kit is used to bootstrap and structure `C4` discovery in the target project.
+- If category is `C3` or `C4`, switch to governed mode and enter OpenSpec gate before coding.
 
-Project-local Spec-Kit bootstrap (`C3`):
+Project-local Spec-Kit bootstrap (`C4`):
 
 ```bash
 specify init --here --ai claude --script sh
@@ -591,7 +592,7 @@ specify init --here --ai codex --script sh
 specify init --here --ai opencode --script sh
 ```
 
-OpenSpec workflow (`C2` and governed `C3`):
+OpenSpec workflow (`C3` and `C4` implementation):
 
 ```bash
 openspec new change <change-name>

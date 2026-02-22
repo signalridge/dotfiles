@@ -52,10 +52,10 @@ Levels:
 
 | Category | Meaning | Default Path |
 |----------|---------|--------------|
-| `C0` | Advisory-only, read-only guidance | Analyze and report only |
-| `C1` | Deterministic direct change on existing code | Implement directly with lightweight planning |
-| `C2` | Incremental governed change on existing systems | OpenSpec lifecycle (required) |
-| `C3` | New initiative / high-ambiguity feature exploration | Spec-Kit first, then implementation |
+| `C1` | Advisory-only, read-only guidance | Analyze and report only |
+| `C2` | Small deterministic change on existing code | Implement directly with lightweight planning |
+| `C3` | Medium governed change on existing systems | OpenSpec lifecycle (required) |
+| `C4` | New development / major feature / major refactor | Spec-Kit first, then OpenSpec-governed implementation |
 
 ## Intake Scoring (N/A/I/R)
 
@@ -73,12 +73,14 @@ Derived values:
 
 Routing rules (ordered):
 
-1. Read-only request -> `C0`
-2. `DiscoveryScore >= 3` or `N = 2` or `A = 2` -> `C3`
-3. Else `ControlScore >= 3` or `I = 2` or `R = 2` -> `C2`
-4. Else -> `C1`
+1. Read-only request -> `C1`
+2. Request explicitly calls for new development, major feature, or major refactor -> `C4`
+3. Else `DiscoveryScore >= 3` or `N = 2` or `A = 2` -> `C4`
+4. Else `I = 2` and `R = 2` -> `C4`
+5. Else `ControlScore >= 3` or `I = 2` or `R = 2` -> `C3`
+6. Else -> `C2`
 
-If C3 and (I = 2 or R = 2), use `Governed` execution mode and enter OpenSpec gate before coding.
+If category is `C3` or `C4`, use `Governed` execution mode and enter OpenSpec gate before coding.
 
 ## Intake Card
 
@@ -86,7 +88,7 @@ Before implementation, emit:
 
 ```markdown
 ## Intake Card
-- Category: C0 | C1 | C2 | C3
+- Category: C1 | C2 | C3 | C4
 - Scores: N/A/I/R = x/x/x/x
 - DiscoveryScore: x
 - ControlScore: x
@@ -95,16 +97,16 @@ Before implementation, emit:
 - Next Step: <single command>
 ```
 
-## Worktree Gate (C1+)
+## Worktree Gate (C2+)
 
 - Default model: `one-task-one-branch-one-worktree`.
-- `C2` and `C3` should use a dedicated `git worktree` under `.worktrees/<branch>`.
-- `C1` quick deterministic edits may remain in the primary workspace when isolation overhead is unnecessary.
+- `C3` and `C4` should use a dedicated `git worktree` under `.worktrees/<branch>`.
+- `C2` quick deterministic edits may remain in the primary workspace when isolation overhead is unnecessary.
 - Worktree cleanup is confirmation-first; avoid force-removal unless explicitly requested.
 
 ## OpenSpec and Spec-Kit Orchestration
 
-### OpenSpec Execution Gate (for C2 and governed C3)
+### OpenSpec Execution Gate (for C3 and C4 implementation)
 
 - Suggest only the next single `/opsx:*` (or `openspec ...`) step.
 - Ask explicit yes/no before executing.
@@ -124,9 +126,9 @@ openspec init --tools claude,codex
 
 If wrappers are stale, run `openspec update`.
 
-### C3 bootstrap note (project-local Spec-Kit)
+### C4 bootstrap note (project-local Spec-Kit)
 
-For `C3`, initialize Spec-Kit in the target project:
+For `C4`, initialize Spec-Kit in the target project:
 
 ```bash
 specify init --here --ai claude --script sh
@@ -163,10 +165,10 @@ Do **not** hand-write or maintain `/opsx:*` prompt files in dotfiles.
 - `/test` (`core/test`)
 - `/pr:pr-create` (`core/pr-create`)
 - `/pr:pr-review` (`core/pr-review`)
-- `/plan` (`core/plan`, use for `C1` lightweight planning)
+- `/plan` (`core/plan`, use for `C2` lightweight planning)
 - `/worktree` (`core/worktree`, shared worktree workflow guidance)
 
-### OpenSpec commands (C2 and governed C3)
+### OpenSpec commands (C3 and C4 implementation)
 
 The following is a **reference order** for the OpenSpec lifecycle. In actual chat, still follow the Execution Gate: propose only the **next single** step and ask explicit yes/no before executing.
 
@@ -179,10 +181,10 @@ The following is a **reference order** for the OpenSpec lifecycle. In actual cha
 
 | Intent | Route |
 |-------|-------|
-| `C0` advisory | analysis only (no file changes) |
-| `C1` deterministic change | `/route` → `/plan` (optional) → implement → `/test` → `/commit` |
-| `C2` governed incremental change | `/route` → `/opsx:new` (explicit yes/no) → OpenSpec lifecycle |
-| `C3` initiative/exploration | `/route` → `specify init --here --ai <tool>` → `/speckit.*` workflow; if governed (`I=2` or `R=2`), enter OpenSpec gate before coding |
+| `C1` advisory | analysis only (no file changes) |
+| `C2` small deterministic change | `/route` → `/plan` (optional) → implement → `/test` → `/commit` |
+| `C3` medium governed change | `/route` → `/opsx:new` (explicit yes/no) → OpenSpec lifecycle |
+| `C4` new/major initiative | `/route` → `specify init --here --ai <tool>` → `/speckit.*` workflow → OpenSpec gate before coding |
 | review / 审查 | `/review` |
 | test / 测试 | `/test` |
 | commit / 提交 | `/commit` |
@@ -190,9 +192,9 @@ The following is a **reference order** for the OpenSpec lifecycle. In actual cha
 
 ---
 
-## Pre-Analysis Protocol (C2+)
+## Pre-Analysis Protocol (C3+)
 
-Before implementing `C2` or governed `C3` tasks, complete:
+Before implementing `C3` or `C4` tasks, complete:
 
 ```markdown
 ## Pre-Analysis

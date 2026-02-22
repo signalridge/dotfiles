@@ -15,7 +15,8 @@ Analyze the relevant code area before implementation.
 2. Capture dependencies and calling paths.
 3. Note conventions that must be preserved.
 4. Run classification-first routing (`/route`) before proposing implementation.
-5. If category is `C2` or governed `C3`, suggest the next OpenSpec step and ask for explicit yes/no confirmation before execution.
+5. If category is `C3`, suggest the next OpenSpec step and ask for explicit yes/no confirmation before execution.
+6. If category is `C4`, suggest Spec-Kit bootstrap first; after discovery, suggest the next OpenSpec step with explicit yes/no confirmation.
 
 ## Tri-MCP Routing Policy
 
