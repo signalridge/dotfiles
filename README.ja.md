@@ -582,7 +582,8 @@ chezmoi init --apply --promptBool headless=true signalridge
 - `C2` の小規模変更は OpenSpec と Spec-Kit の対象外です。
 - OpenSpec は `C3` と `C4` 実装フェーズの実行/検証を担います。
 - Spec-Kit は `C4` の discovery 段階を対象プロジェクトで整備するために使います。
-- 分類が `C3` または `C4` の場合は governed mode に切り替え、実装前に OpenSpec gate に入ります。
+- 分類が `C3` の場合は governed mode に切り替え、実装前に OpenSpec gate に入ります。
+- 分類が `C4` の場合は governed mode に切り替え、Spec-Kit gate を通過してから OpenSpec gate に入ります。
 - `C4` の最初の実行コマンドは `specify init --here --ai <tool> --script sh` でなければなりません。
 - `C4` gate 通過前は read-only コマンド（`ls`、`rg`、`cat`、`git status`）のみ許可します。
 - `C4` の Intake Card には `Spec-Kit Gate: required | passed | waived` を必須で含めます。

@@ -580,7 +580,8 @@ chezmoi init --apply --promptBool headless=true signalridge
 - `C2` 小修任务不需要 OpenSpec，也不需要 Spec-Kit。
 - OpenSpec 负责 `C3` 和 `C4` 实施阶段的执行与验证治理。
 - Spec-Kit 用于在目标项目中启动并结构化 `C4` 的 discovery 阶段。
-- 若分类为 `C3` 或 `C4`，需切换到 governed mode，并在编码前进入 OpenSpec gate。
+- 若分类为 `C3`，需切换到 governed mode，并在编码前进入 OpenSpec gate。
+- 若分类为 `C4`，需切换到 governed mode，先通过 Spec-Kit gate，再进入 OpenSpec gate。
 - 若分类为 `C4`，第一条可执行命令必须是 `specify init --here --ai <tool> --script sh`。
 - `C4` gate 通过前只允许只读命令：`ls`、`rg`、`cat`、`git status`。
 - `C4` 的 Intake Card 必须包含 `Spec-Kit Gate: required | passed | waived`。
