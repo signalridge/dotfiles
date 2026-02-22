@@ -76,6 +76,32 @@ check_user_mcp_sse() {
     fi
 }
 
+check_user_mcp_http() {
+    local name="$1"
+    local expected_url="$2"
+
+    if [[ ! -f "$CLAUDE_JSON" ]]; then
+        echo "missing"
+        return 0
+    fi
+
+    local server
+    server="$(jq -e --arg n "$name" '.mcpServers[$n]' "$CLAUDE_JSON" 2>/dev/null)" || {
+        echo "missing"
+        return 0
+    }
+
+    local actual_type actual_url
+    actual_type="$(jq -r '.type // "stdio"' <<<"$server")"
+    actual_url="$(jq -r '.url // empty' <<<"$server")"
+
+    if [[ "$actual_type" == "http" && "$actual_url" == "$expected_url" ]]; then
+        echo "match"
+    else
+        echo "mismatch"
+    fi
+}
+
 ensure_user_mcp_json() {
     local name="$1"
     local json="$2"
@@ -126,6 +152,31 @@ ensure_user_mcp_sse() {
     esac
 }
 
+ensure_user_mcp_http() {
+    local name="$1"
+    local url="$2"
+
+    local status
+    status="$(check_user_mcp_http "$name" "$url")"
+
+    case "$status" in
+    match)
+        echo "    Exists: $name"
+        ;;
+    missing)
+        "$claude_cmd" mcp add --transport http -s user "$name" "$url"
+        ;;
+    mismatch)
+        echo "    Updating: $name"
+        "$claude_cmd" mcp remove -s user "$name" >/dev/null 2>&1 || true
+        "$claude_cmd" mcp add --transport http -s user "$name" "$url"
+        ;;
+    *)
+        echo "    Skipped: $name (unknown check status: $status)"
+        ;;
+    esac
+}
+
 ensure_user_mcp_json "slack" '{"command":"npx","args":["-y","@anthropic/mcp-server-slack"],"env":{"SLACK_BOT_TOKEN":"${SLACK_BOT_TOKEN}","SLACK_TEAM_ID":"${SLACK_TEAM_ID}"}}'
 
 ensure_user_mcp_json "slack-explorer" '{"command":"docker","args":["run","-i","--rm","--pull","always","ghcr.io/shibayu36/slack-explorer-mcp:latest"],"env":{"SLACK_USER_TOKEN":"${SLACK_USER_TOKEN}"}}'
@@ -137,3 +188,4 @@ ensure_user_mcp_json "markitdown" '{"command":"uvx","args":["markitdown-mcp"]}'
 ensure_user_mcp_json "arxiv-mcp-server" '{"command":"uv","args":["tool","run","arxiv-mcp-server"]}'
 ensure_user_mcp_json "tavily" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily","args":[]}'
 ensure_user_mcp_json "postgres" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-postgres","args":[]}'
+ensure_user_mcp_http "gitmcp" "https://gitmcp.io/docs"
