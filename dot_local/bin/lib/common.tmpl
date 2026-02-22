@@ -66,6 +66,112 @@ log_section() {
     echo -e "${BLUE}$*${NC}"
 }
 
+# ===== Runtime Environment Helpers =====
+
+path_prepend_if_exists() {
+    local dir="$1"
+    [[ -n "$dir" && -d "$dir" ]] || return 0
+
+    case ":${PATH:-}:" in
+        *":$dir:"*) ;;
+        *) PATH="$dir${PATH:+:$PATH}" ;;
+    esac
+}
+
+ensure_aqua_environment() {
+    [[ "${__COMMON_AQUA_ENV_READY:-}" == "1" ]] && return 0
+
+    local candidate
+    local -a config_candidates=()
+    local -a bin_candidates=()
+
+    [[ -n "${AQUA_GLOBAL_CONFIG:-}" ]] && config_candidates+=("$AQUA_GLOBAL_CONFIG")
+    [[ -n "${AQUA_CONFIG:-}" ]] && config_candidates+=("$AQUA_CONFIG")
+    [[ -n "${XDG_CONFIG_HOME:-}" ]] && config_candidates+=("${XDG_CONFIG_HOME}/aquaproj-aqua/aqua.yaml")
+    [[ -n "${HOME:-}" ]] && config_candidates+=("${HOME}/.config/aquaproj-aqua/aqua.yaml")
+
+    for candidate in "${config_candidates[@]}"; do
+        if [[ -n "$candidate" && -f "$candidate" ]]; then
+            export AQUA_GLOBAL_CONFIG="$candidate"
+            export AQUA_CONFIG="$candidate"
+            break
+        fi
+    done
+
+    [[ -n "${AQUA_ROOT_DIR:-}" ]] && bin_candidates+=("${AQUA_ROOT_DIR}/bin")
+    [[ -n "${XDG_DATA_HOME:-}" ]] && bin_candidates+=("${XDG_DATA_HOME}/aquaproj-aqua/bin")
+    [[ -n "${HOME:-}" ]] && bin_candidates+=("${HOME}/.local/share/aquaproj-aqua/bin")
+
+    for candidate in "${bin_candidates[@]}"; do
+        path_prepend_if_exists "$candidate"
+    done
+
+    __COMMON_AQUA_ENV_READY=1
+}
+
+ensure_gopass_environment() {
+    [[ "${__COMMON_GOPASS_ENV_READY:-}" == "1" ]] && return 0
+
+    ensure_aqua_environment
+
+    if [[ -n "${HOME:-}" ]]; then
+        local active_cfg="${XDG_CONFIG_HOME:-$HOME/.config}/gopass/config"
+        local home_cfg="${HOME}/.config/gopass/config"
+        if [[ ! -f "$active_cfg" && -f "$home_cfg" ]]; then
+            export XDG_CONFIG_HOME="${HOME}/.config"
+        fi
+
+        local default_store="${HOME}/.local/share/gopass/stores/root"
+        if [[ -z "${PASSWORD_STORE_DIR:-}" && -d "$default_store" ]]; then
+            export PASSWORD_STORE_DIR="$default_store"
+        fi
+    fi
+
+    __COMMON_GOPASS_ENV_READY=1
+}
+
+gopass_exec_with_timeout() {
+    local timeout_sec="${1:-3}"
+    shift || true
+
+    ensure_gopass_environment
+
+    if command -v gopass >/dev/null 2>&1; then
+        if run_with_timeout "$timeout_sec" gopass "$@"; then
+            return 0
+        fi
+    fi
+
+    if command -v aqua >/dev/null 2>&1; then
+        local aqua_cfg="${AQUA_CONFIG:-${AQUA_GLOBAL_CONFIG:-}}"
+        if [[ -n "$aqua_cfg" && -f "$aqua_cfg" ]]; then
+            if run_with_timeout "$timeout_sec" aqua --config "$aqua_cfg" exec -- gopass "$@"; then
+                return 0
+            fi
+        fi
+    fi
+
+    return 1
+}
+
+gopass_show_secret() {
+    local secret_path="$1"
+    local timeout_sec="${2:-3}"
+    gopass_exec_with_timeout "$timeout_sec" show -o "$secret_path"
+}
+
+gopass_has_secret() {
+    local secret_path="$1"
+    local timeout_sec="${2:-3}"
+    gopass_exec_with_timeout "$timeout_sec" list -f "$secret_path" >/dev/null 2>&1
+}
+
+gopass_list_prefix() {
+    local prefix="$1"
+    local timeout_sec="${2:-3}"
+    gopass_exec_with_timeout "$timeout_sec" list -f "$prefix"
+}
+
 # ===== Command Validation =====
 
 # Check if required commands are available
@@ -74,6 +180,15 @@ log_section() {
 require_cmd() {
     local c
     for c in "$@"; do
+        case "$c" in
+            aqua)
+                ensure_aqua_environment
+                ;;
+            gopass)
+                ensure_gopass_environment
+                ;;
+        esac
+
         if ! command -v "$c" &>/dev/null; then
             log_error "required command not found: $c"
             return 1

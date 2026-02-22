@@ -7,13 +7,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/lib/common"
 
-require_cmd gopass npx
+require_cmd npx
 
 PG_DSN_GOPASS_PATH="postgres/api_key"
 
-if ! PG_DSN=$(run_with_timeout 3 gopass show -o "$PG_DSN_GOPASS_PATH" 2>/dev/null); then
-    log_error "Failed to read PostgreSQL DSN from gopass: $PG_DSN_GOPASS_PATH"
-    exit 1
+# Allow explicit env override for CI/non-interactive runners.
+if [[ -z "${PG_DSN:-}" ]]; then
+    if ! PG_DSN="$(gopass_show_secret "$PG_DSN_GOPASS_PATH" 3 2>/dev/null)"; then
+        log_error "Failed to read PostgreSQL DSN from gopass: $PG_DSN_GOPASS_PATH"
+        exit 1
+    fi
 fi
 
 if [[ -z "$PG_DSN" ]]; then

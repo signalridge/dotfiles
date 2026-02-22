@@ -11,13 +11,13 @@ require_cmd npx
 
 CONTEXT7_PACKAGE="@upstash/context7-mcp@2.1.1"
 CONTEXT7_GOPASS_PATH="context7/api_key"
-context7_api_key=""
+context7_api_key="${CONTEXT7_API_KEY:-}"
 
 # Optional auth: run without key when gopass or entry is unavailable.
-if command -v gopass >/dev/null 2>&1; then
-    if run_with_timeout 3 gopass list -f "$CONTEXT7_GOPASS_PATH" >/dev/null 2>&1; then
-        context7_api_key="$(run_with_timeout 3 gopass show -o "$CONTEXT7_GOPASS_PATH" 2>/dev/null | head -n 1 || true)"
-    fi
+# Respect explicit env override first for CI/non-interactive runs.
+if [[ -z "$context7_api_key" ]] && gopass_has_secret "$CONTEXT7_GOPASS_PATH"; then
+    context7_api_key="$(gopass_show_secret "$CONTEXT7_GOPASS_PATH" 3 2>/dev/null || true)"
+    context7_api_key="${context7_api_key%%$'\n'*}"
 fi
 
 if [[ -n "$context7_api_key" ]]; then

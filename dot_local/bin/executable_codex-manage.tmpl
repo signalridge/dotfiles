@@ -171,7 +171,7 @@ cmd_switch() {
     provider=$(get_provider "$input")
 
     if is_third_party "$provider"; then
-        if command -v gopass >/dev/null 2>&1; then
+        if require_cmd gopass >/dev/null 2>&1; then
             if ! codex-token --check "$input" 2>/dev/null; then
                 log_warn "No API token for $input (continuing without auth update)"
             fi
@@ -187,7 +187,7 @@ cmd_switch() {
     chezmoi apply --verbose --exclude scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
     echo "  ✓ Updated ~/.codex/config.toml"
     if is_third_party "$provider"; then
-        if command -v gopass >/dev/null 2>&1 && codex-token --check "$input" 2>/dev/null; then
+        if require_cmd gopass >/dev/null 2>&1 && codex-token --check "$input" 2>/dev/null; then
             backup_codex_auth_openai || return 1
             local parsed acct_name
             parsed=$(parse_provider_account "$input")
@@ -713,7 +713,7 @@ cmd_doctor() {
     if command -v specify >/dev/null 2>&1; then pass "specify found"; else note_warn "specify not found (C3 Spec-Kit bootstrap unavailable)"; fi
     if command -v jq >/dev/null 2>&1; then pass "jq found"; else note_fail "jq not found"; fi
     if command -v chezmoi >/dev/null 2>&1; then pass "chezmoi found"; else note_fail "chezmoi not found"; fi
-    if command -v gopass >/dev/null 2>&1; then pass "gopass found"; else note_warn "gopass missing (third-party keys unavailable)"; fi
+    if require_cmd gopass >/dev/null 2>&1; then pass "gopass found"; else note_warn "gopass missing (third-party keys unavailable)"; fi
     echo ""
 
     echo "Rendered configs:"

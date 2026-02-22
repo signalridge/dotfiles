@@ -255,7 +255,7 @@ key_exists() {
     local path
     while IFS= read -r path; do
         [[ -z "$path" ]] && continue
-        if run_with_timeout 3 gopass list -f "$path" &>/dev/null; then
+        if gopass_has_secret "$path" 3; then
             return 0
         fi
     done < <(api_key_path_candidates "$provider" "$account")
@@ -416,7 +416,7 @@ build_accounts_with_keys() {
 # Discover third-party accounts that actually exist in gopass.
 # Canonical key path is "<tool>/<provider>/<account>/api_key".
 list_gopass_third_party_accounts() {
-    command -v gopass >/dev/null 2>&1 || return 0
+    require_cmd gopass >/dev/null 2>&1 || return 0
 
     local prefix path provider label account key_value
     local -a accounts=()
@@ -434,7 +434,7 @@ list_gopass_third_party_accounts() {
             validate_account_name "$label" || continue
             is_third_party "$provider" || continue
 
-            key_value=$(run_with_timeout 3 gopass show -o "$path" 2>/dev/null || true)
+            key_value=$(gopass_show_secret "$path" 3 2>/dev/null || true)
             [[ -n "$key_value" ]] || continue
 
             if [[ "$label" == "default" ]]; then
@@ -446,7 +446,7 @@ list_gopass_third_party_accounts() {
             if [[ " ${accounts[*]-} " != *" $account "* ]]; then
                 accounts+=("$account")
             fi
-        done < <(gopass list -f "$prefix" 2>/dev/null || true)
+        done < <(gopass_list_prefix "$prefix" 3 2>/dev/null || true)
     done < <(gopass_prefix_candidates)
 
     if [[ ${#accounts[@]} -gt 0 ]]; then
@@ -541,7 +541,7 @@ store_api_key() {
     local key_value="$3"
     local target
     target=$(api_key_path "$provider" "$account") || return 1
-    printf '%s' "$key_value" | gopass insert -f "$target"
+    printf '%s' "$key_value" | gopass_exec_with_timeout 5 insert -f "$target"
 }
 
 delete_api_key() {
@@ -550,7 +550,7 @@ delete_api_key() {
     local path
     while IFS= read -r path; do
         [[ -z "$path" ]] && continue
-        gopass rm -f "$path" &>/dev/null || true
+        gopass_exec_with_timeout 3 rm -f "$path" &>/dev/null || true
     done < <(api_key_path_candidates "$provider" "$account")
 }
 
@@ -561,7 +561,7 @@ get_api_key() {
     local path key
     while IFS= read -r path; do
         [[ -z "$path" ]] && continue
-        if key=$(run_with_timeout 3 gopass show -o "$path" 2>/dev/null); then
+        if key=$(gopass_show_secret "$path" 3 2>/dev/null); then
             echo "$key"
             return 0
         fi
