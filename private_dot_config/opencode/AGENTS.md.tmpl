@@ -135,6 +135,12 @@ Codex fallback when prompt discovery is missing:
 export CODEX_HOME="$PWD/.codex"
 ```
 
+## OpenSpec Version Control
+
+- Track all OpenSpec artifacts in git: `openspec/**`.
+- Keep active deltas under `openspec/changes/<name>/` until complete, then archive before merge.
+- CI merge gate should run `.github/scripts/check_openspec_trace_gate.sh` to block unarchived changes when OpenSpec is in use.
+
 ## OpenCode Runtime Boundaries
 
 - Default profile is strict native-only mode.

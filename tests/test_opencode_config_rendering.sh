@@ -62,6 +62,15 @@ assert_ignored_path() {
     fi
 }
 
+assert_not_ignored_path() {
+    local path="$1"
+    if git -C "$ROOT" check-ignore -q "$path"; then
+        echo "assertion failed: expected path to NOT be ignored: $path" >&2
+        git -C "$ROOT" check-ignore -v "$path" >&2 || true
+        exit 1
+    fi
+}
+
 render_opencode() {
     local output="$1"
     local override_data="${2:-}"
@@ -417,12 +426,21 @@ assert_jq "$OH_MY_OPENCODE" '(.sisyphus_agent | has("replace_plan")) | not'
 assert_jq "$OH_MY_OPENCODE" '(.sisyphus_agent | has("default_builder_enabled")) | not'
 
 # --- Task 6.8: OpenSpec versioning posture explicit ---
-# .gitignore ignores the entire OpenSpec workspace by default
-assert_file_contains "$ROOT/.gitignore" 'openspec/'
-assert_ignored_path "openspec/changes/active-change/.probe"
-assert_ignored_path "openspec/changes/archive/.probe"
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'ignores `openspec/` by default'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'ignores `openspec/` by default'
+# Long-lived OpenSpec traces are tracked in git and must not be ignored.
+if grep -Eq '^openspec/?$|^openspec/' "$ROOT/.gitignore"; then
+    echo "assertion failed: .gitignore should not ignore openspec/" >&2
+    grep -En '^openspec/?$|^openspec/' "$ROOT/.gitignore" >&2 || true
+    exit 1
+fi
+assert_not_ignored_path "openspec/specs/.probe"
+assert_not_ignored_path "openspec/changes/archive/.probe"
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'tracks all OpenSpec artifacts in git'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'tracks all OpenSpec artifacts in git'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'OpenSpec Version Control'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Track all OpenSpec artifacts in git'
+assert_file_contains "$ROOT/.github/workflows/openspec-trace-gate.yml" '.github/scripts/check_openspec_trace_gate.sh'
+assert_file_contains "$ROOT/.github/scripts/check_openspec_trace_gate.sh" 'unexpected files under openspec/changes'
+assert_file_contains "$ROOT/.github/scripts/check_openspec_trace_gate.sh" 'archive these changes before merge'
 
 # --- Task 8.4: Tavily-first anchor wording ---
 assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Tavily MCP'
