@@ -326,7 +326,6 @@ fi
 assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'Search and MCP readiness:'
 assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'check_mcp_server "tavily" "Tavily"'
 assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'tri-MCP readiness unknown'
-
 assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '[mcp_servers.context7]'
 assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '[mcp_servers.serena]'
 assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" 'git+https://github.com/oraios/serena@v0.1.4'
@@ -334,13 +333,11 @@ assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '"--context", "codex"'
 assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" 'startup_timeout_sec = 30'
 assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '[mcp_servers.gitmcp]'
 assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" 'url = "https://gitmcp.io/docs"'
-
 assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl" 'ensure_user_mcp_json "context7"'
 assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl" '/.local/bin/mcp-context7'
 assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl" 'ensure_user_mcp_json "serena"'
 assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl" '--context","claude-code"'
 assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl" 'ensure_user_mcp_http "gitmcp" "https://gitmcp.io/docs"'
-
 test -f "$ROOT/dot_local/bin/executable_mcp-context7.tmpl" || {
     echo "missing managed context7 wrapper template" >&2
     exit 1
