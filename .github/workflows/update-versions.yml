@@ -54,6 +54,7 @@ jobs:
           microsoft_skills_rev=$(gh api repos/microsoft/skills/commits/main -q '.sha')
           sickn33_antigravity_skills_rev=$(gh api repos/sickn33/antigravity-awesome-skills/commits/main -q '.sha')
           zig_development_playbook_skill_rev=$(gh api repos/signalridge/zig-development-playbook-skill/commits/main -q '.sha')
+          rust_development_playbook_skill_rev=$(gh api repos/signalridge/rust-development-playbook-skill/commits/main -q '.sha')
           humanizer_en_rev=$(gh api repos/blader/humanizer/commits/main -q '.sha')
           stop_slop_en_rev=$(gh api repos/hardikpandya/stop-slop/commits/main -q '.sha')
           humanizer_zh_rev=$(gh api repos/op7418/Humanizer-zh/commits/main -q '.sha')
@@ -87,6 +88,7 @@ jobs:
             echo "microsoft_skills_rev=$microsoft_skills_rev"
             echo "sickn33_antigravity_skills_rev=$sickn33_antigravity_skills_rev"
             echo "zig_development_playbook_skill_rev=$zig_development_playbook_skill_rev"
+            echo "rust_development_playbook_skill_rev=$rust_development_playbook_skill_rev"
             echo "humanizer_en_rev=$humanizer_en_rev"
             echo "stop_slop_en_rev=$stop_slop_en_rev"
             echo "humanizer_zh_rev=$humanizer_zh_rev"
@@ -121,6 +123,7 @@ jobs:
           sed -i 's/microsoftSkillsRev: .*/microsoftSkillsRev: ${{ steps.versions.outputs.microsoft_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/sickn33AntigravitySkillsRev: .*/sickn33AntigravitySkillsRev: ${{ steps.versions.outputs.sickn33_antigravity_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/zigDevelopmentPlaybookSkillRev: .*/zigDevelopmentPlaybookSkillRev: ${{ steps.versions.outputs.zig_development_playbook_skill_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/rustDevelopmentPlaybookSkillRev: .*/rustDevelopmentPlaybookSkillRev: ${{ steps.versions.outputs.rust_development_playbook_skill_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/humanizerEnRev: .*/humanizerEnRev: ${{ steps.versions.outputs.humanizer_en_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/stopSlopEnRev: .*/stopSlopEnRev: ${{ steps.versions.outputs.stop_slop_en_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/humanizerZhRev: .*/humanizerZhRev: ${{ steps.versions.outputs.humanizer_zh_rev }}/' .chezmoidata/versions.yaml
@@ -170,6 +173,7 @@ jobs:
             | microsoft/skills | `${{ steps.versions.outputs.microsoft_skills_rev }}` |
             | sickn33/antigravity-awesome-skills | `${{ steps.versions.outputs.sickn33_antigravity_skills_rev }}` |
             | signalridge/zig-development-playbook-skill | `${{ steps.versions.outputs.zig_development_playbook_skill_rev }}` |
+            | signalridge/rust-development-playbook-skill | `${{ steps.versions.outputs.rust_development_playbook_skill_rev }}` |
             | humanizer-en | `${{ steps.versions.outputs.humanizer_en_rev }}` |
             | stop-slop-en | `${{ steps.versions.outputs.stop_slop_en_rev }}` |
             | humanizer-zh | `${{ steps.versions.outputs.humanizer_zh_rev }}` |
