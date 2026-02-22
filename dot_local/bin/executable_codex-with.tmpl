@@ -116,7 +116,7 @@ launch_codex() {
 
     local api_key=""
     if is_third_party "$provider"; then
-        if command -v gopass >/dev/null 2>&1; then
+        if require_cmd gopass >/dev/null 2>&1; then
             if codex-token --check "$account" 2>/dev/null; then
                 local parsed acct_name
                 parsed=$(parse_provider_account "$account")

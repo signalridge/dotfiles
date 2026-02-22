@@ -754,7 +754,7 @@ cmd_doctor() {
     if command -v jq >/dev/null 2>&1; then pass "jq found"; else note_fail "jq not found"; fi
     if command -v chezmoi >/dev/null 2>&1; then pass "chezmoi found"; else note_fail "chezmoi not found"; fi
     if command -v yq >/dev/null 2>&1; then pass "yq found"; else note_warn "yq missing (account metadata checks reduced)"; fi
-    if command -v gopass >/dev/null 2>&1; then pass "gopass found"; else note_warn "gopass missing (third-party keys unavailable)"; fi
+    if require_cmd gopass >/dev/null 2>&1; then pass "gopass found"; else note_warn "gopass missing (third-party keys unavailable)"; fi
     echo ""
 
     echo "Rendered configs:"
