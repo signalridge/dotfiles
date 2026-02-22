@@ -19,23 +19,29 @@ jobs:
         run: |
           set -euo pipefail
 
+          curl_sha256() {
+            local url="$1"
+            curl -fsSL --retry 5 --retry-delay 2 --retry-max-time 120 --retry-all-errors -L "$url" \
+              | sha256sum | awk '{print $1}'
+          }
+
           nix_installer=$(gh release view --repo DeterminateSystems/nix-installer --json tagName -q '.tagName')
           nix_version=$(gh release view --repo DeterminateSystems/nix --json tagName -q '.tagName')
           aqua_installer=$(gh release view --repo aquaproj/aqua-installer --json tagName -q '.tagName')
-          aqua_installer_sha256=$(curl -fsSL -L "https://raw.githubusercontent.com/aquaproj/aqua-installer/${aqua_installer}/aqua-installer" | sha256sum | awk '{print $1}')
+          aqua_installer_sha256=$(curl_sha256 "https://raw.githubusercontent.com/aquaproj/aqua-installer/${aqua_installer}/aqua-installer")
           aqua_version=$(gh release view --repo aquaproj/aqua --json tagName -q '.tagName')
           nix_index_db=$(gh release view --repo nix-community/nix-index-database --json tagName -q '.tagName')
           # paperlib tag format: release-electron-X.Y.Z -> extract X.Y.Z
           paperlib=$(gh release view --repo Future-Scholars/paperlib --json tagName -q '.tagName' | sed 's/release-electron-//')
 
           claude_wshobson_agents_rev=$(gh api repos/wshobson/agents/commits/main -q '.sha')
-          claude_wshobson_agents_sha256=$(curl -fsSL -L "https://github.com/wshobson/agents/archive/${claude_wshobson_agents_rev}.tar.gz" | sha256sum | awk '{print $1}')
+          claude_wshobson_agents_sha256=$(curl_sha256 "https://github.com/wshobson/agents/archive/${claude_wshobson_agents_rev}.tar.gz")
           claude_superpowers_rev=$(gh api repos/obra/superpowers/commits/main -q '.sha')
-          claude_superpowers_sha256=$(curl -fsSL -L "https://github.com/obra/superpowers/archive/${claude_superpowers_rev}.tar.gz" | sha256sum | awk '{print $1}')
+          claude_superpowers_sha256=$(curl_sha256 "https://github.com/obra/superpowers/archive/${claude_superpowers_rev}.tar.gz")
           claude_anthropics_skills_rev=$(gh api repos/anthropics/skills/commits/main -q '.sha')
-          claude_anthropics_skills_sha256=$(curl -fsSL -L "https://github.com/anthropics/skills/archive/${claude_anthropics_skills_rev}.tar.gz" | sha256sum | awk '{print $1}')
+          claude_anthropics_skills_sha256=$(curl_sha256 "https://github.com/anthropics/skills/archive/${claude_anthropics_skills_rev}.tar.gz")
           ui_ux_pro_max_skill_rev=$(gh api repos/nextlevelbuilder/ui-ux-pro-max-skill/commits/main -q '.sha')
-          ui_ux_pro_max_skill_sha256=$(curl -fsSL -L "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/${ui_ux_pro_max_skill_rev}.tar.gz" | sha256sum | awk '{print $1}')
+          ui_ux_pro_max_skill_sha256=$(curl_sha256 "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/${ui_ux_pro_max_skill_rev}.tar.gz")
           openai_skills_rev=$(gh api repos/openai/skills/commits/main -q '.sha')
           huggingface_skills_rev=$(gh api repos/huggingface/skills/commits/main -q '.sha')
           getsentry_skills_rev=$(gh api repos/getsentry/skills/commits/main -q '.sha')
