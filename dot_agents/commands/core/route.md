@@ -44,20 +44,21 @@ Derived values:
 
 ## Route Split (C3 vs C4)
 
-- `C3` (OpenSpec-first):
-  - Next step: `/opsx:new <change-name>` (Claude) or `/opsx-new <change-name>` (Codex/OpenCode)
-  - CLI fallback: `openspec new change <change-name>`
-  - If wrappers are missing/outdated: run `openspec update` (or `openspec init --tools <tool>` if not initialized)
-- `C4` (Spec-Kit-first):
-  - Next step: current-tool `specify init --here --ai <tool> --script sh`
-  - Until `Spec-Kit Gate: passed`, do not run OpenSpec lifecycle commands or implementation commands
-  - After gate passes, continue Spec-Kit discovery and then enter OpenSpec lifecycle as in `C3` (wrapper or CLI fallback)
+### C3 Mandatory OpenSpec Gate
 
-## C4 Mandatory Spec-Kit Gate (Balanced)
+For `C3`, enforce:
+
+- First executable command MUST be:
+  - Claude Code: `/opsx:new <change-name>`
+  - Codex/OpenCode: `/opsx-new <change-name>`
+- CLI fallback: `openspec new change <change-name>`
+- If wrappers are missing/outdated, run `openspec update` (or `openspec init --tools <tool>` if not initialized)
+
+### C4 Mandatory Spec-Kit Gate (Balanced)
 
 For `C4`, enforce:
 
-- First executable command MUST be the current-tool bootstrap command:
+- First executable command MUST be:
   - Claude Code: `specify init --here --ai claude --script sh`
   - Codex CLI: `specify init --here --ai codex --script sh`
   - OpenCode: `specify init --here --ai opencode --script sh`
@@ -74,6 +75,10 @@ If gate is not passed:
 - STOP and ask explicit yes/no for the single current-tool command above
 - Do not provide alternative implementation paths
 - Use `Spec-Kit Gate: waived` only when user explicitly asks to skip, and include `Waive Reason: <one sentence>`
+
+After gate passes:
+
+- Continue Spec-Kit discovery, then enter the same OpenSpec lifecycle as `C3` (wrapper or CLI fallback)
 
 ## Required Output Contract
 

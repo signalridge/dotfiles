@@ -55,7 +55,17 @@ Levels:
 | `C3`     | Medium governed change on existing systems       | OpenSpec lifecycle required                                    |
 | `C4`     | New development / major feature / major refactor | Mandatory Spec-Kit gate, then OpenSpec-governed implementation |
 
-## C4 Mandatory Spec-Kit Gate (Balanced)
+## Governed Workflow Gates (C3/C4)
+
+### C3 Mandatory OpenSpec Gate
+
+If task is `C3`, apply this gate:
+
+- First executable command MUST be: `/opsx-new <change-name>`
+- CLI fallback: `openspec new change <change-name>`
+- If wrappers are missing/outdated, run `openspec update` (or `openspec init --tools <tool>` if not initialized)
+
+### C4 Mandatory Spec-Kit Gate (Balanced)
 
 If task is `C4` (new development / greenfield / major refactor), apply this gate:
 
@@ -72,6 +82,11 @@ If gate is not passed:
 
 - STOP and ask explicit yes/no for this single next command: `specify init --here --ai opencode --script sh`
 - Do not provide alternative implementation paths
+- Use `Spec-Kit Gate: waived` only when user explicitly asks to skip, and include `Waive Reason: <one sentence>`
+
+After gate passes:
+
+- Continue Spec-Kit discovery, then enter the same OpenSpec lifecycle as `C3`
 
 ## Intake Scoring (N/A/I/R)
 
@@ -140,14 +155,10 @@ For `C4`:
 
 ## C3 vs C4 Route Split (Explicit)
 
-- `C3`:
-  - First workflow command: `/opsx-new <change-name>`
-  - CLI fallback: `openspec new change <change-name>`
-  - Continue directly with OpenSpec lifecycle (`/opsx-ff` or `/opsx-continue` -> `/opsx-apply` -> `/opsx-verify` -> `/opsx-archive`)
-- `C4`:
-  - First workflow command: `specify init --here --ai opencode --script sh`
-  - Before `Spec-Kit Gate: passed`, do not run OpenSpec lifecycle or implementation commands
-  - After gate passes, continue Spec-Kit discovery, then enter the same OpenSpec lifecycle as `C3` (wrapper or CLI fallback)
+| Category | Entry gate                              | Implementation starts when  | Next lifecycle                              |
+| -------- | --------------------------------------- | --------------------------- | ------------------------------------------- |
+| `C3`     | `C3 Mandatory OpenSpec Gate`            | OpenSpec change initialized | OpenSpec lifecycle                          |
+| `C4`     | `C4 Mandatory Spec-Kit Gate (Balanced)` | `Spec-Kit Gate: passed`     | Spec-Kit discovery, then OpenSpec lifecycle |
 
 Reference order:
 
@@ -169,10 +180,7 @@ specify init --here --ai codex --script sh
 specify init --here --ai claude --script sh
 ```
 
-Balanced gate behavior for `C4`:
-
-- If `.specify/` or `specs/` is missing, output `Spec-Kit Gate: required`, STOP, and ask explicit yes/no for `specify init --here --ai opencode --script sh`
-- Only after artifacts exist, output `Spec-Kit Gate: passed` and continue to OpenSpec-governed implementation
+Gate behavior is defined in `Governed Workflow Gates (C3/C4)` above.
 
 Codex fallback when prompt discovery is missing:
 
