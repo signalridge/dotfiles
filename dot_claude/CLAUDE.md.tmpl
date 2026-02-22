@@ -142,8 +142,8 @@ export CODEX_HOME="$PWD/.codex"
 
 ### Version control note (gitignore)
 
-This repository ignores `openspec/` by default.
-OpenSpec artifacts are treated as local working state and are not version-controlled unless ignore rules are intentionally changed.
+This repository tracks all OpenSpec artifacts in git (`openspec/**`).
+Active change directories under `openspec/changes/` must be archived before merge; CI enforces this via `.github/scripts/check_openspec_trace_gate.sh`.
 
 ---
 
