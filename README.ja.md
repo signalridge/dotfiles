@@ -420,8 +420,17 @@ gopass show -o opencode/harui/private/api_key >/dev/null
 - Claude MCP は `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl` によって自動同期されます。
 - OpenCode の MCP/plugin 振る舞いは `~/.config/opencode/opencode.jsonc` と `~/.config/opencode/oh-my-opencode.jsonc` でネイティブに管理されます。
 - このリポジトリは次の MCP ラッパーを提供します：
+  - `~/.local/bin/mcp-context7`
   - `~/.local/bin/mcp-tavily`
   - `~/.local/bin/mcp-postgres`
+
+#### タスク -> MCP ルーティング
+
+| タスク種別                                 | 優先 MCP | フォールバック             |
+| ------------------------------------------ | -------- | -------------------------- |
+| ライブラリ/フレームワーク/API ドキュメント | Context7 | Tavily -> 内蔵 web search  |
+| Web/ニュース/一般調査                      | Tavily   | 内蔵 web search            |
+| シンボリックなコードナビゲーション         | Serena   | repo grep/codesearch + LSP |
 
 ---
 

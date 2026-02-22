@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Context7 MCP wrapper
+# Optional API key injection from gopass with deterministic package pin.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/common"
+
+require_cmd npx
+
+CONTEXT7_PACKAGE="@upstash/context7-mcp@2.1.1"
+CONTEXT7_GOPASS_PATH="context7/api_key"
+context7_api_key=""
+
+# Optional auth: run without key when gopass or entry is unavailable.
+if command -v gopass >/dev/null 2>&1; then
+    if run_with_timeout 3 gopass list -f "$CONTEXT7_GOPASS_PATH" >/dev/null 2>&1; then
+        context7_api_key="$(run_with_timeout 3 gopass show -o "$CONTEXT7_GOPASS_PATH" 2>/dev/null | head -n 1 || true)"
+    fi
+fi
+
+if [[ -n "$context7_api_key" ]]; then
+    export CONTEXT7_API_KEY="$context7_api_key"
+    # Keep key in env only to avoid exposing it through argv/process list.
+    exec npx -y "$CONTEXT7_PACKAGE" "$@"
+fi
+
+exec npx -y "$CONTEXT7_PACKAGE" "$@"

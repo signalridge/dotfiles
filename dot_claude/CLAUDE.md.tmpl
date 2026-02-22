@@ -17,8 +17,13 @@ See `context/tech-stack-guidelines.md` for language-specific conventions.
 
 ## Search Tool Policy
 
-- For web/news/documentation lookup, prefer Tavily MCP tools first.
-- Use built-in web search only when Tavily MCP is unavailable or fails.
+- For library/framework/API documentation, prefer Context7 MCP first.
+- For web/news/general background lookup, prefer Tavily MCP first.
+- For symbolic code navigation and cross-file semantic lookup, prefer Serena MCP first.
+- Fallback order:
+  - Context7 unavailable -> Tavily -> built-in web search
+  - Tavily unavailable -> built-in web search
+  - Serena unavailable -> repo grep/codesearch + LSP tools
 - Keep queries minimal and avoid sending sensitive data.
 
 ---

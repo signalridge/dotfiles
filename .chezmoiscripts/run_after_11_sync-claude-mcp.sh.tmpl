@@ -183,7 +183,8 @@ ensure_user_mcp_json "slack-explorer" '{"command":"docker","args":["run","-i","-
 
 ensure_user_mcp_sse "notion" "https://mcp.notion.com/sse"
 ensure_user_mcp_json "playwright" '{"command":"npx","args":["-y","@playwright/mcp@latest"]}'
-ensure_user_mcp_json "context7" '{"command":"npx","args":["-y","@upstash/context7-mcp"]}'
+ensure_user_mcp_json "context7" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-context7","args":[]}'
+ensure_user_mcp_json "serena" '{"command":"uvx","args":["--from","git+https://github.com/oraios/serena@v0.1.4","serena","start-mcp-server","--context","claude-code","--project-from-cwd","--open-web-dashboard","false"]}'
 ensure_user_mcp_json "markitdown" '{"command":"uvx","args":["markitdown-mcp"]}'
 ensure_user_mcp_json "arxiv-mcp-server" '{"command":"uv","args":["tool","run","arxiv-mcp-server"]}'
 ensure_user_mcp_json "tavily" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily","args":[]}'

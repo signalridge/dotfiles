@@ -21,7 +21,7 @@
     "doctor-all": {
       "description": "Run all AI workflow diagnostics and summarize findings.",
       "agent": "build",
-      "template": "Run `claude-manage doctor`, `codex-manage doctor`, and `opencode mcp list`. Report failures first, then warnings, then concrete remediation steps. If Tavily MCP is missing from OpenCode output, include remediation to restore `mcp.tavily` in opencode config and re-run `chezmoi apply`."
+      "template": "Run `claude-manage doctor`, `codex-manage doctor`, and `opencode mcp list`. Report failures first, then warnings, then concrete remediation steps. If Tavily / Context7 / Serena MCP is missing from OpenCode output, include remediation to restore `mcp.tavily`, `mcp.context7`, and `mcp.serena` in opencode config and re-run `chezmoi apply`."
     },
     "spec-verify": {
       "description": "Validate current OpenSpec change and repository tests.",
@@ -402,6 +402,16 @@
     "tavily": {
       "type": "local",
       "command": ["{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily"],
+      "enabled": true
+    },
+    "context7": {
+      "type": "local",
+      "command": ["{{ .chezmoi.homeDir }}/.local/bin/mcp-context7"],
+      "enabled": true
+    },
+    "serena": {
+      "type": "local",
+      "command": ["uvx", "--from", "git+https://github.com/oraios/serena@v0.1.4", "serena", "start-mcp-server", "--context", "ide", "--project-from-cwd", "--open-web-dashboard", "false"],
       "enabled": true
     },
     "gitmcp": {

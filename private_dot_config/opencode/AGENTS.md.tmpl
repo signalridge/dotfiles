@@ -15,11 +15,16 @@ Pragmatic AI programming assistant. Prioritize clarity, correctness, and simplic
 
 ## Search Policy
 
-- For web/news/documentation lookup, prefer Tavily MCP tools first.
-- Use built-in web search only when Tavily MCP is unavailable or fails.
+- For library/framework/API documentation, prefer Context7 MCP first.
+- For web/news/general background lookup, prefer Tavily MCP first.
+- For symbolic code navigation and cross-file semantic lookup, prefer Serena MCP first.
+- Fallback order:
+  - Context7 unavailable -> Tavily -> built-in web search
+  - Tavily unavailable -> built-in web search
+  - Serena unavailable -> repo grep/codesearch + LSP tools
 - Keep queries minimal and avoid sending sensitive data.
-- Note: oh-my-opencode default websearch provider is Exa. Tavily MCP takes governance precedence when available. If Tavily MCP is not provisioned, Exa remains as startup-safe fallback.
-- Runtime baseline: `opencode.jsonc` must define `mcp.tavily` and `opencode mcp list` should show Tavily as configured.
+- Note: oh-my-opencode default websearch provider is Exa. Tavily MCP takes governance precedence for web/news lookup when available. If Tavily MCP is not provisioned, Exa remains as startup-safe fallback.
+- Runtime baseline: `opencode.jsonc` must define `mcp.tavily`, `mcp.context7`, and `mcp.serena`; `opencode mcp list` should show all three as configured.
 
 ## Hooks
 
