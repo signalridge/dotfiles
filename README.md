@@ -53,7 +53,7 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 - Declarative `OpenCode + oh-my-opencode` global config with native-only (no-Claude-compat) guardrails
 - Auto MCP sync for Claude on every `chezmoi apply`
 - Automated dependency upkeep via GitHub Actions (versions, flake locks, aqua packages)
-- `C1/C2/C3/C4` routing: advisory in `C1`, direct small-change flow in `C2`, OpenSpec governance for `C3`, Spec-Kit bootstrap + OpenSpec implementation for `C4`
+- `C1/C2/C3/C4` routing: advisory in `C1`, direct small-change flow in `C2`, OpenSpec governance for `C3`, `C4` mandatory Spec-Kit gate + OpenSpec implementation
 
 ---
 
@@ -569,12 +569,12 @@ See:
 > [!IMPORTANT]
 > This repository routes implementation by `C1/C2/C3/C4` classification before coding.
 
-| Category | Intent                     | Primary Path                                 |
-| -------- | -------------------------- | -------------------------------------------- |
-| `C1`     | Advisory/read-only request | Analyze and report only                      |
-| `C2`     | Small deterministic change | Implement directly with lightweight planning |
-| `C3`     | Medium governed change     | OpenSpec lifecycle                           |
-| `C4`     | New/major initiative       | Spec-Kit first, then OpenSpec implementation |
+| Category | Intent                     | Primary Path                                          |
+| -------- | -------------------------- | ----------------------------------------------------- |
+| `C1`     | Advisory/read-only request | Analyze and report only                               |
+| `C2`     | Small deterministic change | Implement directly with lightweight planning          |
+| `C3`     | Medium governed change     | OpenSpec lifecycle                                    |
+| `C4`     | New/major initiative       | Mandatory Spec-Kit gate, then OpenSpec implementation |
 
 Boundary and ownership:
 
@@ -582,7 +582,11 @@ Boundary and ownership:
 - `C2` small deterministic changes do not require OpenSpec or Spec-Kit.
 - OpenSpec governs execution and verification for `C3` and `C4` implementation.
 - Spec-Kit is used to bootstrap and structure `C4` discovery in the target project.
-- If category is `C3` or `C4`, switch to governed mode and enter OpenSpec gate before coding.
+- If category is `C3`, switch to governed mode and enter OpenSpec gate before coding.
+- If category is `C4`, switch to governed mode, pass the Spec-Kit gate first, then enter OpenSpec gate.
+- If category is `C4`, the first executable command must be `specify init --here --ai <tool> --script sh`.
+- Before `C4` gate passes, only read-only commands are allowed: `ls`, `rg`, `cat`, `git status`.
+- `C4` Intake Card must include `Spec-Kit Gate: required | passed | waived`.
 
 Project-local Spec-Kit bootstrap (`C4`):
 

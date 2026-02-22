@@ -12,9 +12,14 @@ Plan a feature or task with clear structure before coding.
 
 - If classification is `C3`: use OpenSpec.
   - Next step: `/opsx:new <change-name>` (Claude) or `/opsx-new <change-name>` (Codex/OpenCode), with explicit confirmation.
-- If classification is `C4`: use Spec-Kit first.
-  - Next step: `specify init --here --ai <tool> --script sh` (if not initialized in the project yet).
-  - After Spec-Kit discovery, enter OpenSpec gate before coding.
+- If classification is `C4`: use mandatory Spec-Kit gate first.
+  - Next step (single allowed executable command) is current-tool specific:
+    - Claude Code: `specify init --here --ai claude --script sh`
+    - Codex CLI: `specify init --here --ai codex --script sh`
+    - OpenCode: `specify init --here --ai opencode --script sh`
+  - If `.specify/` or `specs/` is missing, set `Spec-Kit Gate: required`, STOP, and ask explicit yes/no for that single current-tool command.
+  - Before gate passes, only read-only commands are allowed: `ls`, `rg`, `cat`, `git status`.
+  - After artifacts exist, set `Spec-Kit Gate: passed`, then enter OpenSpec gate before coding.
 
 `/plan` does not conflict with OpenSpec wrappers (`/opsx:*` in Claude, `/opsx-*` in Codex/OpenCode). They are different layers:
 

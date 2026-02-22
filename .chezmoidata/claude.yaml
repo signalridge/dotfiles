@@ -89,7 +89,6 @@ claude:
     # Native Anthropic accounts (use OAuth)
     anthropic:
       model: claude-opus-4-6
-      small_model: claude-sonnet-4-5-20250929
     opus:
       provider: anthropic
       model: claude-opus-4-6
@@ -114,11 +113,11 @@ claude:
       opus_model: kimi-k2.5
     naapi@private:
       provider: naapi
-      model: gpt-5.3-codex
-      small_model: gpt-5.3-codex
-      haiku_model: gpt-5.3-codex
-      sonnet_model: gpt-5.3-codex
-      opus_model: gpt-5.3-codex
+      model: claude-opus-4-6
+      small_model: claude-opus-4-6
+      haiku_model: claude-opus-4-6
+      sonnet_model: claude-opus-4-6
+      opus_model: claude-opus-4-6
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
   # All skills are hardcoded in .chezmoiexternal.toml.tmpl
