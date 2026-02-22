@@ -710,6 +710,7 @@ cmd_doctor() {
 
     echo "Runtime commands:"
     if command -v codex >/dev/null 2>&1; then pass "codex found"; else note_fail "codex not found"; fi
+    if command -v specify >/dev/null 2>&1; then pass "specify found"; else note_warn "specify not found (C3 Spec-Kit bootstrap unavailable)"; fi
     if command -v jq >/dev/null 2>&1; then pass "jq found"; else note_fail "jq not found"; fi
     if command -v chezmoi >/dev/null 2>&1; then pass "chezmoi found"; else note_fail "chezmoi not found"; fi
     if command -v gopass >/dev/null 2>&1; then pass "gopass found"; else note_warn "gopass missing (third-party keys unavailable)"; fi
@@ -759,6 +760,18 @@ cmd_doctor() {
         pass "~/.codex/skills symlink exists"
     else
         note_warn "~/.codex/skills symlink missing"
+    fi
+
+    if command -v specify >/dev/null 2>&1; then
+        if specify check >/dev/null 2>&1; then
+            pass "specify check passed"
+        else
+            note_warn "specify check reported issues; C3 bootstrap may be degraded"
+        fi
+    fi
+
+    if [[ -d "$PWD/.codex" ]]; then
+        note_warn "if project prompt discovery is missing, set: export CODEX_HOME=\"$PWD/.codex\""
     fi
     echo ""
 

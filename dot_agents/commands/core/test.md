@@ -14,7 +14,7 @@ Run and verify tests with a minimal, project-aware flow.
 1. Determine test scope (changed files or target path).
 2. Run project-default test command.
 3. If failures occur, fix and rerun until green.
-4. For L3/L4 OpenSpec work, run `/opsx:verify` before archive.
+4. For `C2` and governed `C3` OpenSpec work, run `/opsx:verify` (Claude) or `/opsx-verify` (Codex/OpenCode) before archive.
 
 ## Notes
 

@@ -4,21 +4,26 @@ Plan a feature or task with clear structure before coding.
 
 ## When to Use
 
-- L1/L2 changes where you want a lightweight plan before implementation.
-- L1/L2 changes where you want a more structured planning workflow via Superpowers `writing-plans`.
+- `C1` direct changes where you want a lightweight implementation plan.
+- `C1` changes where you want a more structured planning workflow via Superpowers `writing-plans`.
 - Any time the scope is still fuzzy and you want to clarify goal/DoD.
 
 ## When NOT to Use
 
-- If this is L3/L4 (multi-file, 100+ LOC, architectural work): use OpenSpec.
-  - Next step: `/opsx:new <change-name>` (requires explicit confirmation).
+- If classification is `C2`: use OpenSpec.
+  - Next step: `/opsx:new <change-name>` (Claude) or `/opsx-new <change-name>` (Codex/OpenCode), with explicit confirmation.
+- If classification is `C3`: use Spec-Kit first.
+  - Next step: `specify init --here --ai <tool> --script sh` (if not initialized in the project yet).
+  - If `C3` and (`I = 2` or `R = 2`), switch to governed mode and enter OpenSpec gate before coding.
 
-`/plan` does not conflict with `/opsx:*`. They are different layers:
+`/plan` does not conflict with OpenSpec wrappers (`/opsx:*` in Claude, `/opsx-*` in Codex/OpenCode). They are different layers:
 
-- `/plan`: L1/L2 lightweight planning entry.
-- `/opsx:*`: OpenSpec lifecycle wrappers for L3/L4.
+- `/plan`: `C1` lightweight planning entry.
+- OpenSpec wrappers: lifecycle entry for `C2` and governed `C3`.
 
-If `/opsx:*` wrappers are missing, this is an availability/initialization issue. Run `openspec init --tools claude` (or `openspec update`), or use `openspec ...` CLI directly.
+If wrappers are missing, this is an availability/initialization issue. Run `openspec init --tools <tool>` (or `openspec update`), or use `openspec ...` CLI directly.
+
+Always run `/route` first if category is not already explicit.
 
 ## Framework: Goal → Constraints → Definition of Done
 
