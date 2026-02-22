@@ -4,22 +4,22 @@ Plan a feature or task with clear structure before coding.
 
 ## When to Use
 
-- `C1` direct changes where you want a lightweight implementation plan.
-- `C1` changes where you want a more structured planning workflow via Superpowers `writing-plans`.
+- `C2` direct changes where you want a lightweight implementation plan.
+- `C2` changes where you want a more structured planning workflow via Superpowers `writing-plans`.
 - Any time the scope is still fuzzy and you want to clarify goal/DoD.
 
 ## When NOT to Use
 
-- If classification is `C2`: use OpenSpec.
+- If classification is `C3`: use OpenSpec.
   - Next step: `/opsx:new <change-name>` (Claude) or `/opsx-new <change-name>` (Codex/OpenCode), with explicit confirmation.
-- If classification is `C3`: use Spec-Kit first.
+- If classification is `C4`: use Spec-Kit first.
   - Next step: `specify init --here --ai <tool> --script sh` (if not initialized in the project yet).
-  - If `C3` and (`I = 2` or `R = 2`), switch to governed mode and enter OpenSpec gate before coding.
+  - After Spec-Kit discovery, enter OpenSpec gate before coding.
 
 `/plan` does not conflict with OpenSpec wrappers (`/opsx:*` in Claude, `/opsx-*` in Codex/OpenCode). They are different layers:
 
-- `/plan`: `C1` lightweight planning entry.
-- OpenSpec wrappers: lifecycle entry for `C2` and governed `C3`.
+- `/plan`: `C2` lightweight planning entry.
+- OpenSpec wrappers: lifecycle entry for `C3` and `C4` implementation.
 
 If wrappers are missing, this is an availability/initialization issue. Run `openspec init --tools <tool>` (or `openspec update`), or use `openspec ...` CLI directly.
 

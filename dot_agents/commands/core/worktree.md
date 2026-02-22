@@ -5,8 +5,8 @@ Standardize workspace isolation for classified tasks across Claude, Codex, and O
 ## Policy
 
 - Default model: `one-task-one-branch-one-worktree`.
-- `C2` and `C3` tasks should start in a dedicated worktree under `.worktrees/<branch>`.
-- `C1` tasks may remain in the main workspace when isolation overhead is unnecessary.
+- `C3` and `C4` tasks should start in a dedicated worktree under `.worktrees/<branch>`.
+- `C2` tasks may remain in the main workspace when isolation overhead is unnecessary.
 
 ## Canonical Commands
 

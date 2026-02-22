@@ -54,10 +54,10 @@ Levels:
 
 | Category | Meaning | Default Path |
 | ------ | ------- | ------------ |
-| `C0` | Advisory-only, read-only guidance | Analyze and report only |
-| `C1` | Deterministic direct change on existing code | Implement directly with lightweight planning |
-| `C2` | Incremental governed change on existing systems | OpenSpec lifecycle (required) |
-| `C3` | New initiative / high-ambiguity feature exploration | Spec-Kit first, then implementation |
+| `C1` | Advisory-only, read-only guidance | Analyze and report only |
+| `C2` | Small deterministic change on existing code | Implement directly with lightweight planning |
+| `C3` | Medium governed change on existing systems | OpenSpec lifecycle (required) |
+| `C4` | New development / major feature / major refactor | Spec-Kit first, then OpenSpec-governed implementation |
 
 ## Intake Scoring (N/A/I/R)
 
@@ -75,12 +75,14 @@ Derived values:
 
 Routing rules (ordered):
 
-1. Read-only request -> `C0`
-2. `DiscoveryScore >= 3` or `N = 2` or `A = 2` -> `C3`
-3. Else `ControlScore >= 3` or `I = 2` or `R = 2` -> `C2`
-4. Else -> `C1`
+1. Read-only request -> `C1`
+2. Request explicitly calls for new development, major feature, or major refactor -> `C4`
+3. Else `DiscoveryScore >= 3` or `N = 2` or `A = 2` -> `C4`
+4. Else `I = 2` and `R = 2` -> `C4`
+5. Else `ControlScore >= 3` or `I = 2` or `R = 2` -> `C3`
+6. Else -> `C2`
 
-If C3 and (I = 2 or R = 2), use `Governed` execution mode and enter OpenSpec gate before coding.
+If category is `C3` or `C4`, use `Governed` execution mode and enter OpenSpec gate before coding.
 
 ## Intake Card
 
@@ -88,7 +90,7 @@ Before implementation, emit:
 
 ```markdown
 ## Intake Card
-- Category: C0 | C1 | C2 | C3
+- Category: C1 | C2 | C3 | C4
 - Scores: N/A/I/R = x/x/x/x
 - DiscoveryScore: x
 - ControlScore: x
@@ -97,18 +99,18 @@ Before implementation, emit:
 - Next Step: <single command>
 ```
 
-## Worktree Gate (C1+)
+## Worktree Gate (C2+)
 
-- For `C2` and `C3` work, default to a dedicated `git worktree` under `.worktrees/<branch>`.
+- For `C3` and `C4` work, default to a dedicated `git worktree` under `.worktrees/<branch>`.
 - Enforce `one-task-one-branch-one-worktree` as the default execution model.
-- `C1` quick edits may remain in primary workspace when isolation overhead is unnecessary.
+- `C2` quick edits may remain in primary workspace when isolation overhead is unnecessary.
 - Worktree cleanup is confirmation-first; avoid force-removal unless explicitly requested.
 
 ---
 
-## OpenSpec-first Orchestration (C2 and governed C3)
+## OpenSpec-first Orchestration (C3 and C4 Implementation)
 
-OpenSpec is the governance backbone for `C2` and governed `C3` execution.
+OpenSpec is the governance backbone for `C3` and `C4` implementation.
 
 ### Execution Gate (mandatory)
 
@@ -123,12 +125,12 @@ OpenSpec is the governance backbone for `C2` and governed `C3` execution.
 
 ### Routing model
 
-- `C0`: advisory-only, no file edits.
-- `C1`: direct deterministic implementation path.
-- `C2`: OpenSpec-governed incremental change.
-- `C3`: Spec-Kit initiative/exploration; may switch to governed mode.
+- `C1`: advisory-only, no file edits.
+- `C2`: direct deterministic small-change path.
+- `C3`: OpenSpec-governed medium change.
+- `C4`: Spec-Kit initiative/discovery, then OpenSpec-governed implementation.
 
-### OpenSpec path (C2 and governed C3)
+### OpenSpec path (C3 and C4 implementation)
 
 - Prefer `/opsx-*` wrappers when available.
 - If wrappers are missing/outdated, run `openspec update` (Codex prompts are global: `~/.codex/prompts/`).
@@ -143,7 +145,7 @@ Reference lifecycle:
 - Verify: `/opsx-verify`
 - Archive: `/opsx-archive` (explicit yes/no gate)
 
-### Spec-Kit path (C3)
+### Spec-Kit path (C4)
 
 Initialize project-local command surface in target project:
 
@@ -185,9 +187,9 @@ Active change directories under `openspec/changes/` must be archived before merg
 
 ---
 
-## Pre-Analysis Protocol (C2+)
+## Pre-Analysis Protocol (C3+)
 
-Before implementing `C2` or governed `C3` tasks, complete:
+Before implementing `C3` or `C4` tasks, complete:
 
 ```markdown
 ## Pre-Analysis

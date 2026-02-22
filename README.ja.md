@@ -53,7 +53,7 @@
 - `OpenCode + oh-my-opencode` のグローバル設定を宣言的に管理（Claude compatibility 無効化のガード付き）
 - `chezmoi apply` のたびに Claude MCP を自動同期
 - GitHub Actions による依存更新の自動化（versions、flake lock、aqua packages）
-- `C0/C1/C2/C3` ルーティング: `C0/C1` は直接実装、`C2` は OpenSpec ガバナンス、`C3` は Spec-Kit ブートストラップ
+- `C1/C2/C3/C4` ルーティング: `C1` は助言専用、`C2` は小規模変更の直接実装、`C3` は OpenSpec ガバナンス、`C4` は Spec-Kit ブートストラップ後に OpenSpec 実装
 
 ---
 
@@ -102,7 +102,7 @@
 - [マルチプロファイル設定](#マルチプロファイル設定)
 - [セキュリティとシークレット](#セキュリティとシークレット)
 - [CI と自動化](#ci-と自動化)
-- [ワークフロールーティング（C0-C3）](#ワークフロールーティングc0-c3)
+- [ワークフロールーティング（C1-C4）](#ワークフロールーティングc1-c4)
 - [関連ドキュメント](#関連ドキュメント)
 - [謝辞](#謝辞)
 - [統計](#統計)
@@ -564,26 +564,27 @@ chezmoi init --apply --promptBool headless=true signalridge
 
 ---
 
-## ワークフロールーティング（C0-C3）
+## ワークフロールーティング（C1-C4）
 
 > [!IMPORTANT]
-> このリポジトリでは、実装前に `C0/C1/C2/C3` 分類でルートを決定します。
+> このリポジトリでは、実装前に `C1/C2/C3/C4` 分類でルートを決定します。
 
-| Category | 意図                               | 主経路                    |
-| -------- | ---------------------------------- | ------------------------- |
-| `C0`     | 助言/参照のみ                      | 分析と報告のみ            |
-| `C1`     | 決定論的な小規模変更               | 軽量プランで直接実装      |
-| `C2`     | 既存システムへの増分ガバナンス変更 | OpenSpec ライフサイクル   |
-| `C3`     | 新規イニシアティブ/高い曖昧性      | Spec-Kit 先行、その後実装 |
+| Category | 意図                             | 主経路                              |
+| -------- | -------------------------------- | ----------------------------------- |
+| `C1`     | 助言/参照のみ                    | 分析と報告のみ                      |
+| `C2`     | 決定論的な小規模変更             | 軽量プランで直接実装                |
+| `C3`     | 中規模のガバナンス変更           | OpenSpec ライフサイクル             |
+| `C4`     | 新規開発/大型 feature/リファクタ | Spec-Kit 先行、その後 OpenSpec 実装 |
 
 境界と責務:
 
-- `C0/C1` は OpenSpec も Spec-Kit も不要です。
-- OpenSpec は `C2` と governed `C3` の実行/検証を担います。
-- Spec-Kit は `C3` の discovery 段階を対象プロジェクトで整備するために使います。
-- `C3` かつ (`I = 2` または `R = 2`) の場合は governed mode に切り替え、実装前に OpenSpec gate に入ります。
+- `C1` は助言専用で、ファイル変更は行いません。
+- `C2` の小規模変更は OpenSpec と Spec-Kit の対象外です。
+- OpenSpec は `C3` と `C4` 実装フェーズの実行/検証を担います。
+- Spec-Kit は `C4` の discovery 段階を対象プロジェクトで整備するために使います。
+- 分類が `C3` または `C4` の場合は governed mode に切り替え、実装前に OpenSpec gate に入ります。
 
-プロジェクトローカル Spec-Kit 初期化（`C3`）:
+プロジェクトローカル Spec-Kit 初期化（`C4`）:
 
 ```bash
 specify init --here --ai claude --script sh
@@ -591,7 +592,7 @@ specify init --here --ai codex --script sh
 specify init --here --ai opencode --script sh
 ```
 
-OpenSpec フロー（`C2` と governed `C3`）:
+OpenSpec フロー（`C3` と `C4` 実装フェーズ）:
 
 ```bash
 openspec new change <change-name>

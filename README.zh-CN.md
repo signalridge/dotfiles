@@ -53,7 +53,7 @@
 - 声明式管理 `OpenCode + oh-my-opencode` 全局配置，并启用 native-only（禁用 Claude compatibility）护栏
 - 每次 `chezmoi apply` 自动对齐 Claude MCP 配置
 - GitHub Actions 自动维护依赖版本（versions、flake lock、aqua packages）
-- `C0/C1/C2/C3` 路由模型：`C0/C1` 直接流程，`C2` 走 OpenSpec 治理，`C3` 先走 Spec-Kit 引导
+- `C1/C2/C3/C4` 路由模型：`C1` 只读分析，`C2` 小修直改，`C3` 走 OpenSpec 治理，`C4` 先走 Spec-Kit 再进入 OpenSpec 实施
 
 ---
 
@@ -100,7 +100,7 @@
 - [多 Profile 配置](#多-profile-配置)
 - [安全与加密](#安全与加密)
 - [CI 与自动化](#ci-与自动化)
-- [工作流路由（C0-C3）](#工作流路由c0-c3)
+- [工作流路由（C1-C4）](#工作流路由c1-c4)
 - [更多文档](#更多文档)
 - [致谢](#致谢)
 - [统计](#统计)
@@ -562,26 +562,27 @@ chezmoi init --apply --promptBool headless=true signalridge
 
 ---
 
-## 工作流路由（C0-C3）
+## 工作流路由（C1-C4）
 
 > [!IMPORTANT]
-> 本仓库在实现前会先按 `C0/C1/C2/C3` 分类，再决定执行路径。
+> 本仓库在实现前会先按 `C1/C2/C3/C4` 分类，再决定执行路径。
 
-| Category | 意图                   | 主路径                    |
-| -------- | ---------------------- | ------------------------- |
-| `C0`     | 只读咨询/分析请求      | 仅分析和报告              |
-| `C1`     | 可确定的直接改动       | 轻量规划后直接实现        |
-| `C2`     | 既有系统的增量治理改动 | OpenSpec 生命周期         |
-| `C3`     | 新项目/高不确定性探索  | 先用 Spec-Kit，再进入实现 |
+| Category | 意图                     | 主路径                              |
+| -------- | ------------------------ | ----------------------------------- |
+| `C1`     | 只读咨询/分析请求        | 仅分析和报告                        |
+| `C2`     | 可确定的小修变更         | 轻量规划后直接实现                  |
+| `C3`     | 中等规模治理改动         | OpenSpec 生命周期                   |
+| `C4`     | 新开发/重大 feature/重构 | 先用 Spec-Kit，再进入 OpenSpec 实施 |
 
 边界与职责:
 
-- `C0/C1` 不需要 OpenSpec，也不需要 Spec-Kit。
-- OpenSpec 负责 `C2` 和 governed `C3` 的执行与验证治理。
-- Spec-Kit 用于在目标项目中启动并结构化 `C3` 的 discovery 阶段。
-- 若 `C3` 且 (`I = 2` 或 `R = 2`)，需切换到 governed mode，并在编码前进入 OpenSpec gate。
+- `C1` 为只读分析，不涉及文件变更。
+- `C2` 小修任务不需要 OpenSpec，也不需要 Spec-Kit。
+- OpenSpec 负责 `C3` 和 `C4` 实施阶段的执行与验证治理。
+- Spec-Kit 用于在目标项目中启动并结构化 `C4` 的 discovery 阶段。
+- 若分类为 `C3` 或 `C4`，需切换到 governed mode，并在编码前进入 OpenSpec gate。
 
-项目内 Spec-Kit 初始化（`C3`）:
+项目内 Spec-Kit 初始化（`C4`）:
 
 ```bash
 specify init --here --ai claude --script sh
@@ -589,7 +590,7 @@ specify init --here --ai codex --script sh
 specify init --here --ai opencode --script sh
 ```
 
-OpenSpec 流程（`C2` 与 governed `C3`）:
+OpenSpec 流程（`C3` 与 `C4` 实施阶段）:
 
 ```bash
 openspec new change <change-name>

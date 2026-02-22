@@ -750,7 +750,7 @@ cmd_doctor() {
 
     echo "Runtime commands:"
     if command -v claude >/dev/null 2>&1; then pass "claude found"; else note_fail "claude not found"; fi
-    if command -v specify >/dev/null 2>&1; then pass "specify found"; else note_warn "specify not found (C3 Spec-Kit bootstrap unavailable)"; fi
+    if command -v specify >/dev/null 2>&1; then pass "specify found"; else note_warn "specify not found (C4 Spec-Kit bootstrap unavailable)"; fi
     if command -v jq >/dev/null 2>&1; then pass "jq found"; else note_fail "jq not found"; fi
     if command -v chezmoi >/dev/null 2>&1; then pass "chezmoi found"; else note_fail "chezmoi not found"; fi
     if command -v yq >/dev/null 2>&1; then pass "yq found"; else note_warn "yq missing (account metadata checks reduced)"; fi
@@ -800,7 +800,7 @@ cmd_doctor() {
         if specify check >/dev/null 2>&1; then
             pass "specify check passed"
         else
-            note_warn "specify check reported issues; C3 bootstrap may be degraded"
+            note_warn "specify check reported issues; C4 bootstrap may be degraded"
         fi
     fi
     echo ""
