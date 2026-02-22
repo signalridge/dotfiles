@@ -53,7 +53,7 @@
 - 声明式管理 `OpenCode + oh-my-opencode` 全局配置，并启用 native-only（禁用 Claude compatibility）护栏
 - 每次 `chezmoi apply` 自动对齐 Claude MCP 配置
 - GitHub Actions 自动维护依赖版本（versions、flake lock、aqua packages）
-- OpenSpec 管理中大型改动生命周期（`openspec/changes`、`openspec/specs`、`opsx-*`）
+- `C0/C1/C2/C3` 路由模型：`C0/C1` 直接流程，`C2` 走 OpenSpec 治理，`C3` 先走 Spec-Kit 引导
 
 ---
 
@@ -100,7 +100,7 @@
 - [多 Profile 配置](#多-profile-配置)
 - [安全与加密](#安全与加密)
 - [CI 与自动化](#ci-与自动化)
-- [变更管理（OpenSpec）](#变更管理openspec)
+- [工作流路由（C0-C3）](#工作流路由c0-c3)
 - [更多文档](#更多文档)
 - [致谢](#致谢)
 - [统计](#统计)
@@ -553,22 +553,39 @@ chezmoi init --apply --promptBool headless=true signalridge
 
 ---
 
-## 变更管理（OpenSpec）
+## 工作流路由（C0-C3）
 
 > [!IMPORTANT]
-> 在本仓库中，OpenSpec 是中大型改动的事实来源（source of truth）。
+> 本仓库在实现前会先按 `C0/C1/C2/C3` 分类，再决定执行路径。
 
-- 变更产物位于 `openspec/changes/<change-name>/`（`proposal.md`、`design.md`、`tasks.md`、delta specs）。
-- 主规范位于 `openspec/specs/<capability>/spec.md`。
-- 完成后的变更归档到 `openspec/changes/archive/`。
-- 如已安装 `opsx-*` 包装命令，可按同一 OpenSpec 生命周期执行。
+| Category | 意图                   | 主路径                    |
+| -------- | ---------------------- | ------------------------- |
+| `C0`     | 只读咨询/分析请求      | 仅分析和报告              |
+| `C1`     | 可确定的直接改动       | 轻量规划后直接实现        |
+| `C2`     | 既有系统的增量治理改动 | OpenSpec 生命周期         |
+| `C3`     | 新项目/高不确定性探索  | 先用 Spec-Kit，再进入实现 |
 
-典型流程：
+边界与职责:
+
+- `C0/C1` 不需要 OpenSpec，也不需要 Spec-Kit。
+- OpenSpec 负责 `C2` 和 governed `C3` 的执行与验证治理。
+- Spec-Kit 用于在目标项目中启动并结构化 `C3` 的 discovery 阶段。
+- 若 `C3` 且 (`I = 2` 或 `R = 2`)，需切换到 governed mode，并在编码前进入 OpenSpec gate。
+
+项目内 Spec-Kit 初始化（`C3`）:
+
+```bash
+specify init --here --ai claude --script sh
+specify init --here --ai codex --script sh
+specify init --here --ai opencode --script sh
+```
+
+OpenSpec 流程（`C2` 与 governed `C3`）:
 
 ```bash
 openspec new change <change-name>
 openspec status --change <change-name>
-# 然后使用 opsx-* 或 openspec instructions/apply/verify/archive
+# 然后继续 /opsx-*（已安装时）或 openspec CLI 步骤
 ```
 
 ---

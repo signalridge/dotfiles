@@ -41,27 +41,64 @@ Levels:
 - `WARN`: post-error reminder
 - `INFO`: low-priority hint
 
-## Workflow Complexity
+## Workflow Classification
 
-| Level | Scope                     | Default Path                        |
-| ----- | ------------------------- | ----------------------------------- |
-| L1    | <10 lines, single file    | Execute directly                    |
-| L2    | <100 lines, 1-3 files     | Brief analysis -> plan -> implement |
-| L3    | 100-500 lines, 3-10 files | OpenSpec lifecycle required         |
-| L4    | >500 lines, >10 files     | OpenSpec lifecycle required         |
+| Category | Meaning                                             | Default Path                                 |
+| -------- | --------------------------------------------------- | -------------------------------------------- |
+| `C0`     | Advisory-only, read-only guidance                   | Analyze and report only                      |
+| `C1`     | Deterministic direct change on existing code        | Implement directly with lightweight planning |
+| `C2`     | Incremental governed change on existing systems     | OpenSpec lifecycle required                  |
+| `C3`     | New initiative / high-ambiguity feature exploration | Spec-Kit first, then implementation          |
 
-Rule: L3/L4 use OpenSpec-first workflow.
+## Intake Scoring (N/A/I/R)
 
-## Worktree Gate (L2+)
+Use `N/A/I/R` scores (`0..2`) before implementation:
 
-- For L2+ work, default to a dedicated `git worktree` under `.worktrees/<branch>`.
+- `N` = Novelty
+- `A` = Ambiguity
+- `I` = Impact
+- `R` = Risk
+
+Derived values:
+
+- `DiscoveryScore = N + A`
+- `ControlScore = I + R`
+
+Routing rules (ordered):
+
+1. Read-only request -> `C0`
+2. `DiscoveryScore >= 3` or `N = 2` or `A = 2` -> `C3`
+3. Else `ControlScore >= 3` or `I = 2` or `R = 2` -> `C2`
+4. Else -> `C1`
+
+If C3 and (I = 2 or R = 2), use `Governed` execution mode and enter OpenSpec gate before coding.
+
+## Intake Card
+
+Before implementation, emit:
+
+```markdown
+## Intake Card
+
+- Category: C0 | C1 | C2 | C3
+- Scores: N/A/I/R = x/x/x/x
+- DiscoveryScore: x
+- ControlScore: x
+- Execution Mode: Direct | Governed
+- Route Reason: <one sentence>
+- Next Step: <single command>
+```
+
+## Worktree Gate (C1+)
+
+- For `C2` and `C3` work, default to a dedicated `git worktree` under `.worktrees/<branch>`.
 - Enforce `one-task-one-branch-one-worktree` as the default execution model.
-- If currently in the primary workspace, create/switch to a worktree before implementation (`wt-new <branch>` or `git worktree add ...`).
-- L1 quick edits may remain in primary workspace when isolation overhead is unnecessary.
+- `C1` quick edits may remain in primary workspace when isolation overhead is unnecessary.
 - Worktree cleanup is confirmation-first; avoid force-removal unless explicitly requested.
 
 ## OpenSpec Execution Gate
 
+- Applies to `C2` and governed `C3`.
 - Propose only the next single OpenSpec step.
 - Ask explicit yes/no before execution.
 - Never auto-chain lifecycle steps.
@@ -75,7 +112,23 @@ Reference order:
 4. `/opsx-verify`
 5. `/opsx-archive` (explicit confirmation required)
 
-> **Cross-tool syntax note:** Claude Code uses colon form (`/opsx:*`). OpenCode/Codex use hyphen form (`/opsx-*`). The workflow is equivalent.
+> **Cross-tool syntax note:** Claude Code uses colon form (`/opsx:*`). OpenCode/Codex use hyphen form (`/opsx-*`).
+
+## Spec-Kit Bootstrap (C3)
+
+Use project-local initialization in the target repository:
+
+```bash
+specify init --here --ai opencode --script sh
+specify init --here --ai codex --script sh
+specify init --here --ai claude --script sh
+```
+
+Codex fallback when prompt discovery is missing:
+
+```bash
+export CODEX_HOME="$PWD/.codex"
+```
 
 ## OpenCode Runtime Boundaries
 
@@ -104,7 +157,7 @@ Reference order:
 
 Repository-managed core command docs are projected into OpenCode command paths:
 
-- planning/context: `plan`, `context`
+- routing/planning/context: `route`, `plan`, `context`
 - quality gates: `review`, `test`
 - SCM workflow: `commit`, `pr-create`, `pr-review`
 - workspace isolation: `worktree`
@@ -124,9 +177,9 @@ If commands are missing, verify projection with:
 - Use native `opencode` CLI for provider and session management.
 - Use `claude-manage doctor` / `codex-manage doctor` for cross-tool diagnostics in this repo.
 
-## Pre-Analysis (L3+)
+## Pre-Analysis (C2+)
 
-Before implementation for L3/L4 tasks, complete:
+Before implementation for `C2` or governed `C3` tasks, complete:
 
 ```markdown
 ## Pre-Analysis

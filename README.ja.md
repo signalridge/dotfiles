@@ -53,7 +53,7 @@
 - `OpenCode + oh-my-opencode` のグローバル設定を宣言的に管理（Claude compatibility 無効化のガード付き）
 - `chezmoi apply` のたびに Claude MCP を自動同期
 - GitHub Actions による依存更新の自動化（versions、flake lock、aqua packages）
-- OpenSpec による中〜大規模変更のライフサイクル管理（`openspec/changes`、`openspec/specs`、`opsx-*`）
+- `C0/C1/C2/C3` ルーティング: `C0/C1` は直接実装、`C2` は OpenSpec ガバナンス、`C3` は Spec-Kit ブートストラップ
 
 ---
 
@@ -102,7 +102,7 @@
 - [マルチプロファイル設定](#マルチプロファイル設定)
 - [セキュリティとシークレット](#セキュリティとシークレット)
 - [CI と自動化](#ci-と自動化)
-- [変更管理（OpenSpec）](#変更管理openspec)
+- [ワークフロールーティング（C0-C3）](#ワークフロールーティングc0-c3)
 - [関連ドキュメント](#関連ドキュメント)
 - [謝辞](#謝辞)
 - [統計](#統計)
@@ -555,22 +555,39 @@ chezmoi init --apply --promptBool headless=true signalridge
 
 ---
 
-## 変更管理（OpenSpec）
+## ワークフロールーティング（C0-C3）
 
 > [!IMPORTANT]
-> このリポジトリでは、中〜大規模変更において OpenSpec が source of truth です。
+> このリポジトリでは、実装前に `C0/C1/C2/C3` 分類でルートを決定します。
 
-- 変更アーティファクトは `openspec/changes/<change-name>/`（`proposal.md`、`design.md`、`tasks.md`、delta specs）に配置されます。
-- メイン仕様は `openspec/specs/<capability>/spec.md` に配置されます。
-- 完了した変更は `openspec/changes/archive/` にアーカイブされます。
-- `opsx-*` ラッパーが使える環境では、同じ OpenSpec ライフサイクルをそのまま実行できます。
+| Category | 意図                               | 主経路                    |
+| -------- | ---------------------------------- | ------------------------- |
+| `C0`     | 助言/参照のみ                      | 分析と報告のみ            |
+| `C1`     | 決定論的な小規模変更               | 軽量プランで直接実装      |
+| `C2`     | 既存システムへの増分ガバナンス変更 | OpenSpec ライフサイクル   |
+| `C3`     | 新規イニシアティブ/高い曖昧性      | Spec-Kit 先行、その後実装 |
 
-典型的な流れ：
+境界と責務:
+
+- `C0/C1` は OpenSpec も Spec-Kit も不要です。
+- OpenSpec は `C2` と governed `C3` の実行/検証を担います。
+- Spec-Kit は `C3` の discovery 段階を対象プロジェクトで整備するために使います。
+- `C3` かつ (`I = 2` または `R = 2`) の場合は governed mode に切り替え、実装前に OpenSpec gate に入ります。
+
+プロジェクトローカル Spec-Kit 初期化（`C3`）:
+
+```bash
+specify init --here --ai claude --script sh
+specify init --here --ai codex --script sh
+specify init --here --ai opencode --script sh
+```
+
+OpenSpec フロー（`C2` と governed `C3`）:
 
 ```bash
 openspec new change <change-name>
 openspec status --change <change-name>
-# その後は opsx-* または openspec instructions/apply/verify/archive を使用
+# その後は /opsx-*（導入済みの場合）または openspec CLI ステップを使用
 ```
 
 ---

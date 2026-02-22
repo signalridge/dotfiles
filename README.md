@@ -53,7 +53,7 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 - Declarative `OpenCode + oh-my-opencode` global config with native-only (no-Claude-compat) guardrails
 - Auto MCP sync for Claude on every `chezmoi apply`
 - Automated dependency upkeep via GitHub Actions (versions, flake locks, aqua packages)
-- OpenSpec-backed lifecycle for medium/large changes (`openspec/changes`, `openspec/specs`, `opsx-*`)
+- `C0/C1/C2/C3` routing: direct flow for `C0/C1`, OpenSpec governance for `C2`, Spec-Kit bootstrap for `C3`
 
 ---
 
@@ -102,7 +102,7 @@ Core principles:
 - [Multi-Profile Configuration](#multi-profile-configuration)
 - [Security & Secrets](#security--secrets)
 - [CI and Automation](#ci-and-automation)
-- [Change Management (OpenSpec)](#change-management-openspec)
+- [Workflow Routing (C0-C3)](#workflow-routing-c0-c3)
 - [Additional Docs](#additional-docs)
 - [Acknowledgements](#acknowledgements)
 - [Stats](#stats)
@@ -555,22 +555,39 @@ See:
 
 ---
 
-## Change Management (OpenSpec)
+## Workflow Routing (C0-C3)
 
 > [!IMPORTANT]
-> OpenSpec is the source of truth for medium/large changes in this repository.
+> This repository routes implementation by `C0/C1/C2/C3` classification before coding.
 
-- Change artifacts live under `openspec/changes/<change-name>/` (`proposal.md`, `design.md`, `tasks.md`, delta specs).
-- Main capability specs live under `openspec/specs/<capability>/spec.md`.
-- Completed changes are archived under `openspec/changes/archive/`.
-- If `opsx-*` wrappers are installed, they map to the same OpenSpec lifecycle.
+| Category | Intent                        | Primary Path                                 |
+| -------- | ----------------------------- | -------------------------------------------- |
+| `C0`     | Advisory/read-only request    | Analyze and report only                      |
+| `C1`     | Deterministic direct change   | Implement directly with lightweight planning |
+| `C2`     | Incremental governed change   | OpenSpec lifecycle                           |
+| `C3`     | New initiative/high ambiguity | Spec-Kit first, then implementation          |
 
-Typical workflow:
+Boundary and ownership:
+
+- `C0/C1` do not require OpenSpec or Spec-Kit.
+- OpenSpec governs execution and verification for `C2` and governed `C3`.
+- Spec-Kit is used to bootstrap and structure `C3` discovery in the target project.
+- If `C3` and (`I = 2` or `R = 2`), switch to governed mode and enter OpenSpec gate before coding.
+
+Project-local Spec-Kit bootstrap (`C3`):
+
+```bash
+specify init --here --ai claude --script sh
+specify init --here --ai codex --script sh
+specify init --here --ai opencode --script sh
+```
+
+OpenSpec workflow (`C2` and governed `C3`):
 
 ```bash
 openspec new change <change-name>
 openspec status --change <change-name>
-# then continue with opsx-* wrappers or openspec instructions/apply/verify/archive
+# then continue with /opsx-* wrappers (if installed) or openspec CLI steps
 ```
 
 ---

@@ -45,32 +45,65 @@ Levels:
 
 ---
 
-## Workflow Complexity
+## Workflow Classification
 
-| Level  | Scope                     | Default Path                                                        |
-| ------ | ------------------------- | ------------------------------------------------------------------- |
-| **L1** | <10 lines, single file    | Execute directly                                                    |
-| **L2** | <100 lines, 1-3 files     | Brief analysis → `/plan` or `superpowers:writing-plans` → implement |
-| **L3** | 100-500 lines, 3-10 files | **OpenSpec lifecycle (required)**                                   |
-| **L4** | >500 lines, >10 files     | **OpenSpec lifecycle (required)**                                   |
+| Category | Meaning | Default Path |
+| ------ | ------- | ------------ |
+| `C0` | Advisory-only, read-only guidance | Analyze and report only |
+| `C1` | Deterministic direct change on existing code | Implement directly with lightweight planning |
+| `C2` | Incremental governed change on existing systems | OpenSpec lifecycle (required) |
+| `C3` | New initiative / high-ambiguity feature exploration | Spec-Kit first, then implementation |
 
-**Rule:** L3/L4 must use OpenSpec-first workflow.
+## Intake Scoring (N/A/I/R)
 
----
+Use `N/A/I/R` scores (`0..2`) before implementation:
 
-## Worktree Gate (L2+)
+- `N` = Novelty
+- `A` = Ambiguity
+- `I` = Impact
+- `R` = Risk
 
-- For L2+ work, default to a dedicated `git worktree` under `.worktrees/<branch>`.
+Derived values:
+
+- `DiscoveryScore = N + A`
+- `ControlScore = I + R`
+
+Routing rules (ordered):
+
+1. Read-only request -> `C0`
+2. `DiscoveryScore >= 3` or `N = 2` or `A = 2` -> `C3`
+3. Else `ControlScore >= 3` or `I = 2` or `R = 2` -> `C2`
+4. Else -> `C1`
+
+If C3 and (I = 2 or R = 2), use `Governed` execution mode and enter OpenSpec gate before coding.
+
+## Intake Card
+
+Before implementation, emit:
+
+```markdown
+## Intake Card
+- Category: C0 | C1 | C2 | C3
+- Scores: N/A/I/R = x/x/x/x
+- DiscoveryScore: x
+- ControlScore: x
+- Execution Mode: Direct | Governed
+- Route Reason: <one sentence>
+- Next Step: <single command>
+```
+
+## Worktree Gate (C1+)
+
+- For `C2` and `C3` work, default to a dedicated `git worktree` under `.worktrees/<branch>`.
 - Enforce `one-task-one-branch-one-worktree` as the default execution model.
-- If currently in the primary workspace, create/switch to a worktree before implementation (`wt-new <branch>` or `git worktree add ...`).
-- L1 quick edits may remain in primary workspace when isolation overhead is unnecessary.
+- `C1` quick edits may remain in primary workspace when isolation overhead is unnecessary.
 - Worktree cleanup is confirmation-first; avoid force-removal unless explicitly requested.
 
 ---
 
-## OpenSpec-first Orchestration (L3/L4)
+## OpenSpec-first Orchestration (C2 and governed C3)
 
-OpenSpec is the single workflow backbone and source of truth for L3/L4 work.
+OpenSpec is the governance backbone for `C2` and governed `C3` execution.
 
 ### Execution Gate (mandatory)
 
@@ -83,25 +116,48 @@ OpenSpec is the single workflow backbone and source of truth for L3/L4 work.
 
 ## Workflow Routing
 
-### L1 → L4 routing
+### Routing model
 
-Preference for L3/L4:
+- `C0`: advisory-only, no file edits.
+- `C1`: direct deterministic implementation path.
+- `C2`: OpenSpec-governed incremental change.
+- `C3`: Spec-Kit initiative/exploration; may switch to governed mode.
+
+### OpenSpec path (C2 and governed C3)
 
 - Prefer `/opsx-*` wrappers when available.
 - If wrappers are missing/outdated, run `openspec update` (Codex prompts are global: `~/.codex/prompts/`).
-- If the repo is not OpenSpec-initialized (workspace + skills), run `openspec init` at repo root.
-- `/plan` and `/opsx-*` are not command conflicts; they serve different workflow levels (L1/L2 vs L3/L4).
+- If the repo is not OpenSpec-initialized, run `openspec init` at repo root.
 
-> **Cross-tool syntax note:** Claude Code uses colon form (`/opsx:*`). Codex uses hyphen form (`/opsx-*`) matching actual prompt file naming. The workflow is equivalent.
+> **Cross-tool syntax note:** Claude Code uses colon form (`/opsx:*`). Codex/OpenCode use hyphen form (`/opsx-*`).
 
-- **L1 (<10 lines, single file)**: implement directly; run tests; commit (use your normal project test runner and `git commit`, unless you have Codex-specific skills configured).
-- **L2 (<100 lines, 1-3 files)**: brief analysis → (`/plan` if configured, or `superpowers:writing-plans`) → implement → tests → commit (same note: use your normal tooling; do not assume slash commands like `/test` or `/commit`).
-- **L3/L4**: OpenSpec lifecycle (required) (reference order; still follow Execution Gate and propose only the **next** step):
-  - Start: `/opsx-new <change-name>`
-  - Plan artifacts: default `/opsx-ff` (or `/opsx-continue` if you want step-by-step)
-  - Implement: `/opsx-apply`
-  - Verify: `/opsx-verify`
-  - Archive: `/opsx-archive` (explicit yes/no gate)
+Reference lifecycle:
+- Start: `/opsx-new <change-name>`
+- Plan artifacts: `/opsx-ff` (or `/opsx-continue`)
+- Implement: `/opsx-apply`
+- Verify: `/opsx-verify`
+- Archive: `/opsx-archive` (explicit yes/no gate)
+
+### Spec-Kit path (C3)
+
+Initialize project-local command surface in target project:
+
+```bash
+specify init --here --ai codex --script sh
+```
+
+Cross-tool equivalents:
+
+```bash
+specify init --here --ai claude --script sh
+specify init --here --ai opencode --script sh
+```
+
+If Codex project prompt discovery is missing after init, use:
+
+```bash
+export CODEX_HOME="$PWD/.codex"
+```
 
 ### OpenSpec integration expectations (Codex)
 
@@ -109,29 +165,13 @@ OpenSpec integrations are generated by `openspec init/update`.
 
 - OpenSpec workspace (project-local):
   - `openspec/specs/`, `openspec/changes/`, `openspec/changes/archive/`
-  - Optional: `openspec/config.yaml` (may be skipped in non-interactive mode without `--force`; never overwritten if already exists)
+  - Optional: `openspec/config.yaml` (never overwritten if already exists)
 
-- Codex tool integration outputs (important):
+- Codex tool integration outputs:
   - Project skills: `./.codex/skills/<openspec-skill>/SKILL.md`
   - Global prompts (slash commands): `~/.codex/prompts/opsx-<id>.md` (or `$CODEX_HOME/prompts/…`)
 
-> Note: Codex prompts are **global by OpenSpec design**. Running `openspec init/update` for codex may modify files under `~/.codex/prompts/`.
-
-### If OpenSpec is not initialized in the project
-
-(See routing above. Keep this section as the single source of truth for remediation steps.)
-
-Do not assume this repo is OpenSpec-initialized (workspace + skills). Tell the user to run (at project root):
-
-```bash
-openspec init --tools codex,claude
-```
-
-If they only use the current tool, they may init a single tool (e.g. `--tools codex`).
-
-If `/opsx-*` wrappers are missing or outdated, run `openspec update` to refresh global `~/.codex/prompts/`.
-
-Then re-run the intended `/opsx-*` step.
+> Note: Codex prompts are global by OpenSpec design. Running `openspec init/update` may modify `~/.codex/prompts/`.
 
 ### Version control note (gitignore)
 
@@ -140,9 +180,9 @@ OpenSpec artifacts are treated as local working state and are not version-contro
 
 ---
 
-## Pre-Analysis Protocol (L3+)
+## Pre-Analysis Protocol (C2+)
 
-Before implementing L3+ tasks, complete:
+Before implementing `C2` or governed `C3` tasks, complete:
 
 ```markdown
 ## Pre-Analysis
