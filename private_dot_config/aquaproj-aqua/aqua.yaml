@@ -45,7 +45,7 @@ packages:
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.0.0
   - name: joshmedeski/sesh@v2.24.1
-  - name: skim-rs/skim@v3.4.0
+  - name: skim-rs/skim@v3.5.0
   - name: starship/starship@v1.24.2
   - name: JohnnyMorganz/StyLua@v2.3.1
   - name: Kampfkarren/selene@0.30.0
