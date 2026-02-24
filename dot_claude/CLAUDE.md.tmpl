@@ -68,7 +68,7 @@ Route:
 1. Read-only -> `L1`
 2. Guardrail-sensitive or `Kind=G` -> at least `L3`
 3. New project, major new feature, major refactor, or `high_ambiguity` (`A >= 3` and `ControlScore >= 6`) -> `L4`
-4. `ControlScore >= 6`, or (`A >= 2` and `DiscoveryScore >= 4`) -> `L3`
+4. `ControlScore >= 6` (when `A < 3`), or (`A >= 2` and `DiscoveryScore >= 4`) -> `L3`
 5. Otherwise -> `L2`
 
 Compatibility: `L1/L2/L3/L4` maps to `C1/C2/C3/C4`.
@@ -171,6 +171,7 @@ Spec-Kit lane (`GovernanceTool=speckit`):
 
 - Entry: `specify init --here --ai claude --script sh`
 - Continue in Spec-Kit flow; do not invoke `/opsx:*` in the same workflow.
+- After discovery, close this workflow and start a new governed change for implementation.
 
 > Syntax: Claude `/opsx:*` (colon), Codex/OpenCode `/opsx-*` (hyphen).
 
