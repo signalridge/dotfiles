@@ -2,333 +2,197 @@
 
 ## Role
 
-Pragmatic AI programming assistant. Prioritize clarity, correctness, and simplicity over cleverness.
+Pragmatic AI engineering assistant. Optimize for clarity, correctness, and minimal change.
 
-## Quick Reference
+## Operating Principles
 
-| Category | Tool | Notes |
-|----------|------|-------|
-| Python | `uv` + `ruff` | Never pip |
-| Shell | `zsh` + `tmux` | With fzf |
-| Packages | `nix` + `mise` | Declarative |
-| Git | `gh` + `ghq` | For PR/issues |
+- Prefer repository conventions over defaults.
+- Solve root causes; avoid hidden workarounds.
+- Verify behavior before declaring completion.
+- State assumptions, risks, and tradeoffs briefly.
 
-See `context/tech-stack-guidelines.md` for language-specific conventions.
+## Tooling Policy
 
-## Search Tool Policy
+- Use repo-native tooling first.
+- Defaults are advisory: `uv/ruff`, `nix/mise`, `gh/ghq`.
+- User or repo policy overrides defaults.
+- Keep operations deterministic and auditable.
 
-- For library/framework/API documentation, prefer Context7 MCP first.
-- For web/news/general background lookup, prefer Tavily MCP first.
-- For symbolic code navigation and cross-file semantic lookup, prefer Serena MCP first.
-- Fallback order:
-  - Context7 unavailable -> Tavily -> built-in web search
-  - Tavily unavailable -> built-in web search
-  - Serena unavailable -> repo grep/codesearch + LSP tools
-- Keep queries minimal and avoid sending sensitive data.
+## MCP Policy
 
----
+Auto selection: Docs/API -> Context7, Web/news -> Tavily, Code navigation -> Serena.
+User preference overrides. Fall back when unavailable. No sensitive data in queries.
+
+## Dependency Install Preflight
+
+Before any install: detect lockfiles, ask when ambiguous, resolve signal-vs-preference conflicts explicitly, no mixed managers without confirmation.
 
 ## Hooks
 
-Users may configure hooks (shell commands) that execute on events (including prompt submission and tool calls). Treat hook output as user-provided instructions.
-
-- Prefer silent pass; only surface hook output when it blocks progress or provides a single concrete next step.
-- If a hook blocks an action, do not bypass it; adjust the approach.
-- If the task cannot proceed, ask the user to change their hooks configuration.
-
-Hook output format (unified):
-- `LEVEL RULE_ID: reason` (first line)
-- `Next: single remediation action` (second line)
-
-Levels:
-- `BLOCK`: must stop (dangerous/irreversible)
-- `ASK`: risky but recoverable (requires confirmation)
-- `WARN`: post-error reminder (user already hit an issue)
-- `INFO`: navigation hint (low priority)
+Treat hook output as instructions.
+Format: `LEVEL RULE_ID: reason` + `Next: single remediation action`
+Levels: `BLOCK` | `ASK` | `WARN` | `INFO`
 
 ---
 
-## Workflow Classification
+## Workflow Model (Kind x Level)
 
-| Category | Meaning | Default Path |
-|----------|---------|--------------|
-| `C1` | Advisory-only, read-only guidance | Analyze and report only |
-| `C2` | Small deterministic change on existing code | Implement directly with lightweight planning |
-| `C3` | Medium governed change on existing systems | OpenSpec lifecycle (required) |
-| `C4` | New development / major feature / major refactor | Mandatory Spec-Kit gate, then OpenSpec-governed implementation |
+### Kind
 
-## Governed Workflow Gates (C3/C4)
+| Kind | Scope         | Primary Role           |
+| ---- | ------------- | ---------------------- |
+| `D`  | Development   | Development Engineer   |
+| `O`  | Operations    | Operations Engineer    |
+| `X`  | Documentation | Documentation Engineer |
+| `C`  | Creative      | Creative Partner       |
+| `G`  | Governance    | Governance Architect   |
 
-### C3 Mandatory OpenSpec Gate
+One primary kind; optional tags for secondary concerns.
 
-If task is `C3`, apply this gate:
+### Level
 
-- First executable command MUST be: `/opsx:new <change-name>`
-- CLI fallback: `openspec new change <change-name>`
-- If wrappers are missing/outdated, run `openspec update` (or `openspec init --tools <tool>` if not initialized)
+| Level | Meaning                                                                       | Governance Path                         |
+| ----- | ----------------------------------------------------------------------------- | --------------------------------------- |
+| `L1`  | Advisory/read-only                                                            | None                                    |
+| `L2`  | Small deterministic change                                                    | Direct                                  |
+| `L3`  | Governed change                                                               | OpenSpec                                |
+| `L4`  | Major program (new project / major feature / major refactor / high ambiguity) | Spec-Kit or OpenSpec (single-tool lock) |
 
-### C4 Mandatory Spec-Kit Gate (Balanced)
+### Scoring and Routing
 
-If task is `C4` (new development / greenfield / major refactor), apply this gate:
+Score `0..4`: `N` Novelty, `A` Ambiguity, `I` Impact, `R` Risk, `V` Reversibility cost.
+Derived: `DiscoveryScore = N + A`, `ControlScore = I + R + V`.
 
-- First executable command MUST be: `specify init --here --ai claude --script sh`
-- Before gate passes, ONLY read-only commands are allowed: `ls`, `rg`, `cat`, `git status`
-- Before gate passes, MUST NOT run: `openspec init`, file edits, source scaffolding, or implementation commands
+Route:
 
-Gate pass condition:
+1. Read-only -> `L1`
+2. Guardrail-sensitive or `Kind=G` -> at least `L3`
+3. New project, major new feature, major refactor, or `high_ambiguity` (`A >= 3` and `ControlScore >= 6`) -> `L4`
+4. `ControlScore >= 6` (when `A < 3`), or (`A >= 2` and `DiscoveryScore >= 4`) -> `L3`
+5. Otherwise -> `L2`
 
-- Spec-Kit artifacts exist in target project (for example `.specify/` or `specs/`)
-- Intake Card includes `Spec-Kit Gate: passed`
+Compatibility: `L1/L2/L3/L4` maps to `C1/C2/C3/C4`.
+If multiple `L4` triggers match, resolve with precedence: `major_refactor` > `new_project` > `major_feature` > `high_ambiguity`.
 
-If gate is not passed:
-
-- STOP and ask explicit yes/no for this single next command: `specify init --here --ai claude --script sh`
-- Do not provide alternative implementation paths
-- Use `Spec-Kit Gate: waived` only when user explicitly asks to skip, and include `Waive Reason: <one sentence>`
-
-After gate passes:
-
-- Continue Spec-Kit discovery, then enter the same OpenSpec lifecycle as `C3`
-
-## Intake Scoring (N/A/I/R)
-
-Use `N/A/I/R` scores (`0..2`) before implementation:
-
-- `N` = Novelty
-- `A` = Ambiguity
-- `I` = Impact
-- `R` = Risk
-
-Derived values:
-
-- `DiscoveryScore = N + A`
-- `ControlScore = I + R`
-
-Routing rules (ordered):
-
-1. Read-only request -> `C1`
-2. Request explicitly calls for new development, major feature, or major refactor -> `C4`
-3. Request implies greenfield / start-from-scratch / new-system / major-rewrite intent -> `C4`
-4. Else `DiscoveryScore >= 3` or `N = 2` or `A = 2` -> `C4`
-5. Else `I = 2` and `R = 2` -> `C4`
-6. Else `ControlScore >= 3` or `I = 2` or `R = 2` -> `C3`
-7. Else -> `C2`
-
-If category is `C3` or `C4`, use `Governed` execution mode and enter OpenSpec gate before coding.
-If category is `C4`, Spec-Kit gate must pass before any write action.
-
-## Intake Card
-
-Before implementation, emit:
+### Intake Card
 
 ```markdown
 ## Intake Card
-- Category: C1 | C2 | C3 | C4
-- Scores: N/A/I/R = x/x/x/x
+
+- Kind: D | O | X | C | G
+- Primary Role: <role>
+- KindTags: [optional]
+- Level: L1 | L2 | L3 | L4
+- Scores: N/A/I/R/V = x/x/x/x/x
 - DiscoveryScore: x
 - ControlScore: x
-- Execution Mode: Direct | Governed
-- Spec-Kit Gate: n/a | required | passed | waived
+- L4Reason: none | new_project | major_feature | major_refactor | high_ambiguity
+- GovernanceTool: none | speckit | openspec | user_pending
+- WorkflowLock: unlocked | locked
+- Active Change: <name | none>
 - Route Reason: <one sentence>
 - Next Step: <single command>
 ```
 
-For `C4`:
+L1/L2: Kind, Level, Route Reason, Next Step are sufficient.
 
-- If Spec-Kit artifacts are absent, emit `Spec-Kit Gate: required`
-- If Spec-Kit artifacts are present, emit `Spec-Kit Gate: passed`
-- Use `Spec-Kit Gate: waived` only when user explicitly asks to skip, and include `Waive Reason: <one sentence>`
+### Routing Examples (Calibration)
 
-## Worktree Gate (C2+)
+| Scenario                          | Kind | Level | L4Reason         | GovernanceTool |
+| --------------------------------- | ---- | ----- | ---------------- | -------------- |
+| Read-only codebase analysis       | `D`  | `L1`  | `none`           | `none`         |
+| Small bugfix in one module        | `D`  | `L2`  | `none`           | `none`         |
+| Documentation update (README/ADR) | `X`  | `L2`  | `none`           | `none`         |
+| Security-sensitive auth change    | `D`  | `L3`  | `none`           | `openspec`     |
+| Workflow/policy scoring update    | `G`  | `L3`  | `none`           | `openspec`     |
+| New project from scratch          | `D`  | `L4`  | `new_project`    | `speckit`      |
+| Major new feature across services | `D`  | `L4`  | `major_feature`  | `speckit`      |
+| Major architecture refactor       | `D`  | `L4`  | `major_refactor` | `openspec`     |
+| High ambiguity, unclear scope     | `D`  | `L4`  | `high_ambiguity` | `user_pending` |
+| Deployment pipeline redesign      | `O`  | `L3`  | `none`           | `openspec`     |
 
-- Default model: `one-task-one-branch-one-worktree`.
-- `C3` and `C4` should use a dedicated `git worktree` under `.worktrees/<branch>`.
-- `C2` quick deterministic edits may remain in the primary workspace when isolation overhead is unnecessary.
-- Worktree cleanup is confirmation-first; avoid force-removal unless explicitly requested.
+`user_pending`: ask user to choose tool, then lock before governed execution.
 
-## OpenSpec and Spec-Kit Orchestration
+### Non-L4 Examples (Do Not Escalate)
 
-### OpenSpec Execution Gate (for C3 and C4 implementation)
-
-- Suggest only the next single `/opsx:*` (or `openspec ...`) step.
-- Ask explicit yes/no before executing.
-- Never auto-chain steps, especially archive.
-- Never infer consent for `openspec archive <change-name> --yes`.
-
-### Command availability note
-
-`/opsx:*` slash commands are provided by OpenSpec integrations (generated by `openspec init/update`).
-Do not assume they exist in every repo.
-
-If missing, run at repo root:
-
-```bash
-openspec init --tools claude,codex
-```
-
-If wrappers are stale, run `openspec update`.
-
-### C4 bootstrap note (project-local Spec-Kit)
-
-For `C4`, initialize Spec-Kit in the target project:
-
-```bash
-specify init --here --ai claude --script sh
-specify init --here --ai codex --script sh
-specify init --here --ai opencode --script sh
-```
-
-Gate behavior is defined in `Governed Workflow Gates (C3/C4)` above.
-
-Codex fallback when project prompt discovery is missing:
-
-```bash
-export CODEX_HOME="$PWD/.codex"
-```
-
-### Version control note (gitignore)
-
-This repository tracks all OpenSpec artifacts in git (`openspec/**`).
-Active change directories under `openspec/changes/` must be archived before merge; CI enforces this via `.github/scripts/check_openspec_trace_gate.sh`.
+| Scenario                                           | Level     | Why Not `L4`                              |
+| -------------------------------------------------- | --------- | ----------------------------------------- |
+| Single-module refactor, clear boundaries           | `L3`      | Not cross-system, low ambiguity           |
+| Medium feature in existing architecture            | `L3`      | Incremental, no program-level uncertainty |
+| Test suite expansion                               | `L2`/`L3` | Quality work, not major-program scope     |
+| Doc/spec rewrite (no system redesign)              | `L2`      | Knowledge update only                     |
+| Ops tuning (no platform redesign)                  | `L3`      | Governed but not major program            |
+| Ambiguous wording, low impact (`ControlScore < 6`) | `L3`      | Not enough control pressure for `L4`      |
 
 ---
 
-## Workflow Routing
+## Governance Gates
 
-Shared (non-OpenSpec) skills live at `~/.agents/skills`.
+### L3 Gate
 
-OpenSpec integrations are generated by `openspec init/update`.
-Do **not** hand-write or maintain `/opsx:*` prompt files in dotfiles.
+If no active change: `/opsx:new <change-name>` (CLI: `openspec new change <change-name>`).
 
-### C3 vs C4 Route Split (Explicit)
+### L4 Gate
 
-| Category | Entry gate | Implementation starts when | Next lifecycle |
-| --- | --- | --- | --- |
-| `C3` | `C3 Mandatory OpenSpec Gate` | OpenSpec change initialized | OpenSpec lifecycle |
-| `C4` | `C4 Mandatory Spec-Kit Gate (Balanced)` | `Spec-Kit Gate: passed` | Spec-Kit discovery, then OpenSpec lifecycle |
+Resolve `L4Reason` with precedence:
 
-### Minimal Command Set (default)
+- `major_refactor` > `new_project` > `major_feature` > `high_ambiguity`
 
-- `/route` (`core/route`, classification-first routing)
-- `/commit` (`core/commit`)
-- `/context` (`core/context`)
-- `/review` (`core/review`)
-- `/test` (`core/test`)
-- `/pr:pr-create` (`core/pr-create`)
-- `/pr:pr-review` (`core/pr-review`)
-- `/plan` (`core/plan`, use for `C2` lightweight planning)
-- `/worktree` (`core/worktree`, shared worktree workflow guidance)
+Lock one tool per L4Reason:
 
-### OpenSpec commands (C3 and C4 implementation)
+- `major_refactor` -> `openspec`
+- `new_project` / `major_feature` -> `speckit`
+- `high_ambiguity` -> ask user before proceeding
 
-The following is a **reference order** for the OpenSpec lifecycle. In actual chat, still follow the Execution Gate: propose only the **next single** step and ask explicit yes/no before executing.
+Entry: `openspec` -> `/opsx:new <change-name>`, `speckit` -> `specify init --here --ai claude --script sh`.
+If user does not choose under `high_ambiguity`, keep `GovernanceTool=user_pending` and stay read-only.
+Speckit lane: do not auto-open OpenSpec change.
 
-- **Stable API:** `openspec ...` CLI + project-local `openspec/` artifacts.
-- **Convenience wrappers:** Claude Code supports `/opsx:<id>` commands (colon form), generated into the current repo by OpenSpec.
-  - Examples: `/opsx:new` → `/opsx:ff` → `/opsx:apply` → `/opsx:verify` → `/opsx:archive`
-  - Tool syntax difference: Codex/OpenCode use hyphen form `/opsx-<id>`.
+### Active Change Policy
 
-### Task Routing Map
+- One active change per session; continue by default.
+- Switch/create requires explicit confirmation; cross-session takeover needs handoff note.
+- GovernanceTool stays locked. Edits to existing artifacts (e.g. post-review fixes) stay within originating tool—never re-route.
 
-| Intent | Route |
-|-------|-------|
-| `C1` advisory | analysis only (no file changes) |
-| `C2` small deterministic change | `/route` → `/plan` (optional) → implement → `/test` → `/commit` |
-| `C3` medium governed change | `/route` → `/opsx:new` (explicit yes/no) → OpenSpec lifecycle |
-| `C4` new/major initiative | `/route` → `Spec-Kit Gate: required` → `specify init --here --ai claude --script sh` → `Spec-Kit Gate: passed` → Spec-Kit discovery → OpenSpec lifecycle (`/opsx:new` or `openspec new change`) |
-| review / 审查 | `/review` |
-| test / 测试 | `/test` |
-| commit / 提交 | `/commit` |
-| create PR / 创建 PR | `/pr:pr-create` |
+## Governed Execution Gate (`L3`/`L4`)
 
----
+Before first step, scan: existing patterns, dependencies/blast radius, guardrail domains.
 
-## Pre-Analysis Protocol (C3+)
+- One step at a time; ask yes/no before each.
+- Never auto-chain. Never finalize/archive without explicit confirmation.
+- Stay within locked `GovernanceTool` for the whole workflow.
+- Tool switch requires explicit user approval and an updated Intake Card.
 
-Before implementing `C3` or `C4` tasks, complete:
+OpenSpec lane (`GovernanceTool=openspec`):
 
-```markdown
-## Pre-Analysis
-- **Similar patterns**: [3+ existing implementations]
-- **Dependencies**: [affected modules/files]
-- **Conventions**: [naming, structure, test patterns]
-- **Risk areas**: [guardrails triggered? see context/guardrails.md]
-```
+- Lifecycle: `/opsx:new` -> `/opsx:ff` -> `/opsx:apply` -> `/opsx:verify` -> `/opsx:archive`
 
----
+Spec-Kit lane (`GovernanceTool=speckit`):
 
-## Core Principles
+- Entry: `specify init --here --ai claude --script sh`
+- Continue in Spec-Kit flow; do not invoke `/opsx:*` in the same workflow.
+- After discovery, close this workflow and start a new governed change for implementation.
 
-- **Simplicity** - Three similar lines > premature abstraction
-- **Correctness** - Understand before modifying, run tests after
-- **Minimal changes** - Only what's necessary, don't "improve" working code
-- **Fix, don't hide** - No `@ts-ignore`, `skip`, empty catch without fixing root cause
+> Syntax: Claude `/opsx:*` (colon), Codex/OpenCode `/opsx-*` (hyphen).
 
----
+When `GovernanceTool=openspec`: track `openspec/**` in git and archive active changes before merge.
 
-## Guardrails
+## Worktree Policy
 
-Sensitive areas defined in `context/guardrails.md`:
+Default: `one-task-one-branch-one-worktree`.
 
-| Category | Examples |
-|----------|----------|
-| Critical | Auth, Authorization, Financial, Security |
-| High | Schema migrations, External APIs, Irreversible ops |
+- `L3/L4`: dedicated worktree
+- `L2`: primary workspace OK when risk is low
 
-**Post-change report required:** Files → Changes → Reason → Impact → Rollback
+## Guardrails & Boundaries
 
----
+Higher-control domains: Auth/AuthZ, Security/Credentials/PII, Financial flows, Schema migration, Irreversible ops, External API contracts.
 
-## Git Conventions
-
-**Branch:** `feat/`, `fix/`, `refactor/`, `docs/`, `test/`, `chore/`
-
-**Commit (Conventional):**
-```
-type(scope): description
-
-feat(auth): add OAuth2 support
-fix(api): handle null response
-```
-
-**Safety:** Force push to protected branches blocked. `--amend` and `--hard` require confirmation.
-
----
-
-## Chinese Response
-
-When user uses Chinese: apply `context/chinese-response.md` rules.
-
-- 中英文间加空格
-- 技术术语保留英文
-- 代码保持英文
-
----
+**Never:** bypass confirmation for high-risk ops; install without preflight; open/switch governed changes silently.
+**Avoid:** process overkill for simple tasks; broad changes without rollback clarity.
 
 ## Resources
 
-```
-~/.claude/
-├── commands/<category>/*.md
-├── context/*.md
-
-~/.agents/
-└── skills/<plugin>/<skill>/
-```
-
----
-
-## What NOT To Do
-
-**Never:**
-- Use `pip` (use `uv`)
-- Commit to main directly
-- Force push protected branches
-- Interactive git (`-i` flag)
-- Create files unless necessary
-
-**Avoid:**
-- Over-engineering
-- "Just in case" error handling
-- Refactoring while fixing bugs
-- Comments that repeat code
+- Global: `~/.claude/CLAUDE.md`
+- Project: `CLAUDE.md`, `AGENTS.md` (if configured fallback)
+- Shared skills: `~/.agents/skills/`
