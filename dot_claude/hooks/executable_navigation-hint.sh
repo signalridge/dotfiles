@@ -63,7 +63,7 @@ should_skip() {
 # WARN-OPSX-NOT-INSTALLED: user tried /opsx but it failed
 if echo "$prompt" | grep -qE '(/opsx|opsx).*(not found|unknown|command not found|没有|找不到|不存在|失败)'; then
     should_skip "opsx-not-installed" && exit 0
-    emit "WARN" "OPSX-NOT-INSTALLED" "/opsx command not found or failed." "Run openspec init --tools claude (or openspec update), or use openspec CLI directly."
+    emit "WARN" "OPSX-NOT-INSTALLED" "/opsx command not found or failed." "Use native OpenSpec CLI first (e.g. openspec new change <change-name>), then install wrappers via openspec init --tools claude or openspec update if needed."
 fi
 
 # WARN-OPENSPEC-NOT-INIT: openspec command failed due to missing workspace

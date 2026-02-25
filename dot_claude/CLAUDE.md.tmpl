@@ -130,7 +130,7 @@ L1/L2: Kind, Level, Route Reason, Next Step are sufficient.
 
 ### L3 Gate
 
-If no active change: `/opsx:new <change-name>` (CLI: `openspec new change <change-name>`).
+If no active change: run native CLI `openspec new change <change-name>` first (optional shortcut: `/opsx:new <change-name>`).
 
 ### L4 Gate
 
@@ -144,7 +144,7 @@ Lock one tool per L4Reason:
 - `new_project` / `major_feature` -> `speckit`
 - `high_ambiguity` -> ask user before proceeding
 
-Entry: `openspec` -> `/opsx:new <change-name>`, `speckit` -> `specify init --here --ai claude --script sh`.
+Entry: `openspec` -> `openspec new change <change-name>` (optional shortcut: `/opsx:new <change-name>`), `speckit` -> `specify init --here --ai claude --script sh`.
 If user does not choose under `high_ambiguity`, keep `GovernanceTool=user_pending` and stay read-only.
 Speckit lane: do not auto-open OpenSpec change.
 
@@ -165,7 +165,8 @@ Before first step, scan: existing patterns, dependencies/blast radius, guardrail
 
 OpenSpec lane (`GovernanceTool=openspec`):
 
-- Lifecycle: `/opsx:new` -> `/opsx:ff` -> `/opsx:apply` -> `/opsx:verify` -> `/opsx:archive`
+- CLI-first checkpoints: `openspec new change <change-name>` -> `openspec status --change <change-name>` -> `openspec validate <change-name>` -> `openspec archive <change-name>`
+- Wrapper shortcuts (optional): `/opsx:new` -> `/opsx:ff` -> `/opsx:apply` -> `/opsx:verify` -> `/opsx:archive`
 
 Spec-Kit lane (`GovernanceTool=speckit`):
 
@@ -173,7 +174,7 @@ Spec-Kit lane (`GovernanceTool=speckit`):
 - Continue in Spec-Kit flow; do not invoke `/opsx:*` in the same workflow.
 - After discovery, close this workflow and start a new governed change for implementation.
 
-> Syntax: Claude `/opsx:*` (colon), Codex/OpenCode `/opsx-*` (hyphen).
+Cross-tool syntax note: Claude `/opsx:*` (colon), Codex/OpenCode `/opsx-*` (hyphen).
 
 When `GovernanceTool=openspec`: track `openspec/**` in git and archive active changes before merge.
 

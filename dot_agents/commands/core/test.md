@@ -14,7 +14,8 @@ Run and verify tests with a minimal, project-aware flow.
 1. Determine test scope (changed files or target path).
 2. Run project-default test command.
 3. If failures occur, fix and rerun until green.
-4. For `C3` and `C4` OpenSpec work, run `/opsx:verify` (Claude) or `/opsx-verify` (Codex/OpenCode) before archive.
+4. For `C3` and `C4` OpenSpec work, run `openspec validate <change-name>` before archive.
+   Wrapper shortcuts (`/opsx:verify` for Claude, `/opsx-verify` for Codex/OpenCode) are optional when installed.
 
 ## Notes
 

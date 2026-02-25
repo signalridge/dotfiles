@@ -48,11 +48,11 @@ Derived values:
 
 For `C3`, enforce:
 
-- First executable command MUST be:
+- First executable command MUST be: `openspec new change <change-name>`
+- Optional wrapper shortcuts (when installed):
   - Claude Code: `/opsx:new <change-name>`
   - Codex/OpenCode: `/opsx-new <change-name>`
-- CLI fallback: `openspec new change <change-name>`
-- If wrappers are missing/outdated, run `openspec update` (or `openspec init --tools <tool>` if not initialized)
+- If wrapper shortcuts are missing/outdated, run `openspec update` (or `openspec init --tools <tool>` if not initialized)
 
 ### C4 Mandatory Spec-Kit Gate (Balanced)
 
@@ -78,7 +78,7 @@ If gate is not passed:
 
 After gate passes:
 
-- Continue Spec-Kit discovery, then enter the same OpenSpec lifecycle as `C3` (wrapper or CLI fallback)
+- Continue Spec-Kit discovery, then enter the same OpenSpec lifecycle as `C3` (CLI-first, wrappers optional)
 
 ## Required Output Contract
 
