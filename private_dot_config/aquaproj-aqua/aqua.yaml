@@ -14,9 +14,9 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.50
-  - name: openai/codex@rust-v0.104.0
-  - name: anomalyco/opencode@v1.2.10
+  - name: anthropics/claude-code@v2.1.58
+  - name: openai/codex@rust-v0.105.0
+  - name: anomalyco/opencode@v1.2.14
   - name: direnv/direnv@v2.37.1
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.18.2
@@ -26,7 +26,7 @@ packages:
   - name: sharkdp/fd@v10.3.0
   - name: junegunn/fzf@v0.68.0
   - name: gopasspw/gopass@v1.16.1
-  - name: cli/cli@v2.87.2
+  - name: cli/cli@v2.87.3
   - name: dlvhdr/gh-dash@v4.22.0
   - name: x-motemen/ghq@v1.9.4
   - name: git-lfs/git-lfs@v3.7.1
@@ -36,15 +36,15 @@ packages:
   - name: jesseduffield/lazygit@v0.59.0
   - name: neovim/neovim@v0.11.6
   - name: LuaLS/lua-language-server@3.17.1
-  - name: tree-sitter/tree-sitter@v0.26.5
+  - name: tree-sitter/tree-sitter@v0.26.6
   - name: rclone/rclone@v1.73.1
   - name: o2sh/onefetch@2.26.1
   - name: ip7z/7zip@26.00
   - name: Nukesor/pueue/pueue@v4.0.2
   - name: BurntSushi/ripgrep@15.1.0
   - name: phiresky/ripgrep-all@v0.10.10
-  - name: chmln/sd@v1.0.0
-  - name: joshmedeski/sesh@v2.24.1
+  - name: chmln/sd@v1.1.0
+  - name: joshmedeski/sesh@v2.24.2
   - name: skim-rs/skim@v3.5.0
   - name: starship/starship@v1.24.2
   - name: JohnnyMorganz/StyLua@v2.3.1
@@ -53,7 +53,7 @@ packages:
   - name: mvdan/sh@v3.12.0
   - name: rhysd/actionlint@v1.7.11
   - name: golangci/golangci-lint@v2.10.1
-  - name: goreleaser/goreleaser@v2.14.0
+  - name: goreleaser/goreleaser@v2.14.1
   - name: numtide/treefmt@v2.4.0
   - name: XAMPPRocky/tokei@14.0.0
   - name: dduan/tre@v0.4.0
