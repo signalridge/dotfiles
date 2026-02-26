@@ -2,32 +2,32 @@
 # Pinned versions (auto-updated by GitHub Actions)
 # ─────────────────────────────────────────────────────────────────────────────
 versions:
-  nixInstaller: v3.16.0
-  nixVersion: v2.33.2
+  nixInstaller: v3.16.3
+  nixVersion: v2.33.3
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
-  aquaVersion: v2.56.6
+  aquaVersion: v2.56.7
   nixIndexDb: 2026-02-05-175827
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: ade0c7a211d04fa1354d10359737cace5c6fc5b0
   claudeWshobsonAgentsSha256: 9c6ca3e8b637de4f443d210497c263ff697f377c56b27e8f92752514bb0c798c
   claudeSuperpowersRev: e4a2375cb705ca5800f0833528ce36a3faf9017a
   claudeSuperpowersSha256: 121e82440a6b06ef0b97e4559c49a9b1422c8025ad575a0530526c9144b8da5c
-  claudeAnthropicsSkillsRev: 1ed29a03dc852d30fa6ef2ca53a67dc2c2c2c563
-  claudeAnthropicsSkillsSha256: 294568844992768a95ee994d0cc4cc7afd7d02f89cca9061a917fe8c98048808
+  claudeAnthropicsSkillsRev: 3d59511518591fa82e6cfcf0438d68dd5dad3e76
+  claudeAnthropicsSkillsSha256: 4d7544f1e1e3faf779c5c592151f0e5c632b7ed0ef475caaa62d37dd624f5660
   uiUxProMaxSkillRev: 6623f12b4058d09618c89cffb2de59a47c45f999
   uiUxProMaxSkillSha256: 3b8bcfca56e387f89d0ff24e3ab81cbf70adafac41156ad62c4f862cee17fba5
   openaiSkillsRev: 2c9ebb321958f64aa9414b46e4240901e2b9e1a9
-  huggingfaceSkillsRev: c1cd47139f401b8615d8ed8e7be7555f1312c179
-  getsentrySkillsRev: 187c0022b3b676f72227a04f1cfc8921a58a5020
-  trailofbitsSkillsRev: 60ab7b0fe0ac2132a5cd484d109e9f0ff2ddd63e
-  cloudflareSkillsRev: 57301e49ebfd311178c4acde41c8772503c88997
+  huggingfaceSkillsRev: 4c79590c999ca1b14074d13fd88dc8e592878f5f
+  getsentrySkillsRev: 6089495c2085b5fae0573ec3c0dd64c4a5c7d44e
+  trailofbitsSkillsRev: 5468f6e76afabcc5d1c9f0f5b33d4897f09ef57d
+  cloudflareSkillsRev: 6bd8243a7e187da8f1bdd49d190ce7bb421e2d1e
   vercelLabsAgentSkillsRev: e23951b8cad2f4b1e7e176c5731127c1263fe86f
   vercelLabsNextSkillsRev: 038954e07bfc313e97fa5f6ff7caf87226e4a782
   supabaseAgentSkillsRev: 760460c221d30d0db904ff28e8fa52af85672255
-  expoSkillsRev: 0b19547886fad065d37ae3f776050f6bb89ef7ee
-  microsoftSkillsRev: 154f146735356aea66494931a98719c3fcc12898
-  sickn33AntigravitySkillsRev: c8831a47434692ca1cc547f311dffb4364a13e9f
+  expoSkillsRev: 066928d49a2d25092efe8f32726eaf8bb14b1891
+  microsoftSkillsRev: f4d35f1963029db70b716846590dee39023b0453
+  sickn33AntigravitySkillsRev: 3a0dbf6cfe6472675c7d99b4ae8cfeae249d02ec
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   humanizerEnRev: d8085c7da5ddb9a179572837d4806b68cde3e9ff
