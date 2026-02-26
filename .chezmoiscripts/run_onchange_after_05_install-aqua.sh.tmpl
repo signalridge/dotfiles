@@ -75,6 +75,21 @@ if aqua_cmd="$(detect_aqua_cmd)"; then
         echo "    Skipped (already on pinned version)"
         exit 0
     fi
+
+    # Aqua exists but at a different version — upgrade directly.
+    # This avoids the aqua-installer bootstrap dance entirely and also sidesteps
+    # an upstream bug where `rm -R` (without -f) prompts on macOS for each
+    # read-only file in the temp dir (the tarball ships third_party_licenses/*
+    # as r--r--r--, and BSD rm prompts "override?" when stdin is a tty).
+    if [[ -n "$AQUA_TARGET_VERSION" ]]; then
+        echo "    Updating via 'aqua update-aqua ${AQUA_TARGET_VERSION}'..."
+        if "$aqua_cmd" update-aqua "$AQUA_TARGET_VERSION"; then
+            installed_version="$(current_aqua_version "$aqua_cmd")"
+            echo "    Installed: ${installed_version:-unknown}"
+            exit 0
+        fi
+        echo "    update-aqua failed, falling back to full installer"
+    fi
 fi
 
 if [[ -z "${AQUA_INSTALLER_SHA256:-}" ]]; then
@@ -84,7 +99,7 @@ fi
 
 installer_file="$(mktemp "${TMPDIR:-/tmp}/aqua-installer.XXXXXX")"
 cleanup() {
-    rm -f "$installer_file"
+    rm -f "$installer_file" "${installer_file}.bak"
 }
 trap cleanup EXIT
 
@@ -110,6 +125,13 @@ if [[ "$actual_sha256" != "$expected_sha256" ]]; then
     echo "    actual:   $actual_sha256"
     exit 1
 fi
+
+# Workaround: upstream aqua-installer uses `rm -R "$tempdir"` at the end, which
+# on macOS prompts "override r--r--r--?" for each read-only file when stdin is a
+# tty.  The tarball ships third_party_licenses/* as read-only, so the cleanup
+# stalls indefinitely in interactive terminals.  Patch to `rm -rf`.
+# Ref: https://github.com/aquaproj/aqua-installer (as of v4.0.4)
+sed -i.bak 's/rm -R "\$tempdir"/rm -rf "\$tempdir"/' "$installer_file"
 
 chmod +x "$installer_file"
 if [[ -n "$AQUA_TARGET_VERSION" ]]; then
