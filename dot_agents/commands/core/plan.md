@@ -11,7 +11,8 @@ Plan a feature or task with clear structure before coding.
 ## When NOT to Use
 
 - If classification is `C3`: use OpenSpec.
-  - Next step: `/opsx:new <change-name>` (Claude) or `/opsx-new <change-name>` (Codex/OpenCode), with explicit confirmation.
+  - Next step (CLI-first): `openspec new change <change-name>`, with explicit confirmation.
+  - Optional wrapper shortcuts: `/opsx:new <change-name>` (Claude) or `/opsx-new <change-name>` (Codex/OpenCode).
 - If classification is `C4`: use mandatory Spec-Kit gate first.
   - Next step (single allowed executable command) is current-tool specific:
     - Claude Code: `specify init --here --ai claude --script sh`
@@ -24,9 +25,10 @@ Plan a feature or task with clear structure before coding.
 `/plan` does not conflict with OpenSpec wrappers (`/opsx:*` in Claude, `/opsx-*` in Codex/OpenCode). They are different layers:
 
 - `/plan`: `C2` lightweight planning entry.
-- OpenSpec wrappers: lifecycle entry for `C3` and `C4` implementation.
+- OpenSpec CLI (`openspec ...`): canonical lifecycle entry for `C3` and `C4` implementation.
+- OpenSpec wrappers: optional shortcuts when wrapper prompts are installed.
 
-If wrappers are missing, this is an availability/initialization issue. Run `openspec init --tools <tool>` (or `openspec update`), or use `openspec ...` CLI directly.
+If wrappers are missing, continue with native `openspec ...` CLI. Install wrappers only when needed via `openspec init --tools <tool>` (or `openspec update`).
 
 Always run `/route` first if category is not already explicit.
 

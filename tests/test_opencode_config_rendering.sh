@@ -298,9 +298,9 @@ test -f "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" || {
     exit 1
 }
 
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" "## OpenSpec Execution Gate"
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" "## OpenCode Runtime Boundaries"
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" "## Command and Skill Sources"
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '## Governed Execution Gate (`L3`/`L4`)'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '## OpenCode Runtime Notes'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Shared skills/commands'
 
 theme_file="$ROOT/private_dot_config/opencode/themes/dracula.json"
 test -f "$theme_file" || {
@@ -380,22 +380,23 @@ for f in "$ROOT/dot_claude/CLAUDE.md.tmpl" "$ROOT/dot_codex/AGENTS.md.tmpl" "$RO
     assert_file_contains "$f" 'DiscoveryScore'
     assert_file_contains "$f" 'ControlScore'
     assert_file_contains "$f" 'Intake Card'
-    assert_file_contains "$f" 'Spec-Kit Gate'
-    assert_file_contains "$f" 'C4 Mandatory Spec-Kit Gate (Balanced)'
-    assert_file_contains "$f" 'C3 vs C4'
-    assert_file_contains "$f" 'If category is `C3` or `C4`'
-    assert_file_contains "$f" 'Else `I = 2` and `R = 2` -> `C4`'
+    assert_file_contains "$f" '### L4 Gate'
+    assert_file_contains "$f" 'speckit'
+    assert_file_contains "$f" 'high_ambiguity'
+    assert_file_contains "$f" '## Governed Execution Gate (`L3`/`L4`)'
+    assert_file_contains "$f" 'If user does not choose under `high_ambiguity`'
 done
 
 # --- Task 6.3: Spec-Kit bootstrap anchors ---
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'specify init --here --ai claude --script sh'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'specify init --here --ai codex --script sh'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'specify init --here --ai opencode --script sh'
 for f in "$ROOT/dot_claude/CLAUDE.md.tmpl" "$ROOT/dot_codex/AGENTS.md.tmpl" "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl"; do
-    assert_file_contains "$f" 'specify init --here --ai claude --script sh'
-    assert_file_contains "$f" 'specify init --here --ai codex --script sh'
-    assert_file_contains "$f" 'specify init --here --ai opencode --script sh'
+    assert_file_contains "$f" 'run native CLI `openspec new change <change-name>` first'
 done
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'export CODEX_HOME="$PWD/.codex"'
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'export CODEX_HOME="$PWD/.codex"'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'export CODEX_HOME="$PWD/.codex"'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'OpenSpec prompts: `~/.codex/prompts/opsx-*.md`'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Global: `~/.claude/CLAUDE.md`'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'User config: `~/.config/opencode/AGENTS.md`'
 
 # --- Task 6.4: AGENTS opsx syntax consistency ---
 # Codex AGENTS: hyphen form only (except disambiguation note)
@@ -521,9 +522,12 @@ test -f "$ROOT/dot_agents/commands/core/route.md" || {
 }
 assert_file_contains "$ROOT/dot_agents/commands/core/worktree.md" 'wt-new'
 assert_file_contains "$ROOT/dot_agents/commands/core/worktree.md" 'one-task-one-branch-one-worktree'
+assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'First executable command MUST be: `openspec new change <change-name>`'
+assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" 'Next step (CLI-first): `openspec new change <change-name>`'
 assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" '/opsx:new <change-name>'
 assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" '/opsx-new <change-name>'
 assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" 'openspec init --tools <tool>'
+assert_file_contains "$ROOT/dot_agents/commands/core/test.md" 'openspec validate <change-name>'
 assert_file_contains "$ROOT/dot_agents/commands/core/test.md" '/opsx:verify'
 assert_file_contains "$ROOT/dot_agents/commands/core/test.md" '/opsx-verify'
 assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'If category is `C4`, enforce Spec-Kit gate first'

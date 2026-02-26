@@ -710,6 +710,7 @@ cmd_doctor() {
 
     echo "Runtime commands:"
     if command -v codex >/dev/null 2>&1; then pass "codex found"; else note_fail "codex not found"; fi
+    if command -v openspec >/dev/null 2>&1; then pass "openspec found"; else note_warn "openspec not found (C3/L3 OpenSpec gate unavailable)"; fi
     if command -v specify >/dev/null 2>&1; then pass "specify found"; else note_warn "specify not found (C4 Spec-Kit bootstrap unavailable)"; fi
     if command -v jq >/dev/null 2>&1; then pass "jq found"; else note_fail "jq not found"; fi
     if command -v chezmoi >/dev/null 2>&1; then pass "chezmoi found"; else note_fail "chezmoi not found"; fi
@@ -753,7 +754,7 @@ cmd_doctor() {
     if [[ "${opsx_count:-0}" -ge 5 ]]; then
         pass "opsx wrapper prompts present (${opsx_count})"
     else
-        note_warn "opsx wrapper prompts incomplete (${opsx_count:-0}); run: openspec update"
+        note_warn "opsx wrapper prompts incomplete (${opsx_count:-0}); native openspec CLI still works. run: openspec update"
     fi
 
     if [[ -L "${HOME}/.codex/skills" ]]; then
