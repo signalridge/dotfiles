@@ -417,16 +417,13 @@ assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Guardrail
 
 # --- Task 6.6: Guardrails machine anchors ---
 for f in "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md"; do
-    assert_file_contains "$f" 'Authentication'
-    assert_file_contains "$f" 'Authorization'
-    assert_file_contains "$f" 'Financial'
-    assert_file_contains "$f" 'Security'
-    assert_file_contains "$f" 'Data Schema'
-    assert_file_contains "$f" 'External APIs'
-    assert_file_contains "$f" 'Irreversible Ops'
-    assert_file_contains "$f" 'PII/Privacy'
-    assert_file_contains "$f" 'Post-change report required'
-    assert_file_contains "$f" 'explicit confirmation'
+    assert_file_contains "$f" 'Auth/AuthZ'
+    assert_file_contains "$f" 'Security/Credentials/PII'
+    assert_file_contains "$f" 'Financial flows'
+    assert_file_contains "$f" 'Schema migration'
+    assert_file_contains "$f" 'External API contracts'
+    assert_file_contains "$f" 'Irreversible ops'
+    assert_file_contains "$f" 'high-risk ops'
 done
 
 # --- Task 6.7: Sisyphus planner residue absent ---
@@ -444,24 +441,19 @@ if grep -Eq '^openspec/?$|^openspec/' "$ROOT/.gitignore"; then
 fi
 assert_not_ignored_path "openspec/specs/.probe"
 assert_not_ignored_path "openspec/changes/archive/.probe"
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'tracks all OpenSpec artifacts in git'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'tracks all OpenSpec artifacts in git'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'OpenSpec Version Control'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Track all OpenSpec artifacts in git'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'track `openspec/**` in git and archive active changes before merge'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'track `openspec/**` in git and archive active changes before merge'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'track `openspec/**` in git and archive active changes before merge'
 assert_file_contains "$ROOT/.github/workflows/openspec-trace-gate.yml" '.github/scripts/check_openspec_trace_gate.sh'
 assert_file_contains "$ROOT/.github/scripts/check_openspec_trace_gate.sh" 'unexpected files under openspec/changes'
 assert_file_contains "$ROOT/.github/scripts/check_openspec_trace_gate.sh" 'archive these changes before merge'
 
 # --- Task 8.4: Tavily-first anchor wording ---
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'Tavily MCP'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Tavily MCP'
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'Tavily MCP'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'Context7 MCP'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'Serena MCP'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Context7 MCP'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Serena MCP'
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'Context7 MCP'
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'Serena MCP'
+for f in "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md" "$ROOT/dot_claude/CLAUDE.md"; do
+    assert_file_contains "$f" 'Docs/API -> Context7'
+    assert_file_contains "$f" 'Web/news -> Tavily'
+    assert_file_contains "$f" 'Code navigation -> Serena'
+done
 
 # --- Task 9.4: Research subagent model routes explicit ---
 assert_jq "$OH_MY_OPENCODE" '.agents.librarian.category == "deep"'
@@ -472,17 +464,18 @@ assert_jq "$OH_MY_OPENCODE" '.agents.explore.model == "openai/gpt-5.3-codex"'
 assert_jq "$OH_MY_OPENCODE" '.agents.oracle.model == "openai/gpt-5.3-codex"'
 
 # --- Task 2.3: Runtime boundary wording machine-checkable ---
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'limited runtime hook capability'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'OPENCODE_DISABLE_CLAUDE_CODE=1'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'AGENTS -> CLAUDE fallback'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" '## MCP Policy'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## OpenCode Runtime Notes'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Keep `AGENTS.md` authoritative.'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Use `opencode` CLI for provider/session operations.'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Keep command/skill paths managed; avoid manual drift.'
 
 # --- Task 9.2/9.3: Subagent execution diagnostics ---
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'background-first'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'No assistant or tool response found'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Guardrails & Boundaries'
 
 # --- Task 3.4: Command-surface compatibility ---
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '.opencode/command/'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'routing/planning/context: `route`, `plan`, `context`'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Project config: `AGENTS.md`, `.opencode/AGENTS.md`'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Shared skills/commands: `~/.agents/`'
 
 # --- Task 4.1/4.3: Spec-Kit install + diagnostics anchors ---
 assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" '"pipx:specify-cli"'
@@ -511,9 +504,12 @@ assert_file_contains "$ROOT/dot_custom/functions.sh" 'Path collision:'
 assert_file_contains "$ROOT/dot_custom/functions.sh" 'Nested worktree creation is not supported.'
 
 # --- worktree-first-ai-workflow: policy anchors ---
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'Worktree Gate (C2+)'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'Worktree Gate (C2+)'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Worktree Gate (C2+)'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md" '## Worktree Policy'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" '## Worktree Policy'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Worktree Policy'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'one-task-one-branch-one-worktree'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'one-task-one-branch-one-worktree'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'one-task-one-branch-one-worktree'
 
 # --- worktree-first-ai-workflow: cross-tool shared command projection ---
 test -f "$ROOT/dot_agents/commands/core/route.md" || {
