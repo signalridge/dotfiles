@@ -45,7 +45,7 @@ BIN="$TMP_ROOT/bin"
 mkdir -p "$BIN/lib/keys-manage"
 
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/executable_keys-manage.tmpl" >"$BIN/keys-manage"
-chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/lib/common.tmpl" >"$BIN/lib/common"
+chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/lib/common" >"$BIN/lib/common"
 cp "$ROOT/dot_local/bin/lib/keys-manage/"*.sh "$BIN/lib/keys-manage/"
 chmod +x "$BIN/keys-manage" "$BIN/lib/common"
 export PATH="$BIN:$PATH"

@@ -293,14 +293,14 @@ test -f "$ROOT/private_dot_config/opencode/symlink_skills.tmpl" || {
     exit 1
 }
 
-test -f "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" || {
+test -f "$ROOT/private_dot_config/opencode/AGENTS.md" || {
     echo "missing opencode user-level AGENTS template" >&2
     exit 1
 }
 
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '## Governed Execution Gate (`L3`/`L4`)'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '## OpenCode Runtime Notes'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Shared skills/commands'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Governed Execution Gate (`L3`/`L4`)'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## OpenCode Runtime Notes'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Shared skills/commands'
 
 theme_file="$ROOT/private_dot_config/opencode/themes/dracula.json"
 test -f "$theme_file" || {
@@ -334,9 +334,9 @@ if ! grep -Fq "'doctor:Run workflow diagnostics'" <<<"$codex_manage_completion_b
     exit 1
 fi
 
-assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'Search and MCP readiness:'
-assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'check_mcp_server "tavily" "Tavily"'
-assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'tri-MCP readiness unknown'
+assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage" 'Search and MCP readiness:'
+assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage" 'check_mcp_server "tavily" "Tavily"'
+assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage" 'tri-MCP readiness unknown'
 
 assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '[mcp_servers.context7]'
 assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '[mcp_servers.serena]'
@@ -352,16 +352,16 @@ assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl
 assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl" '--context","ide-assistant"'
 assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl" 'ensure_user_mcp_http "gitmcp" "https://gitmcp.io/docs"'
 
-test -f "$ROOT/dot_local/bin/executable_mcp-context7.tmpl" || {
+test -f "$ROOT/dot_local/bin/executable_mcp-context7" || {
     echo "missing managed context7 wrapper template" >&2
     exit 1
 }
-assert_file_contains "$ROOT/dot_local/bin/executable_mcp-context7.tmpl" 'CONTEXT7_API_KEY'
-assert_file_contains "$ROOT/dot_local/bin/executable_mcp-context7.tmpl" 'context7/api_key'
-assert_file_contains "$ROOT/dot_local/bin/executable_mcp-context7.tmpl" '@upstash/context7-mcp@2.1.1'
-assert_file_not_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'Search and MCP readiness:'
-assert_file_not_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'check_user_mcp "context7" "Context7"'
-assert_file_not_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'check_user_mcp "serena" "Serena"'
+assert_file_contains "$ROOT/dot_local/bin/executable_mcp-context7" 'CONTEXT7_API_KEY'
+assert_file_contains "$ROOT/dot_local/bin/executable_mcp-context7" 'context7/api_key'
+assert_file_contains "$ROOT/dot_local/bin/executable_mcp-context7" '@upstash/context7-mcp@2.1.1'
+assert_file_not_contains "$ROOT/dot_local/bin/executable_claude-manage" 'Search and MCP readiness:'
+assert_file_not_contains "$ROOT/dot_local/bin/executable_claude-manage" 'check_user_mcp "context7" "Context7"'
+assert_file_not_contains "$ROOT/dot_local/bin/executable_claude-manage" 'check_user_mcp "serena" "Serena"'
 assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" 'node = "lts"'
 assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" 'uv = "latest"'
 
@@ -369,7 +369,7 @@ assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" 'uv = "lat
 assert_file_contains "$ROOT/private_dot_config/opencode/opencode.jsonc.tmpl" 'openspec validate <change-name>'
 
 # --- Task 6.2: C1-C4 routing anchors ---
-for f in "$ROOT/dot_claude/CLAUDE.md.tmpl" "$ROOT/dot_codex/AGENTS.md.tmpl" "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl"; do
+for f in "$ROOT/dot_claude/CLAUDE.md" "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md"; do
     assert_file_not_contains "$f" 'C0/C1/C2/C3'
     assert_file_not_contains "$f" 'Category: C0 | C1 | C2 | C3'
     assert_file_not_contains "$f" 'Read-only request -> `C0`'
@@ -388,45 +388,42 @@ for f in "$ROOT/dot_claude/CLAUDE.md.tmpl" "$ROOT/dot_codex/AGENTS.md.tmpl" "$RO
 done
 
 # --- Task 6.3: Spec-Kit bootstrap anchors ---
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'specify init --here --ai claude --script sh'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'specify init --here --ai codex --script sh'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'specify init --here --ai opencode --script sh'
-for f in "$ROOT/dot_claude/CLAUDE.md.tmpl" "$ROOT/dot_codex/AGENTS.md.tmpl" "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl"; do
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'specify init --here --ai claude --script sh'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'specify init --here --ai codex --script sh'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'specify init --here --ai opencode --script sh'
+for f in "$ROOT/dot_claude/CLAUDE.md" "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md"; do
     assert_file_contains "$f" 'run native CLI `openspec new change <change-name>` first'
 done
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'OpenSpec prompts: `~/.codex/prompts/opsx-*.md`'
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Global: `~/.claude/CLAUDE.md`'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'User config: `~/.config/opencode/AGENTS.md`'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'OpenSpec prompts: `~/.codex/prompts/opsx-*.md`'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'Global: `~/.claude/CLAUDE.md`'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'User config: `~/.config/opencode/AGENTS.md`'
 
 # --- Task 6.4: AGENTS opsx syntax consistency ---
 # Codex AGENTS: hyphen form only (except disambiguation note)
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" '/opsx-new'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" '/opsx-archive'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Cross-tool syntax note'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" '/opsx-new'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" '/opsx-archive'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'Cross-tool syntax note'
 # OpenCode AGENTS: hyphen form
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '/opsx-new'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '/opsx-archive'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Cross-tool syntax note'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '/opsx-new'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '/opsx-archive'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Cross-tool syntax note'
 # Claude AGENTS: colon form
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" '/opsx:new'
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" '/opsx:archive'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md" '/opsx:new'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md" '/opsx:archive'
 
 # --- Task 6.5: Guardrails references resolve (inline) ---
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" '## Guardrails'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '## Guardrails'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" '## Guardrails'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Guardrails'
 
 # --- Task 6.6: Guardrails machine anchors ---
-for f in "$ROOT/dot_codex/AGENTS.md.tmpl" "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl"; do
-    assert_file_contains "$f" 'Authentication'
-    assert_file_contains "$f" 'Authorization'
-    assert_file_contains "$f" 'Financial'
-    assert_file_contains "$f" 'Security'
-    assert_file_contains "$f" 'Data Schema'
-    assert_file_contains "$f" 'External APIs'
-    assert_file_contains "$f" 'Irreversible Ops'
-    assert_file_contains "$f" 'PII/Privacy'
-    assert_file_contains "$f" 'Post-change report required'
-    assert_file_contains "$f" 'explicit confirmation'
+for f in "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md"; do
+    assert_file_contains "$f" 'Auth/AuthZ'
+    assert_file_contains "$f" 'Security/Credentials/PII'
+    assert_file_contains "$f" 'Financial flows'
+    assert_file_contains "$f" 'Schema migration'
+    assert_file_contains "$f" 'External API contracts'
+    assert_file_contains "$f" 'Irreversible ops'
+    assert_file_contains "$f" 'high-risk ops'
 done
 
 # --- Task 6.7: Sisyphus planner residue absent ---
@@ -444,24 +441,19 @@ if grep -Eq '^openspec/?$|^openspec/' "$ROOT/.gitignore"; then
 fi
 assert_not_ignored_path "openspec/specs/.probe"
 assert_not_ignored_path "openspec/changes/archive/.probe"
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'tracks all OpenSpec artifacts in git'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'tracks all OpenSpec artifacts in git'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'OpenSpec Version Control'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Track all OpenSpec artifacts in git'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'track `openspec/**` in git and archive active changes before merge'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'track `openspec/**` in git and archive active changes before merge'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'track `openspec/**` in git and archive active changes before merge'
 assert_file_contains "$ROOT/.github/workflows/openspec-trace-gate.yml" '.github/scripts/check_openspec_trace_gate.sh'
 assert_file_contains "$ROOT/.github/scripts/check_openspec_trace_gate.sh" 'unexpected files under openspec/changes'
 assert_file_contains "$ROOT/.github/scripts/check_openspec_trace_gate.sh" 'archive these changes before merge'
 
 # --- Task 8.4: Tavily-first anchor wording ---
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Tavily MCP'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Tavily MCP'
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Tavily MCP'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Context7 MCP'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Serena MCP'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Context7 MCP'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Serena MCP'
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Context7 MCP'
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Serena MCP'
+for f in "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md" "$ROOT/dot_claude/CLAUDE.md"; do
+    assert_file_contains "$f" 'Docs/API -> Context7'
+    assert_file_contains "$f" 'Web/news -> Tavily'
+    assert_file_contains "$f" 'Code navigation -> Serena'
+done
 
 # --- Task 9.4: Research subagent model routes explicit ---
 assert_jq "$OH_MY_OPENCODE" '.agents.librarian.category == "deep"'
@@ -472,24 +464,25 @@ assert_jq "$OH_MY_OPENCODE" '.agents.explore.model == "openai/gpt-5.3-codex"'
 assert_jq "$OH_MY_OPENCODE" '.agents.oracle.model == "openai/gpt-5.3-codex"'
 
 # --- Task 2.3: Runtime boundary wording machine-checkable ---
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'limited runtime hook capability'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'OPENCODE_DISABLE_CLAUDE_CODE=1'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'AGENTS -> CLAUDE fallback'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" '## MCP Policy'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## OpenCode Runtime Notes'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Keep `AGENTS.md` authoritative.'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Use `opencode` CLI for provider/session operations.'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Keep command/skill paths managed; avoid manual drift.'
 
 # --- Task 9.2/9.3: Subagent execution diagnostics ---
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'background-first'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'No assistant or tool response found'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Guardrails & Boundaries'
 
 # --- Task 3.4: Command-surface compatibility ---
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" '.opencode/command/'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'routing/planning/context: `route`, `plan`, `context`'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Project config: `AGENTS.md`, `.opencode/AGENTS.md`'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Shared skills/commands: `~/.agents/`'
 
 # --- Task 4.1/4.3: Spec-Kit install + diagnostics anchors ---
 assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" '"pipx:specify-cli"'
-assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'specify check'
-assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'specify check'
-assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage.tmpl" 'specify check passed'
-assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage.tmpl" 'specify check passed'
+assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage" 'specify check'
+assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage" 'specify check'
+assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage" 'specify check passed'
+assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage" 'specify check passed'
 
 # --- worktree-first-ai-workflow: baseline ignore rule ---
 assert_file_contains "$ROOT/.gitignore" '.worktrees/'
@@ -511,9 +504,12 @@ assert_file_contains "$ROOT/dot_custom/functions.sh" 'Path collision:'
 assert_file_contains "$ROOT/dot_custom/functions.sh" 'Nested worktree creation is not supported.'
 
 # --- worktree-first-ai-workflow: policy anchors ---
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md.tmpl" 'Worktree Gate (C2+)'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md.tmpl" 'Worktree Gate (C2+)'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md.tmpl" 'Worktree Gate (C2+)'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md" '## Worktree Policy'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" '## Worktree Policy'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Worktree Policy'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'one-task-one-branch-one-worktree'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'one-task-one-branch-one-worktree'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'one-task-one-branch-one-worktree'
 
 # --- worktree-first-ai-workflow: cross-tool shared command projection ---
 test -f "$ROOT/dot_agents/commands/core/route.md" || {
