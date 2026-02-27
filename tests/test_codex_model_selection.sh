@@ -28,10 +28,10 @@ STUB="$TMP_ROOT/stub"
 mkdir -p "$BIN/lib/ai" "$BIN/lib" "$STUB"
 
 # Render scripts/libs for isolated execution.
-chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/lib/common.tmpl" >"$BIN/lib/common"
+chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/lib/common" >"$BIN/lib/common"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/lib/ai/core.tmpl" >"$BIN/lib/ai/core"
-cp "$ROOT/dot_local/bin/lib/ai/codex.tmpl" "$BIN/lib/ai/codex"
-chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/executable_codex-token.tmpl" >"$BIN/codex-token"
+cp "$ROOT/dot_local/bin/lib/ai/codex" "$BIN/lib/ai/codex"
+chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/executable_codex-token" >"$BIN/codex-token"
 chmod +x "$BIN/lib/common" "$BIN/lib/ai/core" "$BIN/lib/ai/codex" "$BIN/codex-token"
 
 cat >"$STUB/chezmoi" <<'EOF'

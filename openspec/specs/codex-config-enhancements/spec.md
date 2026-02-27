@@ -8,7 +8,7 @@ TBD - created by archiving change codex-claude-align. Update Purpose after archi
 
 ### Requirement: Codex enhanced feature flags
 
-The system SHALL enable the following Codex feature flags: `apply_patch_freeform`, `include_apply_patch_tool`, `unified_exec`, `shell_snapshot`, `runtime_metrics`, `undo`, `request_rule`, `responses_websockets`, `remote_compaction`, `remote_models`, `skill_mcp_dependency_install`, `skill_env_var_dependency_prompt`, `web_search`, `web_search_cached`, `web_search_request`, `shell_tool`, `memory_tool`.
+The system SHALL enable the following Codex feature flags: `apply_patch_freeform`, `include_apply_patch_tool`, `unified_exec`, `shell_snapshot`, `runtime_metrics`, `undo`, `request_rule`, `responses_websockets`, `remote_compaction`, `remote_models`, `skill_mcp_dependency_install`, `skill_env_var_dependency_prompt`, `web_search`, `web_search_cached`, `web_search_request`, `shell_tool`, `memories`.
 
 #### Scenario: Features are enabled in config
 

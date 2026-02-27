@@ -51,7 +51,7 @@ Managed OpenCode user-level AGENTS policy SHALL describe strict/compat profile b
 
 #### Scenario: AGENTS runtime boundary guidance matches implementation
 
-- **WHEN** maintainers inspect `private_dot_config/opencode/AGENTS.md.tmpl`
+- **WHEN** maintainers inspect `private_dot_config/opencode/AGENTS.md`
 - **THEN** strict/compat behavior remains explicit
 - **AND** operator guidance uses native `opencode` plus existing cross-tool diagnostics
 

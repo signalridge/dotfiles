@@ -6,7 +6,7 @@ set -euo pipefail
 
 # Resolve script directory robustly (works with symlinked entrypoints too).
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-# shellcheck source=lib/common.tmpl
+# shellcheck source=lib/common
 source "$SCRIPT_DIR/lib/common"
 
 # ===== Constants =====

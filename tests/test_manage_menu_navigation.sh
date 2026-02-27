@@ -28,12 +28,12 @@ STUB="$TMP_ROOT/stub"
 mkdir -p "$BIN/lib/ai" "$BIN/lib" "$STUB"
 
 # Render scripts/libs for isolated execution.
-chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/lib/common.tmpl" >"$BIN/lib/common"
+chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/lib/common" >"$BIN/lib/common"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/lib/ai/core.tmpl" >"$BIN/lib/ai/core"
-cp "$ROOT/dot_local/bin/lib/ai/codex.tmpl" "$BIN/lib/ai/codex"
-cp "$ROOT/dot_local/bin/lib/ai/claude.tmpl" "$BIN/lib/ai/claude"
-chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/executable_codex-manage.tmpl" >"$BIN/codex-manage"
-chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/executable_claude-manage.tmpl" >"$BIN/claude-manage"
+cp "$ROOT/dot_local/bin/lib/ai/codex" "$BIN/lib/ai/codex"
+cp "$ROOT/dot_local/bin/lib/ai/claude" "$BIN/lib/ai/claude"
+chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/executable_codex-manage" >"$BIN/codex-manage"
+chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/executable_claude-manage" >"$BIN/claude-manage"
 chmod +x "$BIN/lib/common" "$BIN/lib/ai/core" "$BIN/lib/ai/codex" "$BIN/lib/ai/claude" "$BIN/codex-manage" "$BIN/claude-manage"
 
 # Stubs: keep deterministic, no network/key dependencies.

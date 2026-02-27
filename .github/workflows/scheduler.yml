@@ -1,14 +1,9 @@
 name: Scheduler
 on:
   schedule:
-    # Run twice weekly on Monday and Thursday at 00:00 UTC
-    - cron: "0 0 * * 1,4"
+    # Run daily at 00:00 UTC
+    - cron: "0 0 * * *"
   workflow_dispatch:
-    inputs:
-      force:
-        description: "Force trigger all workflows regardless of schedule"
-        type: boolean
-        default: false
 permissions:
   actions: write
   contents: read
@@ -16,38 +11,19 @@ jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
-      - name: Determine which workflows to trigger
-        id: check
-        run: |
-          DAY_OF_WEEK=$(date -u +%u)  # 1=Monday, 7=Sunday
-          FORCE="${{ github.event.inputs.force || 'false' }}"
-
-          echo "Day of week: $DAY_OF_WEEK (1=Monday, 4=Thursday)"
-          echo "Force: $FORCE"
-
-          # Monday (1) and Thursday (4) workflows
-          if [[ "$DAY_OF_WEEK" == "1" || "$DAY_OF_WEEK" == "4" ]] || [[ "$FORCE" == "true" ]]; then
-            echo "trigger_weekly=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "trigger_weekly=false" >> "$GITHUB_OUTPUT"
-          fi
-      # Weekly workflows (Monday and Thursday)
       - name: Trigger update-flake-lock
-        if: steps.check.outputs.trigger_weekly == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           gh workflow run update-flake-lock.yml --repo ${{ github.repository }}
           echo "Triggered update-flake-lock.yml"
       - name: Trigger update-versions
-        if: steps.check.outputs.trigger_weekly == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           gh workflow run update-versions.yml --repo ${{ github.repository }}
           echo "Triggered update-versions.yml"
       - name: Trigger update-aqua-packages
-        if: steps.check.outputs.trigger_weekly == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
@@ -56,4 +32,4 @@ jobs:
       - name: Summary
         run: |
           echo "## Scheduler Results" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Weekly workflows: ${{ steps.check.outputs.trigger_weekly }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Daily workflows triggered: true" >> "$GITHUB_STEP_SUMMARY"
