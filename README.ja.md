@@ -53,7 +53,7 @@
 - `OpenCode + oh-my-opencode` のグローバル設定を宣言的に管理（Claude compatibility 無効化のガード付き）
 - `chezmoi apply` のたびに Claude MCP を自動同期
 - GitHub Actions による依存更新の自動化（versions、flake lock、aqua packages）
-- `C1/C2/C3/C4` ルーティング: `C1` は助言専用、`C2` は小規模変更の直接実装、`C3` は OpenSpec ガバナンス、`C4` は Spec-Kit gate 通過後に OpenSpec 実装
+- `C1/C2/C3/C4` ルーティング: `C1` は助言専用、`C2` は決定論的変更の直接実装、`C3`/`C4` は OpenSpec ガバナンス
 
 ---
 
@@ -569,34 +569,21 @@ chezmoi init --apply --promptBool headless=true signalridge
 > [!IMPORTANT]
 > このリポジトリでは、実装前に `C1/C2/C3/C4` 分類でルートを決定します。
 
-| Category | 意図                             | 主経路                                     |
-| -------- | -------------------------------- | ------------------------------------------ |
-| `C1`     | 助言/参照のみ                    | 分析と報告のみ                             |
-| `C2`     | 決定論的な小規模変更             | 軽量プランで直接実装                       |
-| `C3`     | 中規模のガバナンス変更           | OpenSpec ライフサイクル                    |
-| `C4`     | 新規開発/大型 feature/リファクタ | Spec-Kit gate を必須通過後に OpenSpec 実装 |
+| Category | 意図                                                             | 主経路                          |
+| -------- | ---------------------------------------------------------------- | ------------------------------- |
+| `C1`     | 助言/参照のみ                                                    | 分析と報告のみ                  |
+| `C2`     | 決定論的な変更                                                   | 直接実装                        |
+| `C3`     | ガバナンス変更（ガードレール/高制御）                            | OpenSpec 標準ライフサイクル     |
+| `C4`     | 探索必須プログラム（新規開発/大規模リファクタ/高曖昧かつ高制御） | OpenSpec 探索優先ライフサイクル |
 
 境界と責務:
 
 - `C1` は助言専用で、ファイル変更は行いません。
-- `C2` の小規模変更は OpenSpec と Spec-Kit の対象外です。
+- `C2` の決定論的変更は OpenSpec の対象外です。
 - OpenSpec は `C3` と `C4` 実装フェーズの実行/検証を担います。
-- Spec-Kit は `C4` の discovery 段階を対象プロジェクトで整備するために使います。
-- 分類が `C3` の場合は governed mode に切り替え、実装前に OpenSpec gate に入ります。
-- 分類が `C4` の場合は governed mode に切り替え、Spec-Kit gate を通過してから OpenSpec gate に入ります。
-- `C4` の最初の実行コマンドは `specify init --here --ai <tool> --script sh` でなければなりません。
-- `C4` gate 通過前は read-only コマンド（`ls`、`rg`、`cat`、`git status`）のみ許可します。
-- `C4` の Intake Card には `Spec-Kit Gate: required | passed | waived` を必須で含めます。
+- 分類が `C3` または `C4` の場合は governed mode に切り替え、実装前に OpenSpec gate に入ります。
 
-プロジェクトローカル Spec-Kit 初期化（`C4`）:
-
-```bash
-specify init --here --ai claude --script sh
-specify init --here --ai codex --script sh
-specify init --here --ai opencode --script sh
-```
-
-OpenSpec フロー（`C3` と `C4` 実装フェーズ）:
+OpenSpec フロー（`C3`/`C4`）:
 
 ```bash
 openspec new change <change-name>

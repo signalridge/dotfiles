@@ -15,14 +15,9 @@ Analyze the relevant code area before implementation.
 2. Capture dependencies and calling paths.
 3. Note conventions that must be preserved.
 4. Run classification-first routing (`/route`) before proposing implementation.
-5. If category is `C3`, suggest the next OpenSpec step and ask for explicit yes/no confirmation before execution.
-6. If category is `C4`, enforce Spec-Kit gate first:
-   - If `.specify/` or `specs/` is missing, set `Spec-Kit Gate: required`, STOP, and ask explicit yes/no for the current-tool command:
-     - Claude Code: `specify init --here --ai claude --script sh`
-     - Codex CLI: `specify init --here --ai codex --script sh`
-     - OpenCode: `specify init --here --ai opencode --script sh`
-   - Before gate passes, only read-only commands are allowed: `ls`, `rg`, `cat`, `git status`.
-   - If artifacts exist, set `Spec-Kit Gate: passed`, then suggest the next OpenSpec step with explicit yes/no confirmation.
+5. If category is `C3` or `C4`, suggest the next OpenSpec step and ask for explicit yes/no confirmation before execution.
+   - `C3` (Standard Governed): proceed to scan -> step-by-step implementation.
+   - `C4` (Discovery-First): proceed to **mandatory exploration phase** first (map codebase, enumerate unknowns, write discovery summary), then obtain user approval on scope before implementation.
 
 ## Tri-MCP Routing Policy
 
@@ -43,4 +38,4 @@ Notes:
 ## Output
 
 - A concise map of key files, dependencies, and constraints.
-- Include an `Intake Card` if implementation is requested, including `Spec-Kit Gate`.
+- Include an `Intake Card` if implementation is requested.

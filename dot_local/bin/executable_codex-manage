@@ -10,7 +10,7 @@
 #   codex-manage remove-account [account] Remove account (optionally delete API key)
 #   codex-manage test [account]           Test connectivity
 #   codex-manage list [provider]          List accounts
-#   codex-manage doctor                   Run workflow diagnostics
+#   codex-manage doctor                   Run account diagnostics
 
 set -euo pipefail
 
@@ -86,7 +86,7 @@ update-account Update account (and optional API key)
 remove-account Remove account (and optional API key)
 test           Test connectivity
 list           Show all accounts
-doctor         Run workflow diagnostics
+doctor         Run account diagnostics
 MENU
             echo -e "${YELLOW}quit${NC}           Exit to shell"
         } | fzf --ansi \
@@ -104,7 +104,7 @@ MENU
                     remove-account) echo "Remove account (and optional API key)." ;;
                     test)           echo "Test API connectivity." ;;
                     list)           echo "Show all accounts." ;;
-                    doctor)         echo "Run workflow diagnostics." ;;
+                    doctor)         echo "Run account diagnostics." ;;
                     quit)           echo "Exit to shell." ;;
                 esac
                 echo ""
@@ -685,7 +685,7 @@ cmd_current() {
     echo -e "Current: ${GREEN}${account}${NC} (${provider})"
 }
 
-# Run workflow diagnostics
+# Run account diagnostics
 cmd_doctor() {
     local ok=0
     local warn=0
@@ -706,75 +706,7 @@ cmd_doctor() {
         fail=$((fail + 1))
     }
 
-    log_header "Codex Workflow Doctor"
-
-    echo "Runtime commands:"
-    if command -v codex >/dev/null 2>&1; then pass "codex found"; else note_fail "codex not found"; fi
-    if command -v openspec >/dev/null 2>&1; then pass "openspec found"; else note_warn "openspec not found (C3/L3 OpenSpec gate unavailable)"; fi
-    if command -v specify >/dev/null 2>&1; then pass "specify found"; else note_warn "specify not found (C4 Spec-Kit bootstrap unavailable)"; fi
-    if command -v jq >/dev/null 2>&1; then pass "jq found"; else note_fail "jq not found"; fi
-    if command -v chezmoi >/dev/null 2>&1; then pass "chezmoi found"; else note_fail "chezmoi not found"; fi
-    if require_cmd gopass >/dev/null 2>&1; then pass "gopass found"; else note_warn "gopass missing (third-party keys unavailable)"; fi
-    echo ""
-
-    echo "Rendered configs:"
-    if [[ -f "$CODEX_CONFIG" ]]; then
-        pass "~/.codex/config.toml present"
-        local model_provider
-        model_provider=$(toml_get_model_provider "$CODEX_CONFIG")
-        if [[ -n "$model_provider" ]]; then
-            pass "model_provider resolved (${model_provider})"
-        else
-            note_warn "model_provider missing in ~/.codex/config.toml"
-        fi
-    else
-        note_fail "~/.codex/config.toml missing"
-    fi
-
-    local user_agents
-    user_agents="${HOME}/.codex/AGENTS.md"
-    if [[ -f "$user_agents" ]]; then
-        pass "~/.codex/AGENTS.md present"
-    else
-        note_warn "~/.codex/AGENTS.md missing"
-    fi
-    echo ""
-
-    echo "Commands and skills projection:"
-    local prompt_count
-    prompt_count=$(find "${HOME}/.codex/prompts" -maxdepth 1 -name 'core-*.md' 2>/dev/null | wc -l | tr -d ' ')
-    if [[ "${prompt_count:-0}" -ge 7 ]]; then
-        pass "core prompt links present (${prompt_count})"
-    else
-        note_warn "core prompt links incomplete (${prompt_count:-0})"
-    fi
-
-    local opsx_count
-    opsx_count=$(find "${HOME}/.codex/prompts" -maxdepth 1 -name 'opsx-*.md' 2>/dev/null | wc -l | tr -d ' ')
-    if [[ "${opsx_count:-0}" -ge 5 ]]; then
-        pass "opsx wrapper prompts present (${opsx_count})"
-    else
-        note_warn "opsx wrapper prompts incomplete (${opsx_count:-0}); native openspec CLI still works. run: openspec update"
-    fi
-
-    if [[ -L "${HOME}/.codex/skills" ]]; then
-        pass "~/.codex/skills symlink exists"
-    else
-        note_warn "~/.codex/skills symlink missing"
-    fi
-
-    if command -v specify >/dev/null 2>&1; then
-        if specify check >/dev/null 2>&1; then
-            pass "specify check passed"
-        else
-            note_warn "specify check reported issues; C4 bootstrap may be degraded"
-        fi
-    fi
-
-    if [[ -d "$PWD/.codex" ]]; then
-        note_warn "if project prompt discovery is missing, set: export CODEX_HOME=\"$PWD/.codex\""
-    fi
-    echo ""
+    log_header "Codex Account Doctor"
 
     echo "Account and auth state:"
     local account provider
@@ -783,6 +715,11 @@ cmd_doctor() {
     pass "current selector: ${account} (${provider})"
 
     if is_third_party "$provider"; then
+        if require_cmd gopass >/dev/null 2>&1; then
+            pass "gopass found"
+        else
+            note_warn "gopass missing (third-party keys unavailable)"
+        fi
         if codex-token --check "$account" >/dev/null 2>&1; then
             pass "API key available for ${account}"
         else
@@ -810,7 +747,7 @@ Usage:
   codex-manage remove-account [account]      Remove account (optionally delete API key)
   codex-manage test [account]                Test connectivity
   codex-manage list [provider]               List accounts
-  codex-manage doctor                        Run workflow diagnostics
+  codex-manage doctor                        Run account diagnostics
   codex-manage current                       Show current account
 
 Compatibility aliases:
