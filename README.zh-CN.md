@@ -53,7 +53,7 @@
 - 声明式管理 `OpenCode + oh-my-opencode` 全局配置，并启用 native-only（禁用 Claude compatibility）护栏
 - 每次 `chezmoi apply` 自动对齐 Claude MCP 配置
 - GitHub Actions 自动维护依赖版本（versions、flake lock、aqua packages）
-- `C1/C2/C3/C4` 路由模型：`C1` 只读分析，`C2` 小修直改，`C3`/`C4` 走 OpenSpec 治理
+- `C1/C2/C3/C4` 路由模型：`C1` 只读分析，`C2` 确定性变更直改，`C3`/`C4` 走 OpenSpec 治理
 
 ---
 
@@ -577,7 +577,7 @@ chezmoi init --apply --promptBool headless=true signalridge
 边界与职责:
 
 - `C1` 为只读分析，不涉及文件变更。
-- `C2` 小修任务不需要 OpenSpec。
+- `C2` 确定性变更不需要 OpenSpec。
 - OpenSpec 负责 `C3` 和 `C4` 实施阶段的执行与验证治理。
 - 若分类为 `C3` 或 `C4`，需切换到 governed mode，并在编码前进入 OpenSpec gate。
 

@@ -53,7 +53,7 @@
 - `OpenCode + oh-my-opencode` のグローバル設定を宣言的に管理（Claude compatibility 無効化のガード付き）
 - `chezmoi apply` のたびに Claude MCP を自動同期
 - GitHub Actions による依存更新の自動化（versions、flake lock、aqua packages）
-- `C1/C2/C3/C4` ルーティング: `C1` は助言専用、`C2` は小規模変更の直接実装、`C3`/`C4` は OpenSpec ガバナンス
+- `C1/C2/C3/C4` ルーティング: `C1` は助言専用、`C2` は決定論的変更の直接実装、`C3`/`C4` は OpenSpec ガバナンス
 
 ---
 
@@ -579,7 +579,7 @@ chezmoi init --apply --promptBool headless=true signalridge
 境界と責務:
 
 - `C1` は助言専用で、ファイル変更は行いません。
-- `C2` の小規模変更は OpenSpec の対象外です。
+- `C2` の決定論的変更は OpenSpec の対象外です。
 - OpenSpec は `C3` と `C4` 実装フェーズの実行/検証を担います。
 - 分類が `C3` または `C4` の場合は governed mode に切り替え、実装前に OpenSpec gate に入ります。
 

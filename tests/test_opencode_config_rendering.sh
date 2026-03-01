@@ -405,6 +405,22 @@ for f in "$ROOT/dot_claude/CLAUDE.md" "$ROOT/dot_codex/AGENTS.md" "$ROOT/private
     assert_file_contains "$f" 'Architecture known, no discovery needed'
 done
 
+# --- Task 6.2c: README C2 deterministic wording anchors ---
+assert_file_contains "$ROOT/README.md" 'direct deterministic flow in `C2`'
+assert_file_contains "$ROOT/README.md" '`C2` deterministic changes do not require OpenSpec.'
+assert_file_not_contains "$ROOT/README.md" 'direct small-change flow in `C2`'
+assert_file_not_contains "$ROOT/README.md" '`C2` small deterministic changes do not require OpenSpec.'
+
+assert_file_contains "$ROOT/README.ja.md" '`C2` は決定論的変更の直接実装'
+assert_file_contains "$ROOT/README.ja.md" '`C2` の決定論的変更は OpenSpec の対象外です。'
+assert_file_not_contains "$ROOT/README.ja.md" '`C2` は小規模変更の直接実装'
+assert_file_not_contains "$ROOT/README.ja.md" '`C2` の小規模変更は OpenSpec の対象外です。'
+
+assert_file_contains "$ROOT/README.zh-CN.md" '`C2` 确定性变更直改'
+assert_file_contains "$ROOT/README.zh-CN.md" '`C2` 确定性变更不需要 OpenSpec。'
+assert_file_not_contains "$ROOT/README.zh-CN.md" '`C2` 小修直改'
+assert_file_not_contains "$ROOT/README.zh-CN.md" '`C2` 小修任务不需要 OpenSpec。'
+
 # --- Task 6.3: OpenSpec gate anchors ---
 for f in "$ROOT/dot_claude/CLAUDE.md" "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md"; do
     assert_file_contains "$f" 'openspec new change <change-name>'

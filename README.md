@@ -53,7 +53,7 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 - Declarative `OpenCode + oh-my-opencode` global config with native-only (no-Claude-compat) guardrails
 - Auto MCP sync for Claude on every `chezmoi apply`
 - Automated dependency upkeep via GitHub Actions (versions, flake locks, aqua packages)
-- `C1/C2/C3/C4` routing: advisory in `C1`, direct small-change flow in `C2`, OpenSpec governance for `C3`/`C4`
+- `C1/C2/C3/C4` routing: advisory in `C1`, direct deterministic flow in `C2`, OpenSpec governance for `C3`/`C4`
 
 ---
 
@@ -579,7 +579,7 @@ See:
 Boundary and ownership:
 
 - `C1` is advisory only and does not include file changes.
-- `C2` small deterministic changes do not require OpenSpec.
+- `C2` deterministic changes do not require OpenSpec.
 - OpenSpec governs execution and verification for `C3` and `C4` implementation.
 - If category is `C3` or `C4`, switch to governed mode and enter OpenSpec gate before coding.
 
