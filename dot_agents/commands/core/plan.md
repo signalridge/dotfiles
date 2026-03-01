@@ -13,6 +13,8 @@ Plan a feature or task with clear structure before coding.
 - If classification is `C3` or `C4`: use OpenSpec.
   - Next step (CLI-first): `openspec new change <change-name>`, with explicit confirmation.
   - Optional wrapper shortcuts: `/opsx:new <change-name>` (Claude) or `/opsx-new <change-name>` (Codex/OpenCode).
+  - `C3` (Standard Governed): open change -> scan -> implement step-by-step -> validate -> archive.
+  - `C4` (Discovery-First): open change -> **mandatory exploration phase** (map codebase, enumerate unknowns, write discovery summary) -> **user approval on scope** -> implement -> validate -> archive. Do not begin implementation until exploration is complete and user approves.
 
 `/plan` does not conflict with OpenSpec wrappers (`/opsx:*` in Claude, `/opsx-*` in Codex/OpenCode). They are different layers:
 

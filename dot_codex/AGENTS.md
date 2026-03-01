@@ -51,12 +51,12 @@ One primary kind; optional tags for secondary concerns.
 
 ### Level
 
-| Level | Meaning                                                                       | Governance Path |
-| ----- | ----------------------------------------------------------------------------- | --------------- |
-| `L1`  | Advisory/read-only                                                            | None            |
-| `L2`  | Small deterministic change                                                    | Direct          |
-| `L3`  | Governed change                                                               | OpenSpec        |
-| `L4`  | Major program (new project / major feature / major refactor / high ambiguity) | OpenSpec        |
+| Level | Meaning                                                                      | Governance Path | Ceremony                                                    |
+| ----- | ---------------------------------------------------------------------------- | --------------- | ----------------------------------------------------------- |
+| `L1`  | Advisory/read-only                                                           | None            | —                                                           |
+| `L2`  | Deterministic change                                                         | Direct          | —                                                           |
+| `L3`  | Governed change (guardrail-triggered or high-control)                        | OpenSpec        | Standard: scan -> step-by-step -> validate -> archive       |
+| `L4`  | Discovery-required program (new project / major refactor / `high_ambiguity`) | OpenSpec        | Extended: mandatory exploration phase before implementation |
 
 ### Scoring and Routing
 
@@ -67,12 +67,12 @@ Route:
 
 1. Read-only -> `L1`
 2. Guardrail-sensitive or `Kind=G` -> at least `L3`
-3. New project, major new feature, major refactor, or `high_ambiguity` (`A >= 3` and `ControlScore >= 6`) -> `L4`
-4. `ControlScore >= 6` (when `A < 3`), or (`A >= 2` and `DiscoveryScore >= 4`) -> `L3`
+3. New project, major refactor, or `high_ambiguity` (`A >= 3` and `ControlScore >= 8`) -> `L4`
+4. `ControlScore >= 8` (when `A < 3`), or (`A >= 3` and `DiscoveryScore >= 6`) -> `L3`
 5. Otherwise -> `L2`
 
 Compatibility: `L1/L2/L3/L4` maps to `C1/C2/C3/C4`.
-If multiple `L4` triggers match, resolve with precedence: `major_refactor` > `new_project` > `major_feature` > `high_ambiguity`.
+If multiple `L4` triggers match, resolve with precedence: `major_refactor` > `new_project` > `high_ambiguity`.
 
 ### Intake Card
 
@@ -94,29 +94,39 @@ L1/L2: Kind, Level, Route Reason, Next Step are sufficient.
 
 ### Routing Examples (Calibration)
 
-| Scenario                          | Kind | Level |
-| --------------------------------- | ---- | ----- |
-| Read-only codebase analysis       | `D`  | `L1`  |
-| Small bugfix in one module        | `D`  | `L2`  |
-| Documentation update (README/ADR) | `X`  | `L2`  |
-| Security-sensitive auth change    | `D`  | `L3`  |
-| Workflow/policy scoring update    | `G`  | `L3`  |
-| Deployment pipeline redesign      | `O`  | `L3`  |
-| New project from scratch          | `D`  | `L4`  |
-| Major new feature across services | `D`  | `L4`  |
-| Major architecture refactor       | `D`  | `L4`  |
-| High ambiguity, unclear scope     | `D`  | `L4`  |
+| Scenario                            | Kind | Level |
+| ----------------------------------- | ---- | ----- |
+| Read-only codebase analysis         | `D`  | `L1`  |
+| Small bugfix in one module          | `D`  | `L2`  |
+| Documentation update (README/ADR)   | `X`  | `L2`  |
+| Multi-file feature in existing arch | `D`  | `L2`  |
+| Ops tuning (no guardrail domain)    | `O`  | `L2`  |
+| Test suite expansion                | `D`  | `L2`  |
+| Security-sensitive auth change      | `D`  | `L3`  |
+| Workflow/policy scoring update      | `G`  | `L3`  |
+| Deployment pipeline redesign        | `O`  | `L3`  |
+| Major new feature across services   | `D`  | `L3`  |
+| New project from scratch            | `D`  | `L4`  |
+| Major architecture refactor         | `D`  | `L4`  |
+| High ambiguity, unclear scope       | `D`  | `L4`  |
 
 ### Non-L4 Examples (Do Not Escalate)
 
-| Scenario                                           | Level     | Why Not `L4`                              |
-| -------------------------------------------------- | --------- | ----------------------------------------- |
-| Single-module refactor, clear boundaries           | `L3`      | Not cross-system, low ambiguity           |
-| Medium feature in existing architecture            | `L3`      | Incremental, no program-level uncertainty |
-| Test suite expansion                               | `L2`/`L3` | Quality work, not major-program scope     |
-| Doc/spec rewrite (no system redesign)              | `L2`      | Knowledge update only                     |
-| Ops tuning (no platform redesign)                  | `L3`      | Governed but not major program            |
-| Ambiguous wording, low impact (`ControlScore < 6`) | `L3`      | Not enough control pressure for `L4`      |
+| Scenario                                           | Level | Why Not `L4`                            |
+| -------------------------------------------------- | ----- | --------------------------------------- |
+| Major new feature across services                  | `L3`  | Architecture known, no discovery needed |
+| Single-module refactor, clear boundaries           | `L3`  | Scope defined, governed is sufficient   |
+| Ambiguous wording, low impact (`ControlScore < 8`) | `L3`  | Not enough control pressure for `L4`    |
+
+### Non-L3 Examples (Do Not Escalate)
+
+| Scenario                                | Level | Why Not `L3`                                 |
+| --------------------------------------- | ----- | -------------------------------------------- |
+| Multi-file feature, no guardrail domain | `L2`  | Complexity alone does not require governance |
+| Test suite expansion                    | `L2`  | Quality work, no guardrail sensitivity       |
+| Doc/spec rewrite (no system redesign)   | `L2`  | Knowledge update only                        |
+| Ops tuning (no guardrail domain)        | `L2`  | No guardrail trigger                         |
+| Dependency version bump (non-security)  | `L2`  | Mechanical change                            |
 
 ---
 
@@ -125,6 +135,8 @@ L1/L2: Kind, Level, Route Reason, Next Step are sufficient.
 ### L3/L4 Gate
 
 If no active change: run `openspec new change <change-name>` (optional shortcut: `/opsx-new <change-name>`).
+
+**L4 additional requirement**: before implementation, complete a mandatory exploration phase (map codebase, enumerate unknowns, write discovery summary) and obtain user approval on scope.
 
 ### Active Change Policy
 
@@ -137,6 +149,14 @@ Before first step, scan: existing patterns, dependencies/blast radius, guardrail
 
 - One step at a time; ask yes/no before each.
 - Never auto-chain. Never finalize/archive without explicit confirmation.
+
+### L3 (Standard Governed)
+
+Open change -> scan patterns -> step-by-step implementation -> validate -> archive. Can begin implementation immediately after scanning.
+
+### L4 (Discovery-First Governed)
+
+Open change -> **mandatory exploration phase** (map codebase, enumerate unknowns, write discovery summary) -> **user approval on scope** -> step-by-step implementation -> validate -> archive. Cannot begin implementation until discovery phase is complete and user approves.
 
 OpenSpec checkpoints:
 

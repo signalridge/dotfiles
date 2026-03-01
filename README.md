@@ -569,12 +569,12 @@ See:
 > [!IMPORTANT]
 > This repository routes implementation by `C1/C2/C3/C4` classification before coding.
 
-| Category | Intent                     | Primary Path                                 |
-| -------- | -------------------------- | -------------------------------------------- |
-| `C1`     | Advisory/read-only request | Analyze and report only                      |
-| `C2`     | Small deterministic change | Implement directly with lightweight planning |
-| `C3`     | Medium governed change     | OpenSpec lifecycle                           |
-| `C4`     | New/major initiative       | OpenSpec lifecycle                           |
+| Category | Intent                                                                                       | Primary Path                       |
+| -------- | -------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `C1`     | Advisory/read-only request                                                                   | Analyze and report only            |
+| `C2`     | Deterministic change                                                                         | Implement directly                 |
+| `C3`     | Governed change (guardrail or high-control)                                                  | OpenSpec standard lifecycle        |
+| `C4`     | Discovery-required program (new project / major refactor / high ambiguity with high control) | OpenSpec discovery-first lifecycle |
 
 Boundary and ownership:
 

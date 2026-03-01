@@ -385,6 +385,26 @@ for f in "$ROOT/dot_claude/CLAUDE.md" "$ROOT/dot_codex/AGENTS.md" "$ROOT/private
     assert_file_contains "$f" '## Governed Execution (`L3`/`L4`)'
 done
 
+# --- Task 6.2b: L3/L4 tightened routing anchors ---
+for f in "$ROOT/dot_claude/CLAUDE.md" "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md"; do
+    # L4 no longer includes major_feature as standalone trigger
+    assert_file_not_contains "$f" 'major new feature, major refactor'
+    # L4 description references discovery
+    assert_file_contains "$f" 'Discovery-required program'
+    # Raised thresholds
+    assert_file_contains "$f" 'ControlScore >= 8'
+    assert_file_contains "$f" 'DiscoveryScore >= 6'
+    # L3/L4 ceremony subsections
+    assert_file_contains "$f" '### L3 (Standard Governed)'
+    assert_file_contains "$f" '### L4 (Discovery-First Governed)'
+    assert_file_contains "$f" 'mandatory exploration phase'
+    # Non-L3 guard table
+    assert_file_contains "$f" '### Non-L3 Examples (Do Not Escalate)'
+    assert_file_contains "$f" 'Complexity alone does not require governance'
+    # Major new feature moved to L3
+    assert_file_contains "$f" 'Architecture known, no discovery needed'
+done
+
 # --- Task 6.3: OpenSpec gate anchors ---
 for f in "$ROOT/dot_claude/CLAUDE.md" "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md"; do
     assert_file_contains "$f" 'openspec new change <change-name>'
@@ -518,6 +538,33 @@ assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'If category is
 assert_file_contains "$ROOT/dot_agents/commands/core/route.md" '## OpenSpec Gate (C3/C4)'
 assert_file_contains "$ROOT/dot_codex/prompts/symlink_core-worktree.md.tmpl" '.agents/commands/core/worktree.md'
 assert_file_contains "$ROOT/dot_agents/commands/core/route.md" '## Intake Card'
+assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'GuardrailDomain'
+assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'Discovery-First'
+assert_file_not_contains "$ROOT/dot_agents/commands/core/route.md" 'major feature'
+
+# --- Review fix: /route guardrail unconditional C3 ---
+assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'guardrail-sensitive or `Kind=G`, set floor category to `C3`'
+assert_file_not_contains "$ROOT/dot_agents/commands/core/route.md" 'guardrail domain and'
+
+# --- Review fix: /route scoring model fully aligned with AGENTS ---
+assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'Score each dimension from `0..4`'
+assert_file_contains "$ROOT/dot_agents/commands/core/route.md" '`V` (Reversibility cost)'
+assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'ControlScore = I + R + V'
+assert_file_contains "$ROOT/dot_agents/commands/core/route.md" '`high_ambiguity` (`A >= 3` and `ControlScore >= 8`)'
+assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'Scores: N/A/I/R/V = x/x/x/x/x'
+assert_file_not_contains "$ROOT/dot_agents/commands/core/route.md" 'Score each dimension from `0..2`'
+assert_file_not_contains "$ROOT/dot_agents/commands/core/route.md" 'Scale note'
+
+# --- Review fix: README C4 mirrors high_ambiguity trigger semantics ---
+assert_file_contains "$ROOT/README.md" 'high ambiguity with high control'
+assert_file_contains "$ROOT/README.ja.md" '高曖昧かつ高制御'
+assert_file_contains "$ROOT/README.zh-CN.md" '高歧义且高控制'
+
+# --- Review fix: L4 exploration-first synced to /plan and /context ---
+assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" 'C4` (Discovery-First)'
+assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" 'mandatory exploration phase'
+assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'C4` (Discovery-First)'
+assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'mandatory exploration phase'
 assert_file_contains "$ROOT/dot_codex/prompts/symlink_core-route.md.tmpl" '.agents/commands/core/route.md'
 
 # --- serena-context7-mcp-integration: tri-MCP routing anchors ---
