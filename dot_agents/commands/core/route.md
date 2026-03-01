@@ -38,47 +38,18 @@ Derived values:
 - `C1`: advisory-only; no implementation.
 - `C2`: direct implementation for small deterministic change.
 - `C3`: OpenSpec-governed implementation for medium change.
-- `C4`: mandatory Spec-Kit gate workflow, then OpenSpec-governed implementation.
+- `C4`: OpenSpec-governed implementation for major change.
 - If category is `C3` or `C4`, switch to `Governed` mode and enter OpenSpec gate before coding.
-- If category is `C4`, Spec-Kit gate must pass before any write action.
 
-## Route Split (C3 vs C4)
+## OpenSpec Gate (C3/C4)
 
-### C3 Mandatory OpenSpec Gate
-
-For `C3`, enforce:
+For `C3` and `C4`, enforce:
 
 - First executable command MUST be: `openspec new change <change-name>`
 - Optional wrapper shortcuts (when installed):
   - Claude Code: `/opsx:new <change-name>`
   - Codex/OpenCode: `/opsx-new <change-name>`
 - If wrapper shortcuts are missing/outdated, run `openspec update` (or `openspec init --tools <tool>` if not initialized)
-
-### C4 Mandatory Spec-Kit Gate (Balanced)
-
-For `C4`, enforce:
-
-- First executable command MUST be:
-  - Claude Code: `specify init --here --ai claude --script sh`
-  - Codex CLI: `specify init --here --ai codex --script sh`
-  - OpenCode: `specify init --here --ai opencode --script sh`
-- Before gate passes, ONLY read-only commands are allowed: `ls`, `rg`, `cat`, `git status`
-- Before gate passes, MUST NOT run: `openspec init`, file edits, source scaffolding, or implementation commands
-
-Gate pass condition:
-
-- Spec-Kit artifacts exist in target project (`.specify/` or `specs/`)
-- Intake Card includes `Spec-Kit Gate: passed`
-
-If gate is not passed:
-
-- STOP and ask explicit yes/no for the single current-tool command above
-- Do not provide alternative implementation paths
-- Use `Spec-Kit Gate: waived` only when user explicitly asks to skip, and include `Waive Reason: <one sentence>`
-
-After gate passes:
-
-- Continue Spec-Kit discovery, then enter the same OpenSpec lifecycle as `C3` (CLI-first, wrappers optional)
 
 ## Required Output Contract
 
@@ -90,7 +61,6 @@ After gate passes:
 - DiscoveryScore: x
 - ControlScore: x
 - Execution Mode: Direct | Governed
-- Spec-Kit Gate: n/a | required | passed | waived
 - Route Reason: <one sentence>
 - Next Step: <single command>
 ```

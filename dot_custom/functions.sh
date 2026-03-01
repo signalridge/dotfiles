@@ -966,7 +966,7 @@ _claude_manage() {
         'list:List accounts'
         'ls:List accounts (alias)'
         'current:Show current account'
-        'doctor:Run workflow diagnostics'
+        'doctor:Run account diagnostics'
         'help:Show help'
     )
 
@@ -1035,7 +1035,7 @@ _codex_manage() {
         'test:Test connectivity'
         'list:List accounts'
         'ls:List accounts (alias)'
-        'doctor:Run workflow diagnostics'
+        'doctor:Run account diagnostics'
         'current:Show current account'
         'help:Show help'
     )

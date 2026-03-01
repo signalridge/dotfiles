@@ -228,6 +228,12 @@ chmod +x "$STUB/chezmoi" "$STUB/gopass" "$STUB/codex-token" "$STUB/claude-token"
     "$STUB/curl" "$STUB/codex" "$STUB/claude"
 
 BASE_PATH="$STUB:$BIN:$PATH"
+NOJQ_PATH="$TMP_ROOT/no-jq-bin"
+mkdir -p "$NOJQ_PATH"
+ln -sf "$(command -v bash)" "$NOJQ_PATH/bash"
+ln -sf "$(command -v dirname)" "$NOJQ_PATH/dirname"
+ln -sf "$(command -v awk)" "$NOJQ_PATH/awk"
+ln -sf "$STUB/chezmoi" "$NOJQ_PATH/chezmoi"
 INSERT_LOG="$TMP_ROOT/gopass-insert.log"
 : >"$INSERT_LOG"
 export GOPASS_INSERT_LOG="$INSERT_LOG"
@@ -307,14 +313,26 @@ PATH="$BASE_PATH" "$BIN/claude-with" qwen@beta --version >/dev/null
 # doctor: parity diagnostics should be available in both tools.
 codex_doctor="$(PATH="$BASE_PATH" "$BIN/codex-manage" doctor | strip_ansi)"
 claude_doctor="$(PATH="$BASE_PATH" "$BIN/claude-manage" doctor | strip_ansi)"
-assert_contains "$codex_doctor" "Codex Workflow Doctor"
+assert_contains "$codex_doctor" "Codex Account Doctor"
 assert_contains "$codex_doctor" "current selector: deepseek@private (deepseek)"
 assert_contains "$codex_doctor" "Summary:"
 assert_not_contains "$codex_doctor" "\\033["
-assert_contains "$claude_doctor" "Claude Workflow Doctor"
+assert_contains "$claude_doctor" "Claude Account Doctor"
 assert_contains "$claude_doctor" "current selector: qwen@beta (qwen)"
 assert_contains "$claude_doctor" "Summary:"
 assert_not_contains "$claude_doctor" "\\033["
+
+# doctor: missing jq should fail fast with actionable error instead of abrupt exit.
+set +e
+codex_doctor_nojq="$(PATH="$NOJQ_PATH" "$BIN/codex-manage" doctor 2>&1)"
+codex_doctor_nojq_rc=$?
+claude_doctor_nojq="$(PATH="$NOJQ_PATH" "$BIN/claude-manage" doctor 2>&1)"
+claude_doctor_nojq_rc=$?
+set -e
+assert_equals "$codex_doctor_nojq_rc" "1"
+assert_equals "$claude_doctor_nojq_rc" "1"
+assert_contains "$codex_doctor_nojq" "required command not found: jq"
+assert_contains "$claude_doctor_nojq" "required command not found: jq"
 
 # Canonical write path should be tool-specific.
 codex_api_path="$(

@@ -53,12 +53,12 @@ One primary kind; optional tags for secondary concerns.
 
 ### Level
 
-| Level | Meaning                                                                       | Governance Path                         |
-| ----- | ----------------------------------------------------------------------------- | --------------------------------------- |
-| `L1`  | Advisory/read-only                                                            | None                                    |
-| `L2`  | Small deterministic change                                                    | Direct                                  |
-| `L3`  | Governed change                                                               | OpenSpec                                |
-| `L4`  | Major program (new project / major feature / major refactor / high ambiguity) | Spec-Kit or OpenSpec (single-tool lock) |
+| Level | Meaning                                                                       | Governance Path |
+| ----- | ----------------------------------------------------------------------------- | --------------- |
+| `L1`  | Advisory/read-only                                                            | None            |
+| `L2`  | Small deterministic change                                                    | Direct          |
+| `L3`  | Governed change                                                               | OpenSpec        |
+| `L4`  | Major program (new project / major feature / major refactor / high ambiguity) | OpenSpec        |
 
 ### Scoring and Routing
 
@@ -83,14 +83,10 @@ If multiple `L4` triggers match, resolve with precedence: `major_refactor` > `ne
 
 - Kind: D | O | X | C | G
 - Primary Role: <role>
-- KindTags: [optional]
 - Level: L1 | L2 | L3 | L4
 - Scores: N/A/I/R/V = x/x/x/x/x
 - DiscoveryScore: x
 - ControlScore: x
-- L4Reason: none | new_project | major_feature | major_refactor | high_ambiguity
-- GovernanceTool: none | speckit | openspec | user_pending
-- WorkflowLock: unlocked | locked
 - Active Change: <name | none>
 - Route Reason: <one sentence>
 - Next Step: <single command>
@@ -100,20 +96,18 @@ L1/L2: Kind, Level, Route Reason, Next Step are sufficient.
 
 ### Routing Examples (Calibration)
 
-| Scenario                          | Kind | Level | L4Reason         | GovernanceTool |
-| --------------------------------- | ---- | ----- | ---------------- | -------------- |
-| Read-only codebase analysis       | `D`  | `L1`  | `none`           | `none`         |
-| Small bugfix in one module        | `D`  | `L2`  | `none`           | `none`         |
-| Documentation update (README/ADR) | `X`  | `L2`  | `none`           | `none`         |
-| Security-sensitive auth change    | `D`  | `L3`  | `none`           | `openspec`     |
-| Workflow/policy scoring update    | `G`  | `L3`  | `none`           | `openspec`     |
-| New project from scratch          | `D`  | `L4`  | `new_project`    | `speckit`      |
-| Major new feature across services | `D`  | `L4`  | `major_feature`  | `speckit`      |
-| Major architecture refactor       | `D`  | `L4`  | `major_refactor` | `openspec`     |
-| High ambiguity, unclear scope     | `D`  | `L4`  | `high_ambiguity` | `user_pending` |
-| Deployment pipeline redesign      | `O`  | `L3`  | `none`           | `openspec`     |
-
-`user_pending`: ask user to choose tool, then lock before governed execution.
+| Scenario                          | Kind | Level |
+| --------------------------------- | ---- | ----- |
+| Read-only codebase analysis       | `D`  | `L1`  |
+| Small bugfix in one module        | `D`  | `L2`  |
+| Documentation update (README/ADR) | `X`  | `L2`  |
+| Security-sensitive auth change    | `D`  | `L3`  |
+| Workflow/policy scoring update    | `G`  | `L3`  |
+| Deployment pipeline redesign      | `O`  | `L3`  |
+| New project from scratch          | `D`  | `L4`  |
+| Major new feature across services | `D`  | `L4`  |
+| Major architecture refactor       | `D`  | `L4`  |
+| High ambiguity, unclear scope     | `D`  | `L4`  |
 
 ### Non-L4 Examples (Do Not Escalate)
 
@@ -130,55 +124,30 @@ L1/L2: Kind, Level, Route Reason, Next Step are sufficient.
 
 ## Governance Gates
 
-### L3 Gate
+### L3/L4 Gate
 
-If no active change: run native CLI `openspec new change <change-name>` first (optional shortcut: `/opsx-new <change-name>`).
-
-### L4 Gate
-
-Resolve `L4Reason` with precedence:
-
-- `major_refactor` > `new_project` > `major_feature` > `high_ambiguity`
-
-Lock one tool per L4Reason:
-
-- `major_refactor` -> `openspec`
-- `new_project` / `major_feature` -> `speckit`
-- `high_ambiguity` -> ask user before proceeding
-
-Entry: `openspec` -> `openspec new change <change-name>` (optional shortcut: `/opsx-new <change-name>`), `speckit` -> `specify init --here --ai opencode --script sh`.
-If user does not choose under `high_ambiguity`, keep `GovernanceTool=user_pending` and stay read-only.
-Speckit lane: do not auto-open OpenSpec change.
+If no active change: run `openspec new change <change-name>` (optional shortcut: `/opsx-new <change-name>`).
 
 ### Active Change Policy
 
 - One active change per session; continue by default.
 - Switch/create requires explicit confirmation; cross-session takeover needs handoff note.
-- GovernanceTool stays locked. Edits to existing artifacts (e.g. post-review fixes) stay within originating tool—never re-route.
 
-## Governed Execution Gate (`L3`/`L4`)
+## Governed Execution (`L3`/`L4`)
 
 Before first step, scan: existing patterns, dependencies/blast radius, guardrail domains.
 
 - One step at a time; ask yes/no before each.
 - Never auto-chain. Never finalize/archive without explicit confirmation.
-- Stay within locked `GovernanceTool` for the whole workflow.
-- Tool switch requires explicit user approval and an updated Intake Card.
 
-OpenSpec lane (`GovernanceTool=openspec`):
+OpenSpec checkpoints:
 
-- CLI-first checkpoints: `openspec new change <change-name>` -> `openspec status --change <change-name>` -> `openspec validate <change-name>` -> `openspec archive <change-name>`
-- Wrapper shortcuts (optional): `/opsx-new` -> `/opsx-ff` -> `/opsx-apply` -> `/opsx-verify` -> `/opsx-archive`
-
-Spec-Kit lane (`GovernanceTool=speckit`):
-
-- Entry: `specify init --here --ai opencode --script sh`
-- Continue in Spec-Kit flow; do not invoke `/opsx-*` in the same workflow.
-- After discovery, close this workflow and start a new governed change for implementation.
+- CLI: `openspec new change <change-name>` -> `openspec status --change <change-name>` -> `openspec validate <change-name>` -> `openspec archive <change-name>`
+- Shortcuts (optional): `/opsx-new` -> `/opsx-ff` -> `/opsx-apply` -> `/opsx-verify` -> `/opsx-archive`
 
 Cross-tool syntax note: Claude `/opsx:*` (colon), Codex/OpenCode `/opsx-*` (hyphen).
 
-When `GovernanceTool=openspec`: track `openspec/**` in git and archive active changes before merge.
+Always track `openspec/**` in git and archive active changes before merge.
 
 ## Worktree Policy
 

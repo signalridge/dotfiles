@@ -298,7 +298,7 @@ test -f "$ROOT/private_dot_config/opencode/AGENTS.md" || {
     exit 1
 }
 
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Governed Execution Gate (`L3`/`L4`)'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Governed Execution (`L3`/`L4`)'
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## OpenCode Runtime Notes'
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Shared skills/commands'
 
@@ -319,7 +319,7 @@ if awk '/^_opencode_manage\(\)/,/^}/' "$ROOT/dot_custom/functions.sh" | grep -q 
 fi
 
 claude_manage_completion_block="$(awk '/^_claude_manage\(\)/,/^}/' "$ROOT/dot_custom/functions.sh")"
-if ! grep -Fq "'doctor:Run workflow diagnostics'" <<<"$claude_manage_completion_block"; then
+if ! grep -Fq "'doctor:Run account diagnostics'" <<<"$claude_manage_completion_block"; then
     echo "assertion failed: claude completion is missing doctor subcommand" >&2
     echo "--- _claude_manage block ---" >&2
     echo "$claude_manage_completion_block" >&2
@@ -327,7 +327,7 @@ if ! grep -Fq "'doctor:Run workflow diagnostics'" <<<"$claude_manage_completion_
 fi
 
 codex_manage_completion_block="$(awk '/^_codex_manage\(\)/,/^}/' "$ROOT/dot_custom/functions.sh")"
-if ! grep -Fq "'doctor:Run workflow diagnostics'" <<<"$codex_manage_completion_block"; then
+if ! grep -Fq "'doctor:Run account diagnostics'" <<<"$codex_manage_completion_block"; then
     echo "assertion failed: codex completion is missing doctor subcommand" >&2
     echo "--- _codex_manage block ---" >&2
     echo "$codex_manage_completion_block" >&2
@@ -380,19 +380,14 @@ for f in "$ROOT/dot_claude/CLAUDE.md" "$ROOT/dot_codex/AGENTS.md" "$ROOT/private
     assert_file_contains "$f" 'DiscoveryScore'
     assert_file_contains "$f" 'ControlScore'
     assert_file_contains "$f" 'Intake Card'
-    assert_file_contains "$f" '### L4 Gate'
-    assert_file_contains "$f" 'speckit'
+    assert_file_contains "$f" '### L3/L4 Gate'
     assert_file_contains "$f" 'high_ambiguity'
-    assert_file_contains "$f" '## Governed Execution Gate (`L3`/`L4`)'
-    assert_file_contains "$f" 'If user does not choose under `high_ambiguity`'
+    assert_file_contains "$f" '## Governed Execution (`L3`/`L4`)'
 done
 
-# --- Task 6.3: Spec-Kit bootstrap anchors ---
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'specify init --here --ai claude --script sh'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'specify init --here --ai codex --script sh'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'specify init --here --ai opencode --script sh'
+# --- Task 6.3: OpenSpec gate anchors ---
 for f in "$ROOT/dot_claude/CLAUDE.md" "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md"; do
-    assert_file_contains "$f" 'run native CLI `openspec new change <change-name>` first'
+    assert_file_contains "$f" 'openspec new change <change-name>'
 done
 assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'OpenSpec prompts: `~/.codex/prompts/opsx-*.md`'
 assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'Global: `~/.claude/CLAUDE.md`'
@@ -477,13 +472,6 @@ assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Guardrail
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Project config: `AGENTS.md`, `.opencode/AGENTS.md`'
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Shared skills/commands: `~/.agents/`'
 
-# --- Task 4.1/4.3: Spec-Kit install + diagnostics anchors ---
-assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" '"pipx:specify-cli"'
-assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage" 'specify check'
-assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage" 'specify check'
-assert_file_contains "$ROOT/dot_local/bin/executable_codex-manage" 'specify check passed'
-assert_file_contains "$ROOT/dot_local/bin/executable_claude-manage" 'specify check passed'
-
 # --- worktree-first-ai-workflow: baseline ignore rule ---
 assert_file_contains "$ROOT/.gitignore" '.worktrees/'
 assert_ignored_path ".worktrees/.probe"
@@ -526,8 +514,8 @@ assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" 'openspec init --t
 assert_file_contains "$ROOT/dot_agents/commands/core/test.md" 'openspec validate <change-name>'
 assert_file_contains "$ROOT/dot_agents/commands/core/test.md" '/opsx:verify'
 assert_file_contains "$ROOT/dot_agents/commands/core/test.md" '/opsx-verify'
-assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'If category is `C4`, enforce Spec-Kit gate first'
-assert_file_contains "$ROOT/dot_agents/commands/core/route.md" '## Route Split (C3 vs C4)'
+assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'If category is `C3` or `C4`'
+assert_file_contains "$ROOT/dot_agents/commands/core/route.md" '## OpenSpec Gate (C3/C4)'
 assert_file_contains "$ROOT/dot_codex/prompts/symlink_core-worktree.md.tmpl" '.agents/commands/core/worktree.md'
 assert_file_contains "$ROOT/dot_agents/commands/core/route.md" '## Intake Card'
 assert_file_contains "$ROOT/dot_codex/prompts/symlink_core-route.md.tmpl" '.agents/commands/core/route.md'
