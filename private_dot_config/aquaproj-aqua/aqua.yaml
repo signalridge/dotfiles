@@ -6,7 +6,7 @@ registries:
 packages:
   - name: nektos/act@v0.2.84
   - name: FiloSottile/age@v1.3.1
-  - name: asciinema/asciinema@v3.1.0
+  - name: asciinema/asciinema@v3.2.0
   - name: atuinsh/atuin@v18.12.1
   - name: sharkdp/bat@v0.26.1
   - name: eth-p/bat-extras@v2024.08.24
@@ -40,7 +40,7 @@ packages:
   - name: rclone/rclone@v1.73.1
   - name: o2sh/onefetch@2.26.1
   - name: ip7z/7zip@26.00
-  - name: Nukesor/pueue/pueue@v4.0.2
+  - name: Nukesor/pueue/pueue@v4.0.3
   - name: BurntSushi/ripgrep@15.1.0
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.1.0
