@@ -15,7 +15,7 @@ packages:
     update:
       enabled: false
   - name: anthropics/claude-code@v2.1.63
-  - name: openai/codex@rust-v0.106.0
+  - name: openai/codex@rust-v0.107.0
   - name: anomalyco/opencode@v1.2.15
   - name: direnv/direnv@v2.37.1
   - name: muesli/duf@v0.9.1
@@ -24,7 +24,7 @@ packages:
   - name: eza-community/eza@v0.23.4
   - name: fastfetch-cli/fastfetch@2.59.0
   - name: sharkdp/fd@v10.3.0
-  - name: junegunn/fzf@v0.68.0
+  - name: junegunn/fzf@v0.70.0
   - name: gopasspw/gopass@v1.16.1
   - name: cli/cli@v2.87.3
   - name: dlvhdr/gh-dash@v4.22.0
@@ -40,12 +40,12 @@ packages:
   - name: rclone/rclone@v1.73.1
   - name: o2sh/onefetch@2.26.1
   - name: ip7z/7zip@26.00
-  - name: Nukesor/pueue/pueue@v4.0.3
+  - name: Nukesor/pueue/pueue@v4.0.4
   - name: BurntSushi/ripgrep@15.1.0
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.1.0
   - name: joshmedeski/sesh@v2.24.2
-  - name: skim-rs/skim@v3.5.0
+  - name: skim-rs/skim@v3.6.0
   - name: starship/starship@v1.24.2
   - name: JohnnyMorganz/StyLua@v2.3.1
   - name: Kampfkarren/selene@0.30.0
