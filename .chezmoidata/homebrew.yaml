@@ -23,6 +23,7 @@ homebrew:
     shared:
       - bitwarden # Password manager (backup age key and daily passwords)
       - codex-app
+      - conductor # Claude code parallelisation
       - dockdoor
       - visual-studio-code
       - hammerspoon
