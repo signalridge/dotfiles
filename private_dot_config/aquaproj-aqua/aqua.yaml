@@ -16,7 +16,7 @@ packages:
       enabled: false
   - name: anthropics/claude-code@v2.1.63
   - name: openai/codex@rust-v0.107.0
-  - name: anomalyco/opencode@v1.2.15
+  - name: anomalyco/opencode@v1.2.16
   - name: direnv/direnv@v2.37.1
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.18.2
@@ -45,10 +45,10 @@ packages:
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.1.0
   - name: joshmedeski/sesh@v2.24.2
-  - name: skim-rs/skim@v3.6.0
+  - name: skim-rs/skim@v3.6.1
   - name: starship/starship@v1.24.2
   - name: JohnnyMorganz/StyLua@v2.3.1
-  - name: Kampfkarren/selene@0.30.0
+  - name: Kampfkarren/selene@0.30.1
   - name: koalaman/shellcheck@v0.11.0
   - name: mvdan/sh@v3.12.0
   - name: rhysd/actionlint@v1.7.11
