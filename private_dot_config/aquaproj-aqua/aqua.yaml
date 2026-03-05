@@ -14,9 +14,9 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.63
+  - name: anthropics/claude-code@v2.1.68
   - name: openai/codex@rust-v0.107.0
-  - name: anomalyco/opencode@v1.2.16
+  - name: anomalyco/opencode@v1.2.17
   - name: direnv/direnv@v2.37.1
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.18.2
@@ -27,7 +27,7 @@ packages:
   - name: junegunn/fzf@v0.70.0
   - name: gopasspw/gopass@v1.16.1
   - name: cli/cli@v2.87.3
-  - name: dlvhdr/gh-dash@v4.22.0
+  - name: dlvhdr/gh-dash@v4.23.0
   - name: x-motemen/ghq@v1.9.4
   - name: git-lfs/git-lfs@v3.7.1
   - name: charmbracelet/glow@v2.1.1
@@ -45,7 +45,7 @@ packages:
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.1.0
   - name: joshmedeski/sesh@v2.24.2
-  - name: skim-rs/skim@v3.6.1
+  - name: skim-rs/skim@v3.6.2
   - name: starship/starship@v1.24.2
   - name: JohnnyMorganz/StyLua@v2.3.1
   - name: Kampfkarren/selene@0.30.1
