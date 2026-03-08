@@ -165,6 +165,8 @@ args = []
 command = "uvx"
 args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "codex", "--project", ".", "--enable-web-dashboard", "false"]
 startup_timeout_sec = 30
+[mcp_servers.serena.env]
+AQUA_GLOBAL_CONFIG = "{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml"
 
 [mcp_servers.slack]
 command = "npx"
