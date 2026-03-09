@@ -7,7 +7,7 @@ versions:
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
   aquaVersion: v2.56.7
-  nixIndexDb: 2026-03-01-044622
+  nixIndexDb: 2026-03-08-042559
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: a6f0f457c4e41cbb0ad329b691d28e255a829210
   claudeWshobsonAgentsSha256: a3d99be05cd030604cba61ad0e453d6f3ea6904393d391e2eab9af46fc850322
@@ -27,7 +27,7 @@ versions:
   supabaseAgentSkillsRev: 760460c221d30d0db904ff28e8fa52af85672255
   expoSkillsRev: 46fa1f8b93479046445706c528af4c70d270e727
   microsoftSkillsRev: e27a68881a3b8bb906cc5ef00877a9a80f521bf6
-  sickn33AntigravitySkillsRev: 4edd2fcedd36b2e66f4697778bd8f85d7138c14a
+  sickn33AntigravitySkillsRev: 062972beb878b87922bc6c8d2623fca6815848b8
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   humanizerEnRev: d8085c7da5ddb9a179572837d4806b68cde3e9ff
