@@ -21,8 +21,6 @@ homebrew:
       - mas # Required for masApps installation
   casks:
     shared:
-      - bitwarden # Password manager (backup age key and daily passwords)
-      - codex-app
       - conductor # Claude code parallelisation
       - dockdoor
       - visual-studio-code
