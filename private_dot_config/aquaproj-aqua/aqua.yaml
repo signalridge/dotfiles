@@ -53,7 +53,7 @@ packages:
   - name: rhysd/actionlint@v1.7.11
   - name: golang.org/x/tools/gopls@v0.21.1
   - name: golangci/golangci-lint@v2.11.2
-  - name: goreleaser/goreleaser@v2.14.2
+  - name: goreleaser/goreleaser@v2.14.3
   - name: numtide/treefmt@v2.4.1
   - name: XAMPPRocky/tokei@14.0.0
   - name: dduan/tre@v0.4.0
