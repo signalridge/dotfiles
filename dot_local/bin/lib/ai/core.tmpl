@@ -343,7 +343,7 @@ gopass_prefix_candidates() {
 codex_default_model_for_provider() {
     local provider="$1"
     case "$provider" in
-        openai) echo "gpt-5.3-codex" ;;
+        openai) echo "gpt-5.4" ;;
         deepseek) echo "deepseek-chat" ;;
         kimi) echo "kimi-k2-0711-preview" ;;
         glm) echo "glm-4.5" ;;
@@ -352,7 +352,7 @@ codex_default_model_for_provider() {
         doubao) echo "doubao-seed-1-6-thinking-250715" ;;
         naapi) echo "gpt-5.2" ;;
         harui) echo "gpt-5.2" ;;
-        *) echo "gpt-5.3-codex" ;;
+        *) echo "gpt-5.4" ;;
     esac
 }
 
