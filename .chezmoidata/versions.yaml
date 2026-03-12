@@ -6,20 +6,20 @@ versions:
   nixVersion: v2.34.0
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
-  aquaVersion: v2.56.7
+  aquaVersion: v2.57.0
   nixIndexDb: 2026-03-08-042559
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: a6f0f457c4e41cbb0ad329b691d28e255a829210
   claudeWshobsonAgentsSha256: a3d99be05cd030604cba61ad0e453d6f3ea6904393d391e2eab9af46fc850322
-  claudeSuperpowersRev: 133a0a80c65c9f71206e31a08511fab1869354f2
-  claudeSuperpowersSha256: d4288bc803909396c103e5d460229901e1ff62f4a152d18560afd9541828b125
+  claudeSuperpowersRev: 5ef73d25b71e69e63a74eae359fb26c7a6ac8fc0
+  claudeSuperpowersSha256: 8e7f4e2de005d555ea0db926d74e88f206177c9009d1b83e444750cc89d678b0
   claudeAnthropicsSkillsRev: b0cbd3df1533b396d281a6886d5132f623393a9c
   claudeAnthropicsSkillsSha256: ccb8b6d05754ec40c2a029d3919555549154646e16d9a8299383ace2398c1be0
-  uiUxProMaxSkillRev: 58f9dfcc71863757371abe2f66397604cb604c87
-  uiUxProMaxSkillSha256: 7a0065b14b808b58d40d9f35084cffdd7d384247ec9667c5218175ac34a2cbac
-  openaiSkillsRev: ce2535c009ef92f4065be9626ae695c9ecd77e61
-  huggingfaceSkillsRev: 5d88e21bff0495d5a900b2fbc5a36958366ee3e0
-  getsentrySkillsRev: 0bd4cdf296da2ac58be5b8f87ed285d1ef17f04d
+  uiUxProMaxSkillRev: 07f4ef3ac2568c25a3b0c8ef5165a86abc3e56e4
+  uiUxProMaxSkillSha256: 70a772d0b166f4b79b3c4f7455b573f7fcf8bd5160ac40617783074ba55377d0
+  openaiSkillsRev: ecc1fb8bc0b82f1d3c7a92a82167ae8e8e613a67
+  huggingfaceSkillsRev: 0e13610de2dad9a0a52f23ba5c85eaf4475087fb
+  getsentrySkillsRev: 405638a2ee3f131b910be238af499eac5c86e92c
   trailofbitsSkillsRev: c6097699e4553f0dda4db615330f4a5097c4ff99
   cloudflareSkillsRev: d3113039790f64e052ff80f351190da65e9b7510
   vercelLabsAgentSkillsRev: 64bee5b7ea30702448e2aed774eb361914029944
@@ -27,7 +27,7 @@ versions:
   supabaseAgentSkillsRev: 760460c221d30d0db904ff28e8fa52af85672255
   expoSkillsRev: 991716e214d206384249322e9ef99a2fe059bb9b
   microsoftSkillsRev: e27a68881a3b8bb906cc5ef00877a9a80f521bf6
-  sickn33AntigravitySkillsRev: ac97c185fbbaa47102930cc87d00a7f9b47d05ed
+  sickn33AntigravitySkillsRev: a4b1f35a0ac185344bdcc6989c7ab35fd0704d1a
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   humanizerEnRev: d8085c7da5ddb9a179572837d4806b68cde3e9ff
