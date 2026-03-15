@@ -13,7 +13,7 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.75
+  - name: anthropics/claude-code@v2.1.76
   - name: openai/codex@rust-v0.114.0
   - name: anomalyco/opencode@v1.2.26
   - name: direnv/direnv@v2.37.1
@@ -35,7 +35,7 @@ packages:
   - name: jesseduffield/lazygit@v0.60.0
   - name: neovim/neovim@v0.11.6
   - name: LuaLS/lua-language-server@3.17.1
-  - name: tree-sitter/tree-sitter@v0.26.6
+  - name: tree-sitter/tree-sitter@v0.26.7
   - name: rclone/rclone@v1.73.2
   - name: o2sh/onefetch@2.26.1
   - name: ip7z/7zip@26.00
