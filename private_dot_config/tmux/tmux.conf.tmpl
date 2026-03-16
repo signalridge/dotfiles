@@ -244,20 +244,12 @@ set -g @tmux2k-pane-active-border '#cba6f7'
 set -g @tmux2k-prefix-highlight '#f5c2e7'
 
 # Plugin layout
-set -g @tmux2k-left-plugins "session git cpu ram"
-set -g @tmux2k-right-plugins "battery network time"
+set -g @tmux2k-left-plugins "session"
+set -g @tmux2k-right-plugins "git"
 
 # Per-module colors: "bg fg" - Dracula + Catppuccin pastel scheme
-# Left side: cool pastels (mauve → pink → sky → green)
 set -g @tmux2k-session-colors "purple text"
-set -g @tmux2k-git-colors "pink text"
-set -g @tmux2k-cpu-colors "light_blue text"
-set -g @tmux2k-ram-colors "green text"
-
-# Right side: warm pastels (peach → teal → yellow)
-set -g @tmux2k-battery-colors "orange text"
-set -g @tmux2k-network-colors "dark_green text"
-set -g @tmux2k-time-colors "yellow text"
+set -g @tmux2k-git-colors "light_blue text"
 
 # Window list: soft blue accent
 set -g @tmux2k-window-list-colors "black blue"
