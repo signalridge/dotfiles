@@ -22,6 +22,7 @@ homebrew:
   casks:
     shared:
       - conductor # Claude code parallelisation
+      - cmux
       - dockdoor
       - visual-studio-code
       - hammerspoon
