@@ -14,12 +14,12 @@ packages:
     update:
       enabled: false
   - name: anthropics/claude-code@v2.1.76
-  - name: openai/codex@rust-v0.114.0
-  - name: anomalyco/opencode@v1.2.26
+  - name: openai/codex@rust-v0.115.0
+  - name: anomalyco/opencode@v1.2.27
   - name: direnv/direnv@v2.37.1
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.18.2
-  - name: Wilfred/difftastic@0.67.0
+  - name: Wilfred/difftastic@0.68.0
   - name: eza-community/eza@v0.23.4
   - name: fastfetch-cli/fastfetch@2.60.0
   - name: sharkdp/fd@v10.4.2
@@ -31,7 +31,7 @@ packages:
   - name: git-lfs/git-lfs@v3.7.1
   - name: charmbracelet/glow@v2.1.1
   - name: jqlang/jq@jq-1.8.1
-  - name: casey/just@1.47.0
+  - name: casey/just@1.47.1
   - name: jesseduffield/lazygit@v0.60.0
   - name: neovim/neovim@v0.11.6
   - name: LuaLS/lua-language-server@3.17.1
