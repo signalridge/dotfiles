@@ -13,7 +13,7 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.78
+  - name: anthropics/claude-code@v2.1.79
   - name: openai/codex@rust-v0.115.0
   - name: anomalyco/opencode@v1.2.27
   - name: direnv/direnv@v2.37.1
