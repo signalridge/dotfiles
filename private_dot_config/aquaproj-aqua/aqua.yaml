@@ -13,8 +13,8 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.79
-  - name: openai/codex@rust-v0.115.0
+  - name: anthropics/claude-code@v2.1.80
+  - name: openai/codex@rust-v0.116.0
   - name: anomalyco/opencode@v1.2.27
   - name: direnv/direnv@v2.37.1
   - name: muesli/duf@v0.9.1
@@ -37,7 +37,7 @@ packages:
   - name: LuaLS/lua-language-server@3.17.1
   - name: tree-sitter/tree-sitter@v0.26.7
   - name: rclone/rclone@v1.73.2
-  - name: o2sh/onefetch@2.26.1
+  - name: o2sh/onefetch@2.27.1
   - name: ip7z/7zip@26.00
   - name: Nukesor/pueue/pueue@v4.0.4
   - name: BurntSushi/ripgrep@15.1.0
