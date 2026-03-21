@@ -17,8 +17,8 @@ versions:
   claudeAnthropicsSkillsSha256: ccb8b6d05754ec40c2a029d3919555549154646e16d9a8299383ace2398c1be0
   uiUxProMaxSkillRev: 07f4ef3ac2568c25a3b0c8ef5165a86abc3e56e4
   uiUxProMaxSkillSha256: 70a772d0b166f4b79b3c4f7455b573f7fcf8bd5160ac40617783074ba55377d0
-  openaiSkillsRev: dc48aff8208131776c9937326002bd60cf572ab6
-  huggingfaceSkillsRev: 4cdabeec700d084152c21e0e6a7e697671ab319e
+  openaiSkillsRev: 82d2c5b44ac234ec0f204f647562a4349d90ef43
+  huggingfaceSkillsRev: 73246ad6dc1a2e7a7f428cefd0e11296d0fff7e3
   getsentrySkillsRev: d2541c0e5f4f1322208f93bef6f6561a5bf95151
   trailofbitsSkillsRev: 5c15f4f5644b4bd3d48882a802a7232d501852b6
   cloudflareSkillsRev: d3113039790f64e052ff80f351190da65e9b7510
@@ -27,10 +27,10 @@ versions:
   supabaseAgentSkillsRev: 760460c221d30d0db904ff28e8fa52af85672255
   expoSkillsRev: 3cd151c9d96bf481c4fc274f2de758cd2e265261
   microsoftSkillsRev: 949a48d50f0c3289f72a61c653bf8cb0cd148e07
-  sickn33AntigravitySkillsRev: 8692fbc68fd47d6ec46c406545dc3bdccdc79c1a
+  sickn33AntigravitySkillsRev: 697275d76c1e1032538ef64292a5cea07acad242
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
-  humanizerEnRev: d8085c7da5ddb9a179572837d4806b68cde3e9ff
+  humanizerEnRev: 12881abf6671c4ab62eceeb56f911b752f9fd6d2
   stopSlopEnRev: 8da1f030185bdfe8471220585162991eaeb970e9
   humanizerZhRev: 91f3d394db8419c20d67ebe22a96cf8fee0a404b
   humanizerJaRev: 1b850cfe8529f7836025b2edd15b3d64447f8fb6
