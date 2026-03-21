@@ -4,7 +4,7 @@
 #
 # Design goals:
 # - Silent by default; only emit when user prompt indicates failure/stuck.
-# - Output format: 2 lines max (LEVEL RULE_ID: reason + Next: single action).
+# - Output format: 2 lines max (status + next action).
 # - Dedup: /tmp marker to avoid repeating same hint within 10 minutes.
 # - Top 3 navigation points max; prefer 1 next action.
 
@@ -27,7 +27,7 @@ input=$(cat 2>/dev/null) || true
 prompt=$(echo "$input" | jq -r '.prompt // ""' 2>/dev/null | tr '[:upper:]' '[:lower:]')
 [[ -n "$prompt" ]] || exit 0
 
-# Utility: emit a 2-line message (LEVEL RULE_ID + Next) then exit.
+# Utility: emit a 2-line message (status + next action) then exit.
 emit() {
     local level="$1"
     local rule_id="$2"
@@ -59,18 +59,6 @@ should_skip() {
 }
 
 # --- Post-error reminder rules (only trigger when user indicates failure) ---
-
-# WARN-OPSX-NOT-INSTALLED: user tried /opsx but it failed
-if echo "$prompt" | grep -qE '(/opsx|opsx).*(not found|unknown|command not found|没有|找不到|不存在|失败)'; then
-    should_skip "opsx-not-installed" && exit 0
-    emit "WARN" "OPSX-NOT-INSTALLED" "/opsx command not found or failed." "Use native OpenSpec CLI first (e.g. openspec new change <change-name>), then install wrappers via openspec init --tools claude or openspec update if needed."
-fi
-
-# WARN-OPENSPEC-NOT-INIT: openspec command failed due to missing workspace
-if echo "$prompt" | grep -qE 'openspec.*(workspace|specs|changes|config).*(not found|missing|不存在|缺失|失败)'; then
-    should_skip "openspec-not-init" && exit 0
-    emit "WARN" "OPENSPEC-NOT-INIT" "OpenSpec workspace not initialized." "openspec init --tools claude at repo root."
-fi
 
 # WARN-NAV-MISSING: user asks "where" / "which file" after a vague answer
 if echo "$prompt" | grep -qE '(where|which file|which line|在哪|哪个文件|哪一行|どこ|どのファイル)'; then

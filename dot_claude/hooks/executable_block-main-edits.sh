@@ -4,7 +4,7 @@
 #
 # Design goals (low-noise, unified output):
 # - ASK: only when editing non-allowed files on protected branches.
-# - Output: 2 lines max (LEVEL RULE_ID: reason + Next: remediation).
+# - Output: 2 lines max (status + next remediation).
 
 set -euo pipefail
 
@@ -56,7 +56,7 @@ for pattern in "${allowed_patterns[@]}"; do
     fi
 done
 
-# Unified output: 2 lines (LEVEL RULE_ID: reason + Next: action)
+# Unified output: 2 lines (status + Next action)
 msg="ASK MAIN-EDIT: Editing '${file_path}' on protected branch '${branch}'.
 Next: git checkout -b fix/<topic> (or set CLAUDE_ALLOW_PROTECTED_BRANCH_EDITS=1)."
 

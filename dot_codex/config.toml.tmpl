@@ -47,8 +47,8 @@ suppress_unstable_features_warning = true
 # Reasoning effort: none | minimal | low | medium | high | xhigh
 model_reasoning_effort = "xhigh"
 
-# Fast mode service tier
-service_tier = "fast"
+# Service tier preference
+service_tier = "flex"
 
 # Personality: none | friendly | pragmatic
 personality = "pragmatic"
@@ -73,7 +73,7 @@ project_doc_max_bytes = 65536
 [features]
 shell_tool = true
 memories = true
-fast_mode = true
+fast_mode = false
 apply_patch_freeform = true
 unified_exec = true
 shell_snapshot = true
@@ -192,11 +192,6 @@ url = "https://gitmcp.io/docs"
 
 [profiles.deep-review]
 model_reasoning_effort = "xhigh"
-approval_policy = "on-request"
-
-[profiles.fast]
-model_reasoning_effort = "low"
-service_tier = "fast"
 approval_policy = "on-request"
 
 [profiles.research]

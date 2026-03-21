@@ -39,7 +39,7 @@ chezmoi execute-template --source "$ROOT" <"$ROOT/dot_codex/config.toml.tmpl" >"
 
 assert_file_contains "$RENDERED" 'model = "gpt-5.4"'
 assert_file_contains "$RENDERED" 'model_reasoning_effort = "xhigh"'
-assert_file_contains "$RENDERED" 'service_tier = "fast"'
-assert_file_contains "$RENDERED" 'fast_mode = true'
+assert_file_contains "$RENDERED" 'service_tier = "flex"'
+assert_file_contains "$RENDERED" 'fast_mode = false'
 
 echo "test_codex_config_rendering: OK"

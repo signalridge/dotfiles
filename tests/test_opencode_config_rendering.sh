@@ -146,8 +146,8 @@ chmod +x "$ACCOUNT_BIN/gopass"
 
 PATH="$ACCOUNT_BIN:$PATH" render_opencode "$OPENCODE_WITH_GOPASS"
 
-assert_jq "$OPENCODE_DEFAULT" '.plugin == ["oh-my-opencode", "opencode-plugin-openspec"]'
-assert_jq "$OPENCODE_DEFAULT" '.plugin | length == 2'
+assert_jq "$OPENCODE_DEFAULT" '.plugin == ["oh-my-opencode"]'
+assert_jq "$OPENCODE_DEFAULT" '.plugin | length == 1'
 assert_jq "$OPENCODE_DEFAULT" '.theme == "dracula"'
 assert_jq "$OPENCODE_DEFAULT" '.model == .small_model'
 assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].agent == "build"'
@@ -155,7 +155,9 @@ assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].template | length > 0'
 assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].template | contains("opencode mcp list")'
 assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].template | contains("mcp.context7")'
 assert_jq "$OPENCODE_DEFAULT" '.command["doctor-all"].template | contains("mcp.serena")'
-assert_jq "$OPENCODE_DEFAULT" '.command["spec-verify"].description | length > 0'
+assert_jq "$OPENCODE_DEFAULT" '.command["run-tests"].description | length > 0'
+assert_jq "$OPENCODE_DEFAULT" '.command["run-tests"].template | contains("bash tests/run.sh")'
+assert_jq "$OPENCODE_DEFAULT" '(.command | has("spec-verify")) | not'
 assert_jq "$OPENCODE_DEFAULT" '.default_agent == "build"'
 assert_jq "$OPENCODE_DEFAULT" '.agent.build.model == .model'
 assert_jq "$OPENCODE_DEFAULT" '.agent.build.variant == "xhigh"'
@@ -298,7 +300,6 @@ test -f "$ROOT/private_dot_config/opencode/AGENTS.md" || {
     exit 1
 }
 
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Governed Execution (`L3`/`L4`)'
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## OpenCode Runtime Notes'
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Shared skills/commands'
 
@@ -365,83 +366,6 @@ assert_file_not_contains "$ROOT/dot_local/bin/executable_claude-manage" 'check_u
 assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" 'node = "lts"'
 assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" 'uv = "latest"'
 
-# --- Task 6.1: spec-verify syntax ---
-assert_file_contains "$ROOT/private_dot_config/opencode/opencode.jsonc.tmpl" 'openspec validate <change-name>'
-
-# --- Task 6.2: C1-C4 routing anchors ---
-for f in "$ROOT/dot_claude/CLAUDE.md" "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md"; do
-    assert_file_not_contains "$f" 'C0/C1/C2/C3'
-    assert_file_not_contains "$f" 'Category: C0 | C1 | C2 | C3'
-    assert_file_not_contains "$f" 'Read-only request -> `C0`'
-    assert_file_contains "$f" 'C1'
-    assert_file_contains "$f" 'C2'
-    assert_file_contains "$f" 'C3'
-    assert_file_contains "$f" 'C4'
-    assert_file_contains "$f" 'DiscoveryScore'
-    assert_file_contains "$f" 'ControlScore'
-    assert_file_contains "$f" 'Intake Card'
-    assert_file_contains "$f" '### L3/L4 Gate'
-    assert_file_contains "$f" 'high_ambiguity'
-    assert_file_contains "$f" '## Governed Execution (`L3`/`L4`)'
-done
-
-# --- Task 6.2b: L3/L4 tightened routing anchors ---
-for f in "$ROOT/dot_claude/CLAUDE.md" "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md"; do
-    # L4 no longer includes major_feature as standalone trigger
-    assert_file_not_contains "$f" 'major new feature, major refactor'
-    # L4 description references discovery
-    assert_file_contains "$f" 'Discovery-required program'
-    # Raised thresholds
-    assert_file_contains "$f" 'ControlScore >= 8'
-    assert_file_contains "$f" 'DiscoveryScore >= 6'
-    # L3/L4 ceremony subsections
-    assert_file_contains "$f" '### L3 (Standard Governed)'
-    assert_file_contains "$f" '### L4 (Discovery-First Governed)'
-    assert_file_contains "$f" 'mandatory exploration phase'
-    # Non-L3 guard table
-    assert_file_contains "$f" '### Non-L3 Examples (Do Not Escalate)'
-    assert_file_contains "$f" 'Complexity alone does not require governance'
-    # Major new feature moved to L3
-    assert_file_contains "$f" 'Architecture known, no discovery needed'
-done
-
-# --- Task 6.2c: README C2 deterministic wording anchors ---
-assert_file_contains "$ROOT/README.md" 'direct deterministic flow in `C2`'
-assert_file_contains "$ROOT/README.md" '`C2` deterministic changes do not require OpenSpec.'
-assert_file_not_contains "$ROOT/README.md" 'direct small-change flow in `C2`'
-assert_file_not_contains "$ROOT/README.md" '`C2` small deterministic changes do not require OpenSpec.'
-
-assert_file_contains "$ROOT/README.ja.md" '`C2` は決定論的変更の直接実装'
-assert_file_contains "$ROOT/README.ja.md" '`C2` の決定論的変更は OpenSpec の対象外です。'
-assert_file_not_contains "$ROOT/README.ja.md" '`C2` は小規模変更の直接実装'
-assert_file_not_contains "$ROOT/README.ja.md" '`C2` の小規模変更は OpenSpec の対象外です。'
-
-assert_file_contains "$ROOT/README.zh-CN.md" '`C2` 确定性变更直改'
-assert_file_contains "$ROOT/README.zh-CN.md" '`C2` 确定性变更不需要 OpenSpec。'
-assert_file_not_contains "$ROOT/README.zh-CN.md" '`C2` 小修直改'
-assert_file_not_contains "$ROOT/README.zh-CN.md" '`C2` 小修任务不需要 OpenSpec。'
-
-# --- Task 6.3: OpenSpec gate anchors ---
-for f in "$ROOT/dot_claude/CLAUDE.md" "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md"; do
-    assert_file_contains "$f" 'openspec new change <change-name>'
-done
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'OpenSpec prompts: `~/.codex/prompts/opsx-*.md`'
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'Global: `~/.claude/CLAUDE.md`'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'User config: `~/.config/opencode/AGENTS.md`'
-
-# --- Task 6.4: AGENTS opsx syntax consistency ---
-# Codex AGENTS: hyphen form only (except disambiguation note)
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" '/opsx-new'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" '/opsx-archive'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'Cross-tool syntax note'
-# OpenCode AGENTS: hyphen form
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '/opsx-new'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '/opsx-archive'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Cross-tool syntax note'
-# Claude AGENTS: colon form
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md" '/opsx:new'
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md" '/opsx:archive'
-
 # --- Task 6.5: Guardrails references resolve (inline) ---
 assert_file_contains "$ROOT/dot_codex/AGENTS.md" '## Guardrails'
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Guardrails'
@@ -463,27 +387,13 @@ assert_jq "$OH_MY_OPENCODE" '(.sisyphus_agent | has("planner_enabled")) | not'
 assert_jq "$OH_MY_OPENCODE" '(.sisyphus_agent | has("replace_plan")) | not'
 assert_jq "$OH_MY_OPENCODE" '(.sisyphus_agent | has("default_builder_enabled")) | not'
 
-# --- Task 6.8: OpenSpec versioning posture explicit ---
-# Long-lived OpenSpec traces are tracked in git and must not be ignored.
-if grep -Eq '^openspec/?$|^openspec/' "$ROOT/.gitignore"; then
-    echo "assertion failed: .gitignore should not ignore openspec/" >&2
-    grep -En '^openspec/?$|^openspec/' "$ROOT/.gitignore" >&2 || true
-    exit 1
-fi
-assert_not_ignored_path "openspec/specs/.probe"
-assert_not_ignored_path "openspec/changes/archive/.probe"
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'track `openspec/**` in git and archive active changes before merge'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'track `openspec/**` in git and archive active changes before merge'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'track `openspec/**` in git and archive active changes before merge'
-assert_file_contains "$ROOT/.github/workflows/openspec-trace-gate.yml" '.github/scripts/check_openspec_trace_gate.sh'
-assert_file_contains "$ROOT/.github/scripts/check_openspec_trace_gate.sh" 'unexpected files under openspec/changes'
-assert_file_contains "$ROOT/.github/scripts/check_openspec_trace_gate.sh" 'archive these changes before merge'
-
 # --- Task 8.4: Tavily-first anchor wording ---
 for f in "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md" "$ROOT/dot_claude/CLAUDE.md"; do
     assert_file_contains "$f" 'Docs/API -> Context7'
     assert_file_contains "$f" 'Web/news -> Tavily'
     assert_file_contains "$f" 'Code navigation -> Serena'
+    assert_file_not_contains "$f" 'LEVEL RULE_ID'
+    assert_file_not_contains "$f" 'Levels: `BLOCK` | `ASK` | `WARN` | `INFO`'
 done
 
 # --- Task 9.4: Research subagent model routes explicit ---
@@ -536,52 +446,12 @@ assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'one-task-one-branch-one-worktr
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'one-task-one-branch-one-worktree'
 
 # --- worktree-first-ai-workflow: cross-tool shared command projection ---
-test -f "$ROOT/dot_agents/commands/core/route.md" || {
-    echo "missing core route command" >&2
-    exit 1
-}
 assert_file_contains "$ROOT/dot_agents/commands/core/worktree.md" 'wt-new'
 assert_file_contains "$ROOT/dot_agents/commands/core/worktree.md" 'one-task-one-branch-one-worktree'
-assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'First executable command MUST be: `openspec new change <change-name>`'
-assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" 'Next step (CLI-first): `openspec new change <change-name>`'
-assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" '/opsx:new <change-name>'
-assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" '/opsx-new <change-name>'
-assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" 'openspec init --tools <tool>'
-assert_file_contains "$ROOT/dot_agents/commands/core/test.md" 'openspec validate <change-name>'
-assert_file_contains "$ROOT/dot_agents/commands/core/test.md" '/opsx:verify'
-assert_file_contains "$ROOT/dot_agents/commands/core/test.md" '/opsx-verify'
-assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'If category is `C3` or `C4`'
-assert_file_contains "$ROOT/dot_agents/commands/core/route.md" '## OpenSpec Gate (C3/C4)'
+assert_file_contains "$ROOT/dot_agents/commands/core/worktree.md" 'Start implementation tasks in a dedicated worktree'
+assert_file_not_contains "$ROOT/dot_agents/commands/core/worktree.md" '`C3`'
+assert_file_not_contains "$ROOT/dot_agents/commands/core/worktree.md" '`C4`'
 assert_file_contains "$ROOT/dot_codex/prompts/symlink_core-worktree.md.tmpl" '.agents/commands/core/worktree.md'
-assert_file_contains "$ROOT/dot_agents/commands/core/route.md" '## Intake Card'
-assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'GuardrailDomain'
-assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'Discovery-First'
-assert_file_not_contains "$ROOT/dot_agents/commands/core/route.md" 'major feature'
-
-# --- Review fix: /route guardrail unconditional C3 ---
-assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'guardrail-sensitive or `Kind=G`, set floor category to `C3`'
-assert_file_not_contains "$ROOT/dot_agents/commands/core/route.md" 'guardrail domain and'
-
-# --- Review fix: /route scoring model fully aligned with AGENTS ---
-assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'Score each dimension from `0..4`'
-assert_file_contains "$ROOT/dot_agents/commands/core/route.md" '`V` (Reversibility cost)'
-assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'ControlScore = I + R + V'
-assert_file_contains "$ROOT/dot_agents/commands/core/route.md" '`high_ambiguity` (`A >= 3` and `ControlScore >= 8`)'
-assert_file_contains "$ROOT/dot_agents/commands/core/route.md" 'Scores: N/A/I/R/V = x/x/x/x/x'
-assert_file_not_contains "$ROOT/dot_agents/commands/core/route.md" 'Score each dimension from `0..2`'
-assert_file_not_contains "$ROOT/dot_agents/commands/core/route.md" 'Scale note'
-
-# --- Review fix: README C4 mirrors high_ambiguity trigger semantics ---
-assert_file_contains "$ROOT/README.md" 'high ambiguity with high control'
-assert_file_contains "$ROOT/README.ja.md" '高曖昧かつ高制御'
-assert_file_contains "$ROOT/README.zh-CN.md" '高歧义且高控制'
-
-# --- Review fix: L4 exploration-first synced to /plan and /context ---
-assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" 'C4` (Discovery-First)'
-assert_file_contains "$ROOT/dot_agents/commands/core/plan.md" 'mandatory exploration phase'
-assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'C4` (Discovery-First)'
-assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'mandatory exploration phase'
-assert_file_contains "$ROOT/dot_codex/prompts/symlink_core-route.md.tmpl" '.agents/commands/core/route.md'
 
 # --- serena-context7-mcp-integration: tri-MCP routing anchors ---
 assert_file_contains "$ROOT/dot_agents/commands/core/context.md" 'Tri-MCP Routing Policy'

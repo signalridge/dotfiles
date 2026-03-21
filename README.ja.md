@@ -53,7 +53,6 @@
 - `OpenCode + oh-my-opencode` のグローバル設定を宣言的に管理（Claude compatibility 無効化のガード付き）
 - `chezmoi apply` のたびに Claude MCP を自動同期
 - GitHub Actions による依存更新の自動化（versions、flake lock、aqua packages）
-- `C1/C2/C3/C4` ルーティング: `C1` は助言専用、`C2` は決定論的変更の直接実装、`C3`/`C4` は OpenSpec ガバナンス
 
 ---
 
@@ -102,7 +101,6 @@
 - [マルチプロファイル設定](#マルチプロファイル設定)
 - [セキュリティとシークレット](#セキュリティとシークレット)
 - [CI と自動化](#ci-と自動化)
-- [ワークフロールーティング（C1-C4）](#ワークフロールーティングc1-c4)
 - [関連ドキュメント](#関連ドキュメント)
 - [謝辞](#謝辞)
 - [統計](#統計)
@@ -345,16 +343,6 @@ OpenCode の key レンダリングは `provider@private` 命名（例: `harui@p
 
 これにより OpenCode の動作は `~/.claude/*` へ依存しません。
 
-### OpenCode での OpenSpec 統合
-
-OpenCode plugin の順序は固定:
-
-```json
-"plugin": ["oh-my-opencode", "opencode-plugin-openspec"]
-```
-
-これで `oh-my-opencode` の orchestration を維持しつつ、OpenCode 上で `openspec-plan` agent を使った OpenSpec planning が可能になります。
-
 ### 実行時確認ポリシー
 
 次の高リスク操作はデフォルトで `ask`:
@@ -561,35 +549,6 @@ chezmoi init --apply --promptBool headless=true signalridge
 - `.github/workflows/update-versions.yml`
 - `.github/workflows/update-flake-lock.yml`
 - `.github/workflows/update-aqua-packages.yml`
-
----
-
-## ワークフロールーティング（C1-C4）
-
-> [!IMPORTANT]
-> このリポジトリでは、実装前に `C1/C2/C3/C4` 分類でルートを決定します。
-
-| Category | 意図                                                             | 主経路                          |
-| -------- | ---------------------------------------------------------------- | ------------------------------- |
-| `C1`     | 助言/参照のみ                                                    | 分析と報告のみ                  |
-| `C2`     | 決定論的な変更                                                   | 直接実装                        |
-| `C3`     | ガバナンス変更（ガードレール/高制御）                            | OpenSpec 標準ライフサイクル     |
-| `C4`     | 探索必須プログラム（新規開発/大規模リファクタ/高曖昧かつ高制御） | OpenSpec 探索優先ライフサイクル |
-
-境界と責務:
-
-- `C1` は助言専用で、ファイル変更は行いません。
-- `C2` の決定論的変更は OpenSpec の対象外です。
-- OpenSpec は `C3` と `C4` 実装フェーズの実行/検証を担います。
-- 分類が `C3` または `C4` の場合は governed mode に切り替え、実装前に OpenSpec gate に入ります。
-
-OpenSpec フロー（`C3`/`C4`）:
-
-```bash
-openspec new change <change-name>
-openspec status --change <change-name>
-# その後は /opsx-*（導入済みの場合）または openspec CLI ステップを使用
-```
 
 ---
 
