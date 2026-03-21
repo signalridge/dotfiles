@@ -53,7 +53,6 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 - Declarative `OpenCode + oh-my-opencode` global config with native-only (no-Claude-compat) guardrails
 - Auto MCP sync for Claude on every `chezmoi apply`
 - Automated dependency upkeep via GitHub Actions (versions, flake locks, aqua packages)
-- `C1/C2/C3/C4` routing: advisory in `C1`, direct deterministic flow in `C2`, OpenSpec governance for `C3`/`C4`
 
 ---
 
@@ -102,7 +101,6 @@ Core principles:
 - [Multi-Profile Configuration](#multi-profile-configuration)
 - [Security & Secrets](#security--secrets)
 - [CI and Automation](#ci-and-automation)
-- [Workflow Routing (C1-C4)](#workflow-routing-c1-c4)
 - [Additional Docs](#additional-docs)
 - [Acknowledgements](#acknowledgements)
 - [Stats](#stats)
@@ -345,16 +343,6 @@ Use native `opencode` directly:
 
 This keeps OpenCode runtime behavior independent from `~/.claude/*`.
 
-### OpenSpec Integration in OpenCode
-
-OpenCode plugin order is pinned to:
-
-```json
-"plugin": ["oh-my-opencode", "opencode-plugin-openspec"]
-```
-
-This preserves oh-my-opencode orchestration while enabling `openspec-plan` agent injection for OpenSpec planning workflow in OpenCode.
-
 ### Runtime Confirmation Baseline
 
 OpenCode permissions are pinned to require confirmation (`ask`) for:
@@ -561,35 +549,6 @@ See:
 - `.github/workflows/update-versions.yml`
 - `.github/workflows/update-flake-lock.yml`
 - `.github/workflows/update-aqua-packages.yml`
-
----
-
-## Workflow Routing (C1-C4)
-
-> [!IMPORTANT]
-> This repository routes implementation by `C1/C2/C3/C4` classification before coding.
-
-| Category | Intent                                                                                       | Primary Path                       |
-| -------- | -------------------------------------------------------------------------------------------- | ---------------------------------- |
-| `C1`     | Advisory/read-only request                                                                   | Analyze and report only            |
-| `C2`     | Deterministic change                                                                         | Implement directly                 |
-| `C3`     | Governed change (guardrail or high-control)                                                  | OpenSpec standard lifecycle        |
-| `C4`     | Discovery-required program (new project / major refactor / high ambiguity with high control) | OpenSpec discovery-first lifecycle |
-
-Boundary and ownership:
-
-- `C1` is advisory only and does not include file changes.
-- `C2` deterministic changes do not require OpenSpec.
-- OpenSpec governs execution and verification for `C3` and `C4` implementation.
-- If category is `C3` or `C4`, switch to governed mode and enter OpenSpec gate before coding.
-
-OpenSpec workflow (`C3`/`C4`):
-
-```bash
-openspec new change <change-name>
-openspec status --change <change-name>
-# then continue with /opsx-* wrappers (if installed) or openspec CLI steps
-```
 
 ---
 

@@ -1,12 +1,12 @@
 # /worktree - Worktree Workflow Guide
 
-Standardize workspace isolation for classified tasks across Claude, Codex, and OpenCode.
+Standardize workspace isolation for implementation tasks across Claude, Codex, and OpenCode.
 
 ## Policy
 
 - Default model: `one-task-one-branch-one-worktree`.
-- `C3` and `C4` tasks should start in a dedicated worktree under `.worktrees/<branch>`.
-- `C2` tasks may remain in the main workspace when isolation overhead is unnecessary.
+- Start implementation tasks in a dedicated worktree under `.worktrees/<branch>` when isolation helps preserve rollback clarity.
+- Small deterministic updates may remain in the main workspace when isolation overhead is unnecessary.
 
 ## Canonical Commands
 

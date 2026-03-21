@@ -53,7 +53,6 @@
 - 声明式管理 `OpenCode + oh-my-opencode` 全局配置，并启用 native-only（禁用 Claude compatibility）护栏
 - 每次 `chezmoi apply` 自动对齐 Claude MCP 配置
 - GitHub Actions 自动维护依赖版本（versions、flake lock、aqua packages）
-- `C1/C2/C3/C4` 路由模型：`C1` 只读分析，`C2` 确定性变更直改，`C3`/`C4` 走 OpenSpec 治理
 
 ---
 
@@ -100,7 +99,6 @@
 - [多 Profile 配置](#多-profile-配置)
 - [安全与加密](#安全与加密)
 - [CI 与自动化](#ci-与自动化)
-- [工作流路由（C1-C4）](#工作流路由c1-c4)
 - [更多文档](#更多文档)
 - [致谢](#致谢)
 - [统计](#统计)
@@ -343,16 +341,6 @@ OpenCode 的 key 渲染使用 `provider@private` 命名（如 `harui@private`）
 
 这保证 OpenCode 工作流不依赖 `~/.claude/*`。
 
-### OpenCode 内的 OpenSpec 集成
-
-OpenCode plugin 顺序固定为：
-
-```json
-"plugin": ["oh-my-opencode", "opencode-plugin-openspec"]
-```
-
-这样既保留 `oh-my-opencode` orchestration，又能在 OpenCode 内启用 `openspec-plan` agent 做 OpenSpec 规划。
-
 ### 运行时确认策略
 
 默认将敏感操作设为 `ask`：
@@ -559,35 +547,6 @@ chezmoi init --apply --promptBool headless=true signalridge
 - `.github/workflows/update-versions.yml`
 - `.github/workflows/update-flake-lock.yml`
 - `.github/workflows/update-aqua-packages.yml`
-
----
-
-## 工作流路由（C1-C4）
-
-> [!IMPORTANT]
-> 本仓库在实现前会先按 `C1/C2/C3/C4` 分类，再决定执行路径。
-
-| Category | 意图                                           | 主路径                    |
-| -------- | ---------------------------------------------- | ------------------------- |
-| `C1`     | 只读咨询/分析请求                              | 仅分析和报告              |
-| `C2`     | 确定性变更                                     | 直接实现                  |
-| `C3`     | 治理变更（护栏域/高控制）                      | OpenSpec 标准生命周期     |
-| `C4`     | 需探索的程序（新项目/重大重构/高歧义且高控制） | OpenSpec 探索优先生命周期 |
-
-边界与职责:
-
-- `C1` 为只读分析，不涉及文件变更。
-- `C2` 确定性变更不需要 OpenSpec。
-- OpenSpec 负责 `C3` 和 `C4` 实施阶段的执行与验证治理。
-- 若分类为 `C3` 或 `C4`，需切换到 governed mode，并在编码前进入 OpenSpec gate。
-
-OpenSpec 流程（`C3`/`C4`）:
-
-```bash
-openspec new change <change-name>
-openspec status --change <change-name>
-# 然后继续 /opsx-*（已安装时）或 openspec CLI 步骤
-```
 
 ---
 

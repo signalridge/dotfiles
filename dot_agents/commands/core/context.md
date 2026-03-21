@@ -14,10 +14,6 @@ Analyze the relevant code area before implementation.
 1. Identify target files and boundaries.
 2. Capture dependencies and calling paths.
 3. Note conventions that must be preserved.
-4. Run classification-first routing (`/route`) before proposing implementation.
-5. If category is `C3` or `C4`, suggest the next OpenSpec step and ask for explicit yes/no confirmation before execution.
-   - `C3` (Standard Governed): proceed to scan -> step-by-step implementation.
-   - `C4` (Discovery-First): proceed to **mandatory exploration phase** first (map codebase, enumerate unknowns, write discovery summary), then obtain user approval on scope before implementation.
 
 ## Tri-MCP Routing Policy
 
@@ -38,4 +34,3 @@ Notes:
 ## Output
 
 - A concise map of key files, dependencies, and constraints.
-- Include an `Intake Card` if implementation is requested.

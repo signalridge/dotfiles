@@ -65,8 +65,7 @@ nix-config/modules/host-users.nix
 {{- end }}
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Claude command convergence (OpenSpec-first + minimal commands)
+# Ignored directories
 # ─────────────────────────────────────────────────────────────────────────────
 backup/
 tests/
-openspec/

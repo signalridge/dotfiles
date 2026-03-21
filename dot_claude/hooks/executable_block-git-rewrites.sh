@@ -5,7 +5,7 @@
 # Design goals (low-noise, unified output):
 # - BLOCK: only for truly irreversible/dangerous actions (rare).
 # - ASK: for risky but recoverable actions.
-# - Output: 2 lines max (LEVEL RULE_ID: reason + Next: remediation).
+# - Output: 2 lines max (status + next remediation).
 
 set -euo pipefail
 
@@ -29,7 +29,7 @@ matches() {
     printf '%s\n' "$command" | grep -qE "$pattern"
 }
 
-# Unified output: 2 lines (LEVEL RULE_ID: reason + Next: action)
+# Unified output: 2 lines (status + Next action)
 ask() {
     local rule_id="$1"
     local reason="$2"
@@ -71,13 +71,6 @@ if matches 'git[[:space:]]+push' && matches '(^|[[:space:]])(--force|-f)([[:spac
 fi
 
 # --- ASK rules (risky but recoverable) ---
-
-if matches '(^|[[:space:]])openspec[[:space:]]+archive([[:space:]]|$)'; then
-    if matches '(^|[[:space:]])--yes([[:space:]]|$)'; then
-        ask "OPENSPEC-ARCHIVE-YES" "openspec archive --yes finalizes the change." "Confirm explicitly (never auto-chain)."
-    fi
-    ask "OPENSPEC-ARCHIVE" "openspec archive finalizes the change." "Confirm explicitly (one step at a time)."
-fi
 
 if matches 'git[[:space:]]+push' && matches '(^|[[:space:]])(--force|-f)([[:space:]]|$)'; then
     ask "GIT-FORCE-PUSH" "Force push rewrites remote history." "Confirm you want to rewrite."

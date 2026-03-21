@@ -4,27 +4,9 @@ Plan a feature or task with clear structure before coding.
 
 ## When to Use
 
-- `C2` direct changes where you want a lightweight implementation plan.
-- `C2` changes where you want a more structured planning workflow via Superpowers `writing-plans`.
+- Direct changes where you want a lightweight implementation plan.
+- Direct changes where you want a more structured planning workflow via Superpowers `writing-plans`.
 - Any time the scope is still fuzzy and you want to clarify goal/DoD.
-
-## When NOT to Use
-
-- If classification is `C3` or `C4`: use OpenSpec.
-  - Next step (CLI-first): `openspec new change <change-name>`, with explicit confirmation.
-  - Optional wrapper shortcuts: `/opsx:new <change-name>` (Claude) or `/opsx-new <change-name>` (Codex/OpenCode).
-  - `C3` (Standard Governed): open change -> scan -> implement step-by-step -> validate -> archive.
-  - `C4` (Discovery-First): open change -> **mandatory exploration phase** (map codebase, enumerate unknowns, write discovery summary) -> **user approval on scope** -> implement -> validate -> archive. Do not begin implementation until exploration is complete and user approves.
-
-`/plan` does not conflict with OpenSpec wrappers (`/opsx:*` in Claude, `/opsx-*` in Codex/OpenCode). They are different layers:
-
-- `/plan`: `C2` lightweight planning entry.
-- OpenSpec CLI (`openspec ...`): canonical lifecycle entry for `C3`/`C4` implementation.
-- OpenSpec wrappers: optional shortcuts when wrapper prompts are installed.
-
-If wrappers are missing, continue with native `openspec ...` CLI. Install wrappers only when needed via `openspec init --tools <tool>` (or `openspec update`).
-
-Always run `/route` first if category is not already explicit.
 
 ## Framework: Goal → Constraints → Definition of Done
 
