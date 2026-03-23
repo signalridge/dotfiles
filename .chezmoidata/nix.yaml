@@ -3,7 +3,8 @@ nix:
     - git
   homepkgs:
     shared:
-      - "(texliveFull.withPackages (ps: with ps; [ ]))"
+      # texliveFull: temporarily disabled (90+ fmt derivations rebuild on every flake.lock update)
+      # - "(texliveFull.withPackages (ps: with ps; [ ]))"
       - aria2
       - certbot
       - dasel
