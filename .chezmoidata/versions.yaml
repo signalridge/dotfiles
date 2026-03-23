@@ -7,14 +7,14 @@ versions:
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
   aquaVersion: v2.57.1
-  nixIndexDb: 2026-03-15-045700
+  nixIndexDb: 2026-03-22-044453
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: 1ad2f007d5e9ec822a2d79e727ac1dcdf5f66f11
   claudeWshobsonAgentsSha256: c39436ae5c104d7bcfa380e341553c028dbd729d6a34a2ab108c175a628c5ab9
   claudeSuperpowersRev: 8ea39819eed74fe2a0338e71789f06b30e953041
   claudeSuperpowersSha256: c818de706778bbb0ca212ef2ea0409d4eb5206b261b1e7c871a195d69d40b31c
-  claudeAnthropicsSkillsRev: b0cbd3df1533b396d281a6886d5132f623393a9c
-  claudeAnthropicsSkillsSha256: ccb8b6d05754ec40c2a029d3919555549154646e16d9a8299383ace2398c1be0
+  claudeAnthropicsSkillsRev: 887114fd09f8f24a7e6c907f9ee505348498ab6a
+  claudeAnthropicsSkillsSha256: fbbc1f4c7eb51f3b5bc81da1fa86779c4e0dd3d5fe0101bee2fa98ef45028e6e
   uiUxProMaxSkillRev: 07f4ef3ac2568c25a3b0c8ef5165a86abc3e56e4
   uiUxProMaxSkillSha256: 70a772d0b166f4b79b3c4f7455b573f7fcf8bd5160ac40617783074ba55377d0
   openaiSkillsRev: 82d2c5b44ac234ec0f204f647562a4349d90ef43
@@ -27,7 +27,7 @@ versions:
   supabaseAgentSkillsRev: 760460c221d30d0db904ff28e8fa52af85672255
   expoSkillsRev: 3cd151c9d96bf481c4fc274f2de758cd2e265261
   microsoftSkillsRev: 949a48d50f0c3289f72a61c653bf8cb0cd148e07
-  sickn33AntigravitySkillsRev: 9c177eb003f8bf2dfe03f118f04653e7afb5370f
+  sickn33AntigravitySkillsRev: efbd3e7b04bcf4ae2fc9af0ba6bc9f317d677f31
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   humanizerEnRev: 12881abf6671c4ab62eceeb56f911b752f9fd6d2
