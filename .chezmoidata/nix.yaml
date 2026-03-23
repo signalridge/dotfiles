@@ -18,7 +18,8 @@ nix:
       - navi
       - ouch
       - pixi # fast Python/conda package manager
-      - pre-commit # Git hook framework
+      # pre-commit: moved to pixi (avoids dotnet-sdk source compilation via nix)
+      # Install: pixi global install pre-commit
       - nodePackages.prettier # JS/TS/JSON/YAML formatter
       - sheldon # shell plugin manager (prefer nix build over aqua binary on macOS)
       - openssh
