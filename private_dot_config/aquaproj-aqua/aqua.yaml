@@ -3,10 +3,10 @@ registries:
   - type: standard
     ref: v4.470.0 # renovate: depName=aquaproj/aqua-registry
 packages:
-  - name: nektos/act@v0.2.84
+  - name: nektos/act@v0.2.85
   - name: FiloSottile/age@v1.3.1
   - name: asciinema/asciinema@v3.2.0
-  - name: atuinsh/atuin@v18.13.3
+  - name: atuinsh/atuin@v18.13.4
   - name: sharkdp/bat@v0.26.1
   - name: eth-p/bat-extras@v2024.08.24
     # aqua update can downgrade to v20200408 due semver ordering;
@@ -36,7 +36,7 @@ packages:
   - name: neovim/neovim@v0.11.6
   - name: LuaLS/lua-language-server@3.17.1
   - name: tree-sitter/tree-sitter@v0.26.7
-  - name: rclone/rclone@v1.73.2
+  - name: rclone/rclone@v1.73.3
   - name: o2sh/onefetch@2.27.1
   - name: ip7z/7zip@26.00
   - name: Nukesor/pueue/pueue@v4.0.4
