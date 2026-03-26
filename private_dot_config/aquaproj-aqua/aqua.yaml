@@ -3,19 +3,19 @@ registries:
   - type: standard
     ref: v4.470.0 # renovate: depName=aquaproj/aqua-registry
 packages:
-  - name: nektos/act@v0.2.85
+  - name: nektos/act@v0.2.86
   - name: FiloSottile/age@v1.3.1
   - name: asciinema/asciinema@v3.2.0
-  - name: atuinsh/atuin@v18.13.4
+  - name: atuinsh/atuin@v18.13.5
   - name: sharkdp/bat@v0.26.1
   - name: eth-p/bat-extras@v2024.08.24
     # aqua update can downgrade to v20200408 due semver ordering;
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.81
+  - name: anthropics/claude-code@v2.1.83
   - name: openai/codex@rust-v0.116.0
-  - name: anomalyco/opencode@v1.3.0
+  - name: anomalyco/opencode@v1.3.2
   - name: direnv/direnv@v2.37.1
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.19.1
@@ -31,7 +31,7 @@ packages:
   - name: git-lfs/git-lfs@v3.7.1
   - name: charmbracelet/glow@v2.1.1
   - name: jqlang/jq@jq-1.8.1
-  - name: casey/just@1.47.1
+  - name: casey/just@1.48.0
   - name: jesseduffield/lazygit@v0.60.0
   - name: neovim/neovim@v0.11.6
   - name: LuaLS/lua-language-server@3.17.1
@@ -58,7 +58,7 @@ packages:
   - name: XAMPPRocky/tokei@14.0.0
   - name: dduan/tre@v0.4.0
   - name: sxyazi/yazi@v26.1.22
-  - name: mikefarah/yq@v4.52.4
+  - name: mikefarah/yq@v4.52.5
   - name: ajeetdsouza/zoxide@v0.9.9
   - name: derailed/k9s@v0.50.18
   - name: terraform-linters/tflint@v0.61.0
