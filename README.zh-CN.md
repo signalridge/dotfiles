@@ -164,8 +164,8 @@
 4. `03` 切换 flakey-profile 包配置
 5. `04` 初始化 gopass store（交互式 clone）
 6. `05` 安装固定版本的 aqua installer/aqua
-7. `06` 根据 `private_dot_config/aquaproj-aqua/aqua.yaml` 安装工具
-8. `07` 通过 `mise` 安装 runtime 与工具
+7. `06` 根据 `private_dot_config/aquaproj-aqua/aqua.yaml` 安装工具（含 `mise`）
+8. `07` 通过 aqua 提供的 `mise` 安装 runtime 与工具
 9. `08` 下载固定版本 nix-index 数据库
 10. `09` macOS：安装/更新 Paperlib
 11. `10` 周期性 Homebrew 更新（7 天间隔）

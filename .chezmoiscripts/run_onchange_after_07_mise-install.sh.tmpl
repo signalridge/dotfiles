@@ -3,25 +3,50 @@
 set -euo pipefail
 
 {{ $miseConfig := joinPath .chezmoi.homeDir ".config/mise/config.toml" -}}
+{{ $aquaConfig := joinPath .chezmoi.homeDir ".config/aquaproj-aqua/aqua.yaml" -}}
 # mise config: {{ if stat $miseConfig }}{{ output "sha256sum" $miseConfig | trim }}{{ else }}n/a{{ end }}
+# aqua config: {{ if stat $aquaConfig }}{{ output "sha256sum" $aquaConfig | trim }}{{ else }}n/a{{ end }}
 
 # chezmoi may be updating dot-directories (e.g. ~/.claude). If the current working
 # directory disappears mid-apply, mise will warn. Run mise from a stable dir.
 cd "$HOME"
 
-# Ensure nix profile tools are discoverable for this non-interactive shell.
-{{ include ".chezmoitemplates/shell/source_nix_env.sh" }}
-if [[ -d "$HOME/.nix-profile/bin" ]]; then
-    export PATH="$HOME/.nix-profile/bin:$PATH"
+# Ensure aqua-managed CLIs are discoverable for this non-interactive shell.
+aqua_bin_dir="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
+if [[ -d "$aqua_bin_dir" ]]; then
+    export PATH="$aqua_bin_dir:$PATH"
 fi
 
 echo ":: [07] Installing mise tools"
 
-# Only use nix-installed mise — no aqua/other fallbacks.
-mise_cmd="$HOME/.nix-profile/bin/mise"
-if [[ ! -x "$mise_cmd" ]]; then
-    echo "    Skipped (mise not found in nix profile)"
+source_aqua_config="{{ joinPath .chezmoi.sourceDir "private_dot_config/aquaproj-aqua/aqua.yaml" }}"
+AQUA_CONFIG_PATH="$HOME/.config/aquaproj-aqua/aqua.yaml"
+if [[ -f "$AQUA_CONFIG_PATH" ]]; then
+    :
+elif [[ -f "$source_aqua_config" ]]; then
+    AQUA_CONFIG_PATH="$source_aqua_config"
+else
+    echo "    Skipped (aqua config not found)"
     exit 0
+fi
+
+export AQUA_GLOBAL_CONFIG="$AQUA_CONFIG_PATH"
+export AQUA_CONFIG="$AQUA_CONFIG_PATH"
+
+if ! grep -Eq '^[[:space:]]*-[[:space:]]+name:[[:space:]]+jdx/mise@' "$AQUA_CONFIG_PATH"; then
+    echo "    Error: jdx/mise is not configured in $AQUA_CONFIG_PATH"
+    exit 1
+fi
+
+mise_cmd="$aqua_bin_dir/mise"
+if [[ ! -x "$mise_cmd" ]]; then
+    echo "    Error: aqua-managed mise not found at $mise_cmd"
+    exit 1
+fi
+
+if ! "$mise_cmd" --version >/dev/null 2>&1; then
+    echo "    Error: aqua-managed mise failed to execute"
+    exit 1
 fi
 
 # Ensure mise shims are available in this non-interactive shell.
