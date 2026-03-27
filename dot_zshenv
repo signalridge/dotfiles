@@ -29,14 +29,14 @@ path_add_back() {
     PATH="${PATH:+$PATH:}$p"
 }
 
-# PATH order: real package managers first, aqua last.
+# PATH order: user dirs first, then aqua, then system package managers.
+AQUA_BIN_DIR="${AQUA_ROOT_DIR:-${XDG_DATA_HOME}/aquaproj-aqua}/bin"
+[[ -d "$AQUA_BIN_DIR" ]] && path_add_front "$AQUA_BIN_DIR"
+
 [[ -d "$HOME/.nix-profile/bin" ]] && path_add_front "$HOME/.nix-profile/bin"
 [[ -d "/opt/homebrew/bin" ]] && path_add_front "/opt/homebrew/bin"
 [[ -d "$HOME/.local/bin" ]] && path_add_front "$HOME/.local/bin"
 [[ -d "$HOME/bin" ]] && path_add_front "$HOME/bin"
-
-AQUA_BIN_DIR="${AQUA_ROOT_DIR:-${XDG_DATA_HOME}/aquaproj-aqua}/bin"
-[[ -d "$AQUA_BIN_DIR" ]] && path_add_back "$AQUA_BIN_DIR"
 
 # Never expose mise shims at .zshenv phase.
 export MISE_SHIMS_DIR="${MISE_DATA_DIR:-${XDG_DATA_HOME}/mise}/shims"
