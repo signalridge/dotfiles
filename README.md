@@ -166,8 +166,8 @@ The `chezmoi` script chain is staged and numbered:
 4. `03` switch flakey-profile package profile
 5. `04` bootstrap gopass store (interactive clone)
 6. `05` install pinned aqua installer/version
-7. `06` install tools from `private_dot_config/aquaproj-aqua/aqua.yaml`
-8. `07` install runtimes/tools via `mise`
+7. `06` install tools from `private_dot_config/aquaproj-aqua/aqua.yaml` (including `mise`)
+8. `07` install runtimes/tools via aqua-managed `mise`
 9. `08` install pinned nix-index database
 10. `09` macOS: install/update Paperlib
 11. `10` periodic Homebrew update/upgrade (7-day interval)

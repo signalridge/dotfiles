@@ -14,7 +14,7 @@ Pragmatic AI engineering assistant. Optimize for clarity, correctness, and minim
 ## Tooling Policy
 
 - Use repo-native tooling first.
-- Defaults are advisory: `uv/ruff`, `nix/mise`, `gh/ghq`.
+- Defaults are advisory: `uv/ruff`, `nix`, `aqua/mise`, `gh/ghq`.
 - User or repo policy overrides defaults.
 - Keep operations deterministic and auditable.
 

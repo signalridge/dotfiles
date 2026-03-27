@@ -18,13 +18,24 @@ eval_if_cmd_exists() {
 eval_if_mise_activate() {
     local mise_cmd=""
     local out=""
-    mise_cmd="$(command -v mise 2>/dev/null || true)"
-    [[ -n "$mise_cmd" ]] || return 0
+    local aqua_mise_cmd=""
+    local aqua_config_path=""
 
-    # Skip aqua proxy wrapper for missing commands (can spawn repeated failures).
-    case "$mise_cmd" in
-    */aquaproj-aqua/bin/mise) return 0 ;;
-    esac
+    aqua_mise_cmd="${AQUA_ROOT_DIR:-${XDG_DATA_HOME}/aquaproj-aqua}/bin/mise"
+    aqua_config_path="${XDG_CONFIG_HOME:-$HOME/.config}/aquaproj-aqua/aqua.yaml"
+    if [[ -n "${AQUA_GLOBAL_CONFIG:-}" ]]; then
+        aqua_config_path="${AQUA_GLOBAL_CONFIG%%:*}"
+    fi
+
+    if [[ -x "$aqua_mise_cmd" ]] &&
+        [[ -f "$aqua_config_path" ]] &&
+        grep -Eq '^[[:space:]]*-[[:space:]]+name:[[:space:]]+jdx/mise@' "$aqua_config_path"; then
+        mise_cmd="$aqua_mise_cmd"
+    else
+        mise_cmd="$(command -v mise 2>/dev/null || true)"
+    fi
+
+    [[ -n "$mise_cmd" ]] || return 0
 
     "$mise_cmd" --version >/dev/null 2>&1 || return 0
     out="$("$mise_cmd" activate zsh 2>/dev/null || true)"
