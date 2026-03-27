@@ -203,6 +203,6 @@ chmod 644 ~/.ssh/main.pub
 
 - `migrate-gopass-to-age.sh` - Initial migration script (current device)
 - `.chezmoiscripts/run_before_01_setup-encryption-key.sh.tmpl` - Restore/ensure encryption key
-- `.chezmoiscripts/run_onchange_after_04_setup-gopass.sh.tmpl` - Clone password store
+- `.chezmoiscripts/run_onchange_after_06_setup-gopass.sh.tmpl` - Clone password store
 - `private_dot_config/gopass/config.tmpl` - gopass configuration template
 - `.chezmoidata/gopass.yaml` - Repository URL configuration (optional)

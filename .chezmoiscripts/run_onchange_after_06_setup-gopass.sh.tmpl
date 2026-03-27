@@ -3,7 +3,13 @@
 # Prerequisites: age encryption key already restored by 01_setup-encryption-key.sh
 set -euo pipefail
 
-echo ":: [04] Setting up gopass password store"
+# Ensure aqua-managed CLIs are discoverable for this non-interactive shell.
+aqua_bin_dir="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
+if [[ -d "$aqua_bin_dir" ]]; then
+    export PATH="$aqua_bin_dir:$PATH"
+fi
+
+echo ":: [06] Setting up gopass password store"
 
 # Check if gopass store already exists
 if [[ -d ~/.local/share/gopass/stores/root ]]; then

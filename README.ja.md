@@ -164,9 +164,9 @@
 2. `01` 必要に応じて keys-manage 暗号化ファイルを復元（`useEncryption=true`）
 3. `02` macOS: nix-darwin 設定を適用
 4. `03` flakey-profile を切り替え
-5. `04` gopass ストアを初期化（対話式 clone）
-6. `05` ピン留め済みの aqua installer/aqua をインストール
-7. `06` `private_dot_config/aquaproj-aqua/aqua.yaml` に基づいてツール（`mise` を含む）を導入
+5. `04` ピン留め済みの aqua installer/aqua をインストール
+6. `05` `private_dot_config/aquaproj-aqua/aqua.yaml` に基づいてツール（`mise` を含む）を導入
+7. `06` gopass ストアを初期化（対話式 clone）
 8. `07` aqua が提供する `mise` でランタイム/ツールを導入
 9. `08` ピン留め済み nix-index DB を導入
 10. `09` macOS: Paperlib をインストール/更新

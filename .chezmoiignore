@@ -60,7 +60,7 @@ nix-config/modules/host-users.nix
 # ─────────────────────────────────────────────────────────────────────────────
 {{- if not .useEncryption }}
 .chezmoiscripts/01_setup-encryption-key.sh
-.chezmoiscripts/04_setup-gopass.sh
+.chezmoiscripts/06_setup-gopass.sh
 .ssh/*
 {{- end }}
 
