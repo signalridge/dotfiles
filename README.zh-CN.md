@@ -162,9 +162,9 @@
 2. `01` 可选恢复 keys-manage 加密文件（`useEncryption=true`）
 3. `02` macOS：应用 nix-darwin 系统配置
 4. `03` 切换 flakey-profile 包配置
-5. `04` 初始化 gopass store（交互式 clone）
-6. `05` 安装固定版本的 aqua installer/aqua
-7. `06` 根据 `private_dot_config/aquaproj-aqua/aqua.yaml` 安装工具（含 `mise`）
+5. `04` 安装固定版本的 aqua installer/aqua
+6. `05` 根据 `private_dot_config/aquaproj-aqua/aqua.yaml` 安装工具（含 `mise`）
+7. `06` 初始化 gopass store（交互式 clone）
 8. `07` 通过 aqua 提供的 `mise` 安装 runtime 与工具
 9. `08` 下载固定版本 nix-index 数据库
 10. `09` macOS：安装/更新 Paperlib

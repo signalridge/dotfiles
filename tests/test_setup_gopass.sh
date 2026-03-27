@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
-TMPL="$ROOT/.chezmoiscripts/run_onchange_after_04_setup-gopass.sh.tmpl"
+TMPL="$ROOT/.chezmoiscripts/run_onchange_after_06_setup-gopass.sh.tmpl"
 
 require_cmd() {
     command -v "$1" >/dev/null 2>&1
@@ -38,6 +38,8 @@ echo "dummy" >"$HOME/.ssh/main"
 
 BIN="$TMP_ROOT/bin"
 mkdir -p "$BIN"
+export AQUA_ROOT_DIR="$TMP_ROOT/aquaproj-aqua"
+mkdir -p "$AQUA_ROOT_DIR/bin"
 
 LOG="$TMP_ROOT/gopass.log"
 cat >"$BIN/gopass" <<'EOF'
@@ -74,6 +76,7 @@ case "$cmd" in
 esac
 EOF
 chmod +x "$BIN/gopass"
+ln -sf "$BIN/gopass" "$AQUA_ROOT_DIR/bin/gopass"
 
 export PATH="$BIN:$PATH"
 export GOPASS_TEST_LOG="$LOG"

@@ -34,12 +34,23 @@ assert_file_contains() {
     fi
 }
 
+assert_file_not_contains() {
+    local file="$1"
+    local unexpected="$2"
+    if grep -Fq "$unexpected" "$file"; then
+        echo "expected to not find: $unexpected" >&2
+        echo "--- $file ---" >&2
+        cat "$file" >&2
+        exit 1
+    fi
+}
+
 RENDERED="$TMP_ROOT/config.toml"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_codex/config.toml.tmpl" >"$RENDERED"
 
 assert_file_contains "$RENDERED" 'model = "gpt-5.4"'
 assert_file_contains "$RENDERED" 'model_reasoning_effort = "xhigh"'
-assert_file_contains "$RENDERED" 'service_tier = "flex"'
+assert_file_not_contains "$RENDERED" 'service_tier ='
 assert_file_contains "$RENDERED" 'fast_mode = false'
 
 echo "test_codex_config_rendering: OK"
