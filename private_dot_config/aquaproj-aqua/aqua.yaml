@@ -6,18 +6,18 @@ packages:
   - name: nektos/act@v0.2.86
   - name: FiloSottile/age@v1.3.1
   - name: asciinema/asciinema@v3.2.0
-  - name: atuinsh/atuin@v18.13.5
+  - name: atuinsh/atuin@v18.13.6
   - name: sharkdp/bat@v0.26.1
   - name: eth-p/bat-extras@v2024.08.24
     # aqua update can downgrade to v20200408 due semver ordering;
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.85
+  - name: anthropics/claude-code@v2.1.86
   - name: openai/codex@rust-v0.117.0
   - name: anomalyco/opencode@v1.3.3
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.3.10
+  - name: jdx/mise@v2026.3.17
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.19.1
   - name: Wilfred/difftastic@0.68.0
