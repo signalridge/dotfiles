@@ -1,11 +1,11 @@
 nix:
-  sysPkgs:
-    - git
+  sysPkgs: []
   homepkgs:
     shared:
       # texliveFull: temporarily disabled (90+ fmt derivations rebuild on every flake.lock update)
       # - "(texliveFull.withPackages (ps: with ps; [ ]))"
       - aria2
+      - git
       - certbot
       - dasel
       - dust
