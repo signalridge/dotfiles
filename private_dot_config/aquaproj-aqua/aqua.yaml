@@ -3,7 +3,7 @@ registries:
   - type: standard
     ref: v4.470.0 # renovate: depName=aquaproj/aqua-registry
 packages:
-  - name: nektos/act@v0.2.86
+  - name: nektos/act@v0.2.87
   - name: FiloSottile/age@v1.3.1
   - name: asciinema/asciinema@v3.2.0
   - name: atuinsh/atuin@v18.13.6
@@ -13,11 +13,11 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.88
-  - name: openai/codex@rust-v0.117.0
-  - name: anomalyco/opencode@v1.3.9
+  - name: anthropics/claude-code@v2.1.89
+  - name: openai/codex@rust-v0.118.0
+  - name: anomalyco/opencode@v1.3.13
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.3.17
+  - name: jdx/mise@v2026.3.18
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.68.0
@@ -36,7 +36,7 @@ packages:
   - name: jesseduffield/lazygit@v0.60.0
   - name: neovim/neovim@v0.12.0
   - name: LuaLS/lua-language-server@3.17.1
-  - name: tree-sitter/tree-sitter@v0.26.7
+  - name: tree-sitter/tree-sitter@v0.26.8
   - name: rclone/rclone@v1.73.3
   - name: o2sh/onefetch@2.27.1
   - name: ip7z/7zip@26.00
@@ -45,7 +45,7 @@ packages:
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.1.0
   - name: joshmedeski/sesh@v2.24.2
-  - name: skim-rs/skim@v4.2.0
+  - name: skim-rs/skim@v4.3.0
   - name: starship/starship@v1.24.2
   - name: JohnnyMorganz/StyLua@v2.4.0
   - name: Kampfkarren/selene@0.30.1
@@ -54,7 +54,7 @@ packages:
   - name: rhysd/actionlint@v1.7.12
   - name: golang.org/x/tools/gopls@v0.21.1
   - name: golangci/golangci-lint@v2.11.4
-  - name: goreleaser/goreleaser@v2.15.1
+  - name: goreleaser/goreleaser@v2.15.2
   - name: numtide/treefmt@v2.4.1
   - name: XAMPPRocky/tokei@14.0.0
   - name: dduan/tre@v0.4.0
