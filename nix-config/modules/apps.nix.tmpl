@@ -28,8 +28,8 @@
   homebrew = {
     enable = true;
     onActivation = {
-      autoUpdate = true; # Fetch the newest stable branch of Homebrew's git repo
-      upgrade = true; # Upgrade outdated casks, formulae, and App Store apps
+      autoUpdate = false; # Disabled: auto-update resets brew bundle state, breaking mas detection (Homebrew 5.1+)
+      upgrade = true; # Upgrade outdated casks and formulae (mas upgrade still fails due to root requirement on macOS 15.4+)
       # 'zap': uninstalls all formulae(and related files) not listed in the generated Brewfile
       cleanup = "zap";
     };
