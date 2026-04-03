@@ -13,11 +13,11 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.90
+  - name: anthropics/claude-code@v2.1.91
   - name: openai/codex@rust-v0.118.0
   - name: anomalyco/opencode@v1.3.13
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.4.0
+  - name: jdx/mise@v2026.4.1
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.68.0
@@ -45,7 +45,7 @@ packages:
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.1.0
   - name: joshmedeski/sesh@v2.24.2
-  - name: skim-rs/skim@v4.3.0
+  - name: skim-rs/skim@v4.4.0
   - name: starship/starship@v1.24.2
   - name: JohnnyMorganz/StyLua@v2.4.0
   - name: Kampfkarren/selene@0.30.1
