@@ -17,7 +17,7 @@ packages:
   - name: openai/codex@rust-v0.118.0
   - name: anomalyco/opencode@v1.3.13
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.4.1
+  - name: jdx/mise@v2026.4.3
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.68.0
@@ -35,7 +35,7 @@ packages:
   - name: casey/just@1.48.1
   - name: jesseduffield/lazygit@v0.60.0
   - name: neovim/neovim@v0.12.0
-  - name: LuaLS/lua-language-server@3.17.1
+  - name: LuaLS/lua-language-server@3.18.0
   - name: tree-sitter/tree-sitter@v0.26.8
   - name: rclone/rclone@v1.73.3
   - name: o2sh/onefetch@2.27.1
