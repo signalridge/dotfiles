@@ -55,7 +55,6 @@ homebrew:
       - balenaetcher
       - bob-app
       - discord
-      - grammarly-desktop
       - iina # video player
       - logseq
       - notion-calendar
