@@ -278,7 +278,6 @@ Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期さ�
 
 - [wshobson/agents](https://github.com/wshobson/agents)
 - [anthropics/skills](https://github.com/anthropics/skills)
-- [obra/superpowers](https://github.com/obra/superpowers)
 - 多言語 Humanizer コミュニティパック（`humanizer-en`、`stop-slop-en`、`humanizer-zh`、`humanizer-ja`）
 
 同期先は `~/.agents/skills` で、Claude/Codex/OpenCode のすべてで利用します。
@@ -371,7 +370,6 @@ OpenCode の key レンダリングは `provider@private` 命名（例: `harui@p
 
 - `wshobson/agents`
 - `anthropics/skills`
-- `obra/superpowers`
 - 多言語 Humanizer コミュニティソース（`humanizer-en`、`stop-slop-en`、`humanizer-zh`、`humanizer-ja`）
 
 同期先は `~/.agents/skills` で、Claude/Codex/OpenCode のすべてで利用します。
@@ -569,7 +567,6 @@ chezmoi init --apply --promptBool headless=true signalridge
 - [flakey-profile](https://github.com/lf-/flakey-profile) - クロスプラットフォーム Nix プロファイル管理
 - [wshobson/agents](https://github.com/wshobson/agents) - Claude Code 向けプラグイン集
 - [anthropics/skills](https://github.com/anthropics/skills) - 公式 Claude Code スキル集
-- [obra/superpowers](https://github.com/obra/superpowers) - 高度なワークフローパターン
 - [Dracula Theme](https://draculatheme.com/) - ターミナル / fzf テーマのベース
 
 ---

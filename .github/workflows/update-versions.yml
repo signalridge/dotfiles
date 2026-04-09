@@ -36,8 +36,6 @@ jobs:
 
           claude_wshobson_agents_rev=$(gh api repos/wshobson/agents/commits/main -q '.sha')
           claude_wshobson_agents_sha256=$(curl_sha256 "https://github.com/wshobson/agents/archive/${claude_wshobson_agents_rev}.tar.gz")
-          claude_superpowers_rev=$(gh api repos/obra/superpowers/commits/main -q '.sha')
-          claude_superpowers_sha256=$(curl_sha256 "https://github.com/obra/superpowers/archive/${claude_superpowers_rev}.tar.gz")
           claude_anthropics_skills_rev=$(gh api repos/anthropics/skills/commits/main -q '.sha')
           claude_anthropics_skills_sha256=$(curl_sha256 "https://github.com/anthropics/skills/archive/${claude_anthropics_skills_rev}.tar.gz")
           ui_ux_pro_max_skill_rev=$(gh api repos/nextlevelbuilder/ui-ux-pro-max-skill/commits/main -q '.sha')
@@ -70,8 +68,6 @@ jobs:
             echo "paperlib=$paperlib"
             echo "claude_wshobson_agents_rev=$claude_wshobson_agents_rev"
             echo "claude_wshobson_agents_sha256=$claude_wshobson_agents_sha256"
-            echo "claude_superpowers_rev=$claude_superpowers_rev"
-            echo "claude_superpowers_sha256=$claude_superpowers_sha256"
             echo "claude_anthropics_skills_rev=$claude_anthropics_skills_rev"
             echo "claude_anthropics_skills_sha256=$claude_anthropics_skills_sha256"
             echo "ui_ux_pro_max_skill_rev=$ui_ux_pro_max_skill_rev"
@@ -105,8 +101,6 @@ jobs:
           sed -i 's/paperlib: .*/paperlib: ${{ steps.versions.outputs.paperlib }}/' .chezmoidata/versions.yaml
           sed -i 's/claudeWshobsonAgentsRev: .*/claudeWshobsonAgentsRev: ${{ steps.versions.outputs.claude_wshobson_agents_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/claudeWshobsonAgentsSha256: .*/claudeWshobsonAgentsSha256: ${{ steps.versions.outputs.claude_wshobson_agents_sha256 }}/' .chezmoidata/versions.yaml
-          sed -i 's/claudeSuperpowersRev: .*/claudeSuperpowersRev: ${{ steps.versions.outputs.claude_superpowers_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/claudeSuperpowersSha256: .*/claudeSuperpowersSha256: ${{ steps.versions.outputs.claude_superpowers_sha256 }}/' .chezmoidata/versions.yaml
           sed -i 's/claudeAnthropicsSkillsRev: .*/claudeAnthropicsSkillsRev: ${{ steps.versions.outputs.claude_anthropics_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/claudeAnthropicsSkillsSha256: .*/claudeAnthropicsSkillsSha256: ${{ steps.versions.outputs.claude_anthropics_skills_sha256 }}/' .chezmoidata/versions.yaml
           sed -i 's/uiUxProMaxSkillRev: .*/uiUxProMaxSkillRev: ${{ steps.versions.outputs.ui_ux_pro_max_skill_rev }}/' .chezmoidata/versions.yaml

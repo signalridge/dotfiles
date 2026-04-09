@@ -11,8 +11,6 @@ versions:
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: 03d0b4b9eb4d57bd961aa252a56025daa21543e6
   claudeWshobsonAgentsSha256: 1eedcac81f0bcbbf74600c2dd0bfafd2a1164b92d38592b2b701274c263515ac
-  claudeSuperpowersRev: 917e5f53b16b115b70a3a355ed5f4993b9f8b73d
-  claudeSuperpowersSha256: c3afdd43c29e377632d54e617f804aa4596e157c8b82bbc4a355a8246e18164e
   claudeAnthropicsSkillsRev: ca1e7dc13c0ab5e2dfaa6de71991cd951b8f1cf2
   claudeAnthropicsSkillsSha256: 93d6fb77b8b9dc8e36df0ac65016de204f0248e5d1c4c0d5e13b3d0763c09d4a
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35

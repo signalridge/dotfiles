@@ -79,7 +79,5 @@ delete, drop, truncate, migrate
 
 This document is the Single Source of Truth (SSOT) for guardrails. Referenced by:
 
-- `CLAUDE.md` - Collaboration Model section
-- `coding-philosophy.md` - ALWAYS rules
-- `security-scanning` plugin - security review skills
+- `CLAUDE.md` - Guardrails & Boundaries section
 - `settings.json` - deny permissions
