@@ -5,7 +5,6 @@ Plan a feature or task with clear structure before coding.
 ## When to Use
 
 - Direct changes where you want a lightweight implementation plan.
-- Direct changes where you want a more structured planning workflow via Superpowers `writing-plans`.
 - Any time the scope is still fuzzy and you want to clarify goal/DoD.
 
 ## Framework: Goal → Constraints → Definition of Done
@@ -64,14 +63,6 @@ Pick the next command to run:
 - `/context` when you need entrypoints, dependencies, or conventions
 - `/review` when the change touches auth/permissions/tokens/secrets
 - `/test` when doing TDD or validating an assumption
-- `superpowers:writing-plans` when you need a structured, detailed execution plan
-- `superpowers:brainstorming` when you need option exploration before committing to one plan
-
-## Related Skills
-
-- `superpowers:brainstorming`
-- `superpowers:writing-plans`
-- `superpowers:executing-plans`
 
 ## Output Format
 

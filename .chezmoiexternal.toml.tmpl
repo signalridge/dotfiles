@@ -56,31 +56,6 @@
 {{- end }}
 
 # ------------------------------------------------------------------------------
-# obra/superpowers (skills only)
-# - Curated skill list
-# - Hardcoded skill list
-# ------------------------------------------------------------------------------
-[".agents/skills/superpowers"]
-    type = "archive"
-    url = "https://github.com/obra/superpowers/archive/{{ $.versions.claudeSuperpowersRev }}.tar.gz"
-    checksum.sha256 = "{{ $.versions.claudeSuperpowersSha256 }}"
-    exact = true
-    stripComponents = 2
-    include = [
-      "superpowers-*/skills/brainstorming/**",
-      "superpowers-*/skills/writing-plans/**",
-      "superpowers-*/skills/executing-plans/**",
-      "superpowers-*/skills/test-driven-development/**",
-      "superpowers-*/skills/using-git-worktrees/**",
-      "superpowers-*/skills/finishing-a-development-branch/**",
-      "superpowers-*/skills/systematic-debugging/**",
-      "superpowers-*/skills/verification-before-completion/**",
-      "superpowers-*/skills/requesting-code-review/**",
-      "superpowers-*/skills/receiving-code-review/**"
-    ]
-    refreshPeriod = "168h"
-
-# ------------------------------------------------------------------------------
 # anthropics/skills (source-available, NOT open source)
 # License: https://github.com/anthropics/skills - see LICENSE.txt in each skill
 # Skills go to .agents/skills/anthropics/{skill}/ (Shared)
