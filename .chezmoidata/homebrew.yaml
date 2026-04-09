@@ -21,7 +21,6 @@ homebrew:
       - mas # Required for masApps installation
   casks:
     shared:
-      - conductor # Claude code parallelisation
       - cmux
       - dockdoor
       - visual-studio-code
