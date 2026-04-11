@@ -1,53 +1,12 @@
 {{- /*
-  aichat config - cloud API only.
-
-  API keys live at gopass path `claude/<provider>/private/api_key`, matching
-  the layout claude-token/claude-with already use. Providers without a key
-  are silently skipped so a fresh machine with no gopass entries still gets
-  a valid config.
-
-  All gopass lookups happen in a single sh invocation at template-render
-  time (one shell fork, one gopass tree walk) instead of one fork per
-  provider — `chezmoi apply` stays snappy even with a cold gpg-agent.
-
-  Default model is naapi's Claude passthrough so `?` / `aichat` keep
-  working even when native Anthropic OAuth isn't available. Switch with
-  `.model <client>:<name>` inside the REPL or `aichat -m ...`.
+  aichat config — kimi + doubao (火山) only.
+  API keys: gopass `claude/{kimi,doubao}/private/api_key`. Missing keys are
+  silently skipped so `chezmoi apply` still works on a fresh machine.
 */ -}}
-{{- $providers := dict
-    "naapi"    (dict "base" "https://na.wanxiaot.com/v1"                         "models" (list "claude-opus-4-6" "claude-sonnet-4-5-20250929" "gpt-5.3-codex" "gpt-5.2-codex"))
-    "deepseek" (dict "base" "https://api.deepseek.com/v1"                        "models" (list "deepseek-chat" "deepseek-reasoner"))
-    "kimi"     (dict "base" "https://api.moonshot.ai/v1"                         "models" (list "kimi-k2.5" "kimi-k2"))
-    "glm"      (dict "base" "https://open.bigmodel.cn/api/paas/v4"               "models" (list "glm-4.7" "glm-4.5-air"))
-    "qwen"     (dict "base" "https://dashscope.aliyuncs.com/compatible-mode/v1"  "models" (list "qwen3-coder-plus" "qwen3-max" "qwen-flash"))
-    "minimax"  (dict "base" "https://api.minimax.io/v1"                          "models" (list "MiniMax-M2.1"))
-    "doubao"   (dict "base" "https://ark.cn-beijing.volces.com/api/v3"           "models" (list "ark-code-latest"))
-    "harui"    (dict "base" "https://codex.harui.edu.kg/v1"                      "models" (list "gpt-5.3-codex" "gpt-5.2-codex"))
--}}
-{{- /*
-  One sh call fetches every key — `printf` guarantees one line per provider
-  (missing entries become empty strings), so we can zip the output back to
-  $names by index. `gopass list -f` can't be used as a presence check
-  because it exits 0 on empty matches; instead we attempt `gopass show`
-  and let its non-zero exit become the empty fallback.
-*/ -}}
-{{- $names := list "naapi" "deepseek" "kimi" "glm" "qwen" "minimax" "doubao" "harui" -}}
-{{- $script := "command -v gopass >/dev/null 2>&1 || { for p in naapi deepseek kimi glm qwen minimax doubao harui; do printf '\\n'; done; exit 0; }; for p in naapi deepseek kimi glm qwen minimax doubao harui; do v=$(gopass show --password \"claude/$p/private/api_key\" 2>/dev/null | head -n 1 || true); printf '%s\\n' \"$v\"; done" -}}
-{{- $raw := output "sh" "-c" $script -}}
-{{- $lines := splitList "\n" (trimSuffix "\n" $raw) -}}
-{{- $keys := dict -}}
-{{- range $i, $name := $names -}}
-{{-   $_ := set $keys $name (index $lines $i | default "") -}}
-{{- end -}}
+{{- $kimi := output "sh" "-c" "gopass show --password claude/kimi/private/api_key 2>/dev/null | head -n1 || true" | trim -}}
+{{- $doubao := output "sh" "-c" "gopass show --password claude/doubao/private/api_key 2>/dev/null | head -n1 || true" | trim -}}
 # Managed by chezmoi. Edit the template, not this file.
-#
-# Usage:
-#   aichat                         # REPL
-#   aichat "why is the sky blue"   # one-shot
-#   aichat -e "find large files"   # generate shell command (bound to Alt-e)
-#   .model naapi:claude-opus-4-6   # switch model inside REPL
-#
-model: naapi:claude-opus-4-6
+model: kimi:kimi-k2.5
 temperature: 0.3
 save: true
 save_session: null
@@ -57,17 +16,20 @@ wrap: auto
 highlight: true
 
 clients:
-{{- range $name := $names }}
-{{-   $key := index $keys $name }}
-{{-   if ne $key "" }}
-{{-     $cfg := index $providers $name }}
+{{- if ne $kimi "" }}
   - type: openai-compatible
-    name: {{ $name }}
-    api_base: {{ $cfg.base }}
-    api_key: {{ $key | quote }}
+    name: kimi
+    api_base: https://api.moonshot.ai/v1
+    api_key: {{ $kimi | quote }}
     models:
-{{-     range $m := $cfg.models }}
-      - name: {{ $m }}
-{{-     end }}
-{{-   end }}
+      - name: kimi-k2.5
+      - name: kimi-k2
+{{- end }}
+{{- if ne $doubao "" }}
+  - type: openai-compatible
+    name: doubao
+    api_base: https://ark.cn-beijing.volces.com/api/v3
+    api_key: {{ $doubao | quote }}
+    models:
+      - name: ark-code-latest
 {{- end }}
