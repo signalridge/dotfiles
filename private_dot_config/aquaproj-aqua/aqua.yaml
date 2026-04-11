@@ -7,6 +7,7 @@ packages:
   - name: FiloSottile/age@v1.3.1
   - name: asciinema/asciinema@v3.2.0
   - name: atuinsh/atuin@v18.13.6
+  - name: sigoden/aichat@v0.30.0
   - name: sharkdp/bat@v0.26.1
   - name: eth-p/bat-extras@v2024.08.24
     # aqua update can downgrade to v20200408 due semver ordering;
@@ -32,6 +33,7 @@ packages:
   - name: git-lfs/git-lfs@v3.7.1
   - name: charmbracelet/glow@v2.1.2
   - name: jqlang/jq@jq-1.8.1
+  - name: ynqa/jnv@v0.7.1
   - name: casey/just@1.49.0
   - name: jesseduffield/lazygit@v0.61.0
   - name: neovim/neovim@v0.12.1
