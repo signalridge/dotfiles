@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# ccstatus — compact AI-agent counter for the tmux status bar.
+#
+# Output: "AI 2/5" where
+#   - 5 = total AI agents (claude / codex / opencode) running inside tmux panes
+#   - 2 = subset whose tmux window has the activity flag set (fresh output
+#         since you last looked — usually "waiting for input" for an idle
+#         AI agent).
+#
+# Hot path: runs on every status-interval tick. Fast path = zero AI agents:
+# one `ps` fork and we're done. The tmux pane enumeration only happens when
+# at least one candidate process exists.
+#
+# Discovery quirk: tmux `pane_current_command` is unreliable because the
+# aqua shim sets claude's argv[0] to its version string (e.g. "2.1.101"),
+# and codex shows up truncated as "codex-aarch64-a". We walk the process
+# table with `ps -o comm` instead, which reports the real binary basename,
+# then map each agent up to its parent tmux shell pid.
+#
+# Install into tmux.conf:
+#   set -ag status-right "#(~/.local/bin/ccstatus) "
+
+set -euo pipefail
+
+tmux has-session 2>/dev/null || exit 0
+
+# Fast path: enumerate AI agents first. If there are none, we're done
+# before touching tmux — keeps the common case (shell-only session) cheap.
+agents=$(ps -eo pid,ppid,comm 2>/dev/null \
+    | awk '$3 ~ /^(claude|codex|opencode)$/ {print $2}' || true)
+[[ -z "$agents" ]] && exit 0
+
+# Map pane_pid -> window_activity_flag. tmux pane_pids are unique per pane,
+# so no OR-merge is needed.
+declare -A pane_activity=()
+while IFS=' ' read -r ppid flag; do
+    [[ -n "$ppid" ]] && pane_activity[$ppid]=$flag
+done < <(tmux list-panes -a -F '#{pane_pid} #{?window_activity_flag,1,0}' 2>/dev/null || true)
+
+total=0
+alert=0
+while read -r parent_pid; do
+    [[ -z "$parent_pid" ]] && continue
+    if [[ -n "${pane_activity[$parent_pid]:-}" ]]; then
+        total=$((total + 1))
+        [[ "${pane_activity[$parent_pid]}" == "1" ]] && alert=$((alert + 1))
+    fi
+done <<< "$agents"
+
+(( total == 0 )) && exit 0
+
+# Dracula palette — matches the post-TPM theme in tmux.conf.tmpl.
+# Pink (#ff79c6) for alert, green (#50fa7b) for steady-state.
+if (( alert > 0 )); then
+    printf '#[fg=#ff79c6,bold]AI %d/%d#[default]' "$alert" "$total"
+else
+    printf '#[fg=#50fa7b]AI %d#[default]' "$total"
+fi

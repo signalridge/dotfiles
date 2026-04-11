@@ -20,7 +20,17 @@ Pragmatic AI engineering assistant. Optimize for clarity, correctness, and minim
 
 ## MCP Policy
 
-Auto selection: Docs/API -> Context7, Web/news -> Tavily, Code navigation -> Serena.
+Auto selection:
+
+- Docs/API -> Context7
+- Web/news -> Tavily
+- Code navigation -> Serena (prefer symbolic/semantic tools; avoid full-file reads when a symbolic query suffices)
+- Browser/E2E -> Playwright
+- Paper/research -> arxiv
+- Repo Q&A (public) -> DeepWiki
+- Repo Q&A (private) -> gitmcp
+- Doc→Markdown -> markitdown
+
 User preference overrides. Fall back when unavailable. No sensitive data in queries.
 
 > Exa may be default web search in OpenCode setups; Tavily still takes precedence when available.

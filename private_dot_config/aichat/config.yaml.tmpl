@@ -1,0 +1,35 @@
+{{- /*
+  aichat config — kimi + doubao (火山) only.
+  API keys: gopass `claude/{kimi,doubao}/private/api_key`. Missing keys are
+  silently skipped so `chezmoi apply` still works on a fresh machine.
+*/ -}}
+{{- $kimi := output "sh" "-c" "gopass show --password claude/kimi/private/api_key 2>/dev/null | head -n1 || true" | trim -}}
+{{- $doubao := output "sh" "-c" "gopass show --password claude/doubao/private/api_key 2>/dev/null | head -n1 || true" | trim -}}
+# Managed by chezmoi. Edit the template, not this file.
+model: kimi:kimi-k2.5
+temperature: 0.3
+save: true
+save_session: null
+keybindings: emacs
+editor: ${EDITOR:-nvim}
+wrap: auto
+highlight: true
+
+clients:
+{{- if ne $kimi "" }}
+  - type: openai-compatible
+    name: kimi
+    api_base: https://api.moonshot.ai/v1
+    api_key: {{ $kimi | quote }}
+    models:
+      - name: kimi-k2.5
+      - name: kimi-k2
+{{- end }}
+{{- if ne $doubao "" }}
+  - type: openai-compatible
+    name: doubao
+    api_base: https://ark.cn-beijing.volces.com/api/v3
+    api_key: {{ $doubao | quote }}
+    models:
+      - name: ark-code-latest
+{{- end }}

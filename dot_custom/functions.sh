@@ -1138,3 +1138,132 @@ ccp() {
         return 1
     fi
 }
+
+# ─────────────────────────────────────────────────────────────
+# ccnew / ccdone — claude + worktree + dedicated tmux session
+# ─────────────────────────────────────────────────────────────
+# One branch == one worktree == one tmux session. Builds on the wt-*
+# helpers above; see `wt-new --help` for the underlying semantics.
+
+_cc_session_name() {
+    local repo="$1" branch="$2"
+    # Disambiguate across same-named repos under different owners (common in
+    # ghq layouts: ~/ghq/github.com/acme/slipway vs .../signalridge/slipway).
+    # Use owner-basename(repo)-branch, then collapse tmux-unsafe chars.
+    local owner base
+    base="$(basename "$repo")"
+    owner="$(basename "$(dirname "$repo")")"
+    printf '%s' "${owner}-${base}-${branch}" | tr './: ' '----'
+}
+
+# Usage: ccnew <branch> [base-ref]
+ccnew() {
+    local branch="${1:-}"
+    local base="${2:-}"
+
+    if [[ -z "$branch" ]]; then
+        echo "Usage: ccnew <branch> [base-ref]"
+        return 1
+    fi
+    if ! command -v claude >/dev/null 2>&1; then
+        echo "Claude Code not installed"
+        return 1
+    fi
+
+    local repo
+    repo="$(_wt_repo_root)" || {
+        echo "Not in a git repository"
+        return 1
+    }
+
+    wt-new "$branch" "$base" || return 1
+
+    local target="$PWD"
+    local session
+    session="$(_cc_session_name "$repo" "$branch")"
+
+    if ! command -v tmux >/dev/null 2>&1; then
+        claude
+        return $?
+    fi
+
+    if ! tmux has-session -t "$session" 2>/dev/null; then
+        tmux new-session -d -s "$session" -c "$target"
+        tmux send-keys -t "$session" 'claude' C-m
+    fi
+
+    if [[ -n "${TMUX:-}" ]]; then
+        tmux switch-client -t "$session"
+    else
+        tmux attach-session -t "$session"
+    fi
+}
+
+# Usage: ccdone <branch> [--force]
+ccdone() {
+    if [[ -z "${1:-}" ]]; then
+        echo "Usage: ccdone <branch> [--force]"
+        return 1
+    fi
+
+    local branch="$1"
+    shift
+
+    local repo
+    repo="$(_wt_repo_root)" || {
+        echo "Not in a git repository"
+        return 1
+    }
+
+    local session
+    session="$(_cc_session_name "$repo" "$branch")"
+
+    # Refuse upfront if we'd need to kill the session we're attached to —
+    # otherwise the user gets bounced out of their shell mid-command.
+    if [[ -n "${TMUX:-}" ]] && command -v tmux >/dev/null 2>&1 &&
+        tmux has-session -t "$session" 2>/dev/null &&
+        [[ "$(tmux display-message -p '#S')" == "$session" ]]; then
+        echo "Refusing to kill the session you're attached to: $session"
+        echo "Detach first (prefix + d) then re-run ccdone."
+        return 1
+    fi
+
+    # Remove the worktree FIRST. A dirty/untracked worktree makes
+    # `git worktree remove` fail — we don't want to have torn down the
+    # claude session before discovering that, or the user loses their
+    # running agent for nothing.
+    wt-rm "$branch" "$@" || return $?
+
+    if command -v tmux >/dev/null 2>&1 && tmux has-session -t "$session" 2>/dev/null; then
+        tmux kill-session -t "$session"
+    fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# aichat shell integration
+# ─────────────────────────────────────────────────────────────────────────────
+# `?` invokes aichat for a one-shot question (`? why does tar -xzf fail...`).
+# Alt-e runs the current prompt buffer through `aichat -e` to translate
+# natural language into a shell command in place:
+#     find all files larger than 1G under /var<Alt-e>
+if command -v aichat >/dev/null 2>&1; then
+    # Function (not alias) so it works inside $(), eval, etc. and isn't
+    # shadowed by zsh's `?` glob metacharacter in non-command positions.
+    # Defined via eval because shellcheck/shfmt (bash parsers) reject the
+    # quoted-name function syntax even though zsh accepts it.
+    eval "'?'() { aichat \"\$@\"; }"
+
+    _aichat_zsh_widget() {
+        [[ -z "$BUFFER" ]] && return
+        local out
+        out="$(aichat -e "$BUFFER" 2>/dev/null)"
+        if [[ -n "$out" ]]; then
+            BUFFER="$out"
+            # shellcheck disable=SC2034  # CURSOR is used by zle
+            CURSOR=${#BUFFER}
+            zle reset-prompt
+        fi
+    }
+    zle -N _aichat_zsh_widget
+    bindkey '\ee' _aichat_zsh_widget
+fi
