@@ -13,11 +13,11 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.98
-  - name: openai/codex@rust-v0.118.0
-  - name: anomalyco/opencode@v1.4.2
+  - name: anthropics/claude-code@v2.1.101
+  - name: openai/codex@rust-v0.119.0
+  - name: anomalyco/opencode@v1.4.3
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.4.7
+  - name: jdx/mise@v2026.4.8
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.68.0
