@@ -252,11 +252,12 @@ set -g @tmux2k-prefix-highlight '#f5c2e7'
 
 # Plugin layout
 set -g @tmux2k-left-plugins "session"
-set -g @tmux2k-right-plugins "git"
+set -g @tmux2k-right-plugins "git ai"
 
 # Per-module colors: "bg fg" - Dracula + Catppuccin pastel scheme
 set -g @tmux2k-session-colors "purple text"
 set -g @tmux2k-git-colors "light_blue text"
+set -g @tmux2k-ai-colors "pink text"
 
 # Window list: soft blue accent
 set -g @tmux2k-window-list-colors "black blue"
@@ -367,19 +368,6 @@ set -g window-status-bell-style "fg=#282a36,bg=#f1fa8c"
 set -g copy-mode-match-style "fg=#282a36,bg=#f1fa8c"
 set -g copy-mode-current-match-style "fg=#282a36,bg=#ffb86c,bold"
 set -g copy-mode-mark-style "fg=#282a36,bg=#ff79c6"
-
-# -- AI agent counter in status-right -----------------------------------------
-# ccstatus short-circuits on zero AI agents, so this is invisible on plain
-# shell sessions. 10s refresh keeps the alert flag responsive; ccstatus
-# itself is cheap (one ps fork in the common case).
-#
-# Reload-idempotent: `prefix + r` re-sources this file but TPM does NOT
-# re-run tmux2k, so a naive `set -ag` would accumulate ccstatus on every
-# reload. Strip any prior occurrence first, then re-append. `##(` is the
-# tmux-config escape for a literal `#(` so the format sequence survives
-# run-shell's own argument parsing.
-set -g status-interval 10
-run-shell 'cur=$(tmux show-options -gv status-right 2>/dev/null); cur=$(printf "%s" "$cur" | sed "s| *##(~/\\.local/bin/ccstatus)||g"); tmux set -g status-right "${cur} ##(~/.local/bin/ccstatus)"'
 
 # -- Popup & Menu (tmux 3.4+) --------------------------------------------------
 set -g popup-style "fg=#f8f8f2,bg=#282a36"
