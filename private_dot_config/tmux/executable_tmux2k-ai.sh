@@ -18,7 +18,9 @@ source "$current_dir/../lib/utils.sh"
 ai_icon=$(get_tmux_option "@tmux2k-ai-icon" "󰚩")
 
 main() {
-    local session="${1:-}"
+    # $1 = tmux target window, e.g. "ws-7:3" (session:window_index).
+    # Passed via #{session_name}:#{window_index} in the tmux format string.
+    local target="${1:-}"
 
     tmux has-session 2>/dev/null || return
 
@@ -29,12 +31,11 @@ main() {
         awk '$3 ~ /^(claude|codex|opencode)$/ {print $2}' || true)
     [[ -z "$agents" ]] && return
 
-    # Map pane_pid → window_activity_flag for this session only.
-    # When called with a session name (passed via #{session_name} in the
-    # tmux format string), counts are scoped to that session.
-    # Without it, falls back to all sessions (-a).
+    # Map pane_pid for the current window only.
+    # list-panes -t "session:window" returns panes of that single window,
+    # so the counter is scoped to what the user is actually looking at.
     local list_args=(-a)
-    [[ -n "$session" ]] && list_args=(-s -t "$session")
+    [[ -n "$target" ]] && list_args=(-t "$target")
 
     declare -A pane_activity=()
     while IFS=' ' read -r ppid flag; do
