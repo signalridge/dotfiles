@@ -18,10 +18,6 @@ source "$current_dir/../lib/utils.sh"
 ai_icon=$(get_tmux_option "@tmux2k-ai-icon" "󰚩")
 
 main() {
-    # $1 = tmux target window, e.g. "ws-7:3" (session:window_index).
-    # Passed via #{session_name}:#{window_index} in the tmux format string.
-    local target="${1:-}"
-
     tmux has-session 2>/dev/null || return
 
     # Fast path: find AI agent processes by real binary name.
@@ -31,16 +27,11 @@ main() {
         awk '$3 ~ /^(claude|codex|opencode)$/ {print $2}' || true)
     [[ -z "$agents" ]] && return
 
-    # Map pane_pid for the current window only.
-    # list-panes -t "session:window" returns panes of that single window,
-    # so the counter is scoped to what the user is actually looking at.
-    local list_args=(-a)
-    [[ -n "$target" ]] && list_args=(-t "$target")
-
+    # Map pane_pid → window_activity_flag across all sessions.
     declare -A pane_activity=()
     while IFS=' ' read -r ppid flag; do
         [[ -n "$ppid" ]] && pane_activity[$ppid]=$flag
-    done < <(tmux list-panes "${list_args[@]}" -F '#{pane_pid} #{?window_activity_flag,1,0}' 2>/dev/null || true)
+    done < <(tmux list-panes -a -F '#{pane_pid} #{?window_activity_flag,1,0}' 2>/dev/null || true)
 
     local total=0 alert=0
     while read -r parent_pid; do
@@ -61,4 +52,4 @@ main() {
     echo "$ai_icon $dots"
 }
 
-main "$@"
+main
