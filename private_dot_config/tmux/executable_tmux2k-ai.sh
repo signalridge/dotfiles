@@ -7,7 +7,7 @@
 #
 # Display:
 #   No agents  → (empty — segment hidden)
-#   In AI win  → "󰚩 ◆●○"  (◆ = this window, ● = other active, ○ = idle)
+#   In AI win  → "󰚩 ●◆○"  (◆ at this agent's position among all agents)
 #   In shell   → "󰚩 ●●○"  (no ◆ — current window has no agent)
 #
 # Deployed by chezmoi to ~/.config/tmux/tmux2k-ai.sh, then symlinked
@@ -33,11 +33,11 @@ main() {
         awk '$3 ~ /^(claude|codex|opencode)$/ {print $2}' || true)
     [[ -z "$agents" ]] && return
 
-    # Map pane_pid → window_activity (absolute unix timestamp).
-    declare -A pane_ts=()
-    while IFS=' ' read -r ppid ts; do
-        [[ -n "$ppid" ]] && pane_ts[$ppid]=$ts
-    done < <(tmux list-panes -a -F '#{pane_pid} #{window_activity}' 2>/dev/null || true)
+    # Build a set of AI agent parent PIDs for quick lookup.
+    declare -A agent_set=()
+    while read -r parent_pid; do
+        [[ -n "$parent_pid" ]] && agent_set[$parent_pid]=1
+    done <<<"$agents"
 
     # Collect current window's pane PIDs for the ◆ marker.
     declare -A current_panes=()
@@ -47,28 +47,22 @@ main() {
         done < <(tmux list-panes -t "$target" -F '#{pane_pid}' 2>/dev/null || true)
     fi
 
-    local now current=0 active=0 idle=0
+    # Walk panes in tmux's natural order (stable across refreshes).
+    # Each AI agent gets a fixed position; ◆ appears at the right slot.
+    local now dots=""
     now=$(date +%s)
-
-    while read -r parent_pid; do
-        [[ -n "${pane_ts[$parent_pid]:-}" ]] || continue
-        if [[ -n "${current_panes[$parent_pid]:-}" ]]; then
-            current=$((current + 1))
-        elif ((now - pane_ts[$parent_pid] < activity_threshold)); then
-            active=$((active + 1))
+    while IFS=' ' read -r ppid ts; do
+        [[ -n "${agent_set[$ppid]:-}" ]] || continue
+        if [[ -n "${current_panes[$ppid]:-}" ]]; then
+            dots+="◆"
+        elif ((now - ts < activity_threshold)); then
+            dots+="●"
         else
-            idle=$((idle + 1))
+            dots+="○"
         fi
-    done <<<"$agents"
+    done < <(tmux list-panes -a -F '#{pane_pid} #{window_activity}' 2>/dev/null || true)
 
-    local total=$((current + active + idle))
-    ((total == 0)) && return
-
-    # ◆ = this window's agent, ● = other active, ○ = other idle
-    local dots="" i
-    for ((i = 0; i < current; i++)); do dots+="◆"; done
-    for ((i = 0; i < active; i++)); do dots+="●"; done
-    for ((i = 0; i < idle; i++)); do dots+="○"; done
+    [[ -z "$dots" ]] && return
     echo "$ai_icon $dots"
 }
 
