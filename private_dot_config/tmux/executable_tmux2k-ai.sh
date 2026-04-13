@@ -6,8 +6,8 @@
 #
 # Display:
 #   No agents  → (empty — segment hidden)
-#   All quiet  → "󰚩 3"      (3 agents, no new output)
-#   Has alerts → "󰚩 2/5"    (2 of 5 agents have unseen output)
+#   All quiet  → "󰚩 ○○○"   (3 agents, no new output)
+#   Has alerts → "󰚩 ●○○"   (1 of 3 agents has unseen output)
 #
 # Deployed by chezmoi to ~/.config/tmux/tmux2k-ai.sh, then symlinked
 # into the tmux2k plugins dir by run_after_12_sync-tmux2k-ai.sh.
@@ -44,11 +44,12 @@ main() {
 
     ((total == 0)) && return
 
-    if ((alert > 0)); then
-        echo "$ai_icon $alert/$total"
-    else
-        echo "$ai_icon $total"
-    fi
+    # Build dot indicators: ● = has new output, ○ = idle
+    local dots=""
+    local i
+    for ((i = 0; i < alert; i++)); do dots+="●"; done
+    for ((i = 0; i < total - alert; i++)); do dots+="○"; done
+    echo "$ai_icon $dots"
 }
 
 main
