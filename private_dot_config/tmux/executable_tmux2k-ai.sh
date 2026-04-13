@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # tmux2k ai plugin — AI agent counter for the status bar.
 #
-# Shows the number of AI coding agents (claude/codex/opencode) running in
-# tmux panes. When no agents exist, outputs nothing (segment collapses).
+# Shows the total number of AI coding agents (claude/codex/opencode)
+# running inside tmux panes. When none exist, outputs nothing.
+# Activity-level alerts are left to tmux's monitor-activity (window
+# tab highlighting), avoiding #() cache vs activity-flag race conditions.
 #
 # Display:
-#   No agents  → (empty — segment hidden)
-#   All quiet  → "󰚩 ○○○"   (3 agents, no new output)
-#   Has alerts → "󰚩 ●○○"   (1 of 3 agents has unseen output)
+#   No agents → (empty — segment hidden)
+#   Has agents → "󰚩 3"
 #
 # Deployed by chezmoi to ~/.config/tmux/tmux2k-ai.sh, then symlinked
 # into the tmux2k plugins dir by run_after_12_sync-tmux2k-ai.sh.
@@ -27,29 +28,19 @@ main() {
         awk '$3 ~ /^(claude|codex|opencode)$/ {print $2}' || true)
     [[ -z "$agents" ]] && return
 
-    # Map pane_pid → window_activity_flag across all sessions.
-    declare -A pane_activity=()
-    while IFS=' ' read -r ppid flag; do
-        [[ -n "$ppid" ]] && pane_activity[$ppid]=$flag
-    done < <(tmux list-panes -a -F '#{pane_pid} #{?window_activity_flag,1,0}' 2>/dev/null || true)
+    # Collect all tmux pane PIDs to confirm agents live inside tmux.
+    declare -A pane_pids=()
+    while IFS=' ' read -r ppid; do
+        [[ -n "$ppid" ]] && pane_pids[$ppid]=1
+    done < <(tmux list-panes -a -F '#{pane_pid}' 2>/dev/null || true)
 
-    local total=0 alert=0
+    local total=0
     while read -r parent_pid; do
-        [[ -z "$parent_pid" ]] && continue
-        if [[ -n "${pane_activity[$parent_pid]:-}" ]]; then
-            total=$((total + 1))
-            [[ "${pane_activity[$parent_pid]}" == "1" ]] && alert=$((alert + 1))
-        fi
+        [[ -n "${pane_pids[$parent_pid]:-}" ]] && total=$((total + 1))
     done <<<"$agents"
 
     ((total == 0)) && return
-
-    # Build dot indicators: ● = has new output, ○ = idle
-    local dots=""
-    local i
-    for ((i = 0; i < alert; i++)); do dots+="●"; done
-    for ((i = 0; i < total - alert; i++)); do dots+="○"; done
-    echo "$ai_icon $dots"
+    echo "$ai_icon $total"
 }
 
 main
