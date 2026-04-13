@@ -18,6 +18,8 @@ source "$current_dir/../lib/utils.sh"
 ai_icon=$(get_tmux_option "@tmux2k-ai-icon" "󰚩")
 
 main() {
+    local session="${1:-}"
+
     tmux has-session 2>/dev/null || return
 
     # Fast path: find AI agent processes by real binary name.
@@ -27,11 +29,17 @@ main() {
         awk '$3 ~ /^(claude|codex|opencode)$/ {print $2}' || true)
     [[ -z "$agents" ]] && return
 
-    # Map tmux pane_pid → window_activity_flag (1 = unseen output).
+    # Map pane_pid → window_activity_flag for this session only.
+    # When called with a session name (passed via #{session_name} in the
+    # tmux format string), counts are scoped to that session.
+    # Without it, falls back to all sessions (-a).
+    local list_args=(-a)
+    [[ -n "$session" ]] && list_args=(-s -t "$session")
+
     declare -A pane_activity=()
     while IFS=' ' read -r ppid flag; do
         [[ -n "$ppid" ]] && pane_activity[$ppid]=$flag
-    done < <(tmux list-panes -a -F '#{pane_pid} #{?window_activity_flag,1,0}' 2>/dev/null || true)
+    done < <(tmux list-panes "${list_args[@]}" -F '#{pane_pid} #{?window_activity_flag,1,0}' 2>/dev/null || true)
 
     local total=0 alert=0
     while read -r parent_pid; do
@@ -52,4 +60,4 @@ main() {
     echo "$ai_icon $dots"
 }
 
-main
+main "$@"
