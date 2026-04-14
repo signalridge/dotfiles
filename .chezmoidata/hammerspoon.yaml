@@ -41,7 +41,7 @@ hammerspoon:
         ime: jp
       - app: Safari
         ime: jp
-      - app: Zen
+      - app: Google Chrome
         ime: jp
     private:
       # Browsers/Communication -> Chinese for private
@@ -51,7 +51,7 @@ hammerspoon:
         ime: zh
       - app: Safari
         ime: zh
-      - app: Zen
+      - app: Google Chrome
         ime: zh
       - app: WeChat
         ime: zh
