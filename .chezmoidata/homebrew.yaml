@@ -42,7 +42,7 @@ homebrew:
       - slidepilot
       - stats
       - tailscale-app
-      - zen
+      - google-chrome
     work:
       - dbeaver-community
       - obsidian
