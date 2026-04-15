@@ -101,16 +101,11 @@
 # openai/skills curated set
 # ------------------------------------------------------------------------------
 {{- $openaiCuratedSkills := list
-  "gh-fix-ci"
-  "gh-address-comments"
   "sentry"
   "playwright"
   "vercel-deploy"
   "render-deploy"
   "cloudflare-deploy"
-  "security-best-practices"
-  "security-threat-model"
-  "security-ownership-map"
   "jupyter-notebook"
   "screenshot"
   "speech"
@@ -157,9 +152,7 @@
 # ------------------------------------------------------------------------------
 {{- $getsentrySkills := list
   "find-bugs"
-  "code-review"
   "iterate-pr"
-  "security-review"
   "create-pr"
   "commit"
   "code-simplifier"
@@ -177,72 +170,8 @@
 {{- end }}
 
 # ------------------------------------------------------------------------------
-# trailofbits/skills security review and static analysis set
+# trailofbits/skills utility set (security/SAST/review skills delegated to slipway)
 # ------------------------------------------------------------------------------
-[".agents/skills/ecosystem/trailofbits/differential-review"]
-    type = "archive"
-    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
-    exact = true
-    stripComponents = 5
-    include = ["skills-*/plugins/differential-review/skills/differential-review/**"]
-    refreshPeriod = "168h"
-
-[".agents/skills/ecosystem/trailofbits/codeql"]
-    type = "archive"
-    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
-    exact = true
-    stripComponents = 5
-    include = ["skills-*/plugins/static-analysis/skills/codeql/**"]
-    refreshPeriod = "168h"
-
-[".agents/skills/ecosystem/trailofbits/semgrep"]
-    type = "archive"
-    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
-    exact = true
-    stripComponents = 5
-    include = ["skills-*/plugins/static-analysis/skills/semgrep/**"]
-    refreshPeriod = "168h"
-
-[".agents/skills/ecosystem/trailofbits/sarif-parsing"]
-    type = "archive"
-    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
-    exact = true
-    stripComponents = 5
-    include = ["skills-*/plugins/static-analysis/skills/sarif-parsing/**"]
-    refreshPeriod = "168h"
-
-[".agents/skills/ecosystem/trailofbits/insecure-defaults"]
-    type = "archive"
-    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
-    exact = true
-    stripComponents = 5
-    include = ["skills-*/plugins/insecure-defaults/skills/insecure-defaults/**"]
-    refreshPeriod = "168h"
-
-[".agents/skills/ecosystem/trailofbits/property-based-testing"]
-    type = "archive"
-    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
-    exact = true
-    stripComponents = 5
-    include = ["skills-*/plugins/property-based-testing/skills/property-based-testing/**"]
-    refreshPeriod = "168h"
-
-[".agents/skills/ecosystem/trailofbits/audit-context-building"]
-    type = "archive"
-    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
-    exact = true
-    stripComponents = 5
-    include = ["skills-*/plugins/audit-context-building/skills/audit-context-building/**"]
-    refreshPeriod = "168h"
-
-[".agents/skills/ecosystem/trailofbits/second-opinion"]
-    type = "archive"
-    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
-    exact = true
-    stripComponents = 5
-    include = ["skills-*/plugins/second-opinion/skills/second-opinion/**"]
-    refreshPeriod = "168h"
-
 [".agents/skills/ecosystem/trailofbits/sharp-edges"]
     type = "archive"
     url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
@@ -265,14 +194,6 @@
     exact = true
     stripComponents = 5
     include = ["skills-*/plugins/modern-python/skills/modern-python/**"]
-    refreshPeriod = "168h"
-
-[".agents/skills/ecosystem/trailofbits/variant-analysis"]
-    type = "archive"
-    url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
-    exact = true
-    stripComponents = 5
-    include = ["skills-*/plugins/variant-analysis/skills/variant-analysis/**"]
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
