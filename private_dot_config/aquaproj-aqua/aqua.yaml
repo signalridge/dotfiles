@@ -6,7 +6,7 @@ packages:
   - name: nektos/act@v0.2.87
   - name: FiloSottile/age@v1.3.1
   - name: asciinema/asciinema@v3.2.0
-  - name: atuinsh/atuin@v18.14.1
+  - name: atuinsh/atuin@v18.15.1
   - name: sigoden/aichat@v0.30.0
   - name: sharkdp/bat@v0.26.1
   - name: eth-p/bat-extras@v2024.08.24
@@ -14,11 +14,11 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.108
-  - name: openai/codex@rust-v0.120.0
-  - name: anomalyco/opencode@v1.4.4
+  - name: anthropics/claude-code@v2.1.110
+  - name: openai/codex@rust-v0.121.0
+  - name: anomalyco/opencode@v1.4.6
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.4.11
+  - name: jdx/mise@v2026.4.14
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.68.0
