@@ -14,11 +14,11 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.112
+  - name: anthropics/claude-code@v2.1.113
   - name: openai/codex@rust-v0.121.0
-  - name: anomalyco/opencode@v1.4.7
+  - name: anomalyco/opencode@v1.4.10
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.4.15
+  - name: jdx/mise@v2026.4.16
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.68.0
@@ -61,7 +61,7 @@ packages:
   - name: XAMPPRocky/tokei@14.0.0
   - name: dduan/tre@v0.4.0
   - name: sxyazi/yazi@v26.1.22
-  - name: mikefarah/yq@v4.52.5
+  - name: mikefarah/yq@v4.53.2
   - name: ajeetdsouza/zoxide@v0.9.9
   - name: derailed/k9s@v0.50.18
   - name: terraform-linters/tflint@v0.61.0
