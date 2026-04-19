@@ -9,13 +9,13 @@ versions:
   aquaVersion: v2.57.1
   nixIndexDb: 2026-03-29-050203
   paperlib: 3.1.12
-  claudeWshobsonAgentsRev: 9a8ad818326b9e3d3492ee5563a2f6cf44af1c81
-  claudeWshobsonAgentsSha256: bd1412d84f176e458858bece038e3a4a1d9326d10eebe447912c79b661c4eb09
+  claudeWshobsonAgentsRev: 27a7ed95755a5c3a2948694343a8e2cd7a7ef6fb
+  claudeWshobsonAgentsSha256: a340801c55b21d980e20c1b07a6652f96bd3369092231259af61aafade65cf7a
   claudeAnthropicsSkillsRev: 2c7ec5e78b8e5d43ea02e90bb8826f6b9f147b0c
   claudeAnthropicsSkillsSha256: c70a05c620c01a88f69f293acfa1689522c5ec610ccb3a9377b7f68155be26bb
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35
   uiUxProMaxSkillSha256: 7c51fb0ab28651f620e873632d0109f364942c54c9e77a8819a1e2cedec424ea
-  openaiSkillsRev: fdf90d652aea00d3fa57803a348744b1d7670fcb
+  openaiSkillsRev: e940b8a86138adf03972802b990a1dfc57fcbf09
   huggingfaceSkillsRev: 061ab494cb145f43ae8f218939b99160e2c61c58
   getsentrySkillsRev: 51b02380c70006a07debc0f781ca057a31dd3f3b
   trailofbitsSkillsRev: e8cc5baf9329ccb491bfa200e82eacbac83b1ead
@@ -25,7 +25,7 @@ versions:
   supabaseAgentSkillsRev: 7a646f8812ec8d21cc8735d5b3fe67c9b5e665db
   expoSkillsRev: 8f26555fe105f72cf43051cf671771ad227a2f8f
   microsoftSkillsRev: a2c05249c4a20103dd954ca702467aa328aac031
-  sickn33AntigravitySkillsRev: 89714d02f94678092cf951707fa9f4a9c99aeaca
+  sickn33AntigravitySkillsRev: 54136b9c7f08e83e9ecd37d495ac49b2a368304c
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   humanizerEnRev: 8b3a17889fbf12bedae20974a3c9f9de746ed754
