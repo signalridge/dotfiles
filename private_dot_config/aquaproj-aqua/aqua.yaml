@@ -16,9 +16,9 @@ packages:
       enabled: false
   - name: anthropics/claude-code@v2.1.114
   - name: openai/codex@rust-v0.121.0
-  - name: anomalyco/opencode@v1.4.11
+  - name: anomalyco/opencode@v1.14.18
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.4.17
+  - name: jdx/mise@v2026.4.18
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.68.0
@@ -34,12 +34,12 @@ packages:
   - name: charmbracelet/glow@v2.1.2
   - name: jqlang/jq@jq-1.8.1
   - name: ynqa/jnv@v0.7.1
-  - name: casey/just@1.49.0
+  - name: casey/just@1.50.0
   - name: jesseduffield/lazygit@v0.61.1
   - name: neovim/neovim@v0.12.1
   - name: LuaLS/lua-language-server@3.18.2
   - name: tree-sitter/tree-sitter@v0.26.8
-  - name: rclone/rclone@v1.73.4
+  - name: rclone/rclone@v1.73.5
   - name: o2sh/onefetch@2.27.1
   - name: ip7z/7zip@26.00
   - name: Nukesor/pueue/pueue@v4.0.4
@@ -64,4 +64,4 @@ packages:
   - name: mikefarah/yq@v4.53.2
   - name: ajeetdsouza/zoxide@v0.9.9
   - name: derailed/k9s@v0.50.18
-  - name: terraform-linters/tflint@v0.61.0
+  - name: terraform-linters/tflint@v0.62.0
