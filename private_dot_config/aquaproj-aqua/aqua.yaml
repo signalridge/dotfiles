@@ -14,16 +14,16 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.117
-  - name: openai/codex@rust-v0.122.0
-  - name: anomalyco/opencode@v1.14.20
+  - name: anthropics/claude-code@v2.1.119
+  - name: openai/codex@rust-v0.124.0
+  - name: anomalyco/opencode@v1.14.22
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.4.18
+  - name: jdx/mise@v2026.4.19
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.68.0
   - name: eza-community/eza@v0.23.4
-  - name: fastfetch-cli/fastfetch@2.62.0
+  - name: fastfetch-cli/fastfetch@2.62.1
   - name: sharkdp/fd@v10.4.2
   - name: junegunn/fzf@v0.71.0
   - name: gopasspw/gopass@v1.16.1
@@ -46,7 +46,7 @@ packages:
   - name: BurntSushi/ripgrep@15.1.0
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.1.0
-  - name: joshmedeski/sesh@v2.25.0
+  - name: joshmedeski/sesh@v2.26.0
   - name: skim-rs/skim@v4.6.0
   - name: starship/starship@v1.25.0
   - name: JohnnyMorganz/StyLua@v2.4.1
