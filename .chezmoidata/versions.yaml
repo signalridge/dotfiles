@@ -2,8 +2,8 @@
 # Pinned versions (auto-updated by GitHub Actions)
 # ─────────────────────────────────────────────────────────────────────────────
 versions:
-  nixInstaller: v3.17.3
-  nixVersion: v2.34.4
+  nixInstaller: v3.18.0
+  nixVersion: v2.34.6
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
   aquaVersion: v2.57.1
@@ -11,21 +11,21 @@ versions:
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: 27a7ed95755a5c3a2948694343a8e2cd7a7ef6fb
   claudeWshobsonAgentsSha256: a340801c55b21d980e20c1b07a6652f96bd3369092231259af61aafade65cf7a
-  claudeAnthropicsSkillsRev: b9e19e6f44773509fbdd7001d77ff41a49a486c1
-  claudeAnthropicsSkillsSha256: 365613f71e6f6062cdf93e58788b467a42c98b191bb59e22e0dc5144177bdb95
+  claudeAnthropicsSkillsRev: 5128e1865d670f5d6c9cef000e6dfc4e951fb5b9
+  claudeAnthropicsSkillsSha256: 94656f316377d46a7e5cfb5ddc6541af1f9aee43b2516ab3478c7c472c679393
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35
   uiUxProMaxSkillSha256: 7c51fb0ab28651f620e873632d0109f364942c54c9e77a8819a1e2cedec424ea
-  openaiSkillsRev: fa71dc0f1f05994d5b51173ce1e60dfc892c89f6
-  huggingfaceSkillsRev: 221f5f784ce3e71b148a7af4a76e43bb7ad86705
+  openaiSkillsRev: 11c643813b4645ca9f25d49ca180697732e0141a
+  huggingfaceSkillsRev: ddcf68038c45b78adda240b924a427f1e069f4b2
   getsentrySkillsRev: 94ea2a26c70f3f646f07a613ffe5cd3d4eca1955
   trailofbitsSkillsRev: e8cc5baf9329ccb491bfa200e82eacbac83b1ead
-  cloudflareSkillsRev: 8c01b03b0a09a01581beed87b656cf634009e735
+  cloudflareSkillsRev: 0438a075b419f737eb091d1c91800b7387e3a75f
   vercelLabsAgentSkillsRev: ce3e64e468f8fa09a2d075d102771838061fdac0
   vercelLabsNextSkillsRev: 038954e07bfc313e97fa5f6ff7caf87226e4a782
   supabaseAgentSkillsRev: 3e7fd16bf8cab06d3c24dc775a331e6effcba29a
-  expoSkillsRev: 8f26555fe105f72cf43051cf671771ad227a2f8f
-  microsoftSkillsRev: f2ced3b38ac6974989bd0c0de4c3a45fbd49b38d
-  sickn33AntigravitySkillsRev: e61a091411c082dd7dbc9b82c0d45557f0d15ade
+  expoSkillsRev: 93751dadf0494110893a9f7a2091ca14833d8212
+  microsoftSkillsRev: 10f8016e4930a9de26da0372835c244897218715
+  sickn33AntigravitySkillsRev: d8e5f035aafced27eb4e6ce278227b01b77ed8c4
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   humanizerEnRev: 8b3a17889fbf12bedae20974a3c9f9de746ed754
