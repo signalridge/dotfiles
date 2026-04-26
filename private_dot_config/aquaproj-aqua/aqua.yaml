@@ -16,9 +16,9 @@ packages:
       enabled: false
   - name: anthropics/claude-code@v2.1.120
   - name: openai/codex@rust-v0.125.0
-  - name: anomalyco/opencode@v1.14.24
+  - name: anomalyco/opencode@v1.14.25
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.4.20
+  - name: jdx/mise@v2026.4.22
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.68.0
