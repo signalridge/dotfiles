@@ -18,7 +18,7 @@ packages:
   - name: openai/codex@rust-v0.128.0
   - name: anomalyco/opencode@v1.14.33
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.4.28
+  - name: jdx/mise@v2026.5.0
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.69.0
