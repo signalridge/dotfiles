@@ -16,9 +16,9 @@ packages:
       enabled: false
   - name: anthropics/claude-code@v2.1.128
   - name: openai/codex@rust-v0.128.0
-  - name: anomalyco/opencode@v1.14.34
+  - name: anomalyco/opencode@v1.14.39
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.5.0
+  - name: jdx/mise@v2026.5.1
   - name: muesli/duf@v0.9.1
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.69.0
@@ -60,7 +60,7 @@ packages:
   - name: numtide/treefmt@v2.5.0
   - name: XAMPPRocky/tokei@14.0.0
   - name: dduan/tre@v0.4.0
-  - name: sxyazi/yazi@v26.1.22
+  - name: sxyazi/yazi@v26.5.6
   - name: mikefarah/yq@v4.53.2
   - name: ajeetdsouza/zoxide@v0.9.9
   - name: derailed/k9s@v0.50.18
