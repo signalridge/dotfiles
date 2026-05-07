@@ -6,26 +6,26 @@ versions:
   nixVersion: v2.34.6
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
-  aquaVersion: v2.57.2
+  aquaVersion: v2.58.0
   nixIndexDb: 2026-03-29-050203
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: ece811f23310a37ceb43496dbac0e244fe6845b6
   claudeWshobsonAgentsSha256: 7ccdb533eff18d9ebbf2a985e58192b4e74cd325d3d16428794d3bf653f45be0
-  claudeAnthropicsSkillsRev: d230a6dd6eb1a0dbee9fec55e2f00a96e28dff81
-  claudeAnthropicsSkillsSha256: 086cdd91e8acaf69c1c7a687a1de09b151bb3d44d7b08bbeb502743a6809f901
+  claudeAnthropicsSkillsRev: d211d437443a7b2496a3dad9575e7dddd724c585
+  claudeAnthropicsSkillsSha256: b5c9abe38996a838e51b1c38ac807cb237a50318fdd84d825054b1f97f984566
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35
   uiUxProMaxSkillSha256: 7c51fb0ab28651f620e873632d0109f364942c54c9e77a8819a1e2cedec424ea
-  openaiSkillsRev: dbb7d1947a095f07d98455c175f8d4e8f18f2734
-  huggingfaceSkillsRev: 6bbfb54f32e58b9661f725de865927a274f01776
+  openaiSkillsRev: 4c4058ebf44f6734e62c70ab4a81246d4d093fc8
+  huggingfaceSkillsRev: 33265eb93b4af265a1a78dae9c210ec43f8a1b10
   getsentrySkillsRev: 89aaec068abcc70368ccd3e1f7fee58a66313377
   trailofbitsSkillsRev: a56045e9ae00b3506cacefea0f672aab0a1a6e3c
   cloudflareSkillsRev: 60147cbb773649eadca89cee92b4e0caf02234b4
   vercelLabsAgentSkillsRev: b9c8ee0643d87d3c5a953d1e22382ff2ead39229
   vercelLabsNextSkillsRev: 34d5a7775ef1c49c0a656f810493c18af7948bbd
-  supabaseAgentSkillsRev: 4bb13d858d19f1f848505a66f46fc9603fdcde95
+  supabaseAgentSkillsRev: fa9911ac26eb15184d0e0f21ac195c6224e6c0b4
   expoSkillsRev: 786398d3574f33eb6714380f44ec09355819516e
-  microsoftSkillsRev: f263c71c47718056f817348cd7749b9f64319be3
-  sickn33AntigravitySkillsRev: 2786468ad796e52afc6ca154510f9cbfde2aa358
+  microsoftSkillsRev: 06a0e6e368577468efe1b12c95a0ca669826e7a5
+  sickn33AntigravitySkillsRev: a59b0916d086e7e0e2a609b8aa9cc28e012ef21a
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   humanizerEnRev: 8b3a17889fbf12bedae20974a3c9f9de746ed754
