@@ -2,8 +2,8 @@
 # Pinned versions (auto-updated by GitHub Actions)
 # ─────────────────────────────────────────────────────────────────────────────
 versions:
-  nixInstaller: v3.19.1
-  nixVersion: v2.34.6
+  nixInstaller: v3.20.0
+  nixVersion: v2.34.7
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
   aquaVersion: v2.58.0
@@ -16,16 +16,16 @@ versions:
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35
   uiUxProMaxSkillSha256: 7c51fb0ab28651f620e873632d0109f364942c54c9e77a8819a1e2cedec424ea
   openaiSkillsRev: 4c4058ebf44f6734e62c70ab4a81246d4d093fc8
-  huggingfaceSkillsRev: 33265eb93b4af265a1a78dae9c210ec43f8a1b10
+  huggingfaceSkillsRev: 7c71cfb2b12920002c3177474c779feeec4e9ad1
   getsentrySkillsRev: 89aaec068abcc70368ccd3e1f7fee58a66313377
   trailofbitsSkillsRev: a56045e9ae00b3506cacefea0f672aab0a1a6e3c
   cloudflareSkillsRev: 60147cbb773649eadca89cee92b4e0caf02234b4
   vercelLabsAgentSkillsRev: b9c8ee0643d87d3c5a953d1e22382ff2ead39229
-  vercelLabsNextSkillsRev: 34d5a7775ef1c49c0a656f810493c18af7948bbd
+  vercelLabsNextSkillsRev: dc1de9caf7612d73f56a8dec3cb1bd6c9ec096b9
   supabaseAgentSkillsRev: fa9911ac26eb15184d0e0f21ac195c6224e6c0b4
   expoSkillsRev: 786398d3574f33eb6714380f44ec09355819516e
-  microsoftSkillsRev: 06a0e6e368577468efe1b12c95a0ca669826e7a5
-  sickn33AntigravitySkillsRev: a59b0916d086e7e0e2a609b8aa9cc28e012ef21a
+  microsoftSkillsRev: ad25bceb76e190a38bcca52057d130023e836a74
+  sickn33AntigravitySkillsRev: afca5570b90749d1833e8c1c218e0e278b27b07d
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   humanizerEnRev: 8b3a17889fbf12bedae20974a3c9f9de746ed754
