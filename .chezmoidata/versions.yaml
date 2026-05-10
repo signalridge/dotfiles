@@ -9,15 +9,15 @@ versions:
   aquaVersion: v2.58.1
   nixIndexDb: 2026-05-08-112113
   paperlib: 3.1.12
-  claudeWshobsonAgentsRev: ece811f23310a37ceb43496dbac0e244fe6845b6
-  claudeWshobsonAgentsSha256: 7ccdb533eff18d9ebbf2a985e58192b4e74cd325d3d16428794d3bf653f45be0
-  claudeAnthropicsSkillsRev: d211d437443a7b2496a3dad9575e7dddd724c585
-  claudeAnthropicsSkillsSha256: b5c9abe38996a838e51b1c38ac807cb237a50318fdd84d825054b1f97f984566
+  claudeWshobsonAgentsRev: 9f9ba3237022cd88d8660060fc58e0492002f978
+  claudeWshobsonAgentsSha256: baf84fae43c513b004d009294cda659ccc77ce1c83610236380735c508b9764a
+  claudeAnthropicsSkillsRev: f458cee31a7577a47ba0c9a101976fa599385174
+  claudeAnthropicsSkillsSha256: c4cf91e678b67b33ffae5c273f756fc7f5565ff0a690658d6b05980b52b36055
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35
   uiUxProMaxSkillSha256: 7c51fb0ab28651f620e873632d0109f364942c54c9e77a8819a1e2cedec424ea
   openaiSkillsRev: 4c4058ebf44f6734e62c70ab4a81246d4d093fc8
   huggingfaceSkillsRev: 7c71cfb2b12920002c3177474c779feeec4e9ad1
-  getsentrySkillsRev: 89aaec068abcc70368ccd3e1f7fee58a66313377
+  getsentrySkillsRev: c81373583417504de2d3be1ae3d81977b11b2981
   trailofbitsSkillsRev: a56045e9ae00b3506cacefea0f672aab0a1a6e3c
   cloudflareSkillsRev: 60147cbb773649eadca89cee92b4e0caf02234b4
   vercelLabsAgentSkillsRev: b9c8ee0643d87d3c5a953d1e22382ff2ead39229
@@ -25,7 +25,7 @@ versions:
   supabaseAgentSkillsRev: fa9911ac26eb15184d0e0f21ac195c6224e6c0b4
   expoSkillsRev: 47f0ef64821f10e42a600758b5087bfe89c09474
   microsoftSkillsRev: eceed4a9fd0809d9460a9e86750cbf4c658d6b97
-  sickn33AntigravitySkillsRev: 65020bd3adeef68aa3ff5a18100d1df95518ecfc
+  sickn33AntigravitySkillsRev: d237aa53065ef4012378554d826fabb428e3cee8
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   humanizerEnRev: 8b3a17889fbf12bedae20974a3c9f9de746ed754
