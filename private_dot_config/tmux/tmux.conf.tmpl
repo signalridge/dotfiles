@@ -252,13 +252,11 @@ set -g @tmux2k-prefix-highlight '#f5c2e7'
 
 # Plugin layout
 set -g @tmux2k-left-plugins "session"
-set -g @tmux2k-right-plugins "git ai"
+set -g @tmux2k-right-plugins "git"
 
 # Per-module colors: "bg fg" - Dracula + Catppuccin pastel scheme
 set -g @tmux2k-session-colors "purple text"
 set -g @tmux2k-git-colors "light_blue text"
-set -g @tmux2k-ai-colors "pink text"
-
 # Window list: soft blue accent
 set -g @tmux2k-window-list-colors "black blue"
 
@@ -369,13 +367,10 @@ set -g copy-mode-match-style "fg=#282a36,bg=#f1fa8c"
 set -g copy-mode-current-match-style "fg=#282a36,bg=#ffb86c,bold"
 set -g copy-mode-mark-style "fg=#282a36,bg=#ff79c6"
 
-# -- Per-window AI marker --------------------------------------------------
-# Inject #{session_name}:#{window_index} into the ai.sh call so the ◆
-# marker tracks the current window. Total/active counts use absolute
-# timestamps and stay globally consistent; only ◆ placement differs.
-# ## escaping prevents run-shell from expanding the format variables at
-# source time — tmux expands them per-client at display time.
-run-shell 'tmux set -g status-right "$(tmux show-options -gv status-right | sed "s|ai\.sh)|ai.sh ##{session_name}:##{window_index})|")"'
+# -- AI agent status segment -----------------------------------------------
+# Appended after tmux2k builds status-right so it sits at the right edge.
+# Uses powerline separator for visual continuity with the git segment.
+set -ga status-right '#[fg=#f5c2e7,bg=#89dceb]#[fg=#1e1e2e,bg=#f5c2e7] #(~/.config/tmux/tmux2k-ai.sh #{session_name}:#{window_index}) '
 
 # -- Popup & Menu (tmux 3.4+) --------------------------------------------------
 set -g popup-style "fg=#f8f8f2,bg=#282a36"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tmux2k ai plugin — AI agent counter for the status bar.
+# tmux2k ai status — AI agent counter for the tmux status bar.
 #
 # Shows AI coding agents (claude/codex/opencode) running in tmux panes.
 # Uses window_activity timestamps for consistent active/idle counts, and
@@ -10,14 +10,16 @@
 #   In AI win  → "󰚩 ●◆○"  (◆ at this agent's position among all agents)
 #   In shell   → "󰚩 ●●○"  (no ◆ — current window has no agent)
 #
-# Deployed by chezmoi to ~/.config/tmux/tmux2k-ai.sh, then symlinked
-# into the tmux2k plugins dir by run_after_12_sync-tmux2k-ai.sh.
+# Loaded directly from tmux.conf post-TPM, independent of tmux2k's
+# plugin discovery. No symlink needed.
 
-current_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$current_dir/../lib/utils.sh"
+get_tmux_option() {
+    local option_value
+    option_value=$(tmux show-option -gqv "$1")
+    echo "${option_value:-$2}"
+}
 
 ai_icon=$(get_tmux_option "@tmux2k-ai-icon" "󰚩")
-# Seconds of inactivity before an agent is considered idle.
 activity_threshold=$(get_tmux_option "@tmux2k-ai-activity-threshold" "30")
 
 main() {
