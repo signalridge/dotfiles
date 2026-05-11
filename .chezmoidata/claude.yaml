@@ -20,7 +20,10 @@ claude:
     # Native Anthropic (OAuth, no API key needed)
     anthropic:
       models:
+        - claude-opus-4-7
+        - claude-opus-4-7[1m]
         - claude-opus-4-6
+        - claude-sonnet-4-6
         - claude-sonnet-4-5-20250929
         - claude-haiku-4-5-20251001
     # DeepSeek: https://api-docs.deepseek.com/guides/anthropic_api
@@ -88,11 +91,11 @@ claude:
   accounts:
     # Native Anthropic accounts (use OAuth)
     anthropic:
-      model: claude-opus-4-6
+      model: claude-opus-4-7[1m]
     opus:
       provider: anthropic
-      model: claude-opus-4-6
-      small_model: claude-opus-4-6
+      model: claude-opus-4-7[1m]
+      small_model: claude-haiku-4-5-20251001
     haiku:
       provider: anthropic
       model: claude-haiku-4-5-20251001
