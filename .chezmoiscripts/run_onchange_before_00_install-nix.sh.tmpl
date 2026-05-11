@@ -153,10 +153,15 @@ main() {
         current_version=$(nix --version 2>/dev/null | awk '{print $NF}')
         info "current: $current_version, pinned: $NIX_VERSION"
 
-        # Check for updates
-        if command -v determinate-nixd >/dev/null 2>&1; then
-            info "checking for updates..."
-            sudo determinate-nixd upgrade || warn "upgrade failed"
+        # Upgrade if version mismatch
+        if [ "$current_version" != "${NIX_VERSION#v}" ]; then
+            if command -v determinate-nixd >/dev/null 2>&1; then
+                info "upgrading via determinate-nixd..."
+                sudo determinate-nixd upgrade || warn "upgrade failed"
+            else
+                info "upgrading via nix upgrade-nix..."
+                sudo nix upgrade-nix || warn "upgrade failed"
+            fi
         fi
         return 0
     fi
