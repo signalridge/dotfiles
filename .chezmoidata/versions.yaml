@@ -15,8 +15,8 @@ versions:
   claudeAnthropicsSkillsSha256: c4cf91e678b67b33ffae5c273f756fc7f5565ff0a690658d6b05980b52b36055
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35
   uiUxProMaxSkillSha256: 7c51fb0ab28651f620e873632d0109f364942c54c9e77a8819a1e2cedec424ea
-  openaiSkillsRev: 4c4058ebf44f6734e62c70ab4a81246d4d093fc8
-  huggingfaceSkillsRev: c3accb78c01b249a060ca87acac9df96368b2f57
+  openaiSkillsRev: c25113bf4c64c8dba6bfe61acf06051d79aa43f6
+  huggingfaceSkillsRev: 35810a6dbe518a0f7bd99b1e6550cb57b266ff0b
   getsentrySkillsRev: c81373583417504de2d3be1ae3d81977b11b2981
   trailofbitsSkillsRev: a56045e9ae00b3506cacefea0f672aab0a1a6e3c
   cloudflareSkillsRev: 60147cbb773649eadca89cee92b4e0caf02234b4
@@ -25,7 +25,7 @@ versions:
   supabaseAgentSkillsRev: 3e7771598f3a03d29533208dd7b5a50bdfc8860f
   expoSkillsRev: 47f0ef64821f10e42a600758b5087bfe89c09474
   microsoftSkillsRev: b71de35cb5a1acc458e1f518cbb9acc830f6d7c6
-  sickn33AntigravitySkillsRev: ec784a979b3dd578e85153ebdae2fb997ddd78d8
+  sickn33AntigravitySkillsRev: 72e7132ecbcda49eb16464038095fd8789e54e0b
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   humanizerEnRev: 8b3a17889fbf12bedae20974a3c9f9de746ed754
