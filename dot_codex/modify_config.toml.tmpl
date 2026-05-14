@@ -1,6 +1,14 @@
+#!/usr/bin/env bash
+# chezmoi modify_ script: render Codex config, preserving any [projects.*] sections
+# that Codex CLI writes when the user trusts a project directory.
+set -euo pipefail
+
+EXISTING=$(cat)
+
+cat <<'CHEZMOI_TEMPLATE_EOF'
 #:schema https://developers.openai.com/codex/config-schema.json
 # Codex CLI Configuration
-# Managed by chezmoi - do not edit directly
+# Managed by chezmoi - do not edit directly (except [projects.*] sections, which are preserved)
 # Run: chezmoi edit ~/.codex/config.toml
 
 {{- /* codexProviderAccount can be openai or provider@label */ -}}
@@ -15,7 +23,7 @@
 # =============================================================================
 
 # Default model
-model = "gpt-5.4"
+model = "gpt-5.5"
 
 # Model provider (only for third-party providers)
 {{- if ne $providerName "openai" }}
@@ -216,3 +224,16 @@ experimental_use_profile = true
 [sandbox_workspace_write]
 network_access = true
 exclude_slash_tmp = false
+CHEZMOI_TEMPLATE_EOF
+
+# Preserve [projects.*] sections (Codex CLI writes these when trusting a directory).
+# Capture from the first [projects.*] header until a different top-level table appears.
+projects=$(printf '%s\n' "$EXISTING" | awk '
+  /^\[projects\./             { in_projects = 1; print; next }
+  in_projects && /^\[/        { in_projects = 0 }
+  in_projects                 { print }
+')
+
+if [ -n "$projects" ]; then
+  printf '\n%s\n' "$projects"
+fi
