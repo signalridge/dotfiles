@@ -12,6 +12,7 @@ nix:
       - ffmpeg
       - ghostscript # gs - PDF/PostScript processor (Snacks.image dependency)
       - hyperfine
+      - lnav # aqua registry currently mismatches the macOS arm64 release asset
       - mermaid-cli # mmdc - Mermaid diagram renderer (render-markdown.nvim dependency)
       - mosh
       - imagemagick # magick/convert - image processing (Snacks.image dependency)

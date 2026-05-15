@@ -1,0 +1,10 @@
+[files]
+extend-exclude = [
+  "private_dot_config/hammerspoon/Spoons/**",
+  "private_dot_config/nvim/lazy-lock.json",
+  "private_dot_ssh/**",
+]
+
+[default.extend-words]
+enhancd = "enhancd"
+noice = "noice"

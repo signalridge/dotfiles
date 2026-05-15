@@ -16,7 +16,7 @@ jobs:
             platform: linux
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: main
       - name: Setup chezmoi config
@@ -31,11 +31,14 @@ jobs:
           timezone = "UTC"
           installMasApps = false
           EOF
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+      - name: Restore Nix cache
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
         with:
-          use-flakehub: false
-          use-gha-cache: true
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('nix-config/**/*.nix', 'nix-config/**/*.tmpl', 'nix-config/.flake-*.lock', '.github/workflows/*.yml', '.pre-commit-config.yaml') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          gc-max-store-size-linux: 1G
+          gc-max-store-size-macos: 2G
       - name: Install chezmoi
         run: nix profile install nixpkgs#chezmoi
       - name: Update flake.lock
@@ -62,7 +65,7 @@ jobs:
         id: date
         run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
       - name: Create PR
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
         with:
           token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           commit-message: "chore(nix): update flake.lock for ${{ matrix.platform }}"

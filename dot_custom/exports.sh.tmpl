@@ -59,6 +59,11 @@ if command -v eza >/dev/null 2>&1; then
   "
 fi
 
+# LS_COLORS for completion previews and modern file listing tools.
+if command -v vivid >/dev/null 2>&1; then
+    export LS_COLORS="${LS_COLORS:-$(vivid generate dracula 2>/dev/null)}"
+fi
+
 # CTRL-R history search options
 export FZF_CTRL_R_OPTS="
   --preview 'echo {}'
@@ -73,6 +78,13 @@ export AICOMMIT_PROVIDER="${AICOMMIT_PROVIDER:-claude}"
 
 # Global Justfile location (XDG)
 export JUSTFILE="${XDG_CONFIG_HOME:-$HOME/.config}/just/.justfile"
+
+# Krew kubectl plugins.
+export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+
+# carapace can bridge existing shell completion specs for tools without native
+# carapace completers.
+export CARAPACE_BRIDGES="${CARAPACE_BRIDGES:-zsh,fish,bash,inshellisense}"
 
 # ─────────────────────────────────────────────────────────────
 # TMux plugin configuration (ohmyzsh/plugins/tmux)

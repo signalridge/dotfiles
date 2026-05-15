@@ -47,6 +47,7 @@ eval_if_cmd_exists "starship" starship init zsh
 eval_if_cmd_exists "fzf" fzf --zsh
 # Load sheldon after fzf so fzf-tab keeps Tab completion ownership.
 eval_if_cmd_exists "sheldon" sheldon source
+eval_if_cmd_exists "carapace" carapace _carapace
 eval_if_cmd_exists "navi" navi widget zsh
 eval_if_cmd_exists "zoxide" zoxide init zsh
 eval_if_mise_activate

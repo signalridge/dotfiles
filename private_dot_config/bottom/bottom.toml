@@ -1,0 +1,12 @@
+[flags]
+default_widget_type = "processes"
+rate = "1s"
+retention = "10m"
+show_table_scroll_position = true
+process_command = true
+group_processes = true
+enable_cache_memory = true
+network_use_bytes = true
+
+[styles]
+theme = "gruvbox"

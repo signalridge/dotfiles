@@ -59,6 +59,24 @@ repos:
         exclude: \.tmpl$
         entry: statix check nix-config/
       #####################################
+      # Lint: source/documentation typos
+      # Requires: typos
+      #####################################
+      - id: typos
+        name: Typos
+        language: system
+        pass_filenames: false
+        entry: typos --config typos.toml .
+      #####################################
+      # Security: staged secret scan
+      # Requires: gitleaks
+      #####################################
+      - id: gitleaks
+        name: Gitleaks
+        language: system
+        pass_filenames: false
+        entry: gitleaks git --pre-commit --redact --staged --verbose
+      #####################################
       # Template: render + format check + lint
       # Requires: chezmoi, treefmt, shellcheck, selene, statix
       #####################################
@@ -119,9 +137,9 @@ repos:
               return 0
             }
 
-            for f in $(find . \( -name "*.sh.tmpl" -o -name "*.lua.tmpl" -o -name "*.json.tmpl" -o -name "*.yaml.tmpl" -o -name "*.yml.tmpl" -o -name "*.md.tmpl" \) ! -path "*/node_modules/*" ! -path "*/Spoons/*"); do
+            while IFS= read -r -d "" f; do
               render_template "$f" "$tmpdir/$(basename "${f%.tmpl}")" || true
-            done
+            done < <(find . \( -name "*.sh.tmpl" -o -name "*.lua.tmpl" -o -name "*.json.tmpl" -o -name "*.yaml.tmpl" -o -name "*.yml.tmpl" -o -name "*.md.tmpl" \) ! -path "*/node_modules/*" ! -path "*/Spoons/*" -print0)
 
             # Render nix templates
             mkdir -p "$tmpdir/nix-modules"

@@ -422,36 +422,56 @@ gopass show -o opencode/harui/private/api_key >/dev/null
 
 ## ツールチェーン
 
-このセットアップは、従来から使っているモダン CLI スタックとシェル操作性を維持しています。
+従来の Unix コマンドにはモダン代替をエイリアスで割り当て、その上に
+ドメイン別に整理したパワーユーザー向け CLI 群を重ねています。すべて aqua でバージョン固定。
 
-### モダン CLI 置き換え
+### ドロップイン置き換え
 
-| 従来   | モダン                                           | 説明                              |
+| 従来   | モダン                                           | 理由                              |
 | ------ | ------------------------------------------------ | --------------------------------- |
 | `ls`   | [eza](https://github.com/eza-community/eza)      | Git 連携、アイコン、ツリービュー  |
 | `cat`  | [bat](https://github.com/sharkdp/bat)            | シンタックスハイライト、Git 連携  |
 | `grep` | [ripgrep](https://github.com/BurntSushi/ripgrep) | 高速な正規表現検索                |
 | `find` | [fd](https://github.com/sharkdp/fd)              | 直感的な構文、`.gitignore` を尊重 |
-| `cd`   | [zoxide](https://github.com/ajeetdsouza/zoxide)  | スマートなディレクトリ移動        |
+| `cd`   | [zoxide](https://github.com/ajeetdsouza/zoxide)  | 使用頻度ベースのディレクトリ移動  |
+| `du`   | [dust](https://github.com/bootandy/dust)         | 読みやすいディスク使用量ツリー    |
+| `man`  | [tlrc](https://github.com/tldr-pages/tlrc)       | 高速な Rust tldr クライアント     |
 
-### シェル環境
+### シェルとプロンプト
 
-| ツール                                              | 役割                            |
-| --------------------------------------------------- | ------------------------------- |
-| [starship](https://github.com/starship/starship)    | 軽量で高速なプロンプト          |
-| [sheldon](https://github.com/rossmacarthur/sheldon) | 高速な zsh プラグイン管理       |
-| [atuin](https://github.com/atuinsh/atuin)           | あいまい検索付き履歴管理        |
-| [direnv](https://github.com/direnv/direnv)          | ディレクトリ単位の環境変数管理  |
-| [fzf](https://github.com/junegunn/fzf)              | ファイル/履歴などのあいまい検索 |
+| ツール                                                  | 役割                            |
+| ------------------------------------------------------- | ------------------------------- |
+| [starship](https://github.com/starship/starship)        | 軽量で高速なプロンプト          |
+| [sheldon](https://github.com/rossmacarthur/sheldon)     | 高速な zsh プラグイン管理       |
+| [atuin](https://github.com/atuinsh/atuin)               | あいまい検索付き履歴管理        |
+| [direnv](https://github.com/direnv/direnv)              | ディレクトリ単位の環境変数管理  |
+| [fzf](https://github.com/junegunn/fzf)                  | ファイル/履歴などのあいまい検索 |
+| [carapace](https://github.com/carapace-sh/carapace-bin) | 多くの CLI 向けの補完エンジン   |
+| [vivid](https://github.com/sharkdp/vivid)               | `LS_COLORS` テーマ生成          |
 
-### 開発ツール
+### エディタ・ファイル・Git
 
-| ツール                                              | 役割                                        |
-| --------------------------------------------------- | ------------------------------------------- |
-| [mise](https://github.com/jdx/mise)                 | 多言語ランタイム管理（Node/Python/Go/Rust） |
-| [lazygit](https://github.com/jesseduffield/lazygit) | ターミナル Git UI                           |
-| [yazi](https://github.com/sxyazi/yazi)              | 高速ターミナルファイルマネージャ            |
-| [tmux](https://github.com/tmux/tmux)                | ターミナルマルチプレクサ                    |
+| ツール                                                                                                          | 役割                                        |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| [mise](https://github.com/jdx/mise)                                                                             | 多言語ランタイム管理（Node/Python/Go/Rust） |
+| [yazi](https://github.com/sxyazi/yazi)                                                                          | 高速ターミナルファイルマネージャ            |
+| [tmux](https://github.com/tmux/tmux)                                                                            | ターミナルマルチプレクサ                    |
+| [lazygit](https://github.com/jesseduffield/lazygit) / [lazydocker](https://github.com/jesseduffield/lazydocker) | git / Docker のターミナル UI                |
+| [jj](https://github.com/jj-vcs/jj)                                                                              | Jujutsu VCS（git 互換）                     |
+| [git-cliff](https://github.com/orhun/git-cliff)                                                                 | チェンジログ生成                            |
+| [delta](https://github.com/dandavison/delta) / [difftastic](https://github.com/Wilfred/difftastic)              | 構文認識 diff                               |
+
+### ドメイン別 CLI
+
+| 領域                | ツール                                                                                                                                                                                                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| コード/検索         | [ast-grep](https://github.com/ast-grep/ast-grep)、[watchexec](https://github.com/watchexec/watchexec)、[typos](https://github.com/crate-ci/typos)、[ruff](https://github.com/astral-sh/ruff)、[ty](https://github.com/astral-sh/ty)、[prek](https://github.com/j178/prek)                                                      |
+| HTTP/API            | [xh](https://github.com/ducaale/xh)、[Posting](https://github.com/darrenburns/posting)、[Slumber](https://github.com/LucasPickering/slumber)、[oha](https://github.com/hatoo/oha)                                                                                                                                              |
+| コンテナ/K8s        | [k9s](https://github.com/derailed/k9s)、[kubectl](https://github.com/kubernetes/kubernetes)、[Helm](https://github.com/helm/helm)、[stern](https://github.com/stern/stern)、[kubecolor](https://github.com/kubecolor/kubecolor)、[kubectx](https://github.com/ahmetb/kubectx)、[krew](https://github.com/kubernetes-sigs/krew) |
+| Security/SBOM       | [zizmor](https://github.com/zizmorcore/zizmor)、[Gitleaks](https://github.com/gitleaks/gitleaks)、[Trivy](https://github.com/aquasecurity/trivy)、[Syft](https://github.com/anchore/syft)、[Grype](https://github.com/anchore/grype)                                                                                           |
+| システム/ネット     | [bottom](https://github.com/ClementTsang/bottom)、[procs](https://github.com/dalance/procs)、[lnav](https://github.com/tstack/lnav)、[hexyl](https://github.com/sharkdp/hexyl)、[doggo](https://github.com/mr-karan/doggo)、[hyperfine](https://github.com/sharkdp/hyperfine)                                                  |
+| アーカイブ/メディア | [ouch](https://github.com/ouch-org/ouch)、[gum](https://github.com/charmbracelet/gum)、[vhs](https://github.com/charmbracelet/vhs)                                                                                                                                                                                             |
+| AI 使用量           | [ccusage](https://github.com/ryoppippi/ccusage)、`@ccusage/codex`、`@ccusage/opencode`                                                                                                                                                                                                                                         |
 
 ---
 

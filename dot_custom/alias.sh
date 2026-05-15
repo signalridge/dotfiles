@@ -34,6 +34,19 @@ alias_if_cmd_exists "duf" "df"
 alias_if_cmd_exists "tldr" "man"
 alias_if_cmd_exists "hyperfine" "hf"
 alias_if_cmd_exists "lazygit" "lg"
+alias_if_cmd_exists "lazydocker" "lzd"
+alias_if_cmd_exists "btm" "top"
+alias_if_cmd_exists "procs" "pc"
+alias_if_cmd_exists "doggo" "dog"
+alias_if_cmd_exists "lnav" "logv"
+alias_if_cmd_exists "posting" "post"
+
+if command -v kubecolor >/dev/null 2>&1; then
+    alias kubectl="kubecolor"
+    alias k="kubecolor"
+elif command -v kubectl >/dev/null 2>&1; then
+    alias k="kubectl"
+fi
 
 # Claude Code provider tools
 alias_if_cmd_exists "claude-with" "ccw"

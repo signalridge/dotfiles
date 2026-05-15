@@ -422,36 +422,56 @@ gopass show -o opencode/harui/private/api_key >/dev/null
 
 ## Tool Chains
 
-This setup keeps the original modern CLI stack and shell ergonomics.
+Classic Unix tools get aliased modern replacements; on top sits a
+domain-organized set of power-user CLIs. Everything is version-pinned via aqua.
 
-### Modern CLI Replacements
+### Drop-in Replacements
 
-| Classic | Modern                                           | Description                           |
-| ------- | ------------------------------------------------ | ------------------------------------- |
-| `ls`    | [eza](https://github.com/eza-community/eza)      | Git integration, icons, tree views    |
-| `cat`   | [bat](https://github.com/sharkdp/bat)            | Syntax highlighting, git integration  |
-| `grep`  | [ripgrep](https://github.com/BurntSushi/ripgrep) | Lightning-fast regex search           |
-| `find`  | [fd](https://github.com/sharkdp/fd)              | Intuitive syntax, respects .gitignore |
-| `cd`    | [zoxide](https://github.com/ajeetdsouza/zoxide)  | Smart directory jumping               |
+| Classic | Modern                                           | Why                                     |
+| ------- | ------------------------------------------------ | --------------------------------------- |
+| `ls`    | [eza](https://github.com/eza-community/eza)      | Git-aware listing, icons, tree views    |
+| `cat`   | [bat](https://github.com/sharkdp/bat)            | Syntax highlighting, git integration    |
+| `grep`  | [ripgrep](https://github.com/BurntSushi/ripgrep) | Lightning-fast regex search             |
+| `find`  | [fd](https://github.com/sharkdp/fd)              | Intuitive syntax, respects `.gitignore` |
+| `cd`    | [zoxide](https://github.com/ajeetdsouza/zoxide)  | Frecency-based directory jumping        |
+| `du`    | [dust](https://github.com/bootandy/dust)         | Readable disk-usage tree                |
+| `man`   | [tlrc](https://github.com/tldr-pages/tlrc)       | Fast Rust `tldr` client                 |
 
-### Shell Environment
+### Shell & Prompt
 
-| Tool                                                | Role                                      |
-| --------------------------------------------------- | ----------------------------------------- |
-| [starship](https://github.com/starship/starship)    | Minimal, blazing-fast prompt              |
-| [sheldon](https://github.com/rossmacarthur/sheldon) | Fast zsh plugin manager                   |
-| [atuin](https://github.com/atuinsh/atuin)           | Shell history with fuzzy search           |
-| [direnv](https://github.com/direnv/direnv)          | Per-directory environment variables       |
-| [fzf](https://github.com/junegunn/fzf)              | Fuzzy finder for files, history, and more |
+| Tool                                                    | Role                                      |
+| ------------------------------------------------------- | ----------------------------------------- |
+| [starship](https://github.com/starship/starship)        | Minimal, blazing-fast prompt              |
+| [sheldon](https://github.com/rossmacarthur/sheldon)     | Fast zsh plugin manager                   |
+| [atuin](https://github.com/atuinsh/atuin)               | Shell history with fuzzy search           |
+| [direnv](https://github.com/direnv/direnv)              | Per-directory environment variables       |
+| [fzf](https://github.com/junegunn/fzf)                  | Fuzzy finder for files, history, and more |
+| [carapace](https://github.com/carapace-sh/carapace-bin) | Cross-shell completions for many CLIs     |
+| [vivid](https://github.com/sharkdp/vivid)               | `LS_COLORS` theme generator               |
 
-### Development Tools
+### Editor, Files & Git
 
-| Tool                                                | Role                                              |
-| --------------------------------------------------- | ------------------------------------------------- |
-| [mise](https://github.com/jdx/mise)                 | Polyglot runtime manager (Node, Python, Go, Rust) |
-| [lazygit](https://github.com/jesseduffield/lazygit) | Terminal UI for git                               |
-| [yazi](https://github.com/sxyazi/yazi)              | Fast terminal file manager                        |
-| [tmux](https://github.com/tmux/tmux)                | Terminal multiplexer                              |
+| Tool                                                                                                            | Role                                           |
+| --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| [mise](https://github.com/jdx/mise)                                                                             | Polyglot runtime manager (Node/Python/Go/Rust) |
+| [yazi](https://github.com/sxyazi/yazi)                                                                          | Fast terminal file manager                     |
+| [tmux](https://github.com/tmux/tmux)                                                                            | Terminal multiplexer                           |
+| [lazygit](https://github.com/jesseduffield/lazygit) / [lazydocker](https://github.com/jesseduffield/lazydocker) | Terminal UIs for git / Docker                  |
+| [jj](https://github.com/jj-vcs/jj)                                                                              | Jujutsu VCS (git-compatible)                   |
+| [git-cliff](https://github.com/orhun/git-cliff)                                                                 | Changelog generator                            |
+| [delta](https://github.com/dandavison/delta) / [difftastic](https://github.com/Wilfred/difftastic)              | Syntax-aware diffs                             |
+
+### Domain-Specific CLIs
+
+| Domain           | Tools                                                                                                                                                                                                                                                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Code & search    | [ast-grep](https://github.com/ast-grep/ast-grep), [watchexec](https://github.com/watchexec/watchexec), [typos](https://github.com/crate-ci/typos), [ruff](https://github.com/astral-sh/ruff), [ty](https://github.com/astral-sh/ty), [prek](https://github.com/j178/prek)                                                      |
+| HTTP & API       | [xh](https://github.com/ducaale/xh), [Posting](https://github.com/darrenburns/posting), [Slumber](https://github.com/LucasPickering/slumber), [oha](https://github.com/hatoo/oha)                                                                                                                                              |
+| Containers & K8s | [k9s](https://github.com/derailed/k9s), [kubectl](https://github.com/kubernetes/kubernetes), [Helm](https://github.com/helm/helm), [stern](https://github.com/stern/stern), [kubecolor](https://github.com/kubecolor/kubecolor), [kubectx](https://github.com/ahmetb/kubectx), [krew](https://github.com/kubernetes-sigs/krew) |
+| Security & SBOM  | [zizmor](https://github.com/zizmorcore/zizmor), [Gitleaks](https://github.com/gitleaks/gitleaks), [Trivy](https://github.com/aquasecurity/trivy), [Syft](https://github.com/anchore/syft), [Grype](https://github.com/anchore/grype)                                                                                           |
+| System & network | [bottom](https://github.com/ClementTsang/bottom), [procs](https://github.com/dalance/procs), [lnav](https://github.com/tstack/lnav), [hexyl](https://github.com/sharkdp/hexyl), [doggo](https://github.com/mr-karan/doggo), [hyperfine](https://github.com/sharkdp/hyperfine)                                                  |
+| Archive & media  | [ouch](https://github.com/ouch-org/ouch), [gum](https://github.com/charmbracelet/gum), [vhs](https://github.com/charmbracelet/vhs)                                                                                                                                                                                             |
+| AI usage         | [ccusage](https://github.com/ryoppippi/ccusage), `@ccusage/codex`, `@ccusage/opencode`                                                                                                                                                                                                                                         |
 
 ---
 

@@ -52,3 +52,7 @@ if [[ -f "$AQUA_CONFIG_PATH" ]]; then
     *) export AQUA_GLOBAL_CONFIG="${AQUA_CONFIG_PATH}${AQUA_GLOBAL_CONFIG:+:${AQUA_GLOBAL_CONFIG}}" ;;
     esac
 fi
+
+# XDG config paths for tools whose macOS defaults live under Library/Application Support.
+export TLRC_CONFIG="${TLRC_CONFIG:-${XDG_CONFIG_HOME}/tlrc/config.toml}"
+export SLUMBER_CONFIG_PATH="${SLUMBER_CONFIG_PATH:-${XDG_CONFIG_HOME}/slumber/config.yml}"

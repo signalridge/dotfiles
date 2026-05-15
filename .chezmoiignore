@@ -20,6 +20,7 @@ node_modules/
 selene.toml
 stylua.toml
 treefmt.toml
+typos.toml
 
 # ─────────────────────────────────────────────────────────────────────────────
 # macOS-only exclusions (skip on Linux)
@@ -36,6 +37,7 @@ nix-config/modules/host-users.nix
 .chezmoiscripts/10_update_homebrew_packages.sh
 
 # macOS-only GUI apps (target paths)
+Library/
 .config/aerospace/
 .config/borders/
 .config/karabiner/

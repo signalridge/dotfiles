@@ -1,0 +1,6 @@
+tail: 100
+timestamps: short
+timezone: Local
+color: auto
+output: default
+max-log-requests: 50

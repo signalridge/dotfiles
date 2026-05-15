@@ -12,14 +12,34 @@ permissions:
   security-events: write
 
 jobs:
+  zizmor:
+    name: Zizmor GitHub Actions Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor workflow scanner
+        uses: zizmorcore/zizmor-action@b572f7b1a1c2d41efaab43d504f68d215c3cd727 # v0.5.4
+        with:
+          inputs: .github/workflows
+          min-severity: high
+          min-confidence: medium
+
   trivy:
     name: Trivy Filesystem Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Run Trivy vulnerability scanner (filesystem)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -28,7 +48,7 @@ jobs:
           severity: CRITICAL,HIGH,MEDIUM
 
       - name: Upload Trivy SARIF report
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@5e316336eb4f107009e477d4bfbfff13d7250fae # v4
         if: always()
         with:
           sarif_file: trivy-results.sarif
@@ -38,12 +58,12 @@ jobs:
     name: Gitleaks Secret Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install gitleaks
         run: |
           set -euo pipefail
-          VERSION="8.24.2"
+          VERSION="8.30.1"
           ASSET="gitleaks_${VERSION}_linux_x64.tar.gz"
           CHECKSUMS="gitleaks_${VERSION}_checksums.txt"
           BASE_URL="https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}"
@@ -66,7 +86,7 @@ jobs:
             --report-path gitleaks-results.sarif
 
       - name: Upload Gitleaks SARIF report
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@5e316336eb4f107009e477d4bfbfff13d7250fae # v4
         if: always() && hashFiles('gitleaks-results.sarif') != ''
         with:
           sarif_file: gitleaks-results.sarif

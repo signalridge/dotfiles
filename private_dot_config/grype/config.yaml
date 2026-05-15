@@ -1,0 +1,4 @@
+log:
+  level: warn
+
+check-for-app-update: false

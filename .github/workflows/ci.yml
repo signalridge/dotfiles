@@ -12,15 +12,18 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+      - name: Restore Nix cache
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
         with:
-          use-flakehub: false
-          use-gha-cache: true
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('nix-config/**/*.nix', 'nix-config/**/*.tmpl', 'nix-config/.flake-*.lock', '.github/workflows/*.yml', '.pre-commit-config.yaml') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          gc-max-store-size-linux: 1G
+          gc-max-store-size-macos: 2G
       - name: Install tools
         run: |
-          nix profile install nixpkgs#pre-commit nixpkgs#treefmt nixpkgs#shfmt nixpkgs#shellcheck nixpkgs#statix nixpkgs#nixfmt nixpkgs#stylua nixpkgs#selene nixpkgs#chezmoi nixpkgs#prettier
+          nix profile install nixpkgs#pre-commit nixpkgs#treefmt nixpkgs#shfmt nixpkgs#shellcheck nixpkgs#statix nixpkgs#nixfmt nixpkgs#stylua nixpkgs#selene nixpkgs#chezmoi nixpkgs#prettier nixpkgs#typos nixpkgs#gitleaks
       - name: Setup chezmoi
         run: |
           mkdir -p ~/.config/chezmoi
@@ -39,7 +42,7 @@ jobs:
           gopassRepository = "git@github.com:test/pass.git"
           keysRepository = "git@github.com:test/keys.git"
           EOF
-      - uses: pre-commit/action@v3.0.1
+      - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
   nix:
     name: Nix (${{ matrix.platform }})
     strategy:
@@ -53,12 +56,15 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+      - name: Restore Nix cache
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
         with:
-          use-flakehub: false
-          use-gha-cache: true
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('nix-config/**/*.nix', 'nix-config/**/*.tmpl', 'nix-config/.flake-*.lock', '.github/workflows/*.yml', '.pre-commit-config.yaml') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          gc-max-store-size-linux: 1G
+          gc-max-store-size-macos: 2G
       - name: Install chezmoi
         run: nix profile install nixpkgs#chezmoi
       - name: Setup chezmoi
@@ -77,7 +83,7 @@ jobs:
         run: |
           # Render to temp directory (avoids Git tracking issues with flakes)
           workdir=$(mktemp -d)
-          echo "WORKDIR=$workdir" >> $GITHUB_ENV
+          echo "WORKDIR=$workdir" >> "$GITHUB_ENV"
           mkdir -p "$workdir/modules"
           chezmoi execute-template --source . < nix-config/flake.nix.tmpl > "$workdir/flake.nix"
           cp nix-config/.flake-${{ matrix.platform }}.lock "$workdir/flake.lock"
@@ -89,6 +95,6 @@ jobs:
           done
       - name: Check flake
         run: nix flake check --no-build "$WORKDIR"
-      - uses: DeterminateSystems/flake-checker-action@v12
+      - uses: DeterminateSystems/flake-checker-action@3164002371bc90729c68af0e24d5aacf20d7c9f6 # v12
         with:
           flake-lock-path: ${{ env.WORKDIR }}/flake.lock
