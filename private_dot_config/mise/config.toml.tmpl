@@ -20,6 +20,9 @@ uv = "latest"
 # pre-commit (Git hook framework, moved from nix to avoid dotnet-sdk compilation)
 "pipx:pre-commit" = "latest"
 
+# Posting terminal API client
+"pipx:posting" = "latest"
+
 # Go
 go = "latest"
 
@@ -42,6 +45,11 @@ lua = "5.4"
 
 # Gemini CLI managed via npm backend (replaces nix gemini-cli)
 "npm:@google/gemini-cli" = "latest"
+
+# AI coding usage analyzers
+"npm:ccusage" = "latest"
+"npm:@ccusage/codex" = "latest"
+"npm:@ccusage/opencode" = "latest"
 
 [settings]
 # Keep auto_install enabled for normal mise workflow.

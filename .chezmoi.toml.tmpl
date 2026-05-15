@@ -98,6 +98,14 @@ encryption = "age"
 {{-   $keysRepository = promptStringOnce . "keysRepository" "keys-manage backup repository URL" $keysRepository -}}
 {{- end -}}
 
+{{/* jj SSH commit signing key. Default to the managed SSH key only when encryption is enabled. */}}
+{{- $jjSigningKey := "" -}}
+{{- if hasKey . "jjSigningKey" -}}
+{{-   $jjSigningKey = .jjSigningKey -}}
+{{- else if $useEncryption -}}
+{{-   $jjSigningKey = "~/.ssh/main.pub" -}}
+{{- end -}}
+
 {{/* timezone: prefer local config, fallback to prompt/UTC */}}
 {{- $timezone := "" -}}
 
@@ -145,6 +153,7 @@ codexProviderAccount = {{ $codexProviderAccount | quote }}
 opencodeProviderAccount = {{ $opencodeProviderAccount | quote }}
 gopassRepository = {{ $gopassRepository | quote }}
 keysRepository = {{ $keysRepository | quote }}
+jjSigningKey = {{ $jjSigningKey | quote }}
 
 [edit]
 command = "code"

@@ -578,6 +578,57 @@ git-cleanup() {
     fi
 }
 
+# gcliff - Generate changelogs with a repo-local config when present, otherwise
+# fall back to the shared dotfiles default.
+gcliff() {
+    if ! command -v git-cliff >/dev/null 2>&1; then
+        echo "git-cliff not installed"
+        return 1
+    fi
+
+    if [[ -f cliff.toml || -f git-cliff.toml ]]; then
+        git-cliff "$@"
+        return $?
+    fi
+
+    local cfg="${XDG_CONFIG_HOME:-$HOME/.config}/git-cliff/cliff.toml"
+    if [[ -f "$cfg" ]]; then
+        git-cliff --config "$cfg" "$@"
+    else
+        git-cliff "$@"
+    fi
+}
+
+# lazydocker - Keep the shared config under XDG without exporting generic CONFIG_DIR.
+lazydocker() {
+    local cfg_dir="${XDG_CONFIG_HOME:-$HOME/.config}/lazydocker"
+    if [[ -d "$cfg_dir" ]]; then
+        CONFIG_DIR="$cfg_dir" command lazydocker "$@"
+    else
+        command lazydocker "$@"
+    fi
+}
+
+# procs - Load the shared XDG config unless the caller explicitly chooses one.
+procs() {
+    local cfg="${XDG_CONFIG_HOME:-$HOME/.config}/procs/config.toml"
+    local arg
+    for arg in "$@"; do
+        case "$arg" in
+        --load-config | --load-config=* | --use-config | --use-config=*)
+            command procs "$@"
+            return $?
+            ;;
+        esac
+    done
+
+    if [[ -f "$cfg" ]]; then
+        command procs --load-config "$cfg" "$@"
+    else
+        command procs "$@"
+    fi
+}
+
 # ─────────────────────────────────────────────────────────────
 # Git Worktree Utilities
 # ─────────────────────────────────────────────────────────────

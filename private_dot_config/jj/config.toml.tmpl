@@ -1,0 +1,24 @@
+[user]
+name = "{{ .gitUsername }}"
+email = "{{ .gitEmail }}"
+
+{{- if and (hasKey . "jjSigningKey") (ne .jjSigningKey "") }}
+
+[signing]
+behavior = "own"
+backend = "ssh"
+key = "{{ .jjSigningKey }}"
+{{- end }}
+
+[ui]
+editor = "nvim"
+pager = "delta"
+diff-formatter = ":git"
+diff-editor = ":builtin"
+
+[aliases]
+st = ["status"]
+ll = ["log", "-r", "ancestors(@, 10)"]
+
+[git]
+colocate = true

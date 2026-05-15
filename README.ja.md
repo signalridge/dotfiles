@@ -433,16 +433,19 @@ gopass show -o opencode/harui/private/api_key >/dev/null
 | `grep` | [ripgrep](https://github.com/BurntSushi/ripgrep) | 高速な正規表現検索                |
 | `find` | [fd](https://github.com/sharkdp/fd)              | 直感的な構文、`.gitignore` を尊重 |
 | `cd`   | [zoxide](https://github.com/ajeetdsouza/zoxide)  | スマートなディレクトリ移動        |
+| `du`   | [dust](https://github.com/bootandy/dust)         | 読みやすいディスク使用量ツリー    |
+| `man`  | [tlrc](https://github.com/tldr-pages/tlrc)       | 高速な Rust tldr クライアント     |
 
 ### シェル環境
 
-| ツール                                              | 役割                            |
-| --------------------------------------------------- | ------------------------------- |
-| [starship](https://github.com/starship/starship)    | 軽量で高速なプロンプト          |
-| [sheldon](https://github.com/rossmacarthur/sheldon) | 高速な zsh プラグイン管理       |
-| [atuin](https://github.com/atuinsh/atuin)           | あいまい検索付き履歴管理        |
-| [direnv](https://github.com/direnv/direnv)          | ディレクトリ単位の環境変数管理  |
-| [fzf](https://github.com/junegunn/fzf)              | ファイル/履歴などのあいまい検索 |
+| ツール                                                  | 役割                            |
+| ------------------------------------------------------- | ------------------------------- |
+| [starship](https://github.com/starship/starship)        | 軽量で高速なプロンプト          |
+| [sheldon](https://github.com/rossmacarthur/sheldon)     | 高速な zsh プラグイン管理       |
+| [atuin](https://github.com/atuinsh/atuin)               | あいまい検索付き履歴管理        |
+| [direnv](https://github.com/direnv/direnv)              | ディレクトリ単位の環境変数管理  |
+| [fzf](https://github.com/junegunn/fzf)                  | ファイル/履歴などのあいまい検索 |
+| [carapace](https://github.com/carapace-sh/carapace-bin) | 多くの CLI 向けの補完エンジン   |
 
 ### 開発ツール
 
@@ -452,6 +455,19 @@ gopass show -o opencode/harui/private/api_key >/dev/null
 | [lazygit](https://github.com/jesseduffield/lazygit) | ターミナル Git UI                           |
 | [yazi](https://github.com/sxyazi/yazi)              | 高速ターミナルファイルマネージャ            |
 | [tmux](https://github.com/tmux/tmux)                | ターミナルマルチプレクサ                    |
+
+### 拡張開発 CLI
+
+| 領域                      | ツール                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| コード/検索               | [ast-grep](https://github.com/ast-grep/ast-grep)、[watchexec](https://github.com/watchexec/watchexec)、[typos](https://github.com/crate-ci/typos)、[ruff](https://github.com/astral-sh/ruff)、[ty](https://github.com/astral-sh/ty)、[prek](https://github.com/j178/prek)                                                                         |
+| Git/リリース              | [jj](https://github.com/jj-vcs/jj)、[git-cliff](https://github.com/orhun/git-cliff)                                                                                                                                                                                                                                                               |
+| HTTP/API                  | [xh](https://github.com/ducaale/xh)、[Posting](https://github.com/darrenburns/posting)、[Slumber](https://github.com/LucasPickering/slumber)、[oha](https://github.com/hatoo/oha)                                                                                                                                                                 |
+| コンテナ/K8s              | [lazydocker](https://github.com/jesseduffield/lazydocker)、[kubectl](https://github.com/kubernetes/kubernetes)、[Helm](https://github.com/helm/helm)、[stern](https://github.com/stern/stern)、[kubecolor](https://github.com/kubecolor/kubecolor)、[kubectx](https://github.com/ahmetb/kubectx)、[krew](https://github.com/kubernetes-sigs/krew) |
+| Security/SBOM             | [zizmor](https://github.com/zizmorcore/zizmor)、[Gitleaks](https://github.com/gitleaks/gitleaks)、[Trivy](https://github.com/aquasecurity/trivy)、[Syft](https://github.com/anchore/syft)、[Grype](https://github.com/anchore/grype)                                                                                                              |
+| システム/ネット           | [bottom](https://github.com/ClementTsang/bottom)、[procs](https://github.com/dalance/procs)、[lnav](https://github.com/tstack/lnav)、[hexyl](https://github.com/sharkdp/hexyl)、[doggo](https://github.com/mr-karan/doggo)、[vivid](https://github.com/sharkdp/vivid)、[hyperfine](https://github.com/sharkdp/hyperfine)                          |
+| Shell/アーカイブ/メディア | [ouch](https://github.com/ouch-org/ouch)、[gum](https://github.com/charmbracelet/gum)、[vhs](https://github.com/charmbracelet/vhs)                                                                                                                                                                                                                |
+| AI 使用量                 | [ccusage](https://github.com/ryoppippi/ccusage)、`@ccusage/codex`、`@ccusage/opencode`                                                                                                                                                                                                                                                            |
 
 ---
 

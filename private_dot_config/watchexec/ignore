@@ -1,0 +1,14 @@
+.git
+.jj
+.direnv
+.venv
+node_modules
+target
+dist
+build
+.next
+.nuxt
+.cache
+coverage
+__pycache__
+*.pyc

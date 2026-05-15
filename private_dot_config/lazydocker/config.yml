@@ -1,0 +1,34 @@
+gui:
+  scrollHeight: 2
+  language: auto
+  wrapMainPanel: true
+  sidePanelWidth: 0.3333
+  showBottomLine: true
+  border: rounded
+  theme:
+    activeBorderColor:
+      - magenta
+      - bold
+    inactiveBorderColor:
+      - white
+    selectedLineBgColor:
+      - blue
+    optionsTextColor:
+      - cyan
+
+logs:
+  since: 60m
+
+oS:
+  openCommand: open {{filename}}
+  openLinkCommand: open {{link}}
+
+stats:
+  maxDuration: 3m0s
+  graphs:
+    - caption: CPU (%)
+      statPath: DerivedStats.CPUPercentage
+      color: cyan
+    - caption: Memory (%)
+      statPath: DerivedStats.MemoryPercentage
+      color: green

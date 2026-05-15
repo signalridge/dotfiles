@@ -1,0 +1,16 @@
+editor: nvim
+follow_redirects: true
+large_body_size: 2000000
+preview_templates: true
+
+commands:
+  default_query:
+    json: jq
+
+input_bindings:
+  up: [k]
+  down: [j]
+  left: [h]
+  right: [l]
+  scroll_up: [ctrl u]
+  scroll_down: [ctrl d]

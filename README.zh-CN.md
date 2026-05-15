@@ -431,16 +431,19 @@ gopass show -o opencode/harui/private/api_key >/dev/null
 | `grep` | [ripgrep](https://github.com/BurntSushi/ripgrep) | 极速正则搜索                |
 | `find` | [fd](https://github.com/sharkdp/fd)              | 直观语法，遵循 `.gitignore` |
 | `cd`   | [zoxide](https://github.com/ajeetdsouza/zoxide)  | 智能目录跳转                |
+| `du`   | [dust](https://github.com/bootandy/dust)         | 可读的磁盘占用树            |
+| `man`  | [tlrc](https://github.com/tldr-pages/tlrc)       | 快速 Rust tldr 客户端       |
 
 ### Shell 环境
 
-| 工具                                                | 作用                   |
-| --------------------------------------------------- | ---------------------- |
-| [starship](https://github.com/starship/starship)    | 极简、快速的提示符     |
-| [sheldon](https://github.com/rossmacarthur/sheldon) | zsh 插件管理器         |
-| [atuin](https://github.com/atuinsh/atuin)           | 支持模糊搜索的命令历史 |
-| [direnv](https://github.com/direnv/direnv)          | 按目录自动加载环境变量 |
-| [fzf](https://github.com/junegunn/fzf)              | 文件/历史等模糊查找器  |
+| 工具                                                    | 作用                   |
+| ------------------------------------------------------- | ---------------------- |
+| [starship](https://github.com/starship/starship)        | 极简、快速的提示符     |
+| [sheldon](https://github.com/rossmacarthur/sheldon)     | zsh 插件管理器         |
+| [atuin](https://github.com/atuinsh/atuin)               | 支持模糊搜索的命令历史 |
+| [direnv](https://github.com/direnv/direnv)              | 按目录自动加载环境变量 |
+| [fzf](https://github.com/junegunn/fzf)                  | 文件/历史等模糊查找器  |
+| [carapace](https://github.com/carapace-sh/carapace-bin) | 多 shell CLI 补全引擎  |
 
 ### 开发工具
 
@@ -450,6 +453,19 @@ gopass show -o opencode/harui/private/api_key >/dev/null
 | [lazygit](https://github.com/jesseduffield/lazygit) | 终端 Git UI                                |
 | [yazi](https://github.com/sxyazi/yazi)              | 高性能终端文件管理器                       |
 | [tmux](https://github.com/tmux/tmux)                | 终端复用器                                 |
+
+### 扩展开发 CLI
+
+| 领域            | 工具                                                                                                                                                                                                                                                                                                                                              |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 代码/搜索       | [ast-grep](https://github.com/ast-grep/ast-grep)、[watchexec](https://github.com/watchexec/watchexec)、[typos](https://github.com/crate-ci/typos)、[ruff](https://github.com/astral-sh/ruff)、[ty](https://github.com/astral-sh/ty)、[prek](https://github.com/j178/prek)                                                                         |
+| Git/发布        | [jj](https://github.com/jj-vcs/jj)、[git-cliff](https://github.com/orhun/git-cliff)                                                                                                                                                                                                                                                               |
+| HTTP/API        | [xh](https://github.com/ducaale/xh)、[Posting](https://github.com/darrenburns/posting)、[Slumber](https://github.com/LucasPickering/slumber)、[oha](https://github.com/hatoo/oha)                                                                                                                                                                 |
+| 容器/K8s        | [lazydocker](https://github.com/jesseduffield/lazydocker)、[kubectl](https://github.com/kubernetes/kubernetes)、[Helm](https://github.com/helm/helm)、[stern](https://github.com/stern/stern)、[kubecolor](https://github.com/kubecolor/kubecolor)、[kubectx](https://github.com/ahmetb/kubectx)、[krew](https://github.com/kubernetes-sigs/krew) |
+| 安全/SBOM       | [zizmor](https://github.com/zizmorcore/zizmor)、[Gitleaks](https://github.com/gitleaks/gitleaks)、[Trivy](https://github.com/aquasecurity/trivy)、[Syft](https://github.com/anchore/syft)、[Grype](https://github.com/anchore/grype)                                                                                                              |
+| 系统/网络       | [bottom](https://github.com/ClementTsang/bottom)、[procs](https://github.com/dalance/procs)、[lnav](https://github.com/tstack/lnav)、[hexyl](https://github.com/sharkdp/hexyl)、[doggo](https://github.com/mr-karan/doggo)、[vivid](https://github.com/sharkdp/vivid)、[hyperfine](https://github.com/sharkdp/hyperfine)                          |
+| Shell/归档/媒体 | [ouch](https://github.com/ouch-org/ouch)、[gum](https://github.com/charmbracelet/gum)、[vhs](https://github.com/charmbracelet/vhs)                                                                                                                                                                                                                |
+| AI 用量分析     | [ccusage](https://github.com/ryoppippi/ccusage)、`@ccusage/codex`、`@ccusage/opencode`                                                                                                                                                                                                                                                            |
 
 ---
 
