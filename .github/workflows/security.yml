@@ -14,6 +14,7 @@ permissions:
 jobs:
   zizmor:
     name: Zizmor GitHub Actions Scan
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -34,6 +35,7 @@ jobs:
 
   trivy:
     name: Trivy Filesystem Scan
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -48,7 +50,7 @@ jobs:
           severity: CRITICAL,HIGH,MEDIUM
 
       - name: Upload Trivy SARIF report
-        uses: github/codeql-action/upload-sarif@5e316336eb4f107009e477d4bfbfff13d7250fae # v4
+        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
         if: always()
         with:
           sarif_file: trivy-results.sarif
@@ -56,6 +58,7 @@ jobs:
 
   gitleaks:
     name: Gitleaks Secret Scan
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -86,7 +89,7 @@ jobs:
             --report-path gitleaks-results.sarif
 
       - name: Upload Gitleaks SARIF report
-        uses: github/codeql-action/upload-sarif@5e316336eb4f107009e477d4bfbfff13d7250fae # v4
+        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
         if: always() && hashFiles('gitleaks-results.sarif') != ''
         with:
           sarif_file: gitleaks-results.sarif
