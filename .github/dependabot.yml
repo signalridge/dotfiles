@@ -8,9 +8,7 @@ updates:
       cronjob: "0 1 * * *"
       timezone: "Asia/Tokyo"
     cooldown:
-      semver-major-days: 14
-      semver-minor-days: 3
-      semver-patch-days: 3
+      default-days: 3
     pull-request-branch-name:
       separator: "-"
     open-pull-requests-limit: 5
