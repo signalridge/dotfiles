@@ -615,7 +615,7 @@ procs() {
     local arg
     for arg in "$@"; do
         case "$arg" in
-        --load-config | --load-config=* | --use-config | --use-config=*)
+        --load-config | --load-config=*)
             command procs "$@"
             return $?
             ;;
