@@ -6,11 +6,11 @@ versions:
   nixVersion: v2.34.7
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
-  aquaVersion: v2.58.1
+  aquaVersion: v2.59.0
   nixIndexDb: 2026-05-10-055239
   paperlib: 3.1.12
-  claudeWshobsonAgentsRev: 112197c6bfd0a1ab10d374e85a2f5efa4757b77d
-  claudeWshobsonAgentsSha256: 39a846274c60ba2798d2327fdd27653cee3b462beb8ab0dec798086eda907974
+  claudeWshobsonAgentsRev: 3e17b71b2da6cf9f3d69f347ef8f8e4984281f7c
+  claudeWshobsonAgentsSha256: c228d108eeb2adc0d15bdfa1dac3fc64fdded075fd446f88f9b9776d0b1a460e
   claudeAnthropicsSkillsRev: f458cee31a7577a47ba0c9a101976fa599385174
   claudeAnthropicsSkillsSha256: c4cf91e678b67b33ffae5c273f756fc7f5565ff0a690658d6b05980b52b36055
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35
@@ -25,7 +25,7 @@ versions:
   supabaseAgentSkillsRev: daaed4afe2c78cbdbf92a98f43540cb0293b512d
   expoSkillsRev: 47f0ef64821f10e42a600758b5087bfe89c09474
   microsoftSkillsRev: 8c173dbe3c4051ae35ee4cb78b8bf80c88f36cc8
-  sickn33AntigravitySkillsRev: 45bad85d0d4cff01426074756d14d429a60b8cca
+  sickn33AntigravitySkillsRev: 2e0c5a9cbf515a0611afcec73ef2a6644c4191e3
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   humanizerEnRev: 8b3a17889fbf12bedae20974a3c9f9de746ed754
