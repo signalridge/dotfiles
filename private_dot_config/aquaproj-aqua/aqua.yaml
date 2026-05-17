@@ -16,9 +16,9 @@ packages:
       enabled: false
   - name: anthropics/claude-code@v2.1.143
   - name: openai/codex@rust-v0.130.0
-  - name: anomalyco/opencode@v1.15.0
+  - name: anomalyco/opencode@v1.15.3
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.5.9
+  - name: jdx/mise@v2026.5.10
   - name: muesli/duf@v0.9.1
   - name: bootandy/dust@v1.2.4
   - name: dandavison/delta@0.19.2
@@ -58,16 +58,16 @@ packages:
   - name: joshmedeski/sesh@v2.26.2
   - name: skim-rs/skim@v4.6.2
   - name: starship/starship@v1.25.1
-  - name: JohnnyMorganz/StyLua@v2.4.1
+  - name: JohnnyMorganz/StyLua@v2.5.2
   - name: Kampfkarren/selene@0.30.1
-  - name: crate-ci/typos@v1.46.1
-  - name: zizmorcore/zizmor@v1.25.0
+  - name: crate-ci/typos@v1.46.2
+  - name: zizmorcore/zizmor@v1.25.2
   - name: gitleaks/gitleaks@v8.30.1
   - name: koalaman/shellcheck@v0.11.0
   - name: mvdan/sh@v3.13.1
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.15.13
-  - name: astral-sh/ty@0.0.36
+  - name: astral-sh/ty@0.0.37
   - name: j178/prek@v0.4.0
   - name: golang.org/x/tools/gopls@v0.21.1
   - name: golangci/golangci-lint@v2.12.2
@@ -96,7 +96,7 @@ packages:
   - name: aquasecurity/trivy@v0.70.0
   - name: anchore/syft@v1.44.0
   - name: anchore/grype@v0.112.0
-  - name: LucasPickering/slumber@v5.2.5
+  - name: LucasPickering/slumber@v5.3.0
   - name: charmbracelet/gum@v0.17.0
   - name: charmbracelet/vhs@v0.11.0
   - name: terraform-linters/tflint@v0.62.1
