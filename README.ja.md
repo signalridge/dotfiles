@@ -317,7 +317,7 @@ OpenCode 設定は次のテンプレートで宣言的に管理します。
 - `~/.config/opencode/opencode.jsonc`
 - `~/.config/opencode/oh-my-opencode.jsonc`
 
-OpenCode の key レンダリングは `provider@private` 命名（例: `harui@private`）を使い、gopass から provider key を解決します。
+OpenCode の key レンダリングは `provider@private` 命名（例: `kimi@private`）を使い、gopass から provider key を解決します。
 
 ### OpenCode ネイティブモード
 
@@ -390,7 +390,7 @@ codex-manage switch openai
 codex-with deepseek@private "explain this file"
 
 # OpenCode（ネイティブ CLI + provider key レンダリング）
-opencode run -m harui@private/gpt-5.3-codex "say ok"
+opencode run -m kimi@private/kimi-k2.5 "say ok"
 ```
 
 ### Token Helpers
@@ -398,7 +398,7 @@ opencode run -m harui@private/gpt-5.3-codex "say ok"
 ```bash
 claude-token --check kimi@private
 codex-token --check deepseek@private
-gopass show -o opencode/harui/private/api_key >/dev/null
+gopass show -o opencode/kimi/private/api_key >/dev/null
 ```
 
 ### MCP 連携

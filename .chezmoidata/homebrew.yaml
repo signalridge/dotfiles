@@ -29,7 +29,6 @@ homebrew:
       - keka
       - keyboardcleantool
       - ghostty
-      # - "mactex"
       - mockoon
       - notion
       - nikitabobko/tap/aerospace
@@ -42,6 +41,7 @@ homebrew:
       - slidepilot
       - stats
       - tailscale-app
+      - typeless
       - google-chrome
     work:
       - dbeaver-community

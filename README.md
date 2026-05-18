@@ -317,7 +317,7 @@ Rendered targets:
 - `~/.config/opencode/opencode.jsonc`
 - `~/.config/opencode/oh-my-opencode.jsonc`
 
-OpenCode key rendering uses `provider@private` naming (for example `harui@private`) and resolves provider keys from gopass.
+OpenCode key rendering uses `provider@private` naming (for example `kimi@private`) and resolves provider keys from gopass.
 
 ### OpenCode Native Mode
 
@@ -390,7 +390,7 @@ codex-manage switch openai
 codex-with deepseek@private "explain this file"
 
 # OpenCode (native CLI + provider-based key rendering)
-opencode run -m harui@private/gpt-5.3-codex "say ok"
+opencode run -m kimi@private/kimi-k2.5 "say ok"
 ```
 
 ### Token Helpers
@@ -398,7 +398,7 @@ opencode run -m harui@private/gpt-5.3-codex "say ok"
 ```bash
 claude-token --check kimi@private
 codex-token --check deepseek@private
-gopass show -o opencode/harui/private/api_key >/dev/null
+gopass show -o opencode/kimi/private/api_key >/dev/null
 ```
 
 ### MCP Integration

@@ -1,7 +1,7 @@
-{{- $resolvedProvider := "harui@private" -}}
-{{- $model := "gpt-5.3-codex" -}}
+{{- $resolvedProvider := "kimi@private" -}}
+{{- $model := "kimi-k2.5" -}}
 {{- $modelRef := printf "%s/%s" $resolvedProvider $model -}}
-{{- $providerKeys := list "openai@private" "deepseek@private" "doubao@private" "glm@private" "harui@private" "kimi@private" "minimax@private" "naapi@private" "qwen@private" -}}
+{{- $providerKeys := list "openai@private" "deepseek@private" "doubao@private" "glm@private" "kimi@private" "minimax@private" "qwen@private" -}}
 {{- $providerApiKeys := dict -}}
 {{- range $providerKey := $providerKeys -}}
 {{-   $providerApiPath := printf "opencode/%s/api_key" (replace "@" "/" $providerKey) -}}
@@ -213,41 +213,6 @@
         }
       }
     },
-    "harui@private": {
-      "npm": "@ai-sdk/openai",
-      "name": "harui@private",
-      "env": ["HARUI_API_KEY"],
-      "options": {
-        "baseURL": "https://codex.harui.edu.kg/v1"{{- if ne (get $providerApiKeys "harui@private") "" }},
-        "apiKey": {{ get $providerApiKeys "harui@private" | quote }}{{- end }}
-      },
-      "models": {
-        "gpt-5.3-codex": {
-          "name": "GPT-5.3 Codex",
-          "options": {
-            "store": false
-          },
-          "variants": {
-            "low": {},
-            "medium": {},
-            "high": {},
-            "xhigh": {}
-          }
-        },
-        "gpt-5.2-codex": {
-          "name": "GPT-5.2 Codex",
-          "options": {
-            "store": false
-          },
-          "variants": {
-            "low": {},
-            "medium": {},
-            "high": {},
-            "xhigh": {}
-          }
-        }
-      }
-    },
     "kimi@private": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "kimi@private",
@@ -294,41 +259,6 @@
       "models": {
         "MiniMax-M2.1": {
           "name": "MiniMax M2.1",
-          "options": {
-            "store": false
-          },
-          "variants": {
-            "low": {},
-            "medium": {},
-            "high": {},
-            "xhigh": {}
-          }
-        }
-      }
-    },
-    "naapi@private": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "naapi@private",
-      "env": ["NAAPI_API_KEY"],
-      "options": {
-        "baseURL": "https://na.wanxiaot.com/v1"{{- if ne (get $providerApiKeys "naapi@private") "" }},
-        "apiKey": {{ get $providerApiKeys "naapi@private" | quote }}{{- end }}
-      },
-      "models": {
-        "gpt-5.3-codex": {
-          "name": "GPT-5.3 Codex",
-          "options": {
-            "store": false
-          },
-          "variants": {
-            "low": {},
-            "medium": {},
-            "high": {},
-            "xhigh": {}
-          }
-        },
-        "gpt-5.2-codex": {
-          "name": "GPT-5.2 Codex",
           "options": {
             "store": false
           },

@@ -291,7 +291,6 @@ assert_not_contains "$claude_list" "qwen@private"
 assert_not_contains "$claude_list" "kimi"
 assert_not_contains "$claude_list" "deepseek"
 assert_not_contains "$claude_list" "doubao@private"
-assert_not_contains "$claude_list" "naapi@private"
 assert_not_contains "$claude_list" "(no key)"
 
 # list-visible runtime accounts must be operable for switch.
