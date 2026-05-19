@@ -315,7 +315,7 @@ OpenCode 配置由以下模板声明式管理：
 - `~/.config/opencode/opencode.jsonc`
 - `~/.config/opencode/oh-my-opencode.jsonc`
 
-OpenCode 的 key 渲染使用 `provider@private` 命名（如 `harui@private`），并从 gopass 解析 provider key。
+OpenCode 的 key 渲染使用 `provider@private` 命名（如 `kimi@private`），并从 gopass 解析 provider key。
 
 ### OpenCode 原生模式
 
@@ -388,7 +388,7 @@ codex-manage switch openai
 codex-with deepseek@private "explain this file"
 
 # OpenCode（原生 CLI + provider key 渲染）
-opencode run -m harui@private/gpt-5.3-codex "say ok"
+opencode run -m kimi@private/kimi-k2.5 "say ok"
 ```
 
 ### Token Helpers
@@ -396,7 +396,7 @@ opencode run -m harui@private/gpt-5.3-codex "say ok"
 ```bash
 claude-token --check kimi@private
 codex-token --check deepseek@private
-gopass show -o opencode/harui/private/api_key >/dev/null
+gopass show -o opencode/kimi/private/api_key >/dev/null
 ```
 
 ### MCP 集成

@@ -113,7 +113,7 @@ case "$cmd" in
     list)
         target="${1:-}"
         [[ "$target" == "-f" ]] && target="${2:-}"
-        if [[ "$target" == "opencode/harui/private/api_key" || "$target" == "opencode/deepseek/private/api_key" || "$target" == "opencode/openai/private/api_key" ]]; then
+        if [[ "$target" == "opencode/kimi/private/api_key" || "$target" == "opencode/deepseek/private/api_key" || "$target" == "opencode/openai/private/api_key" ]]; then
             exit 0
         fi
         exit 1
@@ -123,7 +123,7 @@ case "$cmd" in
         if [[ "$target" == "--password" || "$target" == "-o" ]]; then
             target="${2:-}"
         fi
-        if [[ "$target" == "opencode/harui/private/api_key" ]]; then
+        if [[ "$target" == "opencode/kimi/private/api_key" ]]; then
             printf '%s' "stub-account-key"
             exit 0
         fi
@@ -183,10 +183,9 @@ assert_jq "$OPENCODE_DEFAULT" '(.provider | has("openai_private")) == false'
 assert_jq "$OPENCODE_DEFAULT" '.provider["deepseek@private"].env == ["DEEPSEEK_API_KEY"]'
 assert_jq "$OPENCODE_DEFAULT" '.provider["deepseek@private"].models["deepseek-chat"].options.store == false'
 assert_jq "$OPENCODE_DEFAULT" '(.provider["deepseek@private"].models["deepseek-chat"].variants | has("xhigh")) == true'
-assert_jq "$OPENCODE_DEFAULT" '.provider["harui@private"].env == ["HARUI_API_KEY"]'
-assert_jq "$OPENCODE_DEFAULT" '.provider["harui@private"].npm == "@ai-sdk/openai"'
-assert_jq "$OPENCODE_DEFAULT" '.provider["harui@private"].options.baseURL == "https://codex.harui.edu.kg/v1"'
-assert_jq "$OPENCODE_DEFAULT" '.provider["harui@private"].models["gpt-5.3-codex"].options.store == false'
+assert_jq "$OPENCODE_DEFAULT" '.provider["kimi@private"].env == ["MOONSHOT_API_KEY"]'
+assert_jq "$OPENCODE_DEFAULT" '.provider["kimi@private"].npm == "@ai-sdk/openai-compatible"'
+assert_jq "$OPENCODE_DEFAULT" '.provider["kimi@private"].models["kimi-k2.5"].options.store == false'
 assert_jq "$OPENCODE_DEFAULT" '.provider["qwen@private"].env == ["DASHSCOPE_API_KEY"]'
 assert_jq "$OPENCODE_DEFAULT" '(.provider["qwen@private"].models["qwen3-max"].variants | has("medium")) == true'
 assert_jq "$OPENCODE_DEFAULT" '.provider["kimi@private"].options.baseURL == "https://api.moonshot.ai/v1"'
@@ -210,7 +209,7 @@ assert_jq "$OPENCODE_DEFAULT" '.mcp.gitmcp.type == "remote"'
 assert_jq "$OPENCODE_DEFAULT" '.mcp.gitmcp.url == "https://gitmcp.io/docs"'
 assert_jq "$OPENCODE_DEFAULT" '.mcp.gitmcp.oauth == false'
 assert_jq "$OPENCODE_DEFAULT" '.mcp.gitmcp.enabled == true'
-assert_jq "$OPENCODE_WITH_GOPASS" '.provider["harui@private"].options.apiKey == "stub-account-key"'
+assert_jq "$OPENCODE_WITH_GOPASS" '.provider["kimi@private"].options.apiKey == "stub-account-key"'
 assert_jq "$OPENCODE_WITH_GOPASS" '.provider["deepseek@private"].options.apiKey == "stub-deepseek-key"'
 assert_jq "$OPENCODE_WITH_GOPASS" '.provider["openai@private"].options.apiKey == "stub-openai-key"'
 
