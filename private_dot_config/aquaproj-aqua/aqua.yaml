@@ -14,11 +14,11 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.145
-  - name: openai/codex@rust-v0.132.0
-  - name: anomalyco/opencode@v1.15.6
+  - name: anthropics/claude-code@v2.1.147
+  - name: openai/codex@rust-v0.133.0
+  - name: anomalyco/opencode@v1.15.7
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.5.12
+  - name: jdx/mise@v2026.5.13
   - name: muesli/duf@v0.9.1
   - name: bootandy/dust@v1.2.4
   - name: dandavison/delta@0.19.2
@@ -56,17 +56,17 @@ packages:
   - name: ducaale/xh@v0.25.3
   - name: watchexec/watchexec@v2.5.1
   - name: joshmedeski/sesh@v2.26.2
-  - name: skim-rs/skim@v4.6.3
+  - name: skim-rs/skim@v4.7.0
   - name: starship/starship@v1.25.1
   - name: JohnnyMorganz/StyLua@v2.5.2
-  - name: Kampfkarren/selene@0.30.1
+  - name: Kampfkarren/selene@0.31.0
   - name: crate-ci/typos@v1.46.2
   - name: zizmorcore/zizmor@v1.25.2
   - name: gitleaks/gitleaks@v8.30.1
   - name: koalaman/shellcheck@v0.11.0
   - name: mvdan/sh@v3.13.1
   - name: rhysd/actionlint@v1.7.12
-  - name: astral-sh/ruff@0.15.13
+  - name: astral-sh/ruff@0.15.14
   - name: astral-sh/ty@0.0.38
   - name: j178/prek@v0.4.1
   - name: golang.org/x/tools/gopls@v0.22.0
