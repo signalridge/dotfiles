@@ -2,8 +2,17 @@ nix:
   sysPkgs: []
   homepkgs:
     shared:
-      # texliveFull: temporarily disabled (90+ fmt derivations rebuild on every flake.lock update)
-      # - "(texliveFull.withPackages (ps: with ps; [ ]))"
+      # texlive: minimal set for Japanese lualatex (ltjsarticle, lang: ja) used by quarto.
+      # NOTE: the nix store is read-only, so quarto/tlmgr CANNOT auto-install missing
+      # packages at render time — everything the document needs must be listed here.
+      # If a render reports a missing .sty/.cls, add the TeX Live package name below.
+      # ~2.6 GiB on disk (vs scheme-full ~4.8 GiB) once latexextra/mathscience are included —
+      # quarto's default PDF template genuinely needs that breadth. The combine derivations
+      # build locally and rebuild on flake.lock bumps. Avoid texliveFull.withPackages (uncached).
+      # collection-mathscience: unicode-math etc.; lualatex-math: separate pkg quarto needs under lualatex.
+      # collection-latexextra: framed/fancyvrb/bookmark/footnotehyper/... quarto's default PDF template pulls these.
+      # selnolig: standalone pkg quarto loads unconditionally under LuaTeX (not in the collections above).
+      - "(texlive.withPackages (ps: with ps; [ scheme-basic latexmk collection-latexrecommended collection-latexextra collection-fontsrecommended collection-mathscience lualatex-math selnolig collection-langjapanese ]))"
       - aria2
       - git
       - certbot
