@@ -56,3 +56,8 @@ fi
 # XDG config paths for tools whose macOS defaults live under Library/Application Support.
 export TLRC_CONFIG="${TLRC_CONFIG:-${XDG_CONFIG_HOME}/tlrc/config.toml}"
 export SLUMBER_CONFIG_PATH="${SLUMBER_CONFIG_PATH:-${XDG_CONFIG_HOME}/slumber/config.yml}"
+
+# Mermaid CLI (mmdc): the nix mermaid-cli ships no Chromium on macOS, so puppeteer
+# can't launch a browser. Point it at the installed Google Chrome (no-op elsewhere).
+[[ -z "${PUPPETEER_EXECUTABLE_PATH:-}" && -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]] \
+    && export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
