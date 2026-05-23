@@ -12,7 +12,20 @@ nix:
       # collection-mathscience: unicode-math etc.; lualatex-math: separate pkg quarto needs under lualatex.
       # collection-latexextra: framed/fancyvrb/bookmark/footnotehyper/... quarto's default PDF template pulls these.
       # selnolig: standalone pkg quarto loads unconditionally under LuaTeX (not in the collections above).
-      - "(texlive.withPackages (ps: with ps; [ scheme-basic latexmk collection-latexrecommended collection-latexextra collection-fontsrecommended collection-mathscience lualatex-math selnolig collection-langjapanese ]))"
+      - |-
+        (texlive.withPackages (
+              ps: with ps; [
+                scheme-basic
+                latexmk
+                collection-latexrecommended
+                collection-latexextra
+                collection-fontsrecommended
+                collection-mathscience
+                lualatex-math
+                selnolig
+                collection-langjapanese
+              ]
+            ))
       - aria2
       - git
       - certbot
