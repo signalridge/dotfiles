@@ -56,7 +56,6 @@ packages:
   - name: ducaale/xh@v0.25.3
   - name: watchexec/watchexec@v2.5.1
   - name: joshmedeski/sesh@v2.26.2
-  - name: skim-rs/skim@v4.7.0
   - name: starship/starship@v1.25.1
   - name: JohnnyMorganz/StyLua@v2.5.2
   - name: Kampfkarren/selene@0.31.0
@@ -100,3 +99,5 @@ packages:
   - name: charmbracelet/gum@v0.17.0
   - name: charmbracelet/vhs@v0.11.0
   - name: terraform-linters/tflint@v0.62.1
+  - name: quarto-dev/quarto-cli@v1.9.37
+  - name: typst/typst@v0.14.2
