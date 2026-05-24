@@ -22,6 +22,7 @@ homebrew:
   casks:
     shared:
       - cmux
+      - codex-app # OpenAI Codex desktop app for managing coding agents
       - dockdoor
       - visual-studio-code
       - hammerspoon
