@@ -70,7 +70,7 @@ packages:
   - name: j178/prek@v0.4.1
   - name: golang.org/x/tools/gopls@v0.22.0
   - name: golangci/golangci-lint@v2.12.2
-  - name: goreleaser/goreleaser@v2.15.4
+  - name: goreleaser/goreleaser@v2.16.0
   - name: orhun/git-cliff@v2.13.1
   - name: numtide/treefmt@v2.5.0
   - name: XAMPPRocky/tokei@14.0.0
