@@ -1,0 +1,369 @@
+#!/usr/bin/env python3
+"""Narrow Reddit OAuth submit helper.
+
+This intentionally supports post submission only. It does not comment, vote,
+DM, scrape logged-in browser sessions, or manage account activity.
+"""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import json
+import os
+import re
+import secrets
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+from typing import Any
+
+
+TOKEN_URL = "https://www.reddit.com/api/v1/access_token"
+AUTH_URL = "https://www.reddit.com/api/v1/authorize"
+API_BASE = "https://oauth.reddit.com"
+DEFAULT_REDIRECT_URI = "http://localhost:8080/callback"
+DEFAULT_SCOPES = "identity read submit"
+SUBREDDIT_RE = re.compile(r"^[A-Za-z0-9_]{2,21}$")
+
+
+class RedditSubmitError(Exception):
+    pass
+
+
+def env_or_arg(value: str | None, env_name: str, *, required: bool = True) -> str:
+    result = value or os.environ.get(env_name, "")
+    if required and not result:
+        raise RedditSubmitError(f"missing {env_name}; pass the option or set the environment variable")
+    return result
+
+
+def read_text(value: str | None, file_path: str | None, label: str) -> str:
+    if value is not None and file_path is not None:
+        raise RedditSubmitError(f"use either --{label} or --{label}-file, not both")
+    if value is not None:
+        return value.strip()
+    if file_path is None:
+        return ""
+    if file_path == "-":
+        return sys.stdin.read().strip()
+    return Path(file_path).read_text(encoding="utf-8").strip()
+
+
+def normalize_subreddit(value: str) -> str:
+    sr = value.strip()
+    if sr.startswith("r/"):
+        sr = sr[2:]
+    if not SUBREDDIT_RE.fullmatch(sr):
+        raise RedditSubmitError(f"invalid subreddit name: {value!r}")
+    return sr
+
+
+def require_user_agent(*, for_write: bool) -> str:
+    user_agent = os.environ.get("REDDIT_USER_AGENT", "").strip()
+    if for_write and not user_agent:
+        raise RedditSubmitError(
+            "missing REDDIT_USER_AGENT; use a unique value like "
+            "'macos:reddit-submit:0.1 (by /u/your_username)'"
+        )
+    return user_agent or "macos:reddit-submit:0.1 (by /u/unknown)"
+
+
+def basic_auth_header(client_id: str, client_secret: str) -> str:
+    raw = f"{client_id}:{client_secret}".encode("utf-8")
+    return "Basic " + base64.b64encode(raw).decode("ascii")
+
+
+def request_json(
+    url: str,
+    *,
+    method: str = "GET",
+    headers: dict[str, str] | None = None,
+    form: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    data = None
+    final_headers = dict(headers or {})
+    if form is not None:
+        data = urllib.parse.urlencode(form).encode("utf-8")
+        final_headers.setdefault("Content-Type", "application/x-www-form-urlencoded")
+    req = urllib.request.Request(url, data=data, headers=final_headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            body = response.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RedditSubmitError(f"HTTP {exc.code} from {url}: {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise RedditSubmitError(f"request failed for {url}: {exc.reason}") from exc
+
+    try:
+        parsed = json.loads(body)
+    except json.JSONDecodeError as exc:
+        raise RedditSubmitError(f"non-JSON response from {url}: {body[:500]}") from exc
+    if not isinstance(parsed, dict):
+        raise RedditSubmitError(f"unexpected JSON response from {url}: {parsed!r}")
+    return parsed
+
+
+def token_request(form: dict[str, str], args: argparse.Namespace) -> dict[str, Any]:
+    client_id = env_or_arg(args.client_id, "REDDIT_CLIENT_ID")
+    client_secret = args.client_secret
+    if client_secret is None:
+        client_secret = os.environ.get("REDDIT_CLIENT_SECRET", "")
+    headers = {
+        "Authorization": basic_auth_header(client_id, client_secret),
+        "User-Agent": require_user_agent(for_write=False),
+    }
+    return request_json(TOKEN_URL, method="POST", headers=headers, form=form)
+
+
+def access_token(args: argparse.Namespace) -> str:
+    refresh_token = env_or_arg(getattr(args, "refresh_token", None), "REDDIT_REFRESH_TOKEN")
+    token = token_request({"grant_type": "refresh_token", "refresh_token": refresh_token}, args)
+    value = token.get("access_token")
+    if not isinstance(value, str) or not value:
+        raise RedditSubmitError(f"refresh response did not include access_token: {token}")
+    return value
+
+
+def api_get(path: str, args: argparse.Namespace) -> dict[str, Any]:
+    token = access_token(args)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "User-Agent": require_user_agent(for_write=False),
+    }
+    return request_json(f"{API_BASE}{path}", headers=headers)
+
+
+def api_post(path: str, args: argparse.Namespace, form: dict[str, str]) -> dict[str, Any]:
+    token = access_token(args)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "User-Agent": require_user_agent(for_write=True),
+    }
+    return request_json(f"{API_BASE}{path}", method="POST", headers=headers, form=form)
+
+
+def cmd_auth_url(args: argparse.Namespace) -> int:
+    client_id = env_or_arg(args.client_id, "REDDIT_CLIENT_ID")
+    redirect_uri = args.redirect_uri or os.environ.get("REDDIT_REDIRECT_URI", DEFAULT_REDIRECT_URI)
+    state = args.state or secrets.token_urlsafe(16)
+    scope = args.scope or DEFAULT_SCOPES
+    params = {
+        "client_id": client_id,
+        "response_type": "code",
+        "state": state,
+        "redirect_uri": redirect_uri,
+        "duration": "permanent",
+        "scope": scope,
+    }
+    print(AUTH_URL + "?" + urllib.parse.urlencode(params))
+    print(f"state: {state}", file=sys.stderr)
+    return 0
+
+
+def cmd_exchange_code(args: argparse.Namespace) -> int:
+    redirect_uri = args.redirect_uri or os.environ.get("REDDIT_REDIRECT_URI", DEFAULT_REDIRECT_URI)
+    result = token_request(
+        {"grant_type": "authorization_code", "code": args.code, "redirect_uri": redirect_uri},
+        args,
+    )
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_refresh(args: argparse.Namespace) -> int:
+    result = token_request(
+        {
+            "grant_type": "refresh_token",
+            "refresh_token": env_or_arg(args.refresh_token, "REDDIT_REFRESH_TOKEN"),
+        },
+        args,
+    )
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_me(args: argparse.Namespace) -> int:
+    print(json.dumps(api_get("/api/v1/me", args), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_rules(args: argparse.Namespace) -> int:
+    sr = normalize_subreddit(args.subreddit)
+    print(json.dumps(api_get(f"/r/{sr}/about/rules", args), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_requirements(args: argparse.Namespace) -> int:
+    sr = normalize_subreddit(args.subreddit)
+    print(json.dumps(api_get(f"/api/v1/{sr}/post_requirements", args), indent=2, sort_keys=True))
+    return 0
+
+
+def validate_against_requirements(
+    requirements: dict[str, Any],
+    *,
+    title: str,
+    body: str,
+    link_url: str,
+) -> None:
+    max_len = requirements.get("title_text_max_length")
+    min_len = requirements.get("title_text_min_length")
+    if isinstance(max_len, int) and len(title) > max_len:
+        raise RedditSubmitError(f"title is too long for subreddit requirement: {len(title)} > {max_len}")
+    if isinstance(min_len, int) and len(title) < min_len:
+        raise RedditSubmitError(f"title is too short for subreddit requirement: {len(title)} < {min_len}")
+
+    body_policy = requirements.get("body_restriction_policy")
+    if body_policy == "required" and not body:
+        raise RedditSubmitError("subreddit requires a self-post body")
+    if body_policy == "notAllowed" and body:
+        raise RedditSubmitError("subreddit does not allow self-post body text")
+
+    domain_blacklist = requirements.get("domain_blacklist") or []
+    domain_whitelist = requirements.get("domain_whitelist") or []
+    if link_url:
+        host = urllib.parse.urlparse(link_url).hostname or ""
+        if host and host in domain_blacklist:
+            raise RedditSubmitError(f"link domain is blacklisted by subreddit requirements: {host}")
+        if domain_whitelist and host not in domain_whitelist:
+            raise RedditSubmitError(f"link domain is not in subreddit whitelist: {host}")
+
+
+def cmd_submit(args: argparse.Namespace) -> int:
+    sr = normalize_subreddit(args.subreddit)
+    title = read_text(args.title, args.title_file, "title")
+    body = read_text(args.body, args.body_file, "body")
+    link_url = (args.url or "").strip()
+
+    if not title:
+        raise RedditSubmitError("title is required")
+    if len(title) > 300:
+        raise RedditSubmitError(f"title is too long for Reddit: {len(title)} > 300")
+    if body and link_url:
+        raise RedditSubmitError("use either a text post body or --url, not both")
+    if not body and not link_url:
+        raise RedditSubmitError("text post body or --url is required")
+
+    kind = "link" if link_url else "self"
+    form = {
+        "api_type": "json",
+        "kind": kind,
+        "sr": sr,
+        "title": title,
+        "sendreplies": "false" if args.no_replies else "true",
+        "resubmit": "true" if args.resubmit else "false",
+    }
+    if link_url:
+        form["url"] = link_url
+    else:
+        form["text"] = body
+    if args.flair_id:
+        form["flair_id"] = args.flair_id
+    if args.nsfw:
+        form["nsfw"] = "true"
+    if args.spoiler:
+        form["spoiler"] = "true"
+
+    if args.yes and not args.skip_requirements:
+        requirements = api_get(f"/api/v1/{sr}/post_requirements", args)
+        validate_against_requirements(requirements, title=title, body=body, link_url=link_url)
+
+    if not args.yes:
+        print(json.dumps({"dry_run": True, "endpoint": "/api/submit", "payload": form}, indent=2, sort_keys=True))
+        print("Add --yes to submit this post.", file=sys.stderr)
+        return 0
+
+    result = api_post("/api/submit", args, form)
+    errors = result.get("json", {}).get("errors", [])
+    if errors:
+        raise RedditSubmitError(f"Reddit returned validation errors: {errors}")
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def add_auth_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--client-id", help="Reddit app client id; defaults to REDDIT_CLIENT_ID")
+    parser.add_argument(
+        "--client-secret",
+        help="Reddit app client secret; defaults to REDDIT_CLIENT_SECRET, empty for installed apps",
+    )
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Submit Reddit posts via official OAuth API with a narrow, auditable command surface."
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    auth_url = sub.add_parser("auth-url", help="Print a permanent OAuth authorization URL")
+    add_auth_options(auth_url)
+    auth_url.add_argument("--redirect-uri", help=f"default: {DEFAULT_REDIRECT_URI}")
+    auth_url.add_argument("--state", help="CSRF state value; generated when omitted")
+    auth_url.add_argument("--scope", default=DEFAULT_SCOPES, help=f"default: {DEFAULT_SCOPES!r}")
+    auth_url.set_defaults(func=cmd_auth_url)
+
+    exchange = sub.add_parser("exchange-code", help="Exchange an OAuth authorization code for tokens")
+    add_auth_options(exchange)
+    exchange.add_argument("--redirect-uri", help=f"default: {DEFAULT_REDIRECT_URI}")
+    exchange.add_argument("--code", required=True)
+    exchange.set_defaults(func=cmd_exchange_code)
+
+    refresh = sub.add_parser("refresh", help="Refresh an access token from REDDIT_REFRESH_TOKEN")
+    add_auth_options(refresh)
+    refresh.add_argument("--refresh-token", help="defaults to REDDIT_REFRESH_TOKEN")
+    refresh.set_defaults(func=cmd_refresh)
+
+    me = sub.add_parser("me", help="Show authenticated Reddit account")
+    add_auth_options(me)
+    me.add_argument("--refresh-token", help="defaults to REDDIT_REFRESH_TOKEN")
+    me.set_defaults(func=cmd_me)
+
+    rules = sub.add_parser("rules", help="Fetch subreddit rules using OAuth")
+    add_auth_options(rules)
+    rules.add_argument("--refresh-token", help="defaults to REDDIT_REFRESH_TOKEN")
+    rules.add_argument("subreddit")
+    rules.set_defaults(func=cmd_rules)
+
+    requirements = sub.add_parser("requirements", help="Fetch subreddit post requirements using OAuth")
+    add_auth_options(requirements)
+    requirements.add_argument("--refresh-token", help="defaults to REDDIT_REFRESH_TOKEN")
+    requirements.add_argument("subreddit")
+    requirements.set_defaults(func=cmd_requirements)
+
+    submit = sub.add_parser("submit", help="Submit a text or link post; dry-run unless --yes is set")
+    add_auth_options(submit)
+    submit.add_argument("--refresh-token", help="defaults to REDDIT_REFRESH_TOKEN")
+    submit.add_argument("--subreddit", required=True, help="target subreddit, with or without r/ prefix")
+    submit.add_argument("--title")
+    submit.add_argument("--title-file")
+    submit.add_argument("--body")
+    submit.add_argument("--body-file")
+    submit.add_argument("--url", help="submit a link post instead of a text post")
+    submit.add_argument("--flair-id")
+    submit.add_argument("--no-replies", action="store_true")
+    submit.add_argument("--resubmit", action="store_true")
+    submit.add_argument("--nsfw", action="store_true")
+    submit.add_argument("--spoiler", action="store_true")
+    submit.add_argument("--skip-requirements", action="store_true")
+    submit.add_argument("--yes", action="store_true", help="actually submit; omitted means dry-run only")
+    submit.set_defaults(func=cmd_submit)
+
+    return parser
+
+
+def main() -> int:
+    parser = build_parser()
+    args = parser.parse_args()
+    try:
+        return args.func(args)
+    except RedditSubmitError as exc:
+        print(f"reddit-submit: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
