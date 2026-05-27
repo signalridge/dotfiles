@@ -6,26 +6,26 @@ versions:
   nixVersion: v2.34.7
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
-  aquaVersion: v2.59.0
+  aquaVersion: v2.59.1
   nixIndexDb: 2026-05-24-062331
   paperlib: 3.1.12
-  claudeWshobsonAgentsRev: f31aba246e509d64e487f720937d7df667571a08
-  claudeWshobsonAgentsSha256: a192b11557b3709301375c034592d4f3037bdad6ee50149a369b122b0762b96a
+  claudeWshobsonAgentsRev: 05231aa6398384ca94bb39d8be9d848a1b3b21db
+  claudeWshobsonAgentsSha256: 1b7cc2054edbcd8d023ef72463e064e4c1c8a27cd573530d4239ffd3d08c08a7
   claudeAnthropicsSkillsRev: 690f15cac7f7b4c055c5ab109c79ed9259934081
   claudeAnthropicsSkillsSha256: 60089fdfe24c4e9a5adc3804563009f17a3b7ef44f85de90cf4ae269384e64ea
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35
   uiUxProMaxSkillSha256: 7c51fb0ab28651f620e873632d0109f364942c54c9e77a8819a1e2cedec424ea
   openaiSkillsRev: b0401f07213a66414d84a65cb50c1d226f99485a
-  huggingfaceSkillsRev: 3775200241906acdf936bf8766357d0f8c420fb4
+  huggingfaceSkillsRev: 7a493b09c81aae09a41bd2e1fa33dfc0f68acd75
   getsentrySkillsRev: b10e2db21d3165de1904bdf3fa64285016765fe5
   trailofbitsSkillsRev: a56045e9ae00b3506cacefea0f672aab0a1a6e3c
   cloudflareSkillsRev: 60147cbb773649eadca89cee92b4e0caf02234b4
   vercelLabsAgentSkillsRev: 18a24346600009dc3fcb99e4b2cd83b301601775
   vercelLabsNextSkillsRev: dc1de9caf7612d73f56a8dec3cb1bd6c9ec096b9
   supabaseAgentSkillsRev: 4e69c80e213f315c02c9ebef9c28dd6e43a4707e
-  expoSkillsRev: 956a92b9a0018989d7a0002a2b2a525d741867c2
+  expoSkillsRev: 09ee2115bc5e415046fd3e04809c239f1f53ff14
   microsoftSkillsRev: 325091fc44bafebc11330a442af58039248c9f29
-  sickn33AntigravitySkillsRev: 4cc48db98935243bf479e818cccb8399e06edc55
+  sickn33AntigravitySkillsRev: fb50cb37363d5f4babc97e92eb41805fadd07b9e
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   humanizerEnRev: 8b3a17889fbf12bedae20974a3c9f9de746ed754
