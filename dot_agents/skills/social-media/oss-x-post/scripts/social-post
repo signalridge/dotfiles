@@ -214,9 +214,13 @@ def cmd_reddit(args: argparse.Namespace) -> int:
     # Validate the body file is readable now, even though reddit-submit re-reads it.
     body = read_file(args.file, "post body")
 
-    bin_name = os.environ.get("REDDIT_SUBMIT_BIN", "reddit-submit")
+    # reddit-submit lives next to this script inside the skill (no PATH dependency).
+    reddit_submit = os.environ.get(
+        "REDDIT_SUBMIT_BIN", str(Path(__file__).resolve().parent / "reddit-submit")
+    )
     command = [
-        bin_name,
+        sys.executable,
+        reddit_submit,
         "submit",
         "--subreddit",
         args.subreddit,

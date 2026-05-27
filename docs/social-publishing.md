@@ -29,9 +29,9 @@ through `xurl post`; they go through `social-post`, which is the only posting pa
 
 | Tool            | Backend                               | Role                                                 |
 | --------------- | ------------------------------------- | ---------------------------------------------------- |
-| `social-post`   | `dot_local/bin`                       | The gate. `social-post <platform> --file … [--yes]`. |
+| `social-post`   | `oss-launch` skill `scripts/`         | The gate. `social-post <platform> --file … [--yes]`. |
 | `crosspost`     | `npm:@humanwhocodes/crosspost` (mise) | Multi-platform publish engine.                       |
-| `reddit-submit` | `dot_local/bin`                       | Narrow Reddit OAuth submit helper.                   |
+| `reddit-submit` | `oss-launch` skill `scripts/`         | Narrow Reddit OAuth submit helper.                   |
 | `xurl`          | `go:…/xurl` (mise)                    | X reads/research only.                               |
 
 ## Credentials (gopass)
@@ -56,6 +56,23 @@ gopass insert social/bluesky/identifier      # you@example.com
 gopass insert social/bluesky/password        # Bluesky app password (not your login)
 ```
 
+### Token hygiene — static secrets only
+
+`social-post` and the chezmoi templates only **read** gopass; they never write back. So
+gopass may hold only **static, long-lived** secrets. Short-lived/rotating tokens are
+minted in memory at send time and never stored.
+
+- **Never put a rotating refresh token in gopass.** In particular avoid **X OAuth 2.0**:
+  its refresh token is single-use and rotates on every refresh, so a read-only copy goes
+  stale after the first use (you'd have to write the new one back and commit/push the
+  gopass repo — fragile across machines). Use **X OAuth 1.0a** (static access token +
+  secret), which is exactly what crosspost expects.
+- Everything in the table above is static: X OAuth 1.0a tokens, the Bluesky app password,
+  the Mastodon long-lived access token, the dev.to API key, and Reddit's `permanent`
+  refresh token (revoke-only, does not rotate).
+- Ephemeral tokens — Reddit's 1-hour access token, the Bluesky session JWT — are derived
+  at runtime from the static secret and never touch gopass or any rendered config.
+
 ### Getting tokens
 
 - **X:** create an app in the X developer portal, enable OAuth 1.0a user context with
@@ -71,20 +88,23 @@ gopass insert social/bluesky/password        # Bluesky app password (not your lo
   existing helper:
 
   ```bash
-  reddit-submit auth-url --client-id <id>      # open URL, authorize, copy the code
-  reddit-submit exchange-code --client-id <id> --code <code>
+  SKILL=~/.agents/skills/social-media/oss-x-post
+  python3 "$SKILL/scripts/reddit-submit" auth-url --client-id <id>      # open URL, authorize, copy the code
+  python3 "$SKILL/scripts/reddit-submit" exchange-code --client-id <id> --code <code>
   # store the refresh_token from the output in gopass: social/reddit/refresh_token
   ```
 
 ## Usage
 
 ```bash
+SKILL=~/.agents/skills/social-media/oss-x-post
+
 # preview (dry-run, no credentials needed)
-social-post bluesky --file tmp/launch/bluesky.md
+python3 "$SKILL/scripts/social-post" bluesky --file tmp/launch/bluesky.md
 
 # publish after review
-social-post bluesky --file tmp/launch/bluesky.md --yes
-social-post reddit  --subreddit rust --title "<title>" --file tmp/launch/reddit-rust.md --yes
+python3 "$SKILL/scripts/social-post" bluesky --file tmp/launch/bluesky.md --yes
+python3 "$SKILL/scripts/social-post" reddit  --subreddit rust --title "<title>" --file tmp/launch/reddit-rust.md --yes
 ```
 
 Or drive the whole flow with the `oss-launch` skill / `/social-publish` command, which
