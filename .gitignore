@@ -48,3 +48,7 @@ backups/
 # Node modules (created by prettier cache)
 node_modules/
 backup/
+
+# Python bytecode (created when tests run py_compile on dot_local/bin helpers)
+__pycache__/
+*.pyc
