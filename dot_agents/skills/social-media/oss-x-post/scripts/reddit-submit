@@ -1,0 +1,394 @@
+#!/usr/bin/env bash
+# Narrow Reddit OAuth submit helper.
+#
+# Submission only -- it does not comment, vote, DM, scrape logged-in browser
+# sessions, or manage account activity. Uses the official OAuth API via curl/jq.
+#
+# Auth comes from the environment (or flags): REDDIT_CLIENT_ID,
+# REDDIT_CLIENT_SECRET (empty for installed apps), REDDIT_REFRESH_TOKEN,
+# REDDIT_USER_AGENT. `social-post reddit` resolves these from gopass.
+
+set -euo pipefail
+# Disable xtrace defensively -- `bash -x reddit-submit` would otherwise echo
+# the refresh_token and access_token in plaintext. A motivated user can still
+# re-enable tracing after this line, but the common-mistake case is shut out.
+set +x
+
+TOKEN_URL="https://www.reddit.com/api/v1/access_token"
+AUTH_URL="https://www.reddit.com/api/v1/authorize"
+API_BASE="https://oauth.reddit.com"
+DEFAULT_REDIRECT_URI="http://localhost:8080/callback"
+DEFAULT_SCOPES="identity read submit"
+
+die() {
+    printf 'reddit-submit: %s\n' "$*" >&2
+    exit 1
+}
+
+# Require the value-arg companion of a flag (`--foo VALUE`). Catches the case
+# where a user writes `--foo --bar` and we'd otherwise silently absorb `--bar`
+# as foo's value.
+require_value() {
+    [[ -n "${2:-}" && "${2:-}" != --* ]] || die "option $1 requires a value"
+}
+
+need() { command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"; }
+need curl
+need jq
+
+show_help() {
+    cat <<'HELP'
+reddit-submit -- submit Reddit posts via the official OAuth API.
+
+commands:
+  auth-url        Print a permanent OAuth authorization URL
+  exchange-code   Exchange an OAuth authorization code for tokens
+  refresh         Refresh an access token from REDDIT_REFRESH_TOKEN
+  me              Show the authenticated Reddit account
+  rules SUB       Fetch subreddit rules
+  requirements SUB  Fetch subreddit post requirements
+  submit          Submit a text or link post (dry-run unless --yes)
+
+common options: --client-id --client-secret --refresh-token
+submit options: --subreddit --title[-file] --body[-file] --url --flair-id
+                --no-replies --resubmit --nsfw --spoiler --skip-requirements --yes
+HELP
+}
+
+# ---- config (env, overridable per-invocation) -------------------------------
+client_id="${REDDIT_CLIENT_ID:-}"
+client_secret="${REDDIT_CLIENT_SECRET:-}"
+refresh_token="${REDDIT_REFRESH_TOKEN:-}"
+redirect_uri="${REDDIT_REDIRECT_URI:-$DEFAULT_REDIRECT_URI}"
+scope="$DEFAULT_SCOPES"
+state=""
+code=""
+subreddit=""
+title=""
+title_file=""
+body=""
+body_file=""
+url=""
+flair_id=""
+no_replies=0
+resubmit=0
+nsfw=0
+spoiler=0
+skip_requirements=0
+yes=0
+
+[[ $# -ge 1 ]] || {
+    show_help
+    exit 0
+}
+case "$1" in
+    -h | --help)
+        show_help
+        exit 0
+        ;;
+esac
+cmd="$1"
+shift
+
+positional=()
+# --client-secret is allowed to be empty (Reddit "installed app" type uses
+# an empty Basic-auth secret), so it doesn't go through require_value.
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --client-id) require_value "$1" "${2:-}" && client_id="$2" && shift 2 ;;
+        --client-secret) client_secret="${2:-}" && shift 2 ;;
+        --refresh-token) require_value "$1" "${2:-}" && refresh_token="$2" && shift 2 ;;
+        --redirect-uri) require_value "$1" "${2:-}" && redirect_uri="$2" && shift 2 ;;
+        --scope) require_value "$1" "${2:-}" && scope="$2" && shift 2 ;;
+        --state) require_value "$1" "${2:-}" && state="$2" && shift 2 ;;
+        --code) require_value "$1" "${2:-}" && code="$2" && shift 2 ;;
+        --subreddit) require_value "$1" "${2:-}" && subreddit="$2" && shift 2 ;;
+        --title) require_value "$1" "${2:-}" && title="$2" && shift 2 ;;
+        --title-file) require_value "$1" "${2:-}" && title_file="$2" && shift 2 ;;
+        --body) require_value "$1" "${2:-}" && body="$2" && shift 2 ;;
+        --body-file) require_value "$1" "${2:-}" && body_file="$2" && shift 2 ;;
+        --url) require_value "$1" "${2:-}" && url="$2" && shift 2 ;;
+        --flair-id) require_value "$1" "${2:-}" && flair_id="$2" && shift 2 ;;
+        --no-replies) no_replies=1 && shift ;;
+        --resubmit) resubmit=1 && shift ;;
+        --nsfw) nsfw=1 && shift ;;
+        --spoiler) spoiler=1 && shift ;;
+        --skip-requirements) skip_requirements=1 && shift ;;
+        --yes) yes=1 && shift ;;
+        -h | --help)
+            show_help
+            exit 0
+            ;;
+        --*) die "unknown option: $1" ;;
+        *)
+            positional+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# ---- helpers ----------------------------------------------------------------
+user_agent() { # $1 = read|write
+    local ua="${REDDIT_USER_AGENT:-}"
+    if [[ "$1" == write && -z "$ua" ]]; then
+        die "missing REDDIT_USER_AGENT; use e.g. 'macos:reddit-submit:0.1 (by /u/your_username)'"
+    fi
+    printf '%s' "${ua:-macos:reddit-submit:0.1 (by /u/unknown)}"
+}
+
+urlencode() { jq -rn --arg v "$1" '$v|@uri'; }
+
+basic_auth() { printf '%s:%s' "$client_id" "$client_secret" | base64 | tr -d '\n'; }
+
+normalize_subreddit() {
+    local sr="${1#r/}"
+    [[ "$sr" =~ ^[A-Za-z0-9_]{2,21}$ ]] || die "invalid subreddit name: $1"
+    printf '%s' "$sr"
+}
+
+# Split "body<newline>HTTP_CODE", validate 2xx, echo body.
+http_result() { # $1 = combined, $2 = context
+    local combined="$1" context="$2" http body
+    http="${combined##*$'\n'}"
+    body="${combined%$'\n'*}"
+    [[ "$http" =~ ^2 ]] || die "HTTP $http from $context: $body"
+    printf '%s' "$body"
+}
+
+token_request() { # remaining args = curl --data-urlencode pairs
+    [[ -n "$client_id" ]] || die "missing REDDIT_CLIENT_ID; pass --client-id or set the env var"
+    local combined
+    combined="$(curl -sS -w $'\n%{http_code}' \
+        -H "Authorization: Basic $(basic_auth)" \
+        -H "User-Agent: $(user_agent read)" \
+        "$@" "$TOKEN_URL")" || die "token request failed"
+    http_result "$combined" "token endpoint"
+}
+
+access_token() {
+    [[ -n "$refresh_token" ]] || die "missing REDDIT_REFRESH_TOKEN; pass --refresh-token or set the env var"
+    local tok
+    tok="$(token_request \
+        --data-urlencode "grant_type=refresh_token" \
+        --data-urlencode "refresh_token=$refresh_token" | jq -r '.access_token // empty')"
+    [[ -n "$tok" ]] || die "refresh response did not include access_token"
+    printf '%s' "$tok"
+}
+
+api_get() {
+    local path="$1" token combined
+    token="$(access_token)"
+    combined="$(curl -sS -w $'\n%{http_code}' \
+        -H "Authorization: Bearer $token" \
+        -H "User-Agent: $(user_agent read)" \
+        "$API_BASE$path")" || die "request failed: $path"
+    http_result "$combined" "$path"
+}
+
+api_post() { # $1 = path, rest = curl --data-urlencode pairs
+    local path="$1"
+    shift
+    local token combined
+    token="$(access_token)"
+    combined="$(curl -sS -w $'\n%{http_code}' -X POST \
+        -H "Authorization: Bearer $token" \
+        -H "User-Agent: $(user_agent write)" \
+        "$@" "$API_BASE$path")" || die "request failed: $path"
+    http_result "$combined" "$path"
+}
+
+read_text() { # $1 value, $2 file, $3 label
+    local value="$1" file="$2" label="$3"
+    if [[ -n "$value" && -n "$file" ]]; then
+        die "use either --$label or --$label-file, not both"
+    fi
+    if [[ -n "$value" ]]; then
+        printf '%s' "$value"
+        return 0
+    fi
+    [[ -n "$file" ]] || return 0
+    if [[ "$file" == "-" ]]; then
+        cat
+        return 0
+    fi
+    [[ -f "$file" ]] || die "file not found: $file"
+    cat "$file"
+}
+
+validate_requirements() { # $1 reqs json, $2 title, $3 body, $4 link
+    local reqs="$1" t="$2" b="$3" link="$4" maxlen minlen bodypol
+    maxlen="$(jq -r '.title_text_max_length // empty' <<<"$reqs")"
+    minlen="$(jq -r '.title_text_min_length // empty' <<<"$reqs")"
+    if [[ -n "$maxlen" && "${#t}" -gt "$maxlen" ]]; then
+        die "title is too long for subreddit requirement: ${#t} > $maxlen"
+    fi
+    if [[ -n "$minlen" && "${#t}" -lt "$minlen" ]]; then
+        die "title is too short for subreddit requirement: ${#t} < $minlen"
+    fi
+    bodypol="$(jq -r '.body_restriction_policy // empty' <<<"$reqs")"
+    if [[ "$bodypol" == "required" && -z "$b" ]]; then
+        die "subreddit requires a self-post body"
+    fi
+    if [[ "$bodypol" == "notAllowed" && -n "$b" ]]; then
+        die "subreddit does not allow self-post body text"
+    fi
+    if [[ -n "$link" ]]; then
+        local host blacklisted wl_count
+        host="$(jq -rn --arg u "$link" '$u | sub("^[a-zA-Z]+://";"") | sub("/.*$";"") | sub("^[^@]*@";"") | sub(":.*$";"")')"
+        blacklisted="$(jq -r --arg h "$host" '(.domain_blacklist // []) | index($h) // empty' <<<"$reqs")"
+        if [[ -n "$blacklisted" ]]; then
+            die "link domain is blacklisted by subreddit requirements: $host"
+        fi
+        wl_count="$(jq -r '(.domain_whitelist // []) | length' <<<"$reqs")"
+        if [[ "$wl_count" -gt 0 ]]; then
+            local inwl
+            inwl="$(jq -r --arg h "$host" '(.domain_whitelist // []) | index($h) // empty' <<<"$reqs")"
+            [[ -n "$inwl" ]] || die "link domain is not in subreddit whitelist: $host"
+        fi
+    fi
+}
+
+# ---- subcommands ------------------------------------------------------------
+cmd_auth_url() {
+    [[ -n "$client_id" ]] || die "missing REDDIT_CLIENT_ID; pass --client-id or set the env var"
+    if [[ -z "$state" ]]; then
+        state="$(dd if=/dev/urandom bs=16 count=1 2>/dev/null | base64 | tr -dc 'A-Za-z0-9')"
+        state="${state:0:22}"
+    fi
+    printf '%s?client_id=%s&response_type=code&state=%s&redirect_uri=%s&duration=permanent&scope=%s\n' \
+        "$AUTH_URL" "$(urlencode "$client_id")" "$(urlencode "$state")" \
+        "$(urlencode "$redirect_uri")" "${scope// /+}"
+    printf 'state: %s\n' "$state" >&2
+}
+
+# Write a token response to a private tempfile and print only the path +
+# storage instructions on stderr. Tokens never touch stdout/terminal scrollback.
+write_tokens_file() { # $1 = JSON response, $2 = command label
+    local json="$1" label="$2" out keys
+    out="$(mktemp "${TMPDIR:-/tmp}/reddit-tokens-${label}.XXXXXX")"
+    chmod 600 "$out"
+    printf '%s' "$json" | jq . >"$out"
+    keys="$(jq -r 'to_entries | map(.key) | join(", ")' <<<"$json")"
+    cat >&2 <<EOF
+reddit-submit: response written to $out (mode 600)
+fields: $keys
+Do NOT paste the contents into chat, screenshots, or commit them.
+
+To store the refresh_token in gopass:
+  jq -r .refresh_token "$out" | gopass insert -m social/reddit/refresh_token
+  rm "$out"
+EOF
+}
+
+cmd_exchange_code() {
+    [[ -n "$code" ]] || die "--code is required"
+    local response
+    response="$(token_request \
+        --data-urlencode "grant_type=authorization_code" \
+        --data-urlencode "code=$code" \
+        --data-urlencode "redirect_uri=$redirect_uri")"
+    write_tokens_file "$response" exchange
+}
+
+cmd_refresh() {
+    [[ -n "$refresh_token" ]] || die "missing REDDIT_REFRESH_TOKEN; pass --refresh-token or set the env var"
+    local response
+    response="$(token_request \
+        --data-urlencode "grant_type=refresh_token" \
+        --data-urlencode "refresh_token=$refresh_token")"
+    write_tokens_file "$response" refresh
+}
+
+cmd_me() { api_get "/api/v1/me" | jq .; }
+
+cmd_rules() {
+    [[ ${#positional[@]} -ge 1 ]] || die "subreddit is required"
+    local sr
+    sr="$(normalize_subreddit "${positional[0]}")"
+    api_get "/r/$sr/about/rules" | jq .
+}
+
+cmd_requirements() {
+    [[ ${#positional[@]} -ge 1 ]] || die "subreddit is required"
+    local sr
+    sr="$(normalize_subreddit "${positional[0]}")"
+    api_get "/api/v1/$sr/post_requirements" | jq .
+}
+
+cmd_submit() {
+    [[ -n "$subreddit" ]] || die "--subreddit is required"
+    local sr t b link kind sendreplies resubmit_v
+    sr="$(normalize_subreddit "$subreddit")"
+    t="$(read_text "$title" "$title_file" title)"
+    b="$(read_text "$body" "$body_file" body)"
+    link="$url"
+
+    [[ -n "$t" ]] || die "title is required"
+    [[ "${#t}" -le 300 ]] || die "title is too long for Reddit: ${#t} > 300"
+    if [[ -n "$b" && -n "$link" ]]; then
+        die "use either a text post body or --url, not both"
+    fi
+    if [[ -z "$b" && -z "$link" ]]; then
+        die "text post body or --url is required"
+    fi
+
+    if [[ -n "$link" ]]; then kind="link"; else kind="self"; fi
+    if [[ "$no_replies" -eq 1 ]]; then sendreplies="false"; else sendreplies="true"; fi
+    if [[ "$resubmit" -eq 1 ]]; then resubmit_v="true"; else resubmit_v="false"; fi
+
+    # Single source of truth: build the JSON payload, then derive the curl
+    # form pairs from it. Keeps the dry-run view and the actual POST in lockstep.
+    local payload
+    payload="$(jq -n \
+        --arg kind "$kind" --arg sr "$sr" --arg title "$t" \
+        --arg sendreplies "$sendreplies" --arg resubmit "$resubmit_v" \
+        --arg url "$link" --arg text "$b" --arg flair "$flair_id" \
+        --argjson nsfw "$([[ "$nsfw" -eq 1 ]] && echo true || echo false)" \
+        --argjson spoiler "$([[ "$spoiler" -eq 1 ]] && echo true || echo false)" \
+        '{api_type:"json", kind:$kind, sr:$sr, title:$title, sendreplies:$sendreplies, resubmit:$resubmit}
+         + (if $url != "" then {url:$url} else {text:$text} end)
+         + (if $flair != "" then {flair_id:$flair} else {} end)
+         + (if $nsfw then {nsfw:"true"} else {} end)
+         + (if $spoiler then {spoiler:"true"} else {} end)')"
+
+    # Derive --data-urlencode pairs from the payload. NUL-separated so a `text`
+    # value containing newlines (markdown bodies routinely do) survives intact.
+    local -a form=()
+    local entry
+    while IFS= read -r -d '' entry; do
+        form+=(--data-urlencode "$entry")
+    done < <(jq -j 'to_entries[] | "\(.key)=\(.value)\u0000"' <<<"$payload")
+
+    if [[ "$yes" -eq 1 && "$skip_requirements" -eq 0 ]]; then
+        local reqs
+        reqs="$(api_get "/api/v1/$sr/post_requirements")"
+        validate_requirements "$reqs" "$t" "$b" "$link"
+    fi
+
+    if [[ "$yes" -eq 0 ]]; then
+        jq -n --argjson payload "$payload" \
+            '{dry_run:true,
+              endpoint:"/api/submit",
+              payload:$payload,
+              notes:["subreddit post_requirements are NOT validated in dry-run (no credentials needed); --yes will validate them via /api/v1/<sub>/post_requirements before submitting and may reject the post"]}'
+        printf 'Add --yes to submit this post.\n' >&2
+        return 0
+    fi
+
+    local result errors
+    result="$(api_post "/api/submit" "${form[@]}")"
+    errors="$(jq -c '.json.errors // []' <<<"$result")"
+    [[ "$errors" == "[]" ]] || die "Reddit returned validation errors: $errors"
+    jq . <<<"$result"
+}
+
+case "$cmd" in
+    auth-url) cmd_auth_url ;;
+    exchange-code) cmd_exchange_code ;;
+    refresh) cmd_refresh ;;
+    me) cmd_me ;;
+    rules) cmd_rules ;;
+    requirements) cmd_requirements ;;
+    submit) cmd_submit ;;
+    *) die "unknown command: $cmd (try --help)" ;;
+esac

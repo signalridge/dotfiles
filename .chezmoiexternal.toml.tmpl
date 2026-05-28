@@ -307,6 +307,72 @@
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
+# xdevplatform/xurl official X API skill
+# - Shared for Claude + Codex + OpenCode under ~/.agents/skills/social-media/
+# - Pinned to the xurl v1.1.1 release commit so skill instructions match the CLI
+# ------------------------------------------------------------------------------
+[".agents/skills/social-media/xurl"]
+    type = "archive"
+    url = "https://github.com/xdevplatform/xurl/archive/{{ $.versions.xurlSkillRev }}.tar.gz"
+    exact = true
+    stripComponents = 1
+    include = [
+      "xurl-*/SKILL.md",
+      "xurl-*/LICENSE"
+    ]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# kangarooking/x-skills X content creation skill
+# - Install x-create only; do not install x-publish because publishing is handled
+#   by the official xurl CLI/API path, not browser automation.
+# ------------------------------------------------------------------------------
+[".agents/skills/social-media/x-create"]
+    type = "archive"
+    url = "https://github.com/kangarooking/x-skills/archive/{{ $.versions.xSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 2
+    include = ["x-skills-*/x-create/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# daily.dev official AI agent skills
+# - daily.dev: interact with feed/bookmarks/profile/custom feeds via Public API
+# - daily-dev-ask: developer-focused search over community-vetted articles
+# - Requires daily.dev Plus and a DAILY_DEV_TOKEN; no browser automation.
+# ------------------------------------------------------------------------------
+[".agents/skills/social-media/daily.dev"]
+    type = "archive"
+    url = "https://github.com/dailydotdev/daily/archive/{{ $.versions.dailyDevSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["daily-*/skills/daily.dev/**"]
+    refreshPeriod = "168h"
+
+[".agents/skills/social-media/daily-dev-ask"]
+    type = "archive"
+    url = "https://github.com/dailydotdev/daily/archive/{{ $.versions.dailyDevSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["daily-*/skills/daily-dev-ask/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# ReScienceLab/opc-skills Reddit research skill
+# - Read-only Reddit discovery via public JSON endpoints; no posting, voting, DM,
+#   or logged-in browser automation.
+# - Use as the Reddit community-research layer before drafting subreddit-specific
+#   posts manually or through a separate reviewed publishing path.
+# ------------------------------------------------------------------------------
+[".agents/skills/social-media/reddit"]
+    type = "archive"
+    url = "https://github.com/resciencelab/opc-skills/archive/{{ $.versions.opcSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["opc-skills-*/skills/reddit/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
 # nextlevelbuilder/ui-ux-pro-max-skill (skills only)
 # - Shared UI/UX design intelligence skill for Claude + Codex + OpenCode
 # - Keep SKILL.md and runtime assets in ~/.agents/skills/

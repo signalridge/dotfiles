@@ -1,0 +1,198 @@
+#!/usr/bin/env bash
+# Narrow, auditable social publishing gate.
+#
+# Submit/post only -- no reply, DM, follow, like, repost, or trending surface.
+# Dry-run by default; --yes actually sends. Static secrets are read from gopass
+# at send time and passed only to the child process, never exported or stored.
+#
+# Crosspost platforms (x/bluesky/devto) go through the `crosspost` CLI;
+# reddit is delegated to the sibling `reddit-submit` helper.
+
+set -euo pipefail
+# Disable xtrace defensively -- `bash -x social-post` would otherwise echo
+# every gopass-loaded secret to stderr. A motivated user can still re-enable
+# tracing after this line, but the common-mistake case is shut out.
+set +x
+
+die() {
+    printf 'social-post: %s\n' "$*" >&2
+    exit 1
+}
+
+usage() {
+    cat >&2 <<'USAGE'
+usage:
+  social-post <x|bluesky|devto> --file FILE [--yes]
+  social-post reddit --subreddit SUB --title TITLE --file FILE [--yes]
+
+Dry-run unless --yes is given. Secrets come from gopass (social/<platform>/...).
+USAGE
+    exit 2
+}
+
+# Require the value-arg companion of a flag (`--foo VALUE`). Catches the case
+# where a user writes `--foo --bar` and we'd otherwise silently absorb `--bar`
+# as foo's value.
+require_value() {
+    [[ -n "${2:-}" && "${2:-}" != --* ]] || die "option $1 requires a value"
+}
+
+# First line of a gopass secret, or non-zero if unavailable.
+gp() {
+    command -v gopass >/dev/null 2>&1 || return 1
+    gopass show --password "$1" 2>/dev/null | head -n1
+}
+
+# Approximate character count (wc -m is locale-aware). X's server-side counter
+# weighs emojis as 2 and normalizes URLs to 23 chars, so a length under the
+# limit here is necessary but not sufficient -- the platform is authoritative.
+char_len() {
+    printf '%s' "$1" | wc -m | tr -d '[:space:]'
+}
+
+[[ $# -ge 1 ]] || usage
+case "$1" in
+    -h | --help) usage ;;
+esac
+platform="$1"
+shift
+
+file=""
+yes=0
+subreddit=""
+title=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --file) require_value "$1" "${2:-}" && file="$2" && shift 2 ;;
+        --subreddit) require_value "$1" "${2:-}" && subreddit="$2" && shift 2 ;;
+        --title) require_value "$1" "${2:-}" && title="$2" && shift 2 ;;
+        --yes) yes=1 && shift ;;
+        -h | --help) usage ;;
+        *) die "unknown argument: $1" ;;
+    esac
+done
+
+[[ -n "$file" ]] || die "--file is required"
+
+# When --file is "-", spool stdin to a private tempfile and rewrite $file to it,
+# so downstream (crosspost / reddit-submit) gets a real path -- if we just read
+# stdin here and passed "-" through, the child would see EOF.
+tmpdir=""
+cleanup() {
+    if [[ -n "$tmpdir" ]]; then
+        rm -rf "$tmpdir"
+    fi
+}
+trap cleanup EXIT
+
+if [[ "$file" == "-" ]]; then
+    tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/social-post.XXXXXX")"
+    chmod 700 "$tmpdir"
+    file="$tmpdir/body"
+    cat >"$file"
+fi
+[[ -f "$file" ]] || die "file not found: $file"
+body="$(cat "$file")"
+# Empty-body fail-fast lives before the platform branching so reddit dry-runs
+# also reject empty drafts (social-post only does reddit text posts; an empty
+# body is always wrong, and surfacing it now beats a downstream reddit-submit
+# rejection at --yes time).
+[[ -n "$body" ]] || die "post body is empty"
+
+# env var -> gopass path; existing environment wins, then gopass. Appends
+# "NAME=value" to env_assignments, or records a missing required secret.
+env_assignments=()
+missing=()
+load() {
+    local name="$1" path="$2" required="${3:-}" val
+    val="$(printenv "$name" 2>/dev/null || true)"
+    [[ -n "$val" ]] || val="$(gp "$path" || true)"
+    if [[ -n "$val" ]]; then
+        env_assignments+=("$name=$val")
+    elif [[ "$required" == required ]]; then
+        missing+=("$name (gopass: $path)")
+    fi
+}
+
+if [[ "$platform" == reddit ]]; then
+    [[ -n "$subreddit" ]] || die "--subreddit is required for reddit"
+    [[ -n "$title" ]] || die "--title is required for reddit"
+    [[ "${#title}" -le 300 ]] || die "reddit title is too long: ${#title} > 300"
+
+    script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+    reddit_submit="${REDDIT_SUBMIT_BIN:-$script_dir/reddit-submit}"
+
+    if [[ "$yes" -eq 0 ]]; then
+        printf 'DRY RUN -- not sent (add --yes to submit)\n'
+        printf 'platform:  reddit\n'
+        printf 'subreddit: %s\n' "$subreddit"
+        printf 'title:     %s (%s chars)\n' "$title" "${#title}"
+        printf 'tool:      reddit-submit\n'
+        exit 0
+    fi
+
+    load REDDIT_CLIENT_ID social/reddit/client_id required
+    # client_secret is optional: Reddit "installed app" type uses an empty
+    # secret for Basic auth (the helper's basic_auth handles this). "script"
+    # apps -- which our docs recommend -- always have one, but we don't
+    # force the gate to be stricter than the underlying helper.
+    load REDDIT_CLIENT_SECRET social/reddit/client_secret
+    load REDDIT_REFRESH_TOKEN social/reddit/refresh_token required
+    load REDDIT_USER_AGENT social/reddit/user_agent
+    [[ ${#missing[@]} -eq 0 ]] || die "missing credentials for send:"$'\n  '"${missing[*]}"
+
+    # Not exec'ing -- we need the EXIT trap to run for tempfile cleanup.
+    env "${env_assignments[@]}" bash "$reddit_submit" submit \
+        --subreddit "$subreddit" --title "$title" --body-file "$file" --yes
+    exit $?
+fi
+
+case "$platform" in
+    x) flag="-t" && limit=280 ;;
+    bluesky) flag="-b" && limit=300 ;;
+    devto) flag="--devto" && limit=0 ;;
+    *) die "unknown platform: $platform" ;;
+esac
+
+len="$(char_len "$body")"
+if [[ "$limit" -gt 0 && "$len" -gt "$limit" ]]; then
+    die "$platform post is too long: $len > $limit characters"
+fi
+
+crosspost_bin="${CROSSPOST_BIN:-crosspost}"
+
+if [[ "$yes" -eq 0 ]]; then
+    printf 'DRY RUN -- not sent (add --yes to publish)\n'
+    printf 'platform:  %s\n' "$platform"
+    if [[ "$limit" -gt 0 ]]; then
+        # "approx" because wc -m counts code points; X weighs emojis as 2 and
+        # normalizes URLs to 23 chars, so this is a necessary-but-not-sufficient
+        # check. The platform server is authoritative on send.
+        printf 'length:    %s / %s (approx)\n' "$len" "$limit"
+    else
+        printf 'length:    %s (no limit)\n' "$len"
+    fi
+    printf 'command:   %s %s --file %s\n' "$crosspost_bin" "$flag" "$file"
+    exit 0
+fi
+
+case "$platform" in
+    x)
+        load TWITTER_API_CONSUMER_KEY social/twitter/consumer_key required
+        load TWITTER_API_CONSUMER_SECRET social/twitter/consumer_secret required
+        load TWITTER_ACCESS_TOKEN_KEY social/twitter/access_token_key required
+        load TWITTER_ACCESS_TOKEN_SECRET social/twitter/access_token_secret required
+        ;;
+    bluesky)
+        load BLUESKY_IDENTIFIER social/bluesky/identifier required
+        load BLUESKY_PASSWORD social/bluesky/password required
+        load BLUESKY_HOST social/bluesky/host
+        ;;
+    devto)
+        load DEVTO_API_KEY social/devto/api_key required
+        ;;
+esac
+[[ ${#missing[@]} -eq 0 ]] || die "missing credentials for send:"$'\n  '"${missing[*]}"
+
+# Not exec'ing -- we need the EXIT trap to run for tempfile cleanup.
+env "${env_assignments[@]}" "$crosspost_bin" "$flag" --file "$file"

@@ -4,6 +4,11 @@
 *.tmp
 README.md
 
+# Python bytecode (defensive -- bundled skill scripts are currently bash, but
+# leave the ignore in place for future Python-backed helpers)
+**/__pycache__/
+**/*.pyc
+
 # OS-specific lock files (used by flake.lock.tmpl)
 nix-config/.flake-darwin.lock
 nix-config/.flake-linux.lock

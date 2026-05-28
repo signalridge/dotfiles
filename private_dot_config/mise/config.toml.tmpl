@@ -26,6 +26,20 @@ uv = "latest"
 # Go
 go = "latest"
 
+# Official X API CLI. Use the Go backend because the npm package can lag
+# GitHub releases, and xurl is not in the aqua standard registry yet.
+# Kept for X *reads* (search/whoami/timeline); publishing goes through the
+# gated `social-post` wrapper, never `xurl post`.
+"go:github.com/xdevplatform/xurl" = "1.1.1"
+
+# Multi-platform publish engine (X / Bluesky / Mastodon / LinkedIn / dev.to).
+# Driven only by the `social-post` wrapper, which adds the dry-run/confirm gate
+# that crosspost itself lacks. Replaces the raw toot/goat CLIs.
+"npm:@humanwhocodes/crosspost" = "1.0.4"
+
+# GitLab CLI for open-source repo/MR ops (orthogonal to social publishing).
+glab = "1.99.0"
+
 # Rust
 rust = "latest"
 

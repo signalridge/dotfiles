@@ -48,3 +48,10 @@ backups/
 # Node modules (created by prettier cache)
 node_modules/
 backup/
+
+# Python bytecode (defensive -- some test paths or future skills may invoke python)
+__pycache__/
+*.pyc
+
+# OSS-launch skill draft workspace (per-platform launch posts staged here)
+tmp/launch/
