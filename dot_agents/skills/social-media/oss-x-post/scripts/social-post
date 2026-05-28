@@ -1,305 +1,166 @@
-#!/usr/bin/env python3
-"""Narrow, auditable social publishing gate.
+#!/usr/bin/env bash
+# Narrow, auditable social publishing gate.
+#
+# Submit/post only -- no reply, DM, follow, like, repost, or trending surface.
+# Dry-run by default; --yes actually sends. Static secrets are read from gopass
+# at send time and passed only to the child process, never exported or stored.
+#
+# Crosspost platforms (x/bluesky/mastodon/linkedin/devto) go through the
+# `crosspost` CLI; reddit is delegated to the sibling `reddit-submit` helper.
 
-This wraps the `crosspost` CLI (and the existing `reddit-submit` helper) with a
-single hard safety gate so AI-assisted workflows cannot post without an explicit
-confirmation:
+set -euo pipefail
 
-  - dry-run by default; nothing is sent unless --yes is passed
-  - per-platform length check before sending
-  - submit/post only -- no reply, DM, follow, like, repost, or trending surface
-  - credentials are read from gopass at send time, never from the repo
-  - one attempt per send, errors are surfaced (no silent retry)
-
-It intentionally exposes only `post`. Reads/research stay in the platform-native
-CLIs (e.g. `xurl`), which this wrapper never invokes for writes.
-"""
-
-from __future__ import annotations
-
-import argparse
-import json
-import os
-import shutil
-import subprocess
-import sys
-from pathlib import Path
-from typing import Any
-
-
-class SocialPostError(Exception):
-    pass
-
-
-# Platforms published through the `crosspost` CLI.
-# flag:    the crosspost CLI flag that targets only this platform
-# limit:   approximate max characters (0 = no limit, e.g. dev.to articles)
-# secrets: required env var -> gopass path
-# optional: optional env var -> gopass path
-CROSSPOST_PLATFORMS: dict[str, dict[str, Any]] = {
-    "x": {
-        "flag": "-t",
-        "limit": 280,
-        "secrets": {
-            "TWITTER_API_CONSUMER_KEY": "social/twitter/consumer_key",
-            "TWITTER_API_CONSUMER_SECRET": "social/twitter/consumer_secret",
-            "TWITTER_ACCESS_TOKEN_KEY": "social/twitter/access_token_key",
-            "TWITTER_ACCESS_TOKEN_SECRET": "social/twitter/access_token_secret",
-        },
-        "optional": {},
-    },
-    "bluesky": {
-        "flag": "-b",
-        "limit": 300,
-        "secrets": {
-            "BLUESKY_IDENTIFIER": "social/bluesky/identifier",
-            "BLUESKY_PASSWORD": "social/bluesky/password",
-        },
-        "optional": {"BLUESKY_HOST": "social/bluesky/host"},
-    },
-    "mastodon": {
-        "flag": "-m",
-        "limit": 500,
-        "secrets": {
-            "MASTODON_ACCESS_TOKEN": "social/mastodon/access_token",
-            "MASTODON_HOST": "social/mastodon/host",
-        },
-        "optional": {},
-    },
-    "linkedin": {
-        "flag": "-l",
-        "limit": 3000,
-        "secrets": {"LINKEDIN_ACCESS_TOKEN": "social/linkedin/access_token"},
-        "optional": {},
-    },
-    "devto": {
-        "flag": "--devto",
-        "limit": 0,
-        "secrets": {"DEVTO_API_KEY": "social/devto/api_key"},
-        "optional": {},
-    },
+die() {
+    printf 'social-post: %s\n' "$*" >&2
+    exit 1
 }
 
-# Reddit goes through the existing `reddit-submit` helper (its own dry-run/--yes
-# and subreddit-requirement validation). This wrapper only sources its secrets
-# from gopass and forwards the confirmation.
-REDDIT_TITLE_LIMIT = 300
-REDDIT_SECRETS = {
-    "REDDIT_CLIENT_ID": "social/reddit/client_id",
-    "REDDIT_CLIENT_SECRET": "social/reddit/client_secret",
-    "REDDIT_REFRESH_TOKEN": "social/reddit/refresh_token",
+usage() {
+    cat >&2 <<'USAGE'
+usage:
+  social-post <x|bluesky|mastodon|linkedin|devto> --file FILE [--yes]
+  social-post reddit --subreddit SUB --title TITLE --file FILE [--yes]
+
+Dry-run unless --yes is given. Secrets come from gopass (social/<platform>/...).
+USAGE
+    exit 2
 }
-REDDIT_OPTIONAL = {"REDDIT_USER_AGENT": "social/reddit/user_agent"}
 
+# First line of a gopass secret, or non-zero if unavailable.
+gp() {
+    command -v gopass >/dev/null 2>&1 || return 1
+    gopass show --password "$1" 2>/dev/null | head -n1
+}
 
-def read_file(file_path: str, label: str) -> str:
-    if file_path == "-":
-        return sys.stdin.read().strip()
-    try:
-        return Path(file_path).read_text(encoding="utf-8").strip()
-    except OSError as exc:
-        raise SocialPostError(f"could not read {label} file {file_path!r}: {exc}") from exc
+# Character count (locale-aware), used for per-platform length limits.
+char_len() {
+    printf '%s' "$1" | wc -m | tr -d '[:space:]'
+}
 
+[[ $# -ge 1 ]] || usage
+case "$1" in
+    -h | --help) usage ;;
+esac
+platform="$1"
+shift
 
-def gopass_secret(path: str) -> str | None:
-    """Return the first line of a gopass secret, or None if unavailable."""
-    gopass = shutil.which("gopass")
-    if not gopass:
-        return None
-    try:
-        result = subprocess.run(
-            [gopass, "show", "--password", path],
-            capture_output=True,
-            text=True,
-            timeout=15,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    if result.returncode != 0:
-        return None
-    value = result.stdout.splitlines()[0].strip() if result.stdout else ""
-    return value or None
+file=""
+yes=0
+subreddit=""
+title=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --file) file="${2:-}" && shift 2 ;;
+        --subreddit) subreddit="${2:-}" && shift 2 ;;
+        --title) title="${2:-}" && shift 2 ;;
+        --yes) yes=1 && shift ;;
+        -h | --help) usage ;;
+        *) die "unknown argument: $1" ;;
+    esac
+done
 
+[[ -n "$file" ]] || die "--file is required"
+if [[ "$file" == "-" ]]; then
+    body="$(cat)"
+else
+    [[ -f "$file" ]] || die "file not found: $file"
+    body="$(cat "$file")"
+fi
 
-def resolve_secrets(
-    required: dict[str, str], optional: dict[str, str]
-) -> dict[str, str]:
-    """Resolve env vars from the environment first, then gopass.
+# env var -> gopass path; existing environment wins, then gopass. Appends
+# "NAME=value" to env_assignments, or records a missing required secret.
+env_assignments=()
+missing=()
+load() {
+    local name="$1" path="$2" required="${3:-}" val
+    val="$(printenv "$name" 2>/dev/null || true)"
+    [[ -n "$val" ]] || val="$(gp "$path" || true)"
+    if [[ -n "$val" ]]; then
+        env_assignments+=("$name=$val")
+    elif [[ "$required" == required ]]; then
+        missing+=("$name (gopass: $path)")
+    fi
+}
 
-    Raises if any required secret is missing. Only call this when actually
-    sending (--yes); dry-run must not need credentials.
-    """
-    resolved: dict[str, str] = {}
-    missing: list[str] = []
-    for env_name, path in required.items():
-        value = os.environ.get(env_name) or gopass_secret(path)
-        if value:
-            resolved[env_name] = value
-        else:
-            missing.append(f"{env_name} (gopass: {path})")
-    for env_name, path in optional.items():
-        value = os.environ.get(env_name) or gopass_secret(path)
-        if value:
-            resolved[env_name] = value
-    if missing:
-        raise SocialPostError(
-            "missing credentials for send; set the env var or store in gopass:\n  "
-            + "\n  ".join(missing)
-        )
-    return resolved
+if [[ "$platform" == reddit ]]; then
+    [[ -n "$subreddit" ]] || die "--subreddit is required for reddit"
+    [[ -n "$title" ]] || die "--title is required for reddit"
+    [[ "${#title}" -le 300 ]] || die "reddit title is too long: ${#title} > 300"
 
+    script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+    reddit_submit="${REDDIT_SUBMIT_BIN:-$script_dir/reddit-submit}"
 
-def run_command(argv: list[str], extra_env: dict[str, str]) -> int:
-    binary = shutil.which(argv[0])
-    if not binary:
-        raise SocialPostError(f"{argv[0]!r} not found on PATH")
-    env = {**os.environ, **extra_env}
-    try:
-        result = subprocess.run([binary, *argv[1:]], env=env, check=False)
-    except OSError as exc:
-        raise SocialPostError(f"failed to run {argv[0]}: {exc}") from exc
-    if result.returncode != 0:
-        raise SocialPostError(f"{argv[0]} exited with status {result.returncode}")
-    return 0
+    if [[ "$yes" -eq 0 ]]; then
+        printf 'DRY RUN -- not sent (add --yes to submit)\n'
+        printf 'platform:  reddit\n'
+        printf 'subreddit: %s\n' "$subreddit"
+        printf 'title:     %s (%s chars)\n' "$title" "${#title}"
+        printf 'tool:      reddit-submit\n'
+        exit 0
+    fi
 
+    load REDDIT_CLIENT_ID social/reddit/client_id required
+    load REDDIT_CLIENT_SECRET social/reddit/client_secret required
+    load REDDIT_REFRESH_TOKEN social/reddit/refresh_token required
+    load REDDIT_USER_AGENT social/reddit/user_agent
+    [[ ${#missing[@]} -eq 0 ]] || die "missing credentials for send:"$'\n  '"${missing[*]}"
 
-def cmd_post(args: argparse.Namespace) -> int:
-    platform = args.platform
-    spec = CROSSPOST_PLATFORMS[platform]
-    text = read_file(args.file, "post body")
-    if not text:
-        raise SocialPostError("post body is empty")
+    exec env "${env_assignments[@]}" python3 "$reddit_submit" submit \
+        --subreddit "$subreddit" --title "$title" --body-file "$file" --yes
+fi
 
-    length = len(text)
-    limit = spec["limit"]
-    if limit and length > limit:
-        raise SocialPostError(
-            f"{platform} post is too long: {length} > {limit} characters"
-        )
+case "$platform" in
+    x) flag="-t" && limit=280 ;;
+    bluesky) flag="-b" && limit=300 ;;
+    mastodon) flag="-m" && limit=500 ;;
+    linkedin) flag="-l" && limit=3000 ;;
+    devto) flag="--devto" && limit=0 ;;
+    *) die "unknown platform: $platform" ;;
+esac
 
-    bin_name = os.environ.get("CROSSPOST_BIN", "crosspost")
-    command = [bin_name, spec["flag"], "--file", args.file]
+[[ -n "$body" ]] || die "post body is empty"
+len="$(char_len "$body")"
+if [[ "$limit" -gt 0 && "$len" -gt "$limit" ]]; then
+    die "$platform post is too long: $len > $limit characters"
+fi
 
-    if not args.yes:
-        print(
-            json.dumps(
-                {
-                    "dry_run": True,
-                    "platform": platform,
-                    "length": length,
-                    "limit": limit or None,
-                    "tool": "crosspost",
-                    "command": command,
-                },
-                indent=2,
-                sort_keys=True,
-            )
-        )
-        print("Add --yes to publish this post.", file=sys.stderr)
-        return 0
+crosspost_bin="${CROSSPOST_BIN:-crosspost}"
 
-    extra_env = resolve_secrets(spec["secrets"], spec["optional"])
-    return run_command(command, extra_env)
+if [[ "$yes" -eq 0 ]]; then
+    printf 'DRY RUN -- not sent (add --yes to publish)\n'
+    printf 'platform:  %s\n' "$platform"
+    if [[ "$limit" -gt 0 ]]; then
+        printf 'length:    %s / %s\n' "$len" "$limit"
+    else
+        printf 'length:    %s (no limit)\n' "$len"
+    fi
+    printf 'command:   %s %s --file %s\n' "$crosspost_bin" "$flag" "$file"
+    exit 0
+fi
 
+case "$platform" in
+    x)
+        load TWITTER_API_CONSUMER_KEY social/twitter/consumer_key required
+        load TWITTER_API_CONSUMER_SECRET social/twitter/consumer_secret required
+        load TWITTER_ACCESS_TOKEN_KEY social/twitter/access_token_key required
+        load TWITTER_ACCESS_TOKEN_SECRET social/twitter/access_token_secret required
+        ;;
+    bluesky)
+        load BLUESKY_IDENTIFIER social/bluesky/identifier required
+        load BLUESKY_PASSWORD social/bluesky/password required
+        load BLUESKY_HOST social/bluesky/host
+        ;;
+    mastodon)
+        load MASTODON_ACCESS_TOKEN social/mastodon/access_token required
+        load MASTODON_HOST social/mastodon/host required
+        ;;
+    linkedin)
+        load LINKEDIN_ACCESS_TOKEN social/linkedin/access_token required
+        ;;
+    devto)
+        load DEVTO_API_KEY social/devto/api_key required
+        ;;
+esac
+[[ ${#missing[@]} -eq 0 ]] || die "missing credentials for send:"$'\n  '"${missing[*]}"
 
-def cmd_reddit(args: argparse.Namespace) -> int:
-    title = args.title.strip()
-    if not title:
-        raise SocialPostError("title is required")
-    if len(title) > REDDIT_TITLE_LIMIT:
-        raise SocialPostError(
-            f"reddit title is too long: {len(title)} > {REDDIT_TITLE_LIMIT}"
-        )
-    # Validate the body file is readable now, even though reddit-submit re-reads it.
-    body = read_file(args.file, "post body")
-
-    # reddit-submit lives next to this script inside the skill (no PATH dependency).
-    reddit_submit = os.environ.get(
-        "REDDIT_SUBMIT_BIN", str(Path(__file__).resolve().parent / "reddit-submit")
-    )
-    command = [
-        sys.executable,
-        reddit_submit,
-        "submit",
-        "--subreddit",
-        args.subreddit,
-        "--title",
-        title,
-        "--body-file",
-        args.file,
-    ]
-    if args.yes:
-        command.append("--yes")
-
-    if not args.yes:
-        print(
-            json.dumps(
-                {
-                    "dry_run": True,
-                    "platform": "reddit",
-                    "subreddit": args.subreddit,
-                    "title_length": len(title),
-                    "body_length": len(body),
-                    "limit": REDDIT_TITLE_LIMIT,
-                    "tool": "reddit-submit",
-                    "command": command,
-                },
-                indent=2,
-                sort_keys=True,
-            )
-        )
-        print("Add --yes to submit this post.", file=sys.stderr)
-        return 0
-
-    extra_env = resolve_secrets(REDDIT_SECRETS, REDDIT_OPTIONAL)
-    return run_command(command, extra_env)
-
-
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description=(
-            "Publish a single post to one platform through a hard dry-run/confirm "
-            "gate. Submit/post only; dry-run unless --yes is set."
-        )
-    )
-    sub = parser.add_subparsers(dest="command", required=True)
-
-    for platform in CROSSPOST_PLATFORMS:
-        post = sub.add_parser(platform, help=f"publish a post to {platform}")
-        post.add_argument(
-            "--file", required=True, help="path to the post body file ('-' for stdin)"
-        )
-        post.add_argument(
-            "--yes", action="store_true", help="actually publish; omitted means dry-run"
-        )
-        post.set_defaults(func=cmd_post, platform=platform)
-
-    reddit = sub.add_parser(
-        "reddit", help="submit a Reddit post via the reddit-submit helper"
-    )
-    reddit.add_argument("--subreddit", required=True, help="target subreddit")
-    reddit.add_argument("--title", required=True, help="post title")
-    reddit.add_argument(
-        "--file", required=True, help="path to the self-post body file ('-' for stdin)"
-    )
-    reddit.add_argument(
-        "--yes", action="store_true", help="actually submit; omitted means dry-run"
-    )
-    reddit.set_defaults(func=cmd_reddit)
-
-    return parser
-
-
-def main() -> int:
-    parser = build_parser()
-    args = parser.parse_args()
-    try:
-        return args.func(args)
-    except SocialPostError as exc:
-        print(f"social-post: {exc}", file=sys.stderr)
-        return 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+exec env "${env_assignments[@]}" "$crosspost_bin" "$flag" --file "$file"

@@ -21,9 +21,10 @@ assert_contains() {
     fi
 }
 
-python3 -m py_compile "$CLI"
+bash -n "$CLI"
 
-help_output="$(python3 "$CLI" --help)"
+# usage exits non-zero by design; capture without tripping set -e.
+help_output="$(bash "$CLI" --help 2>&1 || true)"
 assert_contains "$help_output" "bluesky"
 assert_contains "$help_output" "mastodon"
 assert_contains "$help_output" "reddit"
@@ -31,26 +32,26 @@ assert_contains "$help_output" "reddit"
 body_file="$TMP_ROOT/body.md"
 printf 'Shipped v2.0: faster builds, fewer deps.\n' >"$body_file"
 
-bluesky_dry="$(python3 "$CLI" bluesky --file "$body_file" 2>/dev/null)"
-assert_contains "$bluesky_dry" '"dry_run": true'
-assert_contains "$bluesky_dry" '"platform": "bluesky"'
-assert_contains "$bluesky_dry" '"-b"'
+bluesky_dry="$(bash "$CLI" bluesky --file "$body_file")"
+assert_contains "$bluesky_dry" "DRY RUN"
+assert_contains "$bluesky_dry" "bluesky"
+assert_contains "$bluesky_dry" "crosspost -b --file"
 
-# dev.to articles have no character limit -> limit reported as null.
-devto_dry="$(python3 "$CLI" devto --file "$body_file" 2>/dev/null)"
-assert_contains "$devto_dry" '"limit": null'
+# dev.to articles have no character limit.
+devto_dry="$(bash "$CLI" devto --file "$body_file")"
+assert_contains "$devto_dry" "(no limit)"
 
-# Over-limit posts must be rejected (exit non-zero) even in dry-run.
+# Over-limit posts must be rejected (exit non-zero), even in dry-run.
 long_file="$TMP_ROOT/long.txt"
 python3 -c "print('x' * 300)" >"$long_file"
-if python3 "$CLI" x --file "$long_file" >/dev/null 2>&1; then
+if bash "$CLI" x --file "$long_file" >/dev/null 2>&1; then
     echo "assertion failed: over-limit X post should have been rejected" >&2
     exit 1
 fi
 
-reddit_dry="$(python3 "$CLI" reddit --subreddit rust --title "Built a thing" --file "$body_file" 2>/dev/null)"
-assert_contains "$reddit_dry" '"platform": "reddit"'
-assert_contains "$reddit_dry" '"tool": "reddit-submit"'
-assert_contains "$reddit_dry" '"subreddit": "rust"'
+reddit_dry="$(bash "$CLI" reddit --subreddit rust --title "Built a thing" --file "$body_file")"
+assert_contains "$reddit_dry" "reddit"
+assert_contains "$reddit_dry" "tool:      reddit-submit"
+assert_contains "$reddit_dry" "subreddit: rust"
 
 echo "test_social_post_cli: OK"

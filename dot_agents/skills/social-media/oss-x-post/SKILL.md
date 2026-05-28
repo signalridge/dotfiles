@@ -46,8 +46,8 @@ copy-pasted everywhere.
 | dev.to   | `tmp/launch/devto.md`        | —          | Full technical post (markdown). Lead with the problem; include a code/usage snippet and the canonical repo link.                        |
 | Reddit   | `tmp/launch/reddit-<sub>.md` | title ≤300 | Per-subreddit. Frame as "I built X to solve Y, feedback on Z" — not "please star". One file per subreddit, reworded for that community. |
 
-For Reddit, first run the bundled helper `scripts/reddit-submit rules <sub>` and
-`scripts/reddit-submit requirements <sub>` (full path below) and adapt the draft to that
+For Reddit, first run the bundled helper `python3 "$SKILL/scripts/reddit-submit" rules <sub>`
+and `… requirements <sub>` (`$SKILL` defined below) and adapt the draft to that
 subreddit's rules before submitting.
 
 ## Publishing commands
@@ -60,12 +60,12 @@ default; `--yes` actually sends. Credentials come from gopass at send time (see
 ```bash
 SKILL=~/.agents/skills/social-media/oss-x-post   # this skill's installed path
 
-python3 "$SKILL/scripts/social-post" x        --file tmp/launch/x.md
-python3 "$SKILL/scripts/social-post" bluesky  --file tmp/launch/bluesky.md
-python3 "$SKILL/scripts/social-post" mastodon --file tmp/launch/mastodon.md
-python3 "$SKILL/scripts/social-post" linkedin --file tmp/launch/linkedin.md
-python3 "$SKILL/scripts/social-post" devto    --file tmp/launch/devto.md
-python3 "$SKILL/scripts/social-post" reddit   --subreddit rust --title "<title>" --file tmp/launch/reddit-rust.md
+bash "$SKILL/scripts/social-post" x        --file tmp/launch/x.md
+bash "$SKILL/scripts/social-post" bluesky  --file tmp/launch/bluesky.md
+bash "$SKILL/scripts/social-post" mastodon --file tmp/launch/mastodon.md
+bash "$SKILL/scripts/social-post" linkedin --file tmp/launch/linkedin.md
+bash "$SKILL/scripts/social-post" devto    --file tmp/launch/devto.md
+bash "$SKILL/scripts/social-post" reddit   --subreddit rust --title "<title>" --file tmp/launch/reddit-rust.md
 # add --yes to each, only after the user approves the dry-run
 ```
 

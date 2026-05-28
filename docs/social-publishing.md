@@ -100,11 +100,11 @@ minted in memory at send time and never stored.
 SKILL=~/.agents/skills/social-media/oss-x-post
 
 # preview (dry-run, no credentials needed)
-python3 "$SKILL/scripts/social-post" bluesky --file tmp/launch/bluesky.md
+bash "$SKILL/scripts/social-post" bluesky --file tmp/launch/bluesky.md
 
 # publish after review
-python3 "$SKILL/scripts/social-post" bluesky --file tmp/launch/bluesky.md --yes
-python3 "$SKILL/scripts/social-post" reddit  --subreddit rust --title "<title>" --file tmp/launch/reddit-rust.md --yes
+bash "$SKILL/scripts/social-post" bluesky --file tmp/launch/bluesky.md --yes
+bash "$SKILL/scripts/social-post" reddit  --subreddit rust --title "<title>" --file tmp/launch/reddit-rust.md --yes
 ```
 
 Or drive the whole flow with the `oss-launch` skill / `/social-publish` command, which
