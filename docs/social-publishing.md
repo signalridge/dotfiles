@@ -113,3 +113,19 @@ drafts every platform from one topic, waits for your approval, then sends throug
 reply/DM/follow/like/repost), and a single send attempt (no retry loops). One topic is
 rewritten per platform — identical text is never blasted everywhere. These mirror the
 X automation rules and avoid spam/bot flags.
+
+### Research vs. publish vs. DM — the boundary
+
+This toolchain is intentionally **broadcast-publish only**. Two adjacent concerns sit
+outside it:
+
+- **Research / discovery** belongs to the `xurl` skill (X reads: search, profile,
+  timeline). xurl is read-only — use it to find who's already discussing your niche,
+  not to drive outbound automation.
+- **One-to-one outreach (DM / reply / follow / like / repost)** is **always manual**
+  in the platform UI. Automated DMs in particular are flagged by every platform's
+  ToS (X, LinkedIn, Reddit) and most data-protection regimes (GDPR / ePrivacy /
+  PIPL); they get accounts suspended and convert poorly. The healthy pattern is:
+  `xurl` search → triage → **public reply / quote** to a relevant tweet → if
+  someone clearly signals interest, one hand-written DM. Never templated, never
+  batched, never via this toolchain.

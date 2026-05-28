@@ -82,6 +82,27 @@ the user submits manually**. Do not script the submission.
 
 Write these drafts to `tmp/launch/<platform>.md` too, clearly marked as manual.
 
+## Out of scope (intentional)
+
+This skill is for **broadcast publishing only**. The following are deliberately not
+handled here, and `social-post` will refuse to do them:
+
+- **DMs / replies / follows / likes / reposts / quote-engagement loops.** Platform
+  ToS (X, LinkedIn, Reddit) and most data-protection regimes (GDPR / ePrivacy /
+  PIPL) treat automated one-to-one outreach as spam. Account suspension risk is
+  high and conversion is poor. Do this manually in the platform UI, sparingly,
+  and only where the recipient has signalled interest.
+- **Research / audience discovery.** Use the sibling `xurl` skill for X reads
+  (search / profile / timeline). xurl is read-only — it identifies who's already
+  discussing your niche so you can engage **publicly and manually**.
+- **Engagement-growth automation** of any kind (follow-for-follow, reply ladders,
+  metric chasing).
+
+The right escalation when promoting a project is: `xurl` search → triage manually
+→ **public reply / quote** to a relevant tweet (high reach, low spam risk) → if
+someone clearly signals interest, a single hand-written DM. Never templated,
+never batched, never via this toolchain.
+
 ## Safety rules (enforced by `social-post`, restated here)
 
 1. Posting only — never reply, DM, follow, like, repost, or chase trends.
