@@ -91,8 +91,15 @@ minted in memory at send time and never stored.
   SKILL=~/.agents/skills/social-media/oss-x-post
   bash "$SKILL/scripts/reddit-submit" auth-url --client-id <id>      # open URL, authorize, copy the code
   bash "$SKILL/scripts/reddit-submit" exchange-code --client-id <id> --code <code>
-  # store the refresh_token from the output in gopass: social/reddit/refresh_token
+  # The response (incl. refresh_token) is written to a mode-600 tempfile under $TMPDIR
+  # and the path is printed on stderr -- tokens are never echoed to stdout / scrollback.
+  # Follow the printed instructions to pipe the refresh_token into gopass and `rm` the file.
   ```
+
+  Token hygiene: never `cat` the file, never paste it into chat, and `rm` it as soon as
+  the refresh_token is in gopass. Reddit's `permanent` refresh token does not rotate, so
+  if it ever leaks you must revoke the app in the Reddit developer console -- rotating
+  the client secret alone is not sufficient.
 
 ## Usage
 

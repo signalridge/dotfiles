@@ -54,4 +54,11 @@ assert_contains "$reddit_dry" "reddit"
 assert_contains "$reddit_dry" "tool:      reddit-submit"
 assert_contains "$reddit_dry" "subreddit: rust"
 
+# Reading from stdin (--file -) must not leave the child reading an empty stdin;
+# the gate spools stdin to a tempfile internally.
+stdin_dry="$(printf 'from stdin\n' | bash "$CLI" bluesky --file -)"
+assert_contains "$stdin_dry" "DRY RUN"
+# command substitution strips the trailing newline, so length is 10 not 11.
+assert_contains "$stdin_dry" "length:    10 / 300"
+
 echo "test_social_post_cli: OK"

@@ -248,19 +248,42 @@ cmd_auth_url() {
     printf 'state: %s\n' "$state" >&2
 }
 
+# Write a token response to a private tempfile and print only the path +
+# storage instructions on stderr. Tokens never touch stdout/terminal scrollback.
+write_tokens_file() { # $1 = JSON response, $2 = command label
+    local json="$1" label="$2" out keys
+    out="$(mktemp "${TMPDIR:-/tmp}/reddit-tokens-${label}.XXXXXX")"
+    chmod 600 "$out"
+    printf '%s' "$json" | jq . >"$out"
+    keys="$(jq -r 'to_entries | map(.key) | join(", ")' <<<"$json")"
+    cat >&2 <<EOF
+reddit-submit: response written to $out (mode 600)
+fields: $keys
+Do NOT paste the contents into chat, screenshots, or commit them.
+
+To store the refresh_token in gopass:
+  jq -r .refresh_token "$out" | gopass insert -m social/reddit/refresh_token
+  rm "$out"
+EOF
+}
+
 cmd_exchange_code() {
     [[ -n "$code" ]] || die "--code is required"
-    token_request \
+    local response
+    response="$(token_request \
         --data-urlencode "grant_type=authorization_code" \
         --data-urlencode "code=$code" \
-        --data-urlencode "redirect_uri=$redirect_uri" | jq .
+        --data-urlencode "redirect_uri=$redirect_uri")"
+    write_tokens_file "$response" exchange
 }
 
 cmd_refresh() {
     [[ -n "$refresh_token" ]] || die "missing REDDIT_REFRESH_TOKEN; pass --refresh-token or set the env var"
-    token_request \
+    local response
+    response="$(token_request \
         --data-urlencode "grant_type=refresh_token" \
-        --data-urlencode "refresh_token=$refresh_token" | jq .
+        --data-urlencode "refresh_token=$refresh_token")"
+    write_tokens_file "$response" refresh
 }
 
 cmd_me() { api_get "/api/v1/me" | jq .; }
@@ -337,7 +360,11 @@ cmd_submit() {
     fi
 
     if [[ "$yes" -eq 0 ]]; then
-        jq -n --argjson payload "$payload" '{dry_run:true, endpoint:"/api/submit", payload:$payload}'
+        jq -n --argjson payload "$payload" \
+            '{dry_run:true,
+              endpoint:"/api/submit",
+              payload:$payload,
+              notes:["subreddit post_requirements are NOT validated in dry-run (no credentials needed); --yes will validate them via /api/v1/<sub>/post_requirements before submitting and may reject the post"]}'
         printf 'Add --yes to submit this post.\n' >&2
         return 0
     fi

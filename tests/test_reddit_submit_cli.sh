@@ -61,4 +61,8 @@ link_dry_run_output="$(
 assert_contains "$link_dry_run_output" '"kind": "link"'
 assert_contains "$link_dry_run_output" '"url": "https://example.com/post"'
 
+# Dry-run must call out that post_requirements are not validated -- otherwise
+# users get a clean dry-run and an unexpected --yes rejection.
+assert_contains "$link_dry_run_output" 'post_requirements are NOT validated in dry-run'
+
 echo "test_reddit_submit_cli: OK"

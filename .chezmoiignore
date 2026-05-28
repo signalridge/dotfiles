@@ -4,7 +4,8 @@
 *.tmp
 README.md
 
-# Python bytecode (created when tests run py_compile on bundled skill scripts)
+# Python bytecode (defensive -- bundled skill scripts are currently bash, but
+# leave the ignore in place for future Python-backed helpers)
 **/__pycache__/
 **/*.pyc
 
