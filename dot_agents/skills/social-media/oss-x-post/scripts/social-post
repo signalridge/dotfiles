@@ -5,8 +5,8 @@
 # Dry-run by default; --yes actually sends. Static secrets are read from gopass
 # at send time and passed only to the child process, never exported or stored.
 #
-# Crosspost platforms (x/bluesky/mastodon/linkedin/devto) go through the
-# `crosspost` CLI; reddit is delegated to the sibling `reddit-submit` helper.
+# Crosspost platforms (x/bluesky/devto) go through the `crosspost` CLI;
+# reddit is delegated to the sibling `reddit-submit` helper.
 
 set -euo pipefail
 
@@ -18,7 +18,7 @@ die() {
 usage() {
     cat >&2 <<'USAGE'
 usage:
-  social-post <x|bluesky|mastodon|linkedin|devto> --file FILE [--yes]
+  social-post <x|bluesky|devto> --file FILE [--yes]
   social-post reddit --subreddit SUB --title TITLE --file FILE [--yes]
 
 Dry-run unless --yes is given. Secrets come from gopass (social/<platform>/...).
@@ -128,8 +128,6 @@ fi
 case "$platform" in
     x) flag="-t" && limit=280 ;;
     bluesky) flag="-b" && limit=300 ;;
-    mastodon) flag="-m" && limit=500 ;;
-    linkedin) flag="-l" && limit=3000 ;;
     devto) flag="--devto" && limit=0 ;;
     *) die "unknown platform: $platform" ;;
 esac
@@ -165,13 +163,6 @@ case "$platform" in
         load BLUESKY_IDENTIFIER social/bluesky/identifier required
         load BLUESKY_PASSWORD social/bluesky/password required
         load BLUESKY_HOST social/bluesky/host
-        ;;
-    mastodon)
-        load MASTODON_ACCESS_TOKEN social/mastodon/access_token required
-        load MASTODON_HOST social/mastodon/host required
-        ;;
-    linkedin)
-        load LINKEDIN_ACCESS_TOKEN social/linkedin/access_token required
         ;;
     devto)
         load DEVTO_API_KEY social/devto/api_key required

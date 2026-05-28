@@ -26,7 +26,7 @@ bash -n "$CLI"
 # usage exits non-zero by design; capture without tripping set -e.
 help_output="$(bash "$CLI" --help 2>&1 || true)"
 assert_contains "$help_output" "bluesky"
-assert_contains "$help_output" "mastodon"
+assert_contains "$help_output" "devto"
 assert_contains "$help_output" "reddit"
 
 body_file="$TMP_ROOT/body.md"

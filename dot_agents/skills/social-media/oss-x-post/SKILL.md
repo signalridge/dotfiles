@@ -1,6 +1,6 @@
 ---
 name: oss-launch
-description: Turn one open-source release/topic into platform-tailored posts and publish them through a gated, auditable path. Use when the user wants to announce or promote an OSS project/release across X, Bluesky, Mastodon, LinkedIn, dev.to, Reddit, Hacker News, etc. Triggers: "announce my release", "promote my repo", "post about this project", "oss launch", "Show HN", "发布开源项目", "宣传项目".
+description: Turn one open-source release/topic into platform-tailored posts and publish them through a gated, auditable path. Use when the user wants to announce or promote an OSS project/release across X, Bluesky, dev.to, Reddit, Hacker News, etc. Triggers: "announce my release", "promote my repo", "post about this project", "oss launch", "Show HN", "发布开源项目", "宣传项目".
 ---
 
 # OSS Launch
@@ -15,7 +15,7 @@ copy-pasted everywhere.
 - English, written for **developers**, in the project author's own voice.
 - **No hype, no marketing-speak.** State concrete technical value plainly.
 - Never invent metrics, stars, benchmarks, users, or endorsements.
-- At most 2 hashtags, and only where they're idiomatic (X/Mastodon).
+- At most 2 hashtags, and only where they're idiomatic (X).
 
 ## Workflow
 
@@ -24,7 +24,7 @@ copy-pasted everywhere.
    it isn't obvious (what's new / why it matters). Keep it small — do not scan the
    whole repo.
 2. **Pick targets.** Confirm which platforms to publish to (default offer: X,
-   Bluesky, Mastodon, Reddit; add LinkedIn / dev.to when relevant).
+   Bluesky, Reddit; add dev.to when relevant).
 3. **Draft per platform.** Write one file per target under `tmp/launch/<platform>.md`
    following the rules below. Each draft is genuinely rewritten for its platform —
    not a truncation of the X post.
@@ -41,8 +41,6 @@ copy-pasted everywhere.
 | -------- | ---------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | X        | `tmp/launch/x.md`            | 280        | One hook line + concrete value + repo link. ≤2 hashtags.                                                                                |
 | Bluesky  | `tmp/launch/bluesky.md`      | 300        | Slightly more relaxed than X; can add one line of context.                                                                              |
-| Mastodon | `tmp/launch/mastodon.md`     | 500        | Community tone; add a CW line only if warranted.                                                                                        |
-| LinkedIn | `tmp/launch/linkedin.md`     | 3000       | Problem → what you built → who it's for. Professional, still no hype.                                                                   |
 | dev.to   | `tmp/launch/devto.md`        | —          | Full technical post (markdown). Lead with the problem; include a code/usage snippet and the canonical repo link.                        |
 | Reddit   | `tmp/launch/reddit-<sub>.md` | title ≤300 | Per-subreddit. Frame as "I built X to solve Y, feedback on Z" — not "please star". One file per subreddit, reworded for that community. |
 
@@ -60,12 +58,10 @@ default; `--yes` actually sends. Credentials come from gopass at send time (see
 ```bash
 SKILL=~/.agents/skills/social-media/oss-x-post   # this skill's installed path
 
-bash "$SKILL/scripts/social-post" x        --file tmp/launch/x.md
-bash "$SKILL/scripts/social-post" bluesky  --file tmp/launch/bluesky.md
-bash "$SKILL/scripts/social-post" mastodon --file tmp/launch/mastodon.md
-bash "$SKILL/scripts/social-post" linkedin --file tmp/launch/linkedin.md
-bash "$SKILL/scripts/social-post" devto    --file tmp/launch/devto.md
-bash "$SKILL/scripts/social-post" reddit   --subreddit rust --title "<title>" --file tmp/launch/reddit-rust.md
+bash "$SKILL/scripts/social-post" x       --file tmp/launch/x.md
+bash "$SKILL/scripts/social-post" bluesky --file tmp/launch/bluesky.md
+bash "$SKILL/scripts/social-post" devto   --file tmp/launch/devto.md
+bash "$SKILL/scripts/social-post" reddit  --subreddit rust --title "<title>" --file tmp/launch/reddit-rust.md
 # add --yes to each, only after the user approves the dry-run
 ```
 
