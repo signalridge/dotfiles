@@ -36,12 +36,12 @@ Secrets are read from gopass at send time (never stored in the repo). Dry-run do
 **not** need credentials, so you can preview without them. Each env var falls back
 to gopass at the path below; you may also pre-export the env var.
 
-| Platform | gopass paths                                                                         | crosspost / helper env                                                                                               |
-| -------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| X        | `social/twitter/{consumer_key,consumer_secret,access_token_key,access_token_secret}` | `TWITTER_API_CONSUMER_KEY`, `TWITTER_API_CONSUMER_SECRET`, `TWITTER_ACCESS_TOKEN_KEY`, `TWITTER_ACCESS_TOKEN_SECRET` |
-| Bluesky  | `social/bluesky/{identifier,password}` (optional `host`)                             | `BLUESKY_IDENTIFIER`, `BLUESKY_PASSWORD`, `BLUESKY_HOST`                                                             |
-| dev.to   | `social/devto/api_key`                                                               | `DEVTO_API_KEY`                                                                                                      |
-| Reddit   | `social/reddit/{client_id,client_secret,refresh_token}` (optional `user_agent`)      | `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_REFRESH_TOKEN`, `REDDIT_USER_AGENT`                              |
+| Platform | gopass paths                                                                                         | crosspost / helper env                                                                                               |
+| -------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| X        | `social/twitter/{consumer_key,consumer_secret,access_token_key,access_token_secret}`                 | `TWITTER_API_CONSUMER_KEY`, `TWITTER_API_CONSUMER_SECRET`, `TWITTER_ACCESS_TOKEN_KEY`, `TWITTER_ACCESS_TOKEN_SECRET` |
+| Bluesky  | `social/bluesky/{identifier,password}` (optional `host`)                                             | `BLUESKY_IDENTIFIER`, `BLUESKY_PASSWORD`, `BLUESKY_HOST`                                                             |
+| dev.to   | `social/devto/api_key`                                                                               | `DEVTO_API_KEY`                                                                                                      |
+| Reddit   | `social/reddit/{client_id,refresh_token}` (+ `client_secret` for script apps, optional `user_agent`) | `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_REFRESH_TOKEN`, `REDDIT_USER_AGENT`                              |
 
 Store a secret, e.g.:
 
@@ -113,6 +113,18 @@ drafts every platform from one topic, waits for your approval, then sends throug
 reply/DM/follow/like/repost), and a single send attempt (no retry loops). One topic is
 rewritten per platform — identical text is never blasted everywhere. These mirror the
 X automation rules and avoid spam/bot flags.
+
+Length checks use `wc -m` (code-point count), which is a _necessary but not sufficient_
+proxy. X's server-side counter weighs most emojis as 2 and normalizes every URL to 23
+chars, so the dry-run figure is marked `(approx)` — the platform is the final arbiter.
+
+### Don't trace these scripts
+
+Both `social-post` and `reddit-submit` start with `set +x` to defuse the most common
+leak: running `bash -x scripts/social-post …` (or setting `set -x` in your shell first)
+would otherwise echo every gopass-loaded secret and every OAuth token to stderr. The
+guard is defensive — if you really need to trace, do it on a copy with credentials
+unset, never on a real send.
 
 ### Research vs. publish vs. DM — the boundary
 

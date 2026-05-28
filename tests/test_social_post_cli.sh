@@ -59,6 +59,26 @@ assert_contains "$reddit_dry" "subreddit: rust"
 stdin_dry="$(printf 'from stdin\n' | bash "$CLI" bluesky --file -)"
 assert_contains "$stdin_dry" "DRY RUN"
 # command substitution strips the trailing newline, so length is 10 not 11.
-assert_contains "$stdin_dry" "length:    10 / 300"
+assert_contains "$stdin_dry" "length:    10 / 300 (approx)"
+
+# Empty drafts must fail fast in dry-run -- the prior layout let reddit posts
+# slip past with an empty body until --yes time.
+empty_file="$TMP_ROOT/empty.md"
+: >"$empty_file"
+if bash "$CLI" bluesky --file "$empty_file" >/dev/null 2>&1; then
+    echo "assertion failed: empty bluesky body should have been rejected" >&2
+    exit 1
+fi
+if bash "$CLI" reddit --subreddit rust --title "t" --file "$empty_file" >/dev/null 2>&1; then
+    echo "assertion failed: empty reddit body should have been rejected" >&2
+    exit 1
+fi
+
+# Forgotten value after a flag (e.g. `--file --yes`) must error, not silently
+# consume the next flag as a filename.
+if bash "$CLI" bluesky --file --yes >/dev/null 2>&1; then
+    echo "assertion failed: missing value after --file should have been rejected" >&2
+    exit 1
+fi
 
 echo "test_social_post_cli: OK"

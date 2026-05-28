@@ -65,4 +65,24 @@ assert_contains "$link_dry_run_output" '"url": "https://example.com/post"'
 # users get a clean dry-run and an unexpected --yes rejection.
 assert_contains "$link_dry_run_output" 'post_requirements are NOT validated in dry-run'
 
+# A body containing newlines must survive the payload-to-form derivation; the
+# dry-run JSON preserves the raw text so we can assert on it.
+multiline_body_file="$TMP_ROOT/multi.md"
+printf 'line one\n\nline two with spaces\n' >"$multiline_body_file"
+multi_dry_run_output="$(
+    bash "$CLI" submit \
+        --subreddit test \
+        --title "Multi-line body" \
+        --body-file "$multiline_body_file" \
+        2>/dev/null
+)"
+assert_contains "$multi_dry_run_output" 'line one'
+assert_contains "$multi_dry_run_output" 'line two with spaces'
+
+# Forgotten value after a flag (e.g. `--subreddit --title foo`) must error.
+if bash "$CLI" submit --subreddit --title "x" --body "y" >/dev/null 2>&1; then
+    echo "assertion failed: missing value after --subreddit should have been rejected" >&2
+    exit 1
+fi
+
 echo "test_reddit_submit_cli: OK"

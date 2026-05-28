@@ -9,6 +9,10 @@
 # reddit is delegated to the sibling `reddit-submit` helper.
 
 set -euo pipefail
+# Disable xtrace defensively -- `bash -x social-post` would otherwise echo
+# every gopass-loaded secret to stderr. A motivated user can still re-enable
+# tracing after this line, but the common-mistake case is shut out.
+set +x
 
 die() {
     printf 'social-post: %s\n' "$*" >&2
@@ -26,13 +30,22 @@ USAGE
     exit 2
 }
 
+# Require the value-arg companion of a flag (`--foo VALUE`). Catches the case
+# where a user writes `--foo --bar` and we'd otherwise silently absorb `--bar`
+# as foo's value.
+require_value() {
+    [[ -n "${2:-}" && "${2:-}" != --* ]] || die "option $1 requires a value"
+}
+
 # First line of a gopass secret, or non-zero if unavailable.
 gp() {
     command -v gopass >/dev/null 2>&1 || return 1
     gopass show --password "$1" 2>/dev/null | head -n1
 }
 
-# Character count (locale-aware), used for per-platform length limits.
+# Approximate character count (wc -m is locale-aware). X's server-side counter
+# weighs emojis as 2 and normalizes URLs to 23 chars, so a length under the
+# limit here is necessary but not sufficient -- the platform is authoritative.
 char_len() {
     printf '%s' "$1" | wc -m | tr -d '[:space:]'
 }
@@ -50,9 +63,9 @@ subreddit=""
 title=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --file) file="${2:-}" && shift 2 ;;
-        --subreddit) subreddit="${2:-}" && shift 2 ;;
-        --title) title="${2:-}" && shift 2 ;;
+        --file) require_value "$1" "${2:-}" && file="$2" && shift 2 ;;
+        --subreddit) require_value "$1" "${2:-}" && subreddit="$2" && shift 2 ;;
+        --title) require_value "$1" "${2:-}" && title="$2" && shift 2 ;;
         --yes) yes=1 && shift ;;
         -h | --help) usage ;;
         *) die "unknown argument: $1" ;;
@@ -80,6 +93,11 @@ if [[ "$file" == "-" ]]; then
 fi
 [[ -f "$file" ]] || die "file not found: $file"
 body="$(cat "$file")"
+# Empty-body fail-fast lives before the platform branching so reddit dry-runs
+# also reject empty drafts (social-post only does reddit text posts; an empty
+# body is always wrong, and surfacing it now beats a downstream reddit-submit
+# rejection at --yes time).
+[[ -n "$body" ]] || die "post body is empty"
 
 # env var -> gopass path; existing environment wins, then gopass. Appends
 # "NAME=value" to env_assignments, or records a missing required secret.
@@ -114,7 +132,11 @@ if [[ "$platform" == reddit ]]; then
     fi
 
     load REDDIT_CLIENT_ID social/reddit/client_id required
-    load REDDIT_CLIENT_SECRET social/reddit/client_secret required
+    # client_secret is optional: Reddit "installed app" type uses an empty
+    # secret for Basic auth (the helper's basic_auth handles this). "script"
+    # apps -- which our docs recommend -- always have one, but we don't
+    # force the gate to be stricter than the underlying helper.
+    load REDDIT_CLIENT_SECRET social/reddit/client_secret
     load REDDIT_REFRESH_TOKEN social/reddit/refresh_token required
     load REDDIT_USER_AGENT social/reddit/user_agent
     [[ ${#missing[@]} -eq 0 ]] || die "missing credentials for send:"$'\n  '"${missing[*]}"
@@ -132,7 +154,6 @@ case "$platform" in
     *) die "unknown platform: $platform" ;;
 esac
 
-[[ -n "$body" ]] || die "post body is empty"
 len="$(char_len "$body")"
 if [[ "$limit" -gt 0 && "$len" -gt "$limit" ]]; then
     die "$platform post is too long: $len > $limit characters"
@@ -144,7 +165,10 @@ if [[ "$yes" -eq 0 ]]; then
     printf 'DRY RUN -- not sent (add --yes to publish)\n'
     printf 'platform:  %s\n' "$platform"
     if [[ "$limit" -gt 0 ]]; then
-        printf 'length:    %s / %s\n' "$len" "$limit"
+        # "approx" because wc -m counts code points; X weighs emojis as 2 and
+        # normalizes URLs to 23 chars, so this is a necessary-but-not-sufficient
+        # check. The platform server is authoritative on send.
+        printf 'length:    %s / %s (approx)\n' "$len" "$limit"
     else
         printf 'length:    %s (no limit)\n' "$len"
     fi

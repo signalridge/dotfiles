@@ -9,6 +9,10 @@
 # REDDIT_USER_AGENT. `social-post reddit` resolves these from gopass.
 
 set -euo pipefail
+# Disable xtrace defensively -- `bash -x reddit-submit` would otherwise echo
+# the refresh_token and access_token in plaintext. A motivated user can still
+# re-enable tracing after this line, but the common-mistake case is shut out.
+set +x
 
 TOKEN_URL="https://www.reddit.com/api/v1/access_token"
 AUTH_URL="https://www.reddit.com/api/v1/authorize"
@@ -19,6 +23,13 @@ DEFAULT_SCOPES="identity read submit"
 die() {
     printf 'reddit-submit: %s\n' "$*" >&2
     exit 1
+}
+
+# Require the value-arg companion of a flag (`--foo VALUE`). Catches the case
+# where a user writes `--foo --bar` and we'd otherwise silently absorb `--bar`
+# as foo's value.
+require_value() {
+    [[ -n "${2:-}" && "${2:-}" != --* ]] || die "option $1 requires a value"
 }
 
 need() { command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"; }
@@ -80,22 +91,24 @@ cmd="$1"
 shift
 
 positional=()
+# --client-secret is allowed to be empty (Reddit "installed app" type uses
+# an empty Basic-auth secret), so it doesn't go through require_value.
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --client-id) client_id="${2:-}" && shift 2 ;;
+        --client-id) require_value "$1" "${2:-}" && client_id="$2" && shift 2 ;;
         --client-secret) client_secret="${2:-}" && shift 2 ;;
-        --refresh-token) refresh_token="${2:-}" && shift 2 ;;
-        --redirect-uri) redirect_uri="${2:-}" && shift 2 ;;
-        --scope) scope="${2:-}" && shift 2 ;;
-        --state) state="${2:-}" && shift 2 ;;
-        --code) code="${2:-}" && shift 2 ;;
-        --subreddit) subreddit="${2:-}" && shift 2 ;;
-        --title) title="${2:-}" && shift 2 ;;
-        --title-file) title_file="${2:-}" && shift 2 ;;
-        --body) body="${2:-}" && shift 2 ;;
-        --body-file) body_file="${2:-}" && shift 2 ;;
-        --url) url="${2:-}" && shift 2 ;;
-        --flair-id) flair_id="${2:-}" && shift 2 ;;
+        --refresh-token) require_value "$1" "${2:-}" && refresh_token="$2" && shift 2 ;;
+        --redirect-uri) require_value "$1" "${2:-}" && redirect_uri="$2" && shift 2 ;;
+        --scope) require_value "$1" "${2:-}" && scope="$2" && shift 2 ;;
+        --state) require_value "$1" "${2:-}" && state="$2" && shift 2 ;;
+        --code) require_value "$1" "${2:-}" && code="$2" && shift 2 ;;
+        --subreddit) require_value "$1" "${2:-}" && subreddit="$2" && shift 2 ;;
+        --title) require_value "$1" "${2:-}" && title="$2" && shift 2 ;;
+        --title-file) require_value "$1" "${2:-}" && title_file="$2" && shift 2 ;;
+        --body) require_value "$1" "${2:-}" && body="$2" && shift 2 ;;
+        --body-file) require_value "$1" "${2:-}" && body_file="$2" && shift 2 ;;
+        --url) require_value "$1" "${2:-}" && url="$2" && shift 2 ;;
+        --flair-id) require_value "$1" "${2:-}" && flair_id="$2" && shift 2 ;;
         --no-replies) no_replies=1 && shift ;;
         --resubmit) resubmit=1 && shift ;;
         --nsfw) nsfw=1 && shift ;;
@@ -323,23 +336,8 @@ cmd_submit() {
     if [[ "$no_replies" -eq 1 ]]; then sendreplies="false"; else sendreplies="true"; fi
     if [[ "$resubmit" -eq 1 ]]; then resubmit_v="true"; else resubmit_v="false"; fi
 
-    local -a form=(
-        --data-urlencode "api_type=json"
-        --data-urlencode "kind=$kind"
-        --data-urlencode "sr=$sr"
-        --data-urlencode "title=$t"
-        --data-urlencode "sendreplies=$sendreplies"
-        --data-urlencode "resubmit=$resubmit_v"
-    )
-    if [[ -n "$link" ]]; then
-        form+=(--data-urlencode "url=$link")
-    else
-        form+=(--data-urlencode "text=$b")
-    fi
-    [[ -z "$flair_id" ]] || form+=(--data-urlencode "flair_id=$flair_id")
-    [[ "$nsfw" -eq 0 ]] || form+=(--data-urlencode "nsfw=true")
-    [[ "$spoiler" -eq 0 ]] || form+=(--data-urlencode "spoiler=true")
-
+    # Single source of truth: build the JSON payload, then derive the curl
+    # form pairs from it. Keeps the dry-run view and the actual POST in lockstep.
     local payload
     payload="$(jq -n \
         --arg kind "$kind" --arg sr "$sr" --arg title "$t" \
@@ -352,6 +350,14 @@ cmd_submit() {
          + (if $flair != "" then {flair_id:$flair} else {} end)
          + (if $nsfw then {nsfw:"true"} else {} end)
          + (if $spoiler then {spoiler:"true"} else {} end)')"
+
+    # Derive --data-urlencode pairs from the payload. NUL-separated so a `text`
+    # value containing newlines (markdown bodies routinely do) survives intact.
+    local -a form=()
+    local entry
+    while IFS= read -r -d '' entry; do
+        form+=(--data-urlencode "$entry")
+    done < <(jq -j 'to_entries[] | "\(.key)=\(.value)\u0000"' <<<"$payload")
 
     if [[ "$yes" -eq 1 && "$skip_requirements" -eq 0 ]]; then
         local reqs
