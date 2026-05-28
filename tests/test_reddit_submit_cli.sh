@@ -21,14 +21,14 @@ assert_contains() {
     fi
 }
 
-python3 -m py_compile "$CLI"
+bash -n "$CLI"
 
-help_output="$(python3 "$CLI" --help)"
+help_output="$(bash "$CLI" --help)"
 assert_contains "$help_output" "auth-url"
 assert_contains "$help_output" "submit"
 
 auth_output="$(
-    python3 "$CLI" auth-url \
+    bash "$CLI" auth-url \
         --client-id test_client \
         --redirect-uri http://localhost:8080/callback \
         --state fixed_state \
@@ -41,7 +41,7 @@ assert_contains "$auth_output" "scope=identity+read+submit"
 body_file="$TMP_ROOT/body.md"
 printf 'This is a dry-run body.\n' >"$body_file"
 dry_run_output="$(
-    python3 "$CLI" submit \
+    bash "$CLI" submit \
         --subreddit test \
         --title "Dry run title" \
         --body-file "$body_file" \
@@ -52,7 +52,7 @@ assert_contains "$dry_run_output" '"kind": "self"'
 assert_contains "$dry_run_output" '"sr": "test"'
 
 link_dry_run_output="$(
-    python3 "$CLI" submit \
+    bash "$CLI" submit \
         --subreddit r/test \
         --title "Dry run link" \
         --url "https://example.com/post" \

@@ -105,7 +105,7 @@ if [[ "$platform" == reddit ]]; then
     load REDDIT_USER_AGENT social/reddit/user_agent
     [[ ${#missing[@]} -eq 0 ]] || die "missing credentials for send:"$'\n  '"${missing[*]}"
 
-    exec env "${env_assignments[@]}" python3 "$reddit_submit" submit \
+    exec env "${env_assignments[@]}" bash "$reddit_submit" submit \
         --subreddit "$subreddit" --title "$title" --body-file "$file" --yes
 fi
 

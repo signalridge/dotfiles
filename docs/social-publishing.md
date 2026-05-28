@@ -89,8 +89,8 @@ minted in memory at send time and never stored.
 
   ```bash
   SKILL=~/.agents/skills/social-media/oss-x-post
-  python3 "$SKILL/scripts/reddit-submit" auth-url --client-id <id>      # open URL, authorize, copy the code
-  python3 "$SKILL/scripts/reddit-submit" exchange-code --client-id <id> --code <code>
+  bash "$SKILL/scripts/reddit-submit" auth-url --client-id <id>      # open URL, authorize, copy the code
+  bash "$SKILL/scripts/reddit-submit" exchange-code --client-id <id> --code <code>
   # store the refresh_token from the output in gopass: social/reddit/refresh_token
   ```
 

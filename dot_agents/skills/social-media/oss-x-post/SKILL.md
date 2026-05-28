@@ -46,7 +46,7 @@ copy-pasted everywhere.
 | dev.to   | `tmp/launch/devto.md`        | —          | Full technical post (markdown). Lead with the problem; include a code/usage snippet and the canonical repo link.                        |
 | Reddit   | `tmp/launch/reddit-<sub>.md` | title ≤300 | Per-subreddit. Frame as "I built X to solve Y, feedback on Z" — not "please star". One file per subreddit, reworded for that community. |
 
-For Reddit, first run the bundled helper `python3 "$SKILL/scripts/reddit-submit" rules <sub>`
+For Reddit, first run the bundled helper `bash "$SKILL/scripts/reddit-submit" rules <sub>`
 and `… requirements <sub>` (`$SKILL` defined below) and adapt the draft to that
 subreddit's rules before submitting.
 
