@@ -173,12 +173,32 @@ require_cmd() {
     command -v "$cmd" >/dev/null 2>&1 || return 1
 }
 
+# Isolated bootstrap profile for tools needed before the flakey-profile switch
+# (script 03) runs. It MUST be separate from the default profile (~/.nix-profile):
+# flakey-profile installs packages in a representation the modern `nix profile`
+# command does not track, so a bare `nix profile add` against the default profile
+# rewrites its manifest and silently drops every flakey-installed package
+# (tmux, wget, ...). Installing here, and prepending its bin to PATH, keeps these
+# bootstrap tools available without ever touching the flakey-managed profile.
+BOOTSTRAP_PROFILE="${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/dotfiles-bootstrap"
+
 maybe_install_with_nix() {
     local tool="$1"
     require_cmd "$tool" && return 0
     require_cmd nix || return 1
-    info "Installing $tool with nix profile..."
-    nix --extra-experimental-features 'nix-command flakes' profile add "nixpkgs#$tool" >/dev/null
+    info "Installing $tool with nix (isolated bootstrap profile)..."
+    # `nix profile add --profile` does NOT create the parent dir (unlike the
+    # default profile), so ensure it exists first or the add fails on a cold device.
+    mkdir -p "$(dirname "$BOOTSTRAP_PROFILE")"
+    nix --extra-experimental-features 'nix-command flakes' profile add \
+        --profile "$BOOTSTRAP_PROFILE" "nixpkgs#$tool" >/dev/null
+    case ":$PATH:" in
+    *":$BOOTSTRAP_PROFILE/bin:"*) ;;
+    *)
+        PATH="$BOOTSTRAP_PROFILE/bin:$PATH"
+        export PATH
+        ;;
+    esac
     require_cmd "$tool"
 }
 
