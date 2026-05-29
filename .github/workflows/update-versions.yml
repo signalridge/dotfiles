@@ -47,6 +47,7 @@ jobs:
           cloudflare_skills_rev=$(gh api repos/cloudflare/skills/commits/main -q '.sha')
           vercel_labs_agent_skills_rev=$(gh api repos/vercel-labs/agent-skills/commits/main -q '.sha')
           vercel_labs_next_skills_rev=$(gh api repos/vercel-labs/next-skills/commits/main -q '.sha')
+          vercel_labs_agent_browser_rev=$(gh api repos/vercel-labs/agent-browser/commits/main -q '.sha')
           supabase_agent_skills_rev=$(gh api repos/supabase/agent-skills/commits/main -q '.sha')
           expo_skills_rev=$(gh api repos/expo/skills/commits/main -q '.sha')
           microsoft_skills_rev=$(gh api repos/microsoft/skills/commits/main -q '.sha')
@@ -79,6 +80,7 @@ jobs:
             echo "cloudflare_skills_rev=$cloudflare_skills_rev"
             echo "vercel_labs_agent_skills_rev=$vercel_labs_agent_skills_rev"
             echo "vercel_labs_next_skills_rev=$vercel_labs_next_skills_rev"
+            echo "vercel_labs_agent_browser_rev=$vercel_labs_agent_browser_rev"
             echo "supabase_agent_skills_rev=$supabase_agent_skills_rev"
             echo "expo_skills_rev=$expo_skills_rev"
             echo "microsoft_skills_rev=$microsoft_skills_rev"
@@ -112,6 +114,7 @@ jobs:
           sed -i 's/cloudflareSkillsRev: .*/cloudflareSkillsRev: ${{ steps.versions.outputs.cloudflare_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/vercelLabsAgentSkillsRev: .*/vercelLabsAgentSkillsRev: ${{ steps.versions.outputs.vercel_labs_agent_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/vercelLabsNextSkillsRev: .*/vercelLabsNextSkillsRev: ${{ steps.versions.outputs.vercel_labs_next_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/vercelLabsAgentBrowserRev: .*/vercelLabsAgentBrowserRev: ${{ steps.versions.outputs.vercel_labs_agent_browser_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/supabaseAgentSkillsRev: .*/supabaseAgentSkillsRev: ${{ steps.versions.outputs.supabase_agent_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/expoSkillsRev: .*/expoSkillsRev: ${{ steps.versions.outputs.expo_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/microsoftSkillsRev: .*/microsoftSkillsRev: ${{ steps.versions.outputs.microsoft_skills_rev }}/' .chezmoidata/versions.yaml

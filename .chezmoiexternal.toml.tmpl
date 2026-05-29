@@ -262,6 +262,21 @@
 {{- end }}
 
 # ------------------------------------------------------------------------------
+# vercel-labs/agent-browser skill stub
+# Discovery stub only; the real workflow content is served by the CLI at
+# runtime via `agent-browser skills get core`, so this file stays in sync with
+# whatever agent-browser version mise installs. The CLI itself comes from the
+# `npm:agent-browser` entry in mise/config.toml.tmpl.
+# ------------------------------------------------------------------------------
+[".agents/skills/ecosystem/vercel-labs/agent-browser"]
+    type = "archive"
+    url = "https://github.com/vercel-labs/agent-browser/archive/{{ $.versions.vercelLabsAgentBrowserRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["agent-browser-*/skills/agent-browser/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
 # supabase/agent-skills database best practices
 # ------------------------------------------------------------------------------
 [".agents/skills/ecosystem/supabase/supabase-postgres-best-practices"]
