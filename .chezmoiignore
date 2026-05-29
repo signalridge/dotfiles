@@ -68,6 +68,9 @@ Library/
 {{- if not .useEncryption }}
 .chezmoiscripts/01_setup-encryption-key.sh
 .chezmoiscripts/06_setup-gopass.sh
+# gopass is an encryption-gated feature (06_setup-gopass.sh above is skipped);
+# don't write its config with an empty source_url when encryption is disabled.
+.config/gopass/config
 .ssh/*
 {{- end }}
 
