@@ -14,13 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
-      - name: Restore Nix cache
-        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('nix-config/**/*.nix', 'nix-config/**/*.tmpl', 'nix-config/.flake-*.lock', '.github/workflows/*.yml', '.pre-commit-config.yaml') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          gc-max-store-size-linux: 1G
-          gc-max-store-size-macos: 2G
       - name: Install tools
         run: |
           nix profile install nixpkgs#pre-commit nixpkgs#treefmt nixpkgs#shfmt nixpkgs#shellcheck nixpkgs#statix nixpkgs#nixfmt nixpkgs#stylua nixpkgs#selene nixpkgs#chezmoi nixpkgs#prettier nixpkgs#typos nixpkgs#gitleaks
@@ -58,13 +51,6 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
-      - name: Restore Nix cache
-        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('nix-config/**/*.nix', 'nix-config/**/*.tmpl', 'nix-config/.flake-*.lock', '.github/workflows/*.yml', '.pre-commit-config.yaml') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          gc-max-store-size-linux: 1G
-          gc-max-store-size-macos: 2G
       - name: Install chezmoi
         run: nix profile install nixpkgs#chezmoi
       - name: Setup chezmoi
