@@ -53,6 +53,15 @@ if [[ -f "$AQUA_CONFIG_PATH" ]]; then
     esac
 fi
 
+# aqua policy: allow-list for non-standard registries (must be allow-listed once via `aqua policy allow`)
+AQUA_POLICY_PATH="${XDG_CONFIG_HOME}/aquaproj-aqua/aqua-policy.yaml"
+if [[ -f "$AQUA_POLICY_PATH" ]]; then
+    case ":${AQUA_POLICY_CONFIG:-}:" in
+    *":${AQUA_POLICY_PATH}:"*) ;;
+    *) export AQUA_POLICY_CONFIG="${AQUA_POLICY_PATH}${AQUA_POLICY_CONFIG:+:${AQUA_POLICY_CONFIG}}" ;;
+    esac
+fi
+
 # XDG config paths for tools whose macOS defaults live under Library/Application Support.
 export TLRC_CONFIG="${TLRC_CONFIG:-${XDG_CONFIG_HOME}/tlrc/config.toml}"
 export SLUMBER_CONFIG_PATH="${SLUMBER_CONFIG_PATH:-${XDG_CONFIG_HOME}/slumber/config.yml}"

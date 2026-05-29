@@ -1,0 +1,22 @@
+---
+# Local registry file for third-party aqua packages not yet in the standard registry.
+# Referenced from aqua.yaml as `name: third-party, type: local, path: registry.yaml`.
+# Each addition must also be allow-listed in aqua-policy.yaml.
+
+packages:
+  - type: github_release
+    repo_owner: signalridge
+    repo_name: slipway
+    description: Spec-driven development with full lifecycle accountability for Claude, Codex, Cursor & Gemini
+    asset: "slipway_{{trimV .Version}}_{{.OS}}_{{.Arch}}.tar.gz"
+    format: tar.gz
+    files:
+      - name: slipway
+    overrides:
+      - goos: windows
+        asset: "slipway_{{trimV .Version}}_{{.OS}}_{{.Arch}}.zip"
+        format: zip
+    supported_envs:
+      - darwin
+      - linux
+      - windows
