@@ -4,24 +4,75 @@ encryption = "age"
 {{- $work := promptBoolOnce . "work" "Is this a work machine" -}}{{/* true if this machine is a work machine */}}
 {{- $private := not $work -}}{{/* true if this machine should have private configuration  */}}
 {{- $headless := false -}}{{/* true if this machine does not have a screen and keyboard */}}
-{{- $useEncryption := false -}}{{/* default false for users without encryption key */}}
-{{- if hasKey . "useEncryption" -}}
+{{/* useEncryption must be set explicitly. The historical silent default to
+     false was a cold-start footgun: when running `curl ... | sh`, chezmoi has
+     no TTY, the bool prompt silently returns its zero value (false), and
+     .chezmoiignore then hides script 01 entirely — leaving users wondering
+     why the encrypted-keys bootstrap appears to skip itself with zero log
+     output. Force an explicit signal instead. */}}
+{{- $useEncryption := false -}}
+{{- if env "DOTFILES_USE_ENCRYPTION" -}}
+{{-   $useEncryptionEnv := lower (env "DOTFILES_USE_ENCRYPTION") -}}
+{{-   if eq $useEncryptionEnv "true" -}}
+{{-     $useEncryption = true -}}
+{{-   else if eq $useEncryptionEnv "false" -}}
+{{-     $useEncryption = false -}}
+{{-   else -}}
+{{-     fail "DOTFILES_USE_ENCRYPTION must be either \"true\" or \"false\"" -}}
+{{-   end -}}
+{{- else if hasKey . "useEncryption" -}}
 {{-   $useEncryption = .useEncryption -}}
-{{- end -}}
-{{- if stdinIsATTY -}}
-{{-   $useEncryption = promptBoolOnce . "useEncryption" "Enable encryption & SSH config (requires ~/.ssh/main key, default: false)" -}}
+{{- else if stdinIsATTY -}}
+{{-   $useEncryption = promptBoolOnce . "useEncryption" "Enable encrypted key restore (requires keys backup repo)" -}}
+{{- else -}}
+{{-   fail "useEncryption is unset and there is no TTY to prompt.\nDownload init.sh and run it interactively so chezmoi prompts can read from your terminal:\n  curl -fsSL <init-url> -o /tmp/init.sh && sh /tmp/init.sh\nIf this is a re-apply with identity data already configured, set DOTFILES_USE_ENCRYPTION=true or false." -}}
 {{- end -}}
 {{- "" -}}
 
+{{/* Identity prompts. In non-TTY mode `promptStringOnce` silently returns its
+     default (which is the prompt label!) — that pollutes downstream config with
+     literal "GitHub username" strings and breaks URL interpolation. Force an
+     explicit fail when no TTY and no data is available, so non-interactive
+     installs (curl | sh) can't accidentally write a half-formed config. */}}
+{{- $nonInteractiveHelp := "Either pre-populate the value in chezmoi data, or download init.sh and run it interactively instead of piping curl into sh:\n  curl -fsSL <init-url> -o /tmp/init.sh && sh /tmp/init.sh" -}}
+
 {{- $hostname := .chezmoi.hostname -}}
 {{- if not $work -}}
-{{- $hostname = promptStringOnce . "hostname" "Hostname" -}}{{/* set the hostname */}}
+{{-   if hasKey . "hostname" -}}
+{{-     $hostname = .hostname -}}
+{{-   else if stdinIsATTY -}}
+{{-     $hostname = promptStringOnce . "hostname" "Hostname" -}}
+{{-   else -}}
+{{-     fail (printf "hostname is unset and there is no TTY to prompt.\n%s" $nonInteractiveHelp) -}}
+{{-   end -}}
 {{- end -}}
 
-{{/* prompt for user specific configuration */}}
-{{- $useremail := promptStringOnce . "useremail" "Email address" -}}{{/* set the useremail address */}}
-{{- $gitUsername := promptStringOnce . "gitUsername" "GitHub username" -}}{{/* set the github username */}}
-{{- $gitEmail := promptStringOnce . "gitEmail" "GitHub useremail" -}}{{/* set the github useremail */}}
+{{- $useremail := "" -}}
+{{- if hasKey . "useremail" -}}
+{{-   $useremail = .useremail -}}
+{{- else if stdinIsATTY -}}
+{{-   $useremail = promptStringOnce . "useremail" "Email address" -}}
+{{- else -}}
+{{-   fail (printf "useremail is unset and there is no TTY to prompt.\n%s" $nonInteractiveHelp) -}}
+{{- end -}}
+
+{{- $gitUsername := "" -}}
+{{- if hasKey . "gitUsername" -}}
+{{-   $gitUsername = .gitUsername -}}
+{{- else if stdinIsATTY -}}
+{{-   $gitUsername = promptStringOnce . "gitUsername" "GitHub username" -}}
+{{- else -}}
+{{-   fail (printf "gitUsername is unset and there is no TTY to prompt.\n%s" $nonInteractiveHelp) -}}
+{{- end -}}
+
+{{- $gitEmail := "" -}}
+{{- if hasKey . "gitEmail" -}}
+{{-   $gitEmail = .gitEmail -}}
+{{- else if stdinIsATTY -}}
+{{-   $gitEmail = promptStringOnce . "gitEmail" "Git commit email" -}}
+{{- else -}}
+{{-   fail (printf "gitEmail is unset and there is no TTY to prompt.\n%s" $nonInteractiveHelp) -}}
+{{- end -}}
 
 {{- $osID := .chezmoi.os -}}
 {{- if (and (eq .chezmoi.os "linux") (hasKey .chezmoi.osRelease "id")) -}}
@@ -82,20 +133,30 @@ encryption = "age"
 {{-   $opencodeProviderAccount = .opencodeProvider -}}{{/* backward compatibility */}}
 {{- end -}}
 
-{{/* gopass password store repository */}}
-{{- $gopassRepository := printf "git@github.com:%s/passwords.git" $gitUsername -}}
+{{/* gopass password store repository (HTTPS; auth via gh credential helper) */}}
+{{- $gopassRepository := printf "https://github.com/%s/passwords.git" $gitUsername -}}
 {{- if hasKey . "gopassRepository" -}}
 {{-   $gopassRepository = .gopassRepository -}}
 {{- else if and (stdinIsATTY) $useEncryption -}}
 {{-   $gopassRepository = promptStringOnce . "gopassRepository" "gopass repository URL" $gopassRepository -}}
 {{- end -}}
+{{- if hasPrefix "git@github.com:" $gopassRepository -}}
+{{-   $gopassRepository = printf "https://github.com/%s" (trimPrefix "git@github.com:" $gopassRepository) -}}
+{{- else if hasPrefix "ssh://git@github.com/" $gopassRepository -}}
+{{-   $gopassRepository = printf "https://github.com/%s" (trimPrefix "ssh://git@github.com/" $gopassRepository) -}}
+{{- end -}}
 
-{{/* keys-manage backup repository */}}
-{{- $keysRepository := printf "git@github.com:%s/keypairs.git" $gitUsername -}}
+{{/* keys-manage backup repository (HTTPS; auth via gh credential helper) */}}
+{{- $keysRepository := printf "https://github.com/%s/keypairs.git" $gitUsername -}}
 {{- if hasKey . "keysRepository" -}}
 {{-   $keysRepository = .keysRepository -}}
 {{- else if and (stdinIsATTY) $useEncryption -}}
 {{-   $keysRepository = promptStringOnce . "keysRepository" "keys-manage backup repository URL" $keysRepository -}}
+{{- end -}}
+{{- if hasPrefix "git@github.com:" $keysRepository -}}
+{{-   $keysRepository = printf "https://github.com/%s" (trimPrefix "git@github.com:" $keysRepository) -}}
+{{- else if hasPrefix "ssh://git@github.com/" $keysRepository -}}
+{{-   $keysRepository = printf "https://github.com/%s" (trimPrefix "ssh://git@github.com/" $keysRepository) -}}
 {{- end -}}
 
 {{/* jj SSH commit signing key. Default to the managed SSH key only when encryption is enabled. */}}

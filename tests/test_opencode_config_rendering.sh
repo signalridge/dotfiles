@@ -97,9 +97,13 @@ render_oh_my_opencode() {
 OPENCODE_DEFAULT="$TMP_ROOT/opencode-default.jsonc"
 OH_MY_OPENCODE="$TMP_ROOT/oh-my-opencode.jsonc"
 OPENCODE_WITH_GOPASS="$TMP_ROOT/opencode-with-gopass.jsonc"
+CODEX_MODIFY_SCRIPT="$TMP_ROOT/codex-modify-config.sh"
+CODEX_CONFIG="$TMP_ROOT/codex-config.toml"
 
 render_opencode "$OPENCODE_DEFAULT"
 render_oh_my_opencode "$OH_MY_OPENCODE"
+chezmoi execute-template --source "$ROOT" <"$ROOT/dot_codex/modify_config.toml.tmpl" >"$CODEX_MODIFY_SCRIPT"
+bash "$CODEX_MODIFY_SCRIPT" </dev/null >"$CODEX_CONFIG"
 
 ACCOUNT_BIN="$TMP_ROOT/account-bin"
 mkdir -p "$ACCOUNT_BIN"
@@ -338,13 +342,13 @@ assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage" 'Search a
 assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage" 'check_mcp_server "tavily" "Tavily"'
 assert_file_not_contains "$ROOT/dot_local/bin/executable_codex-manage" 'tri-MCP readiness unknown'
 
-assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '[mcp_servers.context7]'
-assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '[mcp_servers.serena]'
-assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" 'git+https://github.com/oraios/serena'
-assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '"--context", "codex"'
-assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" 'startup_timeout_sec = 30'
-assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" '[mcp_servers.gitmcp]'
-assert_file_contains "$ROOT/dot_codex/config.toml.tmpl" 'url = "https://gitmcp.io/docs"'
+assert_file_contains "$CODEX_CONFIG" '[mcp_servers.context7]'
+assert_file_contains "$CODEX_CONFIG" '[mcp_servers.serena]'
+assert_file_contains "$CODEX_CONFIG" 'git+https://github.com/oraios/serena'
+assert_file_contains "$CODEX_CONFIG" '"--context", "codex"'
+assert_file_contains "$CODEX_CONFIG" 'startup_timeout_sec = 30'
+assert_file_contains "$CODEX_CONFIG" '[mcp_servers.gitmcp]'
+assert_file_contains "$CODEX_CONFIG" 'url = "https://gitmcp.io/docs"'
 
 assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl" 'ensure_user_mcp_json "context7"'
 assert_file_contains "$ROOT/.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl" '/.local/bin/mcp-context7'

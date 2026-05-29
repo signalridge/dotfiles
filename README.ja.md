@@ -181,11 +181,16 @@
 > このリポジトリはシェル、パッケージマネージャ、システム設定を変更します。
 > 本番利用前に Fork して内容を確認してください。
 
-### 方法 1: `init.sh` を直接実行
+### 方法 1: `init.sh` をダウンロードして対話実行
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | sh
+curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh -o /tmp/init.sh
+sh /tmp/init.sh
 ```
+
+> なぜ `curl … | sh` ではないのか？
+> `chezmoi init` は hostname / GitHub ユーザー名 / メールなどを対話的に尋ねます。
+> パイプ実行だと stdin が curl に奪われ、prompt が TTY から読み取れずインストールが失敗します（または placeholder 値がそのまま書かれます）。先にダウンロードしてから `sh /tmp/init.sh` を実行すれば TTY が保たれます。
 
 ### 方法 2: タグ/ブランチを固定して確認後に実行
 
@@ -211,7 +216,7 @@ git checkout <tag-or-commit>
 ./init.sh --repo signalridge/dotfiles
 ./init.sh --ref v1.2.3
 ./init.sh --depth 1
-./init.sh --ssh
+DOTFILES_USE_ENCRYPTION=false ./init.sh
 ```
 
 ---
@@ -227,6 +232,8 @@ git checkout <tag-or-commit>
 - `claudeProviderAccount` / `codexProviderAccount`
 
 このリポジトリを初回利用する場合、keys-manage バックアップと鍵を自分で用意していない限り、`useEncryption = false` を推奨します。
+
+> 初回インストールは対話実行が前提です：身分関連の prompt（`hostname` / `gitUsername` / `useremail` / `gitEmail`）には安全な default がなく、TTY が無いと明示的に fail します。方式 1 の「ダウンロードしてから実行」を使ってください（`curl | sh` は NG）。`~/.config/chezmoi/chezmoi.toml` に既に値が書かれているマシンで再 apply する場合は prompt がスキップされ、その場面では `DOTFILES_USE_ENCRYPTION=true|false` で encryption フラグを環境変数から上書きできます。
 
 ---
 

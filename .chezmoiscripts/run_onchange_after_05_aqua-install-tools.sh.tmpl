@@ -37,4 +37,11 @@ else
     exit 0
 fi
 
+# Re-approve the policy file whenever its hash changes, otherwise aqua's
+# policy gate rejects non-standard registry packages with code 002.
+aqua_policy_path="${AQUA_POLICY_CONFIG:-$HOME/.config/aquaproj-aqua/aqua-policy.yaml}"
+if [[ -f "$aqua_policy_path" ]]; then
+    "$aqua_cmd" policy allow "$aqua_policy_path"
+fi
+
 "$aqua_cmd" install

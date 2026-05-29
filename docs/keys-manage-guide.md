@@ -424,15 +424,21 @@ Use yazi in FZF menu to add custom files under `$HOME`.
 Configure in `~/.local/share/chezmoi/.chezmoidata/keys.yaml`:
 
 ```yaml
-keysRepository: git@github.com:username/keys-backup.git
+keysRepository: https://github.com/username/keys-backup.git
 ```
 
 Or in `~/.config/chezmoi/chezmoi.toml`:
 
 ```toml
 [data]
-    keysRepository = "git@github.com:username/keys-backup.git"
+    keysRepository = "https://github.com/username/keys-backup.git"
 ```
+
+Authentication is handled by the `gh` credential helper declared in
+`~/.config/git/config` — `gh auth login` once on each machine and HTTPS
+private-repo access is automatic. SSH URLs are deprecated; any legacy
+`git@github.com:...` value in user data is auto-normalized to HTTPS at
+bootstrap time, but new setups should use HTTPS URLs exclusively.
 
 ## Encryption Details
 
@@ -478,11 +484,14 @@ git push
 ### Authentication failed
 
 ```bash
-# Test SSH connection
-ssh -T git@github.com
+# Check gh auth status (default HTTPS path)
+gh auth status
 
-# Add SSH key
-ssh-add ~/.ssh/your_key
+# Re-authenticate if needed (device code works on headless)
+gh auth login -h github.com -p https
+
+# Or use a PAT for unattended hosts
+export GH_TOKEN=<PAT-with-repo-scope>
 
 # Verify repository URL
 git -C ~/.local/share/keys-backup remote get-url origin
@@ -621,7 +630,7 @@ Password saved to gopass (keys-manage/password)
 # Check status
 $ keys-manage status
 Repository: /home/user/.local/share/keys-backup
-  Remote: git@github.com:user/keys-backup.git
+  Remote: https://github.com/user/keys-backup.git
   Current: abc1234 - Backup: 3 files (2 hours ago)
   Total backups: 15
 

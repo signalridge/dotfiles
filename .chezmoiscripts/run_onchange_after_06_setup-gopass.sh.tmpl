@@ -2,6 +2,12 @@
 # Setup gopass on new device
 # Prerequisites: age encryption key already restored by 01_setup-encryption-key.sh
 set -euo pipefail
+{{- $gopassRepository := .gopassRepository -}}
+{{- if hasPrefix "git@github.com:" $gopassRepository -}}
+{{-   $gopassRepository = printf "https://github.com/%s" (trimPrefix "git@github.com:" $gopassRepository) -}}
+{{- else if hasPrefix "ssh://git@github.com/" $gopassRepository -}}
+{{-   $gopassRepository = printf "https://github.com/%s" (trimPrefix "ssh://git@github.com/" $gopassRepository) -}}
+{{- end }}
 
 # Ensure aqua-managed CLIs are discoverable for this non-interactive shell.
 aqua_bin_dir="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
@@ -37,7 +43,7 @@ echo "Clone gopass password store from Git"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "This will clone your password store from:"
-echo "  {{ .gopassRepository }}"
+echo "  {{ $gopassRepository }}"
 echo ""
 echo "Note: ~/.config/gopass/config is already configured by chezmoi"
 echo "      It points to ~/.ssh/main for age decryption"
@@ -52,7 +58,7 @@ fi
 if [[ "$confirm" != "yes" ]]; then
     echo ""
     echo "Skipped. You can clone later with:"
-    echo "  gopass clone {{ .gopassRepository | quote }}"
+    printf '  gopass clone %s\n' {{ $gopassRepository | quote }}
     echo ""
     exit 0
 fi
@@ -67,7 +73,7 @@ fi
 echo ""
 echo "Cloning password store..."
 # --check-keys=false: Don't generate new keys, use existing SSH key
-gopass clone --check-keys=false {{ .gopassRepository | quote }}
+gopass clone --check-keys=false {{ $gopassRepository | quote }}
 
 echo ""
 echo "✓ gopass password store cloned successfully"

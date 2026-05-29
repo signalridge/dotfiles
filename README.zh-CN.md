@@ -179,11 +179,16 @@
 > 本仓库会修改 shell、包管理器和系统配置。
 > 建议先 Fork 并审阅，再用于生产机器。
 
-### 方式 1：直接运行 `init.sh`
+### 方式 1：先下载 `init.sh` 再交互运行
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | sh
+curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh -o /tmp/init.sh
+sh /tmp/init.sh
 ```
+
+> 为什么不用 `curl … | sh`？
+> `chezmoi init` 会交互式询问 hostname、GitHub 用户名、邮箱等。
+> 管道把 stdin 接到了 curl，prompt 没有 TTY 可读，安装会直接报错（或者更糟，悄悄写入占位值）。先下载再 `sh /tmp/init.sh`，终端就还在。
 
 ### 方式 2：固定 tag/branch 并先审阅
 
@@ -209,7 +214,7 @@ git checkout <tag-or-commit>
 ./init.sh --repo signalridge/dotfiles
 ./init.sh --ref v1.2.3
 ./init.sh --depth 1
-./init.sh --ssh
+DOTFILES_USE_ENCRYPTION=false ./init.sh
 ```
 
 ---
@@ -225,6 +230,8 @@ git checkout <tag-or-commit>
 - `claudeProviderAccount` / `codexProviderAccount`
 
 对大多数首次使用者：除非你已经有自己的 keys-manage 备份仓库与密钥材料，否则建议保持 `useEncryption = false`。
+
+> 首次安装必须交互执行：身份相关 prompt（`hostname` / `gitUsername` / `useremail` / `gitEmail`）没有安全默认值，无 TTY 时会直接 fail。请用方式 1 的"先下载再运行"模式，**不要** `curl | sh`。在 `~/.config/chezmoi/chezmoi.toml` 已经写入这些值的机器上 re-apply 时 prompt 会被跳过；此场景下可以用 `DOTFILES_USE_ENCRYPTION=true|false` 通过环境变量覆盖加密开关。
 
 ---
 

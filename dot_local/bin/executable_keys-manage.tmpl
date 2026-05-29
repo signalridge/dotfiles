@@ -12,7 +12,13 @@ source "$SCRIPT_DIR/lib/common"
 # ===== Constants =====
 
 # Paths from chezmoi data
-KEYS_REPO="{{ .keysRepository }}"
+{{- $keysRepository := .keysRepository -}}
+{{- if hasPrefix "git@github.com:" $keysRepository -}}
+{{-   $keysRepository = printf "https://github.com/%s" (trimPrefix "git@github.com:" $keysRepository) -}}
+{{- else if hasPrefix "ssh://git@github.com/" $keysRepository -}}
+{{-   $keysRepository = printf "https://github.com/%s" (trimPrefix "ssh://git@github.com/" $keysRepository) -}}
+{{- end }}
+KEYS_REPO="{{ $keysRepository }}"
 REPO_DIR="$HOME/.local/share/keys-backup"
 BACKUP_FILES_DIR="backup-files"  # Generic directory for all backed up files
 BACKUP_LIST="$REPO_DIR/backup-list.txt"

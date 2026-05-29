@@ -354,7 +354,7 @@ cmd_remove_account() {
         fi
     fi
 
-    log_warn "Account profile is template-managed; to fully remove, update dot_codex/config.toml.tmpl"
+    log_warn "Account profile is template-managed; to fully remove, update dot_codex/modify_config.toml.tmpl"
 }
 
 # Add API key

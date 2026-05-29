@@ -38,7 +38,7 @@ Type `yes` to auto-clone.
 
 ```bash
 # Get repository URL from your dotfiles configuration
-REPO_URL=$(yq -r '.gopass.repository // "git@github.com:signalridge/password-store.git"' ~/.chezmoidata/gopass.yaml 2>/dev/null || echo "git@github.com:signalridge/password-store.git")
+REPO_URL=$(yq -r '.gopass.repository // "https://github.com/signalridge/password-store.git"' ~/.chezmoidata/gopass.yaml 2>/dev/null || echo "https://github.com/signalridge/password-store.git")
 
 gopass clone "$REPO_URL"
 ```
@@ -116,14 +116,14 @@ The `.age-recipients` file is already in the Git repository and will be automati
 
 ```yaml
 gopass:
-  repository: git@github.com:YOUR_USERNAME/password-store.git
+  repository: https://github.com/YOUR_USERNAME/password-store.git
 ```
 
 ### Method 2: Use in Scripts
 
 ```bash
 # In setup scripts or manual commands
-GOPASS_REPO=$(yq -r '.gopass.repository' ~/.chezmoidata/gopass.yaml 2>/dev/null || echo "git@github.com:signalridge/password-store.git")
+GOPASS_REPO=$(yq -r '.gopass.repository' ~/.chezmoidata/gopass.yaml 2>/dev/null || echo "https://github.com/signalridge/password-store.git")
 
 gopass clone "$GOPASS_REPO"
 ```
@@ -137,17 +137,23 @@ gopass clone "$GOPASS_REPO"
 If you want to avoid prompts:
 
 ```bash
-export KEYS_REPO=git@github.com:YOUR_USERNAME/keypairs.git
+export KEYS_REPO=https://github.com/YOUR_USERNAME/keypairs.git
 export KEYS_BACKUP_PASSWORD='...'
+# Headless/unattended: also export a PAT so gh's credential helper can supply
+# the token without an interactive `gh auth login`.
+export GH_TOKEN=<PAT-with-repo-scope>
 chezmoi apply
 ```
 
 ### Error: gopass clone fails
 
-**Solution:** Check SSH key is added to GitHub:
+**Solution:** HTTPS clone needs `gh` to be authenticated. Check status:
 
 ```bash
-ssh -T git@github.com
+gh auth status
+
+# If not logged in (device-code flow, works on headless SSH sessions):
+gh auth login -h github.com -p https
 ```
 
 ### Error: Cannot decrypt passwords

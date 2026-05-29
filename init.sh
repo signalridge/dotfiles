@@ -14,26 +14,57 @@ Usage: init.sh [options] [-- <chezmoi init flags>]
 
 Options:
   --repo <repo>     Repo to init from (default: signalridge)
-                   Examples: signalridge, signalridge/dotfiles, git@github.com:signalridge/dotfiles.git
+                   Examples: signalridge, signalridge/dotfiles, https://github.com/signalridge/dotfiles.git
   --ref <ref>       Branch or tag to checkout (maps to: chezmoi init --branch)
   --depth <n>       Shallow clone depth (maps to: chezmoi init --depth)
-  --ssh             Use SSH when guessing repo URL (maps to: chezmoi init --ssh)
   -h, --help        Show this help
 
 Environment:
-  DOTFILES_REPO / DOTFILES_REF / DOTFILES_DEPTH / DOTFILES_SSH
+  DOTFILES_REPO / DOTFILES_REF / DOTFILES_DEPTH
+  DOTFILES_USE_ENCRYPTION  Override the encryption flag on re-apply
+                           ("true" or "false"). Does NOT make first-run
+                           non-interactive — identity prompts still
+                           require a TTY.
+
+Note: this bootstrap is HTTPS-only. SSH is deprecated for keys-backup /
+gopass repos and GitHub init repo URLs. Auth is handled via the gh
+credential helper declared in the chezmoi-managed git config.
+
+First-run is interactive. Don't pipe into `sh` — download then run, so
+chezmoi's prompts can read from your terminal:
+
+  curl -fsLS https://raw.githubusercontent.com/signalridge/dotfiles/<tag-or-branch>/init.sh -o /tmp/init.sh
+  sh /tmp/init.sh --ref <tag-or-branch>
 
 Examples:
   ./init.sh
   ./init.sh --ref <tag-or-branch>
-  curl -fsLS https://raw.githubusercontent.com/signalridge/dotfiles/<tag-or-branch>/init.sh | sh -s -- --ref <tag-or-branch>
 EOF
 }
 
 repo="${DOTFILES_REPO:-signalridge}"
 ref="${DOTFILES_REF:-}"
 depth="${DOTFILES_DEPTH:-}"
-ssh="${DOTFILES_SSH:-}"
+
+normalize_repo() {
+    case "$1" in
+    git@github.com:*)
+        printf 'https://github.com/%s\n' "${1#git@github.com:}"
+        ;;
+    ssh://git@github.com/*)
+        printf 'https://github.com/%s\n' "${1#ssh://git@github.com/}"
+        ;;
+    https://github.com/*)
+        printf '%s\n' "$1"
+        ;;
+    */*)
+        printf 'https://github.com/%s.git\n' "${1%.git}"
+        ;;
+    *)
+        printf 'https://github.com/%s/dotfiles.git\n' "$1"
+        ;;
+    esac
+}
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -66,7 +97,8 @@ while [ $# -gt 0 ]; do
         }
         ;;
     --ssh)
-        ssh=1
+        echo "error: --ssh is no longer supported (HTTPS-only bootstrap). Auth flows through the gh credential helper." >&2
+        exit 2
         ;;
     --)
         shift
@@ -112,9 +144,7 @@ if [ -f "$script_dir/.chezmoiroot" ] || [ -f "$script_dir/.chezmoi.toml.tmpl" ];
     exec "$chezmoi" init --apply --source "$script_dir" "$@"
 else
     # Piped from curl/wget - clone from GitHub instead
-    if [ -n "$ssh" ]; then
-        set -- --ssh "$@"
-    fi
+    repo="$(normalize_repo "$repo")"
     if [ -n "$depth" ]; then
         set -- --depth "$depth" "$@"
     fi

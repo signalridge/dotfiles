@@ -181,11 +181,16 @@ The `chezmoi` script chain is staged and numbered:
 > This repository modifies shell, package managers, and system settings.
 > Fork and review before running on a machine you care about.
 
-### Option 1: Run `init.sh` directly
+### Option 1: Download `init.sh` then run interactively
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | sh
+curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh -o /tmp/init.sh
+sh /tmp/init.sh
 ```
+
+> Why not `curl … | sh`?
+> `chezmoi init` prompts for hostname, GitHub username, email, etc.
+> Piping into `sh` detaches stdin from your terminal, so those prompts have nothing to read from and the install bails out (or worse, would silently write placeholder values). Download first, then run — `sh /tmp/init.sh` keeps your TTY attached.
 
 ### Option 2: Pin to a tag/branch and review first
 
@@ -211,7 +216,7 @@ git checkout <tag-or-commit>
 ./init.sh --repo signalridge/dotfiles
 ./init.sh --ref v1.2.3
 ./init.sh --depth 1
-./init.sh --ssh
+DOTFILES_USE_ENCRYPTION=false ./init.sh
 ```
 
 ---
@@ -227,6 +232,8 @@ git checkout <tag-or-commit>
 - `claudeProviderAccount` / `codexProviderAccount`
 
 For most first-time users of this repo: keep `useEncryption = false` unless you have your own keys-manage backup repo and key material.
+
+> First-run is interactive. Identity prompts (`hostname`, `gitUsername`, `useremail`, `gitEmail`) have no safe default and will hard-fail if there's no TTY — use Option 1's download-then-run pattern, not pipe-to-sh. On a re-apply where `~/.config/chezmoi/chezmoi.toml` already has these values, prompts are skipped; `DOTFILES_USE_ENCRYPTION=true|false` lets you override the encryption flag from the environment in that case.
 
 ---
 
