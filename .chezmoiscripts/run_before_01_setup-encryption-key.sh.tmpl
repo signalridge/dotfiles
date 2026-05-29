@@ -406,14 +406,12 @@ needs_bootstrap=false
 case "$KEYS_REPO_URL" in
 git@github.com:* | ssh://git@github.com/*)
     if ! GIT_SSH_COMMAND='ssh -o BatchMode=yes -o ConnectTimeout=5' \
-        git -c "url.https://github.com/.insteadOf=" \
-        ls-remote "$KEYS_REPO_URL" HEAD >/dev/null 2>&1; then
+        git ls-remote "$KEYS_REPO_URL" HEAD >/dev/null 2>&1; then
         needs_bootstrap=true
     fi
     ;;
 https://github.com/*)
-    if ! git -c "url.https://github.com/.insteadOf=" \
-        ls-remote "$KEYS_REPO_URL" HEAD >/dev/null 2>&1; then
+    if ! git ls-remote "$KEYS_REPO_URL" HEAD >/dev/null 2>&1; then
         needs_bootstrap=true
     fi
     ;;
@@ -472,14 +470,14 @@ mkdir -p "$(dirname "$REPO_DIR")"
 if [[ -d "$REPO_DIR/.git" ]]; then
     info "Updating existing keys repository: $REPO_DIR"
     (cd "$REPO_DIR" && git remote get-url origin >/dev/null 2>&1) || (cd "$REPO_DIR" && git remote add origin "$KEYS_REPO_URL")
-    (cd "$REPO_DIR" && git -c "url.https://github.com/.insteadOf=" fetch origin --quiet)
+    (cd "$REPO_DIR" && git fetch origin --quiet)
     (cd "$REPO_DIR" && git pull --ff-only --quiet) || {
         err "Failed to pull keys repository (ff-only)"
         exit 1
     }
 else
     info "Cloning keys repository..."
-    git -c "url.https://github.com/.insteadOf=" clone "${KEYS_REPO_CLONE_URL:-$KEYS_REPO_URL}" "$REPO_DIR" || {
+    git clone "${KEYS_REPO_CLONE_URL:-$KEYS_REPO_URL}" "$REPO_DIR" || {
         err "Failed to clone keys repository"
         exit 1
     }

@@ -83,14 +83,14 @@
     rsq = rebase -i --autosquash
 
 # ─────────────────────────────────────────────────────────────
-# URL Rewriting - Use SSH instead of HTTPS for git operations
-# This allows using SSH keys for authentication
+# HTTPS auth via gh credential helper.
+# Covers all three auth scenarios with one config:
+#   - Interactive local:        `gh auth login -w` (browser OAuth)
+#   - Interactive headless:     `gh auth login`    (device-code, no -w)
+#   - Unattended (CI/cron):     export GH_TOKEN=ghp_xxx (gh reads env)
+# `gh auth git-credential get` returns whichever token gh has — OAuth-stored
+# or env-var. No `insteadOf` rewrites: HTTPS is the one true protocol.
 # ─────────────────────────────────────────────────────────────
-[url "ssh://git@github.com/"]
-    insteadOf = https://github.com/
-
-[url "ssh://git@gitlab.com/"]
-    insteadOf = https://gitlab.com/
-
-[url "ssh://git@bitbucket.org/"]
-    insteadOf = https://bitbucket.org/
+[credential "https://github.com"]
+    helper =
+    helper = !gh auth git-credential

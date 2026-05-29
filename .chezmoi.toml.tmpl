@@ -82,16 +82,16 @@ encryption = "age"
 {{-   $opencodeProviderAccount = .opencodeProvider -}}{{/* backward compatibility */}}
 {{- end -}}
 
-{{/* gopass password store repository */}}
-{{- $gopassRepository := printf "git@github.com:%s/passwords.git" $gitUsername -}}
+{{/* gopass password store repository (HTTPS; auth via gh credential helper) */}}
+{{- $gopassRepository := printf "https://github.com/%s/passwords.git" $gitUsername -}}
 {{- if hasKey . "gopassRepository" -}}
 {{-   $gopassRepository = .gopassRepository -}}
 {{- else if and (stdinIsATTY) $useEncryption -}}
 {{-   $gopassRepository = promptStringOnce . "gopassRepository" "gopass repository URL" $gopassRepository -}}
 {{- end -}}
 
-{{/* keys-manage backup repository */}}
-{{- $keysRepository := printf "git@github.com:%s/keypairs.git" $gitUsername -}}
+{{/* keys-manage backup repository (HTTPS; auth via gh credential helper) */}}
+{{- $keysRepository := printf "https://github.com/%s/keypairs.git" $gitUsername -}}
 {{- if hasKey . "keysRepository" -}}
 {{-   $keysRepository = .keysRepository -}}
 {{- else if and (stdinIsATTY) $useEncryption -}}

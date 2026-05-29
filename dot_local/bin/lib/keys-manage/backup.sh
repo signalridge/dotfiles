@@ -69,7 +69,7 @@ cmd_init() {
         echo ""
         echo "Example (~/.config/chezmoi/chezmoi.toml):"
         echo "  [data]"
-        echo "  keysRepository = \"git@github.com:username/keypairs.git\""
+        echo "  keysRepository = \"https://github.com/username/keypairs.git\""
         return 1
     fi
 
@@ -106,18 +106,20 @@ cmd_init() {
             return 1
         elif echo "$error_content" | grep -q "not found\|does not exist"; then
             log_note "Repository does not exist yet (first time setup)"
-        elif echo "$error_content" | grep -q "Authentication\|Permission denied\|publickey"; then
+        elif echo "$error_content" | grep -q "Authentication\|Permission denied\|publickey\|could not read Username"; then
             log_error "Authentication failed"
             echo ""
-            echo "Possible causes:"
-            echo "  - SSH key not added to git server"
-            echo "  - Wrong repository URL"
-            echo "  - Insufficient permissions"
+            echo "Possible causes (HTTPS):"
+            echo "  - gh not authenticated on this machine"
+            echo "  - gh credential helper not configured"
+            echo "  - Wrong repository URL / insufficient permissions"
             echo ""
             echo "To fix:"
-            echo "  1. Add your SSH key: ssh-add ~/.ssh/your_key"
-            echo "  2. Test connection: ssh -T git@github.com (or your git server)"
-            echo "  3. Verify repository URL: $KEYS_REPO"
+            echo "  1. Authenticate gh:   gh auth login -h github.com -p https"
+            echo "                        (use device code on headless hosts; no -w)"
+            echo "  2. Verify:            gh auth status"
+            echo "  3. For unattended:    export GH_TOKEN=<PAT-with-repo-scope>"
+            echo "  4. Verify URL:        $KEYS_REPO"
             return 1
         fi
 

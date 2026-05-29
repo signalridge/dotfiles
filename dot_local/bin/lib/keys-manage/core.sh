@@ -1274,13 +1274,14 @@ safe_git_push() {
         echo "  2. Resolve any conflicts"
         echo "  3. Run backup again"
         return 1
-    elif echo "$error_content" | grep -q "Authentication\|Permission denied"; then
+    elif echo "$error_content" | grep -q "Authentication\|Permission denied\|could not read Username"; then
         log_error "Authentication failed"
         echo ""
         echo "  Cannot push to remote (permission denied)"
         echo ""
-        echo "  To fix:"
-        echo "  - Check SSH key: ssh -T git@github.com"
+        echo "  To fix (HTTPS via gh credential helper):"
+        echo "  - Check auth status: gh auth status"
+        echo "  - Re-authenticate:   gh auth login -h github.com -p https"
         echo "  - Verify repository access rights"
         return 1
     else
