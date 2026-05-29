@@ -14,11 +14,11 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.152
-  - name: openai/codex@rust-v0.134.0
-  - name: anomalyco/opencode@v1.15.11
+  - name: anthropics/claude-code@v2.1.154
+  - name: openai/codex@rust-v0.135.0
+  - name: anomalyco/opencode@v1.15.12
   - name: direnv/direnv@v2.37.1
-  - name: jdx/mise@v2026.5.15
+  - name: jdx/mise@v2026.5.16
   - name: muesli/duf@v0.9.1
   - name: bootandy/dust@v1.2.4
   - name: dandavison/delta@0.19.2
@@ -39,7 +39,7 @@ packages:
   - name: tldr-pages/tlrc@v1.13.1
   - name: ast-grep/ast-grep@0.43.0
   - name: casey/just@1.51.0
-  - name: jesseduffield/lazygit@v0.62.0
+  - name: jesseduffield/lazygit@v0.62.1
   - name: jesseduffield/lazydocker@v0.25.2
   - name: neovim/neovim@v0.12.2
   - name: LuaLS/lua-language-server@3.18.2
@@ -65,7 +65,7 @@ packages:
   - name: koalaman/shellcheck@v0.11.0
   - name: mvdan/sh@v3.13.1
   - name: rhysd/actionlint@v1.7.12
-  - name: astral-sh/ruff@0.15.14
+  - name: astral-sh/ruff@0.15.15
   - name: astral-sh/ty@0.0.40
   - name: j178/prek@v0.4.3
   - name: golang.org/x/tools/gopls@v0.22.0
