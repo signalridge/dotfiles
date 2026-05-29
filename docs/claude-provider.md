@@ -88,12 +88,7 @@ claude:
   # Provider definitions (base_url + available models)
   providers:
     anthropic:
-      models:
-        [
-          claude-opus-4-5-20251101,
-          claude-sonnet-4-5-20250929,
-          claude-haiku-4-5-20251001,
-        ]
+      models: [claude-opus-4-8, claude-sonnet-4-6, claude-haiku-4-5-20251001]
     deepseek:
       base_url: https://api.deepseek.com/anthropic
       models: [deepseek-chat, deepseek-reasoner]
@@ -105,12 +100,11 @@ claude:
   accounts:
     # Native Anthropic (OAuth)
     anthropic:
-      model: claude-sonnet-4-5-20250929
-      small_model: claude-sonnet-4-5-20250929
+      model: claude-opus-4-8
     opus:
       provider: anthropic # Use anthropic provider
-      model: claude-opus-4-5-20251101
-      small_model: claude-sonnet-4-5-20250929
+      model: claude-opus-4-8
+      small_model: claude-haiku-4-5-20251001
 
     # Third-party accounts (format: provider@label)
     kimi@private:
