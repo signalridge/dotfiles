@@ -26,6 +26,13 @@ nix:
                 collection-langjapanese
               ]
             ))
+      # age: chezmoi's encryption backend. MUST be managed here so the decryption
+      # wrapper's fast path (~/.nix-profile/bin/age) is always satisfied and it never
+      # falls through to `nix profile add` against this profile. flakey-profile installs
+      # packages in a representation the modern `nix profile` command does not track, so
+      # any bare `nix profile add` here rewrites the manifest from scratch and silently
+      # drops every flakey-installed package (tmux, wget, ...). See age_command_wrapper.sh.
+      - age
       - aria2
       - git
       - certbot
