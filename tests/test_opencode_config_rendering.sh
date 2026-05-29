@@ -303,8 +303,8 @@ test -f "$ROOT/private_dot_config/opencode/AGENTS.md" || {
     exit 1
 }
 
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## OpenCode Runtime Notes'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Shared skills/commands'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Exa may be the default web search'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'No first-party OpenCode adapter'
 
 theme_file="$ROOT/private_dot_config/opencode/themes/dracula.json"
 test -f "$theme_file" || {
@@ -370,18 +370,18 @@ assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" 'node = "l
 assert_file_contains "$ROOT/private_dot_config/mise/config.toml.tmpl" 'uv = "latest"'
 
 # --- Task 6.5: Guardrails references resolve (inline) ---
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" '## Guardrails'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Guardrails'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" '## Workflow & guardrails'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Workflow & guardrails'
 
 # --- Task 6.6: Guardrails machine anchors ---
 for f in "$ROOT/dot_codex/AGENTS.md" "$ROOT/private_dot_config/opencode/AGENTS.md"; do
     assert_file_contains "$f" 'Auth/AuthZ'
-    assert_file_contains "$f" 'Security/Credentials/PII'
-    assert_file_contains "$f" 'Financial flows'
+    assert_file_contains "$f" 'Credentials/PII'
+    assert_file_contains "$f" 'Financial'
     assert_file_contains "$f" 'Schema migration'
     assert_file_contains "$f" 'External API contracts'
     assert_file_contains "$f" 'Irreversible ops'
-    assert_file_contains "$f" 'high-risk ops'
+    assert_file_contains "$f" 'never bypass confirmation'
 done
 
 # --- Task 6.7: Sisyphus planner residue absent ---
@@ -408,18 +408,11 @@ assert_jq "$OH_MY_OPENCODE" '.agents.explore.model == "openai/gpt-5.3-codex"'
 assert_jq "$OH_MY_OPENCODE" '.agents.oracle.model == "openai/gpt-5.3-codex"'
 
 # --- Task 2.3: Runtime boundary wording machine-checkable ---
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" '## MCP Policy'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## OpenCode Runtime Notes'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Keep `AGENTS.md` authoritative.'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Use `opencode` CLI for provider/session operations.'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Keep command/skill paths managed; avoid manual drift.'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" '## MCP routing'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## MCP routing'
 
 # --- Task 9.2/9.3: Subagent execution diagnostics ---
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Guardrails & Boundaries'
-
-# --- Task 3.4: Command-surface compatibility ---
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Project config: `AGENTS.md`, `.opencode/AGENTS.md`'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Shared skills/commands: `~/.agents/`'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Workflow & guardrails'
 
 # --- worktree-first-ai-workflow: baseline ignore rule ---
 assert_file_contains "$ROOT/.gitignore" '.worktrees/'
@@ -441,9 +434,9 @@ assert_file_contains "$ROOT/dot_custom/functions.sh" 'Path collision:'
 assert_file_contains "$ROOT/dot_custom/functions.sh" 'Nested worktree creation is not supported.'
 
 # --- worktree-first-ai-workflow: policy anchors ---
-assert_file_contains "$ROOT/dot_claude/CLAUDE.md" '## Worktree Policy'
-assert_file_contains "$ROOT/dot_codex/AGENTS.md" '## Worktree Policy'
-assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" '## Worktree Policy'
+assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'Worktree default'
+assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'Worktree default'
+assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'Worktree default'
 assert_file_contains "$ROOT/dot_claude/CLAUDE.md" 'one-task-one-branch-one-worktree'
 assert_file_contains "$ROOT/dot_codex/AGENTS.md" 'one-task-one-branch-one-worktree'
 assert_file_contains "$ROOT/private_dot_config/opencode/AGENTS.md" 'one-task-one-branch-one-worktree'
