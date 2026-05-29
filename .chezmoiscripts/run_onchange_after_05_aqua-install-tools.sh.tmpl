@@ -44,4 +44,27 @@ if [[ -f "$aqua_policy_path" ]]; then
     "$aqua_cmd" policy allow "$aqua_policy_path"
 fi
 
+# Two-phase install: some packages' registry entries use a source-build
+# backend (cargo / go_install, e.g. eza, tokei, gopls) that needs cargo/go on
+# PATH. Those toolchains are managed by mise, which is itself an aqua package —
+# so install mise first, use it to put Go/Rust on PATH, then do the full
+# install. This makes the step self-contained on a fresh machine (mise's own
+# full install still runs later in script 07).
+echo "    Phase 1: installing mise (bootstrap toolchain manager)"
+"$aqua_cmd" install -t bootstrap
+
+mise_bin="$aqua_bin_dir/mise"
+if [[ -x "$mise_bin" ]]; then
+    echo "    Phase 1: installing Go/Rust toolchains via mise"
+    "$mise_bin" install go rust
+    # Use `mise env` (not `mise activate`): activate relies on a shell hook that
+    # never fires in a non-interactive one-shot, and mise's shims route through
+    # aqua-proxy (argv0-based) so they can't expose cargo/go here. `mise env`
+    # injects the real tool bin dirs (~/.cargo/bin, the Go install bin) directly.
+    eval "$("$mise_bin" env -s bash)"
+else
+    echo "    Warning: mise not found after phase 1; source-build packages may fail"
+fi
+
+echo "    Phase 2: installing all aqua packages"
 "$aqua_cmd" install
