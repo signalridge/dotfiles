@@ -13,8 +13,17 @@
 #   - git, openssl
 #   - jq or python3 (metadata parsing)
 #   - nix (optional, to install missing tools)
+#
+# Cold-start auth bootstrap (when no SSH key exists yet to access keys-backup):
+#   - GH_TOKEN/GITHUB_TOKEN env: one-shot HTTPS clone, token stripped from origin.
+#   - Interactive TTY: install gh via nix and run device-code OAuth (works on
+#     truly headless hosts — no local browser required, just open the printed
+#     URL on any other device).
+#   - Neither: fail fast with remediation hint.
+#
 # Optional env:
 #   - KEYS_BACKUP_PASSWORD (skip prompt)
+#   - GH_TOKEN / GITHUB_TOKEN (unattended cold-start auth)
 set -euo pipefail
 umask 077
 
@@ -387,22 +396,97 @@ if [[ -z "$KEYS_REPO_URL" ]]; then
 fi
 info "Using keys repository: $KEYS_REPO_URL"
 
+# ─────────────────────────────────────────────────────────────
+# Cold-start auth bootstrap.
+# Probe whether the configured URL is reachable as-is. If not, set up an
+# HTTPS+token path so we can clone without a pre-existing SSH key.
+# ─────────────────────────────────────────────────────────────
+KEYS_REPO_CLONE_URL="" # if set, used for clone but stripped from origin afterwards
+needs_bootstrap=false
+case "$KEYS_REPO_URL" in
+git@github.com:* | ssh://git@github.com/*)
+    if ! GIT_SSH_COMMAND='ssh -o BatchMode=yes -o ConnectTimeout=5' \
+        git -c "url.https://github.com/.insteadOf=" \
+        ls-remote "$KEYS_REPO_URL" HEAD >/dev/null 2>&1; then
+        needs_bootstrap=true
+    fi
+    ;;
+https://github.com/*)
+    if ! git -c "url.https://github.com/.insteadOf=" \
+        ls-remote "$KEYS_REPO_URL" HEAD >/dev/null 2>&1; then
+        needs_bootstrap=true
+    fi
+    ;;
+esac
+
+if [[ "$needs_bootstrap" == true ]]; then
+    case "$KEYS_REPO_URL" in
+    git@github.com:*)
+        KEYS_REPO_URL="https://github.com/${KEYS_REPO_URL#git@github.com:}"
+        info "Cold start: rewriting keys repo to HTTPS: $KEYS_REPO_URL"
+        ;;
+    ssh://git@github.com/*)
+        KEYS_REPO_URL="https://github.com/${KEYS_REPO_URL#ssh://git@github.com/}"
+        info "Cold start: rewriting keys repo to HTTPS: $KEYS_REPO_URL"
+        ;;
+    esac
+
+    if [[ -n "${GH_TOKEN:-}${GITHUB_TOKEN:-}" ]]; then
+        # Unattended: embed PAT in the clone URL for this single operation.
+        # We rewrite origin afterwards so the token never persists in .git/config.
+        info "Cold start: using GH_TOKEN/GITHUB_TOKEN for one-shot HTTPS clone"
+        bootstrap_token="${GH_TOKEN:-$GITHUB_TOKEN}"
+        KEYS_REPO_CLONE_URL="${KEYS_REPO_URL/https:\/\//https://oauth:${bootstrap_token}@}"
+        unset bootstrap_token
+    elif [[ -t 0 || -t 1 ]] || [[ -e /dev/tty ]]; then
+        # Interactive: install gh temporarily (aqua installs the permanent one
+        # in step 05) and run device-code OAuth. Works on headless SSH sessions.
+        if ! command -v gh >/dev/null 2>&1; then
+            info "Cold start: installing gh temporarily via nix..."
+            maybe_install_with_nix gh || {
+                err "Failed to install gh via nix; ensure script 00 ran successfully"
+                exit 1
+            }
+        fi
+        if ! gh auth status -h github.com >/dev/null 2>&1; then
+            info "Cold start: running 'gh auth login' (device-code flow)"
+            # No -w: gh prints a one-time code + URL you can open on any device.
+            gh auth login -h github.com -p https || {
+                err "gh auth login failed"
+                exit 1
+            }
+        fi
+        # Configure git credential helper so the upcoming clone uses the gh token.
+        gh auth setup-git -h github.com >/dev/null 2>&1 || true
+    else
+        err "Cannot reach $KEYS_REPO_URL and no auth method is available."
+        err "Either:"
+        err "  - export GH_TOKEN=<PAT-with-repo-scope>  (unattended hosts)"
+        err "  - or run with an interactive TTY        (gh device-code OAuth)"
+        exit 1
+    fi
+fi
+
 mkdir -p "$(dirname "$REPO_DIR")"
 
 if [[ -d "$REPO_DIR/.git" ]]; then
     info "Updating existing keys repository: $REPO_DIR"
     (cd "$REPO_DIR" && git remote get-url origin >/dev/null 2>&1) || (cd "$REPO_DIR" && git remote add origin "$KEYS_REPO_URL")
-    (cd "$REPO_DIR" && git fetch origin --quiet)
+    (cd "$REPO_DIR" && git -c "url.https://github.com/.insteadOf=" fetch origin --quiet)
     (cd "$REPO_DIR" && git pull --ff-only --quiet) || {
         err "Failed to pull keys repository (ff-only)"
         exit 1
     }
 else
     info "Cloning keys repository..."
-    git clone "$KEYS_REPO_URL" "$REPO_DIR" || {
+    git -c "url.https://github.com/.insteadOf=" clone "${KEYS_REPO_CLONE_URL:-$KEYS_REPO_URL}" "$REPO_DIR" || {
         err "Failed to clone keys repository"
         exit 1
     }
+    if [[ -n "$KEYS_REPO_CLONE_URL" ]]; then
+        # Strip the embedded PAT from origin so it never lands in .git/config.
+        (cd "$REPO_DIR" && git remote set-url origin "$KEYS_REPO_URL")
+    fi
 fi
 
 [[ -d "$BACKUP_FILES_DIR" ]] || {

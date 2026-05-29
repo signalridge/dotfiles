@@ -5,10 +5,17 @@
 # ==============================================================================
 # TPM (Tmux Plugin Manager)
 # After chezmoi apply, run `prefix + I` in tmux to install plugins
+#
+# Uses `type = "archive"` (anonymous HTTPS tarball download) instead of
+# `type = "git-repo"` to keep cold-start independent of git/SSH/insteadOf
+# rewrites. tpm itself almost never changes, so losing `git pull` ergonomics
+# is a non-issue.
 # ==============================================================================
 [".config/tmux/plugins/tpm"]
-    type = "git-repo"
-    url = "https://github.com/tmux-plugins/tpm.git"
+    type = "archive"
+    url = "https://github.com/tmux-plugins/tpm/archive/refs/heads/master.tar.gz"
+    exact = true
+    stripComponents = 1
     refreshPeriod = "168h"
 
 # ==============================================================================
