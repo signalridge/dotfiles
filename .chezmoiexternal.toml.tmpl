@@ -154,14 +154,11 @@
 {{- end }}
 
 # ------------------------------------------------------------------------------
-# getsentry/skills engineering set
+# getsentry/skills — skill-scanner only (rest duplicate existing tooling):
+#   commit/create-pr/iterate-pr -> local core commands
+#   find-bugs/code-simplifier    -> Claude /code-review + /simplify, slipway review
 # ------------------------------------------------------------------------------
 {{- $getsentrySkills := list
-  "find-bugs"
-  "iterate-pr"
-  "create-pr"
-  "commit"
-  "code-simplifier"
   "skill-scanner"
 }}
 {{- range $skill := $getsentrySkills }}
