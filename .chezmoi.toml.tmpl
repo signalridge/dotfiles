@@ -153,12 +153,18 @@ encryption = "age"
 {{-   $gopassRepository = printf "https://github.com/%s" (trimPrefix "ssh://git@github.com/" $gopassRepository) -}}
 {{- end -}}
 
-{{/* keys-manage backup repository (HTTPS; auth via gh credential helper) */}}
-{{- $keysRepository := printf "https://github.com/%s/keypairs.git" $gitUsername -}}
+{{/* keys-manage backup repository (HTTPS; auth via gh credential helper).
+     Required when encryption is enabled — no guessed default, so a wrong repo
+     name can never be written silently in a non-interactive install. */}}
+{{- $keysRepository := "" -}}
 {{- if hasKey . "keysRepository" -}}
 {{-   $keysRepository = .keysRepository -}}
-{{- else if and (stdinIsATTY) $useEncryption -}}
-{{-   $keysRepository = promptStringOnce . "keysRepository" "keys-manage backup repository URL" $keysRepository -}}
+{{- else if $useEncryption -}}
+{{-   if stdinIsATTY -}}
+{{-     $keysRepository = promptStringOnce . "keysRepository" "keys-manage backup repository URL (e.g. https://github.com/you/keypairs.git)" -}}
+{{-   else -}}
+{{-     fail (printf "keysRepository is unset and there is no TTY to prompt.\n%s" $nonInteractiveHelp) -}}
+{{-   end -}}
 {{- end -}}
 {{- if hasPrefix "git@github.com:" $keysRepository -}}
 {{-   $keysRepository = printf "https://github.com/%s" (trimPrefix "git@github.com:" $keysRepository) -}}
