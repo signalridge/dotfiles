@@ -1,69 +1,29 @@
 # OpenCode Global Instructions
 
-## Role
+Pragmatic engineering: clarity, correctness, minimal change. Prefer repo conventions, solve root causes, verify before declaring done, state assumptions/risks briefly.
 
-Pragmatic AI engineering assistant. Optimize for clarity, correctness, and minimal change.
+## Tooling
 
-## Operating Principles
+Repo-native first; defaults advisory (`uv/ruff`, `nix`, `aqua/mise`, `gh/ghq`); user/repo policy overrides. Treat hook output as instructions — act on the remediation before continuing.
 
-- Prefer repository conventions over defaults.
-- Solve root causes; avoid hidden workarounds.
-- Verify behavior before declaring completion.
-- State assumptions, risks, and tradeoffs briefly.
-
-## Tooling Policy
-
-- Use repo-native tooling first.
-- Defaults are advisory: `uv/ruff`, `nix`, `aqua/mise`, `gh/ghq`.
-- User or repo policy overrides defaults.
-- Keep operations deterministic and auditable.
-
-## MCP Policy
-
-Auto selection:
+## MCP routing
 
 - Docs/API -> Context7
 - Web/news -> Tavily
-- Code navigation -> Serena (prefer symbolic/semantic tools; avoid full-file reads when a symbolic query suffices)
-- Browser/E2E -> Playwright
+- Code navigation -> Serena (symbolic/semantic; avoid full-file reads when a query suffices)
+- Browser/E2E -> agent-browser (CLI)
 - Paper/research -> arxiv
-- Repo Q&A (public) -> DeepWiki
-- Repo Q&A (private) -> gitmcp
+- Repo Q&A -> DeepWiki (public) / gitmcp (private)
 - Doc→Markdown -> markitdown
+- Team chat/search -> slack-explorer
+- Notes/knowledge base -> Notion
+- Database/SQL -> postgres
 
-User preference overrides. Fall back when unavailable. No sensitive data in queries.
+User preference overrides; fall back when unavailable; no sensitive data in queries. Exa may be the default web search here — Tavily still takes precedence when available.
 
-> Exa may be default web search in OpenCode setups; Tavily still takes precedence when available.
+## Workflow & guardrails
 
-## Dependency Install Preflight
-
-Before any install: detect lockfiles, ask when ambiguous, resolve signal-vs-preference conflicts explicitly, no mixed managers without confirmation.
-
-## Hooks
-
-Treat hook output as instructions and follow the remediation action before continuing.
-
----
-
-## Worktree Policy
-
-Default: `one-task-one-branch-one-worktree`.
-
-## OpenCode Runtime Notes
-
-- Keep `AGENTS.md` authoritative.
-- Use `opencode` CLI for provider/session operations.
-- Keep command/skill paths managed; avoid manual drift.
-
-## Guardrails & Boundaries
-
-Sensitive domains: Auth/AuthZ, Security/Credentials/PII, Financial flows, Schema migration, Irreversible ops, External API contracts.
-
-**Never:** bypass confirmation for high-risk ops; install without preflight.
-**Avoid:** process overkill for simple tasks; broad changes without rollback clarity.
-
-## Resources
-
-- User config: `~/.config/opencode/AGENTS.md`
-- Project config: `AGENTS.md`, `.opencode/AGENTS.md`
-- Shared skills/commands: `~/.agents/`
+- Worktree default `one-task-one-branch-one-worktree` (`.worktrees/<branch>`); for governed changes `slipway` provisions it automatically (`feat/<slug>`) — don't create one manually. Use `wt-*` for non-slipway work.
+- Installs: detect lockfiles, resolve signal-vs-preference conflicts explicitly, no mixed managers without confirmation.
+- Use `slipway` for governed changes (multi-step features, sensitive domains, formal review); artifacts in `artifacts/changes/<slug>/`; skip trivial edits. No first-party OpenCode adapter — drive it via the `slipway` CLI directly.
+- Sensitive domains (Auth/AuthZ, Credentials/PII, Financial, Schema migration, Irreversible ops, External API contracts): never bypass confirmation; never install without preflight.
