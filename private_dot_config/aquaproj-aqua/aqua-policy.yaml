@@ -1,0 +1,15 @@
+---
+# Aqua policy file: allow-list for non-standard registries.
+# After chezmoi apply, activate once with:
+#   aqua policy allow ~/.config/aquaproj-aqua/aqua-policy.yaml
+# AQUA_POLICY_CONFIG (set in ~/.zshenv) points aqua at this file.
+
+registries:
+  - type: standard
+    ref: semver(">= 4.0.0")
+  - name: third-party
+    type: local
+    path: registry.yaml
+packages:
+  - registry: standard
+  - registry: third-party
