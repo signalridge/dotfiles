@@ -1,7 +1,19 @@
 encryption = "age"
 
 {{/* boolean feature tags */}}
-{{- $work := promptBoolOnce . "work" "Is this a work machine" -}}{{/* true if this machine is a work machine */}}
+{{/* work must be set explicitly. In a non-TTY install (curl ... | sh)
+     promptBoolOnce silently returns its zero value (false), making the machine
+     private=true and applying private configuration — wrong, and
+     privacy-relevant, on an actual work machine. Force an explicit signal:
+     chezmoi data, else prompt on a TTY, else fail loudly. */}}
+{{- $work := false -}}{{/* true if this machine is a work machine */}}
+{{- if hasKey . "work" -}}
+{{-   $work = .work -}}
+{{- else if stdinIsATTY -}}
+{{-   $work = promptBoolOnce . "work" "Is this a work machine" -}}
+{{- else -}}
+{{-   fail "work is unset and there is no TTY to prompt.\nDownload init.sh and run it interactively so chezmoi prompts can read from your terminal:\n  curl -fsSL <init-url> -o /tmp/init.sh && sh /tmp/init.sh\nIf this is a re-apply, work is persisted in chezmoi data after the first apply." -}}
+{{- end -}}
 {{- $private := not $work -}}{{/* true if this machine should have private configuration  */}}
 {{- $headless := false -}}{{/* true if this machine does not have a screen and keyboard */}}
 {{/* useEncryption must be set explicitly. The historical silent default to
@@ -133,12 +145,19 @@ encryption = "age"
 {{-   $opencodeProviderAccount = .opencodeProvider -}}{{/* backward compatibility */}}
 {{- end -}}
 
-{{/* gopass password store repository (HTTPS; auth via gh credential helper) */}}
-{{- $gopassRepository := printf "https://github.com/%s/passwords.git" $gitUsername -}}
+{{/* gopass password store repository (HTTPS; auth via gh credential helper).
+     Required when encryption is enabled — no guessed default, so a wrong repo
+     name (e.g. an assumed "passwords.git") can never be written silently in a
+     non-interactive install. */}}
+{{- $gopassRepository := "" -}}
 {{- if hasKey . "gopassRepository" -}}
 {{-   $gopassRepository = .gopassRepository -}}
-{{- else if and (stdinIsATTY) $useEncryption -}}
-{{-   $gopassRepository = promptStringOnce . "gopassRepository" "gopass repository URL" $gopassRepository -}}
+{{- else if $useEncryption -}}
+{{-   if stdinIsATTY -}}
+{{-     $gopassRepository = promptStringOnce . "gopassRepository" "gopass repository URL (e.g. https://github.com/you/password-store.git)" -}}
+{{-   else -}}
+{{-     fail (printf "gopassRepository is unset and there is no TTY to prompt.\n%s" $nonInteractiveHelp) -}}
+{{-   end -}}
 {{- end -}}
 {{- if hasPrefix "git@github.com:" $gopassRepository -}}
 {{-   $gopassRepository = printf "https://github.com/%s" (trimPrefix "git@github.com:" $gopassRepository) -}}
@@ -146,12 +165,18 @@ encryption = "age"
 {{-   $gopassRepository = printf "https://github.com/%s" (trimPrefix "ssh://git@github.com/" $gopassRepository) -}}
 {{- end -}}
 
-{{/* keys-manage backup repository (HTTPS; auth via gh credential helper) */}}
-{{- $keysRepository := printf "https://github.com/%s/keypairs.git" $gitUsername -}}
+{{/* keys-manage backup repository (HTTPS; auth via gh credential helper).
+     Required when encryption is enabled — no guessed default, so a wrong repo
+     name can never be written silently in a non-interactive install. */}}
+{{- $keysRepository := "" -}}
 {{- if hasKey . "keysRepository" -}}
 {{-   $keysRepository = .keysRepository -}}
-{{- else if and (stdinIsATTY) $useEncryption -}}
-{{-   $keysRepository = promptStringOnce . "keysRepository" "keys-manage backup repository URL" $keysRepository -}}
+{{- else if $useEncryption -}}
+{{-   if stdinIsATTY -}}
+{{-     $keysRepository = promptStringOnce . "keysRepository" "keys-manage backup repository URL (e.g. https://github.com/you/keypairs.git)" -}}
+{{-   else -}}
+{{-     fail (printf "keysRepository is unset and there is no TTY to prompt.\n%s" $nonInteractiveHelp) -}}
+{{-   end -}}
 {{- end -}}
 {{- if hasPrefix "git@github.com:" $keysRepository -}}
 {{-   $keysRepository = printf "https://github.com/%s" (trimPrefix "git@github.com:" $keysRepository) -}}
