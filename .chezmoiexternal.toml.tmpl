@@ -111,7 +111,6 @@
   "sentry"
   "vercel-deploy"
   "render-deploy"
-  "cloudflare-deploy"
   "jupyter-notebook"
   "screenshot"
   "speech"
@@ -446,7 +445,6 @@
 # - Shared for Claude + Codex + OpenCode under ~/.agents/skills/multilingual/
 # - Keep stable language-suffixed names:
 #   - multilingual/humanizer-en
-#   - multilingual/stop-slop-en
 #   - multilingual/humanizer-zh
 #   - multilingual/humanizer-ja
 # - Commit-pinned via revisions in .chezmoidata/versions.yaml
@@ -460,19 +458,6 @@
     include = [
       "humanizer-*/SKILL.md",
       "humanizer-*/README.md"
-    ]
-    refreshPeriod = "168h"
-
-[".agents/skills/multilingual/stop-slop-en"]
-    type = "archive"
-    url = "https://github.com/hardikpandya/stop-slop/archive/{{ $.versions.stopSlopEnRev }}.tar.gz"
-    exact = true
-    stripComponents = 1
-    include = [
-      "stop-slop-*/SKILL.md",
-      "stop-slop-*/README.md",
-      "stop-slop-*/references/**",
-      "stop-slop-*/LICENSE"
     ]
     refreshPeriod = "168h"
 

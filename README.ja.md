@@ -285,7 +285,7 @@ Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期さ�
 
 - [wshobson/agents](https://github.com/wshobson/agents)
 - [anthropics/skills](https://github.com/anthropics/skills)
-- 多言語 Humanizer コミュニティパック（`humanizer-en`、`stop-slop-en`、`humanizer-zh`、`humanizer-ja`）
+- 多言語 Humanizer コミュニティパック（`humanizer-en`、`humanizer-zh`、`humanizer-ja`）
 
 同期先は `~/.agents/skills` で、Claude/Codex/OpenCode のすべてで利用します。
 
@@ -377,7 +377,7 @@ OpenCode の key レンダリングは `provider@private` 命名（例: `kimi@pr
 
 - `wshobson/agents`
 - `anthropics/skills`
-- 多言語 Humanizer コミュニティソース（`humanizer-en`、`stop-slop-en`、`humanizer-zh`、`humanizer-ja`）
+- 多言語 Humanizer コミュニティソース（`humanizer-en`、`humanizer-zh`、`humanizer-ja`）
 
 同期先は `~/.agents/skills` で、Claude/Codex/OpenCode のすべてで利用します。
 
