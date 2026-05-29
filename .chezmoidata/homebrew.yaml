@@ -10,13 +10,13 @@ homebrew:
     shared:
       - macos-trash
       - mole
-      - borders
+      - felixkratz/formulae/borders
     work:
       - cliclick # macOS only - GUI automation
       - awscli
       - aws-sam-cli
       - azure-cli
-      - azure-functions-core-tools
+      - azure/functions/azure-functions-core-tools@4
     private:
       - mas # Required for masApps installation
   casks:
