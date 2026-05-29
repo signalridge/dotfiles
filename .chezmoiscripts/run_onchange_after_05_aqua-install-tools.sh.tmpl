@@ -37,10 +37,17 @@ else
     exit 0
 fi
 
-# Re-approve the policy file whenever its hash changes, otherwise aqua's
-# policy gate rejects non-standard registry packages with code 002.
-aqua_policy_path="${AQUA_POLICY_CONFIG:-$HOME/.config/aquaproj-aqua/aqua-policy.yaml}"
+# Policy gate: aqua rejects non-standard registry packages (code 002) unless a
+# policy file both (a) allows the registry and (b) is exported via
+# AQUA_POLICY_CONFIG so install actually loads it. Without the env var aqua
+# falls back to its standard-registry-only default policy, so `aqua policy
+# allow` alone is not enough — on a fresh machine ~/.zshenv hasn't been sourced
+# yet, so we must export it here ourselves. Resolve it next to the config we
+# picked above so the source-dir fallback works too.
+aqua_policy_path="$(dirname "$AQUA_CONFIG_PATH")/aqua-policy.yaml"
 if [[ -f "$aqua_policy_path" ]]; then
+    export AQUA_POLICY_CONFIG="$aqua_policy_path"
+    # Re-approve whenever the policy file's hash changes.
     "$aqua_cmd" policy allow "$aqua_policy_path"
 fi
 
