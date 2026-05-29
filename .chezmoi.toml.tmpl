@@ -11,9 +11,7 @@ encryption = "age"
      why the encrypted-keys bootstrap appears to skip itself with zero log
      output. Force an explicit signal instead. */}}
 {{- $useEncryption := false -}}
-{{- if hasKey . "useEncryption" -}}
-{{-   $useEncryption = .useEncryption -}}
-{{- else if env "DOTFILES_USE_ENCRYPTION" -}}
+{{- if env "DOTFILES_USE_ENCRYPTION" -}}
 {{-   $useEncryptionEnv := lower (env "DOTFILES_USE_ENCRYPTION") -}}
 {{-   if eq $useEncryptionEnv "true" -}}
 {{-     $useEncryption = true -}}
@@ -22,10 +20,12 @@ encryption = "age"
 {{-   else -}}
 {{-     fail "DOTFILES_USE_ENCRYPTION must be either \"true\" or \"false\"" -}}
 {{-   end -}}
+{{- else if hasKey . "useEncryption" -}}
+{{-   $useEncryption = .useEncryption -}}
 {{- else if stdinIsATTY -}}
 {{-   $useEncryption = promptBoolOnce . "useEncryption" "Enable encrypted key restore (requires keys backup repo)" -}}
 {{- else -}}
-{{-   fail "useEncryption is unset and there is no TTY to prompt.\nSet it explicitly:\n  - curl -fsSL <init-url> | DOTFILES_USE_ENCRYPTION=false sh\n  - Or, if restoring encrypted keys:\n      curl -fsSL <init-url> | DOTFILES_USE_ENCRYPTION=true sh\n  - Or download init.sh first and run interactively:\n      curl -fsSL <init-url> -o /tmp/init.sh && sh /tmp/init.sh" -}}
+{{-   fail "useEncryption is unset and there is no TTY to prompt.\nDownload init.sh and run it interactively so chezmoi prompts can read from your terminal:\n  curl -fsSL <init-url> -o /tmp/init.sh && sh /tmp/init.sh\nIf this is a re-apply with identity data already configured, set DOTFILES_USE_ENCRYPTION=true or false." -}}
 {{- end -}}
 {{- "" -}}
 

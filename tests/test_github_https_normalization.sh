@@ -27,6 +27,7 @@ cat >"$CONFIG" <<'EOF'
 hostname = "test"
 work = false
 private = true
+useremail = "test@example.com"
 homeWifiSSIDs = ""
 platform = "darwin"
 installMasApps = false
@@ -141,6 +142,26 @@ if require_cmd git; then
         "git@gitlab.com:test/keys.git" \
         "git@gitlab.com:test/keys.git" \
         "non-github SSH untouched"
+
+    # Runtime: run_before_01 has an earlier fast-path origin normalizer that
+    # must not depend on later helper functions being defined.
+    rendered_run_before="$TMP_ROOT/run_before_01.sh"
+    render .chezmoiscripts/run_before_01_setup-encryption-key.sh.tmpl >"$rendered_run_before"
+    chmod +x "$rendered_run_before"
+
+    fast_home="$TMP_ROOT/run-before-home"
+    fast_repo="$fast_home/.local/share/keys-backup"
+    mkdir -p "$fast_repo/backup-files" "$fast_home/.ssh"
+    touch "$fast_home/.ssh/main" "$fast_repo/backup-list.txt"
+    git -C "$fast_repo" init -q
+    git -C "$fast_repo" remote add origin "git@github.com:test/keys.git"
+
+    HOME="$fast_home" KEYS_REPO="https://github.com/test/keys.git" bash "$rendered_run_before" >/dev/null
+    fast_origin="$(git -C "$fast_repo" remote get-url origin)"
+    if [[ "$fast_origin" != "https://github.com/test/keys.git" ]]; then
+        echo "run_before_01 fast path: expected HTTPS origin, got '$fast_origin'" >&2
+        exit 1
+    fi
 fi
 
 # ─────────────────────────────────────────────────────────────
@@ -170,5 +191,34 @@ assert_identity_render_fails_without_tty() {
 }
 
 assert_identity_render_fails_without_tty
+
+assert_use_encryption_env_overrides_config() {
+    local rendered
+    rendered=$(DOTFILES_USE_ENCRYPTION=false chezmoi execute-template \
+        --config "$CONFIG" \
+        --init --stdinisatty=false \
+        --source "$ROOT" \
+        <"$ROOT/.chezmoi.toml.tmpl")
+
+    assert_contains "$rendered" "useEncryption = false" "useEncryption env override"
+}
+
+assert_use_encryption_message_avoids_pipe_to_sh() {
+    local stderr
+    stderr=$(chezmoi execute-template \
+        --config /dev/null --config-format toml \
+        --init --stdinisatty=false \
+        --source "$ROOT" \
+        <"$ROOT/.chezmoi.toml.tmpl" 2>&1 >/dev/null) && {
+        echo "expected toml.tmpl render to fail when useEncryption is unset in non-TTY mode" >&2
+        echo "$stderr" >&2
+        exit 1
+    }
+    assert_contains "$stderr" "Download init.sh and run it interactively" "useEncryption fail message"
+    assert_not_contains "$stderr" "| DOTFILES_USE_ENCRYPTION" "useEncryption fail message"
+}
+
+assert_use_encryption_env_overrides_config
+assert_use_encryption_message_avoids_pipe_to_sh
 
 echo "test_github_https_normalization: OK"

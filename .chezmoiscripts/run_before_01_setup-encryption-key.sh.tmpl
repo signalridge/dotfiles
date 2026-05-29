@@ -78,7 +78,7 @@ if [[ -d "$REPO_DIR/.git" ]]; then
         ;;
     esac
     if [[ -n "$_new" ]]; then
-        git -C "$REPO_DIR" remote set-url origin "$_new" && info "Normalized SSH origin to HTTPS: $_new"
+        git -C "$REPO_DIR" remote set-url origin "$_new" && echo ":: Normalized SSH origin to HTTPS: $_new"
     fi
     unset _origin _new
 fi
