@@ -429,13 +429,10 @@ if [[ "$needs_bootstrap" == true ]]; then
         ;;
     esac
 
+    bootstrap_token=""
     if [[ -n "${GH_TOKEN:-}${GITHUB_TOKEN:-}" ]]; then
-        # Unattended: embed PAT in the clone URL for this single operation.
-        # We rewrite origin afterwards so the token never persists in .git/config.
-        info "Cold start: using GH_TOKEN/GITHUB_TOKEN for one-shot HTTPS clone"
+        info "Cold start: using GH_TOKEN/GITHUB_TOKEN for HTTPS clone"
         bootstrap_token="${GH_TOKEN:-$GITHUB_TOKEN}"
-        KEYS_REPO_CLONE_URL="${KEYS_REPO_URL/https:\/\//https://oauth:${bootstrap_token}@}"
-        unset bootstrap_token
     elif [[ -t 0 || -t 1 ]] || [[ -e /dev/tty ]]; then
         # Interactive: install gh temporarily (aqua installs the permanent one
         # in step 05) and run device-code OAuth. Works on headless SSH sessions.
@@ -454,8 +451,11 @@ if [[ "$needs_bootstrap" == true ]]; then
                 exit 1
             }
         fi
-        # Configure git credential helper so the upcoming clone uses the gh token.
-        gh auth setup-git -h github.com >/dev/null 2>&1 || true
+        bootstrap_token="$(gh auth token -h github.com 2>/dev/null)" || true
+        if [[ -z "$bootstrap_token" ]]; then
+            err "Failed to obtain auth token from gh"
+            exit 1
+        fi
     else
         err "Cannot reach $KEYS_REPO_URL and no auth method is available."
         err "Either:"
@@ -463,6 +463,16 @@ if [[ "$needs_bootstrap" == true ]]; then
         err "  - or run with an interactive TTY        (gh device-code OAuth)"
         exit 1
     fi
+
+    # Embed token directly in the clone URL. This bypasses any pre-existing
+    # `[url ...] insteadOf` rule from a prior apply: insteadOf matches by URL
+    # prefix, and `https://oauth:TOKEN@github.com/...` does NOT start with
+    # `https://github.com/`, so the rewrite never triggers. (Relying on the gh
+    # credential helper alone would not be enough — the helper is consulted
+    # AFTER URL rewriting, by which point insteadOf has already sent us to SSH.)
+    # The token is stripped from `origin` immediately after clone completes.
+    KEYS_REPO_CLONE_URL="${KEYS_REPO_URL/https:\/\//https://oauth:${bootstrap_token}@}"
+    unset bootstrap_token
 fi
 
 mkdir -p "$(dirname "$REPO_DIR")"
