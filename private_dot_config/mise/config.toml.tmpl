@@ -26,11 +26,6 @@ uv = "latest"
 # Go
 go = "latest"
 
-# gopls: Go LSP. No upstream binaries (Go-modules-only) — must build via
-# `go install`. Routed through mise so the bootstrap doesn't need `go` on
-# PATH at the aqua-install step.
-"go:golang.org/x/tools/gopls" = "0.22.0"
-
 # Official X API CLI. Use the Go backend because the npm package can lag
 # GitHub releases, and xurl is not in the aqua standard registry yet.
 # Kept for X *reads* (search/whoami/timeline); publishing goes through the
@@ -42,16 +37,8 @@ go = "latest"
 # that crosspost itself lacks. Replaces the raw toot/goat CLIs.
 "npm:@humanwhocodes/crosspost" = "1.0.4"
 
-# GitLab CLI for open-source repo/MR ops (orthogonal to social publishing).
-glab = "1.99.0"
-
 # Rust
 rust = "latest"
-
-# tokei: line counter. The aqua registry uses the cargo backend (no stable
-# darwin/arm64 release artifact upstream), so route it through mise instead
-# to avoid needing `cargo` on PATH at the aqua-install step.
-"cargo:tokei" = "14.0.0"
 
 # Lua 5.4 runtime (replaces nix lua5_4)
 lua = "5.4"
