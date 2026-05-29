@@ -44,6 +44,7 @@ packages:
   - name: cli/cli@v2.93.0
   - name: dlvhdr/gh-dash@v4.24.1
   - name: x-motemen/ghq@v1.10.1
+  - name: gitlab.com/gitlab-org/cli@v1.99.0 # glab
   - name: git-lfs/git-lfs@v3.7.1
   - name: charmbracelet/glow@v2.1.2
   - name: carapace-sh/carapace-bin@v1.6.6
