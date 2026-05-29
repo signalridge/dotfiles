@@ -6,6 +6,12 @@ registries:
     type: local
     path: registry.yaml
 packages:
+  # NOTE: do NOT add packages that the registry resolves to the `cargo` or
+  # `go_install` backend (source builds) here. They need cargo/go on PATH,
+  # which mise only provides at bootstrap step 07 — after this aqua-install
+  # step (05) — so a fresh machine fails. Route such tools through mise's
+  # `cargo:`/`go:` backends instead (see ~/.config/mise/config.toml).
+  # Known cases already moved: eza, tokei (cargo), gopls (go_install).
   # ----- third-party registry (see registry.yaml) -----
   - name: signalridge/slipway@v0.1.0
     registry: third-party
@@ -30,7 +36,6 @@ packages:
   - name: bootandy/dust@v1.2.4
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.69.0
-  - name: eza-community/eza@v0.23.4
   - name: fastfetch-cli/fastfetch@2.63.1
   - name: sharkdp/fd@v10.4.2
   - name: junegunn/fzf@v0.73.1

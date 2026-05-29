@@ -53,6 +53,11 @@ rust = "latest"
 # to avoid needing `cargo` on PATH at the aqua-install step.
 "cargo:tokei" = "14.0.0"
 
+# eza: ls replacement. Same reason as tokei — the pinned aqua registry
+# resolves eza to the cargo backend, which would need `cargo` on PATH during
+# the aqua-install step (before mise installs the Rust toolchain).
+"cargo:eza" = "0.23.4"
+
 # Lua 5.4 runtime (replaces nix lua5_4)
 lua = "5.4"
 
