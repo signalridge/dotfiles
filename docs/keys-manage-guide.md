@@ -436,9 +436,9 @@ Or in `~/.config/chezmoi/chezmoi.toml`:
 
 Authentication is handled by the `gh` credential helper declared in
 `~/.config/git/config` — `gh auth login` once on each machine and HTTPS
-private-repo access is automatic. SSH URLs (`git@github.com:...`) still
-work if you prefer them, but cold-start hosts without an SSH key will
-fall back to gh OAuth or `GH_TOKEN` automatically.
+private-repo access is automatic. SSH URLs are deprecated; any legacy
+`git@github.com:...` value in user data is auto-normalized to HTTPS at
+bootstrap time, but new setups should use HTTPS URLs exclusively.
 
 ## Encryption Details
 

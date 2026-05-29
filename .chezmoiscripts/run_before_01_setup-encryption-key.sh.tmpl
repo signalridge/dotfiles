@@ -397,38 +397,32 @@ fi
 info "Using keys repository: $KEYS_REPO_URL"
 
 # ─────────────────────────────────────────────────────────────
-# Cold-start auth bootstrap.
-# Probe whether the configured URL is reachable as-is. If not, set up an
-# HTTPS+token path so we can clone without a pre-existing SSH key.
+# HTTPS-only bootstrap.
+# Any SSH URL (legacy data from older configs) is normalized to HTTPS up
+# front; from here on everything is HTTPS. If the URL can be reached
+# directly (credential helper already configured or repo is public), we
+# clone it; otherwise we fall back to cold-start auth (PAT env or gh
+# device-code OAuth) and clone via an embedded-token URL that bypasses
+# any stale `insteadOf` rule still present in the global git config.
 # ─────────────────────────────────────────────────────────────
-KEYS_REPO_CLONE_URL="" # if set, used for clone but stripped from origin afterwards
-needs_bootstrap=false
 case "$KEYS_REPO_URL" in
-git@github.com:* | ssh://git@github.com/*)
-    if ! GIT_SSH_COMMAND='ssh -o BatchMode=yes -o ConnectTimeout=5' \
-        git ls-remote "$KEYS_REPO_URL" HEAD >/dev/null 2>&1; then
-        needs_bootstrap=true
-    fi
+git@github.com:*)
+    KEYS_REPO_URL="https://github.com/${KEYS_REPO_URL#git@github.com:}"
+    info "Normalizing SSH URL to HTTPS (SSH is deprecated): $KEYS_REPO_URL"
     ;;
-https://github.com/*)
-    if ! git ls-remote "$KEYS_REPO_URL" HEAD >/dev/null 2>&1; then
-        needs_bootstrap=true
-    fi
+ssh://git@github.com/*)
+    KEYS_REPO_URL="https://github.com/${KEYS_REPO_URL#ssh://git@github.com/}"
+    info "Normalizing SSH URL to HTTPS (SSH is deprecated): $KEYS_REPO_URL"
     ;;
 esac
 
-if [[ "$needs_bootstrap" == true ]]; then
-    case "$KEYS_REPO_URL" in
-    git@github.com:*)
-        KEYS_REPO_URL="https://github.com/${KEYS_REPO_URL#git@github.com:}"
-        info "Cold start: rewriting keys repo to HTTPS: $KEYS_REPO_URL"
-        ;;
-    ssh://git@github.com/*)
-        KEYS_REPO_URL="https://github.com/${KEYS_REPO_URL#ssh://git@github.com/}"
-        info "Cold start: rewriting keys repo to HTTPS: $KEYS_REPO_URL"
-        ;;
-    esac
+KEYS_REPO_CLONE_URL="" # if set, used for clone but stripped from origin afterwards
+needs_bootstrap=false
+if ! git ls-remote "$KEYS_REPO_URL" HEAD >/dev/null 2>&1; then
+    needs_bootstrap=true
+fi
 
+if [[ "$needs_bootstrap" == true ]]; then
     bootstrap_token=""
     if [[ -n "${GH_TOKEN:-}${GITHUB_TOKEN:-}" ]]; then
         info "Cold start: using GH_TOKEN/GITHUB_TOKEN for HTTPS clone"
