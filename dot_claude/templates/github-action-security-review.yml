@@ -30,7 +30,7 @@ jobs:
           # Authentication
           claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
           # Model selection
-          claude-model: claude-opus-4-6
+          claude-model: claude-opus-4-8
           # Custom instructions specific to your codebase
           # Examples:
           # - "Our API uses JWT tokens stored in httpOnly cookies"
