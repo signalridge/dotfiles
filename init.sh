@@ -25,19 +25,39 @@ Environment:
                            (required when running non-interactively, e.g. `curl | sh`).
 
 Note: this bootstrap is HTTPS-only. SSH is deprecated for keys-backup /
-gopass repos; auth is handled via the gh credential helper declared in
-the chezmoi-managed git config.
+gopass repos and GitHub init repo URLs. Auth is handled via the gh
+credential helper declared in the chezmoi-managed git config.
 
 Examples:
   ./init.sh
   ./init.sh --ref <tag-or-branch>
-  DOTFILES_USE_ENCRYPTION=true curl -fsLS https://raw.githubusercontent.com/signalridge/dotfiles/<tag-or-branch>/init.sh | sh -s -- --ref <tag-or-branch>
+  curl -fsLS https://raw.githubusercontent.com/signalridge/dotfiles/<tag-or-branch>/init.sh | DOTFILES_USE_ENCRYPTION=false sh -s -- --ref <tag-or-branch>
 EOF
 }
 
 repo="${DOTFILES_REPO:-signalridge}"
 ref="${DOTFILES_REF:-}"
 depth="${DOTFILES_DEPTH:-}"
+
+normalize_repo() {
+    case "$1" in
+    git@github.com:*)
+        printf 'https://github.com/%s\n' "${1#git@github.com:}"
+        ;;
+    ssh://git@github.com/*)
+        printf 'https://github.com/%s\n' "${1#ssh://git@github.com/}"
+        ;;
+    https://github.com/*)
+        printf '%s\n' "$1"
+        ;;
+    */*)
+        printf 'https://github.com/%s.git\n' "${1%.git}"
+        ;;
+    *)
+        printf 'https://github.com/%s/dotfiles.git\n' "$1"
+        ;;
+    esac
+}
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -117,6 +137,7 @@ if [ -f "$script_dir/.chezmoiroot" ] || [ -f "$script_dir/.chezmoi.toml.tmpl" ];
     exec "$chezmoi" init --apply --source "$script_dir" "$@"
 else
     # Piped from curl/wget - clone from GitHub instead
+    repo="$(normalize_repo "$repo")"
     if [ -n "$depth" ]; then
         set -- --depth "$depth" "$@"
     fi

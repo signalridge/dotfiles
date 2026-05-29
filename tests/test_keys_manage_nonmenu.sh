@@ -55,6 +55,8 @@ mkdir -p "$LOCAL_REPO"
 (
     cd "$LOCAL_REPO"
     git init -b main >/dev/null
+    git config user.name "CI Test"
+    git config user.email "ci-test@example.com"
     git remote add origin "$REMOTE"
 
     cat >.gitignore <<'EOF'

@@ -14,11 +14,18 @@ encryption = "age"
 {{- if hasKey . "useEncryption" -}}
 {{-   $useEncryption = .useEncryption -}}
 {{- else if env "DOTFILES_USE_ENCRYPTION" -}}
-{{-   $useEncryption = (eq (env "DOTFILES_USE_ENCRYPTION") "true") -}}
+{{-   $useEncryptionEnv := lower (env "DOTFILES_USE_ENCRYPTION") -}}
+{{-   if eq $useEncryptionEnv "true" -}}
+{{-     $useEncryption = true -}}
+{{-   else if eq $useEncryptionEnv "false" -}}
+{{-     $useEncryption = false -}}
+{{-   else -}}
+{{-     fail "DOTFILES_USE_ENCRYPTION must be either \"true\" or \"false\"" -}}
+{{-   end -}}
 {{- else if stdinIsATTY -}}
-{{-   $useEncryption = promptBoolOnce . "useEncryption" "Enable encryption & SSH config (requires ~/.ssh/main key)" -}}
+{{-   $useEncryption = promptBoolOnce . "useEncryption" "Enable encrypted key restore (requires keys backup repo)" -}}
 {{- else -}}
-{{-   fail "useEncryption is unset and there is no TTY to prompt.\nSet it explicitly:\n  - DOTFILES_USE_ENCRYPTION=true curl -fsSL <init-url> | sh\n  - Or download init.sh first and run interactively:\n      curl -fsSL <init-url> -o /tmp/init.sh && sh /tmp/init.sh" -}}
+{{-   fail "useEncryption is unset and there is no TTY to prompt.\nSet it explicitly:\n  - curl -fsSL <init-url> | DOTFILES_USE_ENCRYPTION=false sh\n  - Or, if restoring encrypted keys:\n      curl -fsSL <init-url> | DOTFILES_USE_ENCRYPTION=true sh\n  - Or download init.sh first and run interactively:\n      curl -fsSL <init-url> -o /tmp/init.sh && sh /tmp/init.sh" -}}
 {{- end -}}
 {{- "" -}}
 
@@ -98,6 +105,11 @@ encryption = "age"
 {{- else if and (stdinIsATTY) $useEncryption -}}
 {{-   $gopassRepository = promptStringOnce . "gopassRepository" "gopass repository URL" $gopassRepository -}}
 {{- end -}}
+{{- if hasPrefix "git@github.com:" $gopassRepository -}}
+{{-   $gopassRepository = printf "https://github.com/%s" (trimPrefix "git@github.com:" $gopassRepository) -}}
+{{- else if hasPrefix "ssh://git@github.com/" $gopassRepository -}}
+{{-   $gopassRepository = printf "https://github.com/%s" (trimPrefix "ssh://git@github.com/" $gopassRepository) -}}
+{{- end -}}
 
 {{/* keys-manage backup repository (HTTPS; auth via gh credential helper) */}}
 {{- $keysRepository := printf "https://github.com/%s/keypairs.git" $gitUsername -}}
@@ -105,6 +117,11 @@ encryption = "age"
 {{-   $keysRepository = .keysRepository -}}
 {{- else if and (stdinIsATTY) $useEncryption -}}
 {{-   $keysRepository = promptStringOnce . "keysRepository" "keys-manage backup repository URL" $keysRepository -}}
+{{- end -}}
+{{- if hasPrefix "git@github.com:" $keysRepository -}}
+{{-   $keysRepository = printf "https://github.com/%s" (trimPrefix "git@github.com:" $keysRepository) -}}
+{{- else if hasPrefix "ssh://git@github.com/" $keysRepository -}}
+{{-   $keysRepository = printf "https://github.com/%s" (trimPrefix "ssh://git@github.com/" $keysRepository) -}}
 {{- end -}}
 
 {{/* jj SSH commit signing key. Default to the managed SSH key only when encryption is enabled. */}}

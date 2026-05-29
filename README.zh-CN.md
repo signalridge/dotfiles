@@ -182,7 +182,7 @@
 ### 方式 1：直接运行 `init.sh`
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | sh
+curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | DOTFILES_USE_ENCRYPTION=false sh
 ```
 
 ### 方式 2：固定 tag/branch 并先审阅
@@ -209,7 +209,7 @@ git checkout <tag-or-commit>
 ./init.sh --repo signalridge/dotfiles
 ./init.sh --ref v1.2.3
 ./init.sh --depth 1
-./init.sh --ssh
+DOTFILES_USE_ENCRYPTION=false ./init.sh
 ```
 
 ---
@@ -224,7 +224,7 @@ git checkout <tag-or-commit>
 - `installMasApps`（是否安装 MAS 应用）
 - `claudeProviderAccount` / `codexProviderAccount`
 
-对大多数首次使用者：除非你已经有自己的 keys-manage 备份仓库与密钥材料，否则建议保持 `useEncryption = false`。
+对大多数首次使用者：除非你已经有自己的 keys-manage 备份仓库与密钥材料，否则建议保持 `useEncryption = false`。非交互运行时，请显式设置 `DOTFILES_USE_ENCRYPTION=false` 或 `DOTFILES_USE_ENCRYPTION=true`。
 
 ---
 

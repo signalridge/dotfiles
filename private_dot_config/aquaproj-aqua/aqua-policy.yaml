@@ -1,8 +1,7 @@
 ---
 # Aqua policy file: allow-list for non-standard registries.
-# After chezmoi apply, activate once with:
-#   aqua policy allow ~/.config/aquaproj-aqua/aqua-policy.yaml
-# AQUA_POLICY_CONFIG (set in ~/.zshenv) points aqua at this file.
+# Auto-allowed by .chezmoiscripts/run_onchange_after_05_aqua-install-tools.sh.tmpl
+# on every `chezmoi apply`; AQUA_POLICY_CONFIG (set in ~/.zshenv) points aqua here.
 
 registries:
   - type: standard

@@ -29,14 +29,14 @@ chmod +x "$BIN/chezmoi"
 export PATH="$BIN:$PATH"
 
 # Copy init.sh into a directory that is NOT a chezmoi source dir, so it takes the
-# remote init path (where --repo/--ref/--depth/--ssh are used).
+# remote init path (where --repo/--ref/--depth are used).
 SCRIPT_DIR="$TMP_ROOT/script"
 mkdir -p "$SCRIPT_DIR"
 cp "$ROOT/init.sh" "$SCRIPT_DIR/init.sh"
 chmod +x "$SCRIPT_DIR/init.sh"
 
-"$SCRIPT_DIR/init.sh" --repo alice/dotfiles --ref v1 --depth 10 --ssh -- --foo bar
-expected="init --apply --branch v1 --depth 10 --ssh --foo bar alice/dotfiles"
+"$SCRIPT_DIR/init.sh" --repo alice/dotfiles --ref v1 --depth 10 -- --foo bar
+expected="init --apply --branch v1 --depth 10 --foo bar https://github.com/alice/dotfiles.git"
 got="$(cat "$ARGS_FILE")"
 if [[ "$got" != "$expected" ]]; then
     echo "unexpected chezmoi args:" >&2
@@ -45,11 +45,32 @@ if [[ "$got" != "$expected" ]]; then
     exit 1
 fi
 
+set +e
+out="$("$SCRIPT_DIR/init.sh" --ssh 2>&1)"
+rc=$?
+set -e
+if [[ $rc -ne 2 ]] || [[ "$out" != *"--ssh is no longer supported"* ]]; then
+    echo "expected --ssh deprecation error (rc=2)" >&2
+    echo "rc=$rc" >&2
+    echo "$out" >&2
+    exit 1
+fi
+
 "$SCRIPT_DIR/init.sh" --repo alice/dotfiles --branch v2 -- --baz
-expected="init --apply --branch v2 --baz alice/dotfiles"
+expected="init --apply --branch v2 --baz https://github.com/alice/dotfiles.git"
 got="$(cat "$ARGS_FILE")"
 if [[ "$got" != "$expected" ]]; then
     echo "unexpected chezmoi args for --branch alias:" >&2
+    echo "  expected: $expected" >&2
+    echo "  got:      $got" >&2
+    exit 1
+fi
+
+"$SCRIPT_DIR/init.sh" --repo git@github.com:alice/dotfiles.git
+expected="init --apply https://github.com/alice/dotfiles.git"
+got="$(cat "$ARGS_FILE")"
+if [[ "$got" != "$expected" ]]; then
+    echo "unexpected chezmoi args for SSH repo normalization:" >&2
     echo "  expected: $expected" >&2
     echo "  got:      $got" >&2
     exit 1

@@ -115,8 +115,8 @@ repos:
           gitEmail = "test@test.com"
           useEncryption = false
           headless = false
-          gopassRepository = "git@github.com:test/pass.git"
-          keysRepository = "git@github.com:test/keys.git"
+          gopassRepository = "https://github.com/test/pass.git"
+          keysRepository = "https://github.com/test/keys.git"
           codexProviderAccount = "openai"
           EOF
 

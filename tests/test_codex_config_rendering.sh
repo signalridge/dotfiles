@@ -45,10 +45,12 @@ assert_file_not_contains() {
     fi
 }
 
+MODIFY_SCRIPT="$TMP_ROOT/modify_config.sh"
 RENDERED="$TMP_ROOT/config.toml"
-chezmoi execute-template --source "$ROOT" <"$ROOT/dot_codex/config.toml.tmpl" >"$RENDERED"
+chezmoi execute-template --source "$ROOT" <"$ROOT/dot_codex/modify_config.toml.tmpl" >"$MODIFY_SCRIPT"
+bash "$MODIFY_SCRIPT" </dev/null >"$RENDERED"
 
-assert_file_contains "$RENDERED" 'model = "gpt-5.4"'
+assert_file_contains "$RENDERED" 'model = "gpt-5.5"'
 assert_file_contains "$RENDERED" 'model_reasoning_effort = "xhigh"'
 assert_file_not_contains "$RENDERED" 'service_tier ='
 assert_file_contains "$RENDERED" 'fast_mode = false'

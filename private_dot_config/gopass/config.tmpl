@@ -1,12 +1,18 @@
 # gopass configuration file
 # Managed by chezmoi - do not edit manually
+{{- $gopassRepository := .gopassRepository -}}
+{{- if hasPrefix "git@github.com:" $gopassRepository -}}
+{{-   $gopassRepository = printf "https://github.com/%s" (trimPrefix "git@github.com:" $gopassRepository) -}}
+{{- else if hasPrefix "ssh://git@github.com/" $gopassRepository -}}
+{{-   $gopassRepository = printf "https://github.com/%s" (trimPrefix "ssh://git@github.com/" $gopassRepository) -}}
+{{- end }}
 
 [mounts]
 	crypto = age
 	path = {{ .chezmoi.homeDir }}/.local/share/gopass/stores/root
 
 [mounts.root]
-	source_url = {{ .gopassRepository }}
+	source_url = {{ $gopassRepository }}
 
 [age]
 	ssh-key-path = {{ .chezmoi.homeDir }}/.ssh/main

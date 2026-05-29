@@ -184,7 +184,7 @@ The `chezmoi` script chain is staged and numbered:
 ### Option 1: Run `init.sh` directly
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | sh
+curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh | DOTFILES_USE_ENCRYPTION=false sh
 ```
 
 ### Option 2: Pin to a tag/branch and review first
@@ -211,7 +211,7 @@ git checkout <tag-or-commit>
 ./init.sh --repo signalridge/dotfiles
 ./init.sh --ref v1.2.3
 ./init.sh --depth 1
-./init.sh --ssh
+DOTFILES_USE_ENCRYPTION=false ./init.sh
 ```
 
 ---
@@ -226,7 +226,7 @@ git checkout <tag-or-commit>
 - `installMasApps` (macOS App Store apps)
 - `claudeProviderAccount` / `codexProviderAccount`
 
-For most first-time users of this repo: keep `useEncryption = false` unless you have your own keys-manage backup repo and key material.
+For most first-time users of this repo: keep `useEncryption = false` unless you have your own keys-manage backup repo and key material. When running non-interactively, set `DOTFILES_USE_ENCRYPTION=false` or `DOTFILES_USE_ENCRYPTION=true` explicitly.
 
 ---
 
