@@ -29,15 +29,50 @@ encryption = "age"
 {{- end -}}
 {{- "" -}}
 
+{{/* Identity prompts. In non-TTY mode `promptStringOnce` silently returns its
+     default (which is the prompt label!) — that pollutes downstream config with
+     literal "GitHub username" strings and breaks URL interpolation. Force an
+     explicit fail when no TTY and no data is available, so non-interactive
+     installs (curl | sh) can't accidentally write a half-formed config. */}}
+{{- $nonInteractiveHelp := "Either pre-populate the value in chezmoi data, or download init.sh and run it interactively instead of piping curl into sh:\n  curl -fsSL <init-url> -o /tmp/init.sh && sh /tmp/init.sh" -}}
+
 {{- $hostname := .chezmoi.hostname -}}
 {{- if not $work -}}
-{{- $hostname = promptStringOnce . "hostname" "Hostname" -}}{{/* set the hostname */}}
+{{-   if hasKey . "hostname" -}}
+{{-     $hostname = .hostname -}}
+{{-   else if stdinIsATTY -}}
+{{-     $hostname = promptStringOnce . "hostname" "Hostname" -}}
+{{-   else -}}
+{{-     fail (printf "hostname is unset and there is no TTY to prompt.\n%s" $nonInteractiveHelp) -}}
+{{-   end -}}
 {{- end -}}
 
-{{/* prompt for user specific configuration */}}
-{{- $useremail := promptStringOnce . "useremail" "Email address" -}}{{/* set the useremail address */}}
-{{- $gitUsername := promptStringOnce . "gitUsername" "GitHub username" -}}{{/* set the github username */}}
-{{- $gitEmail := promptStringOnce . "gitEmail" "GitHub useremail" -}}{{/* set the github useremail */}}
+{{- $useremail := "" -}}
+{{- if hasKey . "useremail" -}}
+{{-   $useremail = .useremail -}}
+{{- else if stdinIsATTY -}}
+{{-   $useremail = promptStringOnce . "useremail" "Email address" -}}
+{{- else -}}
+{{-   fail (printf "useremail is unset and there is no TTY to prompt.\n%s" $nonInteractiveHelp) -}}
+{{- end -}}
+
+{{- $gitUsername := "" -}}
+{{- if hasKey . "gitUsername" -}}
+{{-   $gitUsername = .gitUsername -}}
+{{- else if stdinIsATTY -}}
+{{-   $gitUsername = promptStringOnce . "gitUsername" "GitHub username" -}}
+{{- else -}}
+{{-   fail (printf "gitUsername is unset and there is no TTY to prompt.\n%s" $nonInteractiveHelp) -}}
+{{- end -}}
+
+{{- $gitEmail := "" -}}
+{{- if hasKey . "gitEmail" -}}
+{{-   $gitEmail = .gitEmail -}}
+{{- else if stdinIsATTY -}}
+{{-   $gitEmail = promptStringOnce . "gitEmail" "Git commit email" -}}
+{{- else -}}
+{{-   fail (printf "gitEmail is unset and there is no TTY to prompt.\n%s" $nonInteractiveHelp) -}}
+{{- end -}}
 
 {{- $osID := .chezmoi.os -}}
 {{- if (and (eq .chezmoi.os "linux") (hasKey .chezmoi.osRelease "id")) -}}

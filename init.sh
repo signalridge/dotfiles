@@ -21,17 +21,24 @@ Options:
 
 Environment:
   DOTFILES_REPO / DOTFILES_REF / DOTFILES_DEPTH
-  DOTFILES_USE_ENCRYPTION  Set to "true"/"false" to skip the encryption prompt
-                           (required when running non-interactively, e.g. `curl | sh`).
+  DOTFILES_USE_ENCRYPTION  Override the encryption flag on re-apply
+                           ("true" or "false"). Does NOT make first-run
+                           non-interactive — identity prompts still
+                           require a TTY.
 
 Note: this bootstrap is HTTPS-only. SSH is deprecated for keys-backup /
 gopass repos and GitHub init repo URLs. Auth is handled via the gh
 credential helper declared in the chezmoi-managed git config.
 
+First-run is interactive. Don't pipe into `sh` — download then run, so
+chezmoi's prompts can read from your terminal:
+
+  curl -fsLS https://raw.githubusercontent.com/signalridge/dotfiles/<tag-or-branch>/init.sh -o /tmp/init.sh
+  sh /tmp/init.sh --ref <tag-or-branch>
+
 Examples:
   ./init.sh
   ./init.sh --ref <tag-or-branch>
-  curl -fsLS https://raw.githubusercontent.com/signalridge/dotfiles/<tag-or-branch>/init.sh | DOTFILES_USE_ENCRYPTION=false sh -s -- --ref <tag-or-branch>
 EOF
 }
 

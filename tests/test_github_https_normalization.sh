@@ -81,4 +81,94 @@ assert_not_contains "$setup_gopass" "git@github.com" "setup gopass"
 assert_not_contains "$keys_manage" "git@github.com" "keys-manage"
 assert_not_contains "$gh_hosts" "git_protocol: ssh" "gh hosts"
 
+# ─────────────────────────────────────────────────────────────
+# Runtime: normalize_github_origin rewrites existing SSH remotes.
+# Covers the upgrade case where a machine was set up on the SSH-era
+# config and already has `git@github.com:...` baked into .git/config.
+# ─────────────────────────────────────────────────────────────
+if require_cmd git; then
+    # keys-manage/core.sh expects these constants to be pre-declared by the
+    # keys-manage entry script. Export them here so we can source the lib
+    # for the helper under test without bringing in the full CLI. (`export`
+    # also tells shellcheck they're consumed externally — silences SC2034.)
+    export KEYS_REPO=""
+    export REPO_DIR="$TMP_ROOT/keys-backup"
+    export BACKUP_FILES_DIR="backup-files"
+    export BACKUP_LIST="$REPO_DIR/backup-list.txt"
+    export BACKUP_LIST_ENC="$REPO_DIR/backup-list.txt.enc"
+    export METADATA_FILE="$REPO_DIR/backup-metadata.json"
+    export METADATA_FILE_ENC="$REPO_DIR/backup-metadata.json.enc"
+    export CONTROL_STATE_DIR="$REPO_DIR/.keys-manage"
+    export CONTROL_BASELINE_LIST="$CONTROL_STATE_DIR/backup-list.remote.sha256"
+    export CONTROL_BASELINE_META="$CONTROL_STATE_DIR/backup-metadata.remote.sha256"
+    export HISTORY_LOG="$REPO_DIR/backup-history.log"
+    export RESTORE_SNAPSHOT_DIR="$REPO_DIR/restore-snapshots"
+    # shellcheck source=../dot_local/bin/lib/common
+    source "$ROOT/dot_local/bin/lib/common"
+    # shellcheck source=../dot_local/bin/lib/keys-manage/core.sh
+    source "$ROOT/dot_local/bin/lib/keys-manage/core.sh"
+
+    assert_origin_normalized() {
+        local input="$1"
+        local expected="$2"
+        local label="$3"
+        local dir
+        dir=$(mktemp -d "$TMP_ROOT/repo.XXXXXX")
+        git -C "$dir" init -q
+        git -C "$dir" remote add origin "$input"
+        normalize_github_origin "$dir" >/dev/null
+        local got
+        got=$(git -C "$dir" remote get-url origin)
+        if [[ "$got" != "$expected" ]]; then
+            echo "normalize_github_origin($label): expected '$expected', got '$got'" >&2
+            exit 1
+        fi
+    }
+
+    assert_origin_normalized \
+        "git@github.com:test/keys.git" \
+        "https://github.com/test/keys.git" \
+        "scp-style SSH"
+    assert_origin_normalized \
+        "ssh://git@github.com/test/keys.git" \
+        "https://github.com/test/keys.git" \
+        "ssh:// URL"
+    assert_origin_normalized \
+        "https://github.com/test/keys.git" \
+        "https://github.com/test/keys.git" \
+        "already HTTPS (no-op)"
+    assert_origin_normalized \
+        "git@gitlab.com:test/keys.git" \
+        "git@gitlab.com:test/keys.git" \
+        "non-github SSH untouched"
+fi
+
+# ─────────────────────────────────────────────────────────────
+# .chezmoi.toml.tmpl must fail loud when identity prompts are unset
+# and there's no TTY. Prior behavior silently wrote prompt-label
+# placeholders ("GitHub username", etc.) into the config, which then
+# leaked into URLs as `https://github.com/GitHub username/...`.
+# ─────────────────────────────────────────────────────────────
+assert_identity_render_fails_without_tty() {
+    local stderr
+    stderr=$(DOTFILES_USE_ENCRYPTION=false chezmoi execute-template \
+        --config /dev/null --config-format toml \
+        --init --stdinisatty=false \
+        --source "$ROOT" \
+        <"$ROOT/.chezmoi.toml.tmpl" 2>&1 >/dev/null) && {
+        echo "expected toml.tmpl render to fail when identity data is unset in non-TTY mode" >&2
+        echo "$stderr" >&2
+        exit 1
+    }
+    # Any of {hostname, useremail, gitUsername, gitEmail} should trigger the
+    # guard; the first one in source order wins. Match the shared suffix.
+    if [[ "$stderr" != *"is unset and there is no TTY to prompt"* ]]; then
+        echo "expected identity fail-fast message in stderr, got:" >&2
+        echo "$stderr" >&2
+        exit 1
+    fi
+}
+
+assert_identity_render_fails_without_tty
+
 echo "test_github_https_normalization: OK"

@@ -62,6 +62,27 @@ control_file_is_probably_text() {
     return 0
 }
 
+# Upgrade a legacy GitHub SSH origin to HTTPS so the fast path (and any later
+# fetch/pull/push) goes through the gh credential helper. Idempotent.
+# Must run BEFORE the fast-path early-return below, otherwise machines that
+# were set up on prior SSH-era versions silently keep their SSH origin.
+if [[ -d "$REPO_DIR/.git" ]]; then
+    _origin="$(git -C "$REPO_DIR" remote get-url origin 2>/dev/null || true)"
+    _new=""
+    case "$_origin" in
+    git@github.com:*)
+        _new="https://github.com/${_origin#git@github.com:}"
+        ;;
+    ssh://git@github.com/*)
+        _new="https://github.com/${_origin#ssh://git@github.com/}"
+        ;;
+    esac
+    if [[ -n "$_new" ]]; then
+        git -C "$REPO_DIR" remote set-url origin "$_new" && info "Normalized SSH origin to HTTPS: $_new"
+    fi
+    unset _origin _new
+fi
+
 # Fast path: avoid network and prompting on every apply if everything is already present.
 if [[ -d "$REPO_DIR/.git" && -d "$BACKUP_FILES_DIR" && -f "$HOME/.ssh/main" ]]; then
     missing=false

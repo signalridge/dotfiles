@@ -1076,6 +1076,25 @@ yazi_select_files() {
 
 # ===== Git Operations =====
 
+# Rewrite a legacy GitHub SSH origin URL to HTTPS so the gh credential helper
+# handles auth. Idempotent and silent when nothing needs changing.
+normalize_github_origin() {
+    local repo_dir="${1:-.}"
+    [[ -d "$repo_dir/.git" ]] || return 0
+    local cur new=""
+    cur=$(git -C "$repo_dir" remote get-url origin 2>/dev/null) || return 0
+    case "$cur" in
+    git@github.com:*)
+        new="https://github.com/${cur#git@github.com:}"
+        ;;
+    ssh://git@github.com/*)
+        new="https://github.com/${cur#ssh://git@github.com/}"
+        ;;
+    esac
+    [[ -n "$new" ]] || return 0
+    git -C "$repo_dir" remote set-url origin "$new" 2>/dev/null && log_info "Normalized SSH origin to HTTPS: $new"
+}
+
 # Check git sync status with remote
 # Returns: 0=in sync, 1=ahead, 2=behind, 3=diverged, 4=no remote, 5=offline
 check_git_sync_status() {
@@ -1086,7 +1105,10 @@ check_git_sync_status() {
         return 4
     fi
 
-    # Fetch remote without pulling
+    normalize_github_origin "$REPO_DIR"
+
+    # Fetch remote without pulling. After normalization origin should be HTTPS,
+    # but keep GIT_SSH_COMMAND as a safety net for non-GitHub SSH remotes.
     local fetch_timeout ssh_cmd
     fetch_timeout="${KEYS_GIT_FETCH_TIMEOUT_SEC:-12}"
     ssh_cmd="${GIT_SSH_COMMAND:-ssh -o BatchMode=yes -o ConnectTimeout=8}"

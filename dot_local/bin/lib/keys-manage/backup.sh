@@ -18,6 +18,9 @@ cmd_init() {
             return 1
         }
 
+        # Upgrade legacy SSH origin to HTTPS (HTTPS-only auth via gh helper).
+        normalize_github_origin "$REPO_DIR"
+
         # Ensure the repo is on the new "encrypted control files" layout.
         ensure_repo_ignores_plain_control_files
 
