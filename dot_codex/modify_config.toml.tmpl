@@ -129,9 +129,6 @@ hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-a
 [[hooks.Stop]]
 hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1 }]
 
-[[hooks.SubagentStop]]
-hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1 }]
-
 # =============================================================================
 # Model Providers (Third-Party)
 # =============================================================================
@@ -239,13 +236,49 @@ network_access = true
 exclude_slash_tmp = false
 CHEZMOI_TEMPLATE_EOF
 
+preserve_toml_tables() {
+  local header_regex="$1"
+
+  printf '%s\n' "$EXISTING" | awk -v header_regex="$header_regex" '
+    $0 ~ header_regex             { in_table = 1; print; next }
+    in_table && /^\[/             { in_table = 0 }
+    in_table                      { print }
+  '
+}
+
+preserve_managed_hooks_state() {
+  printf '%s\n' "$EXISTING" | awk '
+    /^\[hooks\.state\]$/ {
+      in_table = 1
+      print
+      next
+    }
+    /^\[hooks\.state\./ {
+      in_table = ($0 ~ /:(session_start|user_prompt_submit|stop):/)
+      if (in_table) {
+        print
+      }
+      next
+    }
+    in_table && /^\[/ {
+      in_table = 0
+    }
+    in_table {
+      print
+    }
+  '
+}
+
+# Preserve trust only for Codex hooks still managed by this template.
+hooks_state=$(preserve_managed_hooks_state)
+
 # Preserve [projects.*] sections (Codex CLI writes these when trusting a directory).
 # Capture from the first [projects.*] header until a different top-level table appears.
-projects=$(printf '%s\n' "$EXISTING" | awk '
-  /^\[projects\./             { in_projects = 1; print; next }
-  in_projects && /^\[/        { in_projects = 0 }
-  in_projects                 { print }
-')
+projects=$(preserve_toml_tables '^\\[projects\\.')
+
+if [ -n "$hooks_state" ]; then
+  printf '\n%s\n' "$hooks_state"
+fi
 
 if [ -n "$projects" ]; then
   printf '\n%s\n' "$projects"

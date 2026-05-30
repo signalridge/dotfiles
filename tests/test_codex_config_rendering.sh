@@ -47,8 +47,10 @@ assert_file_not_contains() {
 
 MODIFY_SCRIPT="$TMP_ROOT/modify_config.sh"
 RENDERED="$TMP_ROOT/config.toml"
+CLAUDE_SETTINGS="$TMP_ROOT/settings.json"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_codex/modify_config.toml.tmpl" >"$MODIFY_SCRIPT"
 bash "$MODIFY_SCRIPT" </dev/null >"$RENDERED"
+chezmoi execute-template --source "$ROOT" <"$ROOT/dot_claude/settings.json.tmpl" >"$CLAUDE_SETTINGS"
 
 assert_file_contains "$RENDERED" 'model = "gpt-5.5"'
 assert_file_contains "$RENDERED" 'model_reasoning_effort = "xhigh"'
@@ -58,6 +60,52 @@ assert_file_contains "$RENDERED" '[[hooks.UserPromptSubmit]]'
 assert_file_contains "$RENDERED" 'tmux-ai-agent-state codex busy'
 assert_file_contains "$RENDERED" '[[hooks.Stop]]'
 assert_file_contains "$RENDERED" 'tmux-ai-agent-state codex idle'
+assert_file_not_contains "$RENDERED" '[[hooks.SubagentStop]]'
 assert_file_not_contains "$RENDERED" 'async = true'
+
+assert_file_contains "$CLAUDE_SETTINGS" '"UserPromptSubmit"'
+assert_file_contains "$CLAUDE_SETTINGS" 'tmux-ai-agent-state claude busy'
+assert_file_contains "$CLAUDE_SETTINGS" '"SessionEnd"'
+assert_file_contains "$CLAUDE_SETTINGS" '"Stop"'
+assert_file_contains "$CLAUDE_SETTINGS" 'tmux-ai-agent-state claude idle'
+assert_file_not_contains "$CLAUDE_SETTINGS" '"SubagentStop"'
+
+cat >"$TMP_ROOT/existing-config.toml" <<'EOF'
+model = "old-model"
+
+[hooks.state]
+
+[hooks.state."/Users/example/.codex/config.toml:session_start:0:0"]
+trusted_hash = "sha256:aaa111"
+
+[hooks.state."/Users/example/.codex/config.toml:user_prompt_submit:0:0"]
+trusted_hash = "sha256:abc123"
+
+[hooks.state."/Users/example/.codex/config.toml:stop:0:0"]
+trusted_hash = "sha256:def456"
+
+[hooks.state."/Users/example/.codex/config.toml:subagent_stop:0:0"]
+trusted_hash = "sha256:old-subagent"
+
+[projects."/tmp/example"]
+trust_level = "trusted"
+
+[projects."/tmp/other"]
+trust_level = "trusted"
+EOF
+
+bash "$MODIFY_SCRIPT" <"$TMP_ROOT/existing-config.toml" >"$RENDERED"
+assert_file_contains "$RENDERED" '[hooks.state]'
+assert_file_contains "$RENDERED" '[hooks.state."/Users/example/.codex/config.toml:session_start:0:0"]'
+assert_file_contains "$RENDERED" 'trusted_hash = "sha256:aaa111"'
+assert_file_contains "$RENDERED" '[hooks.state."/Users/example/.codex/config.toml:user_prompt_submit:0:0"]'
+assert_file_contains "$RENDERED" 'trusted_hash = "sha256:abc123"'
+assert_file_contains "$RENDERED" '[hooks.state."/Users/example/.codex/config.toml:stop:0:0"]'
+assert_file_contains "$RENDERED" 'trusted_hash = "sha256:def456"'
+assert_file_not_contains "$RENDERED" 'subagent_stop'
+assert_file_not_contains "$RENDERED" 'sha256:old-subagent'
+assert_file_contains "$RENDERED" '[projects."/tmp/example"]'
+assert_file_contains "$RENDERED" '[projects."/tmp/other"]'
+assert_file_not_contains "$RENDERED" 'old-model'
 
 echo "test_codex_config_rendering: OK"

@@ -18,7 +18,6 @@ set -euo pipefail
 if [[ "$1" == "show-option" && "$2" == "-gqv" ]]; then
     case "$3" in
         @tmux2k-ai-icon) printf '%s\n' "AI" ;;
-        @tmux2k-ai-activity-threshold) printf '%s\n' "30" ;;
         *) exit 1 ;;
     esac
     exit 0
