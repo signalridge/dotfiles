@@ -1,6 +1,6 @@
 ---
 name: oss-launch
-description: Turn one open-source release/topic into platform-tailored posts and publish them through a gated, auditable path. Use when the user wants to announce or promote an OSS project/release across X, Bluesky, dev.to, Reddit, Hacker News, etc. Triggers: "announce my release", "promote my repo", "post about this project", "oss launch", "Show HN", "发布开源项目", "宣传项目".
+description: 'Turn one open-source release/topic into platform-tailored posts and publish them through a gated, auditable path. Use when the user wants to announce or promote an OSS project/release across X, Bluesky, dev.to, Reddit, Hacker News, etc. Triggers: "announce my release", "promote my repo", "post about this project", "oss launch", "Show HN", "发布开源项目", "宣传项目".'
 ---
 
 # OSS Launch
