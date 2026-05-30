@@ -186,6 +186,12 @@ url = "https://gitmcp.io/docs"
 [mcp_servers.deepwiki]
 url = "https://mcp.deepwiki.com/mcp"
 
+# Wraps Claude Code as MCP tools so Codex can delegate coding tasks to Claude.
+# https://github.com/xihuai18/claude-code-mcp
+[mcp_servers.claude-code-mcp]
+command = "bunx"
+args = ["@leo000001/claude-code-mcp"]
+
 # =============================================================================
 # Profiles
 # =============================================================================
