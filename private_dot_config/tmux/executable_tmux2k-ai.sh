@@ -98,15 +98,18 @@ pane_hook_state() {
 
 pane_tui_looks_busy() {
     local pane_id="$1"
-    local screen
+    local screen recent
 
     screen=$(tmux capture-pane -p -t "$pane_id" -S -18 2>/dev/null || true)
     [[ -n "$screen" ]] || return 1
+    recent=$(printf '%s\n' "$screen" | tail -8)
 
     # This is intentionally a narrow fallback for existing sessions that have
     # not reloaded hook config yet. Claude and Codex both expose an interrupt
-    # hint while a turn is in progress; normal typing at an idle prompt does not.
-    printf '%s\n' "$screen" | grep -Fq "esc to interrupt"
+    # hint while a turn is in progress. Only inspect the bottom status area so
+    # stale "esc to interrupt" text already pushed into scrollback does not
+    # override a later idle prompt.
+    printf '%s\n' "$recent" | grep -Eq '(Working|Waiting for background terminal) .*esc to interrupt|esc to interrupt.*(Working|Waiting for background terminal)'
 }
 
 pane_is_busy() {
