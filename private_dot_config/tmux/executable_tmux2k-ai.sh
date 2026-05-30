@@ -10,9 +10,9 @@
 #
 # Dot display:
 #   No agents      -> (empty - segment hidden)
-#   Busy turn      -> "●" (current: "◆")
-#   Idle/unknown   -> "○" (current: "◇")
-#   Example        -> "󰚩 ●◇●"
+#   Busy turn      -> "●" (current: "■")
+#   Idle/unknown   -> "○" (current: "□")
+#   Example        -> "󰚩 ●□●"
 #
 # Loaded directly from tmux.conf post-TPM, independent of tmux2k's
 # plugin discovery. No symlink needed.
@@ -323,13 +323,13 @@ main() {
 
         if pane_is_busy "$pane_id" "$pane_tool" "$pane_pid" "$cache_dir"; then
             if [[ -n "${current_ttys[$normalized_tty]:-}" ]]; then
-                dots+="◆"
+                dots+="■"
             else
                 dots+="●"
             fi
         else
             if [[ -n "${current_ttys[$normalized_tty]:-}" ]]; then
-                dots+="◇"
+                dots+="□"
             else
                 dots+="○"
             fi

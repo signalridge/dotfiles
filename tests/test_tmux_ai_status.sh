@@ -166,20 +166,20 @@ assert_file_contains() {
 }
 
 # No hook state means "session present, busy unknown", so all dots are idle.
-assert_equals "$(run_status s:2)" "AI ○◇○"
+assert_equals "$(run_status s:2)" "AI ○□○"
 
 # Existing sessions that have not loaded hooks yet can still show busy when
 # their own TUI status says the turn is interruptible.
 TMUX_AI_BUSY_PANES="%1 %3"
-assert_equals "$(run_status s:2)" "AI ●◇●"
+assert_equals "$(run_status s:2)" "AI ●□●"
 unset TMUX_AI_BUSY_PANES
 
 TMUX_AI_WAITING_PANES="%2"
-assert_equals "$(run_status s:2)" "AI ○◆○"
+assert_equals "$(run_status s:2)" "AI ○■○"
 unset TMUX_AI_WAITING_PANES
 
 TMUX_AI_STALE_BUSY_PANES="%2"
-assert_equals "$(run_status s:2)" "AI ○◇○"
+assert_equals "$(run_status s:2)" "AI ○□○"
 unset TMUX_AI_STALE_BUSY_PANES
 
 state_dir="$TMP_ROOT/tmp/tmux2k-ai-4242"
@@ -204,13 +204,13 @@ updated_at=110
 EOF
 
 assert_equals "$(run_status)" "AI ●○●"
-assert_equals "$(run_status s:1)" "AI ◆○●"
-assert_equals "$(run_status s:2)" "AI ●◇●"
-assert_equals "$(run_status s:3)" "AI ●○◆"
+assert_equals "$(run_status s:1)" "AI ■○●"
+assert_equals "$(run_status s:2)" "AI ●□●"
+assert_equals "$(run_status s:3)" "AI ●○■"
 assert_equals "$(run_status s:9)" "AI ●○●"
 
 TMUX_AI_BUSY_PANES="%2"
-assert_equals "$(run_status s:2)" "AI ●◆●"
+assert_equals "$(run_status s:2)" "AI ●■●"
 unset TMUX_AI_BUSY_PANES
 
 TMUX_PANE=%2 \
@@ -220,7 +220,7 @@ TMUX_PANE=%2 \
 assert_file_contains "$state_dir/_2.state" "tool=codex"
 assert_file_contains "$state_dir/_2.state" "state=busy"
 assert_file_contains "$state_dir/_2.state" "pid=222"
-assert_equals "$(run_status s:2)" "AI ●◆●"
+assert_equals "$(run_status s:2)" "AI ●■●"
 
 hook_transcript="$TMP_ROOT/hook-transcript.jsonl"
 printf '%s\n' '{"event":"one"}' '{"event":"two"}' >"$hook_transcript"
@@ -232,17 +232,17 @@ printf '{"transcript_path":"%s","turn_id":"turn-hook"}\n' "$hook_transcript" |
 assert_file_contains "$state_dir/_2.state" "transcript_path=$hook_transcript"
 assert_file_contains "$state_dir/_2.state" "turn_id=turn-hook"
 assert_file_contains "$state_dir/_2.state" "transcript_line_count=2"
-assert_equals "$(run_status s:2)" "AI ●◆●"
+assert_equals "$(run_status s:2)" "AI ●■●"
 
 TMUX_PANE=%2 \
     PATH="$TMP_ROOT/bin:$PATH" \
     TMPDIR="$TMP_ROOT/tmp" \
     bash "$ROOT/dot_local/bin/executable_tmux-ai-agent-state" codex idle
 assert_file_contains "$state_dir/_2.state" "state=idle"
-assert_equals "$(run_status s:2)" "AI ●◇●"
+assert_equals "$(run_status s:2)" "AI ●□●"
 
 TMUX_AI_BUSY_PANES="%2"
-assert_equals "$(run_status s:2)" "AI ●◇●"
+assert_equals "$(run_status s:2)" "AI ●□●"
 unset TMUX_AI_BUSY_PANES
 
 codex_abort_transcript="$TMP_ROOT/codex-abort.jsonl"
@@ -259,10 +259,10 @@ transcript_path=$codex_abort_transcript
 turn_id=turn-codex
 transcript_line_count=1
 EOF
-assert_equals "$(run_status s:2)" "AI ●◇●"
+assert_equals "$(run_status s:2)" "AI ●□●"
 
 TMUX_AI_BUSY_PANES="%2"
-assert_equals "$(run_status s:2)" "AI ●◆●"
+assert_equals "$(run_status s:2)" "AI ●■●"
 unset TMUX_AI_BUSY_PANES
 
 claude_abort_transcript="$TMP_ROOT/claude-abort.jsonl"
@@ -278,6 +278,6 @@ updated_at=100
 transcript_path=$claude_abort_transcript
 transcript_line_count=1
 EOF
-assert_equals "$(run_status s:1)" "AI ◇○●"
+assert_equals "$(run_status s:1)" "AI □○●"
 
 echo "test_tmux_ai_status: OK"
