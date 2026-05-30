@@ -85,6 +85,15 @@ if [[ "$1" == "capture-pane" ]]; then
                     printf '%s\n' "Waiting for background terminal (4m 12s - esc to interrupt)"
                     ;;
             esac
+            case " ${TMUX_AI_CLAUDE_BUSY_PANES:-} " in
+                *" $pane_id "*)
+                    printf '%s\n' "✢ Shimmying… (29s - ↑ 1.6k tokens)"
+                    printf '%s\n' "────────────────────────────────"
+                    printf '%s\n' "❯"
+                    printf '%s\n' "────────────────────────────────"
+                    printf '%s\n' "  ⏵⏵ bypass permissions on · esc to interrupt"
+                    ;;
+            esac
             case " ${TMUX_AI_STALE_BUSY_PANES:-} " in
                 *" $pane_id "*)
                     printf '%s\n' "Working (12s - esc to interrupt)"
@@ -141,6 +150,7 @@ run_status() {
     PATH="$TMP_ROOT/bin:$PATH" \
         TMPDIR="$TMP_ROOT/tmp" \
         TMUX_AI_BUSY_PANES="${TMUX_AI_BUSY_PANES:-}" \
+        TMUX_AI_CLAUDE_BUSY_PANES="${TMUX_AI_CLAUDE_BUSY_PANES:-}" \
         TMUX_AI_WAITING_PANES="${TMUX_AI_WAITING_PANES:-}" \
         TMUX_AI_STALE_BUSY_PANES="${TMUX_AI_STALE_BUSY_PANES:-}" \
         bash "$ROOT/private_dot_config/tmux/executable_tmux2k-ai.sh" "$@"
@@ -173,6 +183,10 @@ assert_equals "$(run_status s:2)" "AI □○□"
 TMUX_AI_BUSY_PANES="%1 %3"
 assert_equals "$(run_status s:2)" "AI ■○■"
 unset TMUX_AI_BUSY_PANES
+
+TMUX_AI_CLAUDE_BUSY_PANES="%1"
+assert_equals "$(run_status s:2)" "AI ■○□"
+unset TMUX_AI_CLAUDE_BUSY_PANES
 
 TMUX_AI_WAITING_PANES="%2"
 assert_equals "$(run_status s:2)" "AI □●□"
@@ -208,6 +222,10 @@ assert_equals "$(run_status s:1)" "AI ●□■"
 assert_equals "$(run_status s:2)" "AI ■○■"
 assert_equals "$(run_status s:3)" "AI ■□●"
 assert_equals "$(run_status s:9)" "AI ■□■"
+
+TMUX_AI_CLAUDE_BUSY_PANES="%1"
+assert_equals "$(run_status s:1)" "AI ●□■"
+unset TMUX_AI_CLAUDE_BUSY_PANES
 
 TMUX_AI_BUSY_PANES="%2"
 assert_equals "$(run_status s:2)" "AI ■●■"

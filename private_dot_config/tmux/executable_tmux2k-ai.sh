@@ -192,7 +192,8 @@ pane_tui_looks_busy() {
     # hint while a turn is in progress. Only inspect the bottom status area so
     # stale "esc to interrupt" text already pushed into scrollback does not
     # override a later idle prompt.
-    printf '%s\n' "$recent" | grep -Eq '(Working|Waiting for background terminal) .*esc to interrupt|esc to interrupt.*(Working|Waiting for background terminal)'
+    printf '%s\n' "$recent" | tail -5 | grep -Fq 'esc to interrupt' ||
+        printf '%s\n' "$recent" | grep -Eq '(Working|Waiting for background terminal) .*esc to interrupt|esc to interrupt.*(Working|Waiting for background terminal)'
 }
 
 pane_tui_looks_idle_after_abort() {
@@ -211,7 +212,8 @@ pane_tui_looks_idle_after_abort() {
         # Claude Code returns to its prompt/footer after Esc or /clear without
         # necessarily running Stop. Treat the visible prompt as idle only when
         # the running "esc to interrupt" status is absent.
-        printf '%s\n' "$recent" | tail -5 | grep -Eq '^❯' &&
+        ! printf '%s\n' "$recent" | tail -5 | grep -Fq 'esc to interrupt' &&
+            printf '%s\n' "$recent" | tail -5 | grep -Eq '^❯' &&
             printf '%s\n' "$recent" | tail -5 | grep -Fq 'bypass permissions'
         ;;
     *)
