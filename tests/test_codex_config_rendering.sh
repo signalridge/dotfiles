@@ -54,5 +54,9 @@ assert_file_contains "$RENDERED" 'model = "gpt-5.5"'
 assert_file_contains "$RENDERED" 'model_reasoning_effort = "xhigh"'
 assert_file_not_contains "$RENDERED" 'service_tier ='
 assert_file_contains "$RENDERED" 'fast_mode = false'
+assert_file_contains "$RENDERED" '[[hooks.UserPromptSubmit]]'
+assert_file_contains "$RENDERED" 'tmux-ai-agent-state codex busy'
+assert_file_contains "$RENDERED" '[[hooks.Stop]]'
+assert_file_contains "$RENDERED" 'tmux-ai-agent-state codex idle'
 
 echo "test_codex_config_rendering: OK"

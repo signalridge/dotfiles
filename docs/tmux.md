@@ -242,9 +242,11 @@
 
 ## Status Bar Modules (tmux2k)
 
-Left: `session` | `git` | `cpu` | `ram`
+Left: `session`
 
-Right: `battery` | `network` | `time`
+Right: `git` | `AI agents`
+
+`AI agents` is provided by `~/.config/tmux/tmux2k-ai.sh`. It reports foreground `claude`, `codex`, and `opencode` sessions attached to tmux panes as stable dots, for example `󰚩 ●◇●`. `●`/`◆` mean an agent lifecycle hook marked that turn busy, and `○`/`◇` mean idle or unknown; diamonds mark the current window without changing the underlying busy state. The busy signal comes from `tmux-ai-agent-state` hooks, with a narrow fallback to Claude/Codex's visible "esc to interrupt" TUI status for already-running sessions that have not loaded hooks yet. It does not use tmux `window_activity`, generic pane content changes, keyboard input, CPU, or network heuristics.
 
 ---
 

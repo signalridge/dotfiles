@@ -122,6 +122,55 @@
             "type": "command",
             "command": "$HOME/.claude/hooks/navigation-hint.sh",
             "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.local/bin/tmux-ai-agent-state claude busy",
+            "timeout": 1
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.local/bin/tmux-ai-agent-state claude idle",
+            "timeout": 1
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.local/bin/tmux-ai-agent-state claude idle",
+            "timeout": 1
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.local/bin/tmux-ai-agent-state claude idle",
+            "timeout": 1
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.local/bin/tmux-ai-agent-state claude idle",
+            "timeout": 1
           }
         ]
       }

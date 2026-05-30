@@ -117,6 +117,22 @@ animations = true
 show_tooltips = true
 
 # =============================================================================
+# Lifecycle Hooks
+# =============================================================================
+
+[[hooks.SessionStart]]
+hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1, async = true }]
+
+[[hooks.UserPromptSubmit]]
+hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex busy", timeout = 1, async = true }]
+
+[[hooks.Stop]]
+hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1, async = true }]
+
+[[hooks.SubagentStop]]
+hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1, async = true }]
+
+# =============================================================================
 # Model Providers (Third-Party)
 # =============================================================================
 
