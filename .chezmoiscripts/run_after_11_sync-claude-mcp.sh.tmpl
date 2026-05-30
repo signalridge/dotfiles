@@ -190,3 +190,7 @@ ensure_user_mcp_json "tavily" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp
 ensure_user_mcp_json "postgres" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-postgres","args":[]}'
 ensure_user_mcp_http "gitmcp" "https://gitmcp.io/docs"
 ensure_user_mcp_http "deepwiki" "https://mcp.deepwiki.com/mcp"
+
+# Wraps Codex as MCP tools so Claude can delegate coding tasks to Codex.
+# https://github.com/xihuai18/codex-mcp
+ensure_user_mcp_json "codex-mcp" '{"command":"bunx","args":["@leo000001/codex-mcp"]}'
