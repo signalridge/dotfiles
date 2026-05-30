@@ -202,4 +202,8 @@ TMUX_PANE=%2 \
 assert_file_contains "$state_dir/_2.state" "state=idle"
 assert_equals "$(run_status s:2)" "AI ●◇●"
 
+TMUX_AI_BUSY_PANES="%2"
+assert_equals "$(run_status s:2)" "AI ●◇●"
+unset TMUX_AI_BUSY_PANES
+
 echo "test_tmux_ai_status: OK"

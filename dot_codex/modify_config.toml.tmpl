@@ -121,16 +121,16 @@ show_tooltips = true
 # =============================================================================
 
 [[hooks.SessionStart]]
-hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1, async = true }]
+hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1 }]
 
 [[hooks.UserPromptSubmit]]
-hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex busy", timeout = 1, async = true }]
+hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex busy", timeout = 1 }]
 
 [[hooks.Stop]]
-hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1, async = true }]
+hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1 }]
 
 [[hooks.SubagentStop]]
-hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1, async = true }]
+hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1 }]
 
 # =============================================================================
 # Model Providers (Third-Party)

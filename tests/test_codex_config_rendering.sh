@@ -58,5 +58,6 @@ assert_file_contains "$RENDERED" '[[hooks.UserPromptSubmit]]'
 assert_file_contains "$RENDERED" 'tmux-ai-agent-state codex busy'
 assert_file_contains "$RENDERED" '[[hooks.Stop]]'
 assert_file_contains "$RENDERED" 'tmux-ai-agent-state codex idle'
+assert_file_not_contains "$RENDERED" 'async = true'
 
 echo "test_codex_config_rendering: OK"

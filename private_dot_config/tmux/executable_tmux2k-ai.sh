@@ -117,7 +117,15 @@ pane_is_busy() {
     local hook_state
 
     hook_state=$(pane_hook_state "$pane_id" "$tool" "$pid" "$cache_dir")
-    [[ "$hook_state" == "busy" ]] && return 0
+    case "$hook_state" in
+    busy)
+        return 0
+        ;;
+    idle)
+        return 1
+        ;;
+    esac
+
     pane_tui_looks_busy "$pane_id"
 }
 
