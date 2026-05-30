@@ -9,14 +9,14 @@ versions:
   aquaVersion: v2.59.1
   nixIndexDb: 2026-05-24-062331
   paperlib: 3.1.12
-  claudeWshobsonAgentsRev: 05231aa6398384ca94bb39d8be9d848a1b3b21db
-  claudeWshobsonAgentsSha256: 1b7cc2054edbcd8d023ef72463e064e4c1c8a27cd573530d4239ffd3d08c08a7
-  claudeAnthropicsSkillsRev: 690f15cac7f7b4c055c5ab109c79ed9259934081
-  claudeAnthropicsSkillsSha256: 60089fdfe24c4e9a5adc3804563009f17a3b7ef44f85de90cf4ae269384e64ea
+  claudeWshobsonAgentsRev: 0818067b4ecad18c234b2ae427cc44f2053792d4
+  claudeWshobsonAgentsSha256: d4324ca3724f9946cd1af40c66e16a143d620ed06f4eb67519809df6ecda961e
+  claudeAnthropicsSkillsRev: da20c92503b2e8ff1cf28ca81a0df4673debdbf7
+  claudeAnthropicsSkillsSha256: 586e3fccffbf1d033c76f14deb9b3ebb7cdf91960b9b72cee9038c3c21c57b79
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35
   uiUxProMaxSkillSha256: 7c51fb0ab28651f620e873632d0109f364942c54c9e77a8819a1e2cedec424ea
-  openaiSkillsRev: b0401f07213a66414d84a65cb50c1d226f99485a
-  huggingfaceSkillsRev: df627be1837523c91ac6df472e3dc543d3107bd9
+  openaiSkillsRev: a8924c2a35cfa290458852c4fad17c9133054c2e
+  huggingfaceSkillsRev: c471b5e941d69fc4a99cdbc09497d5b338f07a0e
   getsentrySkillsRev: b10e2db21d3165de1904bdf3fa64285016765fe5
   trailofbitsSkillsRev: c94841be3deae8a880fa1a9078979adac7ca3dbc
   cloudflareSkillsRev: 60147cbb773649eadca89cee92b4e0caf02234b4
@@ -25,8 +25,8 @@ versions:
   vercelLabsAgentBrowserRev: b4f2f37d7b4f954022bc77f8d6dce70e07072b00
   supabaseAgentSkillsRev: 577e626421fdb691902f158181e467a3dbf99410
   expoSkillsRev: fdd3df12151a208853fe540ffea9a67773446377
-  microsoftSkillsRev: 858117a89d7e8f8c907141e1165b8816f3c18611
-  sickn33AntigravitySkillsRev: da64c77283a7813c7c99f2be0f3925a97342538c
+  microsoftSkillsRev: 684313b5263c04177dd0e232571feae1c9079573
+  sickn33AntigravitySkillsRev: bbfe09c18ead0e7ff2899d5aec29f35d8ca03bca
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: ca7af700a3d8888e63bb819f6f118e2aec42c2db
   dailyDevSkillsRev: 192dae2b904fd4a4e8b9d212474f34c70710e28d
