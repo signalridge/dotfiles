@@ -246,7 +246,7 @@ Left: `session`
 
 Right: `git` | `AI agents`
 
-`AI agents` is provided by `~/.config/tmux/tmux2k-ai.sh`. It reports foreground `claude`, `codex`, and `opencode` sessions attached to tmux panes as stable dots, for example `󰚩 ●◇●`. `●`/`◆` mean an agent lifecycle hook marked that turn busy, and `○`/`◇` mean idle or unknown; diamonds mark the current window without changing the underlying busy state. The busy signal comes from `tmux-ai-agent-state` hooks, with a narrow fallback to Claude/Codex's visible "esc to interrupt" TUI status for already-running sessions that have not loaded hooks yet. It does not use tmux `window_activity`, generic pane content changes, keyboard input, CPU, or network heuristics.
+`AI agents` is provided by `~/.config/tmux/tmux2k-ai.sh`. It reports foreground `claude`, `codex`, and `opencode` sessions attached to tmux panes as stable dots, for example `󰚩 ■○■`. Non-current panes use `■` for busy and `□` for idle or unknown; the current pane uses `●` for busy and `○` for idle or unknown. The shape highlights the current window without changing the underlying busy state. The busy signal comes from `tmux-ai-agent-state` hooks, with a narrow fallback to Claude/Codex's visible "esc to interrupt" TUI status for already-running sessions that have not loaded hooks yet. It does not use tmux `window_activity`, generic pane content changes, keyboard input, CPU, or network heuristics.
 
 ---
 
