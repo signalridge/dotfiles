@@ -367,9 +367,11 @@ set -g copy-mode-match-style "fg=#282a36,bg=#f1fa8c"
 set -g copy-mode-current-match-style "fg=#282a36,bg=#ffb86c,bold"
 set -g copy-mode-mark-style "fg=#282a36,bg=#ff79c6"
 
-# -- AI agent status segment -----------------------------------------------
+# -- AI agent status segment -------------------------------------------------
 # Appended after tmux2k builds status-right so it sits at the right edge.
-# Uses powerline separator for visual continuity with the git segment.
+# The current window target is used only for shape highlighting; activity
+# state comes from agent lifecycle hooks or the agent's own running TUI status,
+# so switching windows cannot make an idle agent look active.
 set -ga status-right '#[fg=#f5c2e7,bg=#89dceb]#[fg=#1e1e2e,bg=#f5c2e7] #(~/.config/tmux/tmux2k-ai.sh #{session_name}:#{window_index}) '
 
 # -- Popup & Menu (tmux 3.4+) --------------------------------------------------

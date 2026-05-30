@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+# Best-effort lifecycle hook for tmux2k-ai.sh.
+#
+# Usage from agent hooks:
+#   tmux-ai-agent-state claude busy
+#   tmux-ai-agent-state claude idle
+#
+# The script intentionally never fails the caller. Claude and Codex run these
+# hooks inline with user workflows; status collection must not block prompts.
+set -u
+
+normalize_tty() {
+    local tty="$1"
+    tty="${tty#/dev/}"
+    printf '%s\n' "$tty"
+}
+
+agent_tool_for_command() {
+    local command_name="${1##*/}"
+
+    case "$command_name" in
+    claude)
+        printf '%s\n' "claude"
+        ;;
+    codex | codex-aarch64-* | codex-x86_64-*)
+        printf '%s\n' "codex"
+        ;;
+    opencode)
+        printf '%s\n' "opencode"
+        ;;
+    *)
+        return 1
+        ;;
+    esac
+}
+
+state_file_for_pane() {
+    local cache_dir="$1"
+    local pane_id="$2"
+    local safe_pane_id
+
+    safe_pane_id="${pane_id//[^[:alnum:]_.-]/_}"
+    printf '%s/%s.state\n' "$cache_dir" "$safe_pane_id"
+}
+
+read_hook_input() {
+    [[ -t 0 ]] && return 0
+    cat 2>/dev/null || true
+}
+
+json_string_field() {
+    local input="$1"
+    local field="$2"
+    local value
+
+    value=$(printf '%s\n' "$input" |
+        sed -nE 's/.*"'"$field"'"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\1/p' |
+        head -n 1)
+    [[ -n "$value" ]] || return 1
+
+    printf '%s\n' "$value" |
+        sed -e 's#\\/#/#g' -e 's#\\"#"#g' -e 's#\\\\#\\#g'
+}
+
+one_line_value() {
+    local value="$1"
+    value="${value//$'\n'/ }"
+    value="${value//$'\r'/ }"
+    printf '%s\n' "$value"
+}
+
+line_count_for_file() {
+    local path="$1"
+    local line_count
+
+    [[ -n "$path" && -r "$path" ]] || return 1
+    line_count=$(wc -l <"$path" 2>/dev/null | tr -d '[:space:]' || true)
+    [[ "$line_count" =~ ^[0-9]+$ ]] || return 1
+    printf '%s\n' "$line_count"
+}
+
+foreground_agent_pid_for_tty() {
+    local expected_tool="$1"
+    local pane_tty="$2"
+    local normalized_pane_tty pid _ppid stat tty command_name tool
+
+    normalized_pane_tty=$(normalize_tty "$pane_tty")
+    while read -r pid _ppid stat tty command_name; do
+        [[ "$stat" == *+* ]] || continue
+        [[ "$(normalize_tty "$tty")" == "$normalized_pane_tty" ]] || continue
+        if ! tool=$(agent_tool_for_command "$command_name"); then
+            continue
+        fi
+        [[ "$tool" == "$expected_tool" ]] || continue
+        printf '%s\n' "$pid"
+        return 0
+    done < <(ps -eo pid=,ppid=,stat=,tty=,comm= 2>/dev/null || true)
+
+    return 1
+}
+
+write_state() {
+    local tool="$1"
+    local state="$2"
+    local hook_input="$3"
+    local pane_id="${TMUX_PANE:-}"
+    local server_pid pane_tty pid cache_dir state_file now
+    local transcript_path turn_id transcript_line_count
+
+    [[ "$tool" =~ ^(claude|codex|opencode)$ ]] || return 0
+    [[ "$state" =~ ^(busy|idle)$ ]] || return 0
+    [[ -n "$pane_id" ]] || return 0
+    command -v tmux >/dev/null 2>&1 || return 0
+
+    server_pid=$(tmux display-message -p '#{pid}' 2>/dev/null || true)
+    cache_dir="${TMPDIR:-/tmp}/tmux2k-ai-${server_pid:-default}"
+    mkdir -p "$cache_dir" 2>/dev/null || return 0
+
+    pane_tty=$(tmux display-message -p -t "$pane_id" '#{pane_tty}' 2>/dev/null || true)
+    [[ -n "$pane_tty" ]] || return 0
+
+    pid=$(foreground_agent_pid_for_tty "$tool" "$pane_tty" 2>/dev/null || true)
+    [[ -n "$pid" ]] || return 0
+
+    now=$(date +%s)
+    state_file=$(state_file_for_pane "$cache_dir" "$pane_id")
+
+    if [[ -n "$hook_input" ]]; then
+        transcript_path=$(json_string_field "$hook_input" "transcript_path" 2>/dev/null || true)
+        turn_id=$(json_string_field "$hook_input" "turn_id" 2>/dev/null || true)
+        transcript_path=$(one_line_value "$transcript_path")
+        turn_id=$(one_line_value "$turn_id")
+        transcript_line_count=$(line_count_for_file "$transcript_path" 2>/dev/null || true)
+    fi
+
+    {
+        printf 'tool=%s\n' "$tool"
+        printf 'state=%s\n' "$state"
+        printf 'pid=%s\n' "$pid"
+        printf 'updated_at=%s\n' "$now"
+        [[ -n "${transcript_path:-}" ]] && printf 'transcript_path=%s\n' "$transcript_path"
+        [[ -n "${turn_id:-}" ]] && printf 'turn_id=%s\n' "$turn_id"
+        [[ -n "${transcript_line_count:-}" ]] && printf 'transcript_line_count=%s\n' "$transcript_line_count"
+    } >"$state_file" 2>/dev/null || true
+}
+
+main() {
+    local tool="${1:-}"
+    local state="${2:-}"
+    local hook_input
+
+    hook_input=$(read_hook_input)
+    write_state "$tool" "$state" "$hook_input"
+}
+
+main "$@" || true
+exit 0
