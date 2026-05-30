@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/lib/common"
 
-require_cmd npx
+require_cmd bunx
 
 CONTEXT7_PACKAGE="@upstash/context7-mcp@2.1.1"
 CONTEXT7_GOPASS_PATH="context7/api_key"
@@ -23,7 +23,7 @@ fi
 if [[ -n "$context7_api_key" ]]; then
     export CONTEXT7_API_KEY="$context7_api_key"
     # Keep key in env only to avoid exposing it through argv/process list.
-    exec npx -y "$CONTEXT7_PACKAGE" "$@"
+    exec bunx "$CONTEXT7_PACKAGE" "$@"
 fi
 
-exec npx -y "$CONTEXT7_PACKAGE" "$@"
+exec bunx "$CONTEXT7_PACKAGE" "$@"

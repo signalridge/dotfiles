@@ -2,8 +2,15 @@
 # https://mise.jdx.dev/configuration.html
 
 [tools]
-# Node.js (used for global JS CLIs via npm/npx)
+# Node.js — still REQUIRED at runtime even after the bun migration: globally
+# installed JS CLIs keep their `#!/usr/bin/env node` shebangs, so `node` must
+# stay on PATH. bun replaces npx (MCP wrappers) and the npm install backend,
+# not the Node runtime itself.
 node = "lts"
+
+# Bun — runs MCP servers via `bunx` (see ~/.local/bin/mcp-*) and, via
+# settings.npm.package_manager below, becomes the installer for all `npm:` CLIs.
+bun = "latest"
 
 # Terraform (replaces tenv)
 terraform = "latest"
@@ -88,6 +95,17 @@ trusted_config_paths = [
 # Always keep latest versions
 always_keep_download = false
 always_keep_install = false
+
+[settings.npm]
+# Use bun as the installer/runner for every `npm:` backend tool above.
+# Unified toolchain + much faster installs. Node still provides the runtime.
+# CAVEAT: this switch is global (no per-package opt-out). bun also skips
+# package lifecycle scripts by default — if a tool that downloads a binary in
+# postinstall goes missing after `mise install`, add `bun_args = "--trust"` to
+# that specific tool entry. Known risk: @google/gemini-cli has bun-install
+# issues; verify `gemini --version` after switching, and revert this to "npm"
+# if it breaks.
+package_manager = "bun"
 
 [env]
 # Add local bin to PATH

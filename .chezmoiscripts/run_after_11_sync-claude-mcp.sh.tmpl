@@ -177,7 +177,7 @@ ensure_user_mcp_http() {
     esac
 }
 
-ensure_user_mcp_json "slack" '{"command":"npx","args":["-y","@anthropic/mcp-server-slack"],"env":{"SLACK_BOT_TOKEN":"${SLACK_BOT_TOKEN}","SLACK_TEAM_ID":"${SLACK_TEAM_ID}"}}'
+ensure_user_mcp_json "slack" '{"command":"bunx","args":["@anthropic/mcp-server-slack"],"env":{"SLACK_BOT_TOKEN":"${SLACK_BOT_TOKEN}","SLACK_TEAM_ID":"${SLACK_TEAM_ID}"}}'
 
 ensure_user_mcp_json "slack-explorer" '{"command":"docker","args":["run","-i","--rm","--pull","always","ghcr.io/shibayu36/slack-explorer-mcp:latest"],"env":{"SLACK_USER_TOKEN":"${SLACK_USER_TOKEN}"}}'
 

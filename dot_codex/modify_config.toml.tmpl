@@ -149,8 +149,8 @@ base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 # =============================================================================
 
 [mcp_servers.notion]
-command = "npx"
-args = ["-y", "@anthropic/mcp-server-notion"]
+command = "bunx"
+args = ["@anthropic/mcp-server-notion"]
 [mcp_servers.notion.env]
 NOTION_API_KEY = "${NOTION_API_KEY}"
 
@@ -170,8 +170,8 @@ startup_timeout_sec = 30
 AQUA_GLOBAL_CONFIG = "{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml"
 
 [mcp_servers.slack]
-command = "npx"
-args = ["-y", "@anthropic/mcp-server-slack"]
+command = "bunx"
+args = ["@anthropic/mcp-server-slack"]
 [mcp_servers.slack.env]
 SLACK_BOT_TOKEN = "${SLACK_BOT_TOKEN}"
 SLACK_TEAM_ID = "${SLACK_TEAM_ID}"
