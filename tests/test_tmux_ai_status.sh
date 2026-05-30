@@ -222,6 +222,18 @@ assert_file_contains "$state_dir/_2.state" "state=busy"
 assert_file_contains "$state_dir/_2.state" "pid=222"
 assert_equals "$(run_status s:2)" "AI ●◆●"
 
+hook_transcript="$TMP_ROOT/hook-transcript.jsonl"
+printf '%s\n' '{"event":"one"}' '{"event":"two"}' >"$hook_transcript"
+printf '{"transcript_path":"%s","turn_id":"turn-hook"}\n' "$hook_transcript" |
+    TMUX_PANE=%2 \
+        PATH="$TMP_ROOT/bin:$PATH" \
+        TMPDIR="$TMP_ROOT/tmp" \
+        bash "$ROOT/dot_local/bin/executable_tmux-ai-agent-state" codex busy
+assert_file_contains "$state_dir/_2.state" "transcript_path=$hook_transcript"
+assert_file_contains "$state_dir/_2.state" "turn_id=turn-hook"
+assert_file_contains "$state_dir/_2.state" "transcript_line_count=2"
+assert_equals "$(run_status s:2)" "AI ●◆●"
+
 TMUX_PANE=%2 \
     PATH="$TMP_ROOT/bin:$PATH" \
     TMPDIR="$TMP_ROOT/tmp" \
@@ -232,5 +244,40 @@ assert_equals "$(run_status s:2)" "AI ●◇●"
 TMUX_AI_BUSY_PANES="%2"
 assert_equals "$(run_status s:2)" "AI ●◇●"
 unset TMUX_AI_BUSY_PANES
+
+codex_abort_transcript="$TMP_ROOT/codex-abort.jsonl"
+cat >"$codex_abort_transcript" <<'EOF'
+{"type":"event_msg","msg":{"type":"task_started","turn_id":"turn-codex"}}
+{"type":"event_msg","msg":{"type":"turn_aborted","turn_id":"turn-codex","reason":"interrupted"}}
+EOF
+cat >"$state_dir/_2.state" <<EOF
+tool=codex
+state=busy
+pid=222
+updated_at=100
+transcript_path=$codex_abort_transcript
+turn_id=turn-codex
+transcript_line_count=1
+EOF
+assert_equals "$(run_status s:2)" "AI ●◇●"
+
+TMUX_AI_BUSY_PANES="%2"
+assert_equals "$(run_status s:2)" "AI ●◆●"
+unset TMUX_AI_BUSY_PANES
+
+claude_abort_transcript="$TMP_ROOT/claude-abort.jsonl"
+cat >"$claude_abort_transcript" <<'EOF'
+{"type":"user","message":{"content":"run sleep"}}
+{"type":"user","message":{"content":"[Request interrupted by user]"}}
+EOF
+cat >"$state_dir/_1.state" <<EOF
+tool=claude
+state=busy
+pid=111
+updated_at=100
+transcript_path=$claude_abort_transcript
+transcript_line_count=1
+EOF
+assert_equals "$(run_status s:1)" "AI ◇○●"
 
 echo "test_tmux_ai_status: OK"

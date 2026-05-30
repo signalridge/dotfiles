@@ -43,6 +43,42 @@ state_file_for_pane() {
     printf '%s/%s.state\n' "$cache_dir" "$safe_pane_id"
 }
 
+read_hook_input() {
+    [[ -t 0 ]] && return 0
+    cat 2>/dev/null || true
+}
+
+json_string_field() {
+    local input="$1"
+    local field="$2"
+    local value
+
+    value=$(printf '%s\n' "$input" |
+        sed -nE 's/.*"'"$field"'"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\1/p' |
+        head -n 1)
+    [[ -n "$value" ]] || return 1
+
+    printf '%s\n' "$value" |
+        sed -e 's#\\/#/#g' -e 's#\\"#"#g' -e 's#\\\\#\\#g'
+}
+
+one_line_value() {
+    local value="$1"
+    value="${value//$'\n'/ }"
+    value="${value//$'\r'/ }"
+    printf '%s\n' "$value"
+}
+
+line_count_for_file() {
+    local path="$1"
+    local line_count
+
+    [[ -n "$path" && -r "$path" ]] || return 1
+    line_count=$(wc -l <"$path" 2>/dev/null | tr -d '[:space:]' || true)
+    [[ "$line_count" =~ ^[0-9]+$ ]] || return 1
+    printf '%s\n' "$line_count"
+}
+
 foreground_agent_pid_for_tty() {
     local expected_tool="$1"
     local pane_tty="$2"
@@ -66,8 +102,10 @@ foreground_agent_pid_for_tty() {
 write_state() {
     local tool="$1"
     local state="$2"
+    local hook_input="$3"
     local pane_id="${TMUX_PANE:-}"
     local server_pid pane_tty pid cache_dir state_file now
+    local transcript_path turn_id transcript_line_count
 
     [[ "$tool" =~ ^(claude|codex|opencode)$ ]] || return 0
     [[ "$state" =~ ^(busy|idle)$ ]] || return 0
@@ -86,19 +124,33 @@ write_state() {
 
     now=$(date +%s)
     state_file=$(state_file_for_pane "$cache_dir" "$pane_id")
+
+    if [[ -n "$hook_input" ]]; then
+        transcript_path=$(json_string_field "$hook_input" "transcript_path" 2>/dev/null || true)
+        turn_id=$(json_string_field "$hook_input" "turn_id" 2>/dev/null || true)
+        transcript_path=$(one_line_value "$transcript_path")
+        turn_id=$(one_line_value "$turn_id")
+        transcript_line_count=$(line_count_for_file "$transcript_path" 2>/dev/null || true)
+    fi
+
     {
         printf 'tool=%s\n' "$tool"
         printf 'state=%s\n' "$state"
         printf 'pid=%s\n' "$pid"
         printf 'updated_at=%s\n' "$now"
+        [[ -n "${transcript_path:-}" ]] && printf 'transcript_path=%s\n' "$transcript_path"
+        [[ -n "${turn_id:-}" ]] && printf 'turn_id=%s\n' "$turn_id"
+        [[ -n "${transcript_line_count:-}" ]] && printf 'transcript_line_count=%s\n' "$transcript_line_count"
     } >"$state_file" 2>/dev/null || true
 }
 
 main() {
     local tool="${1:-}"
     local state="${2:-}"
+    local hook_input
 
-    write_state "$tool" "$state"
+    hook_input=$(read_hook_input)
+    write_state "$tool" "$state" "$hook_input"
 }
 
 main "$@" || true
