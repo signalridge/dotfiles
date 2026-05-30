@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/lib/common"
 
-require_cmd npx
+require_cmd bunx
 
 PG_DSN_GOPASS_PATH="postgres/api_key"
 
@@ -28,4 +28,4 @@ fi
 # Upstream server-postgres currently requires DSN as argv[1].
 # This means DSN may be visible in process listings on the local machine.
 log_warn "server-postgres requires DSN as argv; DSN may be visible in process list"
-exec npx -y @modelcontextprotocol/server-postgres@0.6.2 "$PG_DSN" "$@"
+exec bunx @modelcontextprotocol/server-postgres@0.6.2 "$PG_DSN" "$@"
