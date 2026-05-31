@@ -244,6 +244,10 @@ pane_is_busy() {
         return 0
         ;;
     idle)
+        # Session-start or resume hooks can write an idle baseline before Codex
+        # begins an automatic continuation. If the live TUI footer says the
+        # turn is interruptible, treat that as the fresher signal.
+        pane_tui_looks_busy "$pane_id" && return 0
         return 1
         ;;
     esac
