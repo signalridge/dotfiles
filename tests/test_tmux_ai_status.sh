@@ -260,8 +260,12 @@ assert_file_contains "$state_dir/_2.state" "state=idle"
 assert_equals "$(run_status s:2)" "AI ■○■"
 
 TMUX_AI_BUSY_PANES="%2"
-assert_equals "$(run_status s:2)" "AI ■○■"
+assert_equals "$(run_status s:2)" "AI ■●■"
 unset TMUX_AI_BUSY_PANES
+
+TMUX_AI_STALE_BUSY_PANES="%2"
+assert_equals "$(run_status s:2)" "AI ■○■"
+unset TMUX_AI_STALE_BUSY_PANES
 
 codex_abort_transcript="$TMP_ROOT/codex-abort.jsonl"
 cat >"$codex_abort_transcript" <<'EOF'
