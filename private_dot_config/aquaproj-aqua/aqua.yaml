@@ -21,9 +21,9 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.157
+  - name: anthropics/claude-code@v2.1.158
   - name: openai/codex@rust-v0.135.0
-  - name: anomalyco/opencode@v1.15.12
+  - name: anomalyco/opencode@v1.15.13
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
