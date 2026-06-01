@@ -7,7 +7,7 @@ versions:
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
   aquaVersion: v2.59.1
-  nixIndexDb: 2026-05-24-062331
+  nixIndexDb: 2026-05-31-064259
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: 0818067b4ecad18c234b2ae427cc44f2053792d4
   claudeWshobsonAgentsSha256: d4324ca3724f9946cd1af40c66e16a143d620ed06f4eb67519809df6ecda961e
@@ -16,7 +16,7 @@ versions:
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35
   uiUxProMaxSkillSha256: 7c51fb0ab28651f620e873632d0109f364942c54c9e77a8819a1e2cedec424ea
   openaiSkillsRev: a8924c2a35cfa290458852c4fad17c9133054c2e
-  huggingfaceSkillsRev: c471b5e941d69fc4a99cdbc09497d5b338f07a0e
+  huggingfaceSkillsRev: 49abf82b2ef2ff2bcc6ca072aac0fe8627390a1d
   getsentrySkillsRev: b10e2db21d3165de1904bdf3fa64285016765fe5
   trailofbitsSkillsRev: c94841be3deae8a880fa1a9078979adac7ca3dbc
   cloudflareSkillsRev: 60147cbb773649eadca89cee92b4e0caf02234b4
@@ -26,7 +26,7 @@ versions:
   supabaseAgentSkillsRev: 577e626421fdb691902f158181e467a3dbf99410
   expoSkillsRev: fdd3df12151a208853fe540ffea9a67773446377
   microsoftSkillsRev: 684313b5263c04177dd0e232571feae1c9079573
-  sickn33AntigravitySkillsRev: 472f39688b1b4e1afacef0d9fa2d7b40e7dc7c42
+  sickn33AntigravitySkillsRev: 22710e9767607233281cae3298a92d30b55406d5
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: ca7af700a3d8888e63bb819f6f118e2aec42c2db
   dailyDevSkillsRev: 192dae2b904fd4a4e8b9d212474f34c70710e28d
