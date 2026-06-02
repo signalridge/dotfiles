@@ -7,10 +7,10 @@ registries:
     path: registry.yaml
 packages:
   # ----- third-party registry (see registry.yaml) -----
-  - name: signalridge/slipway@v0.3.4
+  - name: signalridge/slipway@v0.4.1
     registry: third-party
   # ----- standard registry -----
-  - name: nektos/act@v0.2.88
+  - name: nektos/act@v0.2.89
   - name: FiloSottile/age@v1.3.1
   - name: asciinema/asciinema@v3.2.0
   - name: atuinsh/atuin@v18.16.1
@@ -22,7 +22,7 @@ packages:
     update:
       enabled: false
   - name: anthropics/claude-code@v2.1.159
-  - name: openai/codex@rust-v0.135.0
+  - name: openai/codex@rust-v0.136.0
   - name: anomalyco/opencode@v1.15.13
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
@@ -80,7 +80,7 @@ packages:
   - name: mvdan/sh@v3.13.1
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.15.15
-  - name: astral-sh/ty@0.0.40
+  - name: astral-sh/ty@0.0.42
   - name: j178/prek@v0.4.3
   - name: golang.org/x/tools/gopls@v0.22.0
   - name: golangci/golangci-lint@v2.12.2
@@ -106,7 +106,7 @@ packages:
   - name: kubecolor/kubecolor@v0.6.0
   - name: ahmetb/kubectx@v0.11.0
   - name: kubernetes-sigs/krew@v0.5.0
-  - name: aquasecurity/trivy@v0.70.0
+  - name: aquasecurity/trivy@v0.71.0
   - name: anchore/syft@v1.44.0
   - name: anchore/grype@v0.112.0
   - name: LucasPickering/slumber@v5.3.0
