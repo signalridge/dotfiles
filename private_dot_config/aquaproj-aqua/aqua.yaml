@@ -21,7 +21,7 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.159
+  - name: anthropics/claude-code@v2.1.161
   - name: openai/codex@rust-v0.136.0
   - name: anomalyco/opencode@v1.15.13
   - name: direnv/direnv@v2.37.1
@@ -107,11 +107,11 @@ packages:
   - name: ahmetb/kubectx@v0.11.0
   - name: kubernetes-sigs/krew@v0.5.0
   - name: aquasecurity/trivy@v0.71.0
-  - name: anchore/syft@v1.44.0
+  - name: anchore/syft@v1.45.0
   - name: anchore/grype@v0.112.0
   - name: LucasPickering/slumber@v5.3.0
   - name: charmbracelet/gum@v0.17.0
   - name: charmbracelet/vhs@v0.11.0
-  - name: terraform-linters/tflint@v0.62.1
+  - name: terraform-linters/tflint@v0.63.0
   - name: quarto-dev/quarto-cli@v1.9.38
   - name: typst/typst@v0.14.2
