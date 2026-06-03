@@ -9,8 +9,8 @@ versions:
   aquaVersion: v2.59.1
   nixIndexDb: 2026-05-31-064259
   paperlib: 3.1.12
-  claudeWshobsonAgentsRev: 0818067b4ecad18c234b2ae427cc44f2053792d4
-  claudeWshobsonAgentsSha256: d4324ca3724f9946cd1af40c66e16a143d620ed06f4eb67519809df6ecda961e
+  claudeWshobsonAgentsRev: 767d969a73ce6608d10ac713e52be9ac7f061ab9
+  claudeWshobsonAgentsSha256: 36c276b8bafcf6f7be5295b014d546de38907bb9a9da5661921ccb34c2d7563c
   claudeAnthropicsSkillsRev: da20c92503b2e8ff1cf28ca81a0df4673debdbf7
   claudeAnthropicsSkillsSha256: 586e3fccffbf1d033c76f14deb9b3ebb7cdf91960b9b72cee9038c3c21c57b79
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35
@@ -23,10 +23,10 @@ versions:
   vercelLabsAgentSkillsRev: 4ec6f84b61cd3c931046c3e6e398f3ae7de372f7
   vercelLabsNextSkillsRev: dc1de9caf7612d73f56a8dec3cb1bd6c9ec096b9
   vercelLabsAgentBrowserRev: 90050f2913159875e2c3719e424746396ccb3cbf
-  supabaseAgentSkillsRev: 577e626421fdb691902f158181e467a3dbf99410
+  supabaseAgentSkillsRev: 759fddfc29ebc96b88b4bebb89ebb484a39aa6e2
   expoSkillsRev: fdd3df12151a208853fe540ffea9a67773446377
-  microsoftSkillsRev: 2048f2d41624688fffd7cdeb7286a72423e5295e
-  sickn33AntigravitySkillsRev: df309ba1c51f7aefddfb0cdc3457c7345595e281
+  microsoftSkillsRev: 5e4ea8a892c5bffcf1b488903751135e4abc505f
+  sickn33AntigravitySkillsRev: 99b7d3b95757ab991b01244ff5015c267b8f1550
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: ca7af700a3d8888e63bb819f6f118e2aec42c2db
   dailyDevSkillsRev: 192dae2b904fd4a4e8b9d212474f34c70710e28d
