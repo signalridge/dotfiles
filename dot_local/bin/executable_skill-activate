@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+#
+# skill-activate — a live on/off panel for curating which library skills are
+# active, per scope. Navigate with arrows, press Tab to flip a skill on/off
+# (takes effect immediately), Enter/Esc to leave.
+#
+# Master library (nested folders = categories):
+#   ~/.agents/skills/<category>/<skill>/SKILL.md
+# Active sets the tools actually read (flat symlinks into the library):
+#   user    : ~/.claude/skills/   (+ ~/.codex/skills/  with --codex)
+#   project : ./.claude/skills/   (+ ./.agents/skills/ with --codex)
+#
+# Usage:
+#   skill-activate [user|project] [--codex]   live on/off panel (default: user)
+#   skill-activate [scope] --active           list active skills for the scope
+#   skill-activate [scope] --list             print the rows (no TUI)
+#   skill-activate [scope] --clear            deactivate everything for the scope
+
+set -euo pipefail
+
+library="${SKILL_LIBRARY:-$HOME/.agents/skills}"
+scope="user"
+with_codex=0
+mode="pick"
+internal=""
+tname=""
+
+# Internal sub-commands invoked by the fzf key-bindings (kept out of --help).
+if [ "${1:-}" = "__rows" ] || [ "${1:-}" = "__toggle" ]; then
+  internal="$1"
+  shift
+  if [ "$internal" = "__toggle" ]; then
+    tname="$1"
+    shift
+  fi
+  scope="${1:-user}"
+  with_codex="${2:-0}"
+else
+  while [ $# -gt 0 ]; do
+    case "$1" in
+    user | project) scope="$1" ;;
+    --codex) with_codex=1 ;;
+    --active) mode="active" ;;
+    --list) mode="list" ;;
+    --clear) mode="clear" ;;
+    -h | --help)
+      sed -n '3,22p' "$0" | sed 's/^#//; s/^ //'
+      exit 0
+      ;;
+    *)
+      echo "skill-activate: unknown argument '$1'" >&2
+      exit 2
+      ;;
+    esac
+    shift
+  done
+fi
+
+case "$scope" in
+user)
+  claude_dir="$HOME/.claude/skills"
+  codex_dir="$HOME/.codex/skills"
+  ;;
+project)
+  claude_dir="$PWD/.claude/skills"
+  codex_dir="$PWD/.agents/skills"
+  ;;
+*)
+  echo "skill-activate: scope must be 'user' or 'project'" >&2
+  exit 2
+  ;;
+esac
+
+[ -d "$library" ] || {
+  echo "skill-activate: library not found: $library" >&2
+  exit 1
+}
+
+# A scope dir that is itself a symlink points back at the library; writing into
+# it would corrupt the library. Require a real, curated directory.
+require_real_dir() {
+  if [ -L "$1" ]; then
+    echo "skill-activate: $1 is a symlink -> $(readlink "$1")" >&2
+    echo "  It must be a real curated dir. Convert once: rm '$1' && mkdir -p '$1'" >&2
+    exit 1
+  fi
+  mkdir -p "$1"
+}
+
+# One row per skill: name <TAB> category <TAB> skilldir <TAB> description
+index() {
+  find "$library" -name SKILL.md -not -path '*/.system/*' 2>/dev/null | sort | while IFS= read -r md; do
+    sdir=${md%/SKILL.md}
+    name=${sdir##*/}
+    rel=${sdir#"$library"/}
+    cat=${rel%/*}
+    [ "$cat" = "$rel" ] && cat="(top)"
+    desc=$(awk '/^description:/{sub(/^description:[ \t]*/,""); gsub(/[|>"]/,""); if($0!=""){print;exit} getline; sub(/^[ \t]*/,""); gsub(/"/,""); print; exit}' "$md" 2>/dev/null | cut -c1-66)
+    printf '%s\t%s\t%s\t%s\n' "$name" "$cat" "$sdir" "$desc"
+  done
+}
+
+active_mark() { if [ -e "$claude_dir/$1" ]; then printf '●'; else printf '○'; fi; }
+
+# Picker rows: name <TAB> "● category  name  description"
+rows() {
+  index | while IFS=$'\t' read -r name cat sdir desc; do
+    printf '%s\t%s  %-24s %-30s %s\n' "$name" "$(active_mark "$name")" "$cat" "$name" "$desc"
+  done
+}
+
+toggle_by_name() { # name — flip the symlink for one skill, silently
+  local name="$1" sdir
+  sdir=$(index | awk -F'\t' -v n="$name" '$1==n{print $3}')
+  [ -n "$sdir" ] || return 0
+  if [ -e "$claude_dir/$name" ]; then
+    rm -f "$claude_dir/$name"
+    [ "$with_codex" = 1 ] && rm -f "$codex_dir/$name"
+  else
+    ln -sfn "$sdir" "$claude_dir/$name"
+    if [ "$with_codex" = 1 ]; then
+      [ -L "$codex_dir" ] || { mkdir -p "$codex_dir"; ln -sfn "$sdir" "$codex_dir/$name"; }
+    fi
+  fi
+}
+
+# fzf-binding entry points
+case "$internal" in
+__rows)
+  rows
+  exit 0
+  ;;
+__toggle)
+  require_real_dir "$claude_dir" >/dev/null 2>&1 || exit 0
+  toggle_by_name "$tname"
+  exit 0
+  ;;
+esac
+
+case "$mode" in
+active)
+  [ -d "$claude_dir" ] && find "$claude_dir" -maxdepth 1 -type l 2>/dev/null | sed "s#$claude_dir/#  ●  #" | sort
+  exit 0
+  ;;
+list)
+  rows | cut -f2-
+  exit 0
+  ;;
+clear)
+  require_real_dir "$claude_dir"
+  find "$claude_dir" -maxdepth 1 -type l -delete 2>/dev/null || true
+  if [ "$with_codex" = 1 ] && [ ! -L "$codex_dir" ] && [ -d "$codex_dir" ]; then
+    find "$codex_dir" -maxdepth 1 -type l -delete 2>/dev/null || true
+  fi
+  echo "cleared $scope active skills ($claude_dir)"
+  exit 0
+  ;;
+esac
+
+# ---- interactive live on/off panel ----
+command -v fzf >/dev/null 2>&1 || {
+  echo "skill-activate: fzf not found" >&2
+  exit 1
+}
+require_real_dir "$claude_dir"
+self=$(command -v "$0" 2>/dev/null || true)
+[ -x "$self" ] || self="$0"
+home_short=${claude_dir/#$HOME/\~}
+cf=$with_codex
+
+rows | fzf \
+  --delimiter='\t' --with-nth='2..' \
+  --no-multi --cycle --reverse --height='100%' \
+  --header="$scope skills → $home_short   │   Tab: toggle on/off   Enter: done   ● on  ○ off" \
+  --header-first \
+  --bind="tab:execute-silent($self __toggle {1} $scope $cf)+reload-sync($self __rows $scope $cf)" \
+  --bind="space:execute-silent($self __toggle {1} $scope $cf)+reload-sync($self __rows $scope $cf)" \
+  --bind="enter:accept" \
+  --bind="esc:accept" \
+  --preview="sed -n '1,40p' \"\$(find '$library' -path '*/{1}/SKILL.md' -not -path '*/.system/*' 2>/dev/null | head -1)\"" \
+  --preview-window='right,56%,wrap' \
+  >/dev/null || true
+
+n=$(find "$claude_dir" -maxdepth 1 -type l 2>/dev/null | wc -l | tr -d ' ')
+echo "$scope: $n skill(s) active in $home_short"
