@@ -1,6 +1,6 @@
 ---
 name: remotion
-description: Build, run, and render videos programmatically with Remotion (React-based video). Use when scaffolding a Remotion project, writing compositions/animations, previewing in Remotion Studio, rendering to MP4/WebM/GIF/stills, embedding <Player>, or troubleshooting Remotion + Bun. Triggers - "Remotion", "create-video", "remotion studio", "remotion render", "programmatic video", "React video", "做视频", "程序化视频", "用 React 生成视频", "渲染 mp4".
+description: Build, run, and render videos programmatically with Remotion (React-based video). Use when scaffolding a Remotion project, writing compositions/animations, previewing in Remotion Studio, rendering to MP4/WebM/GIF/stills, embedding the Remotion Player, or troubleshooting Remotion + Bun. Triggers - "Remotion", "create-video", "remotion studio", "remotion render", "programmatic video", "React video", "做视频", "程序化视频", "用 React 生成视频", "渲染 mp4".
 ---
 
 # Remotion

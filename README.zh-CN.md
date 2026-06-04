@@ -278,9 +278,10 @@ pre-commit run --all-files
 
 skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 
-- [wshobson/agents](https://github.com/wshobson/agents)
-- [anthropics/skills](https://github.com/anthropics/skills)
-- 社区多语言 Humanizer 套件（`humanizer-en`、`humanizer-zh`、`humanizer-ja`）
+- 通用工程 skills 来源，例如 [wshobson/agents](https://github.com/wshobson/agents)、[anthropics/skills](https://github.com/anthropics/skills)、[openai/skills](https://github.com/openai/skills)
+- Hugging Face、Cloudflare、Vercel、Supabase、Expo、Microsoft 以及精选社区仓库的 vendor/platform skills
+- Go、Rust、Swift、TypeScript/JavaScript、Zig 语言套件
+- social、writing、media skills，包括 `xurl`、`x-create`、`daily.dev`、Reddit、Remotion 和 Humanizer 变体（`humanizer-en`、`qu-ai-wei`、`humanizer-ja`）
 
 同步后统一落到 `~/.harnesses/skills` 共享 harness 库；实际启用的 symlink 由 `skill-activate` 管理。
 
@@ -311,9 +312,10 @@ skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 
 `chezmoi external` 会同步这些来源的精选 skills：
 
-- `wshobson/agents`
-- `anthropics/skills`
-- 多语言 Humanizer 社区来源（`humanizer-en`、`humanizer-zh`、`humanizer-ja`）
+- 通用工程 skills（`wshobson/agents`、`anthropics/skills`、`openai/skills`）
+- vendor/platform skills（Hugging Face、Cloudflare、Vercel、Supabase、Expo、Microsoft 与精选社区仓库）
+- Go、Rust、Swift、TypeScript/JavaScript、Zig 语言套件
+- social、writing、media skills，包括 `xurl`、`x-create`、`daily.dev`、Reddit、Remotion 和 Humanizer 变体（`humanizer-en`、`qu-ai-wei`、`humanizer-ja`）
 
 最终统一到 `~/.harnesses/skills` 共享 harness 库；实际启用的 symlink 由 `skill-activate` 管理。
 
