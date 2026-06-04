@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 #
-# Claude Code and Codex each read a CURATED set of per-skill symlinks managed
-# by `skill-activate`, not a single symlink to the whole ~/.harnesses/skills
-# library. Ensure both user-level dirs are real directories (convert any
-# leftover whole-dir symlink) and leave their contents alone. Empty by default
-# → no user-level skills are active until you pick them. Project-level sets
-# live in each project's ./.claude/skills and ./.harnesses/skills.
+# Keep Claude Code and Codex user-level skill dirs as real directories, not
+# leftover whole-dir symlinks to the shared ~/.harnesses/skills library.
+# `skill-activate` intentionally does not manage these user-level dirs; it only
+# writes per-project symlinks under the current directory's ./.claude/skills and
+# ./.codex/skills.
 
 set -euo pipefail
 
