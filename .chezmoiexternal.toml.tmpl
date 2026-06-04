@@ -19,27 +19,22 @@
     refreshPeriod = "168h"
 
 # ==============================================================================
-# Shared AI Skills (Claude Code + Codex CLI)
-#
-# All skills land FLAT at ~/.agents/skills/<skill>/SKILL.md (no collection
-# namespace dirs). This is the single layout both tools discover natively:
-#   - Claude Code only finds DIRECT children ~/.claude/skills/<skill>/ and does
-#     NOT recurse, so the flat layout is required for it to see every skill
-#     (~/.claude/skills is a single symlink -> ~/.agents/skills).
-#   - Codex scans .agents/skills (recursively) and is happy either way.
-#
-# Hardcoded skill lists in this template are the single source of truth. Each
-# external owns exactly one ~/.agents/skills/<skill> dir; targets must be unique
-# across every source (no two skills may share a name).
-# Agents and commands remain in ~/.claude/ (Claude Code specific).
+# Shared AI Tools Plugins
+# Skills are shared between Claude Code and Codex CLI via ~/.agents/skills/
+# Agents and commands remain in ~/.claude/ (Claude Code specific)
+# Hardcoded plugin/skill lists in this template are the single source of truth
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
+# Shared AI Skills (hardcoded baseline for Claude + Codex)
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
 # wshobson/agents plugins (skills only)
-# - Enumerated per-skill (was a per-plugin `skills/**` glob) so each skill can
-#   land flat at .agents/skills/<skill>. Curate by adding/removing list entries;
-#   omission replaces the old per-plugin `exclude` patterns.
-# - "<plugin>/<skill>" — plugin selects the archive subtree, skill is the target.
+# - Enumerated per-skill and nested as <plugin>/<skill> so the folder is the
+#   category. A per-plugin exact glob + `exclude` tripped chezmoi's
+#   "inconsistent state"; per-skill externals avoid it. Curate by adding /
+#   removing entries — the dropped skills are simply not listed.
 # ------------------------------------------------------------------------------
 {{- $wshobsonSkills := list
   "developer-essentials/auth-implementation-patterns"
@@ -127,7 +122,7 @@
 {{- $parts := splitList "/" $entry }}
 {{- $plugin := index $parts 0 }}
 {{- $skill := index $parts 1 }}
-[".agents/skills/{{ $skill }}"]
+[".agents/skills/{{ $plugin }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/wshobson/agents/archive/{{ $.versions.claudeWshobsonAgentsRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.claudeWshobsonAgentsSha256 }}"
@@ -141,7 +136,7 @@
 # ------------------------------------------------------------------------------
 # anthropics/skills (source-available, NOT open source)
 # License: https://github.com/anthropics/skills - see LICENSE.txt in each skill
-# Skills go to .agents/skills/{skill}/ (flat, shared)
+# Skills go to .agents/skills/anthropics/{skill}/ (Shared)
 # - Hardcoded skill list
 # ------------------------------------------------------------------------------
 {{- $anthropicsSkills := list
@@ -163,7 +158,7 @@
 }}
 
 {{- range $skill := $anthropicsSkills }}
-[".agents/skills/{{ $skill }}"]
+[".agents/skills/anthropics/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/anthropics/skills/archive/{{ $.versions.claudeAnthropicsSkillsRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.claudeAnthropicsSkillsSha256 }}"
@@ -176,7 +171,7 @@
 
 # ------------------------------------------------------------------------------
 # Ecosystem skills pack (official upstream, cross-domain)
-# - All land flat at .agents/skills/<skill>/
+# - Namespace: .agents/skills/ecosystem/
 # - Keep this focused on high-signal, actively maintained skills
 # ------------------------------------------------------------------------------
 
@@ -191,7 +186,7 @@
   "transcribe"
 }}
 {{- range $skill := $openaiCuratedSkills }}
-[".agents/skills/{{ $skill }}"]
+[".agents/skills/ecosystem/openai/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/openai/skills/archive/{{ $.versions.openaiSkillsRev }}.tar.gz"
     exact = true
@@ -215,7 +210,7 @@
   "hugging-face-cli"
 }}
 {{- range $skill := $huggingfaceSkills }}
-[".agents/skills/{{ $skill }}"]
+[".agents/skills/ecosystem/huggingface/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/huggingface/skills/archive/{{ $.versions.huggingfaceSkillsRev }}.tar.gz"
     exact = true
@@ -234,7 +229,7 @@
   "skill-scanner"
 }}
 {{- range $skill := $getsentrySkills }}
-[".agents/skills/{{ $skill }}"]
+[".agents/skills/ecosystem/getsentry/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/getsentry/skills/archive/{{ $.versions.getsentrySkillsRev }}.tar.gz"
     exact = true
@@ -247,7 +242,7 @@
 # ------------------------------------------------------------------------------
 # trailofbits/skills utility set (security/SAST/review skills delegated to slipway)
 # ------------------------------------------------------------------------------
-[".agents/skills/sharp-edges"]
+[".agents/skills/ecosystem/trailofbits/sharp-edges"]
     type = "archive"
     url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
     exact = true
@@ -255,7 +250,7 @@
     include = ["skills-*/plugins/sharp-edges/skills/sharp-edges/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/using-gh-cli"]
+[".agents/skills/ecosystem/trailofbits/using-gh-cli"]
     type = "archive"
     url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
     exact = true
@@ -263,7 +258,7 @@
     include = ["skills-*/plugins/gh-cli/skills/using-gh-cli/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/modern-python"]
+[".agents/skills/ecosystem/trailofbits/modern-python"]
     type = "archive"
     url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
     exact = true
@@ -280,7 +275,7 @@
   "web-perf"
 }}
 {{- range $skill := $cloudflareSkills }}
-[".agents/skills/{{ $skill }}"]
+[".agents/skills/ecosystem/cloudflare/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/cloudflare/skills/archive/{{ $.versions.cloudflareSkillsRev }}.tar.gz"
     exact = true
@@ -298,7 +293,7 @@
   "web-design-guidelines"
 }}
 {{- range $skill := $vercelSkills }}
-[".agents/skills/{{ $skill }}"]
+[".agents/skills/ecosystem/vercel-labs/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/vercel-labs/agent-skills/archive/{{ $.versions.vercelLabsAgentSkillsRev }}.tar.gz"
     exact = true
@@ -317,7 +312,7 @@
   "next-cache-components"
 }}
 {{- range $skill := $vercelNextSkills }}
-[".agents/skills/{{ $skill }}"]
+[".agents/skills/ecosystem/vercel-labs/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/vercel-labs/next-skills/archive/{{ $.versions.vercelLabsNextSkillsRev }}.tar.gz"
     exact = true
@@ -334,7 +329,7 @@
 # whatever agent-browser version mise installs. The CLI itself comes from the
 # `npm:agent-browser` entry in mise/config.toml.tmpl.
 # ------------------------------------------------------------------------------
-[".agents/skills/agent-browser"]
+[".agents/skills/ecosystem/vercel-labs/agent-browser"]
     type = "archive"
     url = "https://github.com/vercel-labs/agent-browser/archive/{{ $.versions.vercelLabsAgentBrowserRev }}.tar.gz"
     exact = true
@@ -345,7 +340,7 @@
 # ------------------------------------------------------------------------------
 # supabase/agent-skills database best practices
 # ------------------------------------------------------------------------------
-[".agents/skills/supabase-postgres-best-practices"]
+[".agents/skills/ecosystem/supabase/supabase-postgres-best-practices"]
     type = "archive"
     url = "https://github.com/supabase/agent-skills/archive/{{ $.versions.supabaseAgentSkillsRev }}.tar.gz"
     exact = true
@@ -356,7 +351,7 @@
 # ------------------------------------------------------------------------------
 # expo/skills deployment workflows
 # ------------------------------------------------------------------------------
-[".agents/skills/expo-deployment"]
+[".agents/skills/ecosystem/expo/expo-deployment"]
     type = "archive"
     url = "https://github.com/expo/skills/archive/{{ $.versions.expoSkillsRev }}.tar.gz"
     exact = true
@@ -364,7 +359,7 @@
     include = ["skills-*/plugins/expo-deployment/skills/expo-deployment/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/expo-cicd-workflows"]
+[".agents/skills/ecosystem/expo/expo-cicd-workflows"]
     type = "archive"
     url = "https://github.com/expo/skills/archive/{{ $.versions.expoSkillsRev }}.tar.gz"
     exact = true
@@ -375,7 +370,7 @@
 # ------------------------------------------------------------------------------
 # microsoft/skills azure deployment workflow
 # ------------------------------------------------------------------------------
-[".agents/skills/azd-deployment"]
+[".agents/skills/ecosystem/microsoft/azd-deployment"]
     type = "archive"
     url = "https://github.com/microsoft/skills/archive/{{ $.versions.microsoftSkillsRev }}.tar.gz"
     exact = true
@@ -386,7 +381,7 @@
 # ------------------------------------------------------------------------------
 # sickn33/antigravity-awesome-skills aws deployment workflow (non-MCP)
 # ------------------------------------------------------------------------------
-[".agents/skills/aws-serverless"]
+[".agents/skills/ecosystem/sickn33/aws-serverless"]
     type = "archive"
     url = "https://github.com/sickn33/antigravity-awesome-skills/archive/{{ $.versions.sickn33AntigravitySkillsRev }}.tar.gz"
     exact = true
@@ -396,9 +391,10 @@
 
 # ------------------------------------------------------------------------------
 # xdevplatform/xurl official X API skill
+# - Shared for Claude + Codex under ~/.agents/skills/social-media/
 # - Pinned to the xurl v1.1.1 release commit so skill instructions match the CLI
 # ------------------------------------------------------------------------------
-[".agents/skills/xurl"]
+[".agents/skills/social-media/xurl"]
     type = "archive"
     url = "https://github.com/xdevplatform/xurl/archive/{{ $.versions.xurlSkillRev }}.tar.gz"
     exact = true
@@ -414,7 +410,7 @@
 # - Install x-create only; do not install x-publish because publishing is handled
 #   by the official xurl CLI/API path, not browser automation.
 # ------------------------------------------------------------------------------
-[".agents/skills/x-create"]
+[".agents/skills/social-media/x-create"]
     type = "archive"
     url = "https://github.com/kangarooking/x-skills/archive/{{ $.versions.xSkillsRev }}.tar.gz"
     exact = true
@@ -428,7 +424,7 @@
 # - daily-dev-ask: developer-focused search over community-vetted articles
 # - Requires daily.dev Plus and a DAILY_DEV_TOKEN; no browser automation.
 # ------------------------------------------------------------------------------
-[".agents/skills/daily.dev"]
+[".agents/skills/social-media/daily.dev"]
     type = "archive"
     url = "https://github.com/dailydotdev/daily/archive/{{ $.versions.dailyDevSkillsRev }}.tar.gz"
     exact = true
@@ -436,7 +432,7 @@
     include = ["daily-*/skills/daily.dev/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/daily-dev-ask"]
+[".agents/skills/social-media/daily-dev-ask"]
     type = "archive"
     url = "https://github.com/dailydotdev/daily/archive/{{ $.versions.dailyDevSkillsRev }}.tar.gz"
     exact = true
@@ -451,7 +447,7 @@
 # - Use as the Reddit community-research layer before drafting subreddit-specific
 #   posts manually or through a separate reviewed publishing path.
 # ------------------------------------------------------------------------------
-[".agents/skills/reddit"]
+[".agents/skills/social-media/reddit"]
     type = "archive"
     url = "https://github.com/resciencelab/opc-skills/archive/{{ $.versions.opcSkillsRev }}.tar.gz"
     exact = true
@@ -462,7 +458,7 @@
 # ------------------------------------------------------------------------------
 # nextlevelbuilder/ui-ux-pro-max-skill (skills only)
 # - Shared UI/UX design intelligence skill for Claude + Codex
-# - SKILL.md + runtime data/scripts assets under .agents/skills/ui-ux-pro-max/
+# - Keep SKILL.md and runtime assets in ~/.agents/skills/
 # ------------------------------------------------------------------------------
 [".agents/skills/ui-ux-pro-max"]
     type = "archive"
@@ -494,7 +490,7 @@
 # ------------------------------------------------------------------------------
 # signalridge custom skills (managed in dedicated repos)
 # ------------------------------------------------------------------------------
-[".agents/skills/zig-development-playbook"]
+[".agents/skills/ecosystem/signalridge/zig-development-playbook"]
     type = "archive"
     url = "https://github.com/signalridge/zig-development-playbook-skill/archive/{{ $.versions.zigDevelopmentPlaybookSkillRev }}.tar.gz"
     exact = true
@@ -502,7 +498,7 @@
     include = ["zig-development-playbook-skill-*/skills/zig-development-playbook/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/rust-development-playbook"]
+[".agents/skills/ecosystem/signalridge/rust-development-playbook"]
     type = "archive"
     url = "https://github.com/signalridge/rust-development-playbook-skill/archive/{{ $.versions.rustDevelopmentPlaybookSkillRev }}.tar.gz"
     exact = true
@@ -511,15 +507,15 @@
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
-# Humanizer skills (remove AI tone)
-# - humanizer-en / humanizer-ja: blader/humanizer lineage (English / Japanese)
-# - qu-ai-wei: Chinese-native de-AI-tone skill (MIT), replaces the old
-#   op7418/Humanizer-zh translation. Ships SKILL.md + references/ (loaded on
-#   demand). Simplified Chinese only; explicit trigger /qu-ai-wei.
+# Humanizer / de-AI-tone skills (multilingual namespace)
+# - multilingual/humanizer-en : blader/humanizer (English)
+# - multilingual/humanizer-ja : kgraph57/humanizer-ja (Japanese)
+# - multilingual/qu-ai-wei    : Chinese-native de-AI-tone skill (MIT), replaces
+#                               the old op7418/Humanizer-zh translation
 # - Commit-pinned via revisions in .chezmoidata/versions.yaml
 # ------------------------------------------------------------------------------
 
-[".agents/skills/humanizer-en"]
+[".agents/skills/multilingual/humanizer-en"]
     type = "archive"
     url = "https://github.com/blader/humanizer/archive/{{ $.versions.humanizerEnRev }}.tar.gz"
     exact = true
@@ -530,7 +526,7 @@
     ]
     refreshPeriod = "168h"
 
-[".agents/skills/qu-ai-wei"]
+[".agents/skills/multilingual/qu-ai-wei"]
     type = "archive"
     url = "https://github.com/LifelongLazyLearner/qu-ai-wei/archive/{{ $.versions.quAiWeiRev }}.tar.gz"
     exact = true
@@ -542,7 +538,7 @@
     ]
     refreshPeriod = "168h"
 
-[".agents/skills/humanizer-ja"]
+[".agents/skills/multilingual/humanizer-ja"]
     type = "archive"
     url = "https://github.com/kgraph57/humanizer-ja/archive/{{ $.versions.humanizerJaRev }}.tar.gz"
     exact = true
