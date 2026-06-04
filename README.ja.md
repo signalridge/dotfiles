@@ -40,12 +40,12 @@
 
 ## ハイライト
 
-- `.chezmoiscripts/00..11` による統一ブートストラップパイプライン（再実行しても破綻しにくい設計）
+- `.chezmoiscripts/00..12` による統一ブートストラップパイプライン（再実行しても破綻しにくい設計）
 - クロスプラットフォームなパッケージ戦略：
   - macOS/Linux 共通の Nix ユーザーパッケージ
   - macOS の `nix-darwin` システム設定
   - macOS の Homebrew / MAS 連携
-- Claude/Codex 共通 Skills を `~/.agents/skills` へ自動同期
+- Claude/Codex 向け Skills ライブラリを `~/.harnesses/skills` へ自動同期
 - Claude/Codex ラッパーの Provider 切替をサポート：
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
@@ -57,7 +57,7 @@
 ## なぜこのリポジトリか
 
 - **プロファイル横断管理**: `.chezmoidata/` が `shared` / `work` / `private` を駆動し、Nix・Homebrew・MAS を横断して一元管理
-- **エンドツーエンドブートストラップ**: `00..11` の段階実行で、初期化を再現可能かつ段階的に組み合わせられる形で維持
+- **エンドツーエンドブートストラップ**: `00..12` の段階実行で、初期化を再現可能かつ段階的に組み合わせられる形で維持
 - **macOS 向け最適化**: nix-darwin のシステム既定、Homebrew + MAS 連携、適用後の保守スクリプト
 - **ワークフローガードレール**: pre-commit と Claude Hooks で危険な編集やコマンド誤用を抑止
 - **DX 自動化**: Justfile ルーチン、fzf ナビゲーション、AI 補助コミットフロー
@@ -135,7 +135,7 @@
 │   ├── versions.yaml           # ツール/プラグインのピン留め
 │   ├── aerospace.yaml          # Aerospace WM データ
 │   └── hammerspoon.yaml        # Hammerspoon データ
-├── .chezmoiscripts/            # ブートストラップ/保守パイプライン（00..11）
+├── .chezmoiscripts/            # ブートストラップ/保守パイプライン（00..12）
 ├── nix-config/
 │   ├── flake.nix.tmpl
 │   └── modules/
@@ -284,7 +284,7 @@ Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期さ�
 - [anthropics/skills](https://github.com/anthropics/skills)
 - 多言語 Humanizer コミュニティパック（`humanizer-en`、`humanizer-zh`、`humanizer-ja`）
 
-同期先は `~/.agents/skills` で、Claude/Codex のすべてで利用します。
+同期先は `~/.harnesses/skills` の共有 harness ライブラリです。実際に有効化する symlink は `skill-activate` で管理します。
 
 ### 品質プロトコル
 
@@ -317,7 +317,7 @@ Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期さ�
 - `anthropics/skills`
 - 多言語 Humanizer コミュニティソース（`humanizer-en`、`humanizer-zh`、`humanizer-ja`）
 
-同期先は `~/.agents/skills` で、Claude/Codex のすべてで利用します。
+同期先は `~/.harnesses/skills` の共有 harness ライブラリです。実際に有効化する symlink は `skill-activate` で管理します。
 
 ### Account / Provider 管理
 

@@ -18,7 +18,7 @@ personalized videos, audiograms/subtitles, and programmatic intros.
    before shipping. Docs: https://www.remotion.dev/docs/license
 2. **Never scaffold inside a dotfiles / config repo.** Remotion pulls a large
    `node_modules`, a `package.json`, and video output artifacts. Create projects in a
-   dedicated dir (e.g. `~/dev/<name>`), never in `~/.local/share/chezmoi` or `~/.agents`.
+   dedicated dir (e.g. `~/dev/<name>`), never in `~/.local/share/chezmoi` or `~/.harnesses`.
 3. **Runtime is already set up here:** `bun` ≥ 1.0.3 and `node` ≥ 16 are present.
    FFmpeg is **bundled since Remotion v4** — do not install it separately.
 

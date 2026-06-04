@@ -20,18 +20,18 @@
 
 # ==============================================================================
 # Shared AI Tools Plugins
-# Skills are shared between Claude Code and Codex CLI via ~/.agents/skills/
+# Shared AI skill library lives at ~/.harnesses/skills/ outside Codex auto-discovery
 # Agents and commands remain in ~/.claude/ (Claude Code specific)
 # Hardcoded plugin/skill lists in this template are the single source of truth
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# Shared AI Skills (hardcoded baseline for Claude + Codex)
+# Shared AI Skills (hardcoded harness library baseline)
 # ------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
 # Function categories — single source of truth (no sidecar TSV). Each skill is
-# saved at download time under ~/.agents/skills/<category>/<skill>.
+# saved at download time under ~/.harnesses/skills/<category>/<skill>.
 # ------------------------------------------------------------------------------
 {{- $cat := dict
   "agent-browser" "testing"
@@ -267,7 +267,7 @@
 {{- $parts := splitList "/" $entry }}
 {{- $plugin := index $parts 0 }}
 {{- $skill := index $parts 1 }}
-[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
+[".harnesses/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/wshobson/agents/archive/{{ $.versions.claudeWshobsonAgentsRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.claudeWshobsonAgentsSha256 }}"
@@ -281,7 +281,7 @@
 # ------------------------------------------------------------------------------
 # anthropics/skills (source-available, NOT open source)
 # License: https://github.com/anthropics/skills - see LICENSE.txt in each skill
-# Skills go to .agents/skills/anthropics/{skill}/ (Shared)
+# Skills go to .harnesses/skills/anthropics/{skill}/ (Shared)
 # - Hardcoded skill list
 # ------------------------------------------------------------------------------
 {{- $anthropicsSkills := list
@@ -303,7 +303,7 @@
 }}
 
 {{- range $skill := $anthropicsSkills }}
-[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
+[".harnesses/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/anthropics/skills/archive/{{ $.versions.claudeAnthropicsSkillsRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.claudeAnthropicsSkillsSha256 }}"
@@ -316,7 +316,7 @@
 
 # ------------------------------------------------------------------------------
 # Ecosystem skills pack (official upstream, cross-domain)
-# - Namespace: .agents/skills/ecosystem/
+# - Namespace: .harnesses/skills/ecosystem/
 # - Keep this focused on high-signal, actively maintained skills
 # ------------------------------------------------------------------------------
 
@@ -331,7 +331,7 @@
   "transcribe"
 }}
 {{- range $skill := $openaiCuratedSkills }}
-[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
+[".harnesses/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/openai/skills/archive/{{ $.versions.openaiSkillsRev }}.tar.gz"
     exact = true
@@ -355,7 +355,7 @@
   "hugging-face-cli"
 }}
 {{- range $skill := $huggingfaceSkills }}
-[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
+[".harnesses/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/huggingface/skills/archive/{{ $.versions.huggingfaceSkillsRev }}.tar.gz"
     exact = true
@@ -374,7 +374,7 @@
   "skill-scanner"
 }}
 {{- range $skill := $getsentrySkills }}
-[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
+[".harnesses/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/getsentry/skills/archive/{{ $.versions.getsentrySkillsRev }}.tar.gz"
     exact = true
@@ -387,7 +387,7 @@
 # ------------------------------------------------------------------------------
 # trailofbits/skills utility set (security/SAST/review skills delegated to slipway)
 # ------------------------------------------------------------------------------
-[".agents/skills/{{ index $cat "sharp-edges" }}/sharp-edges"]
+[".harnesses/skills/{{ index $cat "sharp-edges" }}/sharp-edges"]
     type = "archive"
     url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
     exact = true
@@ -395,7 +395,7 @@
     include = ["skills-*/plugins/sharp-edges/skills/sharp-edges/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/{{ index $cat "using-gh-cli" }}/using-gh-cli"]
+[".harnesses/skills/{{ index $cat "using-gh-cli" }}/using-gh-cli"]
     type = "archive"
     url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
     exact = true
@@ -403,7 +403,7 @@
     include = ["skills-*/plugins/gh-cli/skills/using-gh-cli/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/{{ index $cat "modern-python" }}/modern-python"]
+[".harnesses/skills/{{ index $cat "modern-python" }}/modern-python"]
     type = "archive"
     url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
     exact = true
@@ -420,7 +420,7 @@
   "web-perf"
 }}
 {{- range $skill := $cloudflareSkills }}
-[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
+[".harnesses/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/cloudflare/skills/archive/{{ $.versions.cloudflareSkillsRev }}.tar.gz"
     exact = true
@@ -438,7 +438,7 @@
   "web-design-guidelines"
 }}
 {{- range $skill := $vercelSkills }}
-[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
+[".harnesses/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/vercel-labs/agent-skills/archive/{{ $.versions.vercelLabsAgentSkillsRev }}.tar.gz"
     exact = true
@@ -457,7 +457,7 @@
   "next-cache-components"
 }}
 {{- range $skill := $vercelNextSkills }}
-[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
+[".harnesses/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/vercel-labs/next-skills/archive/{{ $.versions.vercelLabsNextSkillsRev }}.tar.gz"
     exact = true
@@ -474,7 +474,7 @@
 # whatever agent-browser version mise installs. The CLI itself comes from the
 # `npm:agent-browser` entry in mise/config.toml.tmpl.
 # ------------------------------------------------------------------------------
-[".agents/skills/{{ index $cat "agent-browser" }}/agent-browser"]
+[".harnesses/skills/{{ index $cat "agent-browser" }}/agent-browser"]
     type = "archive"
     url = "https://github.com/vercel-labs/agent-browser/archive/{{ $.versions.vercelLabsAgentBrowserRev }}.tar.gz"
     exact = true
@@ -485,7 +485,7 @@
 # ------------------------------------------------------------------------------
 # supabase/agent-skills database best practices
 # ------------------------------------------------------------------------------
-[".agents/skills/{{ index $cat "supabase-postgres-best-practices" }}/supabase-postgres-best-practices"]
+[".harnesses/skills/{{ index $cat "supabase-postgres-best-practices" }}/supabase-postgres-best-practices"]
     type = "archive"
     url = "https://github.com/supabase/agent-skills/archive/{{ $.versions.supabaseAgentSkillsRev }}.tar.gz"
     exact = true
@@ -496,7 +496,7 @@
 # ------------------------------------------------------------------------------
 # expo/skills deployment workflows
 # ------------------------------------------------------------------------------
-[".agents/skills/{{ index $cat "expo-deployment" }}/expo-deployment"]
+[".harnesses/skills/{{ index $cat "expo-deployment" }}/expo-deployment"]
     type = "archive"
     url = "https://github.com/expo/skills/archive/{{ $.versions.expoSkillsRev }}.tar.gz"
     exact = true
@@ -504,7 +504,7 @@
     include = ["skills-*/plugins/expo-deployment/skills/expo-deployment/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/{{ index $cat "expo-cicd-workflows" }}/expo-cicd-workflows"]
+[".harnesses/skills/{{ index $cat "expo-cicd-workflows" }}/expo-cicd-workflows"]
     type = "archive"
     url = "https://github.com/expo/skills/archive/{{ $.versions.expoSkillsRev }}.tar.gz"
     exact = true
@@ -515,7 +515,7 @@
 # ------------------------------------------------------------------------------
 # microsoft/skills azure deployment workflow
 # ------------------------------------------------------------------------------
-[".agents/skills/{{ index $cat "azd-deployment" }}/azd-deployment"]
+[".harnesses/skills/{{ index $cat "azd-deployment" }}/azd-deployment"]
     type = "archive"
     url = "https://github.com/microsoft/skills/archive/{{ $.versions.microsoftSkillsRev }}.tar.gz"
     exact = true
@@ -526,7 +526,7 @@
 # ------------------------------------------------------------------------------
 # sickn33/antigravity-awesome-skills aws deployment workflow (non-MCP)
 # ------------------------------------------------------------------------------
-[".agents/skills/{{ index $cat "aws-serverless" }}/aws-serverless"]
+[".harnesses/skills/{{ index $cat "aws-serverless" }}/aws-serverless"]
     type = "archive"
     url = "https://github.com/sickn33/antigravity-awesome-skills/archive/{{ $.versions.sickn33AntigravitySkillsRev }}.tar.gz"
     exact = true
@@ -536,10 +536,10 @@
 
 # ------------------------------------------------------------------------------
 # xdevplatform/xurl official X API skill
-# - Shared for Claude + Codex under ~/.agents/skills/social-media/
+# - Shared harness library under ~/.harnesses/skills/social-media/
 # - Pinned to the xurl v1.1.1 release commit so skill instructions match the CLI
 # ------------------------------------------------------------------------------
-[".agents/skills/{{ index $cat "xurl" }}/xurl"]
+[".harnesses/skills/{{ index $cat "xurl" }}/xurl"]
     type = "archive"
     url = "https://github.com/xdevplatform/xurl/archive/{{ $.versions.xurlSkillRev }}.tar.gz"
     exact = true
@@ -555,7 +555,7 @@
 # - Install x-create only; do not install x-publish because publishing is handled
 #   by the official xurl CLI/API path, not browser automation.
 # ------------------------------------------------------------------------------
-[".agents/skills/{{ index $cat "x-create" }}/x-create"]
+[".harnesses/skills/{{ index $cat "x-create" }}/x-create"]
     type = "archive"
     url = "https://github.com/kangarooking/x-skills/archive/{{ $.versions.xSkillsRev }}.tar.gz"
     exact = true
@@ -569,7 +569,7 @@
 # - daily-dev-ask: developer-focused search over community-vetted articles
 # - Requires daily.dev Plus and a DAILY_DEV_TOKEN; no browser automation.
 # ------------------------------------------------------------------------------
-[".agents/skills/{{ index $cat "daily.dev" }}/daily.dev"]
+[".harnesses/skills/{{ index $cat "daily.dev" }}/daily.dev"]
     type = "archive"
     url = "https://github.com/dailydotdev/daily/archive/{{ $.versions.dailyDevSkillsRev }}.tar.gz"
     exact = true
@@ -577,7 +577,7 @@
     include = ["daily-*/skills/daily.dev/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/{{ index $cat "daily-dev-ask" }}/daily-dev-ask"]
+[".harnesses/skills/{{ index $cat "daily-dev-ask" }}/daily-dev-ask"]
     type = "archive"
     url = "https://github.com/dailydotdev/daily/archive/{{ $.versions.dailyDevSkillsRev }}.tar.gz"
     exact = true
@@ -592,7 +592,7 @@
 # - Use as the Reddit community-research layer before drafting subreddit-specific
 #   posts manually or through a separate reviewed publishing path.
 # ------------------------------------------------------------------------------
-[".agents/skills/{{ index $cat "reddit" }}/reddit"]
+[".harnesses/skills/{{ index $cat "reddit" }}/reddit"]
     type = "archive"
     url = "https://github.com/resciencelab/opc-skills/archive/{{ $.versions.opcSkillsRev }}.tar.gz"
     exact = true
@@ -603,9 +603,9 @@
 # ------------------------------------------------------------------------------
 # nextlevelbuilder/ui-ux-pro-max-skill (skills only)
 # - Shared UI/UX design intelligence skill for Claude + Codex
-# - Keep SKILL.md and runtime assets in ~/.agents/skills/
+# - Keep SKILL.md and runtime assets in ~/.harnesses/skills/
 # ------------------------------------------------------------------------------
-[".agents/skills/{{ index $cat "ui-ux-pro-max" }}/ui-ux-pro-max"]
+[".harnesses/skills/{{ index $cat "ui-ux-pro-max" }}/ui-ux-pro-max"]
     type = "archive"
     url = "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/{{ $.versions.uiUxProMaxSkillRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.uiUxProMaxSkillSha256 }}"
@@ -614,7 +614,7 @@
     include = ["ui-ux-pro-max-skill-*/.claude/skills/ui-ux-pro-max/SKILL.md"]
     refreshPeriod = "168h"
 
-[".agents/skills/{{ index $cat "ui-ux-pro-max" }}/ui-ux-pro-max/data"]
+[".harnesses/skills/{{ index $cat "ui-ux-pro-max" }}/ui-ux-pro-max/data"]
     type = "archive"
     url = "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/{{ $.versions.uiUxProMaxSkillRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.uiUxProMaxSkillSha256 }}"
@@ -623,7 +623,7 @@
     include = ["ui-ux-pro-max-skill-*/src/ui-ux-pro-max/data/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/{{ index $cat "ui-ux-pro-max" }}/ui-ux-pro-max/scripts"]
+[".harnesses/skills/{{ index $cat "ui-ux-pro-max" }}/ui-ux-pro-max/scripts"]
     type = "archive"
     url = "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/{{ $.versions.uiUxProMaxSkillRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.uiUxProMaxSkillSha256 }}"
@@ -635,7 +635,7 @@
 # ------------------------------------------------------------------------------
 # signalridge custom skills (managed in dedicated repos)
 # ------------------------------------------------------------------------------
-[".agents/skills/{{ index $cat "zig-development-playbook" }}/zig-development-playbook"]
+[".harnesses/skills/{{ index $cat "zig-development-playbook" }}/zig-development-playbook"]
     type = "archive"
     url = "https://github.com/signalridge/zig-development-playbook-skill/archive/{{ $.versions.zigDevelopmentPlaybookSkillRev }}.tar.gz"
     exact = true
@@ -643,7 +643,7 @@
     include = ["zig-development-playbook-skill-*/skills/zig-development-playbook/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/{{ index $cat "rust-development-playbook" }}/rust-development-playbook"]
+[".harnesses/skills/{{ index $cat "rust-development-playbook" }}/rust-development-playbook"]
     type = "archive"
     url = "https://github.com/signalridge/rust-development-playbook-skill/archive/{{ $.versions.rustDevelopmentPlaybookSkillRev }}.tar.gz"
     exact = true
@@ -662,7 +662,7 @@
 # Go — samber/cc-skills-golang (MIT). 43 skills, covers all ~15 Python rubric
 # dimensions PLUS Go-specific gRPC/GraphQL/Swagger, the cobra/viper CLI stack,
 # the full DI cluster (wire/uber-fx/dig/samber-do) and the samber
-# lo/mo/ro/hot/oops/do/slog library family. Lands under ~/.agents/skills/go/.
+# lo/mo/ro/hot/oops/do/slog library family. Lands under ~/.harnesses/skills/go/.
 # Trim golang-samber-* / golang-spf13-* / golang-uber-* / grpc / graphql /
 # swagger below if you don't use those libraries.
 # ------------------------------------------------------------------------------
@@ -712,7 +712,7 @@
   "golang-uber-fx"
 }}
 {{- range $skill := $samberGoSkills }}
-[".agents/skills/go/{{ $skill }}"]
+[".harnesses/skills/go/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/samber/cc-skills-golang/archive/{{ $.versions.samberCcSkillsGolangRev }}.tar.gz"
     exact = true
@@ -726,7 +726,7 @@
 # Engineering suite only: m01-m15 knowledge modules + coding-guidelines +
 # unsafe-checker + domain-* overlays (23 skills). The repo's core-* / rust-* /
 # meta-* agent-infra & navigation skills are intentionally excluded. Lands under
-# ~/.agents/skills/rust/. Testing is NOT here (actionbook has no testing skill)
+# ~/.harnesses/skills/rust/. Testing is NOT here (actionbook has no testing skill)
 # — that gap is filled by the ECC `rust-testing` skill below.
 # ------------------------------------------------------------------------------
 # Map upstream dir -> readable, rust-prefixed skill folder. Claude Code keys on
@@ -760,7 +760,7 @@
   "domain-web" "rust-domain-web"
 }}
 {{- range $src, $dst := $actionbookRust }}
-[".agents/skills/rust/{{ $dst }}"]
+[".harnesses/skills/rust/{{ $dst }}"]
     type = "archive"
     url = "https://github.com/actionbook/rust-skills/archive/{{ $.versions.actionbookRustSkillsRev }}.tar.gz"
     exact = true
@@ -774,7 +774,7 @@
 # the actionbook suite has none. Canonical repo name is `ECC`, so the tarball
 # top-level dir is `ECC-<sha>`.
 # ------------------------------------------------------------------------------
-[".agents/skills/{{ index $cat "rust-testing" }}/rust-testing"]
+[".harnesses/skills/{{ index $cat "rust-testing" }}/rust-testing"]
     type = "archive"
     # Repo canonical name is `ECC`; the GitHub tarball top-level dir (and so the
     # include prefix) is `ECC-<sha>`, not `everything-claude-code-<sha>`.
@@ -881,7 +881,7 @@
   "widgetkit"
 }}
 {{- range $skill := $swiftSkills }}
-[".agents/skills/swift/{{ if hasPrefix "swift" $skill }}{{ $skill }}{{ else }}swift-{{ $skill }}{{ end }}"]
+[".harnesses/skills/swift/{{ if hasPrefix "swift" $skill }}{{ $skill }}{{ else }}swift-{{ $skill }}{{ end }}"]
     type = "archive"
     url = "https://github.com/dpearson2699/swift-ios-skills/archive/{{ $.versions.dpearsonSwiftSkillsRev }}.tar.gz"
     exact = true
@@ -987,7 +987,7 @@
   "write-modern-javascript"
 }}
 {{- range $skill := $effectiveTsSkills }}
-[".agents/skills/typescript/{{ if or (hasPrefix "ts" $skill) (hasPrefix "typescript" $skill) }}{{ $skill }}{{ else }}ts-{{ $skill }}{{ end }}"]
+[".harnesses/skills/typescript/{{ if or (hasPrefix "ts" $skill) (hasPrefix "typescript" $skill) }}{{ $skill }}{{ else }}ts-{{ $skill }}{{ end }}"]
     type = "archive"
     url = "https://github.com/marius-townhouse/effective-typescript-skills/archive/{{ $.versions.effectiveTypescriptRev }}.tar.gz"
     exact = true
@@ -1017,7 +1017,7 @@
   "validation/zod" "ts-zod"
 }}
 {{- range $src, $dst := $bobmatnycTs }}
-[".agents/skills/typescript-stack/{{ $dst }}"]
+[".harnesses/skills/typescript-stack/{{ $dst }}"]
     type = "archive"
     url = "https://github.com/bobmatnyc/claude-mpm-skills/archive/{{ $.versions.bobmatnycMpmSkillsRev }}.tar.gz"
     exact = true
@@ -1026,7 +1026,7 @@
     refreshPeriod = "168h"
 {{ end }}
 # `core` sits one level shallower (no sub-category) -> stripComponents 4.
-[".agents/skills/typescript-stack/typescript-core"]
+[".harnesses/skills/typescript-stack/typescript-core"]
     type = "archive"
     url = "https://github.com/bobmatnyc/claude-mpm-skills/archive/{{ $.versions.bobmatnycMpmSkillsRev }}.tar.gz"
     exact = true
@@ -1039,7 +1039,7 @@
 # telemetry, performance-engineering, system-design (resilience), api-design,
 # tdd, code-review, security-audit, debugging — fills the cross-cutting TS dims
 # and is useful for every language. Tarball top dir is `agent-skills-standard-<sha>`.
-[".agents/skills/common"]
+[".harnesses/skills/common"]
     type = "archive"
     url = "https://github.com/HoangNguyen0403/agent-skills-standard/archive/{{ $.versions.hoangNguyenSkillsRev }}.tar.gz"
     exact = true
@@ -1056,7 +1056,7 @@
 # - Commit-pinned via revisions in .chezmoidata/versions.yaml
 # ------------------------------------------------------------------------------
 
-[".agents/skills/{{ index $cat "humanizer-en" }}/humanizer-en"]
+[".harnesses/skills/{{ index $cat "humanizer-en" }}/humanizer-en"]
     type = "archive"
     url = "https://github.com/blader/humanizer/archive/{{ $.versions.humanizerEnRev }}.tar.gz"
     exact = true
@@ -1067,7 +1067,7 @@
     ]
     refreshPeriod = "168h"
 
-[".agents/skills/{{ index $cat "qu-ai-wei" }}/qu-ai-wei"]
+[".harnesses/skills/{{ index $cat "qu-ai-wei" }}/qu-ai-wei"]
     type = "archive"
     url = "https://github.com/LifelongLazyLearner/qu-ai-wei/archive/{{ $.versions.quAiWeiRev }}.tar.gz"
     exact = true
@@ -1079,7 +1079,7 @@
     ]
     refreshPeriod = "168h"
 
-[".agents/skills/{{ index $cat "humanizer-ja" }}/humanizer-ja"]
+[".harnesses/skills/{{ index $cat "humanizer-ja" }}/humanizer-ja"]
     type = "archive"
     url = "https://github.com/kgraph57/humanizer-ja/archive/{{ $.versions.humanizerJaRev }}.tar.gz"
     exact = true

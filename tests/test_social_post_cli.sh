@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
-CLI="$ROOT/dot_agents/skills/social-media/oss-x-post/scripts/social-post"
+CLI="$ROOT/dot_harnesses/skills/oss-x-post/scripts/social-post"
 TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/social-post-test.XXXXXX")"
 
 cleanup() {

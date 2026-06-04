@@ -40,12 +40,12 @@
 
 ## 亮点
 
-- 统一 bootstrap 流程（`.chezmoiscripts/00..11`），并带有幂等维护步骤
+- 统一 bootstrap 流程（`.chezmoiscripts/00..12`），并带有幂等维护步骤
 - 跨平台包管理策略：
   - macOS/Linux 共用 Nix user packages
   - macOS 使用 `nix-darwin` 管理系统配置
   - macOS 集成 Homebrew / MAS
-- 共享 AI skills 自动同步到 `~/.agents/skills`（Claude、Codex 共用）
+- 共享 AI skills 库自动同步到 `~/.harnesses/skills`（供 Claude、Codex 激活使用）
 - Claude/Codex wrapper 的 provider 切换：
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
@@ -57,7 +57,7 @@
 ## 为什么选择这个仓库
 
 - **Profile 全覆盖**：`.chezmoidata/` 统一驱动 `shared` / `work` / `private`，覆盖 Nix、Homebrew、MAS
-- **端到端引导**：`00..11` 阶段脚本把安装、配置、工具同步串成稳定流水线
+- **端到端引导**：`00..12` 阶段脚本把安装、配置、工具同步串成稳定流水线
 - **macOS 打磨**：nix-darwin 系统项、Homebrew / MAS 联动、应用后维护脚本
 - **工作流护栏**：pre-commit + Claude hooks 组合，降低危险操作概率
 - **DX 自动化**：Justfile、fzf 导航、AI 辅助提交流程
@@ -133,7 +133,7 @@
 │   ├── versions.yaml           # 工具与插件版本固定
 │   ├── aerospace.yaml          # Aerospace WM 数据
 │   └── hammerspoon.yaml        # Hammerspoon 数据
-├── .chezmoiscripts/            # Bootstrap 与维护脚本链（00..11）
+├── .chezmoiscripts/            # Bootstrap 与维护脚本链（00..12）
 ├── nix-config/
 │   ├── flake.nix.tmpl
 │   └── modules/
@@ -282,7 +282,7 @@ skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 - [anthropics/skills](https://github.com/anthropics/skills)
 - 社区多语言 Humanizer 套件（`humanizer-en`、`humanizer-zh`、`humanizer-ja`）
 
-同步后统一落到 `~/.agents/skills`，可被 Claude/Codex 共用。
+同步后统一落到 `~/.harnesses/skills` 共享 harness 库；实际启用的 symlink 由 `skill-activate` 管理。
 
 ### 质量协议
 
@@ -315,7 +315,7 @@ skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 - `anthropics/skills`
 - 多语言 Humanizer 社区来源（`humanizer-en`、`humanizer-zh`、`humanizer-ja`）
 
-最终统一到 `~/.agents/skills`，由 Claude、Codex 共同使用。
+最终统一到 `~/.harnesses/skills` 共享 harness 库；实际启用的 symlink 由 `skill-activate` 管理。
 
 ### Account 与 Provider 管理
 

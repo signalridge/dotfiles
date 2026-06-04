@@ -77,7 +77,7 @@ minted in memory at send time and never stored.
   existing helper:
 
   ```bash
-  SKILL=~/.agents/skills/social-media/oss-x-post
+  SKILL=~/.harnesses/skills/oss-x-post
   bash "$SKILL/scripts/reddit-submit" auth-url --client-id <id>      # open URL, authorize, copy the code
   bash "$SKILL/scripts/reddit-submit" exchange-code --client-id <id> --code <code>
   # The response (incl. refresh_token) is written to a mode-600 tempfile under $TMPDIR
@@ -93,7 +93,7 @@ minted in memory at send time and never stored.
 ## Usage
 
 ```bash
-SKILL=~/.agents/skills/social-media/oss-x-post
+SKILL=~/.harnesses/skills/oss-x-post
 
 # preview (dry-run, no credentials needed)
 bash "$SKILL/scripts/social-post" bluesky --file tmp/launch/bluesky.md
