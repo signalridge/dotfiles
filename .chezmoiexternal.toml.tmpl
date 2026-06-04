@@ -125,6 +125,7 @@
   "remotion" "media"
   "rust-async-patterns" "systems"
   "rust-development-playbook" "systems"
+  "rust-testing" "systems"
   "saga-orchestration" "backend"
   "screenshot" "media"
   "secrets-management" "cicd"
@@ -648,6 +649,402 @@
     exact = true
     stripComponents = 3
     include = ["rust-development-playbook-skill-*/skills/rust-development-playbook/**"]
+    refreshPeriod = "168h"
+
+# ==============================================================================
+# Per-language skill SUITES (comprehensive — "as broad as the Python suite").
+# Chosen per language after a whole-ecosystem review. Enumerated per-skill via a
+# range over a list so each folder is curatable and we avoid the exact-archive +
+# include + exclude "inconsistent state" trap (no `exclude`, one include each).
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Go — samber/cc-skills-golang (MIT). 43 skills, covers all ~15 Python rubric
+# dimensions PLUS Go-specific gRPC/GraphQL/Swagger, the cobra/viper CLI stack,
+# the full DI cluster (wire/uber-fx/dig/samber-do) and the samber
+# lo/mo/ro/hot/oops/do/slog library family. Lands under ~/.agents/skills/go/.
+# Trim golang-samber-* / golang-spf13-* / golang-uber-* / grpc / graphql /
+# swagger below if you don't use those libraries.
+# ------------------------------------------------------------------------------
+{{- $samberGoSkills := list
+  "golang-benchmark"
+  "golang-cli"
+  "golang-code-style"
+  "golang-concurrency"
+  "golang-context"
+  "golang-continuous-integration"
+  "golang-data-structures"
+  "golang-database"
+  "golang-dependency-injection"
+  "golang-dependency-management"
+  "golang-design-patterns"
+  "golang-documentation"
+  "golang-error-handling"
+  "golang-google-wire"
+  "golang-graphql"
+  "golang-grpc"
+  "golang-how-to"
+  "golang-lint"
+  "golang-modernize"
+  "golang-naming"
+  "golang-observability"
+  "golang-performance"
+  "golang-popular-libraries"
+  "golang-project-layout"
+  "golang-safety"
+  "golang-samber-do"
+  "golang-samber-hot"
+  "golang-samber-lo"
+  "golang-samber-mo"
+  "golang-samber-oops"
+  "golang-samber-ro"
+  "golang-samber-slog"
+  "golang-security"
+  "golang-spf13-cobra"
+  "golang-spf13-viper"
+  "golang-stay-updated"
+  "golang-stretchr-testify"
+  "golang-structs-interfaces"
+  "golang-swagger"
+  "golang-testing"
+  "golang-troubleshooting"
+  "golang-uber-dig"
+  "golang-uber-fx"
+}}
+{{- range $skill := $samberGoSkills }}
+[".agents/skills/go/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/samber/cc-skills-golang/archive/{{ $.versions.samberCcSkillsGolangRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["cc-skills-golang-*/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+{{ end }}
+# ------------------------------------------------------------------------------
+# Rust — actionbook/rust-skills. README declares MIT but the repo ships NO
+# LICENSE file (license is therefore ambiguous — revisit if that matters).
+# Engineering suite only: m01-m15 knowledge modules + coding-guidelines +
+# unsafe-checker + domain-* overlays (23 skills). The repo's core-* / rust-* /
+# meta-* agent-infra & navigation skills are intentionally excluded. Lands under
+# ~/.agents/skills/rust/. Testing is NOT here (actionbook has no testing skill)
+# — that gap is filled by the ECC `rust-testing` skill below.
+# ------------------------------------------------------------------------------
+# Map upstream dir -> readable, rust-prefixed skill folder. Claude Code keys on
+# the folder NAME (frontmatter `name` is only a display label) and does NOT
+# namespace by the `rust/` parent, so the cryptic `mNN-*` / generic
+# `coding-guidelines` / `domain-*` names get a `rust-` prefix (and lose the
+# meaningless module numbers) to stay unambiguous and collision-safe.
+{{- $actionbookRust := dict
+  "m01-ownership" "rust-ownership"
+  "m02-resource" "rust-resource"
+  "m03-mutability" "rust-mutability"
+  "m04-zero-cost" "rust-zero-cost"
+  "m05-type-driven" "rust-type-driven"
+  "m06-error-handling" "rust-error-handling"
+  "m07-concurrency" "rust-concurrency"
+  "m09-domain" "rust-domain-modeling"
+  "m10-performance" "rust-performance"
+  "m11-ecosystem" "rust-ecosystem"
+  "m12-lifecycle" "rust-lifecycle"
+  "m13-domain-error" "rust-domain-error"
+  "m14-mental-model" "rust-mental-model"
+  "m15-anti-pattern" "rust-anti-pattern"
+  "coding-guidelines" "rust-coding-guidelines"
+  "unsafe-checker" "rust-unsafe-checker"
+  "domain-cli" "rust-domain-cli"
+  "domain-cloud-native" "rust-domain-cloud-native"
+  "domain-embedded" "rust-domain-embedded"
+  "domain-fintech" "rust-domain-fintech"
+  "domain-iot" "rust-domain-iot"
+  "domain-ml" "rust-domain-ml"
+  "domain-web" "rust-domain-web"
+}}
+{{- range $src, $dst := $actionbookRust }}
+[".agents/skills/rust/{{ $dst }}"]
+    type = "archive"
+    url = "https://github.com/actionbook/rust-skills/archive/{{ $.versions.actionbookRustSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["rust-skills-*/skills/{{ $src }}/**"]
+    refreshPeriod = "168h"
+{{ end }}
+# ------------------------------------------------------------------------------
+# Rust testing — affaan-m/ECC `rust-testing` (MIT). Kept as the dedicated
+# test-authoring skill (rstest/proptest/mockall/criterion/llvm-cov/tokio) since
+# the actionbook suite has none. Canonical repo name is `ECC`, so the tarball
+# top-level dir is `ECC-<sha>`.
+# ------------------------------------------------------------------------------
+[".agents/skills/{{ index $cat "rust-testing" }}/rust-testing"]
+    type = "archive"
+    # Repo canonical name is `ECC`; the GitHub tarball top-level dir (and so the
+    # include prefix) is `ECC-<sha>`, not `everything-claude-code-<sha>`.
+    url = "https://github.com/affaan-m/ECC/archive/{{ $.versions.affaanEccRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["ECC-*/skills/rust-testing/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# Swift / Apple — dpearson2699/swift-ios-skills. 84 skills, ~14/15 Python rubric
+# dims + Apple-framework skills (HealthKit/StoreKit/WidgetKit/CloudKit/…). Each
+# folder gets a `swift-` prefix (skipped where it already starts with `swift`)
+# so the bare framework names (cloudkit, authentication, …) stay unambiguous —
+# Claude Code keys on the folder name and doesn't namespace by `swift/`.
+# NOTE LICENSE: PolyForm Perimeter 1.0.0 — source-available, NOT OSI-open. Free
+# for personal/team use & modification; only forbids reselling as a competing
+# skills product. We reference it as an external (no redistribution), so fine.
+# ------------------------------------------------------------------------------
+{{- $swiftSkills := list
+  "accessorysetupkit"
+  "activitykit"
+  "adattributionkit"
+  "alarmkit"
+  "app-clips"
+  "app-intents"
+  "app-store-optimization"
+  "app-store-review"
+  "apple-on-device-ai"
+  "appmigrationkit"
+  "audioaccessorykit"
+  "authentication"
+  "avkit"
+  "background-processing"
+  "browserenginekit"
+  "callkit"
+  "carplay"
+  "cloudkit"
+  "contacts-framework"
+  "core-bluetooth"
+  "core-data"
+  "core-motion"
+  "core-nfc"
+  "coreml"
+  "cryptokit"
+  "cryptotokenkit"
+  "debugging-instruments"
+  "device-integrity"
+  "dockkit"
+  "energykit"
+  "eventkit"
+  "financekit"
+  "focus-engine"
+  "gamekit"
+  "healthkit"
+  "homekit"
+  "ios-accessibility"
+  "ios-localization"
+  "ios-networking"
+  "ios-simulator"
+  "mapkit"
+  "metrickit"
+  "musickit"
+  "natural-language"
+  "paperkit"
+  "passkit"
+  "pdfkit"
+  "pencilkit"
+  "permissionkit"
+  "photokit"
+  "push-notifications"
+  "realitykit"
+  "relevancekit"
+  "scenekit"
+  "sensorkit"
+  "shareplay-activities"
+  "speech-recognition"
+  "spritekit"
+  "storekit"
+  "swift-api-design-guidelines"
+  "swift-architecture"
+  "swift-charts"
+  "swift-codable"
+  "swift-concurrency"
+  "swift-formatstyle"
+  "swift-language"
+  "swift-security"
+  "swift-testing"
+  "swiftdata"
+  "swiftlint"
+  "swiftui-animation"
+  "swiftui-gestures"
+  "swiftui-layout-components"
+  "swiftui-liquid-glass"
+  "swiftui-navigation"
+  "swiftui-patterns"
+  "swiftui-performance"
+  "swiftui-uikit-interop"
+  "swiftui-webkit"
+  "tabletopkit"
+  "tipkit"
+  "vision-framework"
+  "weatherkit"
+  "widgetkit"
+}}
+{{- range $skill := $swiftSkills }}
+[".agents/skills/swift/{{ if hasPrefix "swift" $skill }}{{ $skill }}{{ else }}swift-{{ $skill }}{{ end }}"]
+    type = "archive"
+    url = "https://github.com/dpearson2699/swift-ios-skills/archive/{{ $.versions.dpearsonSwiftSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["swift-ios-skills-*/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+{{ end }}
+
+# ==============================================================================
+# TypeScript / JavaScript assembly (~11/15 — no single repo is Python-parity, so
+# three complementary MIT/Apache sources, each in its own namespace).
+# Remaining gaps to author later: generic-TS async/concurrency, resilience.
+# ==============================================================================
+
+# typescript/ — marius-townhouse/effective-typescript-skills (MIT). The whole
+# "Effective TypeScript" book as 83 micro-skills (type system, idioms,
+# anti-patterns, exhaustiveness, branded types) — the type-safety backbone.
+# Each folder gets a `ts-` prefix (skipped where it already starts with
+# ts/typescript) so the bare rule names read as TypeScript skills.
+{{- $effectiveTsSkills := list
+  "accurate-environment-model"
+  "allowjs-mixing"
+  "async-over-callbacks"
+  "avoid-anecdotal-types"
+  "avoid-inferable-annotations"
+  "avoid-numeric-index"
+  "avoid-repeated-params"
+  "avoid-unnecessary-type-params"
+  "avoid-wrapper-types"
+  "branded-types"
+  "callback-this-type"
+  "code-gen-independent"
+  "codegen-over-complex-types"
+  "compiler-performance"
+  "conditional-types-over-overloads"
+  "consistent-aliases"
+  "context-type-inference"
+  "control-union-distribution"
+  "create-objects-all-at-once"
+  "currying-inference"
+  "different-variables-types"
+  "distinct-special-values"
+  "dom-hierarchy"
+  "domain-language-types"
+  "dry-types"
+  "ecmascript-over-typescript-features"
+  "editor-interrogation"
+  "evolving-types"
+  "excess-property-checking"
+  "exclusive-or-properties"
+  "exhaustiveness-checking"
+  "export-public-types"
+  "function-type-expressions"
+  "functional-constructs-types"
+  "generics-as-functions"
+  "hide-unsafe-assertions"
+  "imprecise-over-inaccurate"
+  "index-signature-alternatives"
+  "iterate-objects-safely"
+  "liberal-accept-strict-return"
+  "limit-any-type"
+  "limit-optional-properties"
+  "mirror-types"
+  "module-augmentation"
+  "module-by-module-migration"
+  "narrow-any-scope"
+  "no-null-in-aliases"
+  "no-type-in-docs"
+  "noimplicitany-completion"
+  "precise-any-variants"
+  "precise-string-types"
+  "prefer-type-annotations"
+  "prefer-unknown-over-any"
+  "push-null-to-perimeter"
+  "record-types-sync"
+  "runtime-type-reconstruction"
+  "soundness-traps"
+  "source-maps-debugging"
+  "structural-typing"
+  "tagged-unions"
+  "tail-recursive-generics"
+  "template-literal-types"
+  "test-your-types"
+  "three-versions-types"
+  "ts-check-jsdoc-experiment"
+  "ts-js-relationship"
+  "tsconfig-options"
+  "tsdoc-comments"
+  "type-checking-vs-testing"
+  "type-coverage"
+  "type-display-attention"
+  "type-narrowing"
+  "type-safe-monkey-patching"
+  "type-value-space"
+  "type-vs-interface"
+  "types-as-sets"
+  "typescript-devdependencies"
+  "understand-type-widening"
+  "unify-types"
+  "use-readonly"
+  "valid-state-types"
+  "variadic-tuple-types"
+  "write-modern-javascript"
+}}
+{{- range $skill := $effectiveTsSkills }}
+[".agents/skills/typescript/{{ if or (hasPrefix "ts" $skill) (hasPrefix "typescript" $skill) }}{{ $skill }}{{ else }}ts-{{ $skill }}{{ end }}"]
+    type = "archive"
+    url = "https://github.com/marius-townhouse/effective-typescript-skills/archive/{{ $.versions.effectiveTypescriptRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["effective-typescript-skills-*/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+{{ end }}
+
+# typescript-stack/ — bobmatnyc/claude-mpm-skills (MIT) toolchains/typescript (14
+# skills). bobmatnyc nests skills as <category>/<skill> (testing/vitest, data/
+# prisma, …); we FLATTEN each to a single `ts-*` folder so Claude Code discovers
+# them (it doesn't recurse nested categories) and the generic `core` name stops
+# being ambiguous. Map: upstream sub-path -> readable ts-prefixed folder.
+{{- $bobmatnycTs := dict
+  "api/trpc" "ts-trpc"
+  "build/turborepo" "ts-turborepo"
+  "data/drizzle" "ts-drizzle"
+  "data/drizzle-migrations" "ts-drizzle-migrations"
+  "data/kysely" "ts-kysely"
+  "data/prisma" "ts-prisma"
+  "frameworks/fastify" "ts-fastify"
+  "frameworks/nodejs-backend" "ts-nodejs-backend"
+  "state/tanstack-query" "ts-tanstack-query"
+  "state/zustand" "ts-zustand"
+  "testing/jest" "ts-jest"
+  "testing/vitest" "ts-vitest"
+  "validation/zod" "ts-zod"
+}}
+{{- range $src, $dst := $bobmatnycTs }}
+[".agents/skills/typescript-stack/{{ $dst }}"]
+    type = "archive"
+    url = "https://github.com/bobmatnyc/claude-mpm-skills/archive/{{ $.versions.bobmatnycMpmSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 5
+    include = ["claude-mpm-skills-*/toolchains/typescript/{{ $src }}/**"]
+    refreshPeriod = "168h"
+{{ end }}
+# `core` sits one level shallower (no sub-category) -> stripComponents 4.
+[".agents/skills/typescript-stack/typescript-core"]
+    type = "archive"
+    url = "https://github.com/bobmatnyc/claude-mpm-skills/archive/{{ $.versions.bobmatnycMpmSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 4
+    include = ["claude-mpm-skills-*/toolchains/typescript/core/**"]
+    refreshPeriod = "168h"
+
+# common/ — HoangNguyen0403/agent-skills-standard (Apache-2.0, branch `develop`)
+# skills/common (38 language-agnostic skills): error-handling, observability,
+# telemetry, performance-engineering, system-design (resilience), api-design,
+# tdd, code-review, security-audit, debugging — fills the cross-cutting TS dims
+# and is useful for every language. Tarball top dir is `agent-skills-standard-<sha>`.
+[".agents/skills/common"]
+    type = "archive"
+    url = "https://github.com/HoangNguyen0403/agent-skills-standard/archive/{{ $.versions.hoangNguyenSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["agent-skills-standard-*/skills/common/**"]
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
