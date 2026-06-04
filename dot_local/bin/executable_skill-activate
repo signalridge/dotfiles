@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # skill-activate — a live on/off panel for curating which library skills are
-# active for Claude plus either the project harness set or user Codex set.
+# active for Claude plus the matching current-directory Codex set.
 # Tab/Space flips one skill on/off in place (the ● updates live). Ctrl-A flips
 # every skill in the highlighted row's category; Enter leaves.
 # Toggling is fast — the library is scanned ONCE up front and the panel just
@@ -11,22 +11,21 @@
 #   ~/.harnesses/skills/<category>/<skill>/SKILL.md   (e.g. cloud/, python/, ai-llm/)
 # so the panel groups by the folder directly — no sidecar mapping file.
 #
-# Active sets (flat symlinks into the library):
-#   project (default): ./.claude/skills/ + ./.harnesses/skills/
-#   user             : ~/.claude/skills/ + ~/.codex/skills/    (keep minimal)
+# Active set (flat symlinks into the shared library):
+#   current directory: ./.claude/skills/ + ./.codex/skills/
 #
 # Usage:
-#   skill-activate [project|user]      live on/off panel (default: project)
-#   skill-activate [scope] --active    list active skills
-#   skill-activate [scope] --list      print the rows (no fzf)
-#   skill-activate [scope] --category <category>
-#                                      activate every skill in a category
-#   skill-activate [scope] --clear     deactivate everything for the scope
+#   skill-activate                    live on/off panel
+#   skill-activate --active           list active skills
+#   skill-activate --list             print the rows (no fzf)
+#   skill-activate --sync             repair partial Claude/Codex pairs
+#   skill-activate --category <category>
+#                                     activate every skill in a category
+#   skill-activate --clear            deactivate everything for the current dir
 
 set -euo pipefail
 
 library="${SKILL_LIBRARY:-$HOME/.harnesses/skills}"
-scope="project"
 mode="pick"
 category_name=""
 internal=""
@@ -40,14 +39,18 @@ if [ "${1:-}" = "__rows" ] || [ "${1:-}" = "__toggle" ] || [ "${1:-}" = "__toggl
     tname="$1"
     shift
   fi
-  scope="${1:-project}"
-  pidx="${2:-}"
+  pidx="${1:-}"
 else
   while [ $# -gt 0 ]; do
     case "$1" in
-    project | user) scope="$1" ;;
+    project) ;;
+    user)
+      echo "skill-activate: user scope was removed; run from the target project directory instead" >&2
+      exit 2
+      ;;
     --active) mode="active" ;;
     --list) mode="list" ;;
+    --sync) mode="sync" ;;
     --category | --activate-category)
       [ $# -ge 2 ] || {
         echo "skill-activate: $1 requires a category name" >&2
@@ -71,22 +74,9 @@ else
   done
 fi
 
-case "$scope" in
-project)
-  claude_dir="$PWD/.claude/skills"
-  codex_dir="$PWD/.harnesses/skills"
-  target_label="Claude + harness"
-  ;;
-user)
-  claude_dir="$HOME/.claude/skills"
-  codex_dir="$HOME/.codex/skills"
-  target_label="Claude + Codex"
-  ;;
-*)
-  echo "skill-activate: scope must be 'project' or 'user'" >&2
-  exit 2
-  ;;
-esac
+claude_dir="$PWD/.claude/skills"
+codex_dir="$PWD/.codex/skills"
+target_label="Claude + Codex current dir"
 
 [ -d "$library" ] || {
   echo "skill-activate: library not found: $library" >&2
@@ -101,7 +91,23 @@ require_real_dir() {
   fi
 }
 
-mark() { if [ -e "$claude_dir/$1" ]; then printf '●'; else printf '○'; fi; }
+skill_active_full() {
+  [ -e "$claude_dir/$1" ] && [ -e "$codex_dir/$1" ]
+}
+
+skill_active_any() {
+  [ -e "$claude_dir/$1" ] || [ -e "$codex_dir/$1" ]
+}
+
+mark() {
+  if skill_active_full "$1"; then
+    printf '●'
+  elif skill_active_any "$1"; then
+    printf '◐'
+  else
+    printf '○'
+  fi
+}
 
 activate_skill() {
   local name="$1"
@@ -145,6 +151,24 @@ set_category_state() {
   [ "$matched" -eq 1 ]
 }
 
+sync_active_pairs() {
+  local index_file="$1"
+  local synced=0
+  local name
+  local cat
+  local sdir
+  local desc
+
+  while IFS=$'\t' read -r name cat sdir desc; do
+    if skill_active_any "$name" && ! skill_active_full "$name"; then
+      activate_skill "$name" "$sdir"
+      synced=$((synced + 1))
+    fi
+  done <"$index_file"
+
+  printf '%s\n' "$synced"
+}
+
 category_all_active() {
   local category="$1"
   local index_file="$2"
@@ -157,7 +181,7 @@ category_all_active() {
 
   while IFS=$'\t' read -r name cat sdir desc; do
     any=1
-    [ -e "$claude_dir/$name" ] || inactive=1
+    skill_active_full "$name" || inactive=1
   done < <(awk -F'\t' -v c="$category" '$2==c' "$index_file")
 
   [ "$any" -eq 1 ] && [ "$inactive" -eq 0 ]
@@ -192,7 +216,7 @@ if [ "$internal" = "__toggle" ]; then
   mkdir -p "$claude_dir" "$codex_dir" 2>/dev/null || true
   sdir=$(skill_dir_for_name "$tname" "$pidx")
   [ -n "$sdir" ] || exit 0
-  if [ -e "$claude_dir/$tname" ]; then
+  if skill_active_full "$tname"; then
     deactivate_skill "$tname"
   else
     activate_skill "$tname" "$sdir"
@@ -234,6 +258,15 @@ list)
   rows_from "$idx" | cut -f2-
   exit 0
   ;;
+sync)
+  require_real_dir "$claude_dir"
+  require_real_dir "$codex_dir"
+  mkdir -p "$claude_dir" "$codex_dir"
+  n=$(sync_active_pairs "$idx")
+  hs=${claude_dir/#$HOME/\~}
+  echo "current dir: synced $n partial skill(s) ($target_label) in $hs"
+  exit 0
+  ;;
 category)
   require_real_dir "$claude_dir"
   require_real_dir "$codex_dir"
@@ -244,7 +277,7 @@ category)
   fi
   n=$(awk -F'\t' -v c="$category_name" '$2==c{n++} END{print n+0}' "$idx")
   hs=${claude_dir/#$HOME/\~}
-  echo "$scope: activated $n skill(s) in category '$category_name' ($target_label) in $hs"
+  echo "current dir: activated $n skill(s) in category '$category_name' ($target_label) in $hs"
   exit 0
   ;;
 clear)
@@ -252,7 +285,7 @@ clear)
     [ -L "$d" ] && continue
     [ -d "$d" ] && find "$d" -maxdepth 1 -type l -delete 2>/dev/null || true
   done
-  echo "cleared $scope ($target_label)"
+  echo "cleared current dir ($target_label)"
   exit 0
   ;;
 esac
@@ -267,17 +300,17 @@ mkdir -p "$claude_dir" "$codex_dir"
 self=$(command -v "$0" 2>/dev/null || true)
 [ -x "$self" ] || self="$0"
 hs=${claude_dir/#$HOME/\~}
-header="$scope ($target_label) → $hs
-Tab/Space: toggle one skill   │   Ctrl-A: toggle ALL skills in the highlighted category   │   Enter/Esc: done   │   ● on  ○ off
-CLI equivalent: skill-activate $scope --category <category>"
+header="current dir ($target_label) → $hs
+Tab/Space: toggle one skill   │   Ctrl-A: toggle ALL skills in the highlighted category   │   Enter/Esc: done   │   ● both  ◐ partial  ○ off
+CLI equivalents: skill-activate --category <category>   │   skill-activate --sync"
 
 rows_from "$idx" | fzf \
   --delimiter='\t' --with-nth='2..' --no-multi --cycle --reverse --height='100%' \
   --header="$header" \
   --header-first \
-  --bind="tab:execute-silent($self __toggle {1} $scope $idx)+reload-sync($self __rows $scope $idx)" \
-  --bind="space:execute-silent($self __toggle {1} $scope $idx)+reload-sync($self __rows $scope $idx)" \
-  --bind="ctrl-a:execute-silent($self __toggle_category {1} $scope $idx)+reload-sync($self __rows $scope $idx)" \
+  --bind="tab:execute-silent($self __toggle {1} $idx)+reload-sync($self __rows $idx)" \
+  --bind="space:execute-silent($self __toggle {1} $idx)+reload-sync($self __rows $idx)" \
+  --bind="ctrl-a:execute-silent($self __toggle_category {1} $idx)+reload-sync($self __rows $idx)" \
   --bind="enter:accept" \
   --bind="esc:accept" \
   --preview="sed -n '1,40p' \"\$(awk -F'\t' -v n={1} '\$1==n{print \$3}' '$idx')/SKILL.md\"" \
@@ -285,4 +318,4 @@ rows_from "$idx" | fzf \
   >/dev/null || true
 
 n=$(find "$claude_dir" -maxdepth 1 -type l 2>/dev/null | wc -l | tr -d ' ')
-echo "$scope: $n skill(s) active ($target_label) in $hs"
+echo "current dir: $n skill(s) active ($target_label) in $hs"
