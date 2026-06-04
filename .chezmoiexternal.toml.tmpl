@@ -38,7 +38,7 @@
   "airflow-dag-patterns" "data"
   "algorithmic-art" "design"
   "api-design-principles" "backend"
-  "architecture-decision-records" "docs"
+  "architecture-decision-records" "dev-docs"
   "architecture-patterns" "backend"
   "async-python-patterns" "python"
   "auth-implementation-patterns" "security"
@@ -48,7 +48,7 @@
   "bazel-build-optimization" "devtools"
   "brand-guidelines" "design"
   "canvas-design" "design"
-  "changelog-automation" "docs"
+  "changelog-automation" "dev-docs"
   "cost-optimization" "cloud"
   "cqrs-implementation" "backend"
   "daily-dev-ask" "social"
@@ -68,16 +68,13 @@
   "github-actions-templates" "cicd"
   "gitlab-ci-patterns" "cicd"
   "gitops-workflow" "kubernetes"
-  "go-concurrency-patterns" "systems"
   "grafana-dashboards" "observability"
   "helm-chart-scaffolding" "kubernetes"
   "humanizer-en" "writing"
   "humanizer-ja" "writing"
   "hybrid-cloud-networking" "cloud"
-  "hybrid-search-implementation" "ai-llm"
   "internal-comms" "writing"
   "istio-traffic-management" "cloud"
-  "javascript-testing-patterns" "javascript"
   "jupyter-notebook" "documents"
   "k8s-manifest-generator" "kubernetes"
   "k8s-security-policies" "kubernetes"
@@ -85,18 +82,16 @@
   "linkerd-patterns" "cloud"
   "llm-evaluation" "ai-llm"
   "mcp-builder" "ai-llm"
-  "memory-safety-patterns" "systems"
+  "memory-safety-patterns" "security"
   "microservices-patterns" "backend"
-  "modern-javascript-patterns" "javascript"
   "modern-python" "python"
   "monorepo-management" "devtools"
   "mtls-configuration" "cloud"
   "multi-cloud-architecture" "cloud"
-  "next-best-practices" "frontend"
-  "next-cache-components" "frontend"
-  "next-upgrade" "frontend"
-  "nodejs-backend-patterns" "javascript"
-  "openapi-spec-generation" "docs"
+  "next-best-practices" "typescript"
+  "next-cache-components" "typescript"
+  "next-upgrade" "typescript"
+  "openapi-spec-generation" "dev-docs"
   "oss-x-post" "social"
   "pdf" "documents"
   "pptx" "documents"
@@ -118,14 +113,13 @@
   "python-type-safety" "python"
   "qu-ai-wei" "writing"
   "rag-implementation" "ai-llm"
-  "react-best-practices" "frontend"
-  "react-native-architecture" "frontend"
-  "react-state-management" "frontend"
+  "react-best-practices" "typescript"
+  "react-native-architecture" "typescript"
+  "react-state-management" "typescript"
   "reddit" "social"
   "remotion" "media"
-  "rust-async-patterns" "systems"
-  "rust-development-playbook" "systems"
-  "rust-testing" "systems"
+  "rust-development-playbook" "rust"
+  "rust-testing" "rust"
   "saga-orchestration" "backend"
   "screenshot" "media"
   "secrets-management" "cicd"
@@ -133,7 +127,6 @@
   "service-mesh-observability" "cloud"
   "sharp-edges" "security"
   "shellcheck-configuration" "shell"
-  "similarity-search-patterns" "ai-llm"
   "skill-creator" "meta"
   "slack-gif-creator" "design"
   "slo-implementation" "observability"
@@ -141,17 +134,15 @@
   "speech" "media"
   "sql-optimization-patterns" "data"
   "supabase-postgres-best-practices" "data"
-  "tailwind-design-system" "frontend"
-  "temporal-python-testing" "backend"
+  "tailwind-design-system" "design"
+  "temporal-python-testing" "python"
   "terraform-module-library" "cloud"
   "theme-factory" "design"
   "transcribe" "media"
-  "typescript-advanced-types" "javascript"
   "ui-ux-pro-max" "design"
   "vector-index-tuning" "ai-llm"
   "web-artifacts-builder" "design"
-  "web-design-guidelines" "design"
-  "web-perf" "frontend"
+  "web-perf" "typescript"
   "webapp-testing" "testing"
   "workers-best-practices" "cloud"
   "workflow-orchestration-patterns" "backend"
@@ -159,7 +150,7 @@
   "x-create" "social"
   "xlsx" "documents"
   "xurl" "social"
-  "zig-development-playbook" "systems"
+  "zig-development-playbook" "zig"
   "hugging-face-datasets" "ai-llm"
   "hugging-face-evaluation" "ai-llm"
   "hugging-face-jobs" "ai-llm"
@@ -168,8 +159,8 @@
   "hugging-face-tool-builder" "ai-llm"
   "hugging-face-trackio" "ai-llm"
   "hugging-face-cli" "ai-llm"
-  "expo-deployment" "frontend"
-  "expo-cicd-workflows" "frontend"
+  "expo-deployment" "typescript"
+  "expo-cicd-workflows" "typescript"
   "azd-deployment" "cloud"
   "skill-scanner" "meta"
   "using-gh-cli" "devtools"
@@ -214,28 +205,20 @@
   "backend-development/saga-orchestration"
   "backend-development/temporal-python-testing"
   "backend-development/workflow-orchestration-patterns"
-  "systems-programming/go-concurrency-patterns"
   "systems-programming/memory-safety-patterns"
-  "systems-programming/rust-async-patterns"
   "documentation-generation/architecture-decision-records"
   "documentation-generation/changelog-automation"
   "documentation-generation/openapi-spec-generation"
   "llm-application-dev/embedding-strategies"
-  "llm-application-dev/hybrid-search-implementation"
   "llm-application-dev/langchain-architecture"
   "llm-application-dev/llm-evaluation"
   "llm-application-dev/prompt-engineering-patterns"
   "llm-application-dev/rag-implementation"
-  "llm-application-dev/similarity-search-patterns"
   "llm-application-dev/vector-index-tuning"
   "data-engineering/airflow-dag-patterns"
   "data-engineering/data-quality-frameworks"
   "data-engineering/dbt-transformation-patterns"
   "data-engineering/spark-optimization"
-  "javascript-typescript/javascript-testing-patterns"
-  "javascript-typescript/modern-javascript-patterns"
-  "javascript-typescript/nodejs-backend-patterns"
-  "javascript-typescript/typescript-advanced-types"
   "frontend-mobile-development/react-native-architecture"
   "frontend-mobile-development/react-state-management"
   "frontend-mobile-development/tailwind-design-system"
@@ -435,7 +418,6 @@
 # ------------------------------------------------------------------------------
 {{- $vercelSkills := list
   "react-best-practices"
-  "web-design-guidelines"
 }}
 {{- range $skill := $vercelSkills }}
 [".harnesses/skills/{{ index $cat $skill }}/{{ $skill }}"]
@@ -796,7 +778,6 @@
 # ------------------------------------------------------------------------------
 {{- $swiftSkills := list
   "accessorysetupkit"
-  "activitykit"
   "adattributionkit"
   "alarmkit"
   "app-clips"
@@ -996,7 +977,7 @@
     refreshPeriod = "168h"
 {{ end }}
 
-# typescript-stack/ — bobmatnyc/claude-mpm-skills (MIT) toolchains/typescript (14
+# typescript/ (toolchain layer) — bobmatnyc/claude-mpm-skills (MIT) toolchains/typescript (14
 # skills). bobmatnyc nests skills as <category>/<skill> (testing/vitest, data/
 # prisma, …); we FLATTEN each to a single `ts-*` folder so Claude Code discovers
 # them (it doesn't recurse nested categories) and the generic `core` name stops
@@ -1017,7 +998,7 @@
   "validation/zod" "ts-zod"
 }}
 {{- range $src, $dst := $bobmatnycTs }}
-[".harnesses/skills/typescript-stack/{{ $dst }}"]
+[".harnesses/skills/typescript/{{ $dst }}"]
     type = "archive"
     url = "https://github.com/bobmatnyc/claude-mpm-skills/archive/{{ $.versions.bobmatnycMpmSkillsRev }}.tar.gz"
     exact = true
@@ -1026,25 +1007,12 @@
     refreshPeriod = "168h"
 {{ end }}
 # `core` sits one level shallower (no sub-category) -> stripComponents 4.
-[".harnesses/skills/typescript-stack/typescript-core"]
+[".harnesses/skills/typescript/typescript-core"]
     type = "archive"
     url = "https://github.com/bobmatnyc/claude-mpm-skills/archive/{{ $.versions.bobmatnycMpmSkillsRev }}.tar.gz"
     exact = true
     stripComponents = 4
     include = ["claude-mpm-skills-*/toolchains/typescript/core/**"]
-    refreshPeriod = "168h"
-
-# common/ — HoangNguyen0403/agent-skills-standard (Apache-2.0, branch `develop`)
-# skills/common (38 language-agnostic skills): error-handling, observability,
-# telemetry, performance-engineering, system-design (resilience), api-design,
-# tdd, code-review, security-audit, debugging — fills the cross-cutting TS dims
-# and is useful for every language. Tarball top dir is `agent-skills-standard-<sha>`.
-[".harnesses/skills/common"]
-    type = "archive"
-    url = "https://github.com/HoangNguyen0403/agent-skills-standard/archive/{{ $.versions.hoangNguyenSkillsRev }}.tar.gz"
-    exact = true
-    stripComponents = 3
-    include = ["agent-skills-standard-*/skills/common/**"]
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
