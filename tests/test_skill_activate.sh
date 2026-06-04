@@ -61,6 +61,11 @@ make_skill "typescript" "ts-one" "First TypeScript skill"
 make_skill "typescript" "ts-two" "Second TypeScript skill"
 make_skill "python" "py-one" "Python skill"
 
+help_output="$(bash "$CLI" --help)"
+assert_contains "$help_output" "Ctrl-A flips"
+assert_contains "$help_output" "every skill in the highlighted row's category"
+assert_contains "$help_output" "skill-activate [scope] --category <category>"
+
 list_output="$(run_skill_activate user --list)"
 assert_contains "$list_output" "typescript"
 assert_contains "$list_output" "ts-one"
