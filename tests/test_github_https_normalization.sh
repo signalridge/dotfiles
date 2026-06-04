@@ -39,7 +39,6 @@ headless = false
 gopassRepository = "git@github.com:test/pass.git"
 keysRepository = "ssh://git@github.com/test/keys.git"
 codexProviderAccount = "openai"
-opencodeProviderAccount = "openai"
 EOF
 
 render() {

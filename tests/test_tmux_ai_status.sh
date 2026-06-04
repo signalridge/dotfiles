@@ -123,7 +123,7 @@ set -euo pipefail
 if [[ "$*" == "-eo pid=,ppid=,stat=,tty=,comm=" ]]; then
     printf '111 1 S+ ttys001 claude\n'
     printf '222 1 S+ ttys002 codex\n'
-    printf '333 1 S+ ttys003 opencode\n'
+    printf '333 1 S+ ttys003 codex\n'
     printf '444 1 S  ttys001 claude\n'
     printf '555 1 S+ ttys009 codex\n'
     exit 0
@@ -211,7 +211,7 @@ pid=999
 updated_at=110
 EOF
 cat >"$state_dir/_3.state" <<'EOF'
-tool=opencode
+tool=codex
 state=busy
 pid=333
 updated_at=110

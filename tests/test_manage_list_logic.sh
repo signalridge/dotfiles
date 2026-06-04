@@ -340,12 +340,8 @@ codex_api_path="$(
 claude_api_path="$(
     PATH="$BASE_PATH" bash -c "source '$BIN/lib/ai/claude'; api_key_path deepseek alpha"
 )"
-opencode_api_path="$(
-    PATH="$BASE_PATH" AI_TOOL_CONTEXT=opencode bash -c "source '$BIN/lib/ai/core'; api_key_path deepseek alpha"
-)"
 assert_equals "$codex_api_path" "codex/deepseek/alpha/api_key"
 assert_equals "$claude_api_path" "claude/deepseek/alpha/api_key"
-assert_equals "$opencode_api_path" "opencode/deepseek/alpha/api_key"
 
 # Candidate paths use provider/account canonical path only.
 codex_candidates="$(

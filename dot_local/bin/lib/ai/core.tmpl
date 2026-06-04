@@ -320,7 +320,6 @@ gopass_prefix() {
     case "$AI_TOOL_CONTEXT" in
         codex)  prefix="codex" ;;
         claude) prefix="claude" ;;
-        opencode) prefix="opencode" ;;
         *)
             log_error "Unsupported AI_TOOL_CONTEXT: '$AI_TOOL_CONTEXT'"
             return 1

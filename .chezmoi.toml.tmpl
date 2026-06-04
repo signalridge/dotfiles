@@ -137,14 +137,6 @@ encryption = "age"
 {{-   $codexProviderAccount = .codexProviderAccount -}}
 {{- end -}}
 
-{{/* OpenCode provider@account selection (e.g. "openai" or "deepseek@work") */}}
-{{- $opencodeProviderAccount := "openai" -}}
-{{- if hasKey . "opencodeProviderAccount" -}}
-{{-   $opencodeProviderAccount = .opencodeProviderAccount -}}
-{{- else if hasKey . "opencodeProvider" -}}
-{{-   $opencodeProviderAccount = .opencodeProvider -}}{{/* backward compatibility */}}
-{{- end -}}
-
 {{/* gopass password store repository (HTTPS; auth via gh credential helper).
      Required when encryption is enabled — no guessed default, so a wrong repo
      name (e.g. an assumed "passwords.git") can never be written silently in a
@@ -236,7 +228,6 @@ osid = {{ $osID | quote }}
 timezone = {{ $timezone | quote }}
 claudeProviderAccount = {{ $claudeProviderAccount | quote }}
 codexProviderAccount = {{ $codexProviderAccount | quote }}
-opencodeProviderAccount = {{ $opencodeProviderAccount | quote }}
 gopassRepository = {{ $gopassRepository | quote }}
 keysRepository = {{ $keysRepository | quote }}
 jjSigningKey = {{ $jjSigningKey | quote }}

@@ -32,7 +32,7 @@ A reproducible personal workstation setup built around:
 - `chezmoi` for dotfiles, templating, and bootstrap orchestration
 - `Nix` for declarative packages (`nix-darwin` on macOS + `flakey-profile` on macOS/Linux)
 - `aqua` + `mise` for CLI/runtime pinning outside Nix where practical
-- Shared AI tooling for `Claude Code`, `Codex CLI`, and `OpenCode`
+- Shared AI tooling for `Claude Code` and `Codex CLI`
 
 This is a real daily-driver setup, not a demo template. The README focuses on what is actually implemented in this repository today.
 
@@ -45,12 +45,10 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
   - Nix user packages on macOS/Linux
   - nix-darwin system config on macOS
   - Homebrew/MAS integration on macOS
-- Shared AI skills marketplace sync to `~/.agents/skills` for Claude/Codex/OpenCode
-- Multi-provider account switching for managed wrappers, plus native OpenCode provider switching:
+- Shared AI skills marketplace sync to `~/.agents/skills` for Claude/Codex
+- Multi-provider account switching for managed wrappers:
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
-  - OpenCode via native `opencode` (provider keys rendered in config)
-- Declarative `OpenCode + oh-my-opencode` global config with native-only (no-Claude-compat) guardrails
 - Auto MCP sync for Claude on every `chezmoi apply`
 - Automated dependency upkeep via GitHub Actions (versions, flake locks, aqua packages)
 
@@ -64,7 +62,7 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 - **Workflow guardrails**: pre-commit checks + Claude hooks to reduce risky edits and command misuse
 - **DX automation**: Justfile routines, fzf navigation helpers, AI-assisted commit flows
 - **CI parity**: template rendering and `nix flake check` on macOS + Linux matrix
-- **Triple AI stack**: Claude Code, Codex CLI, and OpenCode are managed declaratively in one repo
+- **Dual AI stack**: Claude Code and Codex CLI are managed declaratively in one repo
 
 ---
 
@@ -93,8 +91,7 @@ Core principles:
 - [Bootstrap Flow (What Actually Runs)](#bootstrap-flow-what-actually-runs)
 - [Daily Operations](#daily-operations)
 - [Claude Code Integration](#claude-code-integration)
-- [OpenCode Integration](#opencode-integration)
-- [AI Tooling (Claude + Codex + OpenCode)](#ai-tooling-claude--codex--opencode)
+- [AI Tooling (Claude + Codex)](#ai-tooling-claude--codex)
 - [Tool Chains](#tool-chains)
 - [Shell Functions](#shell-functions)
 - [Package Management](#package-management)
@@ -116,7 +113,7 @@ This repository combines `chezmoi` templating with Nix-based package management 
 - `nix-darwin` (macOS): system-level configuration
 - `flakey-profile` (macOS/Linux): user package profile
 - `aqua` + `mise`: CLI/runtime tooling layer outside Nix where needed
-- `dot_claude` + `dot_codex` + `private_dot_config/opencode`: tool-specific global guidance and configuration
+- `dot_claude` + `dot_codex`: tool-specific global guidance and configuration
 
 | Component     | macOS          | Linux          |
 | ------------- | -------------- | -------------- |
@@ -146,7 +143,7 @@ This repository combines `chezmoi` templating with Nix-based package management 
 │       ├── apps.nix.tmpl       # Homebrew + MAS wiring
 │       ├── profile.nix.tmpl    # flakey-profile package profile
 │       └── host-users.nix
-├── dot_local/bin/              # CLI wrappers (Claude/Codex/OpenCode/keys/MCP)
+├── dot_local/bin/              # CLI wrappers (Claude/Codex/keys/MCP)
 ├── dot_claude/                 # Claude global instructions/hooks/templates
 ├── dot_codex/                  # Codex global instructions/config/prompts
 ├── private_dot_config/         # Tool configs (tmux, mise, aqua, gopass, ...)
@@ -287,7 +284,7 @@ Skills are synced via `.chezmoiexternal.toml.tmpl` from:
 - [anthropics/skills](https://github.com/anthropics/skills)
 - community multilingual Humanizer pack (`humanizer-en`, `humanizer-zh`, `humanizer-ja`)
 
-They are normalized into `~/.agents/skills` and shared by Claude/Codex/OpenCode.
+They are normalized into `~/.agents/skills` and shared by Claude/Codex.
 
 ### Quality Protocols
 
@@ -310,66 +307,7 @@ Claude hooks in `dot_claude/hooks/` provide workflow guardrails and formatting a
 
 ---
 
-## OpenCode Integration
-
-### Configuration Ownership
-
-OpenCode is managed declaratively through:
-
-- `private_dot_config/opencode/opencode.jsonc.tmpl`
-- `private_dot_config/opencode/oh-my-opencode.jsonc`
-
-Rendered targets:
-
-- `~/.config/opencode/opencode.jsonc`
-- `~/.config/opencode/oh-my-opencode.jsonc`
-
-OpenCode key rendering uses `provider@private` naming (for example `kimi@private`) and resolves provider keys from gopass.
-
-### OpenCode Native Mode
-
-Use native `opencode` directly:
-
-- Key path: `opencode/{provider}/private/api_key`
-
-### Native-Only Policy (No Claude Compatibility Bridge)
-
-`oh-my-opencode` compatibility ingestion is explicitly disabled:
-
-- `claude_code.mcp = false`
-- `claude_code.commands = false`
-- `claude_code.skills = false`
-- `claude_code.agents = false`
-- `claude_code.hooks = false`
-- `claude_code.plugins = false`
-- `disabled_hooks` includes `claude-code-hooks`
-- `disabled_agents` includes `sisyphus`
-- `sisyphus_agent.disabled = true`
-- `sisyphus.tasks.claude_code_compat = false`
-
-This keeps OpenCode runtime behavior independent from `~/.claude/*`.
-
-### Runtime Confirmation Baseline
-
-OpenCode permissions are pinned to require confirmation (`ask`) for:
-
-- `edit`
-- `bash`
-- `external_directory`
-- `webfetch`
-- `websearch`
-- `codesearch`
-- `lsp`
-- `task`
-- `skill`
-
-This applies to primary OpenCode flow and the default oh-my-opencode orchestration flow unless an agent overrides those permissions.
-
-See: `docs/opencode-provider.md`.
-
----
-
-## AI Tooling (Claude + Codex + OpenCode)
+## AI Tooling (Claude + Codex)
 
 ### Shared Skill Distribution
 
@@ -379,7 +317,7 @@ See: `docs/opencode-provider.md`.
 - `anthropics/skills`
 - multilingual Humanizer community sources (`humanizer-en`, `humanizer-zh`, `humanizer-ja`)
 
-They are normalized into `~/.agents/skills` and shared by Claude/Codex/OpenCode.
+They are normalized into `~/.agents/skills` and shared by Claude/Codex.
 
 ### Account + Provider Control
 
@@ -395,9 +333,6 @@ codex-manage
 codex-manage list
 codex-manage switch openai
 codex-with deepseek@private "explain this file"
-
-# OpenCode (native CLI + provider-based key rendering)
-opencode run -m kimi@private/kimi-k2.5 "say ok"
 ```
 
 ### Token Helpers
@@ -405,13 +340,11 @@ opencode run -m kimi@private/kimi-k2.5 "say ok"
 ```bash
 claude-token --check kimi@private
 codex-token --check deepseek@private
-gopass show -o opencode/kimi/private/api_key >/dev/null
 ```
 
 ### MCP Integration
 
 - Claude MCP entries are reconciled by `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl`.
-- OpenCode MCP/plugin behavior is managed natively via `~/.config/opencode/opencode.jsonc` and `~/.config/opencode/oh-my-opencode.jsonc`.
 - Wrapper commands provided in this repo:
   - `~/.local/bin/mcp-context7`
   - `~/.local/bin/mcp-tavily`
@@ -478,7 +411,7 @@ domain-organized set of power-user CLIs. Everything is version-pinned via aqua.
 | Security & SBOM  | [zizmor](https://github.com/zizmorcore/zizmor), [Gitleaks](https://github.com/gitleaks/gitleaks), [Trivy](https://github.com/aquasecurity/trivy), [Syft](https://github.com/anchore/syft), [Grype](https://github.com/anchore/grype)                                                                                           |
 | System & network | [bottom](https://github.com/ClementTsang/bottom), [procs](https://github.com/dalance/procs), [lnav](https://github.com/tstack/lnav), [hexyl](https://github.com/sharkdp/hexyl), [doggo](https://github.com/mr-karan/doggo), [hyperfine](https://github.com/sharkdp/hyperfine)                                                  |
 | Archive & media  | [ouch](https://github.com/ouch-org/ouch), [gum](https://github.com/charmbracelet/gum), [vhs](https://github.com/charmbracelet/vhs)                                                                                                                                                                                             |
-| AI usage         | [ccusage](https://github.com/ryoppippi/ccusage), `@ccusage/codex`, `@ccusage/opencode`                                                                                                                                                                                                                                         |
+| AI usage         | [ccusage](https://github.com/ryoppippi/ccusage), `@ccusage/codex`                                                                                                                                                                                                                                                              |
 
 ---
 
@@ -552,7 +485,6 @@ See:
 - `docs/keys-manage-guide.md`
 - `docs/gopass-new-device-setup.md`
 - `docs/claude-provider.md`
-- `docs/opencode-provider.md`
 
 ---
 
@@ -580,7 +512,6 @@ See:
 ## Additional Docs
 
 - `docs/claude-provider.md`
-- `docs/opencode-provider.md`
 - `docs/keys-manage-guide.md`
 - `docs/gopass-new-device-setup.md`
 - `docs/tmux.md`
