@@ -1,21 +1,19 @@
 #!/usr/bin/env bash
 #
-# skill-activate — pick which library skills are active for a scope, for BOTH
-# Claude Code and Codex at once. Selection happens entirely in fzf (no file
-# ops while you browse); the symlinks are created/removed in ONE batch only
-# when you press Enter.
+# skill-activate — a live on/off panel for curating which library skills are
+# active, for BOTH Claude Code and Codex at once. Tab/Space flips a skill on/off
+# in place (the ● updates live); Enter leaves. Toggling is fast — the library
+# is scanned ONCE up front and the panel just re-reads that cached index.
 #
-# Library (master, nested folders = categories):
-#   ~/.agents/skills/<category>/<skill>/SKILL.md
-# Active sets (flat symlinks the tools read):
+# Library (master, organised by source):  ~/.agents/skills/<src>/<skill>/SKILL.md
+# Categories shown in the panel come from a function map (not the source repo):
+#   ~/.local/share/skill-activate/categories.tsv   (skill <TAB> category)
+# Active sets the tools actually read (flat symlinks into the library):
 #   project (default): ./.claude/skills/ + ./.agents/skills/   (Claude + Codex)
 #   user             : ~/.claude/skills/ + ~/.codex/skills/    (keep minimal)
 #
-# In the picker: Tab marks skills to FLIP, Enter applies all flips at once.
-#   ● already active   ○ inactive
-#
 # Usage:
-#   skill-activate [project|user]      interactive picker (default: project)
+#   skill-activate [project|user]      live on/off panel (default: project)
 #   skill-activate [scope] --active    list active skills
 #   skill-activate [scope] --list      print the rows (no fzf)
 #   skill-activate [scope] --clear     deactivate everything for the scope
@@ -23,26 +21,42 @@
 set -euo pipefail
 
 library="${SKILL_LIBRARY:-$HOME/.agents/skills}"
+catfile="${SKILL_CATEGORIES:-$HOME/.local/share/skill-activate/categories.tsv}"
 scope="project"
 mode="pick"
+internal=""
+tname=""
+pidx=""
 
-while [ $# -gt 0 ]; do
-  case "$1" in
-  project | user) scope="$1" ;;
-  --active) mode="active" ;;
-  --list) mode="list" ;;
-  --clear) mode="clear" ;;
-  -h | --help)
-    sed -n '3,24p' "$0" | sed 's/^#//; s/^ //'
-    exit 0
-    ;;
-  *)
-    echo "skill-activate: unknown argument '$1'" >&2
-    exit 2
-    ;;
-  esac
+# Internal entrypoints invoked by the fzf key-bindings.
+if [ "${1:-}" = "__rows" ] || [ "${1:-}" = "__toggle" ]; then
+  internal="$1"
   shift
-done
+  if [ "$internal" = "__toggle" ]; then
+    tname="$1"
+    shift
+  fi
+  scope="${1:-project}"
+  pidx="${2:-}"
+else
+  while [ $# -gt 0 ]; do
+    case "$1" in
+    project | user) scope="$1" ;;
+    --active) mode="active" ;;
+    --list) mode="list" ;;
+    --clear) mode="clear" ;;
+    -h | --help)
+      sed -n '3,21p' "$0" | sed 's/^#//; s/^ //'
+      exit 0
+      ;;
+    *)
+      echo "skill-activate: unknown argument '$1'" >&2
+      exit 2
+      ;;
+    esac
+    shift
+  done
+fi
 
 case "$scope" in
 project)
@@ -53,6 +67,10 @@ user)
   claude_dir="$HOME/.claude/skills"
   codex_dir="$HOME/.codex/skills"
   ;;
+*)
+  echo "skill-activate: scope must be 'project' or 'user'" >&2
+  exit 2
+  ;;
 esac
 
 [ -d "$library" ] || {
@@ -60,8 +78,6 @@ esac
   exit 1
 }
 
-# A scope dir that is itself a symlink points back at the library; writing into
-# it would corrupt the library. Require real directories.
 require_real_dir() {
   if [ -L "$1" ]; then
     echo "skill-activate: $1 is a symlink -> $(readlink "$1")" >&2
@@ -70,38 +86,62 @@ require_real_dir() {
   fi
 }
 
-# name <TAB> category <TAB> skilldir <TAB> description  — scanned ONCE.
-index() {
+mark() { if [ -e "$claude_dir/$1" ]; then printf '●'; else printf '○'; fi; }
+
+# name <TAB> "<mark>  category  name  description", read from a prebuilt index.
+rows_from() {
+  while IFS=$'\t' read -r name cat sdir desc; do
+    printf '%s\t%s  %-15s %-30s %s\n' "$name" "$(mark "$name")" "$cat" "$name" "$desc"
+  done <"$1"
+}
+
+# fzf-binding entrypoints — read the prebuilt index, never re-scan the library.
+if [ "$internal" = "__rows" ]; then
+  rows_from "$pidx"
+  exit 0
+fi
+if [ "$internal" = "__toggle" ]; then
+  [ -L "$claude_dir" ] && exit 0
+  mkdir -p "$claude_dir" "$codex_dir" 2>/dev/null || true
+  sdir=$(awk -F'\t' -v n="$tname" '$1==n{print $3}' "$pidx")
+  [ -n "$sdir" ] || exit 0
+  if [ -e "$claude_dir/$tname" ]; then
+    rm -f "$claude_dir/$tname" "$codex_dir/$tname"
+  else
+    ln -sfn "$sdir" "$claude_dir/$tname"
+    ln -sfn "$sdir" "$codex_dir/$tname"
+  fi
+  exit 0
+fi
+
+if [ "$mode" = "active" ]; then
+  [ -d "$claude_dir" ] && find "$claude_dir" -maxdepth 1 -type l 2>/dev/null | sed "s#$claude_dir/#  ●  #" | sort
+  exit 0
+fi
+
+# Build the index ONCE: name <TAB> category <TAB> skilldir <TAB> description.
+# Category = function map lookup (categories.tsv), else the source folder.
+build_index() {
   find "$library" -name SKILL.md -not -path '*/.system/*' 2>/dev/null | sort | while IFS= read -r md; do
     sdir=${md%/SKILL.md}
     name=${sdir##*/}
     rel=${sdir#"$library"/}
-    cat=${rel%/*}
-    [ "$cat" = "$rel" ] && cat="(top)"
-    desc=$(awk '/^description:/{sub(/^description:[ \t]*/,""); gsub(/[|>"]/,""); if($0!=""){print;exit} getline; sub(/^[ \t]*/,""); gsub(/"/,""); print; exit}' "$md" 2>/dev/null | cut -c1-64)
-    printf '%s\t%s\t%s\t%s\n' "$name" "$cat" "$sdir" "$desc"
-  done
+    folder=${rel%/*}
+    [ "$folder" = "$rel" ] && folder="(top)"
+    desc=$(awk '/^description:/{sub(/^description:[ \t]*/,""); gsub(/[|>"]/,""); if($0!=""){print;exit} getline; sub(/^[ \t]*/,""); gsub(/"/,""); print; exit}' "$md" 2>/dev/null | cut -c1-58)
+    printf '%s\t%s\t%s\t%s\n' "$name" "$folder" "$sdir" "$desc"
+  done | awk -F'\t' -v cf="$catfile" '
+    BEGIN { while ((getline l < cf) > 0) { p = index(l, "\t"); if (p) cat[substr(l, 1, p - 1)] = substr(l, p + 1) } }
+    { c = ($1 in cat) ? cat[$1] : $2; printf "%s\t%s\t%s\t%s\n", $1, c, $3, $4 }'
 }
-
-mark() { if [ -e "$claude_dir/$1" ]; then printf '●'; else printf '○'; fi; }
 
 idx=$(mktemp)
 trap 'rm -f "$idx"' EXIT
-index >"$idx"
-
-rows() {
-  while IFS=$'\t' read -r name cat sdir desc; do
-    printf '%s\t%s  %-22s %-30s %s\n' "$name" "$(mark "$name")" "$cat" "$name" "$desc"
-  done <"$idx"
-}
+build_index | sort -t"$(printf '\t')" -k2,2 -k1,1 >"$idx"
 
 case "$mode" in
-active)
-  [ -d "$claude_dir" ] && find "$claude_dir" -maxdepth 1 -type l 2>/dev/null | sed "s#$claude_dir/#  ●  #" | sort
-  exit 0
-  ;;
 list)
-  rows | cut -f2-
+  rows_from "$idx" | cut -f2-
   exit 0
   ;;
 clear)
@@ -121,41 +161,21 @@ command -v fzf >/dev/null 2>&1 || {
 require_real_dir "$claude_dir"
 require_real_dir "$codex_dir"
 mkdir -p "$claude_dir" "$codex_dir"
+self=$(command -v "$0" 2>/dev/null || true)
+[ -x "$self" ] || self="$0"
+hs=${claude_dir/#$HOME/\~}
 
-home_short=${claude_dir/#$HOME/\~}
-selected=$(rows | fzf -m \
-  --delimiter='\t' --with-nth='2..' \
-  --header="$scope (Claude+Codex) → $home_short   │   Tab=mark  Enter=apply   │   ● active  ○ off  (marking flips it)" \
-  --preview="sed -n '1,40p' \"\$(find '$library' -path '*/{1}/SKILL.md' -not -path '*/.system/*' 2>/dev/null | head -1)\"" \
+rows_from "$idx" | fzf \
+  --delimiter='\t' --with-nth='2..' --no-multi --cycle --reverse --height='100%' \
+  --header="$scope (Claude+Codex) → $hs   │   Tab/Space: toggle on/off (live)   Enter: done   │   ● on  ○ off" \
+  --header-first \
+  --bind="tab:execute-silent($self __toggle {1} $scope $idx)+reload-sync($self __rows $scope $idx)" \
+  --bind="space:execute-silent($self __toggle {1} $scope $idx)+reload-sync($self __rows $scope $idx)" \
+  --bind="enter:accept" \
+  --bind="esc:accept" \
+  --preview="sed -n '1,40p' \"\$(awk -F'\t' -v n={1} '\$1==n{print \$3}' '$idx')/SKILL.md\"" \
   --preview-window='right,56%,wrap' \
-  | cut -f1) || {
-  echo "cancelled"
-  exit 0
-}
-
-[ -z "$selected" ] && {
-  echo "no changes"
-  exit 0
-}
-
-# One batch of file ops, only now.
-added=0
-removed=0
-while IFS= read -r name; do
-  [ -z "$name" ] && continue
-  sdir=$(awk -F'\t' -v n="$name" '$1==n{print $3}' "$idx")
-  [ -n "$sdir" ] || continue
-  if [ -e "$claude_dir/$name" ]; then
-    rm -f "$claude_dir/$name" "$codex_dir/$name"
-    removed=$((removed + 1))
-  else
-    ln -sfn "$sdir" "$claude_dir/$name"
-    ln -sfn "$sdir" "$codex_dir/$name"
-    added=$((added + 1))
-  fi
-done <<EOF
-$selected
-EOF
+  >/dev/null || true
 
 n=$(find "$claude_dir" -maxdepth 1 -type l 2>/dev/null | wc -l | tr -d ' ')
-echo "$scope: +$added −$removed → $n active (Claude + Codex) in $home_short"
+echo "$scope: $n skill(s) active (Claude + Codex) in $hs"
