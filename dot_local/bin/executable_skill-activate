@@ -2,8 +2,8 @@
 #
 # skill-activate — a live on/off panel for curating which library skills are
 # active for Claude plus either the project harness set or user Codex set.
-# Tab/Space flips a skill on/off in place (the ● updates live); Ctrl-A flips
-# the highlighted skill's whole category; Enter leaves.
+# Tab/Space flips one skill on/off in place (the ● updates live). Ctrl-A flips
+# every skill in the highlighted row's category; Enter leaves.
 # Toggling is fast — the library is scanned ONCE up front and the panel just
 # re-reads that cached index.
 #
@@ -267,10 +267,13 @@ mkdir -p "$claude_dir" "$codex_dir"
 self=$(command -v "$0" 2>/dev/null || true)
 [ -x "$self" ] || self="$0"
 hs=${claude_dir/#$HOME/\~}
+header="$scope ($target_label) → $hs
+Tab/Space: toggle one skill   │   Ctrl-A: toggle ALL skills in the highlighted category   │   Enter/Esc: done   │   ● on  ○ off
+CLI equivalent: skill-activate $scope --category <category>"
 
 rows_from "$idx" | fzf \
   --delimiter='\t' --with-nth='2..' --no-multi --cycle --reverse --height='100%' \
-  --header="$scope ($target_label) → $hs   │   Tab/Space: toggle skill   Ctrl-A: toggle category   Enter: done   │   ● on  ○ off" \
+  --header="$header" \
   --header-first \
   --bind="tab:execute-silent($self __toggle {1} $scope $idx)+reload-sync($self __rows $scope $idx)" \
   --bind="space:execute-silent($self __toggle {1} $scope $idx)+reload-sync($self __rows $scope $idx)" \
