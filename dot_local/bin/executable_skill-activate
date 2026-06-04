@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 #
 # skill-activate — a live on/off panel for curating which library skills are
-# active, for BOTH Claude Code and Codex at once. Tab/Space flips a skill on/off
-# in place (the ● updates live); Enter leaves. Toggling is fast — the library
-# is scanned ONCE up front and the panel just re-reads that cached index.
+# active for Claude plus either the project harness set or user Codex set.
+# Tab/Space flips a skill on/off in place (the ● updates live); Enter leaves.
+# Toggling is fast — the library is scanned ONCE up front and the panel just
+# re-reads that cached index.
 #
 # The library is saved by FUNCTION category at download time:
-#   ~/.agents/skills/<category>/<skill>/SKILL.md   (e.g. cloud/, python/, ai-llm/)
+#   ~/.harnesses/skills/<category>/<skill>/SKILL.md   (e.g. cloud/, python/, ai-llm/)
 # so the panel groups by the folder directly — no sidecar mapping file.
 #
-# Active sets the tools actually read (flat symlinks into the library):
-#   project (default): ./.claude/skills/ + ./.agents/skills/   (Claude + Codex)
+# Active sets (flat symlinks into the library):
+#   project (default): ./.claude/skills/ + ./.harnesses/skills/
 #   user             : ~/.claude/skills/ + ~/.codex/skills/    (keep minimal)
 #
 # Usage:
@@ -21,7 +22,7 @@
 
 set -euo pipefail
 
-library="${SKILL_LIBRARY:-$HOME/.agents/skills}"
+library="${SKILL_LIBRARY:-$HOME/.harnesses/skills}"
 scope="project"
 mode="pick"
 internal=""
@@ -60,11 +61,13 @@ fi
 case "$scope" in
 project)
   claude_dir="$PWD/.claude/skills"
-  codex_dir="$PWD/.agents/skills"
+  codex_dir="$PWD/.harnesses/skills"
+  target_label="Claude + harness"
   ;;
 user)
   claude_dir="$HOME/.claude/skills"
   codex_dir="$HOME/.codex/skills"
+  target_label="Claude + Codex"
   ;;
 *)
   echo "skill-activate: scope must be 'project' or 'user'" >&2
@@ -144,7 +147,7 @@ clear)
     [ -L "$d" ] && continue
     [ -d "$d" ] && find "$d" -maxdepth 1 -type l -delete 2>/dev/null || true
   done
-  echo "cleared $scope (Claude + Codex)"
+  echo "cleared $scope ($target_label)"
   exit 0
   ;;
 esac
@@ -162,7 +165,7 @@ hs=${claude_dir/#$HOME/\~}
 
 rows_from "$idx" | fzf \
   --delimiter='\t' --with-nth='2..' --no-multi --cycle --reverse --height='100%' \
-  --header="$scope (Claude+Codex) → $hs   │   Tab/Space: toggle on/off (live)   Enter: done   │   ● on  ○ off" \
+  --header="$scope ($target_label) → $hs   │   Tab/Space: toggle on/off (live)   Enter: done   │   ● on  ○ off" \
   --header-first \
   --bind="tab:execute-silent($self __toggle {1} $scope $idx)+reload-sync($self __rows $scope $idx)" \
   --bind="space:execute-silent($self __toggle {1} $scope $idx)+reload-sync($self __rows $scope $idx)" \
@@ -173,4 +176,4 @@ rows_from "$idx" | fzf \
   >/dev/null || true
 
 n=$(find "$claude_dir" -maxdepth 1 -type l 2>/dev/null | wc -l | tr -d ' ')
-echo "$scope: $n skill(s) active (Claude + Codex) in $hs"
+echo "$scope: $n skill(s) active ($target_label) in $hs"

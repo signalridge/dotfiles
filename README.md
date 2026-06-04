@@ -40,12 +40,12 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 
 ## Highlights
 
-- Unified bootstrap pipeline (`.chezmoiscripts/00..11`) with idempotent post-apply maintenance
+- Unified bootstrap pipeline (`.chezmoiscripts/00..12`) with idempotent post-apply maintenance
 - Cross-platform package strategy:
   - Nix user packages on macOS/Linux
   - nix-darwin system config on macOS
   - Homebrew/MAS integration on macOS
-- Shared AI skills marketplace sync to `~/.agents/skills` for Claude/Codex
+- Shared AI skills marketplace sync to `~/.harnesses/skills` outside Codex auto-discovery
 - Multi-provider account switching for managed wrappers:
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
@@ -135,7 +135,7 @@ This repository combines `chezmoi` templating with Nix-based package management 
 │   ├── versions.yaml           # Pinned tool/plugin revisions
 │   ├── aerospace.yaml          # Aerospace WM data
 │   └── hammerspoon.yaml        # Hammerspoon data
-├── .chezmoiscripts/            # Bootstrap + maintenance pipeline (00..11)
+├── .chezmoiscripts/            # Bootstrap + maintenance pipeline (00..12)
 ├── nix-config/
 │   ├── flake.nix.tmpl
 │   └── modules/
@@ -284,7 +284,7 @@ Skills are synced via `.chezmoiexternal.toml.tmpl` from:
 - [anthropics/skills](https://github.com/anthropics/skills)
 - community multilingual Humanizer pack (`humanizer-en`, `humanizer-zh`, `humanizer-ja`)
 
-They are normalized into `~/.agents/skills` and shared by Claude/Codex.
+They are normalized into `~/.harnesses/skills` as a shared harness library; use `skill-activate` to curate active symlinks.
 
 ### Quality Protocols
 
@@ -317,7 +317,7 @@ Claude hooks in `dot_claude/hooks/` provide workflow guardrails and formatting a
 - `anthropics/skills`
 - multilingual Humanizer community sources (`humanizer-en`, `humanizer-zh`, `humanizer-ja`)
 
-They are normalized into `~/.agents/skills` and shared by Claude/Codex.
+They are normalized into `~/.harnesses/skills` as a shared harness library; use `skill-activate` to curate active symlinks.
 
 ### Account + Provider Control
 
