@@ -25,9 +25,6 @@ agent_tool_for_command() {
     codex | codex-aarch64-* | codex-x86_64-*)
         printf '%s\n' "codex"
         ;;
-    opencode)
-        printf '%s\n' "opencode"
-        ;;
     *)
         return 1
         ;;
@@ -107,7 +104,7 @@ write_state() {
     local server_pid pane_tty pid cache_dir state_file now
     local transcript_path turn_id transcript_line_count
 
-    [[ "$tool" =~ ^(claude|codex|opencode)$ ]] || return 0
+    [[ "$tool" =~ ^(claude|codex)$ ]] || return 0
     [[ "$state" =~ ^(busy|idle)$ ]] || return 0
     [[ -n "$pane_id" ]] || return 0
     command -v tmux >/dev/null 2>&1 || return 0

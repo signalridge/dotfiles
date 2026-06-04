@@ -140,7 +140,6 @@ claude:
 
 - `claude` wrappers -> `claude/...`
 - `codex` wrappers -> `codex/...`
-- `opencode` wrappers -> `opencode/...`
 
 **Migration:** re-add keys with `claude-manage add-key` / `codex-manage add-key` to store them in canonical paths (`<tool>/{provider}/{account}/api_key`), then delete obsolete entries.
 

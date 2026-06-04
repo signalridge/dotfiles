@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tmux2k ai status - stable AI agent counter for the tmux status bar.
 #
-# Shows foreground AI coding agent sessions (claude/codex/opencode) that are
+# Shows foreground AI coding agent sessions (claude/codex) that are
 # occupying tmux panes. The current window may be highlighted with a different
 # shape, but busy state comes from explicit lifecycle hooks written by the
 # agent runtime, with a narrow TUI-status fallback for already-running sessions
@@ -38,9 +38,6 @@ agent_tool_for_command() {
         ;;
     codex | codex-aarch64-* | codex-x86_64-*)
         printf '%s\n' "codex"
-        ;;
-    opencode)
-        printf '%s\n' "opencode"
         ;;
     *)
         return 1

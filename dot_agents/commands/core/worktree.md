@@ -1,6 +1,6 @@
 # /worktree - Worktree Workflow Guide
 
-Standardize workspace isolation for implementation tasks across Claude, Codex, and OpenCode.
+Standardize workspace isolation for implementation tasks across Claude and Codex.
 
 ## Policy
 

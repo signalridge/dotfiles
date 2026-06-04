@@ -32,7 +32,7 @@
 - `chezmoi`: dotfiles 管理、テンプレート展開、ブートストラップのオーケストレーション
 - `Nix`: 宣言的パッケージ管理（macOS は `nix-darwin`、macOS/Linux 共通で `flakey-profile`）
 - `aqua` + `mise`: 必要に応じて Nix 外で CLI/ランタイムをピン留め
-- `Claude Code` と `Codex CLI` と `OpenCode`: 共有 AI ツールチェーン
+- `Claude Code` と `Codex CLI`: 共有 AI ツールチェーン
 
 これはデモ用テンプレートではなく、日常運用している実構成です。README では、このリポジトリで現在実装されている内容のみを扱います。
 
@@ -45,12 +45,10 @@
   - macOS/Linux 共通の Nix ユーザーパッケージ
   - macOS の `nix-darwin` システム設定
   - macOS の Homebrew / MAS 連携
-- Claude/Codex/OpenCode 共通 Skills を `~/.agents/skills` へ自動同期
-- Claude/Codex ラッパーの Provider 切替と、OpenCode ネイティブ provider 切替をサポート：
+- Claude/Codex 共通 Skills を `~/.agents/skills` へ自動同期
+- Claude/Codex ラッパーの Provider 切替をサポート：
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
-  - OpenCode はネイティブ `opencode`（provider key は設定でレンダリング）
-- `OpenCode + oh-my-opencode` のグローバル設定を宣言的に管理（Claude compatibility 無効化のガード付き）
 - `chezmoi apply` のたびに Claude MCP を自動同期
 - GitHub Actions による依存更新の自動化（versions、flake lock、aqua packages）
 
@@ -64,7 +62,7 @@
 - **ワークフローガードレール**: pre-commit と Claude Hooks で危険な編集やコマンド誤用を抑止
 - **DX 自動化**: Justfile ルーチン、fzf ナビゲーション、AI 補助コミットフロー
 - **CI 整合性**: テンプレートレンダリングと `nix flake check` を macOS/Linux マトリクスで検証
-- **AI 三系統対応**: Claude Code、Codex CLI、OpenCode を 1 つのリポジトリで宣言的に管理
+- **AI 2 系統対応**: Claude Code、Codex CLI を 1 つのリポジトリで宣言的に管理
 
 ---
 
@@ -93,8 +91,7 @@
 - [Bootstrap フロー（実際の実行順）](#bootstrap-フロー実際の実行順)
 - [日常運用](#日常運用)
 - [Claude Code 統合](#claude-code-統合)
-- [OpenCode 統合](#opencode-統合)
-- [AI ツールチェーン（Claude + Codex + OpenCode）](#ai-ツールチェーンclaude--codex--opencode)
+- [AI ツールチェーン（Claude + Codex）](#ai-ツールチェーンclaude--codex)
 - [ツールチェーン](#ツールチェーン)
 - [シェル関数](#シェル関数)
 - [パッケージ管理](#パッケージ管理)
@@ -116,7 +113,7 @@
 - `nix-darwin`（macOS）: システムレベル構成
 - `flakey-profile`（macOS/Linux）: ユーザーパッケージプロファイル
 - `aqua` + `mise`: 必要に応じた Nix 外 CLI/ランタイムレイヤー
-- `dot_claude` + `dot_codex` + `private_dot_config/opencode`: ツール別のグローバル指針と設定
+- `dot_claude` + `dot_codex`: ツール別のグローバル指針と設定
 
 | コンポーネント     | macOS          | Linux          |
 | ------------------ | -------------- | -------------- |
@@ -146,7 +143,7 @@
 │       ├── apps.nix.tmpl       # Homebrew + MAS 連携
 │       ├── profile.nix.tmpl    # flakey-profile パッケージ設定
 │       └── host-users.nix
-├── dot_local/bin/              # CLI ラッパー（Claude/Codex/OpenCode/keys/MCP）
+├── dot_local/bin/              # CLI ラッパー（Claude/Codex/keys/MCP）
 ├── dot_claude/                 # Claude グローバル指示、hooks、テンプレート
 ├── dot_codex/                  # Codex グローバル指示、設定、prompts
 ├── private_dot_config/         # 各種ツール設定（tmux、mise、aqua、gopass など）
@@ -287,7 +284,7 @@ Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期さ�
 - [anthropics/skills](https://github.com/anthropics/skills)
 - 多言語 Humanizer コミュニティパック（`humanizer-en`、`humanizer-zh`、`humanizer-ja`）
 
-同期先は `~/.agents/skills` で、Claude/Codex/OpenCode のすべてで利用します。
+同期先は `~/.agents/skills` で、Claude/Codex のすべてで利用します。
 
 ### 品質プロトコル
 
@@ -310,66 +307,7 @@ Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期さ�
 
 ---
 
-## OpenCode 統合
-
-### 設定の責務境界
-
-OpenCode 設定は次のテンプレートで宣言的に管理します。
-
-- `private_dot_config/opencode/opencode.jsonc.tmpl`
-- `private_dot_config/opencode/oh-my-opencode.jsonc`
-
-レンダリング先:
-
-- `~/.config/opencode/opencode.jsonc`
-- `~/.config/opencode/oh-my-opencode.jsonc`
-
-OpenCode の key レンダリングは `provider@private` 命名（例: `kimi@private`）を使い、gopass から provider key を解決します。
-
-### OpenCode ネイティブモード
-
-`opencode` を直接利用してください。
-
-- key パス: `opencode/{provider}/private/api_key`
-
-### Native-only ポリシー（Claude compatibility bridge を無効化）
-
-`oh-my-opencode` の Claude compatibility 入口は明示的に無効化:
-
-- `claude_code.mcp = false`
-- `claude_code.commands = false`
-- `claude_code.skills = false`
-- `claude_code.agents = false`
-- `claude_code.hooks = false`
-- `claude_code.plugins = false`
-- `disabled_hooks` に `claude-code-hooks` を追加
-- `disabled_agents` に `sisyphus` を追加
-- `sisyphus_agent.disabled = true`
-- `sisyphus.tasks.claude_code_compat = false`
-
-これにより OpenCode の動作は `~/.claude/*` へ依存しません。
-
-### 実行時確認ポリシー
-
-次の高リスク操作はデフォルトで `ask`:
-
-- `edit`
-- `bash`
-- `external_directory`
-- `webfetch`
-- `websearch`
-- `codesearch`
-- `lsp`
-- `task`
-- `skill`
-
-このポリシーは、agent 側で明示的 override がない限り、通常の OpenCode フローと `oh-my-opencode` の既定 orchestration フローに適用されます。
-
-詳細: `docs/opencode-provider.md`。
-
----
-
-## AI ツールチェーン（Claude + Codex + OpenCode）
+## AI ツールチェーン（Claude + Codex）
 
 ### 共有 Skills 配布
 
@@ -379,7 +317,7 @@ OpenCode の key レンダリングは `provider@private` 命名（例: `kimi@pr
 - `anthropics/skills`
 - 多言語 Humanizer コミュニティソース（`humanizer-en`、`humanizer-zh`、`humanizer-ja`）
 
-同期先は `~/.agents/skills` で、Claude/Codex/OpenCode のすべてで利用します。
+同期先は `~/.agents/skills` で、Claude/Codex のすべてで利用します。
 
 ### Account / Provider 管理
 
@@ -395,9 +333,6 @@ codex-manage
 codex-manage list
 codex-manage switch openai
 codex-with deepseek@private "explain this file"
-
-# OpenCode（ネイティブ CLI + provider key レンダリング）
-opencode run -m kimi@private/kimi-k2.5 "say ok"
 ```
 
 ### Token Helpers
@@ -405,13 +340,11 @@ opencode run -m kimi@private/kimi-k2.5 "say ok"
 ```bash
 claude-token --check kimi@private
 codex-token --check deepseek@private
-gopass show -o opencode/kimi/private/api_key >/dev/null
 ```
 
 ### MCP 連携
 
 - Claude MCP は `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl` によって自動同期されます。
-- OpenCode の MCP/plugin 振る舞いは `~/.config/opencode/opencode.jsonc` と `~/.config/opencode/oh-my-opencode.jsonc` でネイティブに管理されます。
 - このリポジトリは次の MCP ラッパーを提供します：
   - `~/.local/bin/mcp-context7`
   - `~/.local/bin/mcp-tavily`
@@ -478,7 +411,7 @@ gopass show -o opencode/kimi/private/api_key >/dev/null
 | Security/SBOM       | [zizmor](https://github.com/zizmorcore/zizmor)、[Gitleaks](https://github.com/gitleaks/gitleaks)、[Trivy](https://github.com/aquasecurity/trivy)、[Syft](https://github.com/anchore/syft)、[Grype](https://github.com/anchore/grype)                                                                                           |
 | システム/ネット     | [bottom](https://github.com/ClementTsang/bottom)、[procs](https://github.com/dalance/procs)、[lnav](https://github.com/tstack/lnav)、[hexyl](https://github.com/sharkdp/hexyl)、[doggo](https://github.com/mr-karan/doggo)、[hyperfine](https://github.com/sharkdp/hyperfine)                                                  |
 | アーカイブ/メディア | [ouch](https://github.com/ouch-org/ouch)、[gum](https://github.com/charmbracelet/gum)、[vhs](https://github.com/charmbracelet/vhs)                                                                                                                                                                                             |
-| AI 使用量           | [ccusage](https://github.com/ryoppippi/ccusage)、`@ccusage/codex`、`@ccusage/opencode`                                                                                                                                                                                                                                         |
+| AI 使用量           | [ccusage](https://github.com/ryoppippi/ccusage)、`@ccusage/codex`                                                                                                                                                                                                                                                              |
 
 ---
 
@@ -552,7 +485,6 @@ chezmoi init --apply --promptBool headless=true signalridge
 - `docs/keys-manage-guide.md`
 - `docs/gopass-new-device-setup.md`
 - `docs/claude-provider.md`
-- `docs/opencode-provider.md`
 
 ---
 
@@ -580,7 +512,6 @@ chezmoi init --apply --promptBool headless=true signalridge
 ## 関連ドキュメント
 
 - `docs/claude-provider.md`
-- `docs/opencode-provider.md`
 - `docs/keys-manage-guide.md`
 - `docs/gopass-new-device-setup.md`
 - `docs/tmux.md`

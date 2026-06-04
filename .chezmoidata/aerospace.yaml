@@ -62,5 +62,3 @@ aerospace:
         comment: Keystroke Pro
       - id: com.rogueamoeba.soundsource
         comment: SoundSource
-      - id: com.ripperhe.Bob
-        comment: Bob
