@@ -511,8 +511,11 @@
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
-# Multilingual Humanizer pack
-# - Stable language-suffixed names: humanizer-en / humanizer-zh / humanizer-ja
+# Humanizer skills (remove AI tone)
+# - humanizer-en / humanizer-ja: blader/humanizer lineage (English / Japanese)
+# - qu-ai-wei: Chinese-native de-AI-tone skill (MIT), replaces the old
+#   op7418/Humanizer-zh translation. Ships SKILL.md + references/ (loaded on
+#   demand). Simplified Chinese only; explicit trigger /qu-ai-wei.
 # - Commit-pinned via revisions in .chezmoidata/versions.yaml
 # ------------------------------------------------------------------------------
 
@@ -527,15 +530,15 @@
     ]
     refreshPeriod = "168h"
 
-[".agents/skills/humanizer-zh"]
+[".agents/skills/qu-ai-wei"]
     type = "archive"
-    url = "https://github.com/op7418/Humanizer-zh/archive/{{ $.versions.humanizerZhRev }}.tar.gz"
+    url = "https://github.com/LifelongLazyLearner/qu-ai-wei/archive/{{ $.versions.quAiWeiRev }}.tar.gz"
     exact = true
     stripComponents = 1
     include = [
-      "Humanizer-zh-*/SKILL.md",
-      "Humanizer-zh-*/README.md",
-      "Humanizer-zh-*/LICENSE"
+      "qu-ai-wei-*/SKILL.md",
+      "qu-ai-wei-*/references/**",
+      "qu-ai-wei-*/LICENSE"
     ]
     refreshPeriod = "168h"
 
