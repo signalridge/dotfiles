@@ -788,19 +788,109 @@
 
 # ------------------------------------------------------------------------------
 # Swift / Apple — dpearson2699/swift-ios-skills. 84 skills, ~14/15 Python rubric
-# dims + 60 Apple-framework skills (HealthKit/StoreKit/WidgetKit/CloudKit/…).
-# Whole-suite pull (the user opted for all 84). Lands under ~/.agents/skills/swift/.
+# dims + Apple-framework skills (HealthKit/StoreKit/WidgetKit/CloudKit/…). Each
+# folder gets a `swift-` prefix (skipped where it already starts with `swift`)
+# so the bare framework names (cloudkit, authentication, …) stay unambiguous —
+# Claude Code keys on the folder name and doesn't namespace by `swift/`.
 # NOTE LICENSE: PolyForm Perimeter 1.0.0 — source-available, NOT OSI-open. Free
 # for personal/team use & modification; only forbids reselling as a competing
 # skills product. We reference it as an external (no redistribution), so fine.
 # ------------------------------------------------------------------------------
-[".agents/skills/swift"]
+{{- $swiftSkills := list
+  "accessorysetupkit"
+  "activitykit"
+  "adattributionkit"
+  "alarmkit"
+  "app-clips"
+  "app-intents"
+  "app-store-optimization"
+  "app-store-review"
+  "apple-on-device-ai"
+  "appmigrationkit"
+  "audioaccessorykit"
+  "authentication"
+  "avkit"
+  "background-processing"
+  "browserenginekit"
+  "callkit"
+  "carplay"
+  "cloudkit"
+  "contacts-framework"
+  "core-bluetooth"
+  "core-data"
+  "core-motion"
+  "core-nfc"
+  "coreml"
+  "cryptokit"
+  "cryptotokenkit"
+  "debugging-instruments"
+  "device-integrity"
+  "dockkit"
+  "energykit"
+  "eventkit"
+  "financekit"
+  "focus-engine"
+  "gamekit"
+  "healthkit"
+  "homekit"
+  "ios-accessibility"
+  "ios-localization"
+  "ios-networking"
+  "ios-simulator"
+  "mapkit"
+  "metrickit"
+  "musickit"
+  "natural-language"
+  "paperkit"
+  "passkit"
+  "pdfkit"
+  "pencilkit"
+  "permissionkit"
+  "photokit"
+  "push-notifications"
+  "realitykit"
+  "relevancekit"
+  "scenekit"
+  "sensorkit"
+  "shareplay-activities"
+  "speech-recognition"
+  "spritekit"
+  "storekit"
+  "swift-api-design-guidelines"
+  "swift-architecture"
+  "swift-charts"
+  "swift-codable"
+  "swift-concurrency"
+  "swift-formatstyle"
+  "swift-language"
+  "swift-security"
+  "swift-testing"
+  "swiftdata"
+  "swiftlint"
+  "swiftui-animation"
+  "swiftui-gestures"
+  "swiftui-layout-components"
+  "swiftui-liquid-glass"
+  "swiftui-navigation"
+  "swiftui-patterns"
+  "swiftui-performance"
+  "swiftui-uikit-interop"
+  "swiftui-webkit"
+  "tabletopkit"
+  "tipkit"
+  "vision-framework"
+  "weatherkit"
+  "widgetkit"
+}}
+{{- range $skill := $swiftSkills }}
+[".agents/skills/swift/{{ if hasPrefix "swift" $skill }}{{ $skill }}{{ else }}swift-{{ $skill }}{{ end }}"]
     type = "archive"
     url = "https://github.com/dpearson2699/swift-ios-skills/archive/{{ $.versions.dpearsonSwiftSkillsRev }}.tar.gz"
     exact = true
-    stripComponents = 2
-    include = ["swift-ios-skills-*/skills/**"]
+    stripComponents = 3
+    include = ["swift-ios-skills-*/skills/{{ $skill }}/**"]
     refreshPeriod = "168h"
+{{ end }}
 
 # ==============================================================================
 # TypeScript / JavaScript assembly (~11/15 — no single repo is Python-parity, so
@@ -809,15 +899,104 @@
 # ==============================================================================
 
 # typescript/ — marius-townhouse/effective-typescript-skills (MIT). The whole
-# "Effective TypeScript" book as 83 micro-skills: type system, idioms,
-# anti-patterns, exhaustiveness, branded types. The type-safety backbone.
-[".agents/skills/typescript"]
+# "Effective TypeScript" book as 83 micro-skills (type system, idioms,
+# anti-patterns, exhaustiveness, branded types) — the type-safety backbone.
+# Each folder gets a `ts-` prefix (skipped where it already starts with
+# ts/typescript) so the bare rule names read as TypeScript skills.
+{{- $effectiveTsSkills := list
+  "accurate-environment-model"
+  "allowjs-mixing"
+  "async-over-callbacks"
+  "avoid-anecdotal-types"
+  "avoid-inferable-annotations"
+  "avoid-numeric-index"
+  "avoid-repeated-params"
+  "avoid-unnecessary-type-params"
+  "avoid-wrapper-types"
+  "branded-types"
+  "callback-this-type"
+  "code-gen-independent"
+  "codegen-over-complex-types"
+  "compiler-performance"
+  "conditional-types-over-overloads"
+  "consistent-aliases"
+  "context-type-inference"
+  "control-union-distribution"
+  "create-objects-all-at-once"
+  "currying-inference"
+  "different-variables-types"
+  "distinct-special-values"
+  "dom-hierarchy"
+  "domain-language-types"
+  "dry-types"
+  "ecmascript-over-typescript-features"
+  "editor-interrogation"
+  "evolving-types"
+  "excess-property-checking"
+  "exclusive-or-properties"
+  "exhaustiveness-checking"
+  "export-public-types"
+  "function-type-expressions"
+  "functional-constructs-types"
+  "generics-as-functions"
+  "hide-unsafe-assertions"
+  "imprecise-over-inaccurate"
+  "index-signature-alternatives"
+  "iterate-objects-safely"
+  "liberal-accept-strict-return"
+  "limit-any-type"
+  "limit-optional-properties"
+  "mirror-types"
+  "module-augmentation"
+  "module-by-module-migration"
+  "narrow-any-scope"
+  "no-null-in-aliases"
+  "no-type-in-docs"
+  "noimplicitany-completion"
+  "precise-any-variants"
+  "precise-string-types"
+  "prefer-type-annotations"
+  "prefer-unknown-over-any"
+  "push-null-to-perimeter"
+  "record-types-sync"
+  "runtime-type-reconstruction"
+  "soundness-traps"
+  "source-maps-debugging"
+  "structural-typing"
+  "tagged-unions"
+  "tail-recursive-generics"
+  "template-literal-types"
+  "test-your-types"
+  "three-versions-types"
+  "ts-check-jsdoc-experiment"
+  "ts-js-relationship"
+  "tsconfig-options"
+  "tsdoc-comments"
+  "type-checking-vs-testing"
+  "type-coverage"
+  "type-display-attention"
+  "type-narrowing"
+  "type-safe-monkey-patching"
+  "type-value-space"
+  "type-vs-interface"
+  "types-as-sets"
+  "typescript-devdependencies"
+  "understand-type-widening"
+  "unify-types"
+  "use-readonly"
+  "valid-state-types"
+  "variadic-tuple-types"
+  "write-modern-javascript"
+}}
+{{- range $skill := $effectiveTsSkills }}
+[".agents/skills/typescript/{{ if or (hasPrefix "ts" $skill) (hasPrefix "typescript" $skill) }}{{ $skill }}{{ else }}ts-{{ $skill }}{{ end }}"]
     type = "archive"
     url = "https://github.com/marius-townhouse/effective-typescript-skills/archive/{{ $.versions.effectiveTypescriptRev }}.tar.gz"
     exact = true
-    stripComponents = 2
-    include = ["effective-typescript-skills-*/skills/**"]
+    stripComponents = 3
+    include = ["effective-typescript-skills-*/skills/{{ $skill }}/**"]
     refreshPeriod = "168h"
+{{ end }}
 
 # typescript-stack/ — bobmatnyc/claude-mpm-skills (MIT) toolchains/typescript (14
 # skills). bobmatnyc nests skills as <category>/<skill> (testing/vitest, data/
