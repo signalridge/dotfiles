@@ -126,6 +126,7 @@
   "remotion" "media"
   "rust-async-patterns" "systems"
   "rust-development-playbook" "systems"
+  "rust-testing" "systems"
   "saga-orchestration" "backend"
   "screenshot" "media"
   "secrets-management" "cicd"
@@ -650,6 +651,192 @@
     exact = true
     stripComponents = 3
     include = ["rust-development-playbook-skill-*/skills/rust-development-playbook/**"]
+    refreshPeriod = "168h"
+
+# ==============================================================================
+# Per-language skill SUITES (comprehensive — "as broad as the Python suite").
+# Chosen per language after a whole-ecosystem review. Enumerated per-skill via a
+# range over a list so each folder is curatable and we avoid the exact-archive +
+# include + exclude "inconsistent state" trap (no `exclude`, one include each).
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Go — samber/cc-skills-golang (MIT). 43 skills, covers all ~15 Python rubric
+# dimensions PLUS Go-specific gRPC/GraphQL/Swagger, the cobra/viper CLI stack,
+# the full DI cluster (wire/uber-fx/dig/samber-do) and the samber
+# lo/mo/ro/hot/oops/do/slog library family. Lands under ~/.agents/skills/go/.
+# Trim golang-samber-* / golang-spf13-* / golang-uber-* / grpc / graphql /
+# swagger below if you don't use those libraries.
+# ------------------------------------------------------------------------------
+{{- $samberGoSkills := list
+  "golang-benchmark"
+  "golang-cli"
+  "golang-code-style"
+  "golang-concurrency"
+  "golang-context"
+  "golang-continuous-integration"
+  "golang-data-structures"
+  "golang-database"
+  "golang-dependency-injection"
+  "golang-dependency-management"
+  "golang-design-patterns"
+  "golang-documentation"
+  "golang-error-handling"
+  "golang-google-wire"
+  "golang-graphql"
+  "golang-grpc"
+  "golang-how-to"
+  "golang-lint"
+  "golang-modernize"
+  "golang-naming"
+  "golang-observability"
+  "golang-performance"
+  "golang-popular-libraries"
+  "golang-project-layout"
+  "golang-safety"
+  "golang-samber-do"
+  "golang-samber-hot"
+  "golang-samber-lo"
+  "golang-samber-mo"
+  "golang-samber-oops"
+  "golang-samber-ro"
+  "golang-samber-slog"
+  "golang-security"
+  "golang-spf13-cobra"
+  "golang-spf13-viper"
+  "golang-stay-updated"
+  "golang-stretchr-testify"
+  "golang-structs-interfaces"
+  "golang-swagger"
+  "golang-testing"
+  "golang-troubleshooting"
+  "golang-uber-dig"
+  "golang-uber-fx"
+}}
+{{- range $skill := $samberGoSkills }}
+[".agents/skills/go/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/samber/cc-skills-golang/archive/{{ $.versions.samberCcSkillsGolangRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["cc-skills-golang-*/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+{{ end }}
+# ------------------------------------------------------------------------------
+# Rust — actionbook/rust-skills. README declares MIT but the repo ships NO
+# LICENSE file (license is therefore ambiguous — revisit if that matters).
+# Engineering suite only: m01-m15 knowledge modules + coding-guidelines +
+# unsafe-checker + domain-* overlays (23 skills). The repo's core-* / rust-* /
+# meta-* agent-infra & navigation skills are intentionally excluded. Lands under
+# ~/.agents/skills/rust/. Testing is NOT here (actionbook has no testing skill)
+# — that gap is filled by the ECC `rust-testing` skill below.
+# ------------------------------------------------------------------------------
+{{- $actionbookRustSkills := list
+  "coding-guidelines"
+  "domain-cli"
+  "domain-cloud-native"
+  "domain-embedded"
+  "domain-fintech"
+  "domain-iot"
+  "domain-ml"
+  "domain-web"
+  "m01-ownership"
+  "m02-resource"
+  "m03-mutability"
+  "m04-zero-cost"
+  "m05-type-driven"
+  "m06-error-handling"
+  "m07-concurrency"
+  "m09-domain"
+  "m10-performance"
+  "m11-ecosystem"
+  "m12-lifecycle"
+  "m13-domain-error"
+  "m14-mental-model"
+  "m15-anti-pattern"
+  "unsafe-checker"
+}}
+{{- range $skill := $actionbookRustSkills }}
+[".agents/skills/rust/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/actionbook/rust-skills/archive/{{ $.versions.actionbookRustSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["rust-skills-*/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+{{ end }}
+# ------------------------------------------------------------------------------
+# Rust testing — affaan-m/ECC `rust-testing` (MIT). Kept as the dedicated
+# test-authoring skill (rstest/proptest/mockall/criterion/llvm-cov/tokio) since
+# the actionbook suite has none. Canonical repo name is `ECC`, so the tarball
+# top-level dir is `ECC-<sha>`.
+# ------------------------------------------------------------------------------
+[".agents/skills/{{ index $cat "rust-testing" }}/rust-testing"]
+    type = "archive"
+    # Repo canonical name is `ECC`; the GitHub tarball top-level dir (and so the
+    # include prefix) is `ECC-<sha>`, not `everything-claude-code-<sha>`.
+    url = "https://github.com/affaan-m/ECC/archive/{{ $.versions.affaanEccRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["ECC-*/skills/rust-testing/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# Swift / Apple — dpearson2699/swift-ios-skills. 84 skills, ~14/15 Python rubric
+# dims + 60 Apple-framework skills (HealthKit/StoreKit/WidgetKit/CloudKit/…).
+# Whole-suite pull (the user opted for all 84). Lands under ~/.agents/skills/swift/.
+# NOTE LICENSE: PolyForm Perimeter 1.0.0 — source-available, NOT OSI-open. Free
+# for personal/team use & modification; only forbids reselling as a competing
+# skills product. We reference it as an external (no redistribution), so fine.
+# ------------------------------------------------------------------------------
+[".agents/skills/swift"]
+    type = "archive"
+    url = "https://github.com/dpearson2699/swift-ios-skills/archive/{{ $.versions.dpearsonSwiftSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 2
+    include = ["swift-ios-skills-*/skills/**"]
+    refreshPeriod = "168h"
+
+# ==============================================================================
+# TypeScript / JavaScript assembly (~11/15 — no single repo is Python-parity, so
+# three complementary MIT/Apache sources, each in its own namespace).
+# Remaining gaps to author later: generic-TS async/concurrency, resilience.
+# ==============================================================================
+
+# typescript/ — marius-townhouse/effective-typescript-skills (MIT). The whole
+# "Effective TypeScript" book as 83 micro-skills: type system, idioms,
+# anti-patterns, exhaustiveness, branded types. The type-safety backbone.
+[".agents/skills/typescript"]
+    type = "archive"
+    url = "https://github.com/marius-townhouse/effective-typescript-skills/archive/{{ $.versions.effectiveTypescriptRev }}.tar.gz"
+    exact = true
+    stripComponents = 2
+    include = ["effective-typescript-skills-*/skills/**"]
+    refreshPeriod = "168h"
+
+# typescript-stack/ — bobmatnyc/claude-mpm-skills (MIT) toolchains/typescript (13
+# skills): core, testing/vitest+jest, validation/zod, data (prisma/drizzle/
+# kysely), state (zustand/tanstack-query), frameworks (fastify/nodejs-backend),
+# api/trpc. The concern/tooling/framework layer.
+[".agents/skills/typescript-stack"]
+    type = "archive"
+    url = "https://github.com/bobmatnyc/claude-mpm-skills/archive/{{ $.versions.bobmatnycMpmSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["claude-mpm-skills-*/toolchains/typescript/**"]
+    refreshPeriod = "168h"
+
+# common/ — HoangNguyen0403/agent-skills-standard (Apache-2.0, branch `develop`)
+# skills/common (38 language-agnostic skills): error-handling, observability,
+# telemetry, performance-engineering, system-design (resilience), api-design,
+# tdd, code-review, security-audit, debugging — fills the cross-cutting TS dims
+# and is useful for every language. Tarball top dir is `agent-skills-standard-<sha>`.
+[".agents/skills/common"]
+    type = "archive"
+    url = "https://github.com/HoangNguyen0403/agent-skills-standard/archive/{{ $.versions.hoangNguyenSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["agent-skills-standard-*/skills/common/**"]
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
