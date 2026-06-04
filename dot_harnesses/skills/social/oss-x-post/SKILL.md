@@ -56,7 +56,7 @@ default; `--yes` actually sends. Credentials come from gopass at send time (see
 `docs/social-publishing.md`).
 
 ```bash
-SKILL=~/.harnesses/skills/oss-x-post   # this skill's installed path
+SKILL=~/.harnesses/skills/social/oss-x-post   # this skill's installed path
 
 bash "$SKILL/scripts/social-post" x       --file tmp/launch/x.md
 bash "$SKILL/scripts/social-post" bluesky --file tmp/launch/bluesky.md

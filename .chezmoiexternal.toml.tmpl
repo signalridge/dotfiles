@@ -88,9 +88,9 @@
   "monorepo-management" "devtools"
   "mtls-configuration" "cloud"
   "multi-cloud-architecture" "cloud"
-  "next-best-practices" "typescript"
-  "next-cache-components" "typescript"
-  "next-upgrade" "typescript"
+  "next-best-practices" "frontend"
+  "next-cache-components" "frontend"
+  "next-upgrade" "frontend"
   "openapi-spec-generation" "dev-docs"
   "oss-x-post" "social"
   "pdf" "documents"
@@ -113,9 +113,9 @@
   "python-type-safety" "python"
   "qu-ai-wei" "writing"
   "rag-implementation" "ai-llm"
-  "react-best-practices" "typescript"
-  "react-native-architecture" "typescript"
-  "react-state-management" "typescript"
+  "react-best-practices" "frontend"
+  "react-native-architecture" "mobile"
+  "react-state-management" "frontend"
   "reddit" "social"
   "remotion" "media"
   "rust-development-playbook" "rust"
@@ -142,7 +142,7 @@
   "ui-ux-pro-max" "design"
   "vector-index-tuning" "ai-llm"
   "web-artifacts-builder" "design"
-  "web-perf" "typescript"
+  "web-perf" "frontend"
   "webapp-testing" "testing"
   "workers-best-practices" "cloud"
   "workflow-orchestration-patterns" "backend"
@@ -153,15 +153,14 @@
   "zig-development-playbook" "zig"
   "hugging-face-datasets" "ai-llm"
   "hugging-face-evaluation" "ai-llm"
-  "hugging-face-jobs" "ai-llm"
   "hugging-face-model-trainer" "ai-llm"
   "hugging-face-paper-publisher" "ai-llm"
   "hugging-face-tool-builder" "ai-llm"
   "hugging-face-trackio" "ai-llm"
   "hugging-face-cli" "ai-llm"
-  "expo-deployment" "typescript"
-  "expo-cicd-workflows" "typescript"
-  "azd-deployment" "cloud"
+  "expo-deployment" "mobile"
+  "expo-cicd-workflows" "mobile"
+  "azure-deploy" "cloud"
   "skill-scanner" "meta"
   "using-gh-cli" "devtools"
 }}
@@ -328,22 +327,24 @@
 # huggingface/skills ML workflow set
 # ------------------------------------------------------------------------------
 {{- $huggingfaceSkills := list
-  "hugging-face-datasets"
-  "hugging-face-evaluation"
-  "hugging-face-jobs"
-  "hugging-face-model-trainer"
-  "hugging-face-paper-publisher"
-  "hugging-face-tool-builder"
-  "hugging-face-trackio"
-  "hugging-face-cli"
+  "huggingface-datasets/hugging-face-datasets"
+  "huggingface-community-evals/hugging-face-evaluation"
+  "huggingface-llm-trainer/hugging-face-model-trainer"
+  "huggingface-paper-publisher/hugging-face-paper-publisher"
+  "huggingface-tool-builder/hugging-face-tool-builder"
+  "huggingface-trackio/hugging-face-trackio"
+  "hf-cli/hugging-face-cli"
 }}
-{{- range $skill := $huggingfaceSkills }}
-[".harnesses/skills/{{ index $cat $skill }}/{{ $skill }}"]
+{{- range $entry := $huggingfaceSkills }}
+{{- $parts := splitList "/" $entry }}
+{{- $src := index $parts 0 }}
+{{- $dst := index $parts 1 }}
+[".harnesses/skills/{{ index $cat $dst }}/{{ $dst }}"]
     type = "archive"
     url = "https://github.com/huggingface/skills/archive/{{ $.versions.huggingfaceSkillsRev }}.tar.gz"
     exact = true
     stripComponents = 3
-    include = ["skills-*/skills/{{ $skill }}/**"]
+    include = ["skills-*/skills/{{ $src }}/**"]
     refreshPeriod = "168h"
 
 {{- end }}
@@ -361,8 +362,8 @@
     type = "archive"
     url = "https://github.com/getsentry/skills/archive/{{ $.versions.getsentrySkillsRev }}.tar.gz"
     exact = true
-    stripComponents = 5
-    include = ["skills-*/plugins/sentry-skills/skills/{{ $skill }}/**"]
+    stripComponents = 3
+    include = ["skills-*/skills/{{ $skill }}/**"]
     refreshPeriod = "168h"
 
 {{- end }}
@@ -382,8 +383,8 @@
     type = "archive"
     url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
     exact = true
-    stripComponents = 5
-    include = ["skills-*/plugins/gh-cli/skills/using-gh-cli/**"]
+    stripComponents = 4
+    include = ["skills-*/.codex/skills/gh-cli/**"]
     refreshPeriod = "168h"
 
 [".harnesses/skills/{{ index $cat "modern-python" }}/modern-python"]
@@ -483,7 +484,7 @@
     url = "https://github.com/expo/skills/archive/{{ $.versions.expoSkillsRev }}.tar.gz"
     exact = true
     stripComponents = 5
-    include = ["skills-*/plugins/expo-deployment/skills/expo-deployment/**"]
+    include = ["skills-*/plugins/expo/skills/expo-deployment/**"]
     refreshPeriod = "168h"
 
 [".harnesses/skills/{{ index $cat "expo-cicd-workflows" }}/expo-cicd-workflows"]
@@ -491,18 +492,18 @@
     url = "https://github.com/expo/skills/archive/{{ $.versions.expoSkillsRev }}.tar.gz"
     exact = true
     stripComponents = 5
-    include = ["skills-*/plugins/expo-deployment/skills/expo-cicd-workflows/**"]
+    include = ["skills-*/plugins/expo/skills/expo-cicd-workflows/**"]
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
 # microsoft/skills azure deployment workflow
 # ------------------------------------------------------------------------------
-[".harnesses/skills/{{ index $cat "azd-deployment" }}/azd-deployment"]
+[".harnesses/skills/{{ index $cat "azure-deploy" }}/azure-deploy"]
     type = "archive"
     url = "https://github.com/microsoft/skills/archive/{{ $.versions.microsoftSkillsRev }}.tar.gz"
     exact = true
-    stripComponents = 4
-    include = ["skills-*/.github/skills/azd-deployment/**"]
+    stripComponents = 6
+    include = ["skills-*/.github/plugins/azure-skills/skills/azure-deploy/**"]
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
@@ -518,7 +519,7 @@
 
 # ------------------------------------------------------------------------------
 # xdevplatform/xurl official X API skill
-# - Shared harness library under ~/.harnesses/skills/social-media/
+# - Shared harness library under ~/.harnesses/skills/social/
 # - Pinned to the xurl v1.1.1 release commit so skill instructions match the CLI
 # ------------------------------------------------------------------------------
 [".harnesses/skills/{{ index $cat "xurl" }}/xurl"]
@@ -873,11 +874,12 @@
 
 # ==============================================================================
 # TypeScript / JavaScript assembly (~11/15 — no single repo is Python-parity, so
-# three complementary MIT/Apache sources, each in its own namespace).
+# three complementary MIT/Apache sources, split by functional category for
+# `skill-activate` browsing.
 # Remaining gaps to author later: generic-TS async/concurrency, resilience.
 # ==============================================================================
 
-# typescript/ — marius-townhouse/effective-typescript-skills (MIT). The whole
+# ts-types/ — marius-townhouse/effective-typescript-skills (MIT). The whole
 # "Effective TypeScript" book as 83 micro-skills (type system, idioms,
 # anti-patterns, exhaustiveness, branded types) — the type-safety backbone.
 # Each folder gets a `ts-` prefix (skipped where it already starts with
@@ -968,7 +970,7 @@
   "write-modern-javascript"
 }}
 {{- range $skill := $effectiveTsSkills }}
-[".harnesses/skills/typescript/{{ if or (hasPrefix "ts" $skill) (hasPrefix "typescript" $skill) }}{{ $skill }}{{ else }}ts-{{ $skill }}{{ end }}"]
+[".harnesses/skills/ts-types/{{ if or (hasPrefix "ts" $skill) (hasPrefix "typescript" $skill) }}{{ $skill }}{{ else }}ts-{{ $skill }}{{ end }}"]
     type = "archive"
     url = "https://github.com/marius-townhouse/effective-typescript-skills/archive/{{ $.versions.effectiveTypescriptRev }}.tar.gz"
     exact = true
@@ -977,11 +979,11 @@
     refreshPeriod = "168h"
 {{ end }}
 
-# typescript/ (toolchain layer) — bobmatnyc/claude-mpm-skills (MIT) toolchains/typescript (14
+# TypeScript toolchain layer — bobmatnyc/claude-mpm-skills (MIT) toolchains/typescript (14
 # skills). bobmatnyc nests skills as <category>/<skill> (testing/vitest, data/
 # prisma, …); we FLATTEN each to a single `ts-*` folder so Claude Code discovers
-# them (it doesn't recurse nested categories) and the generic `core` name stops
-# being ambiguous. Map: upstream sub-path -> readable ts-prefixed folder.
+# them (it doesn't recurse nested categories), then group by function. Map:
+# upstream sub-path -> readable ts-prefixed folder.
 {{- $bobmatnycTs := dict
   "api/trpc" "ts-trpc"
   "build/turborepo" "ts-turborepo"
@@ -997,8 +999,23 @@
   "testing/vitest" "ts-vitest"
   "validation/zod" "ts-zod"
 }}
+{{- $bobmatnycTsCat := dict
+  "ts-drizzle" "ts-data"
+  "ts-drizzle-migrations" "ts-data"
+  "ts-fastify" "node-backend"
+  "ts-jest" "ts-testing"
+  "ts-kysely" "ts-data"
+  "ts-nodejs-backend" "node-backend"
+  "ts-prisma" "ts-data"
+  "ts-tanstack-query" "frontend"
+  "ts-trpc" "node-backend"
+  "ts-turborepo" "build-tools"
+  "ts-vitest" "ts-testing"
+  "ts-zod" "ts-types"
+  "ts-zustand" "frontend"
+}}
 {{- range $src, $dst := $bobmatnycTs }}
-[".harnesses/skills/typescript/{{ $dst }}"]
+[".harnesses/skills/{{ index $bobmatnycTsCat $dst }}/{{ $dst }}"]
     type = "archive"
     url = "https://github.com/bobmatnyc/claude-mpm-skills/archive/{{ $.versions.bobmatnycMpmSkillsRev }}.tar.gz"
     exact = true
@@ -1007,7 +1024,7 @@
     refreshPeriod = "168h"
 {{ end }}
 # `core` sits one level shallower (no sub-category) -> stripComponents 4.
-[".harnesses/skills/typescript/typescript-core"]
+[".harnesses/skills/ts-types/typescript-core"]
     type = "archive"
     url = "https://github.com/bobmatnyc/claude-mpm-skills/archive/{{ $.versions.bobmatnycMpmSkillsRev }}.tar.gz"
     exact = true

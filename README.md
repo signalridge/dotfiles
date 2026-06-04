@@ -280,9 +280,10 @@ pre-commit run --all-files
 
 Skills are synced via `.chezmoiexternal.toml.tmpl` from:
 
-- [wshobson/agents](https://github.com/wshobson/agents)
-- [anthropics/skills](https://github.com/anthropics/skills)
-- community multilingual Humanizer pack (`humanizer-en`, `humanizer-zh`, `humanizer-ja`)
+- broad engineering packs such as [wshobson/agents](https://github.com/wshobson/agents), [anthropics/skills](https://github.com/anthropics/skills), and [openai/skills](https://github.com/openai/skills)
+- platform/vendor packs from Hugging Face, Cloudflare, Vercel, Supabase, Expo, Microsoft, and selected community repos
+- language suites for Go, Rust, Swift, TypeScript/JavaScript, and Zig
+- social, writing, and media skills including `xurl`, `x-create`, `daily.dev`, Reddit, Remotion, and Humanizer variants (`humanizer-en`, `qu-ai-wei`, `humanizer-ja`)
 
 They are normalized into `~/.harnesses/skills` as a shared harness library; use `skill-activate` to curate active symlinks.
 
@@ -313,9 +314,10 @@ Claude hooks in `dot_claude/hooks/` provide workflow guardrails and formatting a
 
 `chezmoi external` syncs selected skills from:
 
-- `wshobson/agents`
-- `anthropics/skills`
-- multilingual Humanizer community sources (`humanizer-en`, `humanizer-zh`, `humanizer-ja`)
+- broad engineering packs (`wshobson/agents`, `anthropics/skills`, `openai/skills`)
+- platform/vendor packs (Hugging Face, Cloudflare, Vercel, Supabase, Expo, Microsoft, and selected community repos)
+- language suites for Go, Rust, Swift, TypeScript/JavaScript, and Zig
+- social, writing, and media skills including `xurl`, `x-create`, `daily.dev`, Reddit, Remotion, and Humanizer variants (`humanizer-en`, `qu-ai-wei`, `humanizer-ja`)
 
 They are normalized into `~/.harnesses/skills` as a shared harness library; use `skill-activate` to curate active symlinks.
 

@@ -280,9 +280,10 @@ pre-commit run --all-files
 
 Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期されます。
 
-- [wshobson/agents](https://github.com/wshobson/agents)
-- [anthropics/skills](https://github.com/anthropics/skills)
-- 多言語 Humanizer コミュニティパック（`humanizer-en`、`humanizer-zh`、`humanizer-ja`）
+- [wshobson/agents](https://github.com/wshobson/agents)、[anthropics/skills](https://github.com/anthropics/skills)、[openai/skills](https://github.com/openai/skills) などの汎用エンジニアリング系 pack
+- Hugging Face、Cloudflare、Vercel、Supabase、Expo、Microsoft、および選定したコミュニティ repo の vendor/platform skills
+- Go、Rust、Swift、TypeScript/JavaScript、Zig の言語別 suite
+- `xurl`、`x-create`、`daily.dev`、Reddit、Remotion、Humanizer 系（`humanizer-en`、`qu-ai-wei`、`humanizer-ja`）などの social/writing/media skills
 
 同期先は `~/.harnesses/skills` の共有 harness ライブラリです。実際に有効化する symlink は `skill-activate` で管理します。
 
@@ -313,9 +314,10 @@ Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期さ�
 
 `chezmoi external` が以下から選択した Skills を同期します。
 
-- `wshobson/agents`
-- `anthropics/skills`
-- 多言語 Humanizer コミュニティソース（`humanizer-en`、`humanizer-zh`、`humanizer-ja`）
+- 汎用エンジニアリング系 pack（`wshobson/agents`、`anthropics/skills`、`openai/skills`）
+- vendor/platform skills（Hugging Face、Cloudflare、Vercel、Supabase、Expo、Microsoft、選定したコミュニティ repo）
+- Go、Rust、Swift、TypeScript/JavaScript、Zig の言語別 suite
+- `xurl`、`x-create`、`daily.dev`、Reddit、Remotion、Humanizer 系（`humanizer-en`、`qu-ai-wei`、`humanizer-ja`）などの social/writing/media skills
 
 同期先は `~/.harnesses/skills` の共有 harness ライブラリです。実際に有効化する symlink は `skill-activate` で管理します。
 
