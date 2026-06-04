@@ -30,6 +30,152 @@
 # ------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
+# Function categories — single source of truth (no sidecar TSV). Each skill is
+# saved at download time under ~/.agents/skills/<category>/<skill>.
+# ------------------------------------------------------------------------------
+{{- $cat := dict
+  "agent-browser" "testing"
+  "airflow-dag-patterns" "data"
+  "algorithmic-art" "design"
+  "api-design-principles" "backend"
+  "architecture-decision-records" "docs"
+  "architecture-patterns" "backend"
+  "async-python-patterns" "python"
+  "auth-implementation-patterns" "security"
+  "aws-serverless" "cloud"
+  "bash-defensive-patterns" "shell"
+  "bats-testing-patterns" "shell"
+  "bazel-build-optimization" "devtools"
+  "brand-guidelines" "design"
+  "canvas-design" "design"
+  "changelog-automation" "docs"
+  "cost-optimization" "cloud"
+  "cqrs-implementation" "backend"
+  "daily-dev-ask" "social"
+  "daily.dev" "social"
+  "data-quality-frameworks" "data"
+  "dbt-transformation-patterns" "data"
+  "debugging-strategies" "devtools"
+  "deployment-pipeline-design" "cicd"
+  "distributed-tracing" "observability"
+  "doc-coauthoring" "documents"
+  "docx" "documents"
+  "e2e-testing-patterns" "testing"
+  "embedding-strategies" "ai-llm"
+  "error-handling-patterns" "devtools"
+  "event-store-design" "backend"
+  "git-advanced-workflows" "devtools"
+  "github-actions-templates" "cicd"
+  "gitlab-ci-patterns" "cicd"
+  "gitops-workflow" "kubernetes"
+  "go-concurrency-patterns" "systems"
+  "grafana-dashboards" "observability"
+  "helm-chart-scaffolding" "kubernetes"
+  "humanizer-en" "writing"
+  "humanizer-ja" "writing"
+  "hybrid-cloud-networking" "cloud"
+  "hybrid-search-implementation" "ai-llm"
+  "internal-comms" "writing"
+  "istio-traffic-management" "cloud"
+  "javascript-testing-patterns" "javascript"
+  "jupyter-notebook" "documents"
+  "k8s-manifest-generator" "kubernetes"
+  "k8s-security-policies" "kubernetes"
+  "langchain-architecture" "ai-llm"
+  "linkerd-patterns" "cloud"
+  "llm-evaluation" "ai-llm"
+  "mcp-builder" "ai-llm"
+  "memory-safety-patterns" "systems"
+  "microservices-patterns" "backend"
+  "modern-javascript-patterns" "javascript"
+  "modern-python" "python"
+  "monorepo-management" "devtools"
+  "mtls-configuration" "cloud"
+  "multi-cloud-architecture" "cloud"
+  "next-best-practices" "frontend"
+  "next-cache-components" "frontend"
+  "next-upgrade" "frontend"
+  "nodejs-backend-patterns" "javascript"
+  "openapi-spec-generation" "docs"
+  "oss-x-post" "social"
+  "pdf" "documents"
+  "pptx" "documents"
+  "projection-patterns" "backend"
+  "prometheus-configuration" "observability"
+  "prompt-engineering-patterns" "ai-llm"
+  "python-anti-patterns" "python"
+  "python-background-jobs" "python"
+  "python-code-style" "python"
+  "python-configuration" "python"
+  "python-design-patterns" "python"
+  "python-error-handling" "python"
+  "python-observability" "python"
+  "python-packaging" "python"
+  "python-performance-optimization" "python"
+  "python-project-structure" "python"
+  "python-resilience" "python"
+  "python-resource-management" "python"
+  "python-testing-patterns" "python"
+  "python-type-safety" "python"
+  "qu-ai-wei" "writing"
+  "rag-implementation" "ai-llm"
+  "react-best-practices" "frontend"
+  "react-native-architecture" "frontend"
+  "react-state-management" "frontend"
+  "reddit" "social"
+  "remotion" "media"
+  "rust-async-patterns" "systems"
+  "rust-development-playbook" "systems"
+  "saga-orchestration" "backend"
+  "screenshot" "media"
+  "secrets-management" "cicd"
+  "sentry" "observability"
+  "service-mesh-observability" "cloud"
+  "sharp-edges" "security"
+  "shellcheck-configuration" "shell"
+  "similarity-search-patterns" "ai-llm"
+  "skill-creator" "meta"
+  "slack-gif-creator" "design"
+  "slo-implementation" "observability"
+  "spark-optimization" "data"
+  "speech" "media"
+  "sql-optimization-patterns" "data"
+  "supabase-postgres-best-practices" "data"
+  "tailwind-design-system" "frontend"
+  "temporal-python-testing" "backend"
+  "terraform-module-library" "cloud"
+  "theme-factory" "design"
+  "transcribe" "media"
+  "typescript-advanced-types" "javascript"
+  "ui-ux-pro-max" "design"
+  "vector-index-tuning" "ai-llm"
+  "web-artifacts-builder" "design"
+  "web-design-guidelines" "design"
+  "web-perf" "frontend"
+  "webapp-testing" "testing"
+  "workers-best-practices" "cloud"
+  "workflow-orchestration-patterns" "backend"
+  "wrangler" "cloud"
+  "x-create" "social"
+  "xlsx" "documents"
+  "xurl" "social"
+  "zig-development-playbook" "systems"
+  "hugging-face-datasets" "ai-llm"
+  "hugging-face-evaluation" "ai-llm"
+  "hugging-face-jobs" "ai-llm"
+  "hugging-face-model-trainer" "ai-llm"
+  "hugging-face-paper-publisher" "ai-llm"
+  "hugging-face-tool-builder" "ai-llm"
+  "hugging-face-trackio" "ai-llm"
+  "hugging-face-cli" "ai-llm"
+  "expo-deployment" "frontend"
+  "expo-cicd-workflows" "frontend"
+  "azd-deployment" "cloud"
+  "skill-scanner" "meta"
+  "using-gh-cli" "devtools"
+}}
+
+# ------------------------------------------------------------------------------
 # wshobson/agents plugins (skills only)
 # - Enumerated per-skill and nested as <plugin>/<skill> so the folder is the
 #   category. A per-plugin exact glob + `exclude` tripped chezmoi's
@@ -122,7 +268,7 @@
 {{- $parts := splitList "/" $entry }}
 {{- $plugin := index $parts 0 }}
 {{- $skill := index $parts 1 }}
-[".agents/skills/{{ $plugin }}/{{ $skill }}"]
+[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/wshobson/agents/archive/{{ $.versions.claudeWshobsonAgentsRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.claudeWshobsonAgentsSha256 }}"
@@ -158,7 +304,7 @@
 }}
 
 {{- range $skill := $anthropicsSkills }}
-[".agents/skills/anthropics/{{ $skill }}"]
+[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/anthropics/skills/archive/{{ $.versions.claudeAnthropicsSkillsRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.claudeAnthropicsSkillsSha256 }}"
@@ -186,7 +332,7 @@
   "transcribe"
 }}
 {{- range $skill := $openaiCuratedSkills }}
-[".agents/skills/ecosystem/openai/{{ $skill }}"]
+[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/openai/skills/archive/{{ $.versions.openaiSkillsRev }}.tar.gz"
     exact = true
@@ -210,7 +356,7 @@
   "hugging-face-cli"
 }}
 {{- range $skill := $huggingfaceSkills }}
-[".agents/skills/ecosystem/huggingface/{{ $skill }}"]
+[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/huggingface/skills/archive/{{ $.versions.huggingfaceSkillsRev }}.tar.gz"
     exact = true
@@ -229,7 +375,7 @@
   "skill-scanner"
 }}
 {{- range $skill := $getsentrySkills }}
-[".agents/skills/ecosystem/getsentry/{{ $skill }}"]
+[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/getsentry/skills/archive/{{ $.versions.getsentrySkillsRev }}.tar.gz"
     exact = true
@@ -242,7 +388,7 @@
 # ------------------------------------------------------------------------------
 # trailofbits/skills utility set (security/SAST/review skills delegated to slipway)
 # ------------------------------------------------------------------------------
-[".agents/skills/ecosystem/trailofbits/sharp-edges"]
+[".agents/skills/{{ index $cat "sharp-edges" }}/sharp-edges"]
     type = "archive"
     url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
     exact = true
@@ -250,7 +396,7 @@
     include = ["skills-*/plugins/sharp-edges/skills/sharp-edges/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/ecosystem/trailofbits/using-gh-cli"]
+[".agents/skills/{{ index $cat "using-gh-cli" }}/using-gh-cli"]
     type = "archive"
     url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
     exact = true
@@ -258,7 +404,7 @@
     include = ["skills-*/plugins/gh-cli/skills/using-gh-cli/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/ecosystem/trailofbits/modern-python"]
+[".agents/skills/{{ index $cat "modern-python" }}/modern-python"]
     type = "archive"
     url = "https://github.com/trailofbits/skills/archive/{{ $.versions.trailofbitsSkillsRev }}.tar.gz"
     exact = true
@@ -275,7 +421,7 @@
   "web-perf"
 }}
 {{- range $skill := $cloudflareSkills }}
-[".agents/skills/ecosystem/cloudflare/{{ $skill }}"]
+[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/cloudflare/skills/archive/{{ $.versions.cloudflareSkillsRev }}.tar.gz"
     exact = true
@@ -293,7 +439,7 @@
   "web-design-guidelines"
 }}
 {{- range $skill := $vercelSkills }}
-[".agents/skills/ecosystem/vercel-labs/{{ $skill }}"]
+[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/vercel-labs/agent-skills/archive/{{ $.versions.vercelLabsAgentSkillsRev }}.tar.gz"
     exact = true
@@ -312,7 +458,7 @@
   "next-cache-components"
 }}
 {{- range $skill := $vercelNextSkills }}
-[".agents/skills/ecosystem/vercel-labs/{{ $skill }}"]
+[".agents/skills/{{ index $cat $skill }}/{{ $skill }}"]
     type = "archive"
     url = "https://github.com/vercel-labs/next-skills/archive/{{ $.versions.vercelLabsNextSkillsRev }}.tar.gz"
     exact = true
@@ -329,7 +475,7 @@
 # whatever agent-browser version mise installs. The CLI itself comes from the
 # `npm:agent-browser` entry in mise/config.toml.tmpl.
 # ------------------------------------------------------------------------------
-[".agents/skills/ecosystem/vercel-labs/agent-browser"]
+[".agents/skills/{{ index $cat "agent-browser" }}/agent-browser"]
     type = "archive"
     url = "https://github.com/vercel-labs/agent-browser/archive/{{ $.versions.vercelLabsAgentBrowserRev }}.tar.gz"
     exact = true
@@ -340,7 +486,7 @@
 # ------------------------------------------------------------------------------
 # supabase/agent-skills database best practices
 # ------------------------------------------------------------------------------
-[".agents/skills/ecosystem/supabase/supabase-postgres-best-practices"]
+[".agents/skills/{{ index $cat "supabase-postgres-best-practices" }}/supabase-postgres-best-practices"]
     type = "archive"
     url = "https://github.com/supabase/agent-skills/archive/{{ $.versions.supabaseAgentSkillsRev }}.tar.gz"
     exact = true
@@ -351,7 +497,7 @@
 # ------------------------------------------------------------------------------
 # expo/skills deployment workflows
 # ------------------------------------------------------------------------------
-[".agents/skills/ecosystem/expo/expo-deployment"]
+[".agents/skills/{{ index $cat "expo-deployment" }}/expo-deployment"]
     type = "archive"
     url = "https://github.com/expo/skills/archive/{{ $.versions.expoSkillsRev }}.tar.gz"
     exact = true
@@ -359,7 +505,7 @@
     include = ["skills-*/plugins/expo-deployment/skills/expo-deployment/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/ecosystem/expo/expo-cicd-workflows"]
+[".agents/skills/{{ index $cat "expo-cicd-workflows" }}/expo-cicd-workflows"]
     type = "archive"
     url = "https://github.com/expo/skills/archive/{{ $.versions.expoSkillsRev }}.tar.gz"
     exact = true
@@ -370,7 +516,7 @@
 # ------------------------------------------------------------------------------
 # microsoft/skills azure deployment workflow
 # ------------------------------------------------------------------------------
-[".agents/skills/ecosystem/microsoft/azd-deployment"]
+[".agents/skills/{{ index $cat "azd-deployment" }}/azd-deployment"]
     type = "archive"
     url = "https://github.com/microsoft/skills/archive/{{ $.versions.microsoftSkillsRev }}.tar.gz"
     exact = true
@@ -381,7 +527,7 @@
 # ------------------------------------------------------------------------------
 # sickn33/antigravity-awesome-skills aws deployment workflow (non-MCP)
 # ------------------------------------------------------------------------------
-[".agents/skills/ecosystem/sickn33/aws-serverless"]
+[".agents/skills/{{ index $cat "aws-serverless" }}/aws-serverless"]
     type = "archive"
     url = "https://github.com/sickn33/antigravity-awesome-skills/archive/{{ $.versions.sickn33AntigravitySkillsRev }}.tar.gz"
     exact = true
@@ -394,7 +540,7 @@
 # - Shared for Claude + Codex under ~/.agents/skills/social-media/
 # - Pinned to the xurl v1.1.1 release commit so skill instructions match the CLI
 # ------------------------------------------------------------------------------
-[".agents/skills/social-media/xurl"]
+[".agents/skills/{{ index $cat "xurl" }}/xurl"]
     type = "archive"
     url = "https://github.com/xdevplatform/xurl/archive/{{ $.versions.xurlSkillRev }}.tar.gz"
     exact = true
@@ -410,7 +556,7 @@
 # - Install x-create only; do not install x-publish because publishing is handled
 #   by the official xurl CLI/API path, not browser automation.
 # ------------------------------------------------------------------------------
-[".agents/skills/social-media/x-create"]
+[".agents/skills/{{ index $cat "x-create" }}/x-create"]
     type = "archive"
     url = "https://github.com/kangarooking/x-skills/archive/{{ $.versions.xSkillsRev }}.tar.gz"
     exact = true
@@ -424,7 +570,7 @@
 # - daily-dev-ask: developer-focused search over community-vetted articles
 # - Requires daily.dev Plus and a DAILY_DEV_TOKEN; no browser automation.
 # ------------------------------------------------------------------------------
-[".agents/skills/social-media/daily.dev"]
+[".agents/skills/{{ index $cat "daily.dev" }}/daily.dev"]
     type = "archive"
     url = "https://github.com/dailydotdev/daily/archive/{{ $.versions.dailyDevSkillsRev }}.tar.gz"
     exact = true
@@ -432,7 +578,7 @@
     include = ["daily-*/skills/daily.dev/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/social-media/daily-dev-ask"]
+[".agents/skills/{{ index $cat "daily-dev-ask" }}/daily-dev-ask"]
     type = "archive"
     url = "https://github.com/dailydotdev/daily/archive/{{ $.versions.dailyDevSkillsRev }}.tar.gz"
     exact = true
@@ -447,7 +593,7 @@
 # - Use as the Reddit community-research layer before drafting subreddit-specific
 #   posts manually or through a separate reviewed publishing path.
 # ------------------------------------------------------------------------------
-[".agents/skills/social-media/reddit"]
+[".agents/skills/{{ index $cat "reddit" }}/reddit"]
     type = "archive"
     url = "https://github.com/resciencelab/opc-skills/archive/{{ $.versions.opcSkillsRev }}.tar.gz"
     exact = true
@@ -460,7 +606,7 @@
 # - Shared UI/UX design intelligence skill for Claude + Codex
 # - Keep SKILL.md and runtime assets in ~/.agents/skills/
 # ------------------------------------------------------------------------------
-[".agents/skills/ui-ux-pro-max"]
+[".agents/skills/{{ index $cat "ui-ux-pro-max" }}/ui-ux-pro-max"]
     type = "archive"
     url = "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/{{ $.versions.uiUxProMaxSkillRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.uiUxProMaxSkillSha256 }}"
@@ -469,7 +615,7 @@
     include = ["ui-ux-pro-max-skill-*/.claude/skills/ui-ux-pro-max/SKILL.md"]
     refreshPeriod = "168h"
 
-[".agents/skills/ui-ux-pro-max/data"]
+[".agents/skills/{{ index $cat "ui-ux-pro-max" }}/ui-ux-pro-max/data"]
     type = "archive"
     url = "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/{{ $.versions.uiUxProMaxSkillRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.uiUxProMaxSkillSha256 }}"
@@ -478,7 +624,7 @@
     include = ["ui-ux-pro-max-skill-*/src/ui-ux-pro-max/data/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/ui-ux-pro-max/scripts"]
+[".agents/skills/{{ index $cat "ui-ux-pro-max" }}/ui-ux-pro-max/scripts"]
     type = "archive"
     url = "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/{{ $.versions.uiUxProMaxSkillRev }}.tar.gz"
     checksum.sha256 = "{{ $.versions.uiUxProMaxSkillSha256 }}"
@@ -490,7 +636,7 @@
 # ------------------------------------------------------------------------------
 # signalridge custom skills (managed in dedicated repos)
 # ------------------------------------------------------------------------------
-[".agents/skills/ecosystem/signalridge/zig-development-playbook"]
+[".agents/skills/{{ index $cat "zig-development-playbook" }}/zig-development-playbook"]
     type = "archive"
     url = "https://github.com/signalridge/zig-development-playbook-skill/archive/{{ $.versions.zigDevelopmentPlaybookSkillRev }}.tar.gz"
     exact = true
@@ -498,7 +644,7 @@
     include = ["zig-development-playbook-skill-*/skills/zig-development-playbook/**"]
     refreshPeriod = "168h"
 
-[".agents/skills/ecosystem/signalridge/rust-development-playbook"]
+[".agents/skills/{{ index $cat "rust-development-playbook" }}/rust-development-playbook"]
     type = "archive"
     url = "https://github.com/signalridge/rust-development-playbook-skill/archive/{{ $.versions.rustDevelopmentPlaybookSkillRev }}.tar.gz"
     exact = true
@@ -515,7 +661,7 @@
 # - Commit-pinned via revisions in .chezmoidata/versions.yaml
 # ------------------------------------------------------------------------------
 
-[".agents/skills/multilingual/humanizer-en"]
+[".agents/skills/{{ index $cat "humanizer-en" }}/humanizer-en"]
     type = "archive"
     url = "https://github.com/blader/humanizer/archive/{{ $.versions.humanizerEnRev }}.tar.gz"
     exact = true
@@ -526,7 +672,7 @@
     ]
     refreshPeriod = "168h"
 
-[".agents/skills/multilingual/qu-ai-wei"]
+[".agents/skills/{{ index $cat "qu-ai-wei" }}/qu-ai-wei"]
     type = "archive"
     url = "https://github.com/LifelongLazyLearner/qu-ai-wei/archive/{{ $.versions.quAiWeiRev }}.tar.gz"
     exact = true
@@ -538,7 +684,7 @@
     ]
     refreshPeriod = "168h"
 
-[".agents/skills/multilingual/humanizer-ja"]
+[".agents/skills/{{ index $cat "humanizer-ja" }}/humanizer-ja"]
     type = "archive"
     url = "https://github.com/kgraph57/humanizer-ja/archive/{{ $.versions.humanizerJaRev }}.tar.gz"
     exact = true
