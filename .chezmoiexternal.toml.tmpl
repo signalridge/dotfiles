@@ -50,6 +50,19 @@
   "cicd-automation"
   "kubernetes-operations"
 }}
+{{/* Per-plugin surgical exclusions: drop individual redundant sub-skills
+     without dropping the whole plugin archive. With exact = true, chezmoi
+     removes any excluded skill dir on apply/refresh and keeps it gone. */}}
+{{- $wshobsonExcludes := dict
+  "developer-essentials" (list
+    "agents-*/plugins/developer-essentials/skills/code-review-excellence/**"
+    "agents-*/plugins/developer-essentials/skills/nx-workspace-patterns/**"
+    "agents-*/plugins/developer-essentials/skills/turborepo-caching/**")
+  "python-development" (list
+    "agents-*/plugins/python-development/skills/uv-package-manager/**")
+  "frontend-mobile-development" (list
+    "agents-*/plugins/frontend-mobile-development/skills/nextjs-app-router-patterns/**")
+}}
 {{- range $plugin := $wshobsonPlugins }}
 [".agents/skills/{{ $plugin }}"]
     type = "archive"
@@ -58,6 +71,13 @@
     exact = true
     stripComponents = 4
     include = ["agents-*/plugins/{{ $plugin }}/skills/**"]
+{{- if hasKey $wshobsonExcludes $plugin }}
+    exclude = [
+{{- range $pattern := index $wshobsonExcludes $plugin }}
+      "{{ $pattern }}",
+{{- end }}
+    ]
+{{- end }}
     refreshPeriod = "168h"
 
 {{- end }}
@@ -109,13 +129,10 @@
 # ------------------------------------------------------------------------------
 {{- $openaiCuratedSkills := list
   "sentry"
-  "vercel-deploy"
-  "render-deploy"
   "jupyter-notebook"
   "screenshot"
   "speech"
   "transcribe"
-  "netlify-deploy"
 }}
 {{- range $skill := $openaiCuratedSkills }}
 [".agents/skills/ecosystem/openai/{{ $skill }}"]
@@ -222,9 +239,7 @@
 # ------------------------------------------------------------------------------
 {{- $vercelSkills := list
   "react-best-practices"
-  "composition-patterns"
   "web-design-guidelines"
-  "react-native-skills"
 }}
 {{- range $skill := $vercelSkills }}
 [".agents/skills/ecosystem/vercel-labs/{{ $skill }}"]
