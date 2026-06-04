@@ -2,7 +2,8 @@
 #
 # skill-activate — a live on/off panel for curating which library skills are
 # active for Claude plus either the project harness set or user Codex set.
-# Tab/Space flips a skill on/off in place (the ● updates live); Enter leaves.
+# Tab/Space flips a skill on/off in place (the ● updates live); Ctrl-A flips
+# the highlighted skill's whole category; Enter leaves.
 # Toggling is fast — the library is scanned ONCE up front and the panel just
 # re-reads that cached index.
 #
@@ -18,6 +19,8 @@
 #   skill-activate [project|user]      live on/off panel (default: project)
 #   skill-activate [scope] --active    list active skills
 #   skill-activate [scope] --list      print the rows (no fzf)
+#   skill-activate [scope] --category <category>
+#                                      activate every skill in a category
 #   skill-activate [scope] --clear     deactivate everything for the scope
 
 set -euo pipefail
@@ -25,14 +28,15 @@ set -euo pipefail
 library="${SKILL_LIBRARY:-$HOME/.harnesses/skills}"
 scope="project"
 mode="pick"
+category_name=""
 internal=""
 tname=""
 pidx=""
 
-if [ "${1:-}" = "__rows" ] || [ "${1:-}" = "__toggle" ]; then
+if [ "${1:-}" = "__rows" ] || [ "${1:-}" = "__toggle" ] || [ "${1:-}" = "__toggle_category" ]; then
   internal="$1"
   shift
-  if [ "$internal" = "__toggle" ]; then
+  if [ "$internal" = "__toggle" ] || [ "$internal" = "__toggle_category" ]; then
     tname="$1"
     shift
   fi
@@ -44,9 +48,18 @@ else
     project | user) scope="$1" ;;
     --active) mode="active" ;;
     --list) mode="list" ;;
+    --category | --activate-category)
+      [ $# -ge 2 ] || {
+        echo "skill-activate: $1 requires a category name" >&2
+        exit 2
+      }
+      mode="category"
+      category_name="$2"
+      shift
+      ;;
     --clear) mode="clear" ;;
     -h | --help)
-      sed -n '3,21p' "$0" | sed 's/^#//; s/^ //'
+      sed -n '3,24p' "$0" | sed 's/^#//; s/^ //'
       exit 0
       ;;
     *)
@@ -90,6 +103,80 @@ require_real_dir() {
 
 mark() { if [ -e "$claude_dir/$1" ]; then printf '●'; else printf '○'; fi; }
 
+activate_skill() {
+  local name="$1"
+  local sdir="$2"
+  ln -sfn "$sdir" "$claude_dir/$name"
+  ln -sfn "$sdir" "$codex_dir/$name"
+}
+
+deactivate_skill() {
+  local name="$1"
+  rm -f "$claude_dir/$name" "$codex_dir/$name"
+}
+
+skill_dir_for_name() {
+  awk -F'\t' -v n="$1" '$1==n{print $3; exit}' "$2"
+}
+
+skill_category_for_name() {
+  awk -F'\t' -v n="$1" '$1==n{print $2; exit}' "$2"
+}
+
+set_category_state() {
+  local category="$1"
+  local index_file="$2"
+  local state="$3"
+  local matched=0
+  local name
+  local cat
+  local sdir
+  local desc
+
+  while IFS=$'\t' read -r name cat sdir desc; do
+    matched=1
+    if [ "$state" = "on" ]; then
+      activate_skill "$name" "$sdir"
+    else
+      deactivate_skill "$name"
+    fi
+  done < <(awk -F'\t' -v c="$category" '$2==c' "$index_file")
+
+  [ "$matched" -eq 1 ]
+}
+
+category_all_active() {
+  local category="$1"
+  local index_file="$2"
+  local any=0
+  local inactive=0
+  local name
+  local cat
+  local sdir
+  local desc
+
+  while IFS=$'\t' read -r name cat sdir desc; do
+    any=1
+    [ -e "$claude_dir/$name" ] || inactive=1
+  done < <(awk -F'\t' -v c="$category" '$2==c' "$index_file")
+
+  [ "$any" -eq 1 ] && [ "$inactive" -eq 0 ]
+}
+
+toggle_category_for_skill() {
+  local name="$1"
+  local index_file="$2"
+  local category
+  category=$(skill_category_for_name "$name" "$index_file")
+  [ -n "$category" ] || return 1
+
+  if category_all_active "$category" "$index_file"; then
+    set_category_state "$category" "$index_file" off
+  else
+    set_category_state "$category" "$index_file" on
+  fi
+}
+
 rows_from() {
   while IFS=$'\t' read -r name cat sdir desc; do
     printf '%s\t%s  %-15s %-30s %s\n' "$name" "$(mark "$name")" "$cat" "$name" "$desc"
@@ -103,14 +190,19 @@ fi
 if [ "$internal" = "__toggle" ]; then
   [ -L "$claude_dir" ] && exit 0
   mkdir -p "$claude_dir" "$codex_dir" 2>/dev/null || true
-  sdir=$(awk -F'\t' -v n="$tname" '$1==n{print $3}' "$pidx")
+  sdir=$(skill_dir_for_name "$tname" "$pidx")
   [ -n "$sdir" ] || exit 0
   if [ -e "$claude_dir/$tname" ]; then
-    rm -f "$claude_dir/$tname" "$codex_dir/$tname"
+    deactivate_skill "$tname"
   else
-    ln -sfn "$sdir" "$claude_dir/$tname"
-    ln -sfn "$sdir" "$codex_dir/$tname"
+    activate_skill "$tname" "$sdir"
   fi
+  exit 0
+fi
+if [ "$internal" = "__toggle_category" ]; then
+  [ -L "$claude_dir" ] && exit 0
+  mkdir -p "$claude_dir" "$codex_dir" 2>/dev/null || true
+  toggle_category_for_skill "$tname" "$pidx" || true
   exit 0
 fi
 
@@ -142,6 +234,19 @@ list)
   rows_from "$idx" | cut -f2-
   exit 0
   ;;
+category)
+  require_real_dir "$claude_dir"
+  require_real_dir "$codex_dir"
+  mkdir -p "$claude_dir" "$codex_dir"
+  if ! set_category_state "$category_name" "$idx" on; then
+    echo "skill-activate: category not found: $category_name" >&2
+    exit 1
+  fi
+  n=$(awk -F'\t' -v c="$category_name" '$2==c{n++} END{print n+0}' "$idx")
+  hs=${claude_dir/#$HOME/\~}
+  echo "$scope: activated $n skill(s) in category '$category_name' ($target_label) in $hs"
+  exit 0
+  ;;
 clear)
   for d in "$claude_dir" "$codex_dir"; do
     [ -L "$d" ] && continue
@@ -165,10 +270,11 @@ hs=${claude_dir/#$HOME/\~}
 
 rows_from "$idx" | fzf \
   --delimiter='\t' --with-nth='2..' --no-multi --cycle --reverse --height='100%' \
-  --header="$scope ($target_label) → $hs   │   Tab/Space: toggle on/off (live)   Enter: done   │   ● on  ○ off" \
+  --header="$scope ($target_label) → $hs   │   Tab/Space: toggle skill   Ctrl-A: toggle category   Enter: done   │   ● on  ○ off" \
   --header-first \
   --bind="tab:execute-silent($self __toggle {1} $scope $idx)+reload-sync($self __rows $scope $idx)" \
   --bind="space:execute-silent($self __toggle {1} $scope $idx)+reload-sync($self __rows $scope $idx)" \
+  --bind="ctrl-a:execute-silent($self __toggle_category {1} $scope $idx)+reload-sync($self __rows $scope $idx)" \
   --bind="enter:accept" \
   --bind="esc:accept" \
   --preview="sed -n '1,40p' \"\$(awk -F'\t' -v n={1} '\$1==n{print \$3}' '$idx')/SKILL.md\"" \

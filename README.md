@@ -285,7 +285,7 @@ Skills are synced via `.chezmoiexternal.toml.tmpl` from:
 - language suites for Go, Rust, Swift, TypeScript/JavaScript, and Zig
 - social, writing, and media skills including `xurl`, `x-create`, `daily.dev`, Reddit, Remotion, and Humanizer variants (`humanizer-en`, `qu-ai-wei`, `humanizer-ja`)
 
-They are normalized into `~/.harnesses/skills` as a shared harness library; use `skill-activate` to curate active symlinks.
+They are normalized into `~/.harnesses/skills` as a shared harness library; use `skill-activate` to curate active symlinks. `skill-activate user --category typescript` activates a whole category, and `Ctrl-A` toggles the highlighted category in the picker.
 
 ### Quality Protocols
 
@@ -319,7 +319,7 @@ Claude hooks in `dot_claude/hooks/` provide workflow guardrails and formatting a
 - language suites for Go, Rust, Swift, TypeScript/JavaScript, and Zig
 - social, writing, and media skills including `xurl`, `x-create`, `daily.dev`, Reddit, Remotion, and Humanizer variants (`humanizer-en`, `qu-ai-wei`, `humanizer-ja`)
 
-They are normalized into `~/.harnesses/skills` as a shared harness library; use `skill-activate` to curate active symlinks.
+They are normalized into `~/.harnesses/skills` as a shared harness library; use `skill-activate` to curate active symlinks. `skill-activate user --category typescript` activates a whole category, and `Ctrl-A` toggles the highlighted category in the picker.
 
 ### Account + Provider Control
 

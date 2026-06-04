@@ -285,7 +285,7 @@ Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期さ�
 - Go、Rust、Swift、TypeScript/JavaScript、Zig の言語別 suite
 - `xurl`、`x-create`、`daily.dev`、Reddit、Remotion、Humanizer 系（`humanizer-en`、`qu-ai-wei`、`humanizer-ja`）などの social/writing/media skills
 
-同期先は `~/.harnesses/skills` の共有 harness ライブラリです。実際に有効化する symlink は `skill-activate` で管理します。
+同期先は `~/.harnesses/skills` の共有 harness ライブラリです。実際に有効化する symlink は `skill-activate` で管理します。`skill-activate user --category typescript` でカテゴリ全体を有効化できます。ピッカーでは `Ctrl-A` でハイライト中の項目のカテゴリ全体を切り替えます。
 
 ### 品質プロトコル
 
@@ -319,7 +319,7 @@ Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期さ�
 - Go、Rust、Swift、TypeScript/JavaScript、Zig の言語別 suite
 - `xurl`、`x-create`、`daily.dev`、Reddit、Remotion、Humanizer 系（`humanizer-en`、`qu-ai-wei`、`humanizer-ja`）などの social/writing/media skills
 
-同期先は `~/.harnesses/skills` の共有 harness ライブラリです。実際に有効化する symlink は `skill-activate` で管理します。
+同期先は `~/.harnesses/skills` の共有 harness ライブラリです。実際に有効化する symlink は `skill-activate` で管理します。`skill-activate user --category typescript` でカテゴリ全体を有効化できます。ピッカーでは `Ctrl-A` でハイライト中の項目のカテゴリ全体を切り替えます。
 
 ### Account / Provider 管理
 

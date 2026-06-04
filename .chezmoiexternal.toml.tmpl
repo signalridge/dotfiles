@@ -88,9 +88,9 @@
   "monorepo-management" "devtools"
   "mtls-configuration" "cloud"
   "multi-cloud-architecture" "cloud"
-  "next-best-practices" "frontend"
-  "next-cache-components" "frontend"
-  "next-upgrade" "frontend"
+  "next-best-practices" "typescript"
+  "next-cache-components" "typescript"
+  "next-upgrade" "typescript"
   "openapi-spec-generation" "dev-docs"
   "oss-x-post" "social"
   "pdf" "documents"
@@ -113,9 +113,9 @@
   "python-type-safety" "python"
   "qu-ai-wei" "writing"
   "rag-implementation" "ai-llm"
-  "react-best-practices" "frontend"
-  "react-native-architecture" "mobile"
-  "react-state-management" "frontend"
+  "react-best-practices" "typescript"
+  "react-native-architecture" "typescript"
+  "react-state-management" "typescript"
   "reddit" "social"
   "remotion" "media"
   "rust-development-playbook" "rust"
@@ -142,7 +142,7 @@
   "ui-ux-pro-max" "design"
   "vector-index-tuning" "ai-llm"
   "web-artifacts-builder" "design"
-  "web-perf" "frontend"
+  "web-perf" "typescript"
   "webapp-testing" "testing"
   "workers-best-practices" "cloud"
   "workflow-orchestration-patterns" "backend"
@@ -158,8 +158,8 @@
   "hugging-face-tool-builder" "ai-llm"
   "hugging-face-trackio" "ai-llm"
   "hugging-face-cli" "ai-llm"
-  "expo-deployment" "mobile"
-  "expo-cicd-workflows" "mobile"
+  "expo-deployment" "typescript"
+  "expo-cicd-workflows" "typescript"
   "azure-deploy" "cloud"
   "skill-scanner" "meta"
   "using-gh-cli" "devtools"
@@ -874,12 +874,11 @@
 
 # ==============================================================================
 # TypeScript / JavaScript assembly (~11/15 — no single repo is Python-parity, so
-# three complementary MIT/Apache sources, split by functional category for
-# `skill-activate` browsing.
+# three complementary MIT/Apache sources share one `typescript` category.
 # Remaining gaps to author later: generic-TS async/concurrency, resilience.
 # ==============================================================================
 
-# ts-types/ — marius-townhouse/effective-typescript-skills (MIT). The whole
+# typescript/ — marius-townhouse/effective-typescript-skills (MIT). The whole
 # "Effective TypeScript" book as 83 micro-skills (type system, idioms,
 # anti-patterns, exhaustiveness, branded types) — the type-safety backbone.
 # Each folder gets a `ts-` prefix (skipped where it already starts with
@@ -970,7 +969,7 @@
   "write-modern-javascript"
 }}
 {{- range $skill := $effectiveTsSkills }}
-[".harnesses/skills/ts-types/{{ if or (hasPrefix "ts" $skill) (hasPrefix "typescript" $skill) }}{{ $skill }}{{ else }}ts-{{ $skill }}{{ end }}"]
+[".harnesses/skills/typescript/{{ if or (hasPrefix "ts" $skill) (hasPrefix "typescript" $skill) }}{{ $skill }}{{ else }}ts-{{ $skill }}{{ end }}"]
     type = "archive"
     url = "https://github.com/marius-townhouse/effective-typescript-skills/archive/{{ $.versions.effectiveTypescriptRev }}.tar.gz"
     exact = true
@@ -982,7 +981,7 @@
 # TypeScript toolchain layer — bobmatnyc/claude-mpm-skills (MIT) toolchains/typescript (14
 # skills). bobmatnyc nests skills as <category>/<skill> (testing/vitest, data/
 # prisma, …); we FLATTEN each to a single `ts-*` folder so Claude Code discovers
-# them (it doesn't recurse nested categories), then group by function. Map:
+# them (it doesn't recurse nested categories). Map:
 # upstream sub-path -> readable ts-prefixed folder.
 {{- $bobmatnycTs := dict
   "api/trpc" "ts-trpc"
@@ -999,23 +998,8 @@
   "testing/vitest" "ts-vitest"
   "validation/zod" "ts-zod"
 }}
-{{- $bobmatnycTsCat := dict
-  "ts-drizzle" "ts-data"
-  "ts-drizzle-migrations" "ts-data"
-  "ts-fastify" "node-backend"
-  "ts-jest" "ts-testing"
-  "ts-kysely" "ts-data"
-  "ts-nodejs-backend" "node-backend"
-  "ts-prisma" "ts-data"
-  "ts-tanstack-query" "frontend"
-  "ts-trpc" "node-backend"
-  "ts-turborepo" "build-tools"
-  "ts-vitest" "ts-testing"
-  "ts-zod" "ts-types"
-  "ts-zustand" "frontend"
-}}
 {{- range $src, $dst := $bobmatnycTs }}
-[".harnesses/skills/{{ index $bobmatnycTsCat $dst }}/{{ $dst }}"]
+[".harnesses/skills/typescript/{{ $dst }}"]
     type = "archive"
     url = "https://github.com/bobmatnyc/claude-mpm-skills/archive/{{ $.versions.bobmatnycMpmSkillsRev }}.tar.gz"
     exact = true
@@ -1024,7 +1008,7 @@
     refreshPeriod = "168h"
 {{ end }}
 # `core` sits one level shallower (no sub-category) -> stripComponents 4.
-[".harnesses/skills/ts-types/typescript-core"]
+[".harnesses/skills/typescript/typescript-core"]
     type = "archive"
     url = "https://github.com/bobmatnyc/claude-mpm-skills/archive/{{ $.versions.bobmatnycMpmSkillsRev }}.tar.gz"
     exact = true
