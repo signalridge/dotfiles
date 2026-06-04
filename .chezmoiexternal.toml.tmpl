@@ -731,38 +731,43 @@
 # ~/.agents/skills/rust/. Testing is NOT here (actionbook has no testing skill)
 # — that gap is filled by the ECC `rust-testing` skill below.
 # ------------------------------------------------------------------------------
-{{- $actionbookRustSkills := list
-  "coding-guidelines"
-  "domain-cli"
-  "domain-cloud-native"
-  "domain-embedded"
-  "domain-fintech"
-  "domain-iot"
-  "domain-ml"
-  "domain-web"
-  "m01-ownership"
-  "m02-resource"
-  "m03-mutability"
-  "m04-zero-cost"
-  "m05-type-driven"
-  "m06-error-handling"
-  "m07-concurrency"
-  "m09-domain"
-  "m10-performance"
-  "m11-ecosystem"
-  "m12-lifecycle"
-  "m13-domain-error"
-  "m14-mental-model"
-  "m15-anti-pattern"
-  "unsafe-checker"
+# Map upstream dir -> readable, rust-prefixed skill folder. Claude Code keys on
+# the folder NAME (frontmatter `name` is only a display label) and does NOT
+# namespace by the `rust/` parent, so the cryptic `mNN-*` / generic
+# `coding-guidelines` / `domain-*` names get a `rust-` prefix (and lose the
+# meaningless module numbers) to stay unambiguous and collision-safe.
+{{- $actionbookRust := dict
+  "m01-ownership" "rust-ownership"
+  "m02-resource" "rust-resource"
+  "m03-mutability" "rust-mutability"
+  "m04-zero-cost" "rust-zero-cost"
+  "m05-type-driven" "rust-type-driven"
+  "m06-error-handling" "rust-error-handling"
+  "m07-concurrency" "rust-concurrency"
+  "m09-domain" "rust-domain-modeling"
+  "m10-performance" "rust-performance"
+  "m11-ecosystem" "rust-ecosystem"
+  "m12-lifecycle" "rust-lifecycle"
+  "m13-domain-error" "rust-domain-error"
+  "m14-mental-model" "rust-mental-model"
+  "m15-anti-pattern" "rust-anti-pattern"
+  "coding-guidelines" "rust-coding-guidelines"
+  "unsafe-checker" "rust-unsafe-checker"
+  "domain-cli" "rust-domain-cli"
+  "domain-cloud-native" "rust-domain-cloud-native"
+  "domain-embedded" "rust-domain-embedded"
+  "domain-fintech" "rust-domain-fintech"
+  "domain-iot" "rust-domain-iot"
+  "domain-ml" "rust-domain-ml"
+  "domain-web" "rust-domain-web"
 }}
-{{- range $skill := $actionbookRustSkills }}
-[".agents/skills/rust/{{ $skill }}"]
+{{- range $src, $dst := $actionbookRust }}
+[".agents/skills/rust/{{ $dst }}"]
     type = "archive"
     url = "https://github.com/actionbook/rust-skills/archive/{{ $.versions.actionbookRustSkillsRev }}.tar.gz"
     exact = true
     stripComponents = 3
-    include = ["rust-skills-*/skills/{{ $skill }}/**"]
+    include = ["rust-skills-*/skills/{{ $src }}/**"]
     refreshPeriod = "168h"
 {{ end }}
 # ------------------------------------------------------------------------------
@@ -814,16 +819,42 @@
     include = ["effective-typescript-skills-*/skills/**"]
     refreshPeriod = "168h"
 
-# typescript-stack/ — bobmatnyc/claude-mpm-skills (MIT) toolchains/typescript (13
-# skills): core, testing/vitest+jest, validation/zod, data (prisma/drizzle/
-# kysely), state (zustand/tanstack-query), frameworks (fastify/nodejs-backend),
-# api/trpc. The concern/tooling/framework layer.
-[".agents/skills/typescript-stack"]
+# typescript-stack/ — bobmatnyc/claude-mpm-skills (MIT) toolchains/typescript (14
+# skills). bobmatnyc nests skills as <category>/<skill> (testing/vitest, data/
+# prisma, …); we FLATTEN each to a single `ts-*` folder so Claude Code discovers
+# them (it doesn't recurse nested categories) and the generic `core` name stops
+# being ambiguous. Map: upstream sub-path -> readable ts-prefixed folder.
+{{- $bobmatnycTs := dict
+  "api/trpc" "ts-trpc"
+  "build/turborepo" "ts-turborepo"
+  "data/drizzle" "ts-drizzle"
+  "data/drizzle-migrations" "ts-drizzle-migrations"
+  "data/kysely" "ts-kysely"
+  "data/prisma" "ts-prisma"
+  "frameworks/fastify" "ts-fastify"
+  "frameworks/nodejs-backend" "ts-nodejs-backend"
+  "state/tanstack-query" "ts-tanstack-query"
+  "state/zustand" "ts-zustand"
+  "testing/jest" "ts-jest"
+  "testing/vitest" "ts-vitest"
+  "validation/zod" "ts-zod"
+}}
+{{- range $src, $dst := $bobmatnycTs }}
+[".agents/skills/typescript-stack/{{ $dst }}"]
     type = "archive"
     url = "https://github.com/bobmatnyc/claude-mpm-skills/archive/{{ $.versions.bobmatnycMpmSkillsRev }}.tar.gz"
     exact = true
-    stripComponents = 3
-    include = ["claude-mpm-skills-*/toolchains/typescript/**"]
+    stripComponents = 5
+    include = ["claude-mpm-skills-*/toolchains/typescript/{{ $src }}/**"]
+    refreshPeriod = "168h"
+{{ end }}
+# `core` sits one level shallower (no sub-category) -> stripComponents 4.
+[".agents/skills/typescript-stack/typescript-core"]
+    type = "archive"
+    url = "https://github.com/bobmatnyc/claude-mpm-skills/archive/{{ $.versions.bobmatnycMpmSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 4
+    include = ["claude-mpm-skills-*/toolchains/typescript/core/**"]
     refreshPeriod = "168h"
 
 # common/ — HoangNguyen0403/agent-skills-standard (Apache-2.0, branch `develop`)
