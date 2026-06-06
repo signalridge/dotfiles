@@ -7,7 +7,7 @@ registries:
     path: registry.yaml
 packages:
   # ----- third-party registry (see registry.yaml) -----
-  - name: signalridge/slipway@v0.7.0
+  - name: signalridge/slipway@v0.8.0
     registry: third-party
   # ----- standard registry -----
   - name: nektos/act@v0.2.89
@@ -21,7 +21,7 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.165
+  - name: anthropics/claude-code@v2.1.167
   - name: openai/codex@rust-v0.137.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
