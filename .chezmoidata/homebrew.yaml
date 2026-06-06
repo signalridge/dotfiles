@@ -41,6 +41,7 @@ homebrew:
       - slidepilot
       - stats
       - tailscale-app
+      - tolaria
       - typeless
       - google-chrome
     work:
