@@ -1,0 +1,35 @@
+pi:
+  # Pi Coding Agent configuration
+  # Repo: https://github.com/earendil-works/pi  (npm @earendil-works/pi-coding-agent)
+  #
+  # Pi natively supports multiple providers: it ships a built-in model registry
+  # (anthropic, openai, deepseek, zai/glm, kimi-coding, minimax, google, xai,
+  # groq, ...) and switches provider/model at runtime via `/model`, with auth via
+  # `/login`, env vars, or ~/.pi/agent/auth.json. So no account-switching wrappers
+  # are needed — this file only sets the startup default and any CUSTOM (non
+  # built-in) providers.
+
+  # ===== Startup defaults -> ~/.pi/agent/settings.json =====
+  defaults:
+    theme: dark
+    defaultThinkingLevel: medium
+    defaultProvider: anthropic
+    defaultModel: claude-opus-4-8
+  # ===== Custom providers (NOT in Pi's built-in registry) -> ~/.pi/agent/models.json =====
+  # Only providers Pi does not know natively. apiKey uses "$<env>" (no secrets);
+  # set the env var, or authenticate via /login (stored in auth.json), then pick
+  # the model with /model. Remove these if you don't use them.
+  customProviders:
+    qwen: # Alibaba DashScope (OpenAI-compatible)
+      base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api: openai-completions
+      env: DASHSCOPE_API_KEY
+      models:
+        - qwen3-coder-plus
+        - qwen3-max
+    doubao: # ByteDance Ark v3 (OpenAI-compatible)
+      base_url: https://ark.cn-beijing.volces.com/api/v3
+      api: openai-completions
+      env: ARK_API_KEY
+      models:
+        - doubao-seed-1-6-thinking-250715

@@ -1,0 +1,49 @@
+{{- /*
+  ~/.pi/agent/mcp.json — MCP servers for the pi-mcp-adapter extension.
+  Same shape as codex/claude MCP config. stdio servers reuse the shared
+  ~/.local/bin/mcp-* wrappers; remote servers use "url". Managed by chezmoi
+  (dot_pi/agent/mcp.json.tmpl). The adapter is installed by
+  .chezmoiscripts/run_onchange_after_13_pi-mcp-adapter.sh.tmpl.
+*/ -}}
+{
+  "mcpServers": {
+    "context7": {
+      "command": "{{ .chezmoi.homeDir }}/.local/bin/mcp-context7",
+      "args": [],
+      "lifecycle": "lazy"
+    },
+    "tavily": {
+      "command": "{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily",
+      "args": [],
+      "lifecycle": "lazy"
+    },
+    "postgres": {
+      "command": "{{ .chezmoi.homeDir }}/.local/bin/mcp-postgres",
+      "args": [],
+      "lifecycle": "lazy"
+    },
+    "serena": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        ".",
+        "--enable-web-dashboard",
+        "false"
+      ],
+      "env": {
+        "AQUA_GLOBAL_CONFIG": "{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml"
+      },
+      "lifecycle": "lazy"
+    },
+    "deepwiki": {
+      "url": "https://mcp.deepwiki.com/mcp",
+      "lifecycle": "lazy"
+    }
+  }
+}
