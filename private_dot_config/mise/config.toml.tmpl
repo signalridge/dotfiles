@@ -61,6 +61,10 @@ lua = "5.4"
 # Gemini CLI managed via npm backend (replaces nix gemini-cli)
 "npm:@google/gemini-cli" = "latest"
 
+# Pi coding agent (earendil-works). Binary is `pi`. Requires node >=22.19,
+# satisfied by `node = "lts"` above. Auth/config under ~/.pi/agent (chezmoi-managed).
+"npm:@earendil-works/pi-coding-agent" = "latest"
+
 # AI coding usage analyzers
 "npm:ccusage" = "latest"
 "npm:@ccusage/codex" = "latest"

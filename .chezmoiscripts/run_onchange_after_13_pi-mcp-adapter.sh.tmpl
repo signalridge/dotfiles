@@ -1,0 +1,42 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Install the pi-mcp-adapter extension, which adds MCP support to Pi (Pi has no
+# native MCP). Pi reads MCP servers from ~/.pi/agent/mcp.json (managed by
+# chezmoi). Idempotent: installs only if not already present; upgrade later with
+# `pi update`. Re-runs only when this script changes.
+
+echo ":: [13] Installing pi-mcp-adapter (MCP support for Pi)"
+
+cd "$HOME"
+
+# Locate the aqua-managed mise; pi is a mise-managed tool, so invoke it via
+# `mise exec` (same approach as the mise-install script).
+aqua_bin_dir="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
+[[ -d "$aqua_bin_dir" ]] && export PATH="$aqua_bin_dir:$PATH"
+
+mise_cmd="$aqua_bin_dir/mise"
+if [[ ! -x "$mise_cmd" ]]; then
+    if command -v mise &>/dev/null; then
+        mise_cmd="$(command -v mise)"
+    else
+        echo "    Skipped (mise not found)"
+        exit 0
+    fi
+fi
+
+if ! "$mise_cmd" exec -- pi --version &>/dev/null; then
+    echo "    Skipped (pi not installed yet; run mise install first)"
+    exit 0
+fi
+
+if "$mise_cmd" exec -- pi list 2>/dev/null | grep -qi "pi-mcp-adapter"; then
+    echo "    Already installed"
+    exit 0
+fi
+
+echo "    pi install npm:pi-mcp-adapter"
+if ! "$mise_cmd" exec -- pi install npm:pi-mcp-adapter </dev/null; then
+    echo "    Warning: 'pi install npm:pi-mcp-adapter' failed (MCP will be unavailable in Pi)"
+fi

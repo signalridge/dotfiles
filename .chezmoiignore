@@ -75,6 +75,20 @@ Library/
 {{- end }}
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Pi coding agent runtime/secret state — Pi writes these into ~/.pi/agent at
+# runtime; never version-control them (settings.json/models.json/extensions are
+# managed via dot_pi/, everything below is owned by Pi or the user).
+# ─────────────────────────────────────────────────────────────────────────────
+.pi/agent/auth.json
+.pi/agent/sessions/
+.pi/agent/trust.json
+.pi/agent/keybindings.json
+.pi/agent/npm/
+.pi/agent/git/
+.pi/agent/logs/
+.pi/agent/extensions/*/node_modules/
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Ignored directories
 # ─────────────────────────────────────────────────────────────────────────────
 backup/
