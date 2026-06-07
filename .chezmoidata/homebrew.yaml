@@ -3,6 +3,7 @@ homebrew:
     shared:
       - nikitabobko/tap
       - FelixKratz/formulae
+      - muxy-app/tap # muxy cask source
     work:
       - azure/functions
     private: []
@@ -29,6 +30,7 @@ homebrew:
       - keka
       - keyboardcleantool
       - ghostty
+      - muxy # macOS-first terminal (SwiftUI + libghostty) for AI-agent workflows
       - mockoon
       - notion
       - nikitabobko/tap/aerospace
