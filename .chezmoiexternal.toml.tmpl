@@ -163,6 +163,17 @@
   "azure-deploy" "cloud"
   "skill-scanner" "meta"
   "using-gh-cli" "devtools"
+  "baoyu-diagram" "design"
+  "baoyu-infographic" "design"
+  "baoyu-cover-image" "design"
+  "baoyu-slide-deck" "design"
+  "baoyu-xhs-images" "design"
+  "baoyu-article-illustrator" "design"
+  "baoyu-comic" "design"
+  "baoyu-image-gen" "media"
+  "baoyu-post-to-x" "social"
+  "baoyu-post-to-wechat" "social"
+  "baoyu-post-to-weibo" "social"
 }}
 
 # ------------------------------------------------------------------------------
@@ -292,6 +303,44 @@
     exact = true
     stripComponents = 3
     include = ["skills-*/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+
+{{ end }}
+
+# ------------------------------------------------------------------------------
+# JimLiu/baoyu-skills (community; README states MIT, no LICENSE file in repo)
+# Visual-generation skills + three publishers, routed by $cat:
+#   design: diagram, infographic, cover-image, slide-deck, xhs-images,
+#           article-illustrator, comic
+#   media:  image-gen      social: post-to-x, post-to-wechat, post-to-weibo
+# Notes:
+#   - baoyu-diagram = local hand-written SVG (zero API). The other six visual
+#     skills are text-to-image and need baoyu-image-gen + an image-model API key.
+#   - post-to-* use browser automation (Chrome CDP); post-to-wechat also has an
+#     API mode. These COEXIST with the existing xurl/x-create API publishing
+#     path — added per explicit request, despite the API-first rationale above.
+# ------------------------------------------------------------------------------
+{{- $baoyuSkills := list
+  "baoyu-diagram"
+  "baoyu-infographic"
+  "baoyu-cover-image"
+  "baoyu-slide-deck"
+  "baoyu-xhs-images"
+  "baoyu-article-illustrator"
+  "baoyu-comic"
+  "baoyu-image-gen"
+  "baoyu-post-to-x"
+  "baoyu-post-to-wechat"
+  "baoyu-post-to-weibo"
+}}
+
+{{- range $skill := $baoyuSkills }}
+[".harnesses/skills/{{ index $cat $skill }}/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/JimLiu/baoyu-skills/archive/{{ $.versions.claudeBaoyuSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["baoyu-skills-*/skills/{{ $skill }}/**"]
     refreshPeriod = "168h"
 
 {{ end }}
