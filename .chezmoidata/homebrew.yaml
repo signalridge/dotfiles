@@ -51,6 +51,7 @@ homebrew:
       - obsidian
       - cursor
       - gcloud-cli
+      - keepingyouawake # menu-bar utility to keep the Mac awake
     private:
       - cherry-studio # Multi-model AI desktop client
       - adguard
