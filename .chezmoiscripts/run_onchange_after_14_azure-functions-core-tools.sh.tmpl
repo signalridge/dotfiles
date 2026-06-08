@@ -1,0 +1,80 @@
+#!/bin/bash
+
+set -euo pipefail
+
+{{ if .work -}}
+# Azure Functions Core Tools (`func`) — work machines only.
+#
+# Installed directly from Microsoft's public CDN, NOT Homebrew or npm:
+#   - The official tap `azure/functions` (github.com/azure/homebrew-functions)
+#     and the source repo were disabled by GitHub staff (ToS block, 2026-06-05);
+#     `brew tap` hangs on an auth prompt and cannot succeed even when logged in.
+#   - The npm package fetches the same CDN binary but couples the install to a
+#     specific mise-managed node version and its postinstall download is flaky.
+# This CDN zip is the identical binary brew/npm ship, fetched reliably (resumable
+# curl) into a versioned dir and symlinked onto PATH.
+#
+# To upgrade: bump VERSION and BUILD_ID together (changing them re-triggers this
+# run_onchange script). Both values come from the npm package metadata:
+#   npm view azure-functions-core-tools@4 version consolidatedBuildId
+VERSION="4.12.0"
+BUILD_ID="281211" # consolidatedBuildId; CDN path uses 4.0.<BUILD_ID>
+
+echo ":: [14] Azure Functions Core Tools (func) ${VERSION}"
+
+install_root="${XDG_DATA_HOME:-$HOME/.local/share}/azure-functions-core-tools"
+target_dir="${install_root}/${VERSION}"
+bin_dir="$HOME/.local/bin"
+func_link="${bin_dir}/func"
+
+mkdir -p "$bin_dir"
+
+# Idempotent: already at the target version → just ensure the symlink is correct.
+if [[ -x "${target_dir}/func" ]] \
+    && current="$("${target_dir}/func" --version 2>/dev/null)" \
+    && [[ "$current" == "$VERSION" ]]; then
+    ln -sfn "${target_dir}/func" "$func_link"
+    echo "    Already installed (${VERSION})"
+    exit 0
+fi
+
+# Map platform → Azure CDN release identifier.
+case "$(uname -s)-$(uname -m)" in
+    Darwin-arm64) rid="osx-arm64" ;;
+    Darwin-x86_64) rid="osx-x64" ;;
+    Linux-aarch64 | Linux-arm64) rid="linux-arm64" ;;
+    Linux-x86_64) rid="linux-x64" ;;
+    *)
+        echo "    Skipped (unsupported platform $(uname -s)-$(uname -m))"
+        exit 0
+        ;;
+esac
+
+url="https://cdn.functions.azure.com/public/4.0.${BUILD_ID}/Azure.Functions.Cli.${rid}.${VERSION}.zip"
+echo "    Downloading ${rid} ${VERSION} from Azure CDN (~600MB)..."
+
+tmp_zip="$(mktemp -t func.XXXXXX.zip)"
+trap 'rm -f "$tmp_zip"' EXIT
+if ! curl -fL --retry 5 --retry-delay 2 -C - -o "$tmp_zip" "$url"; then
+    echo "    Error: download failed (${url})" >&2
+    exit 1
+fi
+
+# Extract into a versioned dir so the binary and its sibling .NET assemblies stay
+# together, then (re)point the PATH symlink at it.
+rm -rf "$target_dir"
+mkdir -p "$target_dir"
+unzip -oq "$tmp_zip" -d "$target_dir"
+chmod +x "${target_dir}/func" 2>/dev/null || true
+chmod +x "${target_dir}/gozip" 2>/dev/null || true
+ln -sfn "${target_dir}/func" "$func_link"
+
+# Prune older versions (~1.5GB each once extracted).
+find "$install_root" -mindepth 1 -maxdepth 1 -type d ! -name "$VERSION" -exec rm -rf {} + 2>/dev/null || true
+
+echo "    Installed func ${VERSION} -> ${func_link}"
+"$func_link" --version
+{{- else -}}
+# func is a work-only tool; nothing to do on a non-work machine.
+:
+{{- end }}
