@@ -4,8 +4,7 @@ homebrew:
       - nikitabobko/tap
       - FelixKratz/formulae
       - muxy-app/tap # muxy cask source
-    work:
-      - azure/functions
+    work: [] # azure/functions removed — repo GitHub-staff-disabled 2026-06-05 (untappable); func now installed from Azure CDN via run_onchange_after_14
     private: []
   brews:
     shared:
@@ -17,7 +16,7 @@ homebrew:
       - awscli
       - aws-sam-cli
       - azure-cli
-      - azure/functions/azure-functions-core-tools@4
+      # azure-functions-core-tools@4 — installed from Azure CDN by run_onchange_after_14 (tap is GitHub-staff-disabled)
     private:
       - mas # Required for masApps installation
   casks:
