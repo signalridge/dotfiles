@@ -2,17 +2,17 @@
 # Pinned versions (auto-updated by GitHub Actions)
 # ─────────────────────────────────────────────────────────────────────────────
 versions:
-  nixInstaller: v3.21.0
+  nixInstaller: v3.21.1
   nixVersion: v2.34.7
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
-  aquaVersion: v2.59.1
+  aquaVersion: v2.60.0
   nixIndexDb: 2026-06-07-065317
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: cf6059d030bf4fe96623ae2e596d2f31e35fedc0
   claudeWshobsonAgentsSha256: dbd646528a72a795df3a0394eadd3f590e4588a052a6a8553b939fdfef4b3b8e
-  claudeAnthropicsSkillsRev: c30d329f5814647c1e2f071020c1e8c1c9893ef1
-  claudeAnthropicsSkillsSha256: d24f2f4616ed3404347bb1c449f26dedca64676a7511a7939143428f0a412648
+  claudeAnthropicsSkillsRev: 57546260929473d4e0d1c1bb75297be2fdfa1949
+  claudeAnthropicsSkillsSha256: 7a3e7ac65a8057d56c3ed78292b69d1a0b48cb3adfe3e77ec5019621c42e940e
   claudeBaoyuSkillsRev: ce84174bf7af6a178ae2c980f1bdcce4f1c3f7de
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35
   uiUxProMaxSkillSha256: 7c51fb0ab28651f620e873632d0109f364942c54c9e77a8819a1e2cedec424ea
@@ -26,8 +26,8 @@ versions:
   vercelLabsAgentBrowserRev: 328ce8a98560ac7bac8fa81f53a718822550b94e
   supabaseAgentSkillsRev: 1356046015476711a769601079262b5635929427
   expoSkillsRev: c38860242118df93d4ec4381a34f4144fff61928
-  microsoftSkillsRev: 619745888df8014bc963929896f9a279c6d12641
-  sickn33AntigravitySkillsRev: afc403de16917b418c301b690970047b2109542f
+  microsoftSkillsRev: 5d9ddbeadb8fe805e92b3f4004d9fbad3cd4795b
+  sickn33AntigravitySkillsRev: 7888a7ee53c6a23b4f61b259ef26b5f305ca9498
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: ca7af700a3d8888e63bb819f6f118e2aec42c2db
   dailyDevSkillsRev: 192dae2b904fd4a4e8b9d212474f34c70710e28d
