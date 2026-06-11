@@ -17,7 +17,7 @@ versions:
   uiUxProMaxSkillRev: b7e3af80f6e331f6fb456667b82b12cade7c9d35
   uiUxProMaxSkillSha256: 7c51fb0ab28651f620e873632d0109f364942c54c9e77a8819a1e2cedec424ea
   openaiSkillsRev: a8924c2a35cfa290458852c4fad17c9133054c2e
-  huggingfaceSkillsRev: d7223848c3895fbd447faf2aec73e0a6cdd7fdcd
+  huggingfaceSkillsRev: 7bf59b7f85b79c74207b10d5e425934514e8b089
   getsentrySkillsRev: b39c7c4b6056f0579b340b7c5c4e811e400368e8
   trailofbitsSkillsRev: c070b9b5881183ea5f6e320ff06c46688becb13e
   cloudflareSkillsRev: c5b7b06b073fa0b4abbd63964630f97d81da69c4
@@ -27,7 +27,7 @@ versions:
   supabaseAgentSkillsRev: 1356046015476711a769601079262b5635929427
   expoSkillsRev: 1a5693e0acc95a0829ff1656b4426fee2f2c1167
   microsoftSkillsRev: dee7bef5a24cfd8e313a60c4039cfbdbd0118c6c
-  sickn33AntigravitySkillsRev: 13c8a69fb89d5296a9ee5f0ea7e422b08d9c9fe0
+  sickn33AntigravitySkillsRev: 4da6d2a312f54a5c12fe26e7792df6635f534df6
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: ca7af700a3d8888e63bb819f6f118e2aec42c2db
   dailyDevSkillsRev: 192dae2b904fd4a4e8b9d212474f34c70710e28d
