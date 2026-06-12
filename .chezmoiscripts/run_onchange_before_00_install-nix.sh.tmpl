@@ -143,6 +143,46 @@ select_mirror() {
     echo "$best"
 }
 
+# --- macOS upgrade via official signed .pkg ---
+#
+# `determinate-nixd upgrade` resolves the new version's store path from
+# fallback-paths.nix, then substitutes it from the install.determinate.systems
+# binary cache (falling back to the authenticated FlakeHub Cache). When Determinate
+# bumps `stable` but has not published that store path to the *public* cache, a
+# logged-out machine fails deterministically (404 on install.determinate.systems,
+# then 401 on cache.flakehub.com). The notarized .pkg bundles the full closure and
+# installs it directly, bypassing both caches.
+
+DETERMINATE_PKG_URL="https://install.determinate.systems/determinate-pkg/stable/Universal"
+DETERMINATE_PKG_TEAM="Determinate Systems, Inc. (X3JQ4VPJZ6)"
+
+upgrade_via_pkg() {
+    local pkgtmp
+    local pkg
+    local rc=0
+    pkgtmp=$(mktemp -d)
+    pkg="${pkgtmp}/Determinate.pkg"
+
+    info "downloading Determinate .pkg..."
+    if ! download "$DETERMINATE_PKG_URL" "$pkg"; then
+        warn "pkg download failed"
+        rm -rf "$pkgtmp"
+        return 1
+    fi
+
+    # Only install a package actually signed by Determinate's Apple Developer ID
+    if ! pkgutil --check-signature "$pkg" 2>/dev/null | grep -q "$DETERMINATE_PKG_TEAM"; then
+        warn "pkg signature not from Determinate Systems, refusing to install"
+        rm -rf "$pkgtmp"
+        return 1
+    fi
+
+    info "installing Determinate .pkg (requires sudo)..."
+    sudo installer -pkg "$pkg" -target / || rc=1
+    rm -rf "$pkgtmp"
+    return "$rc"
+}
+
 # --- Main ---
 
 main() {
@@ -155,7 +195,13 @@ main() {
 
         # Upgrade if version mismatch
         if [ "$current_version" != "${NIX_VERSION#v}" ]; then
-            if command -v determinate-nixd >/dev/null 2>&1; then
+            # macOS: upgrade via the official signed .pkg (bundles the closure,
+            # bypasses the binary caches that break logged-out `determinate-nixd
+            # upgrade`). Linux has no .pkg, so keep the cache-based upgrade path.
+            if [ "$(uname -s)" = "Darwin" ]; then
+                info "upgrading via Determinate .pkg..."
+                upgrade_via_pkg || warn "upgrade failed"
+            elif command -v determinate-nixd >/dev/null 2>&1; then
                 info "upgrading via determinate-nixd..."
                 sudo determinate-nixd upgrade || warn "upgrade failed"
             else
