@@ -30,6 +30,11 @@
     onActivation = {
       autoUpdate = false; # Disabled: auto-update resets brew bundle state, breaking mas detection (Homebrew 5.1+)
       upgrade = true; # Upgrade outdated casks and formulae (mas upgrade still fails due to root requirement on macOS 15.4+)
+      extraEnv = {
+        # nix-darwin activation runs under sudo and does not inherit dot_zshenv.
+        # Keep Homebrew trust lookup on the managed XDG config path.
+        XDG_CONFIG_HOME = "{{ .chezmoi.homeDir }}/.config";
+      };
       # 'zap': uninstalls all formulae(and related files) not listed in the generated Brewfile
       cleanup = "zap";
     };
