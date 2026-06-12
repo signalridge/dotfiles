@@ -7,7 +7,7 @@ registries:
     path: registry.yaml
 packages:
   # ----- third-party registry (see registry.yaml) -----
-  - name: signalridge/slipway@v0.18.0
+  - name: signalridge/slipway@v0.20.0
     registry: third-party
   # ----- standard registry -----
   - name: nektos/act@v0.2.89
@@ -21,14 +21,14 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.172
+  - name: anthropics/claude-code@v2.1.174
   - name: openai/codex@rust-v0.139.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.6.2
+  - name: jdx/mise@v2026.6.3
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -78,7 +78,7 @@ packages:
   - name: koalaman/shellcheck@v0.11.0
   - name: mvdan/sh@v3.13.1
   - name: rhysd/actionlint@v1.7.12
-  - name: astral-sh/ruff@0.15.16
+  - name: astral-sh/ruff@0.15.17
   - name: astral-sh/ty@0.0.48
   - name: j178/prek@v0.4.4
   - name: golang.org/x/tools/gopls@v0.22.0
