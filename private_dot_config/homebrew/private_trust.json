@@ -1,0 +1,4 @@
+{
+  "trustedformulae": ["felixkratz/formulae/borders"],
+  "trustedtaps": ["felixkratz/formulae", "muxy-app/tap", "nikitabobko/tap"]
+}
