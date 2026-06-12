@@ -9,8 +9,8 @@ versions:
   aquaVersion: v2.60.0
   nixIndexDb: 2026-06-07-065317
   paperlib: 3.1.12
-  claudeWshobsonAgentsRev: cf6059d030bf4fe96623ae2e596d2f31e35fedc0
-  claudeWshobsonAgentsSha256: dbd646528a72a795df3a0394eadd3f590e4588a052a6a8553b939fdfef4b3b8e
+  claudeWshobsonAgentsRev: 75ebf8c644f4c5bceb4a60523754a021954cba52
+  claudeWshobsonAgentsSha256: a59ba7534d09817d1298d50fca6280f1cb86224fce984eaeba39509c2a06a8ef
   claudeAnthropicsSkillsRev: 57546260929473d4e0d1c1bb75297be2fdfa1949
   claudeAnthropicsSkillsSha256: 7a3e7ac65a8057d56c3ed78292b69d1a0b48cb3adfe3e77ec5019621c42e940e
   claudeBaoyuSkillsRev: ce84174bf7af6a178ae2c980f1bdcce4f1c3f7de
@@ -20,12 +20,12 @@ versions:
   huggingfaceSkillsRev: 7bf59b7f85b79c74207b10d5e425934514e8b089
   getsentrySkillsRev: b39c7c4b6056f0579b340b7c5c4e811e400368e8
   trailofbitsSkillsRev: c070b9b5881183ea5f6e320ff06c46688becb13e
-  cloudflareSkillsRev: c5b7b06b073fa0b4abbd63964630f97d81da69c4
+  cloudflareSkillsRev: 12520fd63a1e958be217a93f48ce1f04bc9055f3
   vercelLabsAgentSkillsRev: f8a72b9603728bb92a217a879b7e62e43ad76c81
   vercelLabsNextSkillsRev: dc1de9caf7612d73f56a8dec3cb1bd6c9ec096b9
   vercelLabsAgentBrowserRev: 5185339ca3fdab9848e11b8ec676eecfdec3733f
   supabaseAgentSkillsRev: 1356046015476711a769601079262b5635929427
-  expoSkillsRev: 1a5693e0acc95a0829ff1656b4426fee2f2c1167
+  expoSkillsRev: bba3c55d7e75f62cbfc937150b4b4ed3873e3b0d
   microsoftSkillsRev: dee7bef5a24cfd8e313a60c4039cfbdbd0118c6c
   sickn33AntigravitySkillsRev: 4da6d2a312f54a5c12fe26e7792df6635f534df6
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
