@@ -14,13 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
-      - name: Restore Nix cache
-        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('nix-config/**/*.nix', 'nix-config/**/*.tmpl', 'nix-config/.flake-*.lock', '.github/workflows/*.yml', '.pre-commit-config.yaml') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          gc-max-store-size-linux: 1G
-          gc-max-store-size-macos: 2G
       - name: Install test dependencies
         run: |
           nix profile install nixpkgs#chezmoi nixpkgs#jq
