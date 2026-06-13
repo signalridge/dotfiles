@@ -29,6 +29,7 @@ homebrew:
       - karabiner-elements
       - keka
       - keyboardcleantool
+      - vial
       - ghostty
       - muxy # macOS-first terminal (SwiftUI + libghostty) for AI-agent workflows
       - mockoon
