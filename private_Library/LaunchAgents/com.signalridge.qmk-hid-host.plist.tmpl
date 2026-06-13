@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.signalridge.qmk-hid-host</string>
+
+    <!-- Runs the aqua-managed binary. Launch args replace the JSON config:
+         configure your keyboard here (find product id with `qmk-hid-host -p`). -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{ .chezmoi.homeDir }}/.local/share/aquaproj-aqua/bin/qmk-hid-host</string>
+        <string>--product-id</string>
+        <string>0x1988</string>
+        <string>--layout</string>
+        <string>en</string>
+    </array>
+
+    <!-- aqua bin is an aqua-proxy shim; it needs these to resolve the real
+         binary version since launchd does not source the shell profile. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>{{ .chezmoi.homeDir }}</string>
+        <key>PATH</key>
+        <string>{{ .chezmoi.homeDir }}/.local/share/aquaproj-aqua/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>AQUA_GLOBAL_CONFIG</key>
+        <string>{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml</string>
+        <key>AQUA_POLICY_CONFIG</key>
+        <string>{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua-policy.yaml</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>StandardOutPath</key>
+    <string>{{ .chezmoi.homeDir }}/Library/Logs/qmk-hid-host.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{ .chezmoi.homeDir }}/Library/Logs/qmk-hid-host.log</string>
+</dict>
+</plist>

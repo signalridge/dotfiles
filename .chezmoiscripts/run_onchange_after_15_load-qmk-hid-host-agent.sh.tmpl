@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# (Re)load the qmk-hid-host LaunchAgent. Re-runs whenever the plist changes.
+# plist sha256: {{ include "private_Library/LaunchAgents/com.signalridge.qmk-hid-host.plist.tmpl" | sha256sum }}
+{{ if eq .chezmoi.os "darwin" -}}
+label="com.signalridge.qmk-hid-host"
+plist="${HOME}/Library/LaunchAgents/${label}.plist"
+domain="gui/$(id -u)"
+
+echo ":: [15] (re)loading ${label} LaunchAgent"
+
+if [[ ! -f "$plist" ]]; then
+    echo "    plist not found at $plist, skipping"
+    exit 0
+fi
+
+mkdir -p "${HOME}/Library/Logs"
+
+# bootout the running instance (ignore if not loaded), then bootstrap + start
+launchctl bootout "${domain}/${label}" 2>/dev/null || true
+launchctl bootstrap "$domain" "$plist"
+launchctl enable "${domain}/${label}"
+launchctl kickstart -k "${domain}/${label}"
+echo "    loaded ${label}"
+{{ else -}}
+echo ":: [15] qmk-hid-host LaunchAgent skipped (macOS only)"
+{{ end -}}
