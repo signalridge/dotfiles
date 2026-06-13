@@ -20,3 +20,23 @@ packages:
       - darwin
       - linux
       - windows
+  - type: github_release
+    repo_owner: signalridge
+    repo_name: qmk-hid-host
+    description: Host component for communicating with QMK keyboards using Raw HID
+    format: raw
+    files:
+      - name: qmk-hid-host
+    # release assets are raw, per-platform binaries: qmk-hid-host-macos-arm64,
+    # qmk-hid-host-linux-x86_64, qmk-hid-host-windows.exe
+    asset: "qmk-hid-host-{{.OS}}-{{.Arch}}"
+    replacements:
+      darwin: macos
+      amd64: x86_64
+    overrides:
+      - goos: windows
+        asset: "qmk-hid-host-windows.exe"
+    supported_envs:
+      - darwin/arm64
+      - linux/amd64
+      - windows/amd64
