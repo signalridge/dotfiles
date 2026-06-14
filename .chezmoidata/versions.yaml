@@ -7,7 +7,7 @@ versions:
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
   aquaVersion: v2.60.0
-  nixIndexDb: 2026-06-07-065317
+  nixIndexDb: 2026-06-14-070944
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: cc37bfdd292ce520ba1c44df7a3a70d5f8137236
   claudeWshobsonAgentsSha256: 3ebf3f5b1dddad63691a9379d6f749277dd3aa3c321e406a18554ffd87fc2097
@@ -27,7 +27,7 @@ versions:
   supabaseAgentSkillsRev: 1356046015476711a769601079262b5635929427
   expoSkillsRev: 39d50f0caeacec8a17588534bb32aa962c677a3d
   microsoftSkillsRev: dee7bef5a24cfd8e313a60c4039cfbdbd0118c6c
-  sickn33AntigravitySkillsRev: 3a407b3c2bf310dd330da4fc801b9f87d2d8b4d1
+  sickn33AntigravitySkillsRev: 9431b67e893f82197ec845a2d945cfe178e70477
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: ca7af700a3d8888e63bb819f6f118e2aec42c2db
   dailyDevSkillsRev: 192dae2b904fd4a4e8b9d212474f34c70710e28d
