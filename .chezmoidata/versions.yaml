@@ -20,7 +20,7 @@ versions:
   huggingfaceSkillsRev: c68f1b08d9eb3af22cdc1d3fb60e9cdb78522556
   getsentrySkillsRev: b39c7c4b6056f0579b340b7c5c4e811e400368e8
   trailofbitsSkillsRev: c070b9b5881183ea5f6e320ff06c46688becb13e
-  cloudflareSkillsRev: 12520fd63a1e958be217a93f48ce1f04bc9055f3
+  cloudflareSkillsRev: e16d698f6be2beb3a100138ac7eb072499bf429f
   vercelLabsAgentSkillsRev: f8a72b9603728bb92a217a879b7e62e43ad76c81
   vercelLabsNextSkillsRev: dc1de9caf7612d73f56a8dec3cb1bd6c9ec096b9
   vercelLabsAgentBrowserRev: 2c7991c9eccca1c9db6eee1a26a713414778de5a
