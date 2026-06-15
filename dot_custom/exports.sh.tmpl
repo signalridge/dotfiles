@@ -91,14 +91,19 @@ export CARAPACE_BRIDGES="${CARAPACE_BRIDGES:-zsh,fish,bash,inshellisense}"
 # Must be set before sheldon loads the plugin
 # ─────────────────────────────────────────────────────────────
 export ZSH_TMUX_CONFIG="$HOME/.config/tmux/tmux.conf"
-# Disable tmux autostart in non-TTY/nested/managed environments.
-# This prevents startup loops for tool-driven shells.
-if [[ "$TERM_PROGRAM" == "vscode" ]] || [[ -n "$TMUX" ]] || [[ ! -t 0 ]] || [[ ! -t 1 ]]; then
-    export ZSH_TMUX_AUTOSTART=false
-    export ZSH_TMUX_AUTOCONNECT=false
-else
+# Only autostart tmux inside the real Ghostty.app. Other terminals that embed
+# the Ghostty core (e.g. muxy) also report TERM_PROGRAM=ghostty, so on macOS we
+# additionally pin __CFBundleIdentifier to Ghostty's bundle id. When that var is
+# unset (e.g. Linux), we fall back to TERM_PROGRAM alone. Non-TTY/nested/managed
+# environments always get a plain shell to prevent startup loops.
+if [[ "$TERM_PROGRAM" == "ghostty" ]] \
+    && [[ "${__CFBundleIdentifier:-com.mitchellh.ghostty}" == "com.mitchellh.ghostty" ]] \
+    && [[ -z "$TMUX" ]] && [[ -t 0 ]] && [[ -t 1 ]]; then
     export ZSH_TMUX_AUTOSTART=true
     export ZSH_TMUX_AUTOCONNECT=true
+else
+    export ZSH_TMUX_AUTOSTART=false
+    export ZSH_TMUX_AUTOCONNECT=false
 fi
 export ZSH_TMUX_AUTOQUIT=false
 # TMux session name based on aerospace workspace
