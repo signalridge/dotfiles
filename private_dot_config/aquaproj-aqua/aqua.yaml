@@ -30,7 +30,7 @@ packages:
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.6.9
+  - name: jdx/mise@v2026.6.10
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
