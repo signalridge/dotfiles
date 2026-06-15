@@ -96,9 +96,9 @@ export ZSH_TMUX_CONFIG="$HOME/.config/tmux/tmux.conf"
 # additionally pin __CFBundleIdentifier to Ghostty's bundle id. When that var is
 # unset (e.g. Linux), we fall back to TERM_PROGRAM alone. Non-TTY/nested/managed
 # environments always get a plain shell to prevent startup loops.
-if [[ "$TERM_PROGRAM" == "ghostty" ]] \
-    && [[ "${__CFBundleIdentifier:-com.mitchellh.ghostty}" == "com.mitchellh.ghostty" ]] \
-    && [[ -z "$TMUX" ]] && [[ -t 0 ]] && [[ -t 1 ]]; then
+if [[ "$TERM_PROGRAM" == "ghostty" ]] &&
+    [[ "${__CFBundleIdentifier:-com.mitchellh.ghostty}" == "com.mitchellh.ghostty" ]] &&
+    [[ -z "$TMUX" ]] && [[ -t 0 ]] && [[ -t 1 ]]; then
     export ZSH_TMUX_AUTOSTART=true
     export ZSH_TMUX_AUTOCONNECT=true
 else
