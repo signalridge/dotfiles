@@ -6,7 +6,7 @@ versions:
   nixVersion: v2.34.7
   aquaInstaller: v4.0.4
   aquaInstallerSha256: acd21cbb06609dd9a701b0032ba4c21fa37b0e3b5cc4c9d721cc02f25ea33a28
-  aquaVersion: v2.60.0
+  aquaVersion: v2.60.1
   nixIndexDb: 2026-06-14-070944
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: cc37bfdd292ce520ba1c44df7a3a70d5f8137236
@@ -20,14 +20,14 @@ versions:
   huggingfaceSkillsRev: c68f1b08d9eb3af22cdc1d3fb60e9cdb78522556
   getsentrySkillsRev: b39c7c4b6056f0579b340b7c5c4e811e400368e8
   trailofbitsSkillsRev: c070b9b5881183ea5f6e320ff06c46688becb13e
-  cloudflareSkillsRev: e16d698f6be2beb3a100138ac7eb072499bf429f
+  cloudflareSkillsRev: 8ff55f2a574f498bbf89675279d92b7a61f4d521
   vercelLabsAgentSkillsRev: f8a72b9603728bb92a217a879b7e62e43ad76c81
   vercelLabsNextSkillsRev: dc1de9caf7612d73f56a8dec3cb1bd6c9ec096b9
   vercelLabsAgentBrowserRev: 2c7991c9eccca1c9db6eee1a26a713414778de5a
   supabaseAgentSkillsRev: 1356046015476711a769601079262b5635929427
-  expoSkillsRev: 39d50f0caeacec8a17588534bb32aa962c677a3d
-  microsoftSkillsRev: dee7bef5a24cfd8e313a60c4039cfbdbd0118c6c
-  sickn33AntigravitySkillsRev: 9431b67e893f82197ec845a2d945cfe178e70477
+  expoSkillsRev: b76270a44ce60fd2f1e664d92177e88211722c45
+  microsoftSkillsRev: 6ac37ba803104a074d2bace9b105e1ec9d0706b6
+  sickn33AntigravitySkillsRev: 39660b6b4b9eee6dc2accbc4a22b89605d995662
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: ca7af700a3d8888e63bb819f6f118e2aec42c2db
   dailyDevSkillsRev: 192dae2b904fd4a4e8b9d212474f34c70710e28d
