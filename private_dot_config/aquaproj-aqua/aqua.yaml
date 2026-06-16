@@ -7,7 +7,7 @@ registries:
     path: registry.yaml
 packages:
   # ----- third-party registry (see registry.yaml) -----
-  - name: signalridge/slipway@v0.23.0
+  - name: signalridge/slipway@v0.25.2
     registry: third-party
   - name: signalridge/qmk-hid-host@v2026.06.14.1
     registry: third-party
@@ -23,8 +23,8 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.177
-  - name: openai/codex@rust-v0.139.0
+  - name: anthropics/claude-code@v2.1.178
+  - name: openai/codex@rust-v0.140.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
@@ -82,7 +82,7 @@ packages:
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.15.17
   - name: astral-sh/ty@0.0.49
-  - name: j178/prek@v0.4.4
+  - name: j178/prek@v0.4.5
   - name: golang.org/x/tools/gopls@v0.22.0
   - name: golangci/golangci-lint@v2.12.2
   - name: goreleaser/goreleaser@v2.16.0
@@ -107,7 +107,7 @@ packages:
   - name: kubecolor/kubecolor@v0.6.0
   - name: ahmetb/kubectx@v0.11.0
   - name: kubernetes-sigs/krew@v0.5.0
-  - name: aquasecurity/trivy@v0.71.0
+  - name: aquasecurity/trivy@v0.71.1
   - name: anchore/syft@v1.45.1
   - name: anchore/grype@v0.114.0
   - name: LucasPickering/slumber@v5.3.0
@@ -115,4 +115,4 @@ packages:
   - name: charmbracelet/vhs@v0.11.0
   - name: terraform-linters/tflint@v0.63.1
   - name: quarto-dev/quarto-cli@v1.9.38
-  - name: typst/typst@v0.14.2
+  - name: typst/typst@v0.15.0
