@@ -111,7 +111,7 @@ fi
 
 # Check mode: just verify key exists
 if $CHECK_ONLY; then
-    if key_exists "$PROVIDER" "$ACCT_NAME"; then
+    if get_api_key "$PROVIDER" "$ACCT_NAME" >/dev/null; then
         exit 0
     else
         exit 1

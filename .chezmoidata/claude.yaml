@@ -27,14 +27,18 @@ claude:
         - claude-sonnet-4-6
         - claude-sonnet-4-5-20250929
         - claude-haiku-4-5-20251001
-    # DeepSeek: https://api-docs.deepseek.com/guides/anthropic_api
+    # DeepSeek Claude Code: https://api-docs.deepseek.com/zh-cn/quick_start/agent_integrations/claude_code
     deepseek:
       base_url: https://api.deepseek.com/anthropic
       timeout_ms: 300000
       disable_nonessential_traffic: true
+      default_model: deepseek-v4-pro[1m]
+      # User preference: run Claude Code subagents on pro instead of the documented flash default.
+      subagent_model: deepseek-v4-pro[1m]
+      effort_level: max
       models:
-        - deepseek-chat
-        - deepseek-reasoner
+        - deepseek-v4-pro[1m]
+        - deepseek-v4-flash
     # Kimi K2 (Moonshot): https://github.com/MoonshotAI/kimi-cli/blob/main/docs/en/configuration/providers.md
     kimi:
       base_url: https://api.kimi.com/coding
@@ -91,6 +95,15 @@ claude:
       small_model: claude-haiku-4-5-20251001
     # Third-party accounts (format: provider@label)
     # Add your own: deepseek@work, kimi@personal, etc.
+    deepseek@private:
+      provider: deepseek
+      model: deepseek-v4-pro[1m]
+      small_model: deepseek-v4-flash
+      haiku_model: deepseek-v4-flash
+      sonnet_model: deepseek-v4-pro[1m]
+      opus_model: deepseek-v4-pro[1m]
+      subagent_model: deepseek-v4-pro[1m]
+      effort_level: max
     doubao@private:
       model: kimi-k2.5
       small_model: kimi-k2.5

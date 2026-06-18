@@ -21,6 +21,8 @@ cleanup() {
 trap cleanup EXIT
 
 export HOME="$TMP_ROOT/home"
+export XDG_CONFIG_HOME="$HOME/.config"
+unset AQUA_CONFIG AQUA_GLOBAL_CONFIG
 mkdir -p "$HOME/.config/chezmoi" "$HOME/.codex"
 cat >"$HOME/.config/chezmoi/chezmoi.toml" <<'EOF'
 [data]
@@ -99,13 +101,17 @@ case "$cmd" in
         case "$target" in
             codex)
                 echo "codex/deepseek/private/api_key"
+                echo "codex/kimi/private/api_key"
                 exit 0
                 ;;
             claude)
+                echo "claude/deepseek/private/api_key"
                 echo "claude/qwen/beta/api_key"
                 exit 0
                 ;;
             codex/deepseek/private/api_key|\
+            codex/kimi/private/api_key|\
+            claude/deepseek/private/api_key|\
             claude/qwen/beta/api_key)
                 exit 0
                 ;;
@@ -115,14 +121,33 @@ case "$cmd" in
         esac
         ;;
     show)
-        target="${1:-}"
-        if [[ "$target" == "-o" ]]; then
-            target="${2:-}"
-        fi
+        target=""
+        password_only=0
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                -o|--password)
+                    password_only=1
+                    ;;
+                -u|--unsafe|-f|--force|--noparsing|-n)
+                    ;;
+                *)
+                    target="$1"
+                    ;;
+            esac
+            shift || true
+        done
         case "$target" in
             codex/deepseek/private/api_key|\
+            claude/deepseek/private/api_key|\
             claude/qwen/beta/api_key)
                 echo "test-key"
+                exit 0
+                ;;
+            claude/kimi/private/api_key)
+                if [[ "$password_only" -eq 1 ]]; then
+                    exit 11
+                fi
+                echo "api_key: body-key"
                 exit 0
                 ;;
             *)
@@ -131,11 +156,27 @@ case "$cmd" in
         esac
         ;;
     insert)
-        if [[ "${1:-}" == "-f" ]]; then
-            printf '%s\n' "${2:-}" >>"${GOPASS_INSERT_LOG:?}"
-            exit 0
-        fi
-        exit 1
+        force=0
+        multiline=0
+        target=""
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                -f|--force)
+                    force=1
+                    ;;
+                -m|--multiline)
+                    multiline=1
+                    ;;
+                *)
+                    target="$1"
+                    ;;
+            esac
+            shift || true
+        done
+        [[ "$force" -eq 1 && "$multiline" -eq 1 && -n "$target" ]] || exit 1
+        secret="$(cat)"
+        printf '%s|%s\n' "$target" "$secret" >>"${GOPASS_INSERT_LOG:?}"
+        exit 0
         ;;
     rm)
         exit 0
@@ -150,7 +191,12 @@ cat >"$STUB/codex-token" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 case "${1:-}" in
-    --check) exit 0 ;;
+    --check)
+        case "${2:-}" in
+            deepseek@private) exit 0 ;;
+            *) exit 1 ;;
+        esac
+        ;;
     --config)
         echo '{"provider":"deepseek","model":"deepseek-chat","base_url":"https://api.deepseek.com"}'
         exit 0
@@ -166,7 +212,12 @@ cat >"$STUB/claude-token" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 case "${1:-}" in
-    --check) exit 0 ;;
+    --check)
+        case "${2:-}" in
+            deepseek@private|qwen@beta) exit 0 ;;
+            *) exit 1 ;;
+        esac
+        ;;
     --config)
         echo '{"provider":"qwen","model":"qwen3-coder-plus","base_url":"https://dashscope.aliyuncs.com/apps/anthropic"}'
         exit 0
@@ -275,30 +326,40 @@ assert_equals() {
 codex_list="$(PATH="$BASE_PATH" "$BIN/codex-manage" list | strip_ansi)"
 claude_list="$(PATH="$BASE_PATH" "$BIN/claude-manage" list | strip_ansi)"
 
-# codex-manage list: native + valid third-party for codex path only.
+# codex-manage list: native + codex gopass accounts; unreadable entries are
+# visible as no-key instead of being mistaken for valid keys.
 assert_contains "$codex_list" "openai (native)"
 assert_contains "$codex_list" "deepseek@private"
-assert_not_contains "$codex_list" "kimi"
+assert_contains "$codex_list" "kimi@private (no key)"
 assert_not_contains "$codex_list" "qwen@beta"
-assert_not_contains "$codex_list" "(no key)"
 
-# claude-manage list: native accounts + valid third-party for claude path only.
+# claude-manage list: native accounts + known configured accounts + valid
+# third-party keys discovered from the claude gopass prefix.
 assert_contains "$claude_list" "anthropic (native)"
 assert_contains "$claude_list" "opus (native)"
 assert_contains "$claude_list" "haiku (native)"
+assert_contains "$claude_list" "deepseek@private"
 assert_contains "$claude_list" "qwen@beta"
+assert_contains "$claude_list" "doubao@private (no key)"
+assert_contains "$claude_list" "kimi@private (no key)"
 assert_not_contains "$claude_list" "qwen@private"
-assert_not_contains "$claude_list" "kimi"
-assert_not_contains "$claude_list" "deepseek"
-assert_not_contains "$claude_list" "doubao@private"
-assert_not_contains "$claude_list" "(no key)"
 
 # list-visible runtime accounts must be operable for switch.
 PATH="$BASE_PATH" "$BIN/codex-manage" switch deepseek@private >/dev/null
+PATH="$BASE_PATH" "$BIN/claude-manage" switch deepseek@private >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-manage" switch qwen@beta >/dev/null
+
+# Configured accounts without keys should be recognized, then fail with the
+# key-specific remediation instead of "Unknown account".
+claude_no_key_switch="$(PATH="$BASE_PATH" "$BIN/claude-manage" switch doubao@private 2>&1 || true)"
+assert_contains "$claude_no_key_switch" "No API token for doubao@private"
 
 # list-visible runtime accounts must be operable for test.
 PATH="$BASE_PATH" "$BIN/codex-manage" test deepseek@private >/dev/null
+codex_no_key_test="$(PATH="$BASE_PATH" "$BIN/codex-manage" test kimi@private 2>&1 || true)"
+assert_contains "$codex_no_key_test" "API key entry is empty or unreadable"
+assert_contains "$codex_no_key_test" "codex-manage update-key kimi@private"
+PATH="$BASE_PATH" "$BIN/claude-manage" test deepseek@private >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-manage" test qwen@beta >/dev/null
 
 # claude-manage test should report network error gracefully when curl fails.
@@ -307,6 +368,7 @@ assert_contains "$claude_fail_output" "Network error"
 
 # list-visible runtime accounts must be operable for launcher entrypoints.
 PATH="$BASE_PATH" "$BIN/codex-with" deepseek@private --version >/dev/null
+PATH="$BASE_PATH" "$BIN/claude-with" deepseek@private --version >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-with" qwen@beta --version >/dev/null
 
 # doctor: parity diagnostics should be available in both tools.
@@ -353,8 +415,18 @@ claude_candidates="$(
 assert_equals "$codex_candidates" $'codex/kimi/private/api_key'
 assert_equals "$claude_candidates" $'claude/kimi/private/api_key'
 
+# gopass body-only entries are accepted as API keys when the password field is empty.
+claude_body_key="$(
+    PATH="$BASE_PATH" bash -c "source '$BIN/lib/ai/claude'; get_api_key kimi private"
+)"
+assert_equals "$claude_body_key" "body-key"
+
 # Store operations always write to tool-specific canonical path.
 PATH="$BASE_PATH" bash -c "source '$BIN/lib/ai/codex'; store_api_key deepseek alpha sk-test"
-assert_equals "$(tail -n1 "$INSERT_LOG")" "codex/deepseek/alpha/api_key"
+assert_equals "$(tail -n1 "$INSERT_LOG")" "codex/deepseek/alpha/api_key|sk-test"
+
+# Configured Claude accounts without keys are still manageable by explicit add-key.
+printf 'sk-doubao\n' | PATH="$BASE_PATH" "$BIN/claude-manage" add-key doubao@private >/dev/null
+assert_equals "$(tail -n1 "$INSERT_LOG")" "claude/doubao/private/api_key|sk-doubao"
 
 echo "test_manage_list_logic: OK"

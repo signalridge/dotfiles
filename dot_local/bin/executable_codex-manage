@@ -167,13 +167,19 @@ cmd_switch() {
         return 1
     fi
 
-    local provider
+    local provider parsed acct_name
     provider=$(get_provider "$input")
+    parsed=$(parse_provider_account "$input")
+    acct_name="${parsed#*|}"
 
     if is_third_party "$provider"; then
         if require_cmd gopass >/dev/null 2>&1; then
             if ! codex-token --check "$input" 2>/dev/null; then
-                log_warn "No API token for $input (continuing without auth update)"
+                if key_exists "$provider" "$acct_name"; then
+                    log_warn "API token entry for $input is empty or unreadable (continuing without auth update; run: codex-manage update-key $input)"
+                else
+                    log_warn "No API token for $input (continuing without auth update; run: codex-manage add-key $input)"
+                fi
             fi
         else
             log_warn "gopass not found (continuing without auth update)"
@@ -189,9 +195,6 @@ cmd_switch() {
     if is_third_party "$provider"; then
         if require_cmd gopass >/dev/null 2>&1 && codex-token --check "$input" 2>/dev/null; then
             backup_codex_auth_openai || return 1
-            local parsed acct_name
-            parsed=$(parse_provider_account "$input")
-            acct_name="${parsed#*|}"
             local api_key
             api_key=$(get_api_key "$provider" "$acct_name") || {
                 log_warn "Failed to retrieve API key (skipping auth.json update)"
@@ -399,7 +402,14 @@ cmd_add_key() {
     acct_name="${parsed#*|}"
 
     is_third_party "$provider" || { log_warn "Native provider, no key needed"; return 0; }
-    key_exists "$provider" "$acct_name" && { log_error "Key already exists. Use update-key."; return 1; }
+    if key_exists "$provider" "$acct_name"; then
+        if codex-token --check "$input" 2>/dev/null; then
+            log_error "Key already exists. Use update-key."
+        else
+            log_error "Key entry already exists but is empty or unreadable. Use update-key."
+        fi
+        return 1
+    fi
 
     log_info "Adding API key for $input"
     printf "API Key: "
@@ -532,14 +542,24 @@ cmd_test() {
     parsed=$(parse_provider_account "$input")
     acct_name="${parsed#*|}"
 
-    key_exists "$provider" "$acct_name" || {
-        log_fail "No API key"
+    if ! codex-token --check "$input" 2>/dev/null; then
+        if key_exists "$provider" "$acct_name"; then
+            log_fail "API key entry is empty or unreadable"
+            echo "  Run: codex-manage update-key $input"
+        else
+            log_fail "No API key"
+            echo "  Run: codex-manage add-key $input"
+        fi
         return 1
-    }
+    fi
     log_success "Key found"
 
     local token
-    token=$(get_api_key "$provider" "$acct_name") || { log_fail "Failed to decrypt"; return 1; }
+    token=$(get_api_key "$provider" "$acct_name") || {
+        log_fail "Failed to read API key"
+        echo "  Run: codex-manage update-key $input"
+        return 1
+    }
 
     echo "  Testing API..."
 
@@ -668,8 +688,10 @@ cmd_list() {
             local parsed acct_name
             parsed=$(parse_provider_account "$account")
             acct_name="${parsed#*|}"
-            if key_exists "$provider" "$acct_name"; then
+            if codex-token --check "$account" 2>/dev/null; then
                 echo -e "  ${GREEN}${STATUS_OK}${NC} $account"
+            else
+                echo -e "  ${RED}${STATUS_ERROR}${NC} $account (no key)"
             fi
         else
             echo -e "  ${GREEN}${STATUS_NATIVE}${NC} $account (native)"

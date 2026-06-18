@@ -81,9 +81,11 @@ launch_claude() {
     small_model=$(echo "$config" | jq -r '.small_model // empty')
 
     # Session isolation: clean up environment to prevent shell pollution
-    # Unset any existing ANTHROPIC_* variables that could interfere
+    # Unset any existing routing variables that could interfere
     unset ANTHROPIC_API_KEY
     unset ANTHROPIC_AUTH_TOKEN
+    unset CLAUDE_CODE_SUBAGENT_MODEL
+    unset CLAUDE_CODE_EFFORT_LEVEL
 
     # Always set override account to ensure claude-token uses the correct provider
     # This works for both native Anthropic (OAuth) and third-party (API key)
@@ -95,7 +97,7 @@ launch_claude() {
         # Verify token exists before launching
         if ! claude-token --check "$account" 2>/dev/null; then
             log_error "No API token for $account"
-            echo -e "Run: ${YELLOW}claude-manage update-account $account${NC}" >&2
+            echo -e "Run: ${YELLOW}claude-manage add-key $account${NC}" >&2
             return 1
         fi
         export ANTHROPIC_BASE_URL="$base_url"
@@ -109,11 +111,13 @@ launch_claude() {
     [[ -n "$small_model" ]] && export ANTHROPIC_SMALL_FAST_MODEL="$small_model"
 
     # Optional settings
-    local timeout haiku sonnet opus disable_traffic
+    local timeout haiku sonnet opus subagent effort_level disable_traffic
     timeout=$(echo "$config" | jq -r '.timeout_ms // empty')
     haiku=$(echo "$config" | jq -r '.haiku_model // empty')
     sonnet=$(echo "$config" | jq -r '.sonnet_model // empty')
     opus=$(echo "$config" | jq -r '.opus_model // empty')
+    subagent=$(echo "$config" | jq -r '.subagent_model // empty')
+    effort_level=$(echo "$config" | jq -r '.effort_level // empty')
     disable_traffic=$(echo "$config" | jq -r '.disable_nonessential_traffic // empty')
 
     [[ -n "$timeout" ]] && export API_TIMEOUT_MS="$timeout"
@@ -121,6 +125,8 @@ launch_claude() {
     [[ -n "$haiku" ]] && export ANTHROPIC_DEFAULT_HAIKU_MODEL="$haiku"
     [[ -n "$sonnet" ]] && export ANTHROPIC_DEFAULT_SONNET_MODEL="$sonnet"
     [[ -n "$opus" ]] && export ANTHROPIC_DEFAULT_OPUS_MODEL="$opus"
+    [[ -n "$subagent" ]] && export CLAUDE_CODE_SUBAGENT_MODEL="$subagent"
+    [[ -n "$effort_level" ]] && export CLAUDE_CODE_EFFORT_LEVEL="$effort_level"
 
     # Status
     echo -e "${GREEN}Launching claude with ${CYAN}$account${NC}"
@@ -155,7 +161,9 @@ launch_claude() {
             .ANTHROPIC_SMALL_FAST_MODEL,
             .ANTHROPIC_DEFAULT_HAIKU_MODEL,
             .ANTHROPIC_DEFAULT_SONNET_MODEL,
-            .ANTHROPIC_DEFAULT_OPUS_MODEL
+            .ANTHROPIC_DEFAULT_OPUS_MODEL,
+            .CLAUDE_CODE_SUBAGENT_MODEL,
+            .CLAUDE_CODE_EFFORT_LEVEL
         ))
     ' "$HOME/.claude/settings.json" 2>/dev/null || echo '{}')
 
@@ -168,6 +176,8 @@ launch_claude() {
         --arg haiku "${haiku:-}" \
         --arg sonnet "${sonnet:-}" \
         --arg opus "${opus:-}" \
+        --arg subagent "${subagent:-}" \
+        --arg effort_level "${effort_level:-}" \
         --arg disable_traffic "${disable_traffic:-}" \
         '(
             $base
@@ -182,6 +192,8 @@ launch_claude() {
                         ANTHROPIC_DEFAULT_HAIKU_MODEL: $haiku,
                         ANTHROPIC_DEFAULT_SONNET_MODEL: $sonnet,
                         ANTHROPIC_DEFAULT_OPUS_MODEL: $opus,
+                        CLAUDE_CODE_SUBAGENT_MODEL: $subagent,
+                        CLAUDE_CODE_EFFORT_LEVEL: $effort_level,
                         CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: (if $disable_traffic == "true" then "1" else "" end)
                     }
                 )

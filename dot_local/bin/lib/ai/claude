@@ -35,6 +35,7 @@ build_account_list_with_status() {
 
 # Build account list with token status
 build_account_list_with_token() {
+    local source="${1:-runtime}"
     local account
     while IFS= read -r account; do
         [[ -z "$account" ]] && continue
@@ -49,7 +50,13 @@ build_account_list_with_token() {
         else
             echo -e "${CYAN}○${NC} $account"
         fi
-    done < <(list_runtime_accounts)
+    done < <(
+        if [[ "$source" == "known" ]]; then
+            list_known_accounts
+        else
+            list_runtime_accounts
+        fi
+    )
 }
 
 # Common preview script for account selection
@@ -65,6 +72,8 @@ ACCOUNT_PREVIEW='
     claude-token --config "$account" 2>/dev/null | jq -r "
         \"Model:     \(.model // \"default\")\",
         \"Small:     \(.small_model // \"default\")\",
+        \"Subagent:  \(.subagent_model // \"default\")\",
+        \"Effort:    \(.effort_level // \"default\")\",
         \"Base URL:  \(.base_url // \"Anthropic (native)\")\"
     " 2>/dev/null || echo "Config not available"
     echo ""
@@ -72,7 +81,7 @@ ACCOUNT_PREVIEW='
         echo -e "\033[0;32m✓ Token ready\033[0m"
     else
         if claude-token --config "$account" 2>/dev/null | jq -e ".base_url // empty" >/dev/null 2>&1; then
-            echo -e "\033[0;31m✗ No token (run: claude-manage update-account $account)\033[0m"
+            echo -e "\033[0;31m✗ No token (run: claude-manage add-key $account)\033[0m"
         else
             echo -e "\033[0;36m○ Native OAuth\033[0m"
         fi
@@ -90,6 +99,7 @@ fzf_pick_account() {
     if ! raw=$({
         case "$list_type" in
             token) build_account_list_with_token ;;
+            token-known) build_account_list_with_token known ;;
             plain) printf '%s\n' "${ACCOUNTS[@]}" ;;
             *)     build_account_list_with_status ;;
         esac

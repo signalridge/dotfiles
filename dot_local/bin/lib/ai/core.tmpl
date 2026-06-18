@@ -97,7 +97,7 @@ load_codex_runtime_config() {
 
     current_account="openai"
     if command -v chezmoi &>/dev/null && command -v jq &>/dev/null; then
-        current_account=$(chezmoi data --format json 2>/dev/null | jq -r '.codexProviderAccount // "openai"' 2>/dev/null)
+        current_account=$(chezmoi data --format json 2>/dev/null | jq -r '.codexProviderAccount // "openai"' 2>/dev/null || true)
         [[ -z "$current_account" || "$current_account" == "null" ]] && current_account="openai"
     fi
 
@@ -223,6 +223,31 @@ list_runtime_accounts() {
     fi
 }
 
+list_known_accounts() {
+    local -a accounts=()
+    local account
+
+    for account in "${ACCOUNTS[@]}"; do
+        [[ -n "$account" ]] && accounts+=("$account")
+    done
+
+    while IFS= read -r account; do
+        [[ -n "$account" ]] && accounts+=("$account")
+    done < <(list_gopass_third_party_accounts)
+
+    local dedup=() a
+    for a in "${accounts[@]}"; do
+        [[ -z "$a" ]] && continue
+        if [[ " ${dedup[*]-} " != *" $a "* ]]; then
+            dedup+=("$a")
+        fi
+    done
+
+    if [[ ${#dedup[@]} -gt 0 ]]; then
+        printf '%s\n' "${dedup[@]}"
+    fi
+}
+
 is_runtime_account() {
     local target="$1"
     local account
@@ -230,6 +255,25 @@ is_runtime_account() {
         [[ -z "$account" ]] && continue
         [[ "$account" == "$target" ]] && return 0
     done < <(list_runtime_accounts)
+    return 1
+}
+
+is_configured_account() {
+    local target="$1"
+    local account
+    for account in "${ACCOUNTS[@]}"; do
+        [[ "$account" == "$target" ]] && return 0
+    done
+    return 1
+}
+
+is_known_account() {
+    local target="$1"
+    local account
+    while IFS= read -r account; do
+        [[ -z "$account" ]] && continue
+        [[ "$account" == "$target" ]] && return 0
+    done < <(list_known_accounts)
     return 1
 }
 
@@ -384,7 +428,7 @@ get_provider_default_model() {
     chezmoi data --format json 2>/dev/null | jq -r \
         --arg tool "$AI_TOOL_CONTEXT" \
         --arg provider "$provider" \
-        '.[$tool].providers[$provider].models[0] // empty' 2>/dev/null
+        '.[$tool].providers[$provider].default_model // .[$tool].providers[$provider].models[0] // empty' 2>/dev/null
 }
 
 is_third_party_account() {
@@ -394,7 +438,9 @@ is_third_party_account() {
     is_third_party "$provider"
 }
 
-# Build list of accounts with existing keys
+# Build list of third-party accounts that can be selected for key rotation.
+# Includes configured accounts and entries present in gopass, even when the
+# existing entry is empty or unreadable.
 build_accounts_with_keys() {
     local acct
     while IFS= read -r acct; do
@@ -402,12 +448,10 @@ build_accounts_with_keys() {
         local prov
         prov=$(get_provider "$acct")
         if is_third_party "$prov"; then
-            local parsed acct_name
-            parsed=$(parse_provider_account "$acct")
-            acct_name="${parsed#*|}"
-            key_exists "$prov" "$acct_name" && echo "$acct"
+            echo "$acct"
         fi
-    done < <(list_runtime_accounts)
+    done < <(list_known_accounts)
+    return 0
 }
 
 # Discover third-party accounts that actually exist in gopass.
@@ -415,7 +459,7 @@ build_accounts_with_keys() {
 list_gopass_third_party_accounts() {
     require_cmd gopass >/dev/null 2>&1 || return 0
 
-    local prefix path provider label account key_value
+    local prefix path provider label account
     local -a accounts=()
 
     while IFS= read -r prefix; do
@@ -431,8 +475,7 @@ list_gopass_third_party_accounts() {
             validate_account_name "$label" || continue
             is_third_party "$provider" || continue
 
-            key_value=$(gopass_show_secret "$path" 3 2>/dev/null || true)
-            [[ -n "$key_value" ]] || continue
+            gopass_has_secret "$path" 3 || continue
 
             if [[ "$label" == "default" ]]; then
                 account="$provider"
@@ -454,29 +497,13 @@ list_gopass_third_party_accounts() {
 # ===== String Utilities =====
 
 # Split a CLI arg string into newline-delimited args.
-# Prefers python3/zsh for shell-like parsing; falls back to whitespace.
+# Prefers zsh for shell-like parsing; falls back to whitespace.
 split_cli_args() {
     local input="$1"
     [[ -z "$input" ]] && return 0
 
-    if command -v python3 &>/dev/null; then
-        python3 - "$input" <<'PY'
-import shlex
-import sys
-
-s = sys.argv[1]
-try:
-    parts = shlex.split(s)
-except ValueError:
-    parts = s.split()
-for p in parts:
-    print(p)
-PY
-        return 0
-    fi
-
     if command -v zsh &>/dev/null; then
-        zsh -c 'print -rl -- ${(z)1}' -- "$input"
+        zsh -c 'print -rl -- ${(Q)${(z)1}}' -- "$input"
         return 0
     fi
 
@@ -538,7 +565,7 @@ store_api_key() {
     local key_value="$3"
     local target
     target=$(api_key_path "$provider" "$account") || return 1
-    printf '%s' "$key_value" | gopass_exec_with_timeout 5 insert -f "$target"
+    printf '%s\n' "$key_value" | gopass_exec_with_timeout 5 insert -f -m "$target"
 }
 
 delete_api_key() {
