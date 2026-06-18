@@ -63,14 +63,29 @@ get_account_config() {
         ($c.defaults // {}) as $defaults |
         ($c.providers[$provider] // {}) as $provider_cfg |
         ($c.accounts[$account] // {}) as $account_cfg |
+        ([
+            $account_cfg.model,
+            $account_cfg.small_model,
+            $account_cfg.haiku_model,
+            $account_cfg.sonnet_model,
+            $account_cfg.opus_model,
+            $account_cfg.subagent_model
+        ] | map(select(. != null and . != ""))) as $account_models |
         {
             base_url: $provider_cfg.base_url,
-            models: $provider_cfg.models,
+            models: (if ($account_models | length) > 0 then
+                reduce $account_models[] as $m ([]; if index($m) then . else . + [$m] end)
+            else
+                $provider_cfg.models
+            end),
+            default_model: $provider_cfg.default_model,
             model: $account_cfg.model,
             small_model: $account_cfg.small_model,
             haiku_model: $account_cfg.haiku_model,
             sonnet_model: $account_cfg.sonnet_model,
             opus_model: $account_cfg.opus_model,
+            subagent_model: ($account_cfg.subagent_model // $provider_cfg.subagent_model),
+            effort_level: ($account_cfg.effort_level // $provider_cfg.effort_level),
             timeout_ms: ($account_cfg.timeout_ms // $provider_cfg.timeout_ms // $defaults.timeout_ms),
             disable_nonessential_traffic: ($account_cfg.disable_nonessential_traffic // $provider_cfg.disable_nonessential_traffic // $defaults.disable_nonessential_traffic)
         } | with_entries(select(.value != null))
@@ -162,7 +177,7 @@ EOF
         check)
             # Silent check, exit code only
             if is_third_party "$provider"; then
-                key_exists "$provider" "$account"
+                get_api_key "$provider" "$account" >/dev/null
             else
                 # Native Anthropic providers don't need tokens
                 exit 0
@@ -188,7 +203,7 @@ EOF
                     display_name="${parsed%%|*}@$account"
                 fi
                 log_error "API token not found for '$display_name'"
-                echo "Run: claude-manage update-account $display_name" >&2
+                echo "Run: claude-manage add-key $display_name" >&2
                 exit 1
             fi
 

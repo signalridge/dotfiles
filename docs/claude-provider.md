@@ -91,7 +91,10 @@ claude:
       models: [claude-opus-4-8, claude-sonnet-4-6, claude-haiku-4-5-20251001]
     deepseek:
       base_url: https://api.deepseek.com/anthropic
-      models: [deepseek-chat, deepseek-reasoner]
+      models: ["deepseek-v4-pro[1m]", deepseek-v4-flash]
+      default_model: deepseek-v4-pro[1m]
+      subagent_model: deepseek-v4-pro[1m]
+      effort_level: max
     kimi:
       base_url: https://api.kimi.com/coding
       models: [kimi-k2.5, kimi-k2]
@@ -107,6 +110,15 @@ claude:
       small_model: claude-haiku-4-5-20251001
 
     # Third-party accounts (format: provider@label)
+    deepseek@private:
+      provider: deepseek
+      model: deepseek-v4-pro[1m]
+      small_model: deepseek-v4-flash
+      haiku_model: deepseek-v4-flash
+      sonnet_model: deepseek-v4-pro[1m]
+      opus_model: deepseek-v4-pro[1m]
+      subagent_model: deepseek-v4-pro[1m]
+      effort_level: max
     kimi@private:
       model: kimi-k2.5
       small_model: kimi-k2.5
@@ -118,14 +130,16 @@ claude:
 
 ## Environment Variable Mapping
 
-| Account Field  | Environment Variable             |
-| -------------- | -------------------------------- |
-| `model`        | `ANTHROPIC_MODEL`                |
-| `small_model`  | `ANTHROPIC_SMALL_FAST_MODEL`     |
-| `haiku_model`  | `ANTHROPIC_DEFAULT_HAIKU_MODEL`  |
-| `sonnet_model` | `ANTHROPIC_DEFAULT_SONNET_MODEL` |
-| `opus_model`   | `ANTHROPIC_DEFAULT_OPUS_MODEL`   |
-| `timeout_ms`   | `API_TIMEOUT_MS`                 |
+| Account Field    | Environment Variable             |
+| ---------------- | -------------------------------- |
+| `model`          | `ANTHROPIC_MODEL`                |
+| `small_model`    | `ANTHROPIC_SMALL_FAST_MODEL`     |
+| `haiku_model`    | `ANTHROPIC_DEFAULT_HAIKU_MODEL`  |
+| `sonnet_model`   | `ANTHROPIC_DEFAULT_SONNET_MODEL` |
+| `opus_model`     | `ANTHROPIC_DEFAULT_OPUS_MODEL`   |
+| `subagent_model` | `CLAUDE_CODE_SUBAGENT_MODEL`     |
+| `effort_level`   | `CLAUDE_CODE_EFFORT_LEVEL`       |
+| `timeout_ms`     | `API_TIMEOUT_MS`                 |
 
 ## Data Storage
 
@@ -188,8 +202,14 @@ claude-manage switch kimi@private
 ```yaml
 accounts:
   deepseek@work:
-    model: deepseek-reasoner
-    small_model: deepseek-chat
+    provider: deepseek
+    model: deepseek-v4-pro[1m]
+    small_model: deepseek-v4-flash
+    haiku_model: deepseek-v4-flash
+    sonnet_model: deepseek-v4-pro[1m]
+    opus_model: deepseek-v4-pro[1m]
+    subagent_model: deepseek-v4-pro[1m]
+    effort_level: max
     timeout_ms: 300000
 ```
 

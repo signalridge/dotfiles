@@ -45,7 +45,7 @@ build_account_list_with_token() {
             local parsed acct_name
             parsed=$(parse_provider_account "$account")
             acct_name="${parsed#*|}"
-            if key_exists "$provider" "$acct_name"; then
+            if codex-token --check "$account" 2>/dev/null; then
                 echo -e "${GREEN}✓${NC} $account"
             else
                 echo -e "${RED}✗${NC} $account"

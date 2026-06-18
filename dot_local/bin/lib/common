@@ -157,7 +157,35 @@ gopass_exec_with_timeout() {
 gopass_show_secret() {
     local secret_path="$1"
     local timeout_sec="${2:-3}"
-    gopass_exec_with_timeout "$timeout_sec" show -o "$secret_path"
+    local output line value
+
+    if output=$(gopass_exec_with_timeout "$timeout_sec" show -o "$secret_path" 2>/dev/null); then
+        if [[ -n "$output" ]]; then
+            printf '%s\n' "$output"
+            return 0
+        fi
+    fi
+
+    if ! output=$(gopass_exec_with_timeout "$timeout_sec" show --unsafe --noparsing "$secret_path" 2>/dev/null); then
+        return 1
+    fi
+
+    while IFS= read -r line; do
+        line="${line%$'\r'}"
+        [[ -z "$line" ]] && continue
+
+        if [[ "$line" =~ ^[[:space:]]*(api[_-]?key|token|key)[[:space:]]*[:=][[:space:]]*(.+)$ ]]; then
+            value="${BASH_REMATCH[2]}"
+            [[ -n "$value" ]] || continue
+            printf '%s\n' "$value"
+            return 0
+        fi
+
+        printf '%s\n' "$line"
+        return 0
+    done <<< "$output"
+
+    return 1
 }
 
 gopass_has_secret() {
@@ -212,25 +240,30 @@ run_with_timeout() {
         return $?
     fi
 
-    if command -v python3 &>/dev/null; then
-        python3 - "$timeout_sec" "$@" <<'PY'
-import subprocess
-import sys
+    local cmd_pid rc elapsed_ticks max_ticks
 
-timeout = float(sys.argv[1])
-cmd = sys.argv[2:]
+    "$@" &
+    cmd_pid=$!
 
-try:
-    completed = subprocess.run(cmd, timeout=timeout)
-    sys.exit(completed.returncode)
-except subprocess.TimeoutExpired:
-    sys.exit(124)
-PY
-        return $?
-    fi
+    elapsed_ticks=0
+    max_ticks=$((timeout_sec * 10))
+    [[ "$max_ticks" -lt 1 ]] && max_ticks=1
 
-    # Fallback without timeout if no timeout backend is available.
-    "$@"
+    while kill -0 "$cmd_pid" 2>/dev/null; do
+        if [[ "$elapsed_ticks" -ge "$max_ticks" ]]; then
+            kill -TERM "$cmd_pid" 2>/dev/null || true
+            sleep 1
+            kill -KILL "$cmd_pid" 2>/dev/null || true
+            wait "$cmd_pid" 2>/dev/null || true
+            return 124
+        fi
+        sleep 0.1
+        elapsed_ticks=$((elapsed_ticks + 1))
+    done
+
+    wait "$cmd_pid"
+    rc=$?
+    return "$rc"
 }
 
 # ===== File Operations =====

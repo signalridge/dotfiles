@@ -61,6 +61,9 @@ switch         Change default account
 create-account Create account (and optional API key)
 update-account Update account (and optional API key)
 remove-account Remove account (and optional API key)
+add-key        Add API key for a configured account
+update-key     Rotate API key for an account
+delete-key     Delete API key for an account
 test           Test connectivity
 list           Show all accounts
 doctor         Run account diagnostics
@@ -79,6 +82,9 @@ MENU
                     create-account) echo "Create account (and optional API key)." ;;
                     update-account) echo "Update account (and optional API key)." ;;
                     remove-account) echo "Remove account (and optional API key)." ;;
+                    add-key)        echo "Add API key for a configured account." ;;
+                    update-key)     echo "Rotate API key for an account." ;;
+                    delete-key)     echo "Delete API key for an account." ;;
                     test)           echo "Test API connectivity." ;;
                     list)           echo "Show all accounts." ;;
                     doctor)         echo "Run account diagnostics." ;;
@@ -105,6 +111,9 @@ MENU
             create-account) cmd_create_account || rc=$? ;;
             update-account) cmd_update_account || rc=$? ;;
             remove-account) cmd_remove_account || rc=$? ;;
+            add-key)        cmd_add_key || rc=$? ;;
+            update-key)     cmd_update_key || rc=$? ;;
+            delete-key)     cmd_delete_key || rc=$? ;;
             test)           cmd_test || rc=$? ;;
             list)           cmd_list || rc=$? ;;
             doctor)         cmd_doctor || rc=$? ;;
@@ -128,7 +137,7 @@ MENU
 cmd_switch() {
     local input="${1:-}"
     if [[ -z "$input" ]]; then
-        if input=$(fzf_pick_account "Switch Account"); then
+        if input=$(fzf_pick_account "Switch Account" "token-known"); then
             :
         else
             local rc=$?
@@ -139,17 +148,24 @@ cmd_switch() {
         fi
     fi
 
-    if ! is_runtime_account "$input"; then
+    if ! is_known_account "$input"; then
         log_error "Unknown account '$input'"
         return 1
     fi
 
-    local provider
+    local provider parsed acct_name
     provider=$(get_provider "$input")
+    parsed=$(parse_provider_account "$input")
+    acct_name="${parsed#*|}"
 
     if is_third_party "$provider" && ! claude-token --check "$input" 2>/dev/null; then
-        log_error "No API token for $input"
-        echo "Run: claude-manage update-account $input" >&2
+        if key_exists "$provider" "$acct_name"; then
+            log_error "API token entry for $input is empty or unreadable"
+            echo "Run: claude-manage update-key $input" >&2
+        else
+            log_error "No API token for $input"
+            echo "Run: claude-manage add-key $input" >&2
+        fi
         return 1
     fi
 
@@ -307,7 +323,7 @@ cmd_create_account() {
             store_api_key "$provider" "$account_name" "$api_key"
             log_success "API key saved"
         else
-            log_info "Skipped API key (run: claude-manage update-account $full_name)"
+            log_info "Skipped API key (run: claude-manage add-key $full_name)"
         fi
     fi
 
@@ -337,7 +353,7 @@ cmd_update_account() {
         fi
     fi
 
-    is_runtime_account "$input" || { log_error "Unknown account '$input'"; return 1; }
+    is_configured_account "$input" || { log_error "Unknown configured account '$input'"; return 1; }
 
     log_info "Edit Account: $input"
     echo ""
@@ -367,6 +383,35 @@ cmd_update_account() {
     if is_third_party_account "$input"; then
         ensure_third_party_account_models "$input"
         log_info "Ensured third-party model fields (fill missing only)"
+
+        local provider parsed acct_name
+        provider=$(get_provider "$input")
+        parsed=$(parse_provider_account "$input")
+        acct_name="${parsed#*|}"
+        if ! key_exists "$provider" "$acct_name"; then
+            echo ""
+            printf "API Key (leave empty to skip): "
+            read -rs api_key
+            echo ""
+            if [[ -n "$api_key" ]]; then
+                store_api_key "$provider" "$acct_name" "$api_key"
+                log_success "API key saved"
+            else
+                log_info "Skipped API key (run: claude-manage add-key $input)"
+            fi
+        else
+            echo ""
+            printf "Rotate API key? [y/N]: "
+            read -r rotate_key
+            if [[ "$rotate_key" == "y" || "$rotate_key" == "Y" ]]; then
+                printf "New API Key: "
+                read -rs api_key
+                echo ""
+                [[ -z "$api_key" ]] && { log_error "API key required"; return 1; }
+                store_api_key "$provider" "$acct_name" "$api_key"
+                log_success "API key updated"
+            fi
+        fi
     fi
 
     echo ""
@@ -396,7 +441,7 @@ cmd_remove_account() {
         fi
     fi
 
-    is_runtime_account "$input" || { log_error "Unknown account '$input'"; return 1; }
+    is_known_account "$input" || { log_error "Unknown account '$input'"; return 1; }
 
     local has_profile=0
     if ACCOUNT_NAME="$input" yq -e '.claude.accounts[strenv(ACCOUNT_NAME)] // empty' "$CLAUDE_YAML" >/dev/null 2>&1; then
@@ -485,8 +530,16 @@ cmd_add_key() {
     parsed=$(parse_provider_account "$input")
     acct_name="${parsed#*|}"
 
+    is_known_account "$input" || { log_error "Unknown account '$input'"; return 1; }
     is_third_party "$provider" || { log_warn "Native OAuth, no key needed"; return 0; }
-    key_exists "$provider" "$acct_name" && { log_error "Key already exists. Use update-key."; return 1; }
+    if key_exists "$provider" "$acct_name"; then
+        if claude-token --check "$input" 2>/dev/null; then
+            log_error "Key already exists. Use update-key."
+        else
+            log_error "Key entry already exists but is empty or unreadable. Use update-key."
+        fi
+        return 1
+    fi
 
     log_info "Adding API key for $input"
     printf "API Key: "
@@ -528,7 +581,7 @@ cmd_update_key() {
     acct_name="${parsed#*|}"
 
     is_third_party "$provider" || { log_warn "Native OAuth, no key needed"; return 0; }
-    key_exists "$provider" "$acct_name" || { log_error "No key exists. Use update-account."; return 1; }
+    key_exists "$provider" "$acct_name" || { log_error "No key exists. Use add-key."; return 1; }
 
     log_info "Updating API key for $input"
     printf "New API Key: "
@@ -584,7 +637,7 @@ cmd_delete_key() {
 cmd_test() {
     local input="${1:-}"
     if [[ -z "$input" ]]; then
-        if input=$(fzf_pick_account "Test Connectivity"); then
+        if input=$(fzf_pick_account "Test Connectivity" "token-known"); then
             :
         else
             local rc=$?
@@ -595,7 +648,7 @@ cmd_test() {
         fi
     fi
 
-    is_runtime_account "$input" || { log_error "Unknown account '$input'"; return 1; }
+    is_known_account "$input" || { log_error "Unknown account '$input'"; return 1; }
 
     local provider config base_url
     provider=$(get_provider "$input")
@@ -617,14 +670,24 @@ cmd_test() {
     parsed=$(parse_provider_account "$input")
     acct_name="${parsed#*|}"
 
-    key_exists "$provider" "$acct_name" || {
-        log_fail "No API key"
+    if ! claude-token --check "$input" 2>/dev/null; then
+        if key_exists "$provider" "$acct_name"; then
+            log_fail "API key entry is empty or unreadable"
+            echo "  Run: claude-manage update-key $input"
+        else
+            log_fail "No API key"
+            echo "  Run: claude-manage add-key $input"
+        fi
         return 1
-    }
+    fi
     log_success "Key found"
 
     local token
-    token=$(claude-token "$input" 2>/dev/null) || { log_fail "Failed to decrypt"; return 1; }
+    token=$(claude-token "$input" 2>/dev/null) || {
+        log_fail "Failed to read API key"
+        echo "  Run: claude-manage update-key $input"
+        return 1
+    }
 
     echo "  Testing API..."
     local model response http_code
@@ -691,7 +754,7 @@ EOF
 
 # List accounts
 list_claude_accounts() {
-    list_runtime_accounts
+    list_known_accounts
 }
 
 cmd_list() {
@@ -711,8 +774,10 @@ cmd_list() {
             local parsed acct_name
             parsed=$(parse_provider_account "$account")
             acct_name="${parsed#*|}"
-            if key_exists "$provider" "$acct_name"; then
+            if claude-token --check "$account" 2>/dev/null; then
                 echo -e "  ${GREEN}${STATUS_OK}${NC} $account"
+            else
+                echo -e "  ${RED}${STATUS_ERROR}${NC} $account (no key)"
             fi
         else
             echo -e "  ${GREEN}${STATUS_NATIVE}${NC} $account (native)"

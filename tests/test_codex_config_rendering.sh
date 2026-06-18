@@ -48,6 +48,7 @@ assert_file_not_contains() {
 MODIFY_SCRIPT="$TMP_ROOT/modify_config.sh"
 RENDERED="$TMP_ROOT/config.toml"
 CLAUDE_SETTINGS="$TMP_ROOT/settings.json"
+DEEPSEEK_CLAUDE_SETTINGS="$TMP_ROOT/settings-deepseek.json"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_codex/modify_config.toml.tmpl" >"$MODIFY_SCRIPT"
 bash "$MODIFY_SCRIPT" </dev/null >"$RENDERED"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_claude/settings.json.tmpl" >"$CLAUDE_SETTINGS"
@@ -69,6 +70,17 @@ assert_file_contains "$CLAUDE_SETTINGS" '"SessionEnd"'
 assert_file_contains "$CLAUDE_SETTINGS" '"Stop"'
 assert_file_contains "$CLAUDE_SETTINGS" 'tmux-ai-agent-state claude idle'
 assert_file_not_contains "$CLAUDE_SETTINGS" '"SubagentStop"'
+
+chezmoi execute-template --source "$ROOT" \
+    --override-data '{"claudeProviderAccount":"deepseek@private"}' \
+    <"$ROOT/dot_claude/settings.json.tmpl" >"$DEEPSEEK_CLAUDE_SETTINGS"
+assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic"'
+assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"ANTHROPIC_MODEL": "deepseek-v4-pro[1m]"'
+assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-v4-pro[1m]"'
+assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-v4-pro[1m]"'
+assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-v4-flash"'
+assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-v4-pro[1m]"'
+assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"CLAUDE_CODE_EFFORT_LEVEL": "max"'
 
 cat >"$TMP_ROOT/existing-config.toml" <<'EOF'
 model = "old-model"
