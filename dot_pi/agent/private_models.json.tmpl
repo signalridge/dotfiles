@@ -1,0 +1,46 @@
+{{- /*
+  ~/.pi/agent/models.json — CUSTOM providers only.
+
+  Pi ships a built-in model registry (~25 providers: anthropic, openai, deepseek,
+  zai/glm, kimi-coding, minimax, google, xai, groq, ...). Those need NO entry here.
+  We emit only the providers under `customProviders` in .chezmoidata/pi.yaml that
+  Pi does not know natively (e.g. qwen, doubao), or built-in providers for which we
+  pin extra models the registry lacks (e.g. DeepSeek V4).
+
+  apiKey per provider:
+    - `env: <VAR>`     -> "$<VAR>" reference (no secret in this file; set the env
+                          var or authenticate via /login -> auth.json).
+    - `gopass: <path>` -> key read via `gopass show` at apply time and baked in
+                          (like the aichat config). Provider is skipped when the
+                          key is missing, so `chezmoi apply` still works fresh.
+
+  models: a string entry becomes {id: <string>}; a map entry is emitted verbatim.
+*/ -}}
+{{- $providers := dict -}}
+{{- if hasKey .pi "customProviders" -}}
+{{-   range $name, $cfg := .pi.customProviders -}}
+{{-     $apiKey := "" -}}
+{{-     $skip := false -}}
+{{-     if hasKey $cfg "gopass" -}}
+{{-       $apiKey = output "sh" "-c" (printf "gopass show --password %s 2>/dev/null | head -n1 || true" $cfg.gopass) | trim -}}
+{{-       if eq $apiKey "" -}}{{- $skip = true -}}{{- end -}}
+{{-     else -}}
+{{-       $env := printf "%s_API_KEY" (upper $name) -}}
+{{-       if hasKey $cfg "env" -}}{{- $env = $cfg.env -}}{{- end -}}
+{{-       $apiKey = printf "$%s" $env -}}
+{{-     end -}}
+{{-     if not $skip -}}
+{{-       $p := dict "baseUrl" $cfg.base_url "api" $cfg.api "apiKey" $apiKey -}}
+{{-       if hasKey $cfg "models" -}}
+{{-         $models := list -}}
+{{-         range $cfg.models -}}
+{{-           if kindIs "string" . -}}{{- $models = append $models (dict "id" .) -}}
+{{-           else -}}{{- $models = append $models . -}}{{- end -}}
+{{-         end -}}
+{{-         $p = set $p "models" $models -}}
+{{-       end -}}
+{{-       $providers = set $providers $name $p -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+{{ dict "providers" $providers | toPrettyJson -}}

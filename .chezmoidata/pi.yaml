@@ -13,13 +13,58 @@ pi:
   defaults:
     theme: dark
     defaultThinkingLevel: medium
-    defaultProvider: anthropic
-    defaultModel: claude-opus-4-8
-  # ===== Custom providers (NOT in Pi's built-in registry) -> ~/.pi/agent/models.json =====
-  # Only providers Pi does not know natively. apiKey uses "$<env>" (no secrets);
-  # set the env var, or authenticate via /login (stored in auth.json), then pick
-  # the model with /model. Remove these if you don't use them.
+    # DeepSeek is the startup default: its key is baked into models.json from
+    # gopass, so plain `pi` works out of the box. Anthropic needs a key/login
+    # first (none wired), so it can't be the default. Switch at runtime with
+    # /model, or launch e.g. `pi --provider anthropic --model claude-opus-4-8`.
+    defaultProvider: deepseek
+    defaultModel: deepseek-v4-pro
+  # ===== Custom providers -> ~/.pi/agent/models.json =====
+  # Providers Pi does not know natively, OR built-in providers for which we want
+  # to pin specific models Pi's built-in registry lacks (e.g. DeepSeek V4).
+  #
+  # API key, per provider:
+  #   env: <VAR>     -> models.json gets apiKey "$<VAR>" (no secret on disk; set
+  #                     the env var or authenticate via /login -> auth.json).
+  #   gopass: <path> -> the key is read with `gopass show` at `chezmoi apply` time
+  #                     and baked into models.json (same approach as aichat). The
+  #                     provider is silently skipped if the key is missing, so
+  #                     `chezmoi apply` still works on a fresh machine.
+  #
+  # models: a plain string is shorthand for {id: <string>}; a map is passed
+  # through verbatim (id/name/contextWindow/maxTokens/reasoning/cost/compat/...).
+  # Pick a model at runtime with /model.
   customProviders:
+    deepseek: # DeepSeek Platform (OpenAI-compatible). V4 models are not in Pi's
+      # built-in registry yet, so we pin them here with the reasoning `compat`
+      # block from the official integration doc:
+      # https://api-docs.deepseek.com/quick_start/agent_integrations/pi_mono
+      base_url: https://api.deepseek.com
+      api: openai-completions
+      gopass: claude/deepseek/private/api_key
+      models:
+        - id: deepseek-v4-pro
+          name: DeepSeek V4 Pro
+          contextWindow: 1000000
+          maxTokens: 384000
+          reasoning: true
+          cost: { input: 1.74, output: 3.48, cacheRead: 0.145, cacheWrite: 0 }
+          compat:
+            requiresReasoningContentOnAssistantMessages: true
+            thinkingFormat: deepseek
+            reasoningEffortMap:
+              { minimal: high, low: high, medium: high, high: high, xhigh: max }
+        - id: deepseek-v4-flash
+          name: DeepSeek V4 Flash
+          contextWindow: 1000000
+          maxTokens: 384000
+          reasoning: true
+          cost: { input: 0.14, output: 0.28, cacheRead: 0.028, cacheWrite: 0 }
+          compat:
+            requiresReasoningContentOnAssistantMessages: true
+            thinkingFormat: deepseek
+            reasoningEffortMap:
+              { minimal: high, low: high, medium: high, high: high, xhigh: max }
     qwen: # Alibaba DashScope (OpenAI-compatible)
       base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
       api: openai-completions
