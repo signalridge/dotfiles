@@ -7,7 +7,7 @@ registries:
     path: registry.yaml
 packages:
   # ----- third-party registry (see registry.yaml) -----
-  - name: signalridge/slipway@v0.30.0
+  - name: signalridge/slipway@v0.31.4
     registry: third-party
   - name: signalridge/qmk-hid-host@v2026.06.14.1
     registry: third-party
@@ -23,7 +23,7 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.181
+  - name: anthropics/claude-code@v2.1.185
   - name: openai/codex@rust-v0.141.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
@@ -48,8 +48,8 @@ packages:
   - name: gitlab.com/gitlab-org/cli@v1.99.0 # glab
   - name: git-lfs/git-lfs@v3.7.1
   - name: charmbracelet/glow@v2.1.2
-  - name: carapace-sh/carapace-bin@v1.7.0
-  - name: jqlang/jq@jq-1.8.1
+  - name: carapace-sh/carapace-bin@v1.7.1
+  - name: jqlang/jq@jq-1.8.2
   - name: ynqa/jnv@v0.7.1
   - name: tldr-pages/tlrc@v1.13.1
   - name: ast-grep/ast-grep@0.43.0
@@ -68,20 +68,20 @@ packages:
   - name: BurntSushi/ripgrep@15.1.0
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.1.0
-  - name: ducaale/xh@v0.25.3
+  - name: ducaale/xh@v0.26.1
   - name: watchexec/watchexec@v2.5.1
   - name: joshmedeski/sesh@v2.26.2
   - name: starship/starship@v1.25.1
   - name: JohnnyMorganz/StyLua@v2.5.2
   - name: Kampfkarren/selene@0.31.0
   - name: crate-ci/typos@v1.47.2
-  - name: zizmorcore/zizmor@v1.25.2
+  - name: zizmorcore/zizmor@v1.26.1
   - name: gitleaks/gitleaks@v8.30.1
   - name: koalaman/shellcheck@v0.11.0
   - name: mvdan/sh@v3.13.1
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.15.18
-  - name: astral-sh/ty@0.0.50
+  - name: astral-sh/ty@0.0.51
   - name: j178/prek@v0.4.5
   - name: golang.org/x/tools/gopls@v0.22.0
   - name: golangci/golangci-lint@v2.12.2
@@ -91,7 +91,7 @@ packages:
   - name: XAMPPRocky/tokei@14.0.0
   - name: sharkdp/hyperfine@v1.20.0
   - name: hatoo/oha@v1.14.0
-  - name: ClementTsang/bottom@0.12.3
+  - name: ClementTsang/bottom@0.14.0
   - name: dalance/procs@v0.14.11
   - name: sharkdp/hexyl@v0.17.0
   - name: mr-karan/doggo@v1.1.7
@@ -107,7 +107,7 @@ packages:
   - name: kubecolor/kubecolor@v0.6.0
   - name: ahmetb/kubectx@v0.11.0
   - name: kubernetes-sigs/krew@v0.5.0
-  - name: aquasecurity/trivy@v0.71.1
+  - name: aquasecurity/trivy@v0.71.2
   - name: anchore/syft@v1.45.1
   - name: anchore/grype@v0.114.0
   - name: LucasPickering/slumber@v5.3.0
