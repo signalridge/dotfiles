@@ -61,9 +61,6 @@ switch         Change default account
 create-account Create account (and optional API key)
 update-account Update account (and optional API key)
 remove-account Remove account (and optional API key)
-add-key        Add API key for a configured account
-update-key     Rotate API key for an account
-delete-key     Delete API key for an account
 test           Test connectivity
 list           Show all accounts
 doctor         Run account diagnostics
@@ -82,9 +79,6 @@ MENU
                     create-account) echo "Create account (and optional API key)." ;;
                     update-account) echo "Update account (and optional API key)." ;;
                     remove-account) echo "Remove account (and optional API key)." ;;
-                    add-key)        echo "Add API key for a configured account." ;;
-                    update-key)     echo "Rotate API key for an account." ;;
-                    delete-key)     echo "Delete API key for an account." ;;
                     test)           echo "Test API connectivity." ;;
                     list)           echo "Show all accounts." ;;
                     doctor)         echo "Run account diagnostics." ;;
@@ -111,9 +105,6 @@ MENU
             create-account) cmd_create_account || rc=$? ;;
             update-account) cmd_update_account || rc=$? ;;
             remove-account) cmd_remove_account || rc=$? ;;
-            add-key)        cmd_add_key || rc=$? ;;
-            update-key)     cmd_update_key || rc=$? ;;
-            delete-key)     cmd_delete_key || rc=$? ;;
             test)           cmd_test || rc=$? ;;
             list)           cmd_list || rc=$? ;;
             doctor)         cmd_doctor || rc=$? ;;
