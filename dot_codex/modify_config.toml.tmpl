@@ -149,6 +149,12 @@ base_url = "https://open.bigmodel.cn/api/paas/v4"
 name = "Kimi"
 base_url = "https://api.moonshot.ai/v1"
 
+[model_providers.krill]
+name = "krill"
+base_url = "https://api.krill-ai.com/codex/v1"
+requires_openai_auth = true
+wire_api = "responses"
+
 [model_providers.minimax]
 name = "Minimax"
 base_url = "https://api.minimax.io/v1"

@@ -64,6 +64,11 @@ assert_file_contains "$RENDERED" 'tmux-ai-agent-state codex idle'
 assert_file_not_contains "$RENDERED" '[[hooks.SubagentStop]]'
 assert_file_not_contains "$RENDERED" 'async = true'
 
+assert_file_contains "$RENDERED" '[model_providers.krill]'
+assert_file_contains "$RENDERED" 'base_url = "https://api.krill-ai.com/codex/v1"'
+assert_file_contains "$RENDERED" 'requires_openai_auth = true'
+assert_file_contains "$RENDERED" 'wire_api = "responses"'
+
 assert_file_contains "$CLAUDE_SETTINGS" '"UserPromptSubmit"'
 assert_file_contains "$CLAUDE_SETTINGS" 'tmux-ai-agent-state claude busy'
 assert_file_contains "$CLAUDE_SETTINGS" '"SessionEnd"'
@@ -81,6 +86,24 @@ assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_SONNET_MODE
 assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-v4-flash"'
 assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-v4-pro[1m]"'
 assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"CLAUDE_CODE_EFFORT_LEVEL": "max"'
+
+KRILL_CLAUDE_SETTINGS="$TMP_ROOT/settings-krill.json"
+chezmoi execute-template --source "$ROOT" \
+    --override-data '{"claudeProviderAccount":"krill@private"}' \
+    <"$ROOT/dot_claude/settings.json.tmpl" >"$KRILL_CLAUDE_SETTINGS"
+assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_BASE_URL": "https://api.krill-ai.com/codex"'
+assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_MODEL": "gpt-5.5"'
+assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"CLAUDE_CODE_ATTRIBUTION_HEADER": "0"'
+assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"'
+assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES": "thinking,adaptive_thinking,temperature,effort,max_effort"'
+assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES": "thinking,adaptive_thinking,temperature,effort,max_effort"'
+assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES": "thinking,adaptive_thinking,temperature,effort,max_effort"'
+assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"CLAUDE_CODE_SUBAGENT_MODEL": "gpt-5.5"'
+assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"CLAUDE_CODE_EFFORT_LEVEL": "max"'
+
+# Native Anthropic default must not leak krill-only env keys.
+assert_file_not_contains "$CLAUDE_SETTINGS" 'CLAUDE_CODE_ATTRIBUTION_HEADER'
+assert_file_not_contains "$CLAUDE_SETTINGS" 'SUPPORTED_CAPABILITIES'
 
 cat >"$TMP_ROOT/existing-config.toml" <<'EOF'
 model = "old-model"
