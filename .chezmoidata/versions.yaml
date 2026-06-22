@@ -14,8 +14,8 @@ versions:
   claudeAnthropicsSkillsRev: 57546260929473d4e0d1c1bb75297be2fdfa1949
   claudeAnthropicsSkillsSha256: 7a3e7ac65a8057d56c3ed78292b69d1a0b48cb3adfe3e77ec5019621c42e940e
   claudeBaoyuSkillsRev: ce84174bf7af6a178ae2c980f1bdcce4f1c3f7de
-  uiUxProMaxSkillRev: f32d6a61cdf0bfd57404c45854583fd19ff95088
-  uiUxProMaxSkillSha256: 414f0fb84f94a470e5af202ab4b0eb643e61f9f4b7a81ea4ac5edfcf1e282169
+  uiUxProMaxSkillRev: fb1fc58bf9d67d44b89b45761a81f7420cd7aab4
+  uiUxProMaxSkillSha256: 82557336a760a5759d3c7fd3bfb70ac03b99bb4ba25f4aec344806ff2e6e6b52
   openaiSkillsRev: 972cb867affac58fda9afa76bb1a19b399a278cf
   huggingfaceSkillsRev: ea9a24f38a98baf2430dab3bcb31a89753ae9e6d
   getsentrySkillsRev: b39c7c4b6056f0579b340b7c5c4e811e400368e8
@@ -27,7 +27,7 @@ versions:
   supabaseAgentSkillsRev: 1356046015476711a769601079262b5635929427
   expoSkillsRev: b553ae4e1755bec11eac21517fe63040c7e07f2c
   microsoftSkillsRev: 12184914d53b81e8d7fe3780d52b58d910b549ec
-  sickn33AntigravitySkillsRev: 2d210e9b935c8234f48c71e21831b05d1f5f0fc5
+  sickn33AntigravitySkillsRev: e09cf1f9f0407961c6697fd4174c47fba76f1996
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: ca7af700a3d8888e63bb819f6f118e2aec42c2db
   dailyDevSkillsRev: 192dae2b904fd4a4e8b9d212474f34c70710e28d
