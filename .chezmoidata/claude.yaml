@@ -78,6 +78,20 @@ claude:
       disable_nonessential_traffic: true
       models:
         - ark-code-latest
+    # Krill (gpt-5.5 served on an Anthropic-compatible endpoint): https://api.krill-ai.com
+    krill:
+      base_url: https://api.krill-ai.com/codex
+      timeout_ms: 300000
+      disable_nonessential_traffic: true
+      # Drop the attribution header and experimental betas the proxy rejects,
+      # and advertise gpt-5.5's reasoning/effort capabilities to Claude Code.
+      attribution_header: "0"
+      disable_experimental_betas: true
+      supported_capabilities: thinking,adaptive_thinking,temperature,effort,max_effort
+      subagent_model: gpt-5.5
+      effort_level: max
+      models:
+        - gpt-5.5
   # ===== Account Configurations =====
   # Format: provider or provider@account
   # Fields: model, small_model, haiku_model, sonnet_model, opus_model, timeout_ms
@@ -116,6 +130,16 @@ claude:
       haiku_model: kimi-k2.5
       sonnet_model: kimi-k2.5
       opus_model: kimi-k2.5
+    # gpt-5.5 via krill; attribution/betas/capabilities inherit from the provider.
+    krill@private:
+      provider: krill
+      model: gpt-5.5
+      small_model: gpt-5.5
+      haiku_model: gpt-5.5
+      sonnet_model: gpt-5.5
+      opus_model: gpt-5.5
+      subagent_model: gpt-5.5
+      effort_level: max
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
   # All skills are hardcoded in .chezmoiexternal.toml.tmpl
