@@ -116,28 +116,7 @@ type = "shell"
 command = "herdr plugin action invoke quick-actions --plugin cloudmanic.herdr-plus"
 description = "herdr-plus: quick actions"
 
-# vim-herdr-navigation — ctrl+h/j/k/l across vim splits & herdr panes (direct, no prefix).
-# If ctrl+h (backspace) / ctrl+l (clear) feel intercepted in shells, comment these four out.
-[[keys.command]]
-key = "ctrl+h"
-type = "shell"
-command = "herdr plugin action invoke left --plugin vim-herdr-navigation"
-description = "nav left (vim/herdr)"
-
-[[keys.command]]
-key = "ctrl+j"
-type = "shell"
-command = "herdr plugin action invoke down --plugin vim-herdr-navigation"
-description = "nav down (vim/herdr)"
-
-[[keys.command]]
-key = "ctrl+k"
-type = "shell"
-command = "herdr plugin action invoke up --plugin vim-herdr-navigation"
-description = "nav up (vim/herdr)"
-
-[[keys.command]]
-key = "ctrl+l"
-type = "shell"
-command = "herdr plugin action invoke right --plugin vim-herdr-navigation"
-description = "nav right (vim/herdr)"
+# NOTE: vim-herdr-navigation (ctrl+h/j/k/l) intentionally NOT bound — those clobber
+# core terminal keys (ctrl+l=clear, ctrl+h=backspace, ctrl+j=newline, ctrl+k=kill-line).
+# Pane focus is on prefix+h/j/k/l (herdr default). The plugin stays installed; bind it
+# to non-conflicting keys here if you want seamless vim<->herdr nav.
