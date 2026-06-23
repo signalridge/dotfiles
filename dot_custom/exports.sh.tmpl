@@ -91,20 +91,11 @@ export CARAPACE_BRIDGES="${CARAPACE_BRIDGES:-zsh,fish,bash,inshellisense}"
 # Must be set before sheldon loads the plugin
 # ─────────────────────────────────────────────────────────────
 export ZSH_TMUX_CONFIG="$HOME/.config/tmux/tmux.conf"
-# Only autostart tmux inside the real Ghostty.app. Other terminals that embed
-# the Ghostty core (e.g. muxy) also report TERM_PROGRAM=ghostty, so on macOS we
-# additionally pin __CFBundleIdentifier to Ghostty's bundle id. When that var is
-# unset (e.g. Linux), we fall back to TERM_PROGRAM alone. Non-TTY/nested/managed
-# environments always get a plain shell to prevent startup loops.
-if [[ "$TERM_PROGRAM" == "ghostty" ]] &&
-    [[ "${__CFBundleIdentifier:-com.mitchellh.ghostty}" == "com.mitchellh.ghostty" ]] &&
-    [[ -z "$TMUX" ]] && [[ -t 0 ]] && [[ -t 1 ]]; then
-    export ZSH_TMUX_AUTOSTART=true
-    export ZSH_TMUX_AUTOCONNECT=true
-else
-    export ZSH_TMUX_AUTOSTART=false
-    export ZSH_TMUX_AUTOCONNECT=false
-fi
+# tmux auto-start DISABLED (user request). A new shell stays a plain shell.
+# Start tmux manually with `tmux` (the omz tmux wrapper, t* aliases, tds, and
+# the session-naming below still apply when you do).
+export ZSH_TMUX_AUTOSTART=false
+export ZSH_TMUX_AUTOCONNECT=false
 export ZSH_TMUX_AUTOQUIT=false
 # TMux session name based on aerospace workspace
 # Each workspace gets its own session (ws-1, ws-2, etc.)
