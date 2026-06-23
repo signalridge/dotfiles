@@ -22,6 +22,7 @@ homebrew:
   casks:
     shared:
       - codex-app # OpenAI Codex desktop app for managing coding agents
+      - supacode # native macOS coding-agents command center (git worktrees + Ghostty + gh CLI); requires macOS >= 26
       - displaylink # USB dock/adapter multi-monitor driver; needs reboot + manual Screen Recording grant
       - dockdoor
       - visual-studio-code
