@@ -1,0 +1,13 @@
+# Herdr plugins — reinstalled by .chezmoiscripts/run_onchange_after_16_herdr-plugins.sh.tmpl
+# Plugins are runtime git clones under ~/.config/herdr/plugins (NOT committed); this list
+# reproduces them on every machine. Each entry is `owner/repo[/subdir]` for `herdr plugin install`.
+# NOTE: third-party herdr plugins run UNSANDBOXED (build + runtime as your user). Vet before adding.
+herdr:
+  plugins:
+    - andrewchng/herdr-sessionizer # fuzzy project/worktree picker (≈ sesh); needs fzf
+    - rmarganti/herdr-pluck # copy paths/URLs/SHAs from a pane (≈ extrakto); builds via cargo
+    - ogulcancelik/herdr-plugin-examples/github-link-preview # ctrl+click a GitHub URL → preview (official example); needs gh
+    - cloudmanic/herdr-plus # Projects + Quick Actions launcher
+    - paulbkim-dev/vim-herdr-navigation # ctrl+hjkl nav across vim splits & herdr panes; needs jq
+    - zom-2018/herdr-ntfy-notify # ntfy phone push on agent status change; needs node + ntfy server
+    - dcolinmorgan/herdr-push # mobile monitoring + one-tap approval via herdr-remote

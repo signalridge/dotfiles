@@ -40,3 +40,20 @@ packages:
       - darwin/arm64
       - linux/amd64
       - windows/amd64
+  - type: github_release
+    repo_owner: ogulcancelik
+    repo_name: herdr
+    description: Agent multiplexer that lives in your terminal
+    format: raw
+    files:
+      - name: herdr
+    # release assets are raw, per-platform binaries: herdr-macos-aarch64,
+    # herdr-macos-x86_64, herdr-linux-aarch64, herdr-linux-x86_64 (no windows asset)
+    asset: "herdr-{{.OS}}-{{.Arch}}"
+    replacements:
+      darwin: macos
+      amd64: x86_64
+      arm64: aarch64
+    supported_envs:
+      - darwin
+      - linux
