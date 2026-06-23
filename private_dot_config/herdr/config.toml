@@ -1,0 +1,143 @@
+# herdr — terminal workspace manager for AI coding agents.
+# chezmoi-managed (private_dot_config/herdr/config.toml).
+# NOTE: herdr also writes this file (UI theme picker, `herdr config reset-keys`);
+#       in-app changes are overwritten on the next `chezmoi apply`.
+#
+# Tuned to mirror the user's tmux setup. Prefix stays ctrl+b (== tmux C-b).
+# Most herdr default keys are already tmux-like, so only additions/overrides are set.
+
+onboarding = false
+
+[theme]
+name = "dracula"                       # matches Ghostty's fixed Dracula scheme
+
+[terminal]
+shell_mode = "login"                   # login shells pick up full env
+new_cwd = "follow"                     # new panes/tabs inherit cwd (tmux: new-window -c "#{pane_current_path}")
+
+[update]
+channel = "stable"                     # version is pinned by aqua — do NOT use `herdr update`
+
+[ui]
+prompt_new_tab_name = false            # new tab = no naming prompt
+show_agent_labels_on_pane_borders = true
+agent_panel_scope = "all"              # sidebar shows agents across all workspaces
+confirm_close = true
+mouse_scroll_lines = 3                 # == tmux @scroll-speed-num-lines-per-scroll '3'
+sidebar_width = 28
+accent = "#bd93f9"                     # Dracula purple (== tmux pane-active-border)
+
+[ui.toast]
+delivery = "system"                    # macOS notification on agent done / needs-input (replaces tmux-notify)
+delay_seconds = 5
+
+[ui.toast.clipboard]
+enabled = true                         # toast on copy
+
+[ui.sound]
+enabled = true                         # audible cue when a background agent changes state
+
+[ui.sound.agents]                      # scope notifications to the agents you actually run
+claude = "on"
+codex = "on"
+pi = "on"
+droid = "off"
+
+[session]
+resume_agents_on_restore = true        # restore agent conversations after a server restart (≈ resurrect/continuum)
+
+[remote]
+manage_ssh_config = true               # keepalive-managed ssh for `herdr --remote`
+
+[experimental]
+kitty_graphics = true                  # in-terminal image rendering (≈ tmux allow-passthrough)
+allow_nested = true                    # allow herdr inside a herdr pane (nested sessions, ≈ tmux-suspend use case)
+switch_ascii_input_source_in_prefix = true   # CJK IME: prefix commands register while a Chinese IME is active (macOS)
+reveal_hidden_cursor_for_cjk_ime = true       # keep the IME candidate window tracking the cursor inside agent TUIs
+cjk_ime_agents = ["pi", "claude", "codex"]    # apply the IME cursor reveal only to these agents
+# pane_history intentionally left false — it persists pane SCREEN CONTENTS (incl. secrets) to disk.
+
+[advanced]
+scrollback_limit_bytes = 50000000      # ~50 MiB per pane (≈ tmux history-limit 50000)
+
+# ── Keybindings ───────────────────────────────────────────────────────────────
+# Prefix = ctrl+b (== tmux). herdr DEFAULTS already match tmux for: new_tab (prefix+c),
+# focus_pane h/j/k/l (prefix+h/j/k/l), split_vertical (prefix+v), split_horizontal
+# (prefix+minus), zoom (prefix+z), close_pane (prefix+x), switch_tab (prefix+1..9),
+# edit_scrollback (prefix+e). Only the additions below are set.
+[keys]
+prefix = "ctrl+b"
+focus_agent = "prefix+alt+1..9"        # jump to agent pane N
+switch_workspace = "prefix+shift+1..9" # jump to workspace N
+last_pane = "prefix+semicolon"         # back-and-forth (tmux prefix+;)
+previous_workspace = "prefix+comma"
+next_workspace = "prefix+period"
+
+# ── Plugin & tool keybinds (type="shell" runs the plugin CLI; type="pane" opens an overlay) ──
+# lazygit popup (tmux prefix+g; prefix+g is herdr 'goto', so use prefix+alt+g)
+[[keys.command]]
+key = "prefix+alt+g"
+type = "pane"
+command = "lazygit"
+description = "lazygit overlay"
+
+# sessionizer — fuzzy project picker (≈ sesh)
+[[keys.command]]
+key = "prefix+f"
+type = "shell"
+command = "herdr plugin action invoke open --plugin sessionizer"
+description = "sessionizer: project picker"
+
+# sessionizer — git worktree picker (fits your worktree-per-task workflow)
+[[keys.command]]
+key = "prefix+shift+f"
+type = "shell"
+command = "herdr plugin action invoke worktree-open --plugin sessionizer"
+description = "sessionizer: worktree picker"
+
+# pluck — copy paths / URLs / SHAs from the pane (≈ extrakto)
+[[keys.command]]
+key = "prefix+u"
+type = "shell"
+command = "herdr plugin action invoke pluck --plugin rmarganti.herdr-pluck"
+description = "pluck: extract token"
+
+# herdr-plus — Projects picker
+[[keys.command]]
+key = "prefix+alt+p"
+type = "shell"
+command = "herdr plugin action invoke projects --plugin cloudmanic.herdr-plus"
+description = "herdr-plus: projects"
+
+# herdr-plus — Quick Actions
+[[keys.command]]
+key = "prefix+alt+a"
+type = "shell"
+command = "herdr plugin action invoke quick-actions --plugin cloudmanic.herdr-plus"
+description = "herdr-plus: quick actions"
+
+# vim-herdr-navigation — ctrl+h/j/k/l across vim splits & herdr panes (direct, no prefix).
+# If ctrl+h (backspace) / ctrl+l (clear) feel intercepted in shells, comment these four out.
+[[keys.command]]
+key = "ctrl+h"
+type = "shell"
+command = "herdr plugin action invoke left --plugin vim-herdr-navigation"
+description = "nav left (vim/herdr)"
+
+[[keys.command]]
+key = "ctrl+j"
+type = "shell"
+command = "herdr plugin action invoke down --plugin vim-herdr-navigation"
+description = "nav down (vim/herdr)"
+
+[[keys.command]]
+key = "ctrl+k"
+type = "shell"
+command = "herdr plugin action invoke up --plugin vim-herdr-navigation"
+description = "nav up (vim/herdr)"
+
+[[keys.command]]
+key = "ctrl+l"
+type = "shell"
+command = "herdr plugin action invoke right --plugin vim-herdr-navigation"
+description = "nav right (vim/herdr)"

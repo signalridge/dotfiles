@@ -1,0 +1,51 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Install herdr plugins listed in .chezmoidata/herdr.yaml (idempotent).
+# run_onchange: re-runs only when the embedded list below changes.
+# Plugins (hash trigger):
+{{- range .herdr.plugins }}
+#   - {{ . }}
+{{- end }}
+
+echo ":: [16] Installing herdr plugins"
+
+# herdr is installed via aqua; make sure its bin dir is on PATH.
+aqua_bin_dir="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
+[[ -d "$aqua_bin_dir" ]] && export PATH="$aqua_bin_dir:$PATH"
+
+if ! command -v herdr >/dev/null 2>&1; then
+    echo "    Skipped (herdr not found)"
+    exit 0
+fi
+
+# Some plugins build via cargo/bun/node; put the mise-managed toolchains on PATH.
+mise_bin="$aqua_bin_dir/mise"
+if [[ -x "$mise_bin" ]]; then
+    eval "$("$mise_bin" env -s bash 2>/dev/null)" || true
+fi
+
+installed="$(herdr plugin list 2>/dev/null || true)"
+
+install_plugin() {
+    local spec="$1"
+    # `herdr plugin list` prints "[github:<owner>/<repo>[/subdir]@<sha>]" — match on that.
+    if printf '%s\n' "$installed" | grep -qF "github:${spec}"; then
+        echo "    ✓ ${spec} (present)"
+        return 0
+    fi
+    echo "    + ${spec}"
+    # --yes: required when stdin is non-interactive (chezmoi run scripts).
+    if herdr plugin install "$spec" --yes </dev/null; then
+        echo "    ✓ ${spec}"
+    else
+        echo "    ! failed: ${spec} (continuing)"
+    fi
+}
+
+{{ range .herdr.plugins -}}
+install_plugin "{{ . }}"
+{{ end }}
+echo "    Done. Active plugins:"
+herdr plugin list 2>/dev/null | grep -E 'enabled|disabled' || true
