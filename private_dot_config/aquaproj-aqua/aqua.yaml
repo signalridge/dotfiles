@@ -7,7 +7,7 @@ registries:
     path: registry.yaml
 packages:
   # ----- third-party registry (see registry.yaml) -----
-  - name: signalridge/slipway@v0.31.5
+  - name: signalridge/slipway@v0.32.0
     registry: third-party
   - name: signalridge/qmk-hid-host@v2026.06.14.1
     registry: third-party
@@ -23,14 +23,14 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.185
-  - name: openai/codex@rust-v0.141.0
+  - name: anthropics/claude-code@v2.1.186
+  - name: openai/codex@rust-v0.142.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.6.11
+  - name: jdx/mise@v2026.6.12
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -52,7 +52,7 @@ packages:
   - name: jqlang/jq@jq-1.8.2
   - name: ynqa/jnv@v0.7.1
   - name: tldr-pages/tlrc@v1.13.1
-  - name: ast-grep/ast-grep@0.43.0
+  - name: ast-grep/ast-grep@0.44.0
   - name: casey/just@1.53.0
   - name: jesseduffield/lazygit@v0.62.2
   - name: jesseduffield/lazydocker@v0.25.2
@@ -91,7 +91,7 @@ packages:
   - name: XAMPPRocky/tokei@14.0.0
   - name: sharkdp/hyperfine@v1.20.0
   - name: hatoo/oha@v1.14.0
-  - name: ClementTsang/bottom@0.14.0
+  - name: ClementTsang/bottom@0.14.1
   - name: dalance/procs@v0.14.11
   - name: sharkdp/hexyl@v0.17.0
   - name: mr-karan/doggo@v1.1.7
