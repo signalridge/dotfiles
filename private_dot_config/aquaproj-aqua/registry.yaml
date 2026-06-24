@@ -57,3 +57,26 @@ packages:
     supported_envs:
       - darwin
       - linux
+  - type: github_release
+    repo_owner: mr-karan
+    repo_name: doggo
+    description: ":dog: Command-line DNS Client for Humans. Written in Golang"
+    asset: "doggo-{{.OS}}-{{.Arch}}.{{.Format}}"
+    format: tar.gz
+    files:
+      - name: doggo
+    replacements:
+      amd64: x86_64
+      arm64: aarch64
+    checksum:
+      type: github_release
+      asset: "doggo_{{trimV .Version}}_checksums.txt"
+      algorithm: sha256
+    overrides:
+      - goos: windows
+        format: zip
+        replacements: {}
+    supported_envs:
+      - darwin
+      - linux
+      - windows/amd64
