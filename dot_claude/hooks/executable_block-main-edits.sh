@@ -60,5 +60,11 @@ done
 msg="ASK MAIN-EDIT: Editing '${file_path}' on protected branch '${branch}'.
 Next: git checkout -b fix/<topic> (or set CLAUDE_ALLOW_PROTECTED_BRANCH_EDITS=1)."
 
-jq -n --arg reason "$msg" '{decision:"ask", reason:$reason}'
+jq -n --arg reason "$msg" '{
+    hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "ask",
+        permissionDecisionReason: $reason
+    }
+}'
 exit 0
