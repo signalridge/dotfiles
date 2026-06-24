@@ -97,6 +97,7 @@ packages:
   - name: dalance/procs@v0.14.11
   - name: sharkdp/hexyl@v0.17.0
   - name: mr-karan/doggo@v1.2.0
+    registry: third-party
   - name: sharkdp/vivid@v0.11.1
   - name: dduan/tre@v0.4.0
   - name: sxyazi/yazi@v26.5.6
