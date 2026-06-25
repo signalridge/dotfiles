@@ -69,6 +69,12 @@ assert_file_contains "$RENDERED" '[".harnesses/skills/typescript/expo-deployment
 assert_file_contains "$RENDERED" 'include = ["skills-*/plugins/expo/skills/expo-deployment/**"]'
 assert_file_contains "$RENDERED" '[".harnesses/skills/cloud/azure-deploy"]'
 assert_file_contains "$RENDERED" 'include = ["skills-*/.github/plugins/azure-skills/skills/azure-deploy/**"]'
+assert_file_contains "$RENDERED" '[".harnesses/skills/product/create-prd"]'
+assert_file_contains "$RENDERED" 'include = ["pm-skills-*/pm-execution/skills/create-prd/**"]'
+assert_file_contains "$RENDERED" '[".harnesses/skills/product/opportunity-solution-tree"]'
+assert_file_contains "$RENDERED" 'include = ["pm-skills-*/pm-product-discovery/skills/opportunity-solution-tree/**"]'
+assert_file_contains "$RENDERED" '[".harnesses/skills/product/intended-vs-implemented"]'
+assert_file_contains "$RENDERED" 'include = ["pm-skills-*/pm-ai-shipping/skills/intended-vs-implemented/**"]'
 
 assert_file_not_contains "$RENDERED" 'hugging-face-jobs'
 assert_file_not_contains "$RENDERED" 'plugins/expo-deployment/skills'
@@ -98,8 +104,12 @@ assert_file_not_contains "$RENDERED" '[".harnesses/skills/mobile/react-native-ar
 
 VALIDATOR="$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py"
 if [ -f "$VALIDATOR" ]; then
-    python3 "$VALIDATOR" "$ROOT/dot_harnesses/skills/social/oss-x-post" >/dev/null
-    python3 "$VALIDATOR" "$ROOT/dot_harnesses/skills/media/remotion" >/dev/null
+    if python3 -c 'import yaml' >/dev/null 2>&1; then
+        python3 "$VALIDATOR" "$ROOT/dot_harnesses/skills/social/oss-x-post" >/dev/null
+        python3 "$VALIDATOR" "$ROOT/dot_harnesses/skills/media/remotion" >/dev/null
+    else
+        echo "SKIP: missing Python dependency for Codex skill validator: yaml" >&2
+    fi
 else
     echo "SKIP: missing Codex skill validator: $VALIDATOR" >&2
 fi

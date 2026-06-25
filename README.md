@@ -319,6 +319,7 @@ Claude hooks in `dot_claude/hooks/` provide workflow guardrails and formatting a
 - broad engineering packs (`wshobson/agents`, `anthropics/skills`, `openai/skills`)
 - platform/vendor packs (Hugging Face, Cloudflare, Vercel, Supabase, Expo, Microsoft, and selected community repos)
 - language suites for Go, Rust, Swift, TypeScript/JavaScript, and Zig
+- product-management skills from `phuryn/pm-skills` for discovery, strategy, execution, GTM, analytics, and AI shipping
 - social, writing, and media skills including `xurl`, `x-create`, `daily.dev`, Reddit, Remotion, and Humanizer variants (`humanizer-en`, `qu-ai-wei`, `humanizer-ja`)
 
 They are normalized into `~/.harnesses/skills` as a shared library; use `skill-activate` from a project directory to curate active symlinks in `./.claude/skills` and `./.codex/skills`. `skill-activate --category typescript` activates a whole category for the current directory, `skill-activate --sync` repairs existing Claude-only/Codex-only partial pairs, and `Ctrl-A` toggles the highlighted category in the picker.
