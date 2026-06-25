@@ -25,7 +25,38 @@ jobs:
               | sha256sum | awk '{print $1}'
           }
 
+          release_asset_digest_sha256() {
+            local repo="$1"
+            local tag="$2"
+            local asset="$3"
+            local digest
+            digest="$(gh release view "$tag" --repo "$repo" --json assets -q ".assets[] | select(.name == \"$asset\") | .digest")"
+            digest="${digest#sha256:}"
+            if [[ -z "$digest" || "$digest" == "null" ]]; then
+              echo "missing sha256 digest for $repo $tag $asset" >&2
+              exit 1
+            fi
+            printf '%s\n' "$digest"
+          }
+
+          tag_commit_sha() {
+            local repo="$1"
+            local tag="$2"
+            local ref_type
+            local ref_sha
+            ref_type="$(gh api "repos/${repo}/git/ref/tags/${tag}" -q '.object.type')"
+            ref_sha="$(gh api "repos/${repo}/git/ref/tags/${tag}" -q '.object.sha')"
+            if [[ "$ref_type" == "tag" ]]; then
+              gh api "repos/${repo}/git/tags/${ref_sha}" -q '.object.sha'
+            else
+              printf '%s\n' "$ref_sha"
+            fi
+          }
+
           nix_installer=$(gh release view --repo DeterminateSystems/nix-installer --json tagName -q '.tagName')
+          nix_installer_aarch64_darwin_sha256=$(release_asset_digest_sha256 DeterminateSystems/nix-installer "$nix_installer" nix-installer-aarch64-darwin)
+          nix_installer_aarch64_linux_sha256=$(release_asset_digest_sha256 DeterminateSystems/nix-installer "$nix_installer" nix-installer-aarch64-linux)
+          nix_installer_x86_64_linux_sha256=$(release_asset_digest_sha256 DeterminateSystems/nix-installer "$nix_installer" nix-installer-x86_64-linux)
           nix_version=$(gh release view --repo DeterminateSystems/nix --json tagName -q '.tagName')
           aqua_installer=$(gh release view --repo aquaproj/aqua-installer --json tagName -q '.tagName')
           aqua_installer_sha256=$(curl_sha256 "https://raw.githubusercontent.com/aquaproj/aqua-installer/${aqua_installer}/aqua-installer")
@@ -58,6 +89,8 @@ jobs:
           phuryn_pm_skills_rev=$(gh api repos/phuryn/pm-skills/commits/main -q '.sha')
           opc_skills_rev=$(gh api repos/resciencelab/opc-skills/commits/main -q '.sha')
           x_skills_rev=$(gh api repos/kangarooking/x-skills/commits/main -q '.sha')
+          xurl_tag=$(gh release view --repo xdevplatform/xurl --json tagName -q '.tagName')
+          xurl_skill_rev=$(tag_commit_sha xdevplatform/xurl "$xurl_tag")
           daily_dev_skills_rev=$(gh api repos/dailydotdev/daily/commits/master -q '.sha')
           samber_cc_skills_golang_rev=$(gh api repos/samber/cc-skills-golang/commits/main -q '.sha')
           affaan_ecc_rev=$(gh api repos/affaan-m/ECC/commits/main -q '.sha')
@@ -71,6 +104,9 @@ jobs:
 
           {
             echo "nix_installer=$nix_installer"
+            echo "nix_installer_aarch64_darwin_sha256=$nix_installer_aarch64_darwin_sha256"
+            echo "nix_installer_aarch64_linux_sha256=$nix_installer_aarch64_linux_sha256"
+            echo "nix_installer_x86_64_linux_sha256=$nix_installer_x86_64_linux_sha256"
             echo "nix_version=$nix_version"
             echo "aqua_installer=$aqua_installer"
             echo "aqua_installer_sha256=$aqua_installer_sha256"
@@ -101,6 +137,8 @@ jobs:
             echo "phuryn_pm_skills_rev=$phuryn_pm_skills_rev"
             echo "opc_skills_rev=$opc_skills_rev"
             echo "x_skills_rev=$x_skills_rev"
+            echo "xurl_tag=$xurl_tag"
+            echo "xurl_skill_rev=$xurl_skill_rev"
             echo "daily_dev_skills_rev=$daily_dev_skills_rev"
             echo "samber_cc_skills_golang_rev=$samber_cc_skills_golang_rev"
             echo "affaan_ecc_rev=$affaan_ecc_rev"
@@ -115,6 +153,9 @@ jobs:
       - name: Update .chezmoidata/versions.yaml
         run: |
           sed -i 's/nixInstaller: .*/nixInstaller: ${{ steps.versions.outputs.nix_installer }}/' .chezmoidata/versions.yaml
+          sed -i 's/nixInstallerAarch64DarwinSha256: .*/nixInstallerAarch64DarwinSha256: ${{ steps.versions.outputs.nix_installer_aarch64_darwin_sha256 }}/' .chezmoidata/versions.yaml
+          sed -i 's/nixInstallerAarch64LinuxSha256: .*/nixInstallerAarch64LinuxSha256: ${{ steps.versions.outputs.nix_installer_aarch64_linux_sha256 }}/' .chezmoidata/versions.yaml
+          sed -i 's/nixInstallerX8664LinuxSha256: .*/nixInstallerX8664LinuxSha256: ${{ steps.versions.outputs.nix_installer_x86_64_linux_sha256 }}/' .chezmoidata/versions.yaml
           sed -i 's/nixVersion: .*/nixVersion: ${{ steps.versions.outputs.nix_version }}/' .chezmoidata/versions.yaml
           sed -i 's/aquaInstaller: .*/aquaInstaller: ${{ steps.versions.outputs.aqua_installer }}/' .chezmoidata/versions.yaml
           sed -i 's/aquaInstallerSha256: .*/aquaInstallerSha256: ${{ steps.versions.outputs.aqua_installer_sha256 }}/' .chezmoidata/versions.yaml
@@ -145,6 +186,7 @@ jobs:
           sed -i 's/phurynPmSkillsRev: .*/phurynPmSkillsRev: ${{ steps.versions.outputs.phuryn_pm_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/opcSkillsRev: .*/opcSkillsRev: ${{ steps.versions.outputs.opc_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/xSkillsRev: .*/xSkillsRev: ${{ steps.versions.outputs.x_skills_rev }}/' .chezmoidata/versions.yaml
+          sed -i 's/xurlSkillRev: .*/xurlSkillRev: ${{ steps.versions.outputs.xurl_skill_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/dailyDevSkillsRev: .*/dailyDevSkillsRev: ${{ steps.versions.outputs.daily_dev_skills_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/samberCcSkillsGolangRev: .*/samberCcSkillsGolangRev: ${{ steps.versions.outputs.samber_cc_skills_golang_rev }}/' .chezmoidata/versions.yaml
           sed -i 's/affaanEccRev: .*/affaanEccRev: ${{ steps.versions.outputs.affaan_ecc_rev }}/' .chezmoidata/versions.yaml
@@ -182,6 +224,9 @@ jobs:
             | Package | Version |
             |---------|---------|
             | nix-installer | `${{ steps.versions.outputs.nix_installer }}` |
+            | nix-installer aarch64-darwin sha256 | `${{ steps.versions.outputs.nix_installer_aarch64_darwin_sha256 }}` |
+            | nix-installer aarch64-linux sha256 | `${{ steps.versions.outputs.nix_installer_aarch64_linux_sha256 }}` |
+            | nix-installer x86_64-linux sha256 | `${{ steps.versions.outputs.nix_installer_x86_64_linux_sha256 }}` |
             | nix | `${{ steps.versions.outputs.nix_version }}` |
             | aqua-installer | `${{ steps.versions.outputs.aqua_installer }}` |
             | aqua-installer sha256 | `${{ steps.versions.outputs.aqua_installer_sha256 }}` |
@@ -205,6 +250,7 @@ jobs:
             | phuryn/pm-skills | `${{ steps.versions.outputs.phuryn_pm_skills_rev }}` |
             | resciencelab/opc-skills | `${{ steps.versions.outputs.opc_skills_rev }}` |
             | kangarooking/x-skills | `${{ steps.versions.outputs.x_skills_rev }}` |
+            | xdevplatform/xurl | `${{ steps.versions.outputs.xurl_skill_rev }}` (`${{ steps.versions.outputs.xurl_tag }}`) |
             | dailydotdev/daily | `${{ steps.versions.outputs.daily_dev_skills_rev }}` |
             | samber/cc-skills-golang | `${{ steps.versions.outputs.samber_cc_skills_golang_rev }}` |
             | affaan-m/ECC | `${{ steps.versions.outputs.affaan_ecc_rev }}` |

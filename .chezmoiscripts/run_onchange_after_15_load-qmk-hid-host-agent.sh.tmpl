@@ -4,7 +4,7 @@ set -euo pipefail
 
 # (Re)load the qmk-hid-host LaunchAgent. Re-runs whenever the plist changes.
 # plist sha256: {{ include "private_Library/LaunchAgents/com.signalridge.qmk-hid-host.plist.tmpl" | sha256sum }}
-{{ if eq .chezmoi.os "darwin" -}}
+{{ if and (eq .chezmoi.os "darwin") (not .headless) -}}
 label="com.signalridge.qmk-hid-host"
 plist="${HOME}/Library/LaunchAgents/${label}.plist"
 domain="gui/$(id -u)"
@@ -25,5 +25,5 @@ launchctl enable "${domain}/${label}"
 launchctl kickstart -k "${domain}/${label}"
 echo "    loaded ${label}"
 {{ else -}}
-echo ":: [15] qmk-hid-host LaunchAgent skipped (macOS only)"
+echo ":: [15] qmk-hid-host LaunchAgent skipped (macOS GUI profile only)"
 {{ end -}}

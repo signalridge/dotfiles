@@ -102,17 +102,7 @@ assert_file_not_contains "$RENDERED" '[".harnesses/skills/build-tools/ts-turbore
 assert_file_not_contains "$RENDERED" '[".harnesses/skills/frontend/ts-tanstack-query"]'
 assert_file_not_contains "$RENDERED" '[".harnesses/skills/mobile/react-native-architecture"]'
 
-VALIDATOR="$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py"
-if [ -f "$VALIDATOR" ]; then
-    if python3 -c 'import yaml' >/dev/null 2>&1; then
-        python3 "$VALIDATOR" "$ROOT/dot_harnesses/skills/social/oss-x-post" >/dev/null
-        python3 "$VALIDATOR" "$ROOT/dot_harnesses/skills/media/remotion" >/dev/null
-    else
-        echo "SKIP: missing Python dependency for Codex skill validator: yaml" >&2
-    fi
-else
-    echo "SKIP: missing Codex skill validator: $VALIDATOR" >&2
-fi
+python3 "$ROOT/tests/validate_skill_frontmatter.py" "$ROOT/dot_harnesses/skills" >/dev/null
 assert_file_not_contains "$ROOT/dot_harnesses/skills/social/oss-x-post/SKILL.md" \
     'SKILL=~/.harnesses/skills/oss-x-post'
 

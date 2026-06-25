@@ -9,6 +9,7 @@ command -v chezmoi >/dev/null 2>&1 || {
 }
 
 out="$(chezmoi ignored --source "$ROOT" --override-data '{"useEncryption":false,"headless":false}')"
+headless_out="$(chezmoi ignored --source "$ROOT" --override-data '{"useEncryption":true,"headless":true}')"
 
 require_line() {
     local expected="$1"
@@ -55,5 +56,11 @@ require_line ".chezmoiscripts/01_setup-encryption-key.sh"
 require_line ".chezmoiscripts/06_setup-gopass.sh"
 # Chezmoi may report source entries as either target-style or template/encrypted names.
 require_any_line ".ssh/config" ".ssh/config.tmpl.age"
+
+out="$headless_out"
+require_line ".chezmoiscripts/09_install-paperlib.sh"
+require_line ".chezmoiscripts/15_load-qmk-hid-host-agent.sh"
+require_line "Library/LaunchAgents/com.signalridge.qmk-hid-host.plist"
+require_line ".config/hammerspoon"
 
 echo "test_chezmoiignore: OK"

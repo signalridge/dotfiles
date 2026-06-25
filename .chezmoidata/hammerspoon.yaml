@@ -17,8 +17,6 @@ hammerspoon:
         ime: en
       - app: Ghostty
         ime: en
-      - app: DBeaver
-        ime: en
       - app: OrbStack
         ime: en
       - app: Karabiner-Elements
@@ -32,6 +30,8 @@ hammerspoon:
       - app: Raycast
         ime: en
     work:
+      - app: DBeaver
+        ime: en
       - app: Cursor
         ime: en
       - app: Obsidian

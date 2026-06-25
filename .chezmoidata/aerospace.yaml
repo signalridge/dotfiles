@@ -25,11 +25,11 @@ aerospace:
         comment: RustDesk
       - id: io.tailscale.ipn.macsys
         comment: Tailscale
+      - id: com.raycast.macos
+        comment: Raycast
     work: []
     private:
       # Utilities
-      - id: com.raycast.macos
-        comment: Raycast
       - id: com.setapp.DesktopClient
         comment: Setapp
       - id: com.adguard.mac.adguard

@@ -119,11 +119,11 @@ claude:
       subagent_model: deepseek-v4-pro[1m]
       effort_level: max
     doubao@private:
-      model: kimi-k2.5
-      small_model: kimi-k2.5
-      haiku_model: kimi-k2.5
-      sonnet_model: kimi-k2.5
-      opus_model: kimi-k2.5
+      model: ark-code-latest
+      small_model: ark-code-latest
+      haiku_model: ark-code-latest
+      sonnet_model: ark-code-latest
+      opus_model: ark-code-latest
     kimi@private:
       model: kimi-k2.5
       small_model: kimi-k2.5

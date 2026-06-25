@@ -1,0 +1,20 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Pinned Cloudflare skills revisions are Git commit SHAs, not API keys."
+paths = ['''^\.chezmoidata/versions\.yaml$''']
+regexTarget = "line"
+regexes = ['''^\s+cloudflareSkillsRev:\s+[0-9a-f]{40}\s*$''']
+
+[[allowlists]]
+description = "Deleted historical Claude docs contained placeholder credentials in examples."
+paths = [
+  '''^dot_claude/commands/code-documentation/doc-generate\.md$''',
+  '''^dot_claude/skills/review-code/rules/security-rules\.json$''',
+  '''^dot_claude/skills/security-review/SKILL\.md$''',
+]
+
+[[allowlists]]
+description = "Local linked worktrees duplicate this repository and are not scan sources."
+paths = ['''^\.worktrees/''']
