@@ -38,12 +38,10 @@ return {
           })
         end,
       },
-      strategies = {
-        chat = { adapter = "anthropic" },
-        inline = { adapter = "anthropic" },
-        cmd = { adapter = "anthropic" },
-      },
       display = {
+        action_palette = {
+          provider = "snacks",
+        },
         chat = {
           show_settings = false,
           show_token_count = true,
@@ -56,8 +54,14 @@ return {
           provider = "default",
         },
       },
+      interactions = {
+        chat = { adapter = "anthropic" },
+        inline = { adapter = "anthropic" },
+        cmd = { adapter = "anthropic" },
+      },
       opts = {
         log_level = "ERROR",
+        language = "Chinese",
         send_code = true,
       },
     },
