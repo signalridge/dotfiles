@@ -7,11 +7,11 @@ registries:
     path: registry.yaml
 packages:
   # ----- third-party registry (see registry.yaml) -----
-  - name: signalridge/slipway@v0.33.0
+  - name: signalridge/slipway@v0.34.0
     registry: third-party
   - name: signalridge/qmk-hid-host@v2026.06.14.1
     registry: third-party
-  - name: ogulcancelik/herdr@v0.7.0
+  - name: ogulcancelik/herdr@v0.7.1
     registry: third-party
   # ----- standard registry -----
   - name: nektos/act@v0.2.89
@@ -25,14 +25,14 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.187
-  - name: openai/codex@rust-v0.142.0
+  - name: anthropics/claude-code@v2.1.191
+  - name: openai/codex@rust-v0.142.2
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.6.13
+  - name: jdx/mise@v2026.6.14
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -40,7 +40,7 @@ packages:
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.69.0
   - name: eza-community/eza@v0.23.4
-  - name: fastfetch-cli/fastfetch@2.64.2
+  - name: fastfetch-cli/fastfetch@2.65.1
   - name: sharkdp/fd@v10.4.2
   - name: junegunn/fzf@v0.73.1
   - name: gopasspw/gopass@v1.16.1
@@ -82,8 +82,8 @@ packages:
   - name: koalaman/shellcheck@v0.11.0
   - name: mvdan/sh@v3.13.1
   - name: rhysd/actionlint@v1.7.12
-  - name: astral-sh/ruff@0.15.18
-  - name: astral-sh/ty@0.0.52
+  - name: astral-sh/ruff@0.15.19
+  - name: astral-sh/ty@0.0.53
   - name: j178/prek@v0.4.5
   - name: golang.org/x/tools/gopls@v0.22.0
   - name: golangci/golangci-lint@v2.12.2
