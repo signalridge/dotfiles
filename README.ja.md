@@ -317,6 +317,7 @@ Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期さ�
 - 汎用エンジニアリング系 pack（`wshobson/agents`、`anthropics/skills`、`openai/skills`）
 - vendor/platform skills（Hugging Face、Cloudflare、Vercel、Supabase、Expo、Microsoft、選定したコミュニティ repo）
 - Go、Rust、Swift、TypeScript/JavaScript、Zig の言語別 suite
+- discovery、strategy、execution、GTM、analytics、AI shipping を扱う `phuryn/pm-skills` のプロダクトマネジメント skills
 - `xurl`、`x-create`、`daily.dev`、Reddit、Remotion、Humanizer 系（`humanizer-en`、`qu-ai-wei`、`humanizer-ja`）などの social/writing/media skills
 
 同期先は `~/.harnesses/skills` の共有ライブラリです。プロジェクトディレクトリで `skill-activate` を実行すると、そのディレクトリの `./.claude/skills` と `./.codex/skills` の symlink だけを管理します。`skill-activate --category typescript` で現在のディレクトリにカテゴリ全体を有効化できます。`skill-activate --sync` は既存の Claude-only/Codex-only の半端な状態を修復します。ピッカーでは `Ctrl-A` でハイライト中の項目のカテゴリ全体を切り替えます。

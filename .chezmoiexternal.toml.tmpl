@@ -346,6 +346,97 @@
 {{ end }}
 
 # ------------------------------------------------------------------------------
+# phuryn/pm-skills (MIT) product-management marketplace
+# - Install all 68 upstream skills into ~/.harnesses/skills/product/.
+# - Commands and plugin manifests stay out of the shared skill library; Codex can
+#   consume the SKILL.md folders directly, while slash-command workflows remain
+#   plugin-specific.
+# ------------------------------------------------------------------------------
+{{- $pmSkills := list
+  "pm-ai-shipping/intended-vs-implemented"
+  "pm-ai-shipping/shipping-artifacts"
+  "pm-data-analytics/ab-test-analysis"
+  "pm-data-analytics/cohort-analysis"
+  "pm-data-analytics/sql-queries"
+  "pm-execution/brainstorm-okrs"
+  "pm-execution/create-prd"
+  "pm-execution/dummy-dataset"
+  "pm-execution/job-stories"
+  "pm-execution/outcome-roadmap"
+  "pm-execution/pre-mortem"
+  "pm-execution/prioritization-frameworks"
+  "pm-execution/release-notes"
+  "pm-execution/retro"
+  "pm-execution/sprint-plan"
+  "pm-execution/stakeholder-map"
+  "pm-execution/strategy-red-team"
+  "pm-execution/summarize-meeting"
+  "pm-execution/test-scenarios"
+  "pm-execution/user-stories"
+  "pm-execution/wwas"
+  "pm-go-to-market/beachhead-segment"
+  "pm-go-to-market/competitive-battlecard"
+  "pm-go-to-market/growth-loops"
+  "pm-go-to-market/gtm-motions"
+  "pm-go-to-market/gtm-strategy"
+  "pm-go-to-market/ideal-customer-profile"
+  "pm-market-research/competitor-analysis"
+  "pm-market-research/customer-journey-map"
+  "pm-market-research/market-segments"
+  "pm-market-research/market-sizing"
+  "pm-market-research/sentiment-analysis"
+  "pm-market-research/user-personas"
+  "pm-market-research/user-segmentation"
+  "pm-marketing-growth/marketing-ideas"
+  "pm-marketing-growth/north-star-metric"
+  "pm-marketing-growth/positioning-ideas"
+  "pm-marketing-growth/product-name"
+  "pm-marketing-growth/value-prop-statements"
+  "pm-product-discovery/analyze-feature-requests"
+  "pm-product-discovery/brainstorm-experiments-existing"
+  "pm-product-discovery/brainstorm-experiments-new"
+  "pm-product-discovery/brainstorm-ideas-existing"
+  "pm-product-discovery/brainstorm-ideas-new"
+  "pm-product-discovery/identify-assumptions-existing"
+  "pm-product-discovery/identify-assumptions-new"
+  "pm-product-discovery/interview-script"
+  "pm-product-discovery/metrics-dashboard"
+  "pm-product-discovery/opportunity-solution-tree"
+  "pm-product-discovery/prioritize-assumptions"
+  "pm-product-discovery/prioritize-features"
+  "pm-product-discovery/summarize-interview"
+  "pm-product-strategy/ansoff-matrix"
+  "pm-product-strategy/business-model"
+  "pm-product-strategy/lean-canvas"
+  "pm-product-strategy/monetization-strategy"
+  "pm-product-strategy/pestle-analysis"
+  "pm-product-strategy/porters-five-forces"
+  "pm-product-strategy/pricing-strategy"
+  "pm-product-strategy/product-strategy"
+  "pm-product-strategy/product-vision"
+  "pm-product-strategy/startup-canvas"
+  "pm-product-strategy/swot-analysis"
+  "pm-product-strategy/value-proposition"
+  "pm-toolkit/draft-nda"
+  "pm-toolkit/grammar-check"
+  "pm-toolkit/privacy-policy"
+  "pm-toolkit/review-resume"
+}}
+{{- range $entry := $pmSkills }}
+{{- $parts := splitList "/" $entry }}
+{{- $plugin := index $parts 0 }}
+{{- $skill := index $parts 1 }}
+[".harnesses/skills/product/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/phuryn/pm-skills/archive/{{ $.versions.phurynPmSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 4
+    include = ["pm-skills-*/{{ $plugin }}/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+
+{{ end }}
+
+# ------------------------------------------------------------------------------
 # Ecosystem skills pack (official upstream, cross-domain)
 # - Namespace: .harnesses/skills/ecosystem/
 # - Keep this focused on high-signal, actively maintained skills
