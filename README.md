@@ -21,7 +21,10 @@
 
 [![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=1000&color=BD93F9&center=true&vCenter=true&width=600&lines=Declarative+dev+environment+with+chezmoi+%2B+Nix;Cross-platform+macOS+%2B+Linux+support;Automated+plugin+sync+for+Claude+Code;Modern+CLI+toolchain+with+Rust-based+tools)](https://git.io/typing-svg)
 
-<img src="docs/images/preview.png" alt="Desktop preview — Ghostty terminal with AeroSpace tiling and a fastfetch system summary" width="820" />
+<p>
+  <img src="docs/images/preview.png" alt="Desktop preview — Ghostty terminal with AeroSpace tiling and a fastfetch system summary" width="400" />
+  <img src="docs/images/herdr-lazyvim-preview.png" alt="Herdr workspace preview — LazyVim in Ghostty with repository and agent status sidebars" width="400" />
+</p>
 
 </div>
 
