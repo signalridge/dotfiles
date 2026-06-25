@@ -26,6 +26,7 @@ bash -n "$CLI"
 help_output="$(bash "$CLI" --help)"
 assert_contains "$help_output" "auth-url"
 assert_contains "$help_output" "submit"
+assert_contains "$help_output" "--refresh-token-file"
 
 auth_output="$(
     bash "$CLI" auth-url \
@@ -78,6 +79,55 @@ multi_dry_run_output="$(
 )"
 assert_contains "$multi_dry_run_output" 'line one'
 assert_contains "$multi_dry_run_output" 'line two with spaces'
+
+refresh_token_file="$TMP_ROOT/refresh-token"
+printf 'refresh-secret\n' >"$refresh_token_file"
+file_secret_dry_run_output="$(
+    bash "$CLI" submit \
+        --refresh-token-file "$refresh_token_file" \
+        --subreddit test \
+        --title "File token dry run" \
+        --body-file "$body_file" \
+        2>/dev/null
+)"
+assert_contains "$file_secret_dry_run_output" '"dry_run": true'
+
+client_secret_file="$TMP_ROOT/client-secret"
+printf 'client-secret\n' >"$client_secret_file"
+secret_file_auth_output="$(
+    bash "$CLI" auth-url \
+        --client-id test_client \
+        --client-secret-file "$client_secret_file" \
+        --redirect-uri http://localhost:8080/callback \
+        --state fixed_state \
+        2>/dev/null
+)"
+assert_contains "$secret_file_auth_output" "response_type=code"
+
+code_file="$TMP_ROOT/code"
+printf 'oauth-code\n' >"$code_file"
+code_file_auth_output="$(
+    bash "$CLI" auth-url \
+        --client-id test_client \
+        --code-file "$code_file" \
+        --redirect-uri http://localhost:8080/callback \
+        --state fixed_state \
+        2>/dev/null
+)"
+assert_contains "$code_file_auth_output" "response_type=code"
+
+if bash "$CLI" submit --refresh-token secret --subreddit test --title "x" --body "y" >/dev/null 2>&1; then
+    echo "assertion failed: command-line refresh token should have been rejected" >&2
+    exit 1
+fi
+if bash "$CLI" auth-url --client-id test_client --client-secret secret >/dev/null 2>&1; then
+    echo "assertion failed: command-line client secret should have been rejected" >&2
+    exit 1
+fi
+if bash "$CLI" exchange-code --code secret --client-id test_client >/dev/null 2>&1; then
+    echo "assertion failed: command-line authorization code should have been rejected" >&2
+    exit 1
+fi
 
 # Forgotten value after a flag (e.g. `--subreddit --title foo`) must error.
 if bash "$CLI" submit --subreddit --title "x" --body "y" >/dev/null 2>&1; then

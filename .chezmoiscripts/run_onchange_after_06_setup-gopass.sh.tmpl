@@ -63,11 +63,15 @@ if [[ "$confirm" != "yes" ]]; then
     exit 0
 fi
 
-# Remove age native identities if they exist
-# (Force gopass to use SSH key from config instead)
-if [[ -d ~/.config/gopass/age ]]; then
-    echo "Removing age identities directory (will use SSH key)..."
-    rm -rf ~/.config/gopass/age
+# Move age native identities out of the active config path if they exist.
+# gopass is configured to use ~/.ssh/main, but existing identity material should
+# never be deleted by bootstrap automation.
+age_dir="$HOME/.config/gopass/age"
+if [[ -d "$age_dir" ]]; then
+    backup_dir="$HOME/.config/gopass/age.backup.$(date +%Y%m%d%H%M%S)"
+    echo "Backing up age identities directory to: $backup_dir"
+    mv "$age_dir" "$backup_dir"
+    chmod 700 "$backup_dir" 2>/dev/null || true
 fi
 
 echo ""

@@ -7,6 +7,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/lib/common"
 
+MCP_POSTGRES_PACKAGE="${MCP_POSTGRES_PACKAGE:-@modelcontextprotocol/server-postgres@0.6.2}"
+MCP_POSTGRES_ALLOW_DEPRECATED_REFERENCE="${MCP_POSTGRES_ALLOW_DEPRECATED_REFERENCE:-0}"
+
+if [[ "$MCP_POSTGRES_PACKAGE" == @modelcontextprotocol/server-postgres@* && "$MCP_POSTGRES_ALLOW_DEPRECATED_REFERENCE" != "1" ]]; then
+    log_error "PostgreSQL MCP is disabled by default: @modelcontextprotocol/server-postgres@0.6.2 is deprecated and has a known read-only bypass risk."
+    log_error "Use a dedicated read-only database role and set MCP_POSTGRES_ALLOW_DEPRECATED_REFERENCE=1 only for a conscious local opt-in."
+    exit 1
+fi
+
 require_cmd bunx
 
 PG_DSN_GOPASS_PATH="postgres/api_key"
@@ -24,8 +33,8 @@ if [[ -z "$PG_DSN" ]]; then
     exit 1
 fi
 
-# Reference server: read-only Postgres MCP
+# Deprecated reference server: read-only Postgres MCP.
 # Upstream server-postgres currently requires DSN as argv[1].
 # This means DSN may be visible in process listings on the local machine.
-log_warn "server-postgres requires DSN as argv; DSN may be visible in process list"
-exec bunx @modelcontextprotocol/server-postgres@0.6.2 "$PG_DSN" "$@"
+log_warn "$MCP_POSTGRES_PACKAGE requires DSN as argv; DSN may be visible in process list"
+exec bunx "$MCP_POSTGRES_PACKAGE" "$PG_DSN" "$@"

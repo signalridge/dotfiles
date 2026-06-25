@@ -75,7 +75,7 @@ repos:
         name: Gitleaks
         language: system
         pass_filenames: false
-        entry: gitleaks git --pre-commit --redact --staged --verbose
+        entry: gitleaks git --pre-commit --config .gitleaks.toml --redact --staged --verbose
       #####################################
       # Template: render + format check + lint
       # Requires: chezmoi, treefmt, shellcheck, selene, statix
@@ -86,109 +86,6 @@ repos:
         files: \.tmpl$
         exclude: Spoons/
         pass_filenames: false
-        entry: |
-          bash -c '
-            set -e
-            tmpdir=$(mktemp -d)
-            trap "rm -rf $tmpdir" EXIT
-
-            # Copy required config files (fail if missing)
-            for cfg in treefmt.toml stylua.toml selene.toml; do
-              if [[ -f "$cfg" ]]; then
-                cp "$cfg" "$tmpdir/"
-              else
-                echo "⚠️  Missing config: $cfg"
-              fi
-            done
-
-            # Chezmoi config with claude data for template rendering
-            cat > "$tmpdir/chezmoi.toml" << EOF
-          [data]
-          hostname = "test"
-          work = false
-          private = true
-          homeWifiSSIDs = ""
-          platform = "darwin"
-          installMasApps = true
-          timezone = "UTC"
-          gitUsername = "test"
-          gitEmail = "test@test.com"
-          useEncryption = false
-          headless = false
-          gopassRepository = "https://github.com/test/pass.git"
-          keysRepository = "https://github.com/test/keys.git"
-          codexProviderAccount = "openai"
-          EOF
-
-            # Render templates to tmpdir
-            render_error_log="$tmpdir/chezmoi-render.stderr"
-            : > "$render_error_log"
-            render_failed_files=()
-
-            render_template() {
-              local src="$1"
-              local dest="$2"
-
-              if ! chezmoi execute-template --config "$tmpdir/chezmoi.toml" --source . < "$src" > "$dest" 2>> "$render_error_log"; then
-                echo "❌ Template render failed: $src" >&2
-                render_failed_files+=("$src")
-                return 1
-              fi
-              return 0
-            }
-
-            while IFS= read -r -d "" f; do
-              render_template "$f" "$tmpdir/$(basename "${f%.tmpl}")" || true
-            done < <(find . \( -name "*.sh.tmpl" -o -name "*.lua.tmpl" -o -name "*.json.tmpl" -o -name "*.yaml.tmpl" -o -name "*.yml.tmpl" -o -name "*.md.tmpl" \) ! -path "*/node_modules/*" ! -path "*/Spoons/*" -print0)
-
-            # Render nix templates
-            mkdir -p "$tmpdir/nix-modules"
-            [[ -f nix-config/flake.nix.tmpl ]] && render_template nix-config/flake.nix.tmpl "$tmpdir/flake.nix" || true
-            for f in nix-config/modules/*.tmpl; do
-              [[ -f "$f" ]] && render_template "$f" "$tmpdir/nix-modules/$(basename "${f%.tmpl}")" || true
-            done
-
-            if (( ${#render_failed_files[@]} > 0 )); then
-              echo "" >&2
-              echo "❌ Template rendering failed for ${#render_failed_files[@]} file(s):" >&2
-              for f in "${render_failed_files[@]}"; do
-                echo "  - $f" >&2
-              done
-              echo "" >&2
-              echo "---- chezmoi stderr (last 200 lines) ----" >&2
-              tail -200 "$render_error_log" >&2 || true
-              exit 1
-            fi
-
-            cd "$tmpdir"
-
-            # Format check
-            echo "Checking format with treefmt..."
-            if [[ -f treefmt.toml ]]; then
-              treefmt --fail-on-change || { echo "❌ Format check failed"; exit 1; }
-            fi
-
-            # Lint shell scripts (fail on errors)
-            echo "Linting shell scripts..."
-            shfiles=$(ls *.sh 2>/dev/null || true)
-            if [[ -n "$shfiles" ]]; then
-              shellcheck --severity=warning $shfiles
-            fi
-
-            # Lint Lua files (warn only - many false positives for hs/vim globals)
-            echo "Linting Lua files..."
-            luafiles=$(ls *.lua 2>/dev/null || true)
-            if [[ -n "$luafiles" ]] && [[ -f selene.toml ]]; then
-              selene $luafiles || echo "⚠️  Selene warnings (non-blocking)"
-            fi
-
-            # Lint Nix files (warn only)
-            echo "Linting Nix files..."
-            if [[ -f flake.nix ]]; then
-              statix check . || echo "⚠️  Statix warnings (non-blocking)"
-            fi
-
-            echo "✅ All template checks passed!"
-          '
+        entry: bash tests/check_templates.sh
 ci:
   autoupdate_schedule: weekly

@@ -80,10 +80,10 @@ jobs:
           rm -f "${ASSET}" "${CHECKSUMS}" gitleaks
 
       - name: Run gitleaks and generate SARIF
-        continue-on-error: true
         run: |
           gitleaks detect \
             --source . \
+            --config .gitleaks.toml \
             --redact \
             --report-format sarif \
             --report-path gitleaks-results.sarif

@@ -4,6 +4,11 @@
 
 set -euo pipefail
 
+{{- if or (ne .chezmoi.os "darwin") .headless }}
+echo ":: [09] Paperlib install skipped (macOS GUI profile only)"
+exit 0
+{{- end }}
+
 echo ":: [09] Installing Paperlib"
 
 VERSION="{{ .versions.paperlib }}"

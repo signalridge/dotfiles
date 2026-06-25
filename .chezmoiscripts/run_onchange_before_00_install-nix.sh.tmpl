@@ -52,7 +52,53 @@ get_arch() {
     *) die "unsupported CPU: $cpu" ;;
     esac
 
+    if [ "$cpu" = "x86_64" ] && [ "$os" = "darwin" ]; then
+        die "unsupported CPU/OS combo: x86_64-darwin (Determinate nix-installer ${NIX_INSTALLER_VERSION} does not publish this asset)"
+    fi
+
     echo "${cpu}-${os}"
+}
+
+expected_sha256_for_arch() {
+    local arch="$1"
+
+    case "$arch" in
+    aarch64-darwin) echo "{{ .versions.nixInstallerAarch64DarwinSha256 }}" ;;
+    aarch64-linux) echo "{{ .versions.nixInstallerAarch64LinuxSha256 }}" ;;
+    x86_64-linux) echo "{{ .versions.nixInstallerX8664LinuxSha256 }}" ;;
+    *) die "no pinned nix-installer sha256 for architecture: $arch" ;;
+    esac
+}
+
+sha256_file() {
+    local file="$1"
+
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$file" | awk '{print $1}'
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$file" | awk '{print $1}'
+    else
+        die "sha256sum or shasum required"
+    fi
+}
+
+verify_sha256() {
+    local file="$1"
+    local expected="$2"
+    local actual
+
+    expected="${expected#sha256:}"
+    actual=$(sha256_file "$file")
+    if [ "$actual" != "$expected" ]; then
+        die "sha256 mismatch for $file: expected $expected, got $actual"
+    fi
+}
+
+is_installer_binary() {
+    local file="$1"
+
+    # ELF starts with 0x7F 'E' 'L' 'F', Mach-O with 0xCF 0xFA.
+    head -c 4 "$file" | od -An -tx1 | grep -qE '7f.*45.*4c.*46|cf.*fa'
 }
 
 # --- Downloader selection ---
@@ -217,8 +263,10 @@ main() {
     local arch
     local base
     local url
+    local expected_sha256
     arch=$(get_arch)
     info "architecture: $arch"
+    expected_sha256="${NIX_INSTALLER_OVERRIDE_SHA256:-$(expected_sha256_for_arch "$arch")}"
 
     # Determine download URL
     if [ -n "${NIX_INSTALLER_OVERRIDE_URL:-}" ]; then
@@ -249,9 +297,8 @@ main() {
 
     chmod +x "$bin"
 
-    # Verify it's a valid ELF/Mach-O binary, not an error page
-    # ELF starts with 0x7F 'E' 'L' 'F', Mach-O with 0xCF 0xFA
-    if ! head -c 4 "$bin" | od -An -tx1 | grep -qE '7f.*45.*4c.*46|cf.*fa'; then
+    # Verify it's a valid ELF/Mach-O binary, not an error page.
+    if ! is_installer_binary "$bin"; then
         warn "downloaded file is not a valid binary, trying github directly..."
         url="${GITHUB_RELEASE}/nix-installer-${arch}"
         info "downloading: $url"
@@ -261,6 +308,10 @@ main() {
         chmod +x "$bin"
     fi
 
+    if ! is_installer_binary "$bin"; then
+        die "downloaded file is not a valid installer binary"
+    fi
+    verify_sha256 "$bin" "$expected_sha256"
     [ -x "$bin" ] || die "cannot execute $bin (try: export TMPDIR=~/tmp)"
 
     info "running installer..."

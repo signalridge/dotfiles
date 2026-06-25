@@ -4,7 +4,7 @@
 # Submission only -- it does not comment, vote, DM, scrape logged-in browser
 # sessions, or manage account activity. Uses the official OAuth API via curl/jq.
 #
-# Auth comes from the environment (or flags): REDDIT_CLIENT_ID,
+# Auth comes from the environment or private files: REDDIT_CLIENT_ID,
 # REDDIT_CLIENT_SECRET (empty for installed apps), REDDIT_REFRESH_TOKEN,
 # REDDIT_USER_AGENT. `social-post reddit` resolves these from gopass.
 
@@ -36,6 +36,14 @@ need() { command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"
 need curl
 need jq
 
+read_secret_file() {
+    local file="$1"
+    local label="$2"
+
+    [[ -f "$file" ]] || die "$label file not found: $file"
+    tr -d '\r\n' <"$file"
+}
+
 show_help() {
     cat <<'HELP'
 reddit-submit -- submit Reddit posts via the official OAuth API.
@@ -49,7 +57,7 @@ commands:
   requirements SUB  Fetch subreddit post requirements
   submit          Submit a text or link post (dry-run unless --yes)
 
-common options: --client-id --client-secret --refresh-token
+common options: --client-id --client-secret-file --refresh-token-file
 submit options: --subreddit --title[-file] --body[-file] --url --flair-id
                 --no-replies --resubmit --nsfw --spoiler --skip-requirements --yes
 HELP
@@ -62,7 +70,7 @@ refresh_token="${REDDIT_REFRESH_TOKEN:-}"
 redirect_uri="${REDDIT_REDIRECT_URI:-$DEFAULT_REDIRECT_URI}"
 scope="$DEFAULT_SCOPES"
 state=""
-code=""
+code="${REDDIT_AUTH_CODE:-}"
 subreddit=""
 title=""
 title_file=""
@@ -91,17 +99,27 @@ cmd="$1"
 shift
 
 positional=()
-# --client-secret is allowed to be empty (Reddit "installed app" type uses
-# an empty Basic-auth secret), so it doesn't go through require_value.
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --client-id) require_value "$1" "${2:-}" && client_id="$2" && shift 2 ;;
-        --client-secret) client_secret="${2:-}" && shift 2 ;;
-        --refresh-token) require_value "$1" "${2:-}" && refresh_token="$2" && shift 2 ;;
+        --client-secret)
+            if [[ $# -ge 2 && "${2:-}" != --* ]]; then
+                [[ -z "${2:-}" ]] || die "do not pass client secrets on the command line; use REDDIT_CLIENT_SECRET or --client-secret-file"
+                client_secret=""
+                shift 2
+            else
+                client_secret=""
+                shift
+            fi
+            ;;
+        --client-secret-file) require_value "$1" "${2:-}" && client_secret="$(read_secret_file "$2" client-secret)" && shift 2 ;;
+        --refresh-token) die "do not pass refresh tokens on the command line; use REDDIT_REFRESH_TOKEN or --refresh-token-file" ;;
+        --refresh-token-file) require_value "$1" "${2:-}" && refresh_token="$(read_secret_file "$2" refresh-token)" && shift 2 ;;
         --redirect-uri) require_value "$1" "${2:-}" && redirect_uri="$2" && shift 2 ;;
         --scope) require_value "$1" "${2:-}" && scope="$2" && shift 2 ;;
         --state) require_value "$1" "${2:-}" && state="$2" && shift 2 ;;
-        --code) require_value "$1" "${2:-}" && code="$2" && shift 2 ;;
+        --code) die "do not pass authorization codes on the command line; use REDDIT_AUTH_CODE or --code-file" ;;
+        --code-file) require_value "$1" "${2:-}" && code="$(read_secret_file "$2" code)" && shift 2 ;;
         --subreddit) require_value "$1" "${2:-}" && subreddit="$2" && shift 2 ;;
         --title) require_value "$1" "${2:-}" && title="$2" && shift 2 ;;
         --title-file) require_value "$1" "${2:-}" && title_file="$2" && shift 2 ;;
@@ -166,7 +184,7 @@ token_request() { # remaining args = curl --data-urlencode pairs
 }
 
 access_token() {
-    [[ -n "$refresh_token" ]] || die "missing REDDIT_REFRESH_TOKEN; pass --refresh-token or set the env var"
+    [[ -n "$refresh_token" ]] || die "missing REDDIT_REFRESH_TOKEN; set the env var or pass --refresh-token-file"
     local tok
     tok="$(token_request \
         --data-urlencode "grant_type=refresh_token" \
@@ -281,7 +299,7 @@ EOF
 }
 
 cmd_exchange_code() {
-    [[ -n "$code" ]] || die "--code is required"
+    [[ -n "$code" ]] || die "missing authorization code; set REDDIT_AUTH_CODE or pass --code-file"
     local response
     response="$(token_request \
         --data-urlencode "grant_type=authorization_code" \
@@ -291,7 +309,7 @@ cmd_exchange_code() {
 }
 
 cmd_refresh() {
-    [[ -n "$refresh_token" ]] || die "missing REDDIT_REFRESH_TOKEN; pass --refresh-token or set the env var"
+    [[ -n "$refresh_token" ]] || die "missing REDDIT_REFRESH_TOKEN; set the env var or pass --refresh-token-file"
     local response
     response="$(token_request \
         --data-urlencode "grant_type=refresh_token" \

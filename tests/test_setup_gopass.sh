@@ -109,10 +109,11 @@ if [[ -d "$HOME/.local/share/gopass/stores/root" ]]; then
 fi
 
 ###############################################################################
-# Case 3: user says 'yes' -> clone, remove age identities dir, verify calls.
+# Case 3: user says 'yes' -> clone, back up age identities dir, verify calls.
 ###############################################################################
 rm -f "$LOG"
 mkdir -p "$HOME/.config/gopass/age"
+echo "identity" >"$HOME/.config/gopass/age/key.txt"
 printf "yes\n" | bash "$RENDERED" >/dev/null 2>&1
 
 [[ -d "$HOME/.local/share/gopass/stores/root" ]] || {
@@ -120,7 +121,20 @@ printf "yes\n" | bash "$RENDERED" >/dev/null 2>&1
     exit 1
 }
 [[ ! -d "$HOME/.config/gopass/age" ]] || {
-    echo "expected ~/.config/gopass/age to be removed" >&2
+    echo "expected ~/.config/gopass/age to be moved aside" >&2
+    exit 1
+}
+age_backup_count="$(
+    find "$HOME/.config/gopass" -maxdepth 1 -type d -name 'age.backup.*' | wc -l | tr -d ' '
+)"
+[[ "$age_backup_count" == "1" ]] || {
+    echo "expected exactly one age backup, found $age_backup_count" >&2
+    find "$HOME/.config/gopass" -maxdepth 1 -type d -print >&2
+    exit 1
+}
+age_backup_dir="$(find "$HOME/.config/gopass" -maxdepth 1 -type d -name 'age.backup.*' -print -quit)"
+[[ -f "$age_backup_dir/key.txt" ]] || {
+    echo "expected age identity material to be preserved in backup" >&2
     exit 1
 }
 

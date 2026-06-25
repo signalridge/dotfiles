@@ -55,6 +55,9 @@ Library/
 # ─────────────────────────────────────────────────────────────────────────────
 {{- if .headless }}
 # GUI apps (not needed on headless servers)
+.chezmoiscripts/09_install-paperlib.sh
+.chezmoiscripts/15_load-qmk-hid-host-agent.sh
+Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 .config/aerospace/
 .config/borders/
 .config/karabiner/

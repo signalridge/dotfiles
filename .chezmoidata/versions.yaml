@@ -3,6 +3,9 @@
 # ─────────────────────────────────────────────────────────────────────────────
 versions:
   nixInstaller: v3.21.2
+  nixInstallerAarch64DarwinSha256: 17c0845f0133c9544b293449d853f5873ef9692b61cea1fe2ddf3b3a2500b81b
+  nixInstallerAarch64LinuxSha256: 0b2321832c1bf10503c6b299b382bd70b00023771650c93efbf1ba4c99de8284
+  nixInstallerX8664LinuxSha256: b7961969faefef53e5bc5a6986fd50a09b1ea3e04578ff58c5408edb0d4113b0
   nixVersion: v2.34.7
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
