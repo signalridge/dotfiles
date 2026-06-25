@@ -24,17 +24,12 @@ effort=$(echo "$input" | jq -r '.effort.level // ""')
 # yellow #f1fa8c  → \e[38;5;228m
 # reset
 RST='\e[0m'
-CYAN='\e[38;5;117m'
 PINK='\e[38;5;212m'
 PURPLE='\e[38;5;141m'
 GREEN='\e[38;5;84m'
 ORANGE='\e[38;5;215m'
 YELLOW='\e[38;5;228m'
 BOLD='\e[1m'
-
-# ── Directory: shorten $HOME to ~ ─────────────────────────────────────────────
-home="${HOME:-/root}"
-short_cwd="${cwd/#$home/\~}"
 
 # ── Git branch via git (more accurate than repo field alone) ─────────────────
 git_branch=""
@@ -44,9 +39,6 @@ fi
 
 # ── Build output ──────────────────────────────────────────────────────────────
 out=""
-
-#  directory (bold cyan)
-out+="${BOLD}${CYAN}${short_cwd}${RST}"
 
 #  git branch (bold pink with  symbol)
 if [[ -n "$git_branch" ]]; then
