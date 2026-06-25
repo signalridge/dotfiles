@@ -60,7 +60,9 @@ require_any_line ".ssh/config" ".ssh/config.tmpl.age"
 out="$headless_out"
 require_line ".chezmoiscripts/09_install-paperlib.sh"
 require_line ".chezmoiscripts/15_load-qmk-hid-host-agent.sh"
-require_line "Library/LaunchAgents/com.signalridge.qmk-hid-host.plist"
+# On Linux, the OS-specific ignore rules may collapse the child LaunchAgent
+# path into the ignored parent Library directory.
+require_any_line "Library/LaunchAgents/com.signalridge.qmk-hid-host.plist" "Library"
 require_line ".config/hammerspoon"
 
 echo "test_chezmoiignore: OK"

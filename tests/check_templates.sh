@@ -40,6 +40,7 @@ installMasApps = true
 timezone = "UTC"
 gitUsername = "test"
 gitEmail = "test@test.com"
+useremail = "test@test.com"
 useEncryption = false
 headless = false
 gopassRepository = "https://github.com/test/pass.git"
@@ -55,25 +56,10 @@ render_failed_files=()
 render_template() {
     local src="$1"
     local dest="$2"
-    local -a init_args=()
 
     mkdir -p "$(dirname -- "$dest")"
     if [[ "$src" == ".chezmoi.toml.tmpl" ]]; then
-        init_args=(
-            --init
-            --promptBool work=false
-            --promptBool useEncryption=false
-            --promptBool headless=false
-            --promptBool installMasApps=true
-            --promptString hostname=test
-            --promptString useremail=test@test.com
-            --promptString gitUsername=test
-            --promptString gitEmail=test@test.com
-            --promptString homeWifiSSIDs=
-            --promptString gopassRepository=https://github.com/test/pass.git
-            --promptString keysRepository=https://github.com/test/keys.git
-        )
-        if ! chezmoi execute-template "${init_args[@]}" --source "$ROOT" <"$ROOT/$src" >"$dest" 2>>"$render_error_log"; then
+        if ! chezmoi execute-template --config "$TMP_ROOT/chezmoi.toml" --init --stdinisatty=false --source "$ROOT" <"$ROOT/$src" >"$dest" 2>>"$render_error_log"; then
             echo "template render failed: $src" >&2
             render_failed_files+=("$src")
             return 1
