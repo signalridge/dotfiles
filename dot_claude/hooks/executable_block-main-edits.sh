@@ -25,14 +25,30 @@ if [[ "$tool" != "Write" && "$tool" != "Edit" && "$tool" != "MultiEdit" ]]; then
     exit 0
 fi
 
-if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+file_path=$(echo "$input" | jq -r '.tool_input.file_path // .tool_input.path // ""' 2>/dev/null || echo "")
+
+# Judge the branch by where the *edited file* lives, not the hook's CWD.
+# CC always runs from the primary checkout (usually main), so a CWD-based
+# check flags every edit as "main" even when the file is in a feature
+# worktree under .worktrees/<branch>. Resolve the file's own directory and
+# ask git there: a linked worktree reports its own branch, not main.
+if [[ -n "$file_path" ]]; then
+    target_dir=$(dirname -- "$file_path")
+else
+    target_dir="."
+fi
+# New-file writes target a path that doesn't exist yet; walk up to the
+# nearest existing ancestor so git can resolve the containing worktree.
+while [[ "$target_dir" != "/" && "$target_dir" != "." && ! -d "$target_dir" ]]; do
+    target_dir=$(dirname -- "$target_dir")
+done
+
+if ! git -C "$target_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     exit 0
 fi
 
-branch=$(git branch --show-current 2>/dev/null || echo "")
+branch=$(git -C "$target_dir" branch --show-current 2>/dev/null || echo "")
 [[ -n "$branch" ]] || exit 0
-
-file_path=$(echo "$input" | jq -r '.tool_input.file_path // .tool_input.path // ""' 2>/dev/null || echo "")
 
 protected=false
 case "$branch" in
