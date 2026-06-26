@@ -35,7 +35,6 @@ claude:
       default_model: deepseek-v4-pro[1m]
       # User preference: run Claude Code subagents on pro instead of the documented flash default.
       subagent_model: deepseek-v4-pro[1m]
-      effort_level: max
       models:
         - deepseek-v4-pro[1m]
         - deepseek-v4-flash
@@ -89,7 +88,6 @@ claude:
       disable_experimental_betas: true
       supported_capabilities: thinking,adaptive_thinking,temperature,effort,max_effort
       subagent_model: gpt-5.5
-      effort_level: max
       models:
         - gpt-5.5
   # ===== Account Configurations =====
@@ -117,7 +115,6 @@ claude:
       sonnet_model: deepseek-v4-pro[1m]
       opus_model: deepseek-v4-pro[1m]
       subagent_model: deepseek-v4-pro[1m]
-      effort_level: max
     doubao@private:
       model: ark-code-latest
       small_model: ark-code-latest
@@ -139,7 +136,6 @@ claude:
       sonnet_model: gpt-5.5
       opus_model: gpt-5.5
       subagent_model: gpt-5.5
-      effort_level: max
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
   # All skills are hardcoded in .chezmoiexternal.toml.tmpl
