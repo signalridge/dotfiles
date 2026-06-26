@@ -85,7 +85,6 @@ get_account_config() {
             sonnet_model: $account_cfg.sonnet_model,
             opus_model: $account_cfg.opus_model,
             subagent_model: ($account_cfg.subagent_model // $provider_cfg.subagent_model),
-            effort_level: ($account_cfg.effort_level // $provider_cfg.effort_level),
             attribution_header: ($account_cfg.attribution_header // $provider_cfg.attribution_header),
             disable_experimental_betas: ($account_cfg.disable_experimental_betas // $provider_cfg.disable_experimental_betas),
             supported_capabilities: ($account_cfg.supported_capabilities // $provider_cfg.supported_capabilities),

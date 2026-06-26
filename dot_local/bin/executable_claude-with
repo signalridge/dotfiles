@@ -85,7 +85,6 @@ launch_claude() {
     unset ANTHROPIC_API_KEY
     unset ANTHROPIC_AUTH_TOKEN
     unset CLAUDE_CODE_SUBAGENT_MODEL
-    unset CLAUDE_CODE_EFFORT_LEVEL
     unset CLAUDE_CODE_ATTRIBUTION_HEADER
     unset CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS
     unset ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES
@@ -116,14 +115,13 @@ launch_claude() {
     [[ -n "$small_model" ]] && export ANTHROPIC_SMALL_FAST_MODEL="$small_model"
 
     # Optional settings
-    local timeout haiku sonnet opus subagent effort_level disable_traffic
+    local timeout haiku sonnet opus subagent disable_traffic
     local attribution disable_betas supported_caps
     timeout=$(echo "$config" | jq -r '.timeout_ms // empty')
     haiku=$(echo "$config" | jq -r '.haiku_model // empty')
     sonnet=$(echo "$config" | jq -r '.sonnet_model // empty')
     opus=$(echo "$config" | jq -r '.opus_model // empty')
     subagent=$(echo "$config" | jq -r '.subagent_model // empty')
-    effort_level=$(echo "$config" | jq -r '.effort_level // empty')
     disable_traffic=$(echo "$config" | jq -r '.disable_nonessential_traffic // empty')
     attribution=$(echo "$config" | jq -r '.attribution_header // empty')
     disable_betas=$(echo "$config" | jq -r '.disable_experimental_betas // empty')
@@ -135,7 +133,6 @@ launch_claude() {
     [[ -n "$sonnet" ]] && export ANTHROPIC_DEFAULT_SONNET_MODEL="$sonnet"
     [[ -n "$opus" ]] && export ANTHROPIC_DEFAULT_OPUS_MODEL="$opus"
     [[ -n "$subagent" ]] && export CLAUDE_CODE_SUBAGENT_MODEL="$subagent"
-    [[ -n "$effort_level" ]] && export CLAUDE_CODE_EFFORT_LEVEL="$effort_level"
     [[ -n "$attribution" ]] && export CLAUDE_CODE_ATTRIBUTION_HEADER="$attribution"
     [[ "$disable_betas" == "true" ]] && export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS="1"
     if [[ -n "$supported_caps" ]]; then
@@ -179,7 +176,6 @@ launch_claude() {
             .ANTHROPIC_DEFAULT_SONNET_MODEL,
             .ANTHROPIC_DEFAULT_OPUS_MODEL,
             .CLAUDE_CODE_SUBAGENT_MODEL,
-            .CLAUDE_CODE_EFFORT_LEVEL,
             .CLAUDE_CODE_ATTRIBUTION_HEADER,
             .CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS,
             .ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES,
@@ -198,7 +194,6 @@ launch_claude() {
         --arg sonnet "${sonnet:-}" \
         --arg opus "${opus:-}" \
         --arg subagent "${subagent:-}" \
-        --arg effort_level "${effort_level:-}" \
         --arg disable_traffic "${disable_traffic:-}" \
         --arg attribution "${attribution:-}" \
         --arg disable_betas "${disable_betas:-}" \
@@ -217,7 +212,6 @@ launch_claude() {
                         ANTHROPIC_DEFAULT_SONNET_MODEL: $sonnet,
                         ANTHROPIC_DEFAULT_OPUS_MODEL: $opus,
                         CLAUDE_CODE_SUBAGENT_MODEL: $subagent,
-                        CLAUDE_CODE_EFFORT_LEVEL: $effort_level,
                         CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: (if $disable_traffic == "true" then "1" else "" end),
                         CLAUDE_CODE_ATTRIBUTION_HEADER: $attribution,
                         CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: (if $disable_betas == "true" then "1" else "" end),
