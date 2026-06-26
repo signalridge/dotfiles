@@ -85,7 +85,7 @@ assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_OPUS_MODEL"
 assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-v4-pro[1m]"'
 assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-v4-flash"'
 assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-v4-pro[1m]"'
-assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"CLAUDE_CODE_EFFORT_LEVEL": "max"'
+assert_file_not_contains "$DEEPSEEK_CLAUDE_SETTINGS" 'CLAUDE_CODE_EFFORT_LEVEL'
 
 KRILL_CLAUDE_SETTINGS="$TMP_ROOT/settings-krill.json"
 chezmoi execute-template --source "$ROOT" \
@@ -99,7 +99,7 @@ assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_OPUS_MODEL_SUP
 assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES": "thinking,adaptive_thinking,temperature,effort,max_effort"'
 assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES": "thinking,adaptive_thinking,temperature,effort,max_effort"'
 assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"CLAUDE_CODE_SUBAGENT_MODEL": "gpt-5.5"'
-assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"CLAUDE_CODE_EFFORT_LEVEL": "max"'
+assert_file_not_contains "$KRILL_CLAUDE_SETTINGS" 'CLAUDE_CODE_EFFORT_LEVEL'
 
 # Native Anthropic default must not leak krill-only env keys.
 assert_file_not_contains "$CLAUDE_SETTINGS" 'CLAUDE_CODE_ATTRIBUTION_HEADER'

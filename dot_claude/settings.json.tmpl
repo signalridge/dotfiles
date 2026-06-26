@@ -49,16 +49,6 @@
 {{- if $subagentModel }}
     "CLAUDE_CODE_SUBAGENT_MODEL": "{{ $subagentModel }}",
 {{- end }}
-{{- /* effort_level: account -> provider */ -}}
-{{- $effortLevel := "" -}}
-{{- if and $account (hasKey $account "effort_level") -}}
-{{-   $effortLevel = $account.effort_level -}}
-{{- else if and $provider (hasKey $provider "effort_level") -}}
-{{-   $effortLevel = $provider.effort_level -}}
-{{- end -}}
-{{- if $effortLevel }}
-    "CLAUDE_CODE_EFFORT_LEVEL": "{{ $effortLevel }}",
-{{- end }}
 {{- /* attribution_header: account -> provider (proxies that reject the header set "0") */ -}}
 {{- $attributionHeader := "" -}}
 {{- if and $account (hasKey $account "attribution_header") -}}
@@ -223,16 +213,6 @@
           {
             "type": "command",
             "command": "$HOME/.claude/hooks/block-git-rewrites.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$HOME/.claude/hooks/block-main-edits.sh",
             "timeout": 5
           }
         ]

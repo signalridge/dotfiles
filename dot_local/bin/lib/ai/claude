@@ -73,7 +73,6 @@ ACCOUNT_PREVIEW='
         \"Model:     \(.model // \"default\")\",
         \"Small:     \(.small_model // \"default\")\",
         \"Subagent:  \(.subagent_model // \"default\")\",
-        \"Effort:    \(.effort_level // \"default\")\",
         \"Base URL:  \(.base_url // \"Anthropic (native)\")\"
     " 2>/dev/null || echo "Config not available"
     echo ""
