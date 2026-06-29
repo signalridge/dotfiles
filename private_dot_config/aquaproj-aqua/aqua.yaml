@@ -25,8 +25,8 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.193
-  - name: openai/codex@rust-v0.142.2
+  - name: anthropics/claude-code@v2.1.195
+  - name: openai/codex@rust-v0.142.3
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
@@ -40,7 +40,7 @@ packages:
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.69.0
   - name: eza-community/eza@v0.23.4
-  - name: fastfetch-cli/fastfetch@2.65.1
+  - name: fastfetch-cli/fastfetch@2.65.2
   - name: sharkdp/fd@v10.4.2
   - name: junegunn/fzf@v0.73.1
   - name: gopasspw/gopass@v1.16.1
@@ -60,11 +60,11 @@ packages:
   - name: jesseduffield/lazydocker@v0.25.2
   - name: neovim/neovim@v0.12.3
   - name: LuaLS/lua-language-server@3.18.2
-  - name: tree-sitter/tree-sitter@v0.26.9
+  - name: tree-sitter/tree-sitter@v0.26.10
   - name: jj-vcs/jj@v0.42.0
   - name: rclone/rclone@v1.74.3
   - name: o2sh/onefetch@2.27.1
-  - name: ip7z/7zip@26.01
+  - name: ip7z/7zip@26.02
   - name: ouch-org/ouch@0.8.0
   - name: Nukesor/pueue/pueue@v4.0.4
   - name: BurntSushi/ripgrep@15.1.0
@@ -73,7 +73,7 @@ packages:
   - name: ducaale/xh@v0.26.1
   - name: watchexec/watchexec@v2.5.1
   - name: joshmedeski/sesh@v2.26.2
-  - name: starship/starship@v1.25.1
+  - name: starship/starship@v1.26.0
   - name: JohnnyMorganz/StyLua@v2.5.2
   - name: Kampfkarren/selene@0.31.0
   - name: crate-ci/typos@v1.47.2
@@ -83,7 +83,7 @@ packages:
   - name: mvdan/sh@v3.13.1
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.15.20
-  - name: astral-sh/ty@0.0.54
+  - name: astral-sh/ty@0.0.55
   - name: j178/prek@v0.4.5
   - name: golang.org/x/tools/gopls@v0.22.0
   - name: golangci/golangci-lint@v2.12.2
@@ -93,7 +93,7 @@ packages:
   - name: XAMPPRocky/tokei@14.0.0
   - name: sharkdp/hyperfine@v1.20.0
   - name: hatoo/oha@v1.14.0
-  - name: ClementTsang/bottom@0.14.1
+  - name: ClementTsang/bottom@0.14.2
   - name: dalance/procs@v0.14.12
   - name: sharkdp/hexyl@v0.17.0
   - name: mr-karan/doggo@v1.2.0
@@ -111,8 +111,8 @@ packages:
   - name: ahmetb/kubectx@v0.11.0
   - name: kubernetes-sigs/krew@v0.5.0
   - name: aquasecurity/trivy@v0.71.2
-  - name: anchore/syft@v1.45.1
-  - name: anchore/grype@v0.114.0
+  - name: anchore/syft@v1.46.0
+  - name: anchore/grype@v0.115.0
   - name: LucasPickering/slumber@v5.3.0
   - name: charmbracelet/gum@v0.17.0
   - name: charmbracelet/vhs@v0.11.0
