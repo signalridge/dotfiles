@@ -1,4 +1,5 @@
 {
   "trustedformulae": ["felixkratz/formulae/borders"],
-  "trustedtaps": ["felixkratz/formulae", "muxy-app/tap", "nikitabobko/tap"]
+  "trustedtaps": ["felixkratz/formulae", "muxy-app/tap", "nikitabobko/tap"],
+  "trustedcasks": ["nikitabobko/tap/aerospace"]
 }
