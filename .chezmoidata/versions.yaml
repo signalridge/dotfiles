@@ -18,8 +18,8 @@ versions:
   claudeAnthropicsSkillsSha256: 1dc9e601025dc0a4e3f5e7c6f8f68955a7cba040e101b2ab0ef269ed517857ff
   claudeBaoyuSkillsRev: c9a50cc908d0473f5d754efdbe08cbe387714f63
   phurynPmSkillsRev: a0cd730d4c61e519ca8568b172334402257a74a9
-  uiUxProMaxSkillRev: 8a81ed60272d21d4b8808f7308d49a0b1b000555
-  uiUxProMaxSkillSha256: 6b1b3e664d99a74b3f716f1d79399ce3ec6df794d7b12d23fda1f2f84b267fd7
+  uiUxProMaxSkillRev: 3327f9dcb338c8b863a034d152c062a0a7764586
+  uiUxProMaxSkillSha256: 170f2b5d0ba49c896288ec1319de7771f17175d34c0703ddfa18f48afb410b1c
   openaiSkillsRev: 49f948faa9258a0c61caceaf225e179651397431
   huggingfaceSkillsRev: 35e8c35a1ae5b462e0bb23d444d25569c3bb6700
   getsentrySkillsRev: 89a1f0105c5be12934bda2bcd01f58ab894976e2
@@ -30,12 +30,12 @@ versions:
   vercelLabsAgentBrowserRev: ed2e10598c9064aecfaeb7cf21b540684db4be2c
   supabaseAgentSkillsRev: 1356046015476711a769601079262b5635929427
   expoSkillsRev: ad897fdf0c6593d0cc7523198aa752c6f62adeda
-  microsoftSkillsRev: fddb7211e75e44abc39551222160abe646832f0e
-  sickn33AntigravitySkillsRev: 9fc5f9839d597a8b6a483339109daf5e96ba97ef
+  microsoftSkillsRev: 68996f2a82d0af54e1fbede408af3726ec5b653e
+  sickn33AntigravitySkillsRev: 45bce6b6be12cc96151eb4984c7233b4dc6f7d9d
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: ca7af700a3d8888e63bb819f6f118e2aec42c2db
   dailyDevSkillsRev: 192dae2b904fd4a4e8b9d212474f34c70710e28d
-  opcSkillsRev: 39da7fce28239b08b46e66afc13c8b0332209e9b
+  opcSkillsRev: 58749f05ae39da8201b131cd9bd2049291cf8905
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 466ea6dfd4aecb5c19caf29e7595e752c66c1a5d
