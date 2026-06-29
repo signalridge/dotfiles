@@ -98,9 +98,9 @@ fzf_pick_account() {
     local result raw
     if ! raw=$({
         case "$list_type" in
-            token) build_account_list_with_token ;;
-            plain) printf '%s\n' "${ACCOUNTS[@]}" ;;
-            *)     build_account_list_with_status ;;
+            (token) build_account_list_with_token ;;
+            (plain) printf '%s\n' "${ACCOUNTS[@]}" ;;
+            (*)     build_account_list_with_status ;;
         esac
         echo -e "${YELLOW}Back${NC}"
     } | fzf --ansi \
