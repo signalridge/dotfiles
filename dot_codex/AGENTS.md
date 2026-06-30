@@ -15,7 +15,7 @@ Repo-native first; defaults advisory (`uv/ruff`, `nix`, `aqua/mise`, `gh/ghq`); 
 - Paper/research -> arxiv
 - Repo Q&A -> DeepWiki (public) / gitmcp (private)
 - Doc→Markdown -> markitdown
-- Team chat/search -> slack-explorer
+- Team chat -> slack
 - Notes/knowledge base -> Notion
 - Database/SQL -> postgres
 

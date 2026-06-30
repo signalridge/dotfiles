@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
-# mcp-reaper — reap orphaned Claude Code MCP servers.
+# mcp-reaper — reap orphaned Claude Code / Codex MCP servers.
 #
-# MCP stdio servers are spawned per session via `bunx <pkg>-mcp` (see mcp-tavily,
-# mcp-context7, ...). On a clean exit Claude Code closes their stdio pipe and they
-# die. On a crash / SIGKILL they get reparented to launchd (PID 1) and linger
-# forever, accumulating across sessions.
+# MCP servers are spawned per session:
+#   * node servers via `bunx <pkg>-mcp` (tavily / codex-mcp / claude-code / slack)
+#   * serena via `uv tool uvx ... serena start-mcp-server` (a uv launcher + python child)
+# On a clean exit the client closes their stdio pipe and they die. On a crash /
+# SIGKILL they get reparented to launchd (PID 1) and linger forever, piling up
+# across sessions.
 #
-# This script:
-#   1. logs a CPU/mem snapshot of every MCP-related process (diagnostics), then
-#   2. kills only the orphans — processes whose parent PID is 1.
-#
-# Safe by design: a process whose parent is a live `claude` session has a real
-# PPID (not 1), so it is never touched. Only crash-orphaned servers are reaped.
+# This script logs a CPU/mem snapshot of every MCP-related process (diagnostics),
+# then kills only the orphans — processes whose parent PID is 1. A process under a
+# live session has a real PPID (not 1) and is never touched, so the long-running
+# sessions you keep on purpose are safe. Two passes catch serena's python child,
+# which only reparents to launchd once its orphaned uv launcher is killed.
 
 set -uo pipefail
 
@@ -21,14 +22,16 @@ mkdir -p "$LOG_DIR"
 
 ts() { date '+%Y-%m-%dT%H:%M:%S%z'; }
 
-# MCP servers launched from bunx temp dirs (tavily / context7 / codex / claude-code, ...).
-PATTERN='bunx-[0-9]+-.*mcp'
+# node/bunx MCP servers + serena (uv/python) MCP servers.
+PATTERN='bunx-[0-9]+-.*mcp|serena.*start-mcp-server'
 
-# Snapshot every match, sorted by %CPU desc. Columns: PID PPID %CPU %MEM ELAPSED COMMAND.
-snapshot="$(ps -axo pid=,ppid=,pcpu=,pmem=,etime=,command= \
-  | grep -E "$PATTERN" | grep -v grep \
-  | sort -k3 -nr)"
+match_procs() {
+  ps -axww -o pid=,ppid=,pcpu=,pmem=,etime=,command= \
+    | grep -E "$PATTERN" | grep -v grep
+}
 
+# Snapshot every match, sorted by %CPU desc (diagnostics for "who eats CPU").
+snapshot="$(match_procs | sort -k3 -nr)"
 if [ -n "$snapshot" ]; then
   {
     echo "── $(ts) MCP processes (sorted by %CPU) — PID PPID %CPU %MEM ELAPSED COMMAND ──"
@@ -36,13 +39,20 @@ if [ -n "$snapshot" ]; then
   } >>"$LOG"
 fi
 
-# Orphans: PPID == 1 means the spawning Claude Code session is gone.
-orphans="$(printf '%s\n' "$snapshot" | awk 'NF && $2==1 {print $1}')"
-
-if [ -n "$orphans" ]; then
-  echo "$(ts) reaping orphaned MCP servers: $(printf '%s ' $orphans)" >>"$LOG"
+# Reap orphans (PPID == 1). Two passes: killing an orphaned serena uv launcher
+# reparents its python child to launchd, caught on the second pass.
+reaped=""
+for _pass in 1 2; do
+  orphans="$(match_procs | awk 'NF && $2==1 {print $1}')"
+  [ -n "$orphans" ] || break
   # shellcheck disable=SC2086
   kill -9 $orphans 2>/dev/null || true
+  reaped="$reaped $orphans"
+  sleep 1
+done
+
+if [ -n "${reaped// /}" ]; then
+  echo "$(ts) reaped orphaned MCP servers:$reaped" >>"$LOG"
 else
   echo "$(ts) no orphaned MCP servers" >>"$LOG"
 fi

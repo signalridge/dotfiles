@@ -1328,7 +1328,7 @@ fi
 # List MCP servers (bunx temp dirs) with CPU/mem; flag orphans (parent = launchd).
 mcp-ps() {
     ps -axo pid=,ppid=,pcpu=,pmem=,etime=,command= |
-        grep -E 'bunx-[0-9]+-.*mcp' | grep -v grep |
+        grep -E 'bunx-[0-9]+-.*mcp|serena.*start-mcp-server' | grep -v grep |
         sort -k3 -nr |
         awk '{
             tag = ($2 == 1) ? "ORPHAN" : "live"

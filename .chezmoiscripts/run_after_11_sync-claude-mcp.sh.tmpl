@@ -179,10 +179,10 @@ ensure_user_mcp_http() {
 
 ensure_user_mcp_json "slack" '{"command":"bunx","args":["@anthropic/mcp-server-slack"],"env":{"SLACK_BOT_TOKEN":"${SLACK_BOT_TOKEN}","SLACK_TEAM_ID":"${SLACK_TEAM_ID}"}}'
 
-ensure_user_mcp_json "slack-explorer" '{"command":"docker","args":["run","-i","--rm","--pull","always","ghcr.io/shibayu36/slack-explorer-mcp:latest"],"env":{"SLACK_USER_TOKEN":"${SLACK_USER_TOKEN}"}}'
-
 ensure_user_mcp_sse "notion" "https://mcp.notion.com/sse"
-ensure_user_mcp_json "context7" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-context7","args":[]}'
+# context7 runs as a single shared HTTP daemon (com.signalridge.mcp-context7),
+# not one stdio process per session. See private_Library/LaunchAgents.
+ensure_user_mcp_http "context7" "http://127.0.0.1:13711/mcp"
 ensure_user_mcp_json "serena" '{"command":"uvx","args":["--from","git+https://github.com/oraios/serena","serena","start-mcp-server","--context","ide-assistant","--project",".","--enable-web-dashboard","false"]}'
 ensure_user_mcp_json "markitdown" '{"command":"uvx","args":["markitdown-mcp"]}'
 ensure_user_mcp_json "arxiv-mcp-server" '{"command":"uv","args":["tool","run","arxiv-mcp-server"]}'

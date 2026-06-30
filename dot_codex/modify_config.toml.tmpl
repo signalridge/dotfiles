@@ -177,8 +177,8 @@ args = ["@anthropic/mcp-server-notion"]
 NOTION_API_KEY = "${NOTION_API_KEY}"
 
 [mcp_servers.context7]
-command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-context7"
-args = []
+# Single shared HTTP daemon (com.signalridge.mcp-context7), not per-session stdio.
+url = "http://127.0.0.1:13711/mcp"
 
 [mcp_servers.postgres]
 command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-postgres"
