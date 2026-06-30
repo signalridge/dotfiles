@@ -6,7 +6,7 @@ Pragmatic engineering: clarity, correctness, minimal change. Prefer repo convent
 
 Repo-native first; defaults advisory (`uv/ruff`, `nix`, `aqua/mise`, `gh/ghq`); user/repo policy overrides. Treat hook output as instructions — act on the remediation before continuing.
 
-## MCP routing
+## Tool integration routing
 
 - Docs/API -> Context7
 - Web/news -> Tavily
@@ -15,9 +15,8 @@ Repo-native first; defaults advisory (`uv/ruff`, `nix`, `aqua/mise`, `gh/ghq`); 
 - Paper/research -> arxiv
 - Repo Q&A -> DeepWiki (public) / gitmcp (private)
 - Doc→Markdown -> markitdown
-- Team chat -> slack
-- Notes/knowledge base -> Notion
-- Database/SQL -> postgres
+- Team chat -> Slack official app connector/plugin/API
+- Notes/knowledge base -> Notion official MCP/plugin
 
 User preference overrides; fall back when unavailable; no sensitive data in queries.
 

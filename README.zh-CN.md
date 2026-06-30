@@ -54,7 +54,7 @@
 - Claude/Codex wrapper 的 provider 切换：
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
-- 每次 `chezmoi apply` 自动对齐 Claude MCP 配置
+- 每次 `chezmoi apply` 自动对齐工具集成和 Herdr agent 集成
 - GitHub Actions 自动维护依赖版本（versions、flake lock、aqua packages）
 
 ---
@@ -171,7 +171,7 @@
 9. `08` 下载固定版本 nix-index 数据库
 10. `09` macOS：安装/更新 Paperlib
 11. `10` 周期性 Homebrew 更新（7 天间隔）
-12. `11` 同步 Claude MCP servers（仅缺失/不一致时更新）
+12. `11` 同步 AI 工具集成和 Herdr agent 集成
 13. `12` work profile：安装 Azure Functions Core Tools
 14. `13` macOS GUI：重新加载托管的 LaunchAgents
 15. `14` 同步 Herdr plugins
@@ -352,21 +352,25 @@ claude-token --check kimi@private
 codex-token --check deepseek@private
 ```
 
-### MCP 集成
+### 工具集成
 
 - Claude MCP 由 `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl` 自动对齐。
+- Claude Notion/Slack 集成由 `.chezmoiscripts/run_after_11_sync-claude-integration-plugins.sh.tmpl` 作为官方 plugin 安装。
+- Codex Slack 由 `.chezmoiscripts/run_after_11_sync-codex-connector-plugins.sh.tmpl` 作为官方 connector plugin 安装，并启用为 `slack@openai-curated`。
+- Codex、Claude、Pi 的 Herdr agent lifecycle integration 由 `.chezmoiscripts/run_after_11_sync-herdr-integrations.sh.tmpl` 安装；Codex hook 配置保留在 `config.toml`，不使用 `hooks.json`。
 - 仓库提供 MCP wrapper：
   - `~/.local/bin/mcp-context7`
   - `~/.local/bin/mcp-tavily`
-  - `~/.local/bin/mcp-postgres`
 
-#### 任务 -> MCP 路由
+#### 任务 -> 工具路由
 
-| 任务类型                   | 首选 MCP | 回退路径                   |
-| -------------------------- | -------- | -------------------------- |
-| 库 / 框架 / API 文档       | Context7 | Tavily -> 内置 web search  |
-| 通用网页 / 新闻 / 背景调研 | Tavily   | 内置 web search            |
-| 语义级代码导航             | Serena   | repo grep/codesearch + LSP |
+| 任务类型                   | 首选工具               | 回退路径                   |
+| -------------------------- | ---------------------- | -------------------------- |
+| 库 / 框架 / API 文档       | Context7               | Tavily -> 内置 web search  |
+| 通用网页 / 新闻 / 背景调研 | Tavily                 | 内置 web search            |
+| 语义级代码导航             | Serena                 | repo grep/codesearch + LSP |
+| 团队聊天                   | Slack connector/plugin | Slack API 或 web UI        |
+| 笔记 / 知识库              | Notion MCP/plugin      | Notion API 或 web UI       |
 
 ---
 

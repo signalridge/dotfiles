@@ -2,10 +2,9 @@
 
 set -euo pipefail
 
-# (Re)load the systemd --user units for the shared context7 MCP daemon and the
-# orphan reaper. Linux analog of the macOS LaunchAgent loader (13).
+# (Re)load systemd --user units for the orphan reaper. Linux analog of the macOS
+# LaunchAgent loader (13).
 # Re-runs whenever any unit file changes (hashes below).
-# context7.service sha256: {{ include "private_dot_config/systemd/user/mcp-context7.service" | sha256sum }}
 # reaper.service  sha256: {{ include "private_dot_config/systemd/user/mcp-reaper.service" | sha256sum }}
 # reaper.timer    sha256: {{ include "private_dot_config/systemd/user/mcp-reaper.timer" | sha256sum }}
 {{ if eq .chezmoi.os "linux" -}}
@@ -31,15 +30,13 @@ fi
 
 systemctl --user daemon-reload
 
-# Shared context7 HTTP daemon (KeepAlive equivalent).
-systemctl --user enable --now mcp-context7.service
-# Restart so a changed unit takes effect immediately (enable --now won't restart
-# an already-running instance).
-systemctl --user try-restart mcp-context7.service || true
+# The local Context7 HTTP daemon was replaced by the official hosted MCP
+# endpoint. Stop any older user unit left behind by previous installs.
+systemctl --user disable --now mcp-context7.service >/dev/null 2>&1 || true
 
 # Orphan reaper: enable the timer (it pulls in the oneshot service on schedule).
 systemctl --user enable --now mcp-reaper.timer
 systemctl --user try-restart mcp-reaper.timer || true
 
-echo "    enabled mcp-context7.service + mcp-reaper.timer"
+echo "    enabled mcp-reaper.timer"
 {{ end -}}

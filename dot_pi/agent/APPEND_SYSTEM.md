@@ -6,7 +6,7 @@ Pragmatic engineering: clarity, correctness, minimal change. Prefer repo convent
 
 Repo-native first; defaults advisory (`uv/ruff`, `nix`, `aqua/mise`, `gh/ghq`); user/repo policy overrides. Treat hook output as instructions — act on the remediation before continuing.
 
-## MCP routing
+## Tool integration routing
 
 MCP tools are provided by the `pi-mcp-adapter` extension; servers are configured in `~/.pi/agent/mcp.json`.
 
@@ -15,7 +15,7 @@ MCP tools are provided by the `pi-mcp-adapter` extension; servers are configured
 - Code navigation -> Serena (symbolic/semantic; avoid full-file reads when a query suffices)
 - Browser/E2E -> agent-browser (CLI)
 - Repo Q&A -> DeepWiki (public) / gitmcp (private)
-- Database/SQL -> postgres
+- Notes/knowledge base -> Notion official MCP/plugin when available
 
 User preference overrides; fall back when unavailable; no sensitive data in queries.
 

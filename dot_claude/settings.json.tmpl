@@ -19,6 +19,24 @@
 
 {
   "apiKeyHelper": "{{- if and $provider (hasKey $provider "base_url") -}}~/.local/bin/claude-token{{- end -}}",
+  "enabledPlugins": {
+    "notion-workspace-plugin@notion-plugin-marketplace": true,
+    "slack@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-plugins-official": {
+      "source": {
+        "repo": "anthropics/claude-plugins-official",
+        "source": "github"
+      }
+    },
+    "notion-plugin-marketplace": {
+      "source": {
+        "repo": "makenotion/claude-code-notion-plugin",
+        "source": "github"
+      }
+    }
+  },
   "env": {
 {{- /* Third-party providers: use provider base_url + account-configured model settings */ -}}
 {{- if and $provider (hasKey $provider "base_url") }}
@@ -180,6 +198,16 @@
             "type": "command",
             "command": "$HOME/.local/bin/tmux-ai-agent-state claude idle",
             "timeout": 1
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '{{ .chezmoi.homeDir }}/.claude/hooks/herdr-agent-state.sh' session",
+            "timeout": 10
           }
         ]
       }

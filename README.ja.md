@@ -54,7 +54,7 @@
 - Claude/Codex ラッパーの Provider 切替をサポート：
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
-- `chezmoi apply` のたびに Claude MCP を自動同期
+- `chezmoi apply` のたびにツール連携と Herdr agent 連携を自動同期
 - GitHub Actions による依存更新の自動化（versions、flake lock、aqua packages）
 
 ---
@@ -173,7 +173,7 @@
 9. `08` ピン留め済み nix-index DB を導入
 10. `09` macOS: Paperlib をインストール/更新
 11. `10` Homebrew 更新（7 日間隔）
-12. `11` Claude MCP サーバーを同期（差分時のみ更新）
+12. `11` AI ツール連携と Herdr agent 連携を同期
 13. `12` work profile: Azure Functions Core Tools を導入
 14. `13` macOS GUI: 管理対象 LaunchAgents を再読み込み
 15. `14` Herdr plugins を同期
@@ -354,21 +354,25 @@ claude-token --check kimi@private
 codex-token --check deepseek@private
 ```
 
-### MCP 連携
+### ツール連携
 
 - Claude MCP は `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl` によって自動同期されます。
+- Claude の Notion/Slack 連携は `.chezmoiscripts/run_after_11_sync-claude-integration-plugins.sh.tmpl` によって公式 plugin としてインストールされます。
+- Codex Slack は `.chezmoiscripts/run_after_11_sync-codex-connector-plugins.sh.tmpl` によって公式 connector plugin としてインストールされ、`slack@openai-curated` として有効化されます。
+- Codex、Claude、Pi の Herdr agent lifecycle integration は `.chezmoiscripts/run_after_11_sync-herdr-integrations.sh.tmpl` によってインストールされます。Codex の hook 設定は `hooks.json` ではなく `config.toml` に保持します。
 - このリポジトリは次の MCP ラッパーを提供します：
   - `~/.local/bin/mcp-context7`
   - `~/.local/bin/mcp-tavily`
-  - `~/.local/bin/mcp-postgres`
 
-#### タスク -> MCP ルーティング
+#### タスク -> ツールルーティング
 
-| タスク種別                                 | 優先 MCP | フォールバック             |
-| ------------------------------------------ | -------- | -------------------------- |
-| ライブラリ/フレームワーク/API ドキュメント | Context7 | Tavily -> 内蔵 web search  |
-| Web/ニュース/一般調査                      | Tavily   | 内蔵 web search            |
-| シンボリックなコードナビゲーション         | Serena   | repo grep/codesearch + LSP |
+| タスク種別                                 | 優先ツール             | フォールバック             |
+| ------------------------------------------ | ---------------------- | -------------------------- |
+| ライブラリ/フレームワーク/API ドキュメント | Context7               | Tavily -> 内蔵 web search  |
+| Web/ニュース/一般調査                      | Tavily                 | 内蔵 web search            |
+| シンボリックなコードナビゲーション         | Serena                 | repo grep/codesearch + LSP |
+| チームチャット                             | Slack connector/plugin | Slack API または web UI    |
+| ノート/ナレッジベース                      | Notion MCP/plugin      | Notion API または web UI   |
 
 ---
 

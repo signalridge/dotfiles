@@ -77,6 +77,8 @@ project_doc_max_bytes = 65536
 # =============================================================================
 
 [features]
+hooks = true
+apps = true
 shell_tool = true
 memories = true
 fast_mode = false
@@ -98,6 +100,13 @@ skill_env_var_dependency_prompt = true
 
 [tools]
 view_image = true
+
+# =============================================================================
+# Plugins
+# =============================================================================
+
+[plugins."slack@openai-curated"]
+enabled = true
 
 # =============================================================================
 # History Settings
@@ -124,7 +133,10 @@ status_line_use_colors = true
 # =============================================================================
 
 [[hooks.SessionStart]]
-hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1 }]
+hooks = [
+  { type = "command", command = "bash '{{ .chezmoi.homeDir }}/.codex/herdr-agent-state.sh' session", timeout = 10 },
+  { type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1 },
+]
 
 [[hooks.UserPromptSubmit]]
 hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex busy", timeout = 1 }]
@@ -171,18 +183,12 @@ base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 # =============================================================================
 
 [mcp_servers.notion]
-command = "bunx"
-args = ["@anthropic/mcp-server-notion"]
-[mcp_servers.notion.env]
-NOTION_API_KEY = "${NOTION_API_KEY}"
+url = "https://mcp.notion.com/mcp"
 
 [mcp_servers.context7]
-# Single shared HTTP daemon (com.signalridge.mcp-context7), not per-session stdio.
-url = "http://127.0.0.1:13711/mcp"
-
-[mcp_servers.postgres]
-command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-postgres"
-args = []
+# Official hosted Context7 MCP endpoint. The old local HTTP daemon used
+# @upstash/context7-mcp@2.1.1 and can fail repeated Streamable HTTP handshakes.
+url = "https://mcp.context7.com/mcp"
 
 [mcp_servers.serena]
 command = "uvx"
@@ -190,13 +196,6 @@ args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-s
 startup_timeout_sec = 30
 [mcp_servers.serena.env]
 AQUA_GLOBAL_CONFIG = "{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml"
-
-[mcp_servers.slack]
-command = "bunx"
-args = ["@anthropic/mcp-server-slack"]
-[mcp_servers.slack.env]
-SLACK_BOT_TOKEN = "${SLACK_BOT_TOKEN}"
-SLACK_TEAM_ID = "${SLACK_TEAM_ID}"
 
 [mcp_servers.tavily]
 command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily"
@@ -207,12 +206,6 @@ url = "https://gitmcp.io/docs"
 
 [mcp_servers.deepwiki]
 url = "https://mcp.deepwiki.com/mcp"
-
-# Wraps Claude Code as MCP tools so Codex can delegate coding tasks to Claude.
-# https://github.com/xihuai18/claude-code-mcp
-[mcp_servers.claude-code-mcp]
-command = "bunx"
-args = ["@leo000001/claude-code-mcp"]
 
 # =============================================================================
 # Profiles
@@ -263,7 +256,7 @@ preserve_managed_hooks_state() {
       next
     }
     /^\[hooks\.state\./ {
-      in_table = ($0 ~ /:(session_start|user_prompt_submit|stop):/)
+      in_table = ($0 ~ /:(session_start|user_prompt_submit|stop):/ && $0 !~ /\/\.codex\/hooks\.json:/)
       if (in_table) {
         print
       }
@@ -278,7 +271,8 @@ preserve_managed_hooks_state() {
   '
 }
 
-# Preserve trust only for Codex hooks still managed by this template.
+# Preserve Codex hook trust state for inline/project config hooks, but drop
+# legacy standalone hooks.json state now that hooks live in config.toml.
 hooks_state=$(preserve_managed_hooks_state)
 
 # Preserve [projects.*] sections (Codex CLI writes these when trusting a directory).

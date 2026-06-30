@@ -1,0 +1,31 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Sync Codex plugin bundles that provide official app connectors.
+
+echo ":: [11] Syncing Codex connector plugins"
+
+PATH="$HOME/.nix-profile/bin:/opt/homebrew/bin:$HOME/.local/share/aquaproj-aqua/bin:$PATH"
+codex_cmd="$(command -v codex 2>/dev/null || true)"
+
+if [[ -z "$codex_cmd" ]]; then
+    echo "    Skipped (codex not found)"
+    exit 0
+fi
+
+ensure_plugin() {
+    local plugin="$1"
+    local plugin_list
+
+    plugin_list="$("$codex_cmd" plugin list 2>/dev/null || true)"
+    if printf '%s\n' "$plugin_list" | awk -v p="$plugin" '$1 == p && $0 ~ /installed/ { found = 1 } END { exit found ? 0 : 1 }'; then
+        echo "    Plugin exists: $plugin"
+        return 0
+    fi
+
+    "$codex_cmd" plugin add "$plugin" >/dev/null
+    echo "    Plugin installed: $plugin"
+}
+
+ensure_plugin "slack@openai-curated"

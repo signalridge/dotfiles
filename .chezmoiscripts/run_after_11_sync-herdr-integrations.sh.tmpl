@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Install/update Herdr agent lifecycle integrations. Codex hook configuration is
+# kept in ~/.codex/config.toml, so remove the standalone hooks.json that Herdr's
+# installer currently creates.
+
+echo ":: [11] Syncing Herdr agent integrations"
+
+PATH="$HOME/.nix-profile/bin:/opt/homebrew/bin:$HOME/.local/share/aquaproj-aqua/bin:$PATH"
+
+if ! command -v herdr >/dev/null 2>&1; then
+    echo "    Skipped (herdr not found)"
+    exit 0
+fi
+
+install_integration() {
+    local name="$1"
+
+    if herdr integration install "$name" >/dev/null 2>&1; then
+        echo "    Integration installed/updated: $name"
+    else
+        echo "    ! failed: $name (continuing)"
+    fi
+}
+
+install_integration "codex"
+rm -f "$HOME/.codex/hooks.json"
+
+install_integration "claude"
+install_integration "pi"
