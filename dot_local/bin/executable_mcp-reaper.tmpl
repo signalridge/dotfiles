@@ -16,11 +16,24 @@ set -uo pipefail
 # macOS: orphaned children reparent to launchd (PID 1).
 LOG_DIR="${HOME}/Library/Logs"
 ORPHAN_PPIDS="1"
+# The shared context7 daemon is launchd-managed but ALSO has PPID 1 and matches
+# the pattern below — without this exclusion the reaper would kill its own daemon
+# every run (launchd would respawn it: a needless kill/restart loop).
+managed_daemon_pids() {
+  launchctl list com.signalridge.mcp-context7 2>/dev/null \
+    | awk -F= '/"PID"/ { gsub(/[^0-9]/, "", $2); if ($2 != "") print $2 }'
+}
 {{ else -}}
 # Linux: under a systemd --user session the manager is a subreaper, so orphans
 # reparent to it (not always PID 1) — treat both as orphan parents.
 LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/mcp-reaper"
 ORPHAN_PPIDS="1 $(pgrep -u "$(id -u)" -x systemd 2>/dev/null | head -1)"
+# The shared context7 daemon reparents to the same systemd --user manager and
+# matches the pattern below — exclude its MainPID so we never reap our own daemon.
+managed_daemon_pids() {
+  systemctl --user show -p MainPID --value mcp-context7.service 2>/dev/null \
+    | grep -E '^[1-9][0-9]*$' || true
+}
 {{ end -}}
 
 LOG="${LOG_DIR}/mcp-reaper.log"
@@ -36,11 +49,17 @@ match_procs() {
     | grep -E "$PATTERN" | grep -v grep
 }
 
-# PIDs whose parent is in the orphan set (parent session gone).
+# PIDs whose parent is in the orphan set (parent session gone), minus the
+# service-manager-managed context7 daemon (which also looks orphaned).
 orphan_pids() {
-  match_procs | awk -v op="$ORPHAN_PPIDS" '
-    BEGIN { n = split(op, a, " "); for (i = 1; i <= n; i++) if (a[i] != "") o[a[i]] = 1 }
-    NF && ($2 in o) { print $1 }'
+  local protected
+  protected="$(managed_daemon_pids | tr '\n' ' ')"
+  match_procs | awk -v op="$ORPHAN_PPIDS" -v prot="$protected" '
+    BEGIN {
+      n = split(op, a, " "); for (i = 1; i <= n; i++) if (a[i] != "") o[a[i]] = 1
+      m = split(prot, b, " "); for (i = 1; i <= m; i++) if (b[i] != "") p[b[i]] = 1
+    }
+    NF && ($2 in o) && !($1 in p) { print $1 }'
 }
 
 # Snapshot every match, sorted by %CPU desc (diagnostics for "who eats CPU").
