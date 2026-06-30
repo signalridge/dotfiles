@@ -40,6 +40,7 @@ nix-config/modules/host-users.nix
 .chezmoiscripts/02_init.sh
 .chezmoiscripts/09_install-paperlib.sh
 .chezmoiscripts/10_update_homebrew_packages.sh
+.chezmoiscripts/13_load-launch-agents.sh
 
 # macOS-only GUI apps (target paths)
 Library/

@@ -8,10 +8,17 @@ command -v chezmoi >/dev/null 2>&1 || {
     exit 0
 }
 
-out="$(chezmoi ignored --source "$ROOT" --override-data '{"useEncryption":false,"headless":false}')"
-headless_out="$(chezmoi ignored --source "$ROOT" --override-data '{"useEncryption":true,"headless":true}')"
-managed_scripts="$(chezmoi managed --source "$ROOT" --include=scripts)"
-chezmoi_os="$(chezmoi execute-template --source "$ROOT" '{{ .chezmoi.os }}')"
+default_data='{"useEncryption":false,"headless":false}'
+headless_data='{"useEncryption":true,"headless":true}'
+darwin_data='{"chezmoi":{"os":"darwin"},"useEncryption":false,"headless":false}'
+linux_data='{"chezmoi":{"os":"linux"},"useEncryption":false,"headless":false}'
+
+out="$(chezmoi ignored --source "$ROOT" --override-data "$default_data")"
+headless_out="$(chezmoi ignored --source "$ROOT" --override-data "$headless_data")"
+darwin_out="$(chezmoi ignored --source "$ROOT" --override-data "$darwin_data")"
+darwin_managed_scripts="$(chezmoi managed --source "$ROOT" --include=scripts --override-data "$darwin_data")"
+linux_out="$(chezmoi ignored --source "$ROOT" --override-data "$linux_data")"
+linux_managed_scripts="$(chezmoi managed --source "$ROOT" --include=scripts --override-data "$linux_data")"
 
 require_line() {
     local expected="$1"
@@ -48,22 +55,26 @@ require_any_line() {
     exit 1
 }
 
-require_managed_script() {
-    local expected="$1"
-    if ! printf '%s\n' "$managed_scripts" | grep -qxF "$expected"; then
-        echo "expected managed script not found: $expected" >&2
-        echo "--- managed scripts ---" >&2
-        printf '%s\n' "$managed_scripts" >&2
+require_entry_in() {
+    local haystack="$1"
+    local expected="$2"
+    local label="$3"
+    if ! printf '%s\n' "$haystack" | grep -qxF "$expected"; then
+        echo "expected entry not found in $label: $expected" >&2
+        echo "--- $label ---" >&2
+        printf '%s\n' "$haystack" >&2
         exit 1
     fi
 }
 
-forbid_managed_script() {
-    local unexpected="$1"
-    if printf '%s\n' "$managed_scripts" | grep -qxF "$unexpected"; then
-        echo "unexpected managed script found: $unexpected" >&2
-        echo "--- managed scripts ---" >&2
-        printf '%s\n' "$managed_scripts" >&2
+forbid_entry_in() {
+    local haystack="$1"
+    local unexpected="$2"
+    local label="$3"
+    if printf '%s\n' "$haystack" | grep -qxF "$unexpected"; then
+        echo "unexpected entry found in $label: $unexpected" >&2
+        echo "--- $label ---" >&2
+        printf '%s\n' "$haystack" >&2
         exit 1
     fi
 }
@@ -79,13 +90,25 @@ require_line ".chezmoiscripts/06_setup-gopass.sh"
 # Chezmoi may report source entries as either target-style or template/encrypted names.
 require_any_line ".ssh/config" ".ssh/config.tmpl.age"
 
-if [[ "$chezmoi_os" == "darwin" ]]; then
-    require_line ".chezmoiscripts/15_load-systemd-user-units.sh"
-    forbid_managed_script ".chezmoiscripts/15_load-systemd-user-units.sh"
-else
-    forbid_line ".chezmoiscripts/15_load-systemd-user-units.sh"
-    require_managed_script ".chezmoiscripts/15_load-systemd-user-units.sh"
-fi
+# Platform-specific scripts should be selected by .chezmoiignore, not by
+# rendering/running scripts that only print a platform skip message.
+forbid_entry_in "$darwin_out" ".chezmoiscripts/09_install-paperlib.sh" "darwin ignored"
+forbid_entry_in "$darwin_out" ".chezmoiscripts/13_load-launch-agents.sh" "darwin ignored"
+require_entry_in "$darwin_out" ".chezmoiscripts/15_load-systemd-user-units.sh" "darwin ignored"
+require_entry_in "$darwin_managed_scripts" ".chezmoiscripts/09_install-paperlib.sh" "darwin managed scripts"
+require_entry_in "$darwin_managed_scripts" ".chezmoiscripts/13_load-launch-agents.sh" "darwin managed scripts"
+forbid_entry_in "$darwin_managed_scripts" ".chezmoiscripts/15_load-systemd-user-units.sh" "darwin managed scripts"
+
+require_entry_in "$linux_out" ".chezmoiscripts/02_init.sh" "linux ignored"
+require_entry_in "$linux_out" ".chezmoiscripts/09_install-paperlib.sh" "linux ignored"
+require_entry_in "$linux_out" ".chezmoiscripts/10_update_homebrew_packages.sh" "linux ignored"
+require_entry_in "$linux_out" ".chezmoiscripts/13_load-launch-agents.sh" "linux ignored"
+forbid_entry_in "$linux_out" ".chezmoiscripts/15_load-systemd-user-units.sh" "linux ignored"
+forbid_entry_in "$linux_managed_scripts" ".chezmoiscripts/02_init.sh" "linux managed scripts"
+forbid_entry_in "$linux_managed_scripts" ".chezmoiscripts/09_install-paperlib.sh" "linux managed scripts"
+forbid_entry_in "$linux_managed_scripts" ".chezmoiscripts/10_update_homebrew_packages.sh" "linux managed scripts"
+forbid_entry_in "$linux_managed_scripts" ".chezmoiscripts/13_load-launch-agents.sh" "linux managed scripts"
+require_entry_in "$linux_managed_scripts" ".chezmoiscripts/15_load-systemd-user-units.sh" "linux managed scripts"
 
 out="$headless_out"
 require_line ".chezmoiscripts/09_install-paperlib.sh"
