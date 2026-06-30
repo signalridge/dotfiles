@@ -19,6 +19,12 @@ pi:
     # /model, or launch e.g. `pi --provider anthropic --model claude-opus-4-8`.
     defaultProvider: deepseek
     defaultModel: deepseek-v4-pro
+  # ===== Pi packages -> ~/.pi/agent/settings.json packages =====
+  # Pi installs missing packages from this settings field when it resolves
+  # resources. Keep third-party packages explicit here instead of using a
+  # dedicated chezmoi installer script.
+  packages:
+    - npm:pi-mcp-adapter
   # ===== Custom providers -> ~/.pi/agent/models.json =====
   # Providers Pi does not know natively, OR built-in providers for which we want
   # to pin specific models Pi's built-in registry lacks (e.g. DeepSeek V4).

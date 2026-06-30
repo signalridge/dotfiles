@@ -45,7 +45,7 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 
 ## Highlights
 
-- Unified bootstrap pipeline (`.chezmoiscripts/00..12`) with idempotent post-apply maintenance
+- Unified bootstrap pipeline (`.chezmoiscripts/00..15`) with idempotent post-apply maintenance
 - Cross-platform package strategy:
   - Nix user packages on macOS/Linux
   - nix-darwin system config on macOS
@@ -62,7 +62,7 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 ## Why This Repo
 
 - **Profiles everywhere**: `.chezmoidata/` drives `shared` / `work` / `private` packages across Nix, Homebrew, and MAS
-- **End-to-end bootstrap**: staged scripts from `00` to `11` keep setup deterministic and composable
+- **End-to-end bootstrap**: staged scripts from `00` to `15` keep setup deterministic and composable
 - **macOS polish**: nix-darwin system defaults, Homebrew + MAS integration, post-apply maintenance scripts
 - **Workflow guardrails**: pre-commit checks + Claude hooks to reduce risky edits and command misuse
 - **DX automation**: Justfile routines, fzf navigation helpers, AI-assisted commit flows
@@ -140,7 +140,7 @@ This repository combines `chezmoi` templating with Nix-based package management 
 │   ├── versions.yaml           # Pinned tool/plugin revisions
 │   ├── aerospace.yaml          # Aerospace WM data
 │   └── hammerspoon.yaml        # Hammerspoon data
-├── .chezmoiscripts/            # Bootstrap + maintenance pipeline (00..12)
+├── .chezmoiscripts/            # Bootstrap + maintenance pipeline (00..15)
 ├── nix-config/
 │   ├── flake.nix.tmpl
 │   └── modules/
@@ -174,6 +174,10 @@ The `chezmoi` script chain is staged and numbered:
 10. `09` macOS: install/update Paperlib
 11. `10` periodic Homebrew update/upgrade (7-day interval)
 12. `11` sync Claude MCP servers (add/update only when needed)
+13. `12` work profile: install Azure Functions Core Tools
+14. `13` macOS GUI: reload managed LaunchAgents
+15. `14` sync Herdr plugins
+16. `15` Linux: reload systemd user units
 
 ---
 

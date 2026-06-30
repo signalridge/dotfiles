@@ -45,7 +45,7 @@
 
 ## ハイライト
 
-- `.chezmoiscripts/00..12` による統一ブートストラップパイプライン（再実行しても破綻しにくい設計）
+- `.chezmoiscripts/00..15` による統一ブートストラップパイプライン（再実行しても破綻しにくい設計）
 - クロスプラットフォームなパッケージ戦略：
   - macOS/Linux 共通の Nix ユーザーパッケージ
   - macOS の `nix-darwin` システム設定
@@ -62,7 +62,7 @@
 ## なぜこのリポジトリか
 
 - **プロファイル横断管理**: `.chezmoidata/` が `shared` / `work` / `private` を駆動し、Nix・Homebrew・MAS を横断して一元管理
-- **エンドツーエンドブートストラップ**: `00..12` の段階実行で、初期化を再現可能かつ段階的に組み合わせられる形で維持
+- **エンドツーエンドブートストラップ**: `00..15` の段階実行で、初期化を再現可能かつ段階的に組み合わせられる形で維持
 - **macOS 向け最適化**: nix-darwin のシステム既定、Homebrew + MAS 連携、適用後の保守スクリプト
 - **ワークフローガードレール**: pre-commit と Claude Hooks で危険な編集やコマンド誤用を抑止
 - **DX 自動化**: Justfile ルーチン、fzf ナビゲーション、AI 補助コミットフロー
@@ -140,7 +140,7 @@
 │   ├── versions.yaml           # ツール/プラグインのピン留め
 │   ├── aerospace.yaml          # Aerospace WM データ
 │   └── hammerspoon.yaml        # Hammerspoon データ
-├── .chezmoiscripts/            # ブートストラップ/保守パイプライン（00..12）
+├── .chezmoiscripts/            # ブートストラップ/保守パイプライン（00..15）
 ├── nix-config/
 │   ├── flake.nix.tmpl
 │   └── modules/
@@ -174,6 +174,10 @@
 10. `09` macOS: Paperlib をインストール/更新
 11. `10` Homebrew 更新（7 日間隔）
 12. `11` Claude MCP サーバーを同期（差分時のみ更新）
+13. `12` work profile: Azure Functions Core Tools を導入
+14. `13` macOS GUI: 管理対象 LaunchAgents を再読み込み
+15. `14` Herdr plugins を同期
+16. `15` Linux: systemd user units を再読み込み
 
 ---
 

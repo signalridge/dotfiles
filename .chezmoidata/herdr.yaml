@@ -1,4 +1,4 @@
-# Herdr plugins — reinstalled by .chezmoiscripts/run_onchange_after_16_herdr-plugins.sh.tmpl
+# Herdr plugins — reinstalled by .chezmoiscripts/run_onchange_after_14_herdr-plugins.sh.tmpl
 # Plugins are runtime git clones under ~/.config/herdr/plugins (NOT committed); this list
 # reproduces them on every machine. Each entry is `owner/repo[/subdir]` for `herdr plugin install`.
 # NOTE: third-party herdr plugins run UNSANDBOXED (build + runtime as your user). Vet before adding.

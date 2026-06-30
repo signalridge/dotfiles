@@ -2,8 +2,8 @@
   ~/.pi/agent/mcp.json — MCP servers for the pi-mcp-adapter extension.
   Same shape as codex/claude MCP config. stdio servers reuse the shared
   ~/.local/bin/mcp-* wrappers; remote servers use "url". Managed by chezmoi
-  (dot_pi/agent/mcp.json.tmpl). The adapter is installed by
-  .chezmoiscripts/run_onchange_after_13_pi-mcp-adapter.sh.tmpl.
+  (dot_pi/agent/mcp.json.tmpl). The adapter package is declared in
+  .chezmoidata/pi.yaml and merged into ~/.pi/agent/settings.json.
 */ -}}
 {
   "mcpServers": {

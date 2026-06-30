@@ -45,7 +45,7 @@
 
 ## 亮点
 
-- 统一 bootstrap 流程（`.chezmoiscripts/00..12`），并带有幂等维护步骤
+- 统一 bootstrap 流程（`.chezmoiscripts/00..15`），并带有幂等维护步骤
 - 跨平台包管理策略：
   - macOS/Linux 共用 Nix user packages
   - macOS 使用 `nix-darwin` 管理系统配置
@@ -62,7 +62,7 @@
 ## 为什么选择这个仓库
 
 - **Profile 全覆盖**：`.chezmoidata/` 统一驱动 `shared` / `work` / `private`，覆盖 Nix、Homebrew、MAS
-- **端到端引导**：`00..12` 阶段脚本把安装、配置、工具同步串成稳定流水线
+- **端到端引导**：`00..15` 阶段脚本把安装、配置、工具同步串成稳定流水线
 - **macOS 打磨**：nix-darwin 系统项、Homebrew / MAS 联动、应用后维护脚本
 - **工作流护栏**：pre-commit + Claude hooks 组合，降低危险操作概率
 - **DX 自动化**：Justfile、fzf 导航、AI 辅助提交流程
@@ -138,7 +138,7 @@
 │   ├── versions.yaml           # 工具与插件版本固定
 │   ├── aerospace.yaml          # Aerospace WM 数据
 │   └── hammerspoon.yaml        # Hammerspoon 数据
-├── .chezmoiscripts/            # Bootstrap 与维护脚本链（00..12）
+├── .chezmoiscripts/            # Bootstrap 与维护脚本链（00..15）
 ├── nix-config/
 │   ├── flake.nix.tmpl
 │   └── modules/
@@ -172,6 +172,10 @@
 10. `09` macOS：安装/更新 Paperlib
 11. `10` 周期性 Homebrew 更新（7 天间隔）
 12. `11` 同步 Claude MCP servers（仅缺失/不一致时更新）
+13. `12` work profile：安装 Azure Functions Core Tools
+14. `13` macOS GUI：重新加载托管的 LaunchAgents
+15. `14` 同步 Herdr plugins
+16. `15` Linux：重新加载 systemd user units
 
 ---
 
