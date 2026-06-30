@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# mcp-reaper — reap orphaned Claude Code / Codex MCP servers.
+#
+# Rendered by chezmoi per-OS: the log path and the set of "orphan parent" PIDs
+# differ between macOS (launchd) and Linux (systemd --user). The body is shared.
+#
+# MCP servers are spawned per session (node via `bunx <pkg>-mcp`, serena via
+# `uv ... serena start-mcp-server`). On a crash/SIGKILL they are reparented and
+# linger, piling up across sessions. This logs a CPU/mem snapshot, then kills
+# only orphans — never a process under a live session, so the sessions you keep
+# on purpose are safe.
+
+set -uo pipefail
+
+{{ if eq .chezmoi.os "darwin" -}}
+# macOS: orphaned children reparent to launchd (PID 1).
+LOG_DIR="${HOME}/Library/Logs"
+ORPHAN_PPIDS="1"
+{{ else -}}
+# Linux: under a systemd --user session the manager is a subreaper, so orphans
+# reparent to it (not always PID 1) — treat both as orphan parents.
+LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/mcp-reaper"
+ORPHAN_PPIDS="1 $(pgrep -u "$(id -u)" -x systemd 2>/dev/null | head -1)"
+{{ end -}}
+
+LOG="${LOG_DIR}/mcp-reaper.log"
+mkdir -p "$LOG_DIR"
+
+ts() { date '+%Y-%m-%dT%H:%M:%S%z'; }
+
+# node/bunx MCP servers + serena (uv/python) MCP servers.
+PATTERN='bunx-[0-9]+-.*mcp|serena.*start-mcp-server'
+
+match_procs() {
+  ps -axww -o pid=,ppid=,pcpu=,pmem=,etime=,command= \
+    | grep -E "$PATTERN" | grep -v grep
+}
+
+# PIDs whose parent is in the orphan set (parent session gone).
+orphan_pids() {
+  match_procs | awk -v op="$ORPHAN_PPIDS" '
+    BEGIN { n = split(op, a, " "); for (i = 1; i <= n; i++) if (a[i] != "") o[a[i]] = 1 }
+    NF && ($2 in o) { print $1 }'
+}
+
+# Snapshot every match, sorted by %CPU desc (diagnostics for "who eats CPU").
+snapshot="$(match_procs | sort -k3 -nr)"
+if [ -n "$snapshot" ]; then
+  {
+    echo "── $(ts) MCP processes (sorted by %CPU) — PID PPID %CPU %MEM ELAPSED COMMAND ──"
+    echo "$snapshot"
+  } >>"$LOG"
+fi
+
+# Reap orphans. Two passes: killing an orphaned serena uv launcher reparents its
+# python child, caught on the second pass.
+reaped=""
+for _pass in 1 2; do
+  orphans="$(orphan_pids)"
+  [ -n "$orphans" ] || break
+  # shellcheck disable=SC2086
+  kill -9 $orphans 2>/dev/null || true
+  reaped="$reaped $orphans"
+  sleep 1
+done
+
+if [ -n "${reaped// /}" ]; then
+  echo "$(ts) reaped orphaned MCP servers:$reaped" >>"$LOG"
+else
+  echo "$(ts) no orphaned MCP servers" >>"$LOG"
+fi

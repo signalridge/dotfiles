@@ -48,6 +48,10 @@ Library/
 .config/karabiner/
 .config/ghostty/
 .config/hammerspoon/
+{{- else }}
+# Linux-only: systemd --user units have no meaning on macOS (launchd is used
+# there via Library/LaunchAgents). Exclude them from the macOS target.
+.config/systemd/
 {{- end }}
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -1,0 +1,11 @@
+[Unit]
+Description=Reap orphaned Claude Code / Codex MCP servers
+Documentation=man:mcp-reaper
+# Triggered by mcp-reaper.timer; not enabled directly. Logs a CPU/mem snapshot,
+# then kills only orphans (parent session gone) — live sessions are never touched.
+
+[Service]
+Type=oneshot
+# %h = user home; mirrors {{ .chezmoi.homeDir }} in the macOS plist.
+ExecStart=%h/.local/bin/mcp-reaper
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
