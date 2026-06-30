@@ -177,20 +177,26 @@ ensure_user_mcp_http() {
     esac
 }
 
-ensure_user_mcp_json "slack" '{"command":"bunx","args":["@anthropic/mcp-server-slack"],"env":{"SLACK_BOT_TOKEN":"${SLACK_BOT_TOKEN}","SLACK_TEAM_ID":"${SLACK_TEAM_ID}"}}'
+remove_user_mcp_if_present() {
+    local name="$1"
 
-ensure_user_mcp_sse "notion" "https://mcp.notion.com/sse"
-# context7 runs as a single shared HTTP daemon (com.signalridge.mcp-context7),
-# not one stdio process per session. See private_Library/LaunchAgents.
-ensure_user_mcp_http "context7" "http://127.0.0.1:13711/mcp"
+    if [[ ! -f "$CLAUDE_JSON" ]] || ! jq -e --arg n "$name" '.mcpServers[$n]' "$CLAUDE_JSON" >/dev/null 2>&1; then
+        echo "    Absent: $name"
+        return 0
+    fi
+
+    echo "    Removing legacy user MCP: $name"
+    "$claude_cmd" mcp remove -s user "$name" >/dev/null
+}
+
+remove_user_mcp_if_present "slack"
+remove_user_mcp_if_present "notion"
+remove_user_mcp_if_present "codex-mcp"
+
+ensure_user_mcp_http "context7" "https://mcp.context7.com/mcp"
 ensure_user_mcp_json "serena" '{"command":"uvx","args":["--from","git+https://github.com/oraios/serena","serena","start-mcp-server","--context","ide-assistant","--project",".","--enable-web-dashboard","false"]}'
 ensure_user_mcp_json "markitdown" '{"command":"uvx","args":["markitdown-mcp"]}'
 ensure_user_mcp_json "arxiv-mcp-server" '{"command":"uv","args":["tool","run","arxiv-mcp-server"]}'
 ensure_user_mcp_json "tavily" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily","args":[]}'
-ensure_user_mcp_json "postgres" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-postgres","args":[]}'
 ensure_user_mcp_http "gitmcp" "https://gitmcp.io/docs"
 ensure_user_mcp_http "deepwiki" "https://mcp.deepwiki.com/mcp"
-
-# Wraps Codex as MCP tools so Claude can delegate coding tasks to Codex.
-# https://github.com/xihuai18/codex-mcp
-ensure_user_mcp_json "codex-mcp" '{"command":"bunx","args":["@leo000001/codex-mcp"]}'

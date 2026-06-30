@@ -54,7 +54,7 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 - Multi-provider account switching for managed wrappers:
   - `claude-manage` / `claude-with`
   - `codex-manage` / `codex-with`
-- Auto MCP sync for Claude on every `chezmoi apply`
+- Auto tool-integration and Herdr agent-integration sync on every `chezmoi apply`
 - Automated dependency upkeep via GitHub Actions (versions, flake locks, aqua packages)
 
 ---
@@ -173,7 +173,7 @@ The `chezmoi` script chain is staged and numbered:
 9. `08` install pinned nix-index database
 10. `09` macOS: install/update Paperlib
 11. `10` periodic Homebrew update/upgrade (7-day interval)
-12. `11` sync Claude MCP servers (add/update only when needed)
+12. `11` sync AI tool integrations and Herdr agent integrations
 13. `12` work profile: install Azure Functions Core Tools
 14. `13` macOS GUI: reload managed LaunchAgents
 15. `14` sync Herdr plugins
@@ -354,21 +354,25 @@ claude-token --check kimi@private
 codex-token --check deepseek@private
 ```
 
-### MCP Integration
+### Tool Integration
 
 - Claude MCP entries are reconciled by `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl`.
+- Claude Notion/Slack integrations are installed as official plugins by `.chezmoiscripts/run_after_11_sync-claude-integration-plugins.sh.tmpl`.
+- Codex Slack is installed as the official connector plugin by `.chezmoiscripts/run_after_11_sync-codex-connector-plugins.sh.tmpl` and enabled as `slack@openai-curated`.
+- Herdr agent lifecycle integrations for Codex, Claude, and Pi are installed by `.chezmoiscripts/run_after_11_sync-herdr-integrations.sh.tmpl`; Codex keeps hook config in `config.toml`, not `hooks.json`.
 - Wrapper commands provided in this repo:
   - `~/.local/bin/mcp-context7`
   - `~/.local/bin/mcp-tavily`
-  - `~/.local/bin/mcp-postgres`
 
-#### Task -> MCP Routing
+#### Task -> Tool Routing
 
-| Task type                  | Primary MCP | Fallback                      |
-| -------------------------- | ----------- | ----------------------------- |
-| Library/framework/API docs | Context7    | Tavily -> built-in web search |
-| Web/news/general research  | Tavily      | built-in web search           |
-| Symbolic code navigation   | Serena      | repo grep/codesearch + LSP    |
+| Task type                  | Primary tool           | Fallback                      |
+| -------------------------- | ---------------------- | ----------------------------- |
+| Library/framework/API docs | Context7               | Tavily -> built-in web search |
+| Web/news/general research  | Tavily                 | built-in web search           |
+| Symbolic code navigation   | Serena                 | repo grep/codesearch + LSP    |
+| Team chat                  | Slack connector/plugin | Slack API or web UI           |
+| Notes/knowledge base       | Notion MCP/plugin      | Notion API or web UI          |
 
 ---
 
