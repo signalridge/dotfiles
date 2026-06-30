@@ -1341,7 +1341,7 @@ mcp-ps() {
 # Reap orphaned MCP servers now (only parent = launchd; live sessions untouched).
 mcp-reap() {
     if [[ -x "${HOME}/.local/bin/mcp-reaper" ]]; then
-        "${HOME}/.local/bin/mcp-reaper" && echo "mcp-reap done — log: ~/Library/Logs/mcp-reaper.log"
+        "${HOME}/.local/bin/mcp-reaper" && echo "mcp-reap done (see mcp-reaper.log)"
     else
         echo "mcp-reaper not installed; run: chezmoi apply" >&2
         return 1
