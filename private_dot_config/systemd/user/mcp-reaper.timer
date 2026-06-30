@@ -1,0 +1,14 @@
+[Unit]
+Description=Reap orphaned MCP servers every 2 hours
+Documentation=man:mcp-reaper
+
+[Timer]
+# 2 min after the user service manager starts, then every 2 hours (matches the
+# macOS plist StartInterval=7200). Persistent=true catches up a missed run after
+# the machine was asleep/off, like launchd.
+OnStartupSec=2min
+OnUnitActiveSec=2h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

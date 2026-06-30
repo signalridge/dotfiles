@@ -1,0 +1,47 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# (Re)load the systemd --user units for the shared context7 MCP daemon and the
+# orphan reaper. Linux analog of the macOS LaunchAgent loaders (16/17).
+# Re-runs whenever any unit file changes (hashes below).
+# context7.service sha256: {{ include "private_dot_config/systemd/user/mcp-context7.service" | sha256sum }}
+# reaper.service  sha256: {{ include "private_dot_config/systemd/user/mcp-reaper.service" | sha256sum }}
+# reaper.timer    sha256: {{ include "private_dot_config/systemd/user/mcp-reaper.timer" | sha256sum }}
+{{ if eq .chezmoi.os "linux" -}}
+echo ":: [18] (re)loading systemd --user MCP units"
+
+if ! command -v systemctl >/dev/null 2>&1; then
+    echo "    systemctl not found, skipping"
+    exit 0
+fi
+
+# Need a running user service manager (D-Bus) to talk to. Absent in minimal
+# containers / non-systemd hosts — skip gracefully there.
+if ! systemctl --user show-environment >/dev/null 2>&1; then
+    echo "    no systemd --user instance available, skipping"
+    exit 0
+fi
+
+# Keep the user manager alive after logout so the timer + daemon persist on a
+# headless server (no graphical session pinning it).
+if command -v loginctl >/dev/null 2>&1; then
+    loginctl enable-linger "$(id -un)" >/dev/null 2>&1 || true
+fi
+
+systemctl --user daemon-reload
+
+# Shared context7 HTTP daemon (KeepAlive equivalent).
+systemctl --user enable --now mcp-context7.service
+# Restart so a changed unit takes effect immediately (enable --now won't restart
+# an already-running instance).
+systemctl --user try-restart mcp-context7.service || true
+
+# Orphan reaper: enable the timer (it pulls in the oneshot service on schedule).
+systemctl --user enable --now mcp-reaper.timer
+systemctl --user try-restart mcp-reaper.timer || true
+
+echo "    enabled mcp-context7.service + mcp-reaper.timer"
+{{ else -}}
+echo ":: [18] systemd --user MCP units skipped (Linux only)"
+{{ end -}}
