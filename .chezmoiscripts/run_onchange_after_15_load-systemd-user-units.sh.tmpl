@@ -3,13 +3,13 @@
 set -euo pipefail
 
 # (Re)load the systemd --user units for the shared context7 MCP daemon and the
-# orphan reaper. Linux analog of the macOS LaunchAgent loaders (16/17).
+# orphan reaper. Linux analog of the macOS LaunchAgent loader (13).
 # Re-runs whenever any unit file changes (hashes below).
 # context7.service sha256: {{ include "private_dot_config/systemd/user/mcp-context7.service" | sha256sum }}
 # reaper.service  sha256: {{ include "private_dot_config/systemd/user/mcp-reaper.service" | sha256sum }}
 # reaper.timer    sha256: {{ include "private_dot_config/systemd/user/mcp-reaper.timer" | sha256sum }}
 {{ if eq .chezmoi.os "linux" -}}
-echo ":: [18] (re)loading systemd --user MCP units"
+echo ":: [15] (re)loading systemd --user MCP units"
 
 if ! command -v systemctl >/dev/null 2>&1; then
     echo "    systemctl not found, skipping"
@@ -43,5 +43,5 @@ systemctl --user try-restart mcp-reaper.timer || true
 
 echo "    enabled mcp-context7.service + mcp-reaper.timer"
 {{ else -}}
-echo ":: [18] systemd --user MCP units skipped (Linux only)"
+echo ":: [15] systemd --user MCP units skipped (Linux only)"
 {{ end -}}
