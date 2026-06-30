@@ -40,6 +40,7 @@ nix-config/modules/host-users.nix
 .chezmoiscripts/02_init.sh
 .chezmoiscripts/09_install-paperlib.sh
 .chezmoiscripts/10_update_homebrew_packages.sh
+.chezmoiscripts/13_load-launch-agents.sh
 
 # macOS-only GUI apps (target paths)
 Library/
@@ -50,7 +51,9 @@ Library/
 .config/hammerspoon/
 {{- else }}
 # Linux-only: systemd --user units have no meaning on macOS (launchd is used
-# there via Library/LaunchAgents). Exclude them from the macOS target.
+# there via Library/LaunchAgents). Exclude the script and units from the macOS
+# target so the Linux-only script is not rendered or executed during apply.
+.chezmoiscripts/15_load-systemd-user-units.sh
 .config/systemd/
 {{- end }}
 
