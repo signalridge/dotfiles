@@ -1318,3 +1318,32 @@ if command -v aichat >/dev/null 2>&1; then
     zle -N _aichat_zsh_widget
     bindkey '\ee' _aichat_zsh_widget
 fi
+
+# ─────────────────────────────────────────────────────────────
+# Claude Code MCP process hygiene
+# A LaunchAgent (com.signalridge.mcp-reaper) reaps orphaned MCP
+# servers every 2 hours; these are for on-demand inspection/cleanup.
+# ─────────────────────────────────────────────────────────────
+
+# List MCP servers (bunx temp dirs) with CPU/mem; flag orphans (parent = launchd).
+mcp-ps() {
+    ps -axo pid=,ppid=,pcpu=,pmem=,etime=,command= |
+        grep -E 'bunx-[0-9]+-.*mcp' | grep -v grep |
+        sort -k3 -nr |
+        awk '{
+            tag = ($2 == 1) ? "ORPHAN" : "live"
+            cmd = ""
+            for (i = 6; i <= NF; i++) cmd = cmd $i " "
+            printf "%-7s ppid=%-7s cpu=%-5s mem=%-5s %-9s %-6s %s\n", $1, $2, $3, $4, $5, tag, cmd
+          }'
+}
+
+# Reap orphaned MCP servers now (only parent = launchd; live sessions untouched).
+mcp-reap() {
+    if [[ -x "${HOME}/.local/bin/mcp-reaper" ]]; then
+        "${HOME}/.local/bin/mcp-reaper" && echo "mcp-reap done — log: ~/Library/Logs/mcp-reaper.log"
+    else
+        echo "mcp-reaper not installed; run: chezmoi apply" >&2
+        return 1
+    fi
+}
