@@ -50,7 +50,9 @@ Library/
 .config/hammerspoon/
 {{- else }}
 # Linux-only: systemd --user units have no meaning on macOS (launchd is used
-# there via Library/LaunchAgents). Exclude them from the macOS target.
+# there via Library/LaunchAgents). Exclude the script and units from the macOS
+# target so the Linux-only script is not rendered or executed during apply.
+.chezmoiscripts/15_load-systemd-user-units.sh
 .config/systemd/
 {{- end }}
 

@@ -42,6 +42,4 @@ systemctl --user enable --now mcp-reaper.timer
 systemctl --user try-restart mcp-reaper.timer || true
 
 echo "    enabled mcp-context7.service + mcp-reaper.timer"
-{{ else -}}
-echo ":: [15] systemd --user MCP units skipped (Linux only)"
 {{ end -}}

@@ -10,6 +10,8 @@ command -v chezmoi >/dev/null 2>&1 || {
 
 out="$(chezmoi ignored --source "$ROOT" --override-data '{"useEncryption":false,"headless":false}')"
 headless_out="$(chezmoi ignored --source "$ROOT" --override-data '{"useEncryption":true,"headless":true}')"
+managed_scripts="$(chezmoi managed --source "$ROOT" --include=scripts)"
+chezmoi_os="$(chezmoi execute-template --source "$ROOT" '{{ .chezmoi.os }}')"
 
 require_line() {
     local expected="$1"
@@ -46,6 +48,26 @@ require_any_line() {
     exit 1
 }
 
+require_managed_script() {
+    local expected="$1"
+    if ! printf '%s\n' "$managed_scripts" | grep -qxF "$expected"; then
+        echo "expected managed script not found: $expected" >&2
+        echo "--- managed scripts ---" >&2
+        printf '%s\n' "$managed_scripts" >&2
+        exit 1
+    fi
+}
+
+forbid_managed_script() {
+    local unexpected="$1"
+    if printf '%s\n' "$managed_scripts" | grep -qxF "$unexpected"; then
+        echo "unexpected managed script found: $unexpected" >&2
+        echo "--- managed scripts ---" >&2
+        printf '%s\n' "$managed_scripts" >&2
+        exit 1
+    fi
+}
+
 # Always ignored (repo-only content).
 require_line "docs"
 require_line "tests"
@@ -56,6 +78,14 @@ require_line ".chezmoiscripts/01_setup-encryption-key.sh"
 require_line ".chezmoiscripts/06_setup-gopass.sh"
 # Chezmoi may report source entries as either target-style or template/encrypted names.
 require_any_line ".ssh/config" ".ssh/config.tmpl.age"
+
+if [[ "$chezmoi_os" == "darwin" ]]; then
+    require_line ".chezmoiscripts/15_load-systemd-user-units.sh"
+    forbid_managed_script ".chezmoiscripts/15_load-systemd-user-units.sh"
+else
+    forbid_line ".chezmoiscripts/15_load-systemd-user-units.sh"
+    require_managed_script ".chezmoiscripts/15_load-systemd-user-units.sh"
+fi
 
 out="$headless_out"
 require_line ".chezmoiscripts/09_install-paperlib.sh"
