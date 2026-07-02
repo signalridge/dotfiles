@@ -14,12 +14,12 @@ versions:
   paperlib: 3.1.12
   claudeWshobsonAgentsRev: 5cc2549a50fc672230efd0a0307e2fd27ffba792
   claudeWshobsonAgentsSha256: c65f98eaede6979e684def3d7c97c0327cef9cdeb9fb66b18fe63c5369004ee3
-  claudeAnthropicsSkillsRev: 35414756ca55738e050562e272a6bbc6273aa926
-  claudeAnthropicsSkillsSha256: 1dc9e601025dc0a4e3f5e7c6f8f68955a7cba040e101b2ab0ef269ed517857ff
-  claudeBaoyuSkillsRev: c9a50cc908d0473f5d754efdbe08cbe387714f63
+  claudeAnthropicsSkillsRev: 9d2f1ae187231d8199c64b5b762e1bdf2244733d
+  claudeAnthropicsSkillsSha256: d3369ba9df41ec79bccc1ca98c63cd7c4fe866718670f34e149b2c0acc9e4c0a
+  claudeBaoyuSkillsRev: a4e78af8136fa0bbfd7a8243d2f6813b4b6398c9
   phurynPmSkillsRev: a0cd730d4c61e519ca8568b172334402257a74a9
-  uiUxProMaxSkillRev: 3effe971c07a20658952e304099557523bdf9e44
-  uiUxProMaxSkillSha256: 5cdc3da58608eff8b8d2721c813355147aca6081142d42c4340c35805b71bdb1
+  uiUxProMaxSkillRev: d7e37dd3598de748a4ec789efc42cff0409a9ac0
+  uiUxProMaxSkillSha256: 012433fe864f0ea7ea5302275849f2446bbe2d45ff73f02628408683c020b681
   openaiSkillsRev: 49f948faa9258a0c61caceaf225e179651397431
   huggingfaceSkillsRev: 35e8c35a1ae5b462e0bb23d444d25569c3bb6700
   getsentrySkillsRev: 5a64b36c62d042d3981b7937d9d6ca7bd1753b9a
@@ -29,16 +29,16 @@ versions:
   vercelLabsNextSkillsRev: b76d687cf3e026eac3b1032f610f06b47a56377c
   vercelLabsAgentBrowserRev: ed2e10598c9064aecfaeb7cf21b540684db4be2c
   supabaseAgentSkillsRev: 1356046015476711a769601079262b5635929427
-  expoSkillsRev: f5ed81a2da9082ca9d34fdd6daadc27037a733e7
-  microsoftSkillsRev: 68996f2a82d0af54e1fbede408af3726ec5b653e
-  sickn33AntigravitySkillsRev: b4e58904aa84c26e3aa679e2fababad36f95fd4d
+  expoSkillsRev: 1f9951197dc6acff61c4f0f19521fa0e62c33e51
+  microsoftSkillsRev: 5a6104bd49d8fd4e733a30952953fd1cf9f16e62
+  sickn33AntigravitySkillsRev: 89c32f4c0b9ed015e32316ae24aade58628f919f
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: bfb0f365d14f5ed63416d29aa3abbb21a613f5cb
   dailyDevSkillsRev: 192dae2b904fd4a4e8b9d212474f34c70710e28d
-  opcSkillsRev: 8b5cf1ce2d7dc053058bd8bf2c560441418d4af5
+  opcSkillsRev: 5b818d8ce1697c6eb9b581e18f206fceb78e320e
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
-  samberCcSkillsGolangRev: 466ea6dfd4aecb5c19caf29e7595e752c66c1a5d
+  samberCcSkillsGolangRev: 9cfe9ad5246201fb651d5495202666bbcf3023cf
   affaanEccRev: 81af40761939056ab3dc54732fd4f562a27309d0
   actionbookRustSkillsRev: fa60f7931223646fb71c4586b4a6c8545016076a
   dpearsonSwiftSkillsRev: cea0bd88a298927ee9653c9bc5f17ca85aefdbc4
@@ -46,4 +46,4 @@ versions:
   bobmatnycMpmSkillsRev: d8c8001f001b843d101f645f95cb784c1270ae08
   humanizerEnRev: 1b48564898e999219882660237fde01bf4843a0f
   humanizerJaRev: 1b850cfe8529f7836025b2edd15b3d64447f8fb6
-  quAiWeiRev: 486c80ed6c6aaee541a7a92703add99d0590cd89
+  quAiWeiRev: ed35e74629c7f0337fa30b85660fe59adef291ff
