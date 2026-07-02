@@ -236,7 +236,7 @@ alias take="mkcd" # Alternative name
 # ─────────────────────────────────────────────────────────────
 # aicommit - Generate commit message with AI CLI
 # Usage: aicommit [--dry-run|-n] [provider] [type]
-# Providers: codex (default), gemini, claude, auto
+# Providers: codex (default), claude, auto
 # Type: optional prefix override (wip, feat, fix, chore, etc.)
 # Config: AICOMMIT_PROVIDER env var
 # Note: For context-aware commits in Claude Code, use /commit command
@@ -250,7 +250,7 @@ aicommit() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
         --dry-run | -n) dry_run=true ;;
-        claude | codex | gemini | auto) provider="$1" ;;
+        claude | codex | auto) provider="$1" ;;
         *) [[ -z "$type_override" ]] && type_override="$1" ;;
         esac
         shift
@@ -299,7 +299,7 @@ Return ONLY the commit message, nothing else."
     # Determine provider order
     local providers=()
     if [[ "$provider" == "auto" ]]; then
-        providers=(gemini claude codex)
+        providers=(claude codex)
     else
         providers=("$provider")
     fi
@@ -326,14 +326,6 @@ Return ONLY the commit message, nothing else."
             message=$(head -1 "$tmp_out" 2>/dev/null)
             rm -f "$tmp_out"
             [[ -z "$message" ]] && continue
-            ;;
-        gemini)
-            command -v gemini &>/dev/null || continue
-            # gemini-2.5-flash: fast, 1M context; --sandbox disables agentic mode
-            error_output=$(gemini -m gemini-2.5-flash -o text --sandbox "$prompt" 2>&1) || continue
-            [[ "$error_output" == *"error"* || "$error_output" == *"Error"* ]] && continue
-            # Skip "Loaded cached credentials" line
-            message=$(echo "$error_output" | grep -v "^Loaded" | head -1)
             ;;
         esac
     done

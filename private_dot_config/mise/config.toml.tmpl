@@ -58,9 +58,6 @@ lua = "5.4"
 # HAPI CLI for remote control of local AI coding sessions
 "npm:@twsxtd/hapi" = "latest"
 
-# Gemini CLI managed via npm backend (replaces nix gemini-cli)
-"npm:@google/gemini-cli" = "latest"
-
 # Pi coding agent (earendil-works). Binary is `pi`. Requires node >=22.19,
 # satisfied by `node = "lts"` above. Auth/config under ~/.pi/agent (chezmoi-managed).
 "npm:@earendil-works/pi-coding-agent" = "latest"
@@ -102,9 +99,7 @@ always_keep_install = false
 # CAVEAT: this switch is global (no per-package opt-out). bun also skips
 # package lifecycle scripts by default — if a tool that downloads a binary in
 # postinstall goes missing after `mise install`, add `bun_args = "--trust"` to
-# that specific tool entry. Known risk: @google/gemini-cli has bun-install
-# issues; verify `gemini --version` after switching, and revert this to "npm"
-# if it breaks.
+# that specific tool entry.
 package_manager = "bun"
 
 [env]

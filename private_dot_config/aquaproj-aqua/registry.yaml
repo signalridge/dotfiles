@@ -7,7 +7,7 @@ packages:
   - type: github_release
     repo_owner: signalridge
     repo_name: slipway
-    description: Spec-driven development with full lifecycle accountability for Claude, Codex, Cursor & Gemini
+    description: Spec-driven development with full lifecycle accountability for Claude, Codex & Cursor
     asset: "slipway_{{trimV .Version}}_{{.OS}}_{{.Arch}}.tar.gz"
     format: tar.gz
     files:

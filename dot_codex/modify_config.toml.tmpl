@@ -197,6 +197,11 @@ startup_timeout_sec = 30
 [mcp_servers.serena.env]
 AQUA_GLOBAL_CONFIG = "{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml"
 
+[mcp_servers.codegraph]
+command = "bunx"
+args = ["@colbymchenry/codegraph@1.2.0", "serve", "--mcp"]
+startup_timeout_sec = 60
+
 [mcp_servers.tavily]
 command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily"
 args = []
