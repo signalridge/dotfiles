@@ -32,8 +32,6 @@ hammerspoon:
     work:
       - app: DBeaver
         ime: en
-      - app: Cursor
-        ime: en
       - app: Obsidian
         ime: jp
       # Browsers/Communication -> Japanese for work
