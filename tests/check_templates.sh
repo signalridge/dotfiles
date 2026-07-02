@@ -81,7 +81,12 @@ while IFS= read -r -d "" template_path; do
         ;;
     esac
     render_template "$template_path" "$RENDER_ROOT/${template_path%.tmpl}" || true
-done < <(git -C "$ROOT" ls-files -z '*.tmpl')
+done < <(
+    git -C "$ROOT" ls-files -z --cached --others --exclude-standard '*.tmpl' |
+        while IFS= read -r -d "" template_path; do
+            [[ -f "$ROOT/$template_path" ]] && printf '%s\0' "$template_path"
+        done
+)
 
 if ((${#render_failed_files[@]} > 0)); then
     echo "" >&2

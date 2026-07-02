@@ -356,10 +356,10 @@ codex-token --check deepseek@private
 
 ### Tool Integration
 
-- Claude MCP entries are reconciled by `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl`.
+- Claude MCP entries are reconciled by `.chezmoiscripts/run_after_12_sync-claude-mcp.sh.tmpl`.
 - Claude Notion/Slack integrations are installed as official plugins by `.chezmoiscripts/run_after_11_sync-claude-integration-plugins.sh.tmpl`.
-- Codex Slack is installed as the official connector plugin by `.chezmoiscripts/run_after_11_sync-codex-connector-plugins.sh.tmpl` and enabled as `slack@openai-curated`.
-- Herdr agent lifecycle integrations for Codex, Claude, and Pi are installed by `.chezmoiscripts/run_after_11_sync-herdr-integrations.sh.tmpl`; Codex keeps hook config in `config.toml`, not `hooks.json`.
+- Codex Slack is installed as the official connector plugin by `.chezmoiscripts/run_after_13_sync-codex-connector-plugins.sh.tmpl` and enabled as `slack@openai-curated`.
+- Herdr agent lifecycle integrations for Codex, Claude, and Pi are installed by `.chezmoiscripts/run_after_14_sync-herdr-integrations.sh.tmpl`; Codex keeps hook config in `config.toml`, not `hooks.json`.
 - Wrapper commands provided in this repo:
   - `~/.local/bin/mcp-context7`
   - `~/.local/bin/mcp-tavily`

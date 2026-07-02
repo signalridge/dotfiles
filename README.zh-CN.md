@@ -354,10 +354,10 @@ codex-token --check deepseek@private
 
 ### 工具集成
 
-- Claude MCP 由 `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl` 自动对齐。
+- Claude MCP 由 `.chezmoiscripts/run_after_12_sync-claude-mcp.sh.tmpl` 自动对齐。
 - Claude Notion/Slack 集成由 `.chezmoiscripts/run_after_11_sync-claude-integration-plugins.sh.tmpl` 作为官方 plugin 安装。
-- Codex Slack 由 `.chezmoiscripts/run_after_11_sync-codex-connector-plugins.sh.tmpl` 作为官方 connector plugin 安装，并启用为 `slack@openai-curated`。
-- Codex、Claude、Pi 的 Herdr agent lifecycle integration 由 `.chezmoiscripts/run_after_11_sync-herdr-integrations.sh.tmpl` 安装；Codex hook 配置保留在 `config.toml`，不使用 `hooks.json`。
+- Codex Slack 由 `.chezmoiscripts/run_after_13_sync-codex-connector-plugins.sh.tmpl` 作为官方 connector plugin 安装，并启用为 `slack@openai-curated`。
+- Codex、Claude、Pi 的 Herdr agent lifecycle integration 由 `.chezmoiscripts/run_after_14_sync-herdr-integrations.sh.tmpl` 安装；Codex hook 配置保留在 `config.toml`，不使用 `hooks.json`。
 - 仓库提供 MCP wrapper：
   - `~/.local/bin/mcp-context7`
   - `~/.local/bin/mcp-tavily`
