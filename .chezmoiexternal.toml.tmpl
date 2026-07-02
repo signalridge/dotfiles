@@ -647,17 +647,6 @@
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
-# sickn33/antigravity-awesome-skills aws deployment workflow (non-MCP)
-# ------------------------------------------------------------------------------
-[".harnesses/skills/{{ index $cat "aws-serverless" }}/aws-serverless"]
-    type = "archive"
-    url = "https://github.com/sickn33/antigravity-awesome-skills/archive/{{ $.versions.sickn33AntigravitySkillsRev }}.tar.gz"
-    exact = true
-    stripComponents = 3
-    include = ["antigravity-awesome-skills-*/skills/aws-serverless/**"]
-    refreshPeriod = "168h"
-
-# ------------------------------------------------------------------------------
 # xdevplatform/xurl official X API skill
 # - Shared harness library under ~/.harnesses/skills/social/
 # - Pinned to the xurl v1.1.1 release commit so skill instructions match the CLI

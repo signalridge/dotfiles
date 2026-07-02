@@ -49,9 +49,13 @@ MODIFY_SCRIPT="$TMP_ROOT/modify_config.sh"
 RENDERED="$TMP_ROOT/config.toml"
 CLAUDE_SETTINGS="$TMP_ROOT/settings.json"
 DEEPSEEK_CLAUDE_SETTINGS="$TMP_ROOT/settings-deepseek.json"
+PI_MCP="$TMP_ROOT/pi-mcp.json"
+CURSOR_MCP="$TMP_ROOT/cursor-mcp.json"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_codex/modify_config.toml.tmpl" >"$MODIFY_SCRIPT"
 bash "$MODIFY_SCRIPT" </dev/null >"$RENDERED"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_claude/settings.json.tmpl" >"$CLAUDE_SETTINGS"
+chezmoi execute-template --source "$ROOT" <"$ROOT/dot_pi/agent/mcp.json.tmpl" >"$PI_MCP"
+chezmoi execute-template --source "$ROOT" <"$ROOT/dot_cursor/mcp.json.tmpl" >"$CURSOR_MCP"
 
 assert_file_contains "$RENDERED" 'model = "gpt-5.5"'
 assert_file_contains "$RENDERED" 'model_reasoning_effort = "xhigh"'
@@ -68,6 +72,9 @@ assert_file_contains "$RENDERED" '[model_providers.krill]'
 assert_file_contains "$RENDERED" 'base_url = "https://api.krill-ai.com/codex/v1"'
 assert_file_contains "$RENDERED" 'requires_openai_auth = true'
 assert_file_contains "$RENDERED" 'wire_api = "responses"'
+assert_file_contains "$RENDERED" '[mcp_servers.codegraph]'
+assert_file_contains "$RENDERED" 'command = "bunx"'
+assert_file_contains "$RENDERED" 'args = ["@colbymchenry/codegraph@1.2.0", "serve", "--mcp"]'
 
 assert_file_contains "$CLAUDE_SETTINGS" '"UserPromptSubmit"'
 assert_file_contains "$CLAUDE_SETTINGS" 'tmux-ai-agent-state claude busy'
@@ -75,6 +82,19 @@ assert_file_contains "$CLAUDE_SETTINGS" '"SessionEnd"'
 assert_file_contains "$CLAUDE_SETTINGS" '"Stop"'
 assert_file_contains "$CLAUDE_SETTINGS" 'tmux-ai-agent-state claude idle'
 assert_file_not_contains "$CLAUDE_SETTINGS" '"SubagentStop"'
+assert_file_not_contains "$CLAUDE_SETTINGS" '"Bash(codegraph:*)"'
+assert_file_contains "$CLAUDE_SETTINGS" '"mcp__codegraph__*"'
+
+assert_file_contains "$PI_MCP" '"codegraph"'
+assert_file_contains "$PI_MCP" '"command": "bunx"'
+assert_file_contains "$PI_MCP" '"@colbymchenry/codegraph@1.2.0"'
+assert_file_contains "$PI_MCP" '"serve"'
+assert_file_contains "$PI_MCP" '"--mcp"'
+assert_file_contains "$CURSOR_MCP" '"codegraph"'
+assert_file_contains "$CURSOR_MCP" '"command": "bunx"'
+assert_file_contains "$CURSOR_MCP" '"@colbymchenry/codegraph@1.2.0"'
+assert_file_contains "$CURSOR_MCP" '"serve"'
+assert_file_contains "$CURSOR_MCP" '"--mcp"'
 
 chezmoi execute-template --source "$ROOT" \
     --override-data '{"claudeProviderAccount":"deepseek@private"}' \
