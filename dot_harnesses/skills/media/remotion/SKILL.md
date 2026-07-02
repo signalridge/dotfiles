@@ -79,7 +79,7 @@ If either bites, switch the affected script from `remotionb` to `remotion`.
 - Repo/architecture questions → **deepwiki** (`remotion-dev/remotion`) or **gitmcp**.
 - The official `@remotion/mcp` docs server is **not installed** here by choice; rely on
   context7/deepwiki instead. (If deeper doc grounding is ever wanted, it can be added
-  to `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl` as `bunx @remotion/mcp@latest`.)
+  to `.chezmoiscripts/run_after_12_sync-claude-mcp.sh.tmpl` as `bunx @remotion/mcp@latest`.)
 
 ## Reproducibility note
 

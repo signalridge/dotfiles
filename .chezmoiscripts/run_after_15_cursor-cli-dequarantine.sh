@@ -14,7 +14,7 @@ set -euo pipefail
 
 [[ "$(uname -s)" == "Darwin" ]] || exit 0
 
-echo ":: [13] De-quarantining cursor-cli native modules"
+echo ":: [15] De-quarantining cursor-cli native modules"
 
 stripped=0
 for prefix in /opt/homebrew /usr/local; do

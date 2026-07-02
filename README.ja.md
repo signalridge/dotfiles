@@ -356,10 +356,10 @@ codex-token --check deepseek@private
 
 ### ツール連携
 
-- Claude MCP は `.chezmoiscripts/run_after_11_sync-claude-mcp.sh.tmpl` によって自動同期されます。
+- Claude MCP は `.chezmoiscripts/run_after_12_sync-claude-mcp.sh.tmpl` によって自動同期されます。
 - Claude の Notion/Slack 連携は `.chezmoiscripts/run_after_11_sync-claude-integration-plugins.sh.tmpl` によって公式 plugin としてインストールされます。
-- Codex Slack は `.chezmoiscripts/run_after_11_sync-codex-connector-plugins.sh.tmpl` によって公式 connector plugin としてインストールされ、`slack@openai-curated` として有効化されます。
-- Codex、Claude、Pi の Herdr agent lifecycle integration は `.chezmoiscripts/run_after_11_sync-herdr-integrations.sh.tmpl` によってインストールされます。Codex の hook 設定は `hooks.json` ではなく `config.toml` に保持します。
+- Codex Slack は `.chezmoiscripts/run_after_13_sync-codex-connector-plugins.sh.tmpl` によって公式 connector plugin としてインストールされ、`slack@openai-curated` として有効化されます。
+- Codex、Claude、Pi の Herdr agent lifecycle integration は `.chezmoiscripts/run_after_14_sync-herdr-integrations.sh.tmpl` によってインストールされます。Codex の hook 設定は `hooks.json` ではなく `config.toml` に保持します。
 - このリポジトリは次の MCP ラッパーを提供します：
   - `~/.local/bin/mcp-context7`
   - `~/.local/bin/mcp-tavily`

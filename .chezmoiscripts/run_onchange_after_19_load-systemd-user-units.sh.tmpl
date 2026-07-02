@@ -3,12 +3,12 @@
 set -euo pipefail
 
 # (Re)load systemd --user units for the orphan reaper. Linux analog of the macOS
-# LaunchAgent loader (13).
+# LaunchAgent loader (17).
 # Re-runs whenever any unit file changes (hashes below).
 # reaper.service  sha256: {{ include "private_dot_config/systemd/user/mcp-reaper.service" | sha256sum }}
 # reaper.timer    sha256: {{ include "private_dot_config/systemd/user/mcp-reaper.timer" | sha256sum }}
 {{ if eq .chezmoi.os "linux" -}}
-echo ":: [15] (re)loading systemd --user MCP units"
+echo ":: [19] (re)loading systemd --user MCP units"
 
 if ! command -v systemctl >/dev/null 2>&1; then
     echo "    systemctl not found, skipping"
