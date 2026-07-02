@@ -50,7 +50,7 @@ homebrew:
     work:
       - dbeaver-community
       - obsidian
-      - cursor
+      - cursor-cli
       - gcloud-cli
       - keepingyouawake # menu-bar utility to keep the Mac awake
     private:
