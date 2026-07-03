@@ -49,7 +49,6 @@ homebrew:
       - google-chrome
     work:
       - dbeaver-community
-      - obsidian
       # cursor-cli ships Anysphere-signed native .node modules. macOS/MDM tags the
       # freshly-installed files with com.apple.quarantine, so Gatekeeper blocks
       # dlopen ("library load disallowed by system policy") and cursor-agent crashes.
