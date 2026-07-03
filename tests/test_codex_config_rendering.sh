@@ -105,6 +105,37 @@ assert_file_not_contains "$KRILL_CLAUDE_SETTINGS" 'CLAUDE_CODE_EFFORT_LEVEL'
 assert_file_not_contains "$CLAUDE_SETTINGS" 'CLAUDE_CODE_ATTRIBUTION_HEADER'
 assert_file_not_contains "$CLAUDE_SETTINGS" 'SUPPORTED_CAPABILITIES'
 
+# Reasoning effort is per-environment (independent of the tester's own machine):
+# personal machines run hot, work machines run medium. Render both explicitly via
+# --override-data so the assertions don't depend on the ambient work/private value.
+
+# Personal render (work=false): Codex default is xhigh, and the named [profiles.*]
+# keep xhigh too, so "medium" must not appear anywhere. Claude runs max.
+PERSONAL_CODEX_MODIFY="$TMP_ROOT/modify_config-personal.sh"
+PERSONAL_CODEX="$TMP_ROOT/config-personal.toml"
+PERSONAL_CLAUDE_SETTINGS="$TMP_ROOT/settings-personal.json"
+chezmoi execute-template --source "$ROOT" --override-data '{"work":false}' \
+    <"$ROOT/dot_codex/modify_config.toml.tmpl" >"$PERSONAL_CODEX_MODIFY"
+bash "$PERSONAL_CODEX_MODIFY" </dev/null >"$PERSONAL_CODEX"
+assert_file_contains "$PERSONAL_CODEX" 'model_reasoning_effort = "xhigh"'
+assert_file_not_contains "$PERSONAL_CODEX" 'model_reasoning_effort = "medium"'
+chezmoi execute-template --source "$ROOT" --override-data '{"work":false}' \
+    <"$ROOT/dot_claude/settings.json.tmpl" >"$PERSONAL_CLAUDE_SETTINGS"
+assert_file_contains "$PERSONAL_CLAUDE_SETTINGS" '"effortLevel": "max"'
+
+# Work render (work=true): Codex default drops to medium (deep-review/research
+# profiles still pin xhigh), and Claude drops to medium.
+WORK_CODEX_MODIFY="$TMP_ROOT/modify_config-work.sh"
+WORK_CODEX="$TMP_ROOT/config-work.toml"
+WORK_CLAUDE_SETTINGS="$TMP_ROOT/settings-work.json"
+chezmoi execute-template --source "$ROOT" --override-data '{"work":true}' \
+    <"$ROOT/dot_codex/modify_config.toml.tmpl" >"$WORK_CODEX_MODIFY"
+bash "$WORK_CODEX_MODIFY" </dev/null >"$WORK_CODEX"
+assert_file_contains "$WORK_CODEX" 'model_reasoning_effort = "medium"'
+chezmoi execute-template --source "$ROOT" --override-data '{"work":true}' \
+    <"$ROOT/dot_claude/settings.json.tmpl" >"$WORK_CLAUDE_SETTINGS"
+assert_file_contains "$WORK_CLAUDE_SETTINGS" '"effortLevel": "medium"'
+
 cat >"$TMP_ROOT/existing-config.toml" <<'EOF'
 model = "old-model"
 
