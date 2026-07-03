@@ -17,10 +17,18 @@ fi
 
 echo ":: [06] Setting up gopass password store"
 
-# Check if gopass store already exists
-if [[ -d ~/.local/share/gopass/stores/root ]]; then
+# Check if gopass store already exists.
+# A valid store is a cloned git repo; a bare empty directory (e.g. left behind by
+# a failed clone or created by `gopass config`) must NOT count as "already set up",
+# otherwise this script silently skips the clone and the store never initializes.
+store_dir=~/.local/share/gopass/stores/root
+if [[ -d "$store_dir/.git" ]]; then
     echo "✓ gopass store already exists"
     exit 0
+fi
+if [[ -d "$store_dir" ]] && [[ -z "$(ls -A "$store_dir" 2>/dev/null)" ]]; then
+    echo "⚠ Removing empty gopass store directory (not a valid store): $store_dir"
+    rmdir "$store_dir"
 fi
 
 # Check if age key exists
