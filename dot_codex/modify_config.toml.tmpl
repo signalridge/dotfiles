@@ -17,6 +17,11 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 {{-   $accountKey = .codexProviderAccount -}}
 {{- end -}}
 {{- $providerName := (split "@" $accountKey)._0 -}}
+{{- /* work flag may be absent when the template is rendered without chezmoi
+       config data (e.g. tests via `chezmoi execute-template`); default to the
+       personal/hot profile in that case. */ -}}
+{{- $work := false -}}
+{{- if hasKey . "work" -}}{{- $work = .work -}}{{- end -}}
 
 # =============================================================================
 # Core Settings
@@ -54,7 +59,7 @@ suppress_unstable_features_warning = true
 
 # Reasoning effort: none | minimal | low | medium | high | xhigh
 # Work machines run medium; personal machines run xhigh.
-model_reasoning_effort = "{{ if .work }}medium{{ else }}xhigh{{ end }}"
+model_reasoning_effort = "{{ if $work }}medium{{ else }}xhigh{{ end }}"
 
 
 # Personality: none | friendly | pragmatic
