@@ -16,6 +16,10 @@
 {{- $provider := index .claude.providers $providerName -}}
 {{- /* Get defaults */ -}}
 {{- $defaults := .claude.defaults -}}
+{{- /* work flag may be absent when rendered without chezmoi config data (tests);
+       default to the personal/hot profile in that case. */ -}}
+{{- $work := false -}}
+{{- if hasKey . "work" -}}{{- $work = .work -}}{{- end -}}
 
 {
   "apiKeyHelper": "{{- if and $provider (hasKey $provider "base_url") -}}~/.local/bin/claude-token{{- end -}}",
@@ -271,5 +275,5 @@
   },
   "skipDangerousModePermissionPrompt": true,
   "alwaysThinkingEnabled": true,
-  "effortLevel": "xhigh"
+  "effortLevel": "{{ if $work }}medium{{ else }}max{{ end }}"
 }
