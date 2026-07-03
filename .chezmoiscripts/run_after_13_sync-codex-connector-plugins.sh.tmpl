@@ -19,8 +19,13 @@ ensure_plugin() {
     local plugin_list
 
     plugin_list="$("$codex_cmd" plugin list 2>/dev/null || true)"
-    if printf '%s\n' "$plugin_list" | awk -v p="$plugin" '$1 == p && $0 ~ /installed/ { found = 1 } END { exit found ? 0 : 1 }'; then
+    if printf '%s\n' "$plugin_list" | awk -v p="$plugin" '$1 == p && $2 == "installed" { found = 1 } END { exit found ? 0 : 1 }'; then
         echo "    Plugin exists: $plugin"
+        return 0
+    fi
+
+    if ! printf '%s\n' "$plugin_list" | awk -v p="$plugin" '$1 == p { found = 1 } END { exit found ? 0 : 1 }'; then
+        echo "    Skipped: $plugin (not available in current Codex marketplace)"
         return 0
     fi
 
