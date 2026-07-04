@@ -195,7 +195,6 @@ remove_user_mcp_if_present "codex-mcp"
 
 ensure_user_mcp_http "context7" "https://mcp.context7.com/mcp"
 ensure_user_mcp_json "serena" '{"command":"uvx","args":["--from","git+https://github.com/oraios/serena","serena","start-mcp-server","--context","ide-assistant","--project",".","--enable-web-dashboard","false"]}'
-ensure_user_mcp_json "codegraph" '{"type":"stdio","command":"bunx","args":["@colbymchenry/codegraph@1.2.0","serve","--mcp"]}'
 ensure_user_mcp_json "markitdown" '{"command":"uvx","args":["markitdown-mcp"]}'
 ensure_user_mcp_json "arxiv-mcp-server" '{"command":"uv","args":["tool","run","arxiv-mcp-server"]}'
 ensure_user_mcp_json "tavily" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily","args":[]}'

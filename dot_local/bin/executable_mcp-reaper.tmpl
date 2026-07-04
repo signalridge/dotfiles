@@ -28,8 +28,8 @@ mkdir -p "$LOG_DIR"
 
 ts() { date '+%Y-%m-%dT%H:%M:%S%z'; }
 
-# node/bunx MCP servers + serena (uv/python) + CodeGraph stdio MCP servers.
-PATTERN='bunx-[0-9]+-.*mcp|serena.*start-mcp-server|bunx.*@colbymchenry/codegraph|codegraph.*serve --mcp'
+# node/bunx MCP servers + serena (uv/python).
+PATTERN='bunx-[0-9]+-.*mcp|serena.*start-mcp-server'
 
 match_procs() {
   ps -axww -o pid=,ppid=,pcpu=,pmem=,etime=,command= \
