@@ -1,0 +1,43 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# VibeTunnel: browser-accessible terminal server. Wraps a local shell / AI coding
+# session and exposes it on a web dashboard (default http://localhost:4020) so it
+# can be driven from any device's browser. Cross-platform (darwin + linux).
+#
+# Why a bespoke script instead of mise or the Homebrew cask:
+#   - The Homebrew cask is macOS-only; we want one channel for every machine.
+#   - vibetunnel publishes ONLY prereleases to npm (no stable release yet). mise's
+#     npm backend hides prereleases behind the *global* `prereleases` setting, so
+#     enabling it for vibetunnel would also let node/bun/go/rust/... resolve to
+#     prereleases. Not worth it for one tool.
+#   - So install via npm straight into ~/.local (stable, already on PATH). npm runs
+#     the package's native-module postinstall by default — no bun `--trust` dance.
+#
+# Upgrade by bumping `versions.vibetunnel` in .chezmoidata/versions.yaml
+# (that changes this rendered script, so run_onchange re-runs it).
+
+VERSION="{{ .versions.vibetunnel }}"
+
+echo ":: [20] Installing VibeTunnel (vibetunnel@${VERSION})"
+
+# npm comes from mise-managed node; make it discoverable in this non-interactive shell.
+if ! command -v npm >/dev/null 2>&1; then
+    mise_cmd="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin/mise"
+    [[ -x "$mise_cmd" ]] && eval "$("$mise_cmd" activate bash)" 2>/dev/null || true
+fi
+if ! command -v npm >/dev/null 2>&1; then
+    echo "    Skipped (npm not found; needs mise-managed node)"
+    exit 0
+fi
+
+# Idempotent: skip when the pinned version is already the one installed.
+installed="$(vibetunnel version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+[^[:space:]]*' | head -1 || true)"
+if [[ "$installed" == "$VERSION" ]]; then
+    echo "    Already at ${VERSION}"
+    exit 0
+fi
+
+npm install -g --prefix "$HOME/.local" "vibetunnel@${VERSION}"
+echo "    Installed → $HOME/.local/bin/vibetunnel (vibetunnel@${VERSION})"

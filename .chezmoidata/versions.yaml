@@ -12,6 +12,7 @@ versions:
   aquaVersion: v2.60.1
   nixIndexDb: 2026-07-02-200945
   paperlib: 3.1.12
+  vibetunnel: 1.0.0-beta.17
   claudeWshobsonAgentsRev: 5cc2549a50fc672230efd0a0307e2fd27ffba792
   claudeWshobsonAgentsSha256: c65f98eaede6979e684def3d7c97c0327cef9cdeb9fb66b18fe63c5369004ee3
   claudeAnthropicsSkillsRev: 9d2f1ae187231d8199c64b5b762e1bdf2244733d
