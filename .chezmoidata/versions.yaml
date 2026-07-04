@@ -17,11 +17,11 @@ versions:
   claudeAnthropicsSkillsRev: 9d2f1ae187231d8199c64b5b762e1bdf2244733d
   claudeAnthropicsSkillsSha256: d3369ba9df41ec79bccc1ca98c63cd7c4fe866718670f34e149b2c0acc9e4c0a
   claudeBaoyuSkillsRev: a4e78af8136fa0bbfd7a8243d2f6813b4b6398c9
-  phurynPmSkillsRev: a0cd730d4c61e519ca8568b172334402257a74a9
+  phurynPmSkillsRev: 18468a95b427e70e258b51389796367c6f684e7d
   uiUxProMaxSkillRev: 9ceab49a1c6e9bf23fa9ebc49ca7d4f0c6303a99
   uiUxProMaxSkillSha256: 6958babddf184d788c84ff36c8aa69f4bfd400b2e2c3e2b6719b30cb9e7dcf94
   openaiSkillsRev: 49f948faa9258a0c61caceaf225e179651397431
-  huggingfaceSkillsRev: 35e8c35a1ae5b462e0bb23d444d25569c3bb6700
+  huggingfaceSkillsRev: 4948baec814c92edd91024b76d8c2ffa6df4eb70
   getsentrySkillsRev: 5a64b36c62d042d3981b7937d9d6ca7bd1753b9a
   trailofbitsSkillsRev: cfe5d7b1619e47fb5b38b7e2561dad7e5f1e89af
   cloudflareSkillsRev: 27ce0c0e159225caa7ed30ebefd4107aa6c52497
@@ -34,7 +34,7 @@ versions:
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: bfb0f365d14f5ed63416d29aa3abbb21a613f5cb
   dailyDevSkillsRev: 192dae2b904fd4a4e8b9d212474f34c70710e28d
-  opcSkillsRev: ac06b57e357b677e30a4ef68b37cc15f248e080d
+  opcSkillsRev: 282acb489dca9db2d2ad8e5af2e40d6d69650f92
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 8b2d019212d6a5390d472a7660a8489109d7db49
