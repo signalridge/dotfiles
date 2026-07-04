@@ -13,7 +13,6 @@ MCP tools are provided by the `pi-mcp-adapter` extension; servers are configured
 - Docs/API -> Context7
 - Web/news -> Tavily
 - Code navigation -> Serena (symbolic/semantic; avoid full-file reads when a query suffices)
-- Code graph / impact analysis -> CodeGraph MCP (on-demand via `bunx @colbymchenry/codegraph@1.2.0`; initialize per repo with `bunx @colbymchenry/codegraph@1.2.0 init` when needed)
 - Browser/E2E -> agent-browser (CLI)
 - Repo Q&A -> DeepWiki (public) / gitmcp (private)
 - Notes/knowledge base -> Notion official MCP/plugin when available
