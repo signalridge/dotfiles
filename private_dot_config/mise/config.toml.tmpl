@@ -71,6 +71,18 @@ lua = "5.4"
 # to fetch Chrome for Testing (or it auto-detects an existing Chrome/Brave).
 "npm:agent-browser" = "latest"
 
+# hyperframes (HeyGen): render HTML/CSS/animations to deterministic MP4. Bin is
+# `hyperframes`. Needs node>=22 (satisfied above) + ffmpeg (nix profile);
+# puppeteer-core fetches Chrome for Testing on first render. AI-agent skills are
+# NOT managed as chezmoi externals — the CLI self-installs them globally into
+# ~/.claude/skills + ~/.agents/skills (fanned out to every agent) via a one-off
+# `hyperframes skills`; run `hyperframes skills update` to refresh.
+# NOTE: bun skips postinstall, so onnxruntime-node's native lib is not fetched.
+# Core render works without it; voiceover/transcription/background-removal (the
+# media skills) do not. If those error on a missing binary, switch this entry to
+#   "npm:hyperframes" = { version = "latest", bun_args = "--trust" }
+"npm:hyperframes" = "latest"
+
 [settings]
 # Keep auto_install enabled for normal mise workflow.
 # Process storms were caused by shell PATH/init ordering, not this flag.
