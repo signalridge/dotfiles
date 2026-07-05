@@ -18,6 +18,7 @@ packages:
   - name: FiloSottile/age@v1.3.1
   - name: asciinema/asciinema@v3.2.1
   - name: atuinsh/atuin@v18.16.1
+  - name: axodotdev/cargo-dist@v0.32.0 # `dist` — was a live-only cargo install
   - name: sigoden/aichat@v0.30.0
   - name: sharkdp/bat@v0.26.1
   - name: eth-p/bat-extras@v2024.08.24
