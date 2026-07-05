@@ -66,11 +66,6 @@ fi
 export TLRC_CONFIG="${TLRC_CONFIG:-${XDG_CONFIG_HOME}/tlrc/config.toml}"
 export SLUMBER_CONFIG_PATH="${SLUMBER_CONFIG_PATH:-${XDG_CONFIG_HOME}/slumber/config.yml}"
 
-# Pi statusline (@narumitw/pi-statusline): `classic` preset uses Pi theme colors
-# (follows signalridge-dracula); the plugin default is `tokyo-night` (hardcoded
-# palette), so pin classic here — the plugin only reads this from the env.
-export PI_STATUSLINE_PRESET="${PI_STATUSLINE_PRESET:-classic}"
-
 # Mermaid CLI (mmdc): the nix mermaid-cli ships no Chromium on macOS, so puppeteer
 # can't launch a browser. Point it at the installed Google Chrome (no-op elsewhere).
 [[ -z "${PUPPETEER_EXECUTABLE_PATH:-}" && -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]] \
