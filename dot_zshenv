@@ -74,3 +74,7 @@ export SLUMBER_CONFIG_PATH="${SLUMBER_CONFIG_PATH:-${XDG_CONFIG_HOME}/slumber/co
 # Pi statusline (@narumitw/pi-statusline): classic preset follows the Pi theme
 # (signalridge-dracula); default tokyo-night is hardcoded blue-gray.
 export PI_STATUSLINE_PRESET="${PI_STATUSLINE_PRESET:-classic}"
+
+# pi-hypa rewrites shell/grep/find into a `hypa` CLI call; point it at the
+# bundled binary so bash finds it (the npm .bin dir isn't on PATH → code 127).
+export HYPA_BIN="${HYPA_BIN:-$HOME/.pi/agent/npm/node_modules/@hypabolic/hypa-darwin-arm64/bin/hypa}"
