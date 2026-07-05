@@ -16,7 +16,9 @@ pi:
     # hot-reloads on edit). All footer/TUI semantic colors follow this theme —
     # no per-plugin color config or seed script needed.
     theme: signalridge-dracula
-    defaultThinkingLevel: medium
+    # Max reasoning effort by default (off<minimal<low<medium<high<xhigh).
+    # Override per-turn in the TUI; subagents still use their own model routing.
+    defaultThinkingLevel: xhigh
     # GLM-5.2 via the NewAPI gateway (https://newapi.3689403.xyz/) is the startup
     # default: key baked into models.json from gopass (claude/newapi/private/
     # api_key), so plain `pi` works out of the box. DeepSeek V4 also wired (gopass)
@@ -43,13 +45,11 @@ pi:
   # dedicated chezmoi installer script.
   packages:
     - npm:pi-mcp-adapter
-    # Information-rich statusline footer (@narumitw/pi-statusline). classic preset
-    # (env PI_STATUSLINE_PRESET=classic) uses Pi THEME colors → follows
-    # signalridge-dracula; emoji segment icons (🤖🧠📁🌿🪟🔢💸🕒) render in any
-    # font (no Nerd-glyph mojibake). Has own model/dir/git/context/tokens/cost/
-    # clock segments + 2nd line for other-extension statuses. Config:
+    # Information-rich statusline footer (@narumitw/pi-statusline). Uses its
+    # default preset (tokyo-night). To make it follow the Pi theme instead, set
+    # env PI_STATUSLINE_PRESET=classic. Segments: model/dir/git/context/tokens/
+    # cost/clock + 2nd line for other-extension statuses. Config:
     # ~/.pi/agent/pi-statusline-settings.json (extensionStatusIcons emoji map).
-    # Replaces pi-powerline-footer (hardcoded pink/teal + nerd-glyph mojibake).
     - npm:@narumitw/pi-statusline
     # Subagent delegation: child Pi sessions (NOT worktrees) for scout/researcher/
     # planner/worker/reviewer/oracle/context-builder/delegate. Natural-language
