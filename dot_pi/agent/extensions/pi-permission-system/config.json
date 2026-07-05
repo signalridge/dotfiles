@@ -12,21 +12,10 @@
       "**/.config/gopass/*": "deny"
     },
     "bash": {
-      "*": "allow",
-      "rm -rf *": "ask",
-      "rm -fr *": "ask",
-      "sudo *": "ask",
-      "git push --force*": "ask",
-      "git push -f *": "ask",
-      "git push * --force*": "ask",
-      "dd *": "deny",
-      "mkfs*": "deny"
+      "*": "allow"
     },
     "external_directory": {
-      "*": "ask",
-      "~/.pi/*": "allow",
-      "~/.cargo/registry/*": "allow",
-      "~/.local/share/mise/*": "allow"
+      "*": "allow"
     }
   }
 }
