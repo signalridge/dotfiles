@@ -45,12 +45,13 @@ pi:
   # dedicated chezmoi installer script.
   packages:
     - npm:pi-mcp-adapter
-    # Information-rich statusline footer (@narumitw/pi-statusline). Uses its
-    # default preset (tokyo-night). To make it follow the Pi theme instead, set
-    # env PI_STATUSLINE_PRESET=classic. Segments: model/dir/git/context/tokens/
-    # cost/clock + 2nd line for other-extension statuses. Config:
-    # ~/.pi/agent/pi-statusline-settings.json (extensionStatusIcons emoji map).
-    - npm:@narumitw/pi-statusline
+    # Minimal footer (@fgladisch/pi-footer) — renders in the ACTIVE THEME's text/
+    # dim colors (follows signalridge-dracula, matches the ghostty Dracula term),
+    # and every segment icon is customizable (we use Nerd-font glyphs, not emoji).
+    # Config: ~/.pi/agent/footer.json (chezmoi-managed at dot_pi/agent/footer.json;
+    # /footer-reload to reapply). Chosen over @narumitw/pi-statusline whose core
+    # segment emoji are hardcoded and whose default preset ignores the Pi theme.
+    - npm:@fgladisch/pi-footer
     # Subagent delegation: child Pi sessions (NOT worktrees) for scout/researcher/
     # planner/worker/reviewer/oracle/context-builder/delegate. Natural-language
     # invoke ("Use reviewer to review this diff"). No slipway conflict.
@@ -123,9 +124,42 @@ pi:
       base_url: https://newapi.3689403.xyz/v1
       api: openai-completions
       gopass: claude/newapi/private/api_key
+      # reasoning: true so Pi's thinking level applies to GLM (footer shows 🧠).
+      # compat.supportsDeveloperRole:false is REQUIRED — for reasoning models Pi
+      # sends the system prompt as OpenAI's `developer` role, which this gateway
+      # rejects with HTTP 422; false makes Pi use `system` instead (root-caused
+      # via a logging proxy capturing Pi's request body). thinkingFormat:deepseek
+      # because the gateway returns reasoning_content on the assistant message.
+      # reasoningEffortMap xhigh→high: the gateway's honored max is `high`.
       models:
-        - glm-5.2 # flagship, startup default
-        - glm-4.7 # stable fallback (both verified HTTP 200 on the gateway)
+        - id: glm-5.2 # flagship, startup default
+          reasoning: true
+          compat:
+            supportsDeveloperRole: false
+            thinkingFormat: deepseek
+            requiresReasoningContentOnAssistantMessages: true
+            reasoningEffortMap:
+              {
+                minimal: low,
+                low: low,
+                medium: medium,
+                high: high,
+                xhigh: high,
+              }
+        - id: glm-4.7 # stable fallback (both verified HTTP 200 on the gateway)
+          reasoning: true
+          compat:
+            supportsDeveloperRole: false
+            thinkingFormat: deepseek
+            requiresReasoningContentOnAssistantMessages: true
+            reasoningEffortMap:
+              {
+                minimal: low,
+                low: low,
+                medium: medium,
+                high: high,
+                xhigh: high,
+              }
     deepseek: # DeepSeek Platform (OpenAI-compatible). V4 models are not in Pi's
       # built-in registry yet, so we pin them here with the reasoning `compat`
       # block from the official integration doc:

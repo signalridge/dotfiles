@@ -1,0 +1,20 @@
+{
+  "icons": {
+    "provider": "󰅩",
+    "model": "󰚩",
+    "context": "󰔟",
+    "project": "󰉋",
+    "branch": ""
+  },
+  "promptInput": {
+    "prefix": "❯"
+  },
+  "separator": "·",
+  "segments": {
+    "provider": false,
+    "model": true,
+    "context": true,
+    "project": true,
+    "branch": true
+  }
+}
