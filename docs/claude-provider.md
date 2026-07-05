@@ -98,6 +98,16 @@ claude:
     kimi:
       base_url: https://api.kimi.com/coding
       models: [kimi-k2.5, kimi-k2]
+    glm:
+      base_url: https://api.z.ai/api/anthropic
+      models: [glm-5.2, glm-4.7]
+      default_model: glm-5.2
+      subagent_model: glm-5.2
+    newapi:
+      base_url: https://newapi.3689403.xyz/
+      models: [glm-5.2, glm-4.7]
+      default_model: glm-5.2
+      subagent_model: glm-5.2
 
   # Account configurations (model selection + settings)
   accounts:
@@ -126,20 +136,30 @@ claude:
       sonnet_model: kimi-k2.5
       opus_model: kimi-k2.5
       timeout_ms: 300000
+    newapi@private:
+      provider: newapi
+      model: glm-5.2
+      small_model: glm-4.7
+      haiku_model: glm-4.7
+      sonnet_model: glm-5.2
+      opus_model: glm-5.2
+      subagent_model: glm-5.2
+      auto_compact_window: 1000000
 ```
 
 ## Environment Variable Mapping
 
-| Account Field    | Environment Variable             |
-| ---------------- | -------------------------------- |
-| `model`          | `ANTHROPIC_MODEL`                |
-| `small_model`    | `ANTHROPIC_SMALL_FAST_MODEL`     |
-| `haiku_model`    | `ANTHROPIC_DEFAULT_HAIKU_MODEL`  |
-| `sonnet_model`   | `ANTHROPIC_DEFAULT_SONNET_MODEL` |
-| `opus_model`     | `ANTHROPIC_DEFAULT_OPUS_MODEL`   |
-| `subagent_model` | `CLAUDE_CODE_SUBAGENT_MODEL`     |
-| `effort_level`   | `CLAUDE_CODE_EFFORT_LEVEL`       |
-| `timeout_ms`     | `API_TIMEOUT_MS`                 |
+| Account Field         | Environment Variable              |
+| --------------------- | --------------------------------- |
+| `model`               | `ANTHROPIC_MODEL`                 |
+| `small_model`         | `ANTHROPIC_SMALL_FAST_MODEL`      |
+| `haiku_model`         | `ANTHROPIC_DEFAULT_HAIKU_MODEL`   |
+| `sonnet_model`        | `ANTHROPIC_DEFAULT_SONNET_MODEL`  |
+| `opus_model`          | `ANTHROPIC_DEFAULT_OPUS_MODEL`    |
+| `subagent_model`      | `CLAUDE_CODE_SUBAGENT_MODEL`      |
+| `auto_compact_window` | `CLAUDE_CODE_AUTO_COMPACT_WINDOW` |
+| `effort_level`        | `CLAUDE_CODE_EFFORT_LEVEL`        |
+| `timeout_ms`          | `API_TIMEOUT_MS`                  |
 
 ## Data Storage
 

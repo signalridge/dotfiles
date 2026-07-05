@@ -49,6 +49,7 @@ MODIFY_SCRIPT="$TMP_ROOT/modify_config.sh"
 RENDERED="$TMP_ROOT/config.toml"
 CLAUDE_SETTINGS="$TMP_ROOT/settings.json"
 DEEPSEEK_CLAUDE_SETTINGS="$TMP_ROOT/settings-deepseek.json"
+NEWAPI_CLAUDE_SETTINGS="$TMP_ROOT/settings-newapi.json"
 PI_MCP="$TMP_ROOT/pi-mcp.json"
 CURSOR_MCP="$TMP_ROOT/cursor-mcp.json"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_codex/modify_config.toml.tmpl" >"$MODIFY_SCRIPT"
@@ -97,6 +98,19 @@ assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_SONNET_MODE
 assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-v4-flash"'
 assert_file_contains "$DEEPSEEK_CLAUDE_SETTINGS" '"CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-v4-pro[1m]"'
 assert_file_not_contains "$DEEPSEEK_CLAUDE_SETTINGS" 'CLAUDE_CODE_EFFORT_LEVEL'
+
+chezmoi execute-template --source "$ROOT" \
+    --override-data '{"claudeProviderAccount":"newapi@private"}' \
+    <"$ROOT/dot_claude/settings.json.tmpl" >"$NEWAPI_CLAUDE_SETTINGS"
+assert_file_contains "$NEWAPI_CLAUDE_SETTINGS" '"ANTHROPIC_BASE_URL": "https://newapi.3689403.xyz/"'
+assert_file_contains "$NEWAPI_CLAUDE_SETTINGS" '"ANTHROPIC_MODEL": "glm-5.2"'
+assert_file_contains "$NEWAPI_CLAUDE_SETTINGS" '"ANTHROPIC_SMALL_FAST_MODEL": "glm-4.7"'
+assert_file_contains "$NEWAPI_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5.2"'
+assert_file_contains "$NEWAPI_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-5.2"'
+assert_file_contains "$NEWAPI_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.7"'
+assert_file_contains "$NEWAPI_CLAUDE_SETTINGS" '"CLAUDE_CODE_SUBAGENT_MODEL": "glm-5.2"'
+assert_file_contains "$NEWAPI_CLAUDE_SETTINGS" '"CLAUDE_CODE_AUTO_COMPACT_WINDOW": "1000000"'
+assert_file_not_contains "$NEWAPI_CLAUDE_SETTINGS" 'CLAUDE_CODE_EFFORT_LEVEL'
 
 KRILL_CLAUDE_SETTINGS="$TMP_ROOT/settings-krill.json"
 chezmoi execute-template --source "$ROOT" \

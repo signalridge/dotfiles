@@ -11,20 +11,80 @@ pi:
 
   # ===== Startup defaults -> ~/.pi/agent/settings.json =====
   defaults:
-    theme: dark
+    # Custom Pi theme matching the terminal (ghostty = Dracula). Loaded from
+    # ~/.pi/agent/themes/signalridge-dracula.json (Pi auto-discovers themes/*.json;
+    # hot-reloads on edit). All footer/TUI semantic colors follow this theme —
+    # no per-plugin color config or seed script needed.
+    theme: signalridge-dracula
     defaultThinkingLevel: medium
-    # DeepSeek is the startup default: its key is baked into models.json from
-    # gopass, so plain `pi` works out of the box. Anthropic needs a key/login
-    # first (none wired), so it can't be the default. Switch at runtime with
-    # /model, or launch e.g. `pi --provider anthropic --model claude-opus-4-8`.
-    defaultProvider: deepseek
-    defaultModel: deepseek-v4-pro
+    # GLM-5.2 via the NewAPI gateway (https://newapi.3689403.xyz/) is the startup
+    # default: key baked into models.json from gopass (claude/newapi/private/
+    # api_key), so plain `pi` works out of the box. DeepSeek V4 also wired (gopass)
+    # for /model switching; subagents still route to deepseek-v4-flash for cost
+    # (see subagents below). Switch at runtime with /model, or e.g.
+    # `pi --provider deepseek --model deepseek-v4-pro`.
+    defaultProvider: newapi
+    defaultModel: glm-5.2
+    # Resolve/install Pi packages with bun instead of npm (faster, no
+    # package-lock.json). Pi dispatches package ops via settings `npmCommand`
+    # (default ["npm"]); the switch is global across all `npm:` packages below.
+    # Revert: remove this key, `chezmoi apply`, delete ~/.pi/agent/npm, `pi update`.
+    npmCommand: ["bun"]
+    # Bounded retry: cap escalating backoff so a transient upstream error (e.g. a
+    # gateway HTTP 429) fails fast and surfaces — then just /model switch —
+    # instead of hanging. Still retries twice for genuine transient recovery.
+    retry:
+      enabled: true
+      maxRetries: 2
+      maxRetryDelayMs: 4000
   # ===== Pi packages -> ~/.pi/agent/settings.json packages =====
   # Pi installs missing packages from this settings field when it resolves
   # resources. Keep third-party packages explicit here instead of using a
   # dedicated chezmoi installer script.
   packages:
     - npm:pi-mcp-adapter
+    # Information-rich statusline footer (@narumitw/pi-statusline). classic preset
+    # (env PI_STATUSLINE_PRESET=classic) uses Pi THEME colors → follows
+    # signalridge-dracula; emoji segment icons (🤖🧠📁🌿🪟🔢💸🕒) render in any
+    # font (no Nerd-glyph mojibake). Has own model/dir/git/context/tokens/cost/
+    # clock segments + 2nd line for other-extension statuses. Config:
+    # ~/.pi/agent/pi-statusline-settings.json (extensionStatusIcons emoji map).
+    # Replaces pi-powerline-footer (hardcoded pink/teal + nerd-glyph mojibake).
+    - npm:@narumitw/pi-statusline
+    # Subagent delegation: child Pi sessions (NOT worktrees) for scout/researcher/
+    # planner/worker/reviewer/oracle/context-builder/delegate. Natural-language
+    # invoke ("Use reviewer to review this diff"). No slipway conflict.
+    - npm:pi-subagents
+    # Web search (zero-config Exa, no key) + fetch_content for PDF / GitHub
+    # clone / YouTube / local-video. Multi-provider fallback chain. Keys optional
+    # in ~/.pi/web-search.json; ffmpeg+yt-dlp (brew) optional for video frames.
+    - npm:pi-web-access
+    # Permission policy engine: allow/ask/deny gates over tools, bash, path,
+    # external_directory, mcp. Policy at dot_pi/agent/extensions/pi-permission-system/
+    # config.json. Fails CLOSED — keep JSON strict (no comments/trailing commas).
+    - npm:@gotgenes/pi-permission-system
+    # readseek: hash-anchored read/edit/grep + structural code maps/search
+    # (complements serena's semantic nav with hash-anchored edit safety).
+    - npm:pi-readseek
+    # OS-level sandbox with interactive permission prompts (@landstrip/landstrip
+    # backend). NOTE: Landlock is Linux-only — verify the macOS backend actually
+    # sandboxes post-install before relying on it.
+    - npm:pi-landstrip
+    # hypa: local context runtime — long-context compression, deterministic
+    # reducers + evidence record; rewrites shell/read/grep/find/ls and proxies
+    # MCP to cut context pollution. Top-downloaded Pi package; pairs with readseek.
+    - npm:@hypabolic/pi-hypa
+  # ===== Subagents config -> ~/.pi/agent/settings.json subagents =====
+  # Model routing for pi-subagents builtins. Quality-first: default pro, recon
+  # agents on flash. For cost-aggressive: defaultModel=flash + override
+  # oracle/reviewer/planner/worker to pro.
+  subagents:
+    defaultModel: deepseek-v4-pro
+    agentOverrides:
+      scout: { model: deepseek-v4-flash }
+      researcher: { model: deepseek-v4-flash }
+      context-builder: { model: deepseek-v4-flash }
+      delegate: { model: deepseek-v4-flash }
   # ===== Custom providers -> ~/.pi/agent/models.json =====
   # Providers Pi does not know natively, OR built-in providers for which we want
   # to pin specific models Pi's built-in registry lacks (e.g. DeepSeek V4).
@@ -41,6 +101,18 @@ pi:
   # through verbatim (id/name/contextWindow/maxTokens/reasoning/cost/compat/...).
   # Pick a model at runtime with /model.
   customProviders:
+    newapi: # NewAPI multi-provider gateway (https://newapi.3689403.xyz/),
+      # OpenAI-compatible; routes to GLM (and anything else the gateway exposes).
+      # Startup default (see defaults above). Key from gopass. base_url includes
+      # /v1 because Pi's openai-completions api appends /chat/completions (cf.
+      # doubao's /api/v3). Models below are a curated subset — extend from the
+      # gateway catalogue as needed; pick at runtime with /model.
+      base_url: https://newapi.3689403.xyz/v1
+      api: openai-completions
+      gopass: claude/newapi/private/api_key
+      models:
+        - glm-5.2 # flagship, startup default
+        - glm-4.7 # stable fallback (both verified HTTP 200 on the gateway)
     deepseek: # DeepSeek Platform (OpenAI-compatible). V4 models are not in Pi's
       # built-in registry yet, so we pin them here with the reasoning `compat`
       # block from the official integration doc:
