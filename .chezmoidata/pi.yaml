@@ -11,11 +11,16 @@ pi:
 
   # ===== Startup defaults -> ~/.pi/agent/settings.json =====
   defaults:
-    # Custom Pi theme matching the terminal (ghostty = Dracula). Loaded from
-    # ~/.pi/agent/themes/signalridge-dracula.json (Pi auto-discovers themes/*.json;
-    # hot-reloads on edit). All footer/TUI semantic colors follow this theme —
-    # no per-plugin color config or seed script needed.
-    theme: signalridge-dracula
+    # Custom Pi theme: Catppuccin Mocha. Loaded from
+    # ~/.pi/agent/themes/catppuccin-mocha.json (Pi auto-discovers themes/*.json;
+    # hot-reloads on edit). Soft pastel palette (mauve accent, blue functions,
+    # green strings, peach numbers); the background-tint tokens
+    # (userMessageBg/tool*Bg/selectionBg) are tuned to sit on the ghostty #282a36
+    # bg rather than Mocha's own #1e1e2e, so the boxes read naturally on the
+    # actual terminal background. The old signalridge-dracula.json is kept in
+    # themes/ as a one-`/settings` switch fallback. All footer/TUI semantic
+    # colors follow this theme.
+    theme: catppuccin-mocha
     # Max reasoning effort by default (off<minimal<low<medium<high<xhigh).
     # Override per-turn in the TUI; subagents still use their own model routing.
     defaultThinkingLevel: xhigh
@@ -47,7 +52,7 @@ pi:
     - npm:pi-mcp-adapter
     # Information-rich statusline (@narumitw/pi-statusline, most-downloaded). The
     # `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv) follows the
-    # Pi theme (signalridge-dracula / ghostty Dracula); default tokyo-night is
+    # Pi theme (catppuccin-mocha / ghostty Dracula); default tokyo-night is
     # hardcoded blue-gray. Core segment emoji are fixed but render fine in the
     # CaskaydiaCove Nerd Font. Extension-status icons (2nd line) are tunable via
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
