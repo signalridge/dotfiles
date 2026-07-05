@@ -88,6 +88,7 @@ get_account_config() {
             attribution_header: ($account_cfg.attribution_header // $provider_cfg.attribution_header),
             disable_experimental_betas: ($account_cfg.disable_experimental_betas // $provider_cfg.disable_experimental_betas),
             supported_capabilities: ($account_cfg.supported_capabilities // $provider_cfg.supported_capabilities),
+            auto_compact_window: ($account_cfg.auto_compact_window // $provider_cfg.auto_compact_window),
             timeout_ms: ($account_cfg.timeout_ms // $provider_cfg.timeout_ms // $defaults.timeout_ms),
             disable_nonessential_traffic: ($account_cfg.disable_nonessential_traffic // $provider_cfg.disable_nonessential_traffic // $defaults.disable_nonessential_traffic)
         } | with_entries(select(.value != null))

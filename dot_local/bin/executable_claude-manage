@@ -185,38 +185,43 @@ ensure_third_party_account_models() {
     local default_model
     default_model=$(get_provider_default_model "$provider")
 
-    ACCOUNT_NAME="$account" DEFAULT_MODEL="$default_model" yq -i '
-      .claude.accounts[strenv(ACCOUNT_NAME)] as $acct |
-      .claude.accounts[strenv(ACCOUNT_NAME)].model = (
-        ($acct.model // "") as $m |
-        if $m == "" then (($acct.small_model // strenv(DEFAULT_MODEL) // "") as $s | if $s == "" then null else $s end) else $m end
-      ) |
-      .claude.accounts[strenv(ACCOUNT_NAME)].small_model = (
-        ($acct.small_model // "") as $s |
-        if $s == "" then (($acct.model // strenv(DEFAULT_MODEL) // "") as $m | if $m == "" then null else $m end) else $s end
-      ) |
-      .claude.accounts[strenv(ACCOUNT_NAME)].sonnet_model = (
-        ($acct.sonnet_model // "") as $v |
-        if $v == "" then (($acct.small_model // $acct.model // strenv(DEFAULT_MODEL) // "") as $d | if $d == "" then null else $d end) else $v end
-      ) |
-      .claude.accounts[strenv(ACCOUNT_NAME)].opus_model = (
-        ($acct.opus_model // "") as $v |
-        if $v == "" then (($acct.model // $acct.small_model // strenv(DEFAULT_MODEL) // "") as $d | if $d == "" then null else $d end) else $v end
-      ) |
-      .claude.accounts[strenv(ACCOUNT_NAME)].haiku_model = (
-        ($acct.haiku_model // "") as $v |
-        if $v == "" then (($acct.small_model // $acct.model // strenv(DEFAULT_MODEL) // "") as $d | if $d == "" then null else $d end) else $v end
-      )
-    ' "$CLAUDE_YAML"
+    local model small sonnet opus haiku
+    model=$(ACCOUNT_NAME="$account" yq -r '.claude.accounts[strenv(ACCOUNT_NAME)].model // ""' "$CLAUDE_YAML")
+    small=$(ACCOUNT_NAME="$account" yq -r '.claude.accounts[strenv(ACCOUNT_NAME)].small_model // ""' "$CLAUDE_YAML")
+    sonnet=$(ACCOUNT_NAME="$account" yq -r '.claude.accounts[strenv(ACCOUNT_NAME)].sonnet_model // ""' "$CLAUDE_YAML")
+    opus=$(ACCOUNT_NAME="$account" yq -r '.claude.accounts[strenv(ACCOUNT_NAME)].opus_model // ""' "$CLAUDE_YAML")
+    haiku=$(ACCOUNT_NAME="$account" yq -r '.claude.accounts[strenv(ACCOUNT_NAME)].haiku_model // ""' "$CLAUDE_YAML")
 
-    if ! ACCOUNT_NAME="$account" yq -e '
-      .claude.accounts[strenv(ACCOUNT_NAME)] as $acct |
-      ($acct.model // "") != "" and
-      ($acct.small_model // "") != "" and
-      ($acct.sonnet_model // "") != "" and
-      ($acct.opus_model // "") != "" and
-      ($acct.haiku_model // "") != ""
-    ' "$CLAUDE_YAML" >/dev/null; then
+    set_account_field() {
+        local field="$1"
+        local value="$2"
+        [[ -z "$value" ]] && return 0
+        ACCOUNT_NAME="$account" FIELD="$field" VALUE="$value" \
+            yq -i '.claude.accounts[strenv(ACCOUNT_NAME)][strenv(FIELD)] = strenv(VALUE)' "$CLAUDE_YAML"
+    }
+
+    if [[ -z "$model" ]]; then
+        model="${small:-$default_model}"
+        set_account_field model "$model"
+    fi
+    if [[ -z "$small" ]]; then
+        small="${model:-$default_model}"
+        set_account_field small_model "$small"
+    fi
+    if [[ -z "$sonnet" ]]; then
+        sonnet="${small:-${model:-$default_model}}"
+        set_account_field sonnet_model "$sonnet"
+    fi
+    if [[ -z "$opus" ]]; then
+        opus="${model:-${small:-$default_model}}"
+        set_account_field opus_model "$opus"
+    fi
+    if [[ -z "$haiku" ]]; then
+        haiku="${small:-${model:-$default_model}}"
+        set_account_field haiku_model "$haiku"
+    fi
+
+    if [[ -z "$model" || -z "$small" || -z "$sonnet" || -z "$opus" || -z "$haiku" ]]; then
         log_error "Failed to ensure required third-party model fields for '$account'"
         return 1
     fi
@@ -300,7 +305,7 @@ cmd_create_account() {
     ' "$CLAUDE_YAML"
 
     if is_third_party "$provider"; then
-        ensure_third_party_account_models "$full_name"
+        ensure_third_party_account_models "$full_name" || return $?
     fi
     log_success "Account '$full_name' added"
 
@@ -372,7 +377,7 @@ cmd_update_account() {
     ' "$CLAUDE_YAML"
 
     if is_third_party_account "$input"; then
-        ensure_third_party_account_models "$input"
+        ensure_third_party_account_models "$input" || return $?
         log_info "Ensured third-party model fields (fill missing only)"
 
         local provider parsed acct_name

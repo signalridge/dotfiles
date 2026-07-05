@@ -57,4 +57,20 @@ assert_contains "$doubao_account" "sonnet_model: ark-code-latest"
 assert_contains "$doubao_account" "opus_model: ark-code-latest"
 assert_not_contains "$doubao_account" "kimi-k2.5"
 
+glm_provider="$(section_block "$ROOT/.chezmoidata/claude.yaml" glm)"
+newapi_provider="$(section_block "$ROOT/.chezmoidata/claude.yaml" newapi)"
+newapi_account="$(
+    awk '
+        /^    newapi@private:$/ { in_section = 1; next }
+        in_section && /^    [^[:space:]][^:]*:$/ { exit }
+        in_section { print }
+    ' "$ROOT/.chezmoidata/claude.yaml"
+)"
+assert_contains "$glm_provider" "base_url: https://api.z.ai/api/anthropic"
+assert_not_contains "$glm_provider" "newapi.3689403.xyz"
+assert_contains "$newapi_provider" "base_url: https://newapi.3689403.xyz/"
+assert_contains "$newapi_account" "provider: newapi"
+assert_contains "$newapi_account" "model: glm-5.2"
+assert_contains "$newapi_account" "auto_compact_window: 1000000"
+
 echo "test_profile_alignment: OK"
