@@ -70,3 +70,7 @@ export SLUMBER_CONFIG_PATH="${SLUMBER_CONFIG_PATH:-${XDG_CONFIG_HOME}/slumber/co
 # can't launch a browser. Point it at the installed Google Chrome (no-op elsewhere).
 [[ -z "${PUPPETEER_EXECUTABLE_PATH:-}" && -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]] \
     && export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+
+# Pi statusline (@narumitw/pi-statusline): classic preset follows the Pi theme
+# (signalridge-dracula); default tokyo-night is hardcoded blue-gray.
+export PI_STATUSLINE_PRESET="${PI_STATUSLINE_PRESET:-classic}"

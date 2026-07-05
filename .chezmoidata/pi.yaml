@@ -45,13 +45,13 @@ pi:
   # dedicated chezmoi installer script.
   packages:
     - npm:pi-mcp-adapter
-    # Minimal footer (@fgladisch/pi-footer) — renders in the ACTIVE THEME's text/
-    # dim colors (follows signalridge-dracula, matches the ghostty Dracula term),
-    # and every segment icon is customizable (we use Nerd-font glyphs, not emoji).
-    # Config: ~/.pi/agent/footer.json (chezmoi-managed at dot_pi/agent/footer.json;
-    # /footer-reload to reapply). Chosen over @narumitw/pi-statusline whose core
-    # segment emoji are hardcoded and whose default preset ignores the Pi theme.
-    - npm:@fgladisch/pi-footer
+    # Information-rich statusline (@narumitw/pi-statusline, most-downloaded). The
+    # `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv) follows the
+    # Pi theme (signalridge-dracula / ghostty Dracula); default tokyo-night is
+    # hardcoded blue-gray. Core segment emoji are fixed but render fine in the
+    # CaskaydiaCove Nerd Font. Extension-status icons (2nd line) are tunable via
+    # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
+    - npm:@narumitw/pi-statusline
     # Subagent delegation: child Pi sessions (NOT worktrees) for scout/researcher/
     # planner/worker/reviewer/oracle/context-builder/delegate. Natural-language
     # invoke ("Use reviewer to review this diff"). No slipway conflict.
@@ -130,10 +130,15 @@ pi:
       # rejects with HTTP 422; false makes Pi use `system` instead (root-caused
       # via a logging proxy capturing Pi's request body). thinkingFormat:deepseek
       # because the gateway returns reasoning_content on the assistant message.
-      # reasoningEffortMap xhigh→high: the gateway's honored max is `high`.
+      # reasoningEffortMap xhigh→xhigh: gateway accepts high/xhigh/max (all HTTP 200).
       models:
         - id: glm-5.2 # flagship, startup default
           reasoning: true
+          # thinkingLevelMap declares which levels GLM supports so Pi does NOT
+          # clamp xhigh down to high (agent-session _clampThinkingLevel). Without
+          # it the footer shows 🧠 high even when defaultThinkingLevel=xhigh.
+          thinkingLevelMap:
+            { minimal: low, low: low, medium: medium, high: high, xhigh: xhigh }
           compat:
             supportsDeveloperRole: false
             thinkingFormat: deepseek
@@ -144,10 +149,12 @@ pi:
                 low: low,
                 medium: medium,
                 high: high,
-                xhigh: high,
+                xhigh: xhigh,
               }
         - id: glm-4.7 # stable fallback (both verified HTTP 200 on the gateway)
           reasoning: true
+          thinkingLevelMap:
+            { minimal: low, low: low, medium: medium, high: high, xhigh: xhigh }
           compat:
             supportsDeveloperRole: false
             thinkingFormat: deepseek
@@ -158,7 +165,7 @@ pi:
                 low: low,
                 medium: medium,
                 high: high,
-                xhigh: high,
+                xhigh: xhigh,
               }
     deepseek: # DeepSeek Platform (OpenAI-compatible). V4 models are not in Pi's
       # built-in registry yet, so we pin them here with the reasoning `compat`

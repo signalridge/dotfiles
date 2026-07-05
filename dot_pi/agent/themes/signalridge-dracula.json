@@ -65,11 +65,11 @@
     "syntaxOperator": "pink",
     "syntaxPunctuation": "fg",
     "thinkingOff": "currentLine",
-    "thinkingMinimal": "comment",
-    "thinkingLow": "cyan",
-    "thinkingMedium": "purple",
-    "thinkingHigh": "pink",
-    "thinkingXhigh": "red",
+    "thinkingMinimal": "#4a5578",
+    "thinkingLow": "#556086",
+    "thinkingMedium": "#6272a4",
+    "thinkingHigh": "#7686b8",
+    "thinkingXhigh": "#8b9bce",
     "bashMode": "green"
   },
   "export": {
