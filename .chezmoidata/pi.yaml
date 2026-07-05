@@ -74,6 +74,19 @@ pi:
     # reducers + evidence record; rewrites shell/read/grep/find/ls and proxies
     # MCP to cut context pollution. Top-downloaded Pi package; pairs with readseek.
     - npm:@hypabolic/pi-hypa
+    # retry: widens what counts as retryable (provider "unknown error", Codex
+    # ws-limit, and a stall watchdog that aborts a frozen stream after ~90s) and
+    # hands off to Pi's built-in retry path. COMPLEMENTS defaults.retry above
+    # (that caps backoff; this adds trigger conditions). Zero deps/config.
+    - npm:@narumitw/pi-retry
+    # caffeinate: inhibits macOS sleep (system `caffeinate`) while the agent is
+    # processing a long turn; releases on idle/shutdown. /caffeinate to control.
+    # Zero deps. Disable with PI_CAFFEINATE_DISABLED=1.
+    - npm:@narumitw/pi-caffeinate
+    # goal: `/goal <objective>` autonomous mode — keeps working until goal_complete
+    # or a token budget (--tokens) is hit. Pairs well with GLM-5.2's 1M context.
+    # Zero deps; state is session-scoped.
+    - npm:@narumitw/pi-goal
   # ===== Subagents config -> ~/.pi/agent/settings.json subagents =====
   # Model routing for pi-subagents builtins. Quality-first: default pro, recon
   # agents on flash. For cost-aggressive: defaultModel=flash + override
