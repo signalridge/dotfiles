@@ -12,7 +12,7 @@
 # so the panel groups by the folder directly — no sidecar mapping file.
 #
 # Active set (flat symlinks into the shared library):
-#   current directory: ./.claude/skills/ + ./.codex/skills/
+#   current directory: ./.claude/skills/ + ./.codex/skills/ + ./.pi/skills/
 #
 # Usage:
 #   skill-activate                    live on/off panel
@@ -76,7 +76,11 @@ fi
 
 claude_dir="$PWD/.claude/skills"
 codex_dir="$PWD/.codex/skills"
-target_label="Claude + Codex current dir"
+pi_dir="$PWD/.pi/skills"
+# All harness skill dirs in the current project. A skill is symlinked into every
+# one so Claude, Codex, and Pi (SKILL.md format is shared) see the same set.
+active_dirs=("$claude_dir" "$codex_dir" "$pi_dir")
+target_label="Claude + Codex + Pi current dir"
 
 [ -d "$library" ] || {
   echo "skill-activate: library not found: $library" >&2
@@ -92,11 +96,19 @@ require_real_dir() {
 }
 
 skill_active_full() {
-  [ -e "$claude_dir/$1" ] && [ -e "$codex_dir/$1" ]
+  local d
+  for d in "${active_dirs[@]}"; do
+    [ -e "$d/$1" ] || return 1
+  done
+  return 0
 }
 
 skill_active_any() {
-  [ -e "$claude_dir/$1" ] || [ -e "$codex_dir/$1" ]
+  local d
+  for d in "${active_dirs[@]}"; do
+    [ -e "$d/$1" ] && return 0
+  done
+  return 1
 }
 
 mark() {
@@ -112,13 +124,18 @@ mark() {
 activate_skill() {
   local name="$1"
   local sdir="$2"
-  ln -sfn "$sdir" "$claude_dir/$name"
-  ln -sfn "$sdir" "$codex_dir/$name"
+  local d
+  for d in "${active_dirs[@]}"; do
+    ln -sfn "$sdir" "$d/$name"
+  done
 }
 
 deactivate_skill() {
   local name="$1"
-  rm -f "$claude_dir/$name" "$codex_dir/$name"
+  local d
+  for d in "${active_dirs[@]}"; do
+    rm -f "$d/$name"
+  done
 }
 
 skill_dir_for_name() {
@@ -213,7 +230,7 @@ if [ "$internal" = "__rows" ]; then
 fi
 if [ "$internal" = "__toggle" ]; then
   [ -L "$claude_dir" ] && exit 0
-  mkdir -p "$claude_dir" "$codex_dir" 2>/dev/null || true
+  mkdir -p "${active_dirs[@]}" 2>/dev/null || true
   sdir=$(skill_dir_for_name "$tname" "$pidx")
   [ -n "$sdir" ] || exit 0
   if skill_active_full "$tname"; then
@@ -225,7 +242,7 @@ if [ "$internal" = "__toggle" ]; then
 fi
 if [ "$internal" = "__toggle_category" ]; then
   [ -L "$claude_dir" ] && exit 0
-  mkdir -p "$claude_dir" "$codex_dir" 2>/dev/null || true
+  mkdir -p "${active_dirs[@]}" 2>/dev/null || true
   toggle_category_for_skill "$tname" "$pidx" || true
   exit 0
 fi
@@ -259,18 +276,16 @@ list)
   exit 0
   ;;
 sync)
-  require_real_dir "$claude_dir"
-  require_real_dir "$codex_dir"
-  mkdir -p "$claude_dir" "$codex_dir"
+  for d in "${active_dirs[@]}"; do require_real_dir "$d"; done
+  mkdir -p "${active_dirs[@]}"
   n=$(sync_active_pairs "$idx")
   hs=${claude_dir/#$HOME/\~}
   echo "current dir: synced $n partial skill(s) ($target_label) in $hs"
   exit 0
   ;;
 category)
-  require_real_dir "$claude_dir"
-  require_real_dir "$codex_dir"
-  mkdir -p "$claude_dir" "$codex_dir"
+  for d in "${active_dirs[@]}"; do require_real_dir "$d"; done
+  mkdir -p "${active_dirs[@]}"
   if ! set_category_state "$category_name" "$idx" on; then
     echo "skill-activate: category not found: $category_name" >&2
     exit 1
@@ -281,7 +296,7 @@ category)
   exit 0
   ;;
 clear)
-  for d in "$claude_dir" "$codex_dir"; do
+  for d in "${active_dirs[@]}"; do
     [ -L "$d" ] && continue
     [ -d "$d" ] && find "$d" -maxdepth 1 -type l -delete 2>/dev/null || true
   done
@@ -294,9 +309,8 @@ command -v fzf >/dev/null 2>&1 || {
   echo "skill-activate: fzf not found" >&2
   exit 1
 }
-require_real_dir "$claude_dir"
-require_real_dir "$codex_dir"
-mkdir -p "$claude_dir" "$codex_dir"
+for d in "${active_dirs[@]}"; do require_real_dir "$d"; done
+mkdir -p "${active_dirs[@]}"
 self=$(command -v "$0" 2>/dev/null || true)
 [ -x "$self" ] || self="$0"
 hs=${claude_dir/#$HOME/\~}
