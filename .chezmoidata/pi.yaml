@@ -24,14 +24,13 @@ pi:
     # Max reasoning effort by default (off<minimal<low<medium<high<xhigh).
     # Override per-turn in the TUI; subagents still use their own model routing.
     defaultThinkingLevel: xhigh
-    # GLM-5.2 via the NewAPI gateway (https://newapi.3689403.xyz/) is the startup
-    # default: key baked into models.json from gopass (claude/newapi/private/
-    # api_key), so plain `pi` works out of the box. DeepSeek V4 also wired (gopass)
-    # for /model switching; subagents still route to deepseek-v4-flash for cost
-    # (see subagents below). Switch at runtime with /model, or e.g.
-    # `pi --provider deepseek --model deepseek-v4-pro`.
-    defaultProvider: newapi
-    defaultModel: glm-5.2
+    # DeepSeek V4 Flash (DeepSeek Platform, gopass key) is the startup default:
+    # cheap + 1M context for the main loop. GLM-5.2 via the NewAPI gateway
+    # (https://newapi.3689403.xyz/, gopass key) stays wired for /model switching
+    # AND is what subagents run on (see subagents below). Switch at runtime with
+    # /model, or e.g. `pi --provider newapi --model glm-5.2`.
+    defaultProvider: deepseek
+    defaultModel: deepseek-v4-flash
     # Resolve/install Pi packages with bun instead of npm (faster, no
     # package-lock.json). Pi dispatches package ops via settings `npmCommand`
     # (default ["npm"]); the switch is global across all `npm:` packages below.
@@ -99,16 +98,14 @@ pi:
     # Ctrl+R is free (herdr is prefix=ctrl+b; no bare Ctrl+R binding). Zero deps.
     - npm:pi-input-history
   # ===== Subagents config -> ~/.pi/agent/settings.json subagents =====
-  # Model routing for pi-subagents builtins. Quality-first: default pro, recon
-  # agents on flash. For cost-aggressive: defaultModel=flash + override
-  # oracle/reviewer/planner/worker to pro.
+  # Model routing for pi-subagents builtins. All subagents run on GLM-5.2 (newapi
+  # gateway) while the main loop is on deepseek-v4-flash — the reverse of the old
+  # split. No agentOverrides: every builtin (scout/researcher/planner/worker/
+  # reviewer/oracle/context-builder/delegate) uses defaultModel. To re-introduce a
+  # cheaper recon tier, add agentOverrides mapping scout/researcher/etc to a
+  # flash model.
   subagents:
-    defaultModel: deepseek-v4-pro
-    agentOverrides:
-      scout: { model: deepseek-v4-flash }
-      researcher: { model: deepseek-v4-flash }
-      context-builder: { model: deepseek-v4-flash }
-      delegate: { model: deepseek-v4-flash }
+    defaultModel: glm-5.2
   # ===== Custom providers -> ~/.pi/agent/models.json =====
   # Providers Pi does not know natively, OR built-in providers for which we want
   # to pin specific models Pi's built-in registry lacks (e.g. DeepSeek V4).
