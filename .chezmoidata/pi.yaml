@@ -191,8 +191,9 @@ pi:
       # reasoningEffortMap xhigh→xhigh: gateway accepts high/xhigh/max (all HTTP 200).
       models:
         - id: glm-5.2 # flagship, startup default
-          # newapi gateway routes GLM at 200K ctx; set so compaction can compute
-          # its threshold (contextWindow - reserveTokens). Without it pi never auto-compacts.
+          # newapi gateway routes GLM-5.2 at its native 1M ctx; set so compaction
+          # can compute its threshold (contextWindow - reserveTokens). Without it
+          # pi never auto-compacts. (footer ctx% = usedTokens / this value.)
           contextWindow: 1000000
           maxTokens: 131072
           reasoning: true

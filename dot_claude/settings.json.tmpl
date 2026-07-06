@@ -42,6 +42,17 @@
     }
   },
   "env": {
+{{- /* MCP Tool Search: default defers ALL mcp__* tool schemas — the model must
+       call ToolSearch to load a schema before invoking, so MCP is never the
+       default reach (measured: 695 ToolSearch ≈ 675 MCP calls, ~1:1). auto:15
+       loads MCP tool schemas upfront when they fit within 15% of the context
+       window (our ~47 tools ≈ 9-14K tokens fit easily), removing that friction,
+       and only defers if the tool surface later overflows. High-value servers
+       (serena/context7/tavily/deepwiki) are ALSO pinned alwaysLoad in
+       .chezmoiscripts/run_after_12_sync-claude-mcp.sh so they never defer
+       regardless of this budget. Requires a model with tool_reference support
+       (Opus/Sonnet; Haiku ignores it and loads all upfront anyway). */}}
+    "ENABLE_TOOL_SEARCH": "auto:15",
 {{- /* Third-party providers: use provider base_url + account-configured model settings */ -}}
 {{- if and $provider (hasKey $provider "base_url") }}
     "ANTHROPIC_BASE_URL": "{{ $provider.base_url }}",

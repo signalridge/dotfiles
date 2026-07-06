@@ -4,17 +4,33 @@
   ~/.local/bin/mcp-* wrappers; remote servers use "url". Managed by chezmoi
   (dot_pi/agent/mcp.json.tmpl). The adapter package is declared in
   .chezmoidata/pi.yaml and merged into ~/.pi/agent/settings.json.
+
+  directTools: the adapter defaults to PROXY-ONLY — every MCP server hides
+  behind a single `mcp` dispatcher tool, so the model must do a discover→invoke
+  dance to reach any tool. In practice the GLM-5.2 main loop never does it:
+  across all session history only 5 `mcp` calls fired (all bare connect/list,
+  ZERO real tool invocations) vs. 4000+ native bash/read/grep/edit calls. So we
+  register the frequently-relevant servers as FIRST-CLASS tools (directTools:
+  true) — they show up in the tool list alongside read/bash/edit and get called
+  like any native tool. The `mcp` proxy is KEPT (no disableProxyTool) as the
+  fallback for the niche servers left on proxy (arxiv: many tools; markitdown:
+  rare). Cost ~150-300 tokens/tool in the system prompt; serena's 21 are the
+  most expensive slice but requested in full. Direct tools register from
+  mcp-cache.json, so no startup connection is needed; on first add a server
+  falls back to proxy until its cache populates (force with /mcp reconnect).
 */ -}}
 {
   "mcpServers": {
     "context7": {
       "url": "https://mcp.context7.com/mcp",
-      "lifecycle": "lazy"
+      "lifecycle": "lazy",
+      "directTools": true
     },
     "tavily": {
       "command": "{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily",
       "args": [],
-      "lifecycle": "lazy"
+      "lifecycle": "lazy",
+      "directTools": true
     },
     "serena": {
       "command": "uvx",
@@ -33,15 +49,18 @@
       "env": {
         "AQUA_GLOBAL_CONFIG": "{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml"
       },
-      "lifecycle": "lazy"
+      "lifecycle": "lazy",
+      "directTools": true
     },
     "deepwiki": {
       "url": "https://mcp.deepwiki.com/mcp",
-      "lifecycle": "lazy"
+      "lifecycle": "lazy",
+      "directTools": true
     },
     "gitmcp": {
       "url": "https://gitmcp.io/docs",
-      "lifecycle": "lazy"
+      "lifecycle": "lazy",
+      "directTools": true
     },
     "markitdown": {
       "command": "uvx",

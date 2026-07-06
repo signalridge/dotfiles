@@ -189,6 +189,35 @@ remove_user_mcp_if_present() {
     "$claude_cmd" mcp remove -s user "$name" >/dev/null
 }
 
+# Pin a server as always-loaded so Claude Code never defers its tools behind the
+# Tool Search / ToolSearch step (schemas load at session start regardless of the
+# ENABLE_TOOL_SEARCH budget). Patches ~/.claude.json in place via jq — works for
+# both stdio and http servers and retrofits entries added by a prior run (the
+# ensure_* match-checks above ignore alwaysLoad, so this is the sole owner of it).
+ensure_always_load() {
+    local name="$1"
+
+    if [[ ! -f "$CLAUDE_JSON" ]] || ! jq -e --arg n "$name" '.mcpServers[$n]' "$CLAUDE_JSON" >/dev/null 2>&1; then
+        echo "    alwaysLoad skip: $name (not registered)"
+        return 0
+    fi
+
+    if [[ "$(jq -r --arg n "$name" '.mcpServers[$n].alwaysLoad // false' "$CLAUDE_JSON")" == "true" ]]; then
+        echo "    alwaysLoad set: $name"
+        return 0
+    fi
+
+    local tmp
+    tmp="$(mktemp)"
+    if jq --arg n "$name" '.mcpServers[$n].alwaysLoad = true' "$CLAUDE_JSON" >"$tmp"; then
+        mv "$tmp" "$CLAUDE_JSON"
+        echo "    alwaysLoad add: $name"
+    else
+        rm -f "$tmp"
+        echo "    alwaysLoad FAILED: $name"
+    fi
+}
+
 remove_user_mcp_if_present "slack"
 remove_user_mcp_if_present "notion"
 remove_user_mcp_if_present "codex-mcp"
@@ -200,3 +229,10 @@ ensure_user_mcp_json "arxiv-mcp-server" '{"command":"uv","args":["tool","run","a
 ensure_user_mcp_json "tavily" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily","args":[]}'
 ensure_user_mcp_http "gitmcp" "https://gitmcp.io/docs"
 ensure_user_mcp_http "deepwiki" "https://mcp.deepwiki.com/mcp"
+
+# Pin high-value servers so their tools are always in context (never deferred).
+# arxiv/markitdown/gitmcp stay deferrable (rarely used, fine behind ToolSearch).
+ensure_always_load "serena"
+ensure_always_load "context7"
+ensure_always_load "tavily"
+ensure_always_load "deepwiki"
