@@ -3,6 +3,8 @@
 # ─────────────────────────────────────────────────────────────────────────────
 *.tmp
 README.md
+CLAUDE.md
+AGENTS.md
 
 # Python bytecode (defensive -- bundled skill scripts are currently bash, but
 # leave the ignore in place for future Python-backed helpers)
