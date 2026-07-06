@@ -32,3 +32,24 @@ User preference overrides; fall back when unavailable; no sensitive data in quer
 - Installs: detect lockfiles, resolve signal-vs-preference conflicts explicitly, no mixed managers without confirmation.
 - Use `slipway` for governed changes (multi-step features, sensitive domains, formal review); artifacts in `artifacts/changes/<slug>/`; skip trivial edits.
 - Sensitive domains (Auth/AuthZ, Credentials/PII, Financial, Schema migration, Irreversible ops, External API contracts): never bypass confirmation; never install without preflight.
+
+## Subagent delegation (proactive)
+
+Actively delegate to `subagent` (pi-subagents) instead of doing everything inline
+in the main loop. Reach for a subagent by default when the work fits one of these:
+
+- Cross-file / cross-directory recon where only the conclusion is needed -> `scout`
+  or `context-builder` (they read excerpts and return findings, not full dumps).
+- Reviewing a diff or code quality -> fresh-context `reviewer` (adversarial review,
+  file/line evidence, does NOT edit files unless explicitly asked).
+- Multi-step external research -> `researcher`, paired with `scout` for local code
+  context; combine when a question spans web evidence + repo state.
+- Multiple independent, non-conflicting tasks -> run them as parallel `subagent`
+  tasks rather than serially.
+
+Principles: parallelize when tasks are independent; use fresh context for review;
+do writes with a single `worker` only when implementation is explicitly requested
+(never several writers in one worktree); make cost visible via a normal
+`subagent(...)` call, not hidden background automation. Skip delegation for trivial
+or single-point questions, direct commands, highly private requests, or when the
+user asks not to delegate — then just do it yourself.
