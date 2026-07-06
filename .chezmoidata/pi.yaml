@@ -98,6 +98,15 @@ pi:
     # natively in Pi's TUI — no fzf/atuin binary, so it coexists with herdr/ghostty.
     # Ctrl+R is free (herdr is prefix=ctrl+b; no bare Ctrl+R binding). Zero deps.
     - npm:pi-input-history
+    # ultra-compact: smarter auto-compaction than Pi's built-in. Built-in does a
+    # single reactive threshold + always-LLM summarize; ultra-compact adds (1) a
+    # no-LLM "micro-compaction" tier at 60-90% ctx (strips reasoning + bulk tool
+    # output in microseconds, no summary call) and (2) a PREEMPTIVE 70% trigger
+    # that fires before the next turn, so long multi-tool turns don't overflow.
+    # Coexists with built-in compaction (fallback). PINNED @1.2.1: young, churny,
+    # single-maintainer pkg — pinning freezes it and makes `pi update` skip it.
+    # Rollback: delete this line, `chezmoi apply`, `pi remove npm:pi-ultra-compact`.
+    - npm:pi-ultra-compact@1.2.1
   # ===== Subagents config -> ~/.pi/agent/settings.json subagents =====
   # Model routing for pi-subagents builtins. Reasoning-heavy agents (worker/
   # reviewer/planner/oracle) + researcher run on deepseek-v4-pro (the defaultModel;
