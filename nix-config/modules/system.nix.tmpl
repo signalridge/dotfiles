@@ -196,6 +196,22 @@
   security.pam.services.sudo_local.touchIdAuth = true;
 
   # ─────────────────────────────────────────────────────────────────────────────
+  # Documentation
+  # ─────────────────────────────────────────────────────────────────────────────
+  # nixpkgs-unstable's `nixos-render-docs` dropped `--toc-depth` (~2026-07-05),
+  # but nix-darwin's `doc/manual/default.nix` still passes it, so building
+  # `darwin-manual-html` fails with:
+  #   nixos-render-docs manual html: error: --toc-depth has been removed, use --sidebar-depth instead
+  # Upstream nix-darwin has no fix yet (master == pinned rev), so disable the
+  # HTML manual until it adopts `--sidebar-depth`. `man`/`info` stay enabled.
+  documentation.doc.enable = false; # drop `darwin-help` HTML manual (the broken build)
+  # The darwin-uninstaller builds a *nested* default-config darwin system whose
+  # system-path re-pulls the same broken `darwin-manual-html`, so `doc.enable`
+  # alone is not enough — drop the prebuilt uninstaller too (still runnable via
+  # `nix run nix-darwin#darwin-uninstaller` if ever needed).
+  system.tools.darwin-uninstaller.enable = false;
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # Programs
   # ─────────────────────────────────────────────────────────────────────────────
   programs = {
