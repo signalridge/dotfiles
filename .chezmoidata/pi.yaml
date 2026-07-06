@@ -72,10 +72,6 @@ pi:
     # readseek: hash-anchored read/edit/grep + structural code maps/search
     # (complements serena's semantic nav with hash-anchored edit safety).
     - npm:pi-readseek
-    # OS-level sandbox with interactive permission prompts (@landstrip/landstrip
-    # backend). NOTE: Landlock is Linux-only — verify the macOS backend actually
-    # sandboxes post-install before relying on it.
-    - npm:pi-landstrip
     # hypa: local context runtime — long-context compression, deterministic
     # reducers + evidence record; rewrites shell/read/grep/find/ls and proxies
     # MCP to cut context pollution. Top-downloaded Pi package; pairs with readseek.

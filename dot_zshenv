@@ -75,6 +75,10 @@ export SLUMBER_CONFIG_PATH="${SLUMBER_CONFIG_PATH:-${XDG_CONFIG_HOME}/slumber/co
 # (catppuccin-mocha); default tokyo-night is hardcoded blue-gray.
 export PI_STATUSLINE_PRESET="${PI_STATUSLINE_PRESET:-classic}"
 
-# pi-hypa rewrites shell/grep/find into a `hypa` CLI call; point it at the
-# bundled binary so bash finds it (the npm .bin dir isn't on PATH → code 127).
+# pi-hypa rewrites Pi's bash commands into bare `hypa …` calls. Two separate needs:
+#   - the `hypa` token in the rewritten string must be on PATH (else code 127) —
+#     handled by the ~/.local/bin/hypa shim (dot_local/bin/executable_hypa);
+#   - pi-hypa's own pi.exec() (rewrite step + hypa_* tools) reads HYPA_BIN below.
+# HYPA_BIN does NOT satisfy the PATH need; it only points pi.exec/the shim's fast
+# path at the bundled native binary (skips the node launcher).
 export HYPA_BIN="${HYPA_BIN:-$HOME/.pi/agent/npm/node_modules/@hypabolic/hypa-darwin-arm64/bin/hypa}"
