@@ -127,20 +127,31 @@ pi:
   #                        gateway instead of burning metered deepseek-flash tokens.
   #
   # deepseek-v4-flash is no longer routed to any subagent (still a /model option).
-  # Bare model ids resolve to a provider automatically — each id here is unique to
-  # one provider (gpt-5.5=krill, glm-*=newapi, deepseek-*=deepseek).
+  #
+  # Each override is QUALIFIED as `provider/id`, NOT a bare id. A bare id is
+  # resolved by pi-subagents (resolveBaseModelCandidate) via `id ===` across ALL
+  # registered models — and pi's BUILT-IN registry also defines `gpt-5.5` (openai /
+  # openai-codex, see model-resolver.js). So bare `gpt-5.5` is ambiguous: the match
+  # count is >1, the parent provider (newapi) doesn't disambiguate, and it falls
+  # through to fuzzy resolution onto a keyless built-in provider → "No API key found
+  # for openrouter" (the reviewer/oracle failure). A slash-qualified `krill/gpt-5.5`
+  # matches ONLY within the named provider (the resolver's own contract: "a
+  # qualified provider/id query only matches within the named provider — never
+  # silently switches providers for security/cost-sensitive configs"), so it's
+  # collision-proof. glm-*/deepseek-* ids happen to be unique today, but they're
+  # qualified too so a future built-in-registry id clash can't resurface this bug.
   #
   # NOTE: modify_settings deep-merges (jq *), so REMOVING an override here does NOT
   # delete it from an existing ~/.pi/agent/settings.json — prune agentOverrides there
   # too when narrowing. (Changing a model VALUE is fine: jq * overwrites scalars.)
   subagents:
-    defaultModel: deepseek-v4-pro
+    defaultModel: deepseek/deepseek-v4-pro
     agentOverrides:
-      oracle: { model: gpt-5.5 }
-      reviewer: { model: gpt-5.5 }
-      scout: { model: glm-4.7 }
-      context-builder: { model: glm-5.2 }
-      delegate: { model: glm-4.7 }
+      oracle: { model: krill/gpt-5.5 }
+      reviewer: { model: krill/gpt-5.5 }
+      scout: { model: newapi/glm-4.7 }
+      context-builder: { model: newapi/glm-5.2 }
+      delegate: { model: newapi/glm-4.7 }
   # ===== Custom providers -> ~/.pi/agent/models.json =====
   # Providers Pi does not know natively, OR built-in providers for which we want
   # to pin specific models Pi's built-in registry lacks (e.g. DeepSeek V4).
