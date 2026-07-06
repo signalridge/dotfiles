@@ -115,15 +115,15 @@ pi:
   # the reviewer gate runs on a family DIFFERENT from the glm-5.2 main loop (an
   # independent perspective catches what the main model misses):
   #
-  #   gpt-5.5 (krill)   -> the defaultModel: worker, planner, researcher (the bulk
-  #                        coding/planning/investigation volume) plus oracle (the
-  #                        rare hardest one-shot question). NOTE: gpt-5.5 is premium-
-  #                        priced, so this bulk tier is far costlier than the prior
-  #                        deepseek-v4-pro default — watch spend on high-throughput
-  #                        agents. Distinct family from the glm-5.2 main loop.
-  #   deepseek-v4-pro   -> reviewer. Adversarial review on a family distinct from
-  #                        BOTH the glm main loop and the gpt-5.5 worker tier — the
-  #                        strongest independent gate (its 1M window fits large diffs).
+  #   gpt-5.5 (openai-codex) -> the defaultModel (worker, planner, researcher — the
+  #                        bulk volume) plus reviewer + oracle. Served by the OFFICIAL
+  #                        OpenAI provider via ChatGPT "Sign in with ChatGPT" Codex
+  #                        OAuth (auth type "chatgpt"), NOT the krill proxy. Distinct
+  #                        family from the glm-5.2 main loop, so reviewer stays an
+  #                        independent adversarial gate. NOTE: on a ChatGPT Plus/Pro
+  #                        sub these share your Codex usage limits — high-throughput
+  #                        subagents can hit HTTP 429 usage_limit_reached (2-4h
+  #                        lockouts); watch volume.
   #   glm (newapi)      -> the cheap mechanical/recon tier, same family as the main
   #                        loop (fine for non-adversarial dispatch): scout=glm-4.7
   #                        (quick lookup), context-builder=glm-5.2 (1M window suits
@@ -131,7 +131,12 @@ pi:
   #                        Runs on the subscription gateway instead of burning metered
   #                        deepseek tokens.
   #
-  # deepseek-v4-flash is no longer routed to any subagent (still a /model option).
+  # deepseek (v4-pro/flash) and the krill/gpt-5.5 proxy are no longer routed to any
+  # subagent (all remain /model options for the interactive loop).
+  #
+  # AUTH: openai-codex needs a one-time `/login` -> OpenAI in pi (browser OAuth);
+  # creds land in ~/.pi/agent/auth.json (NOT this repo). Until you log in the
+  # gpt-5.5 subagents fail with an auth error; deepseek/glm (gopass) keep working.
   #
   # Each override is QUALIFIED as `provider/id`, NOT a bare id. A bare id is
   # resolved by pi-subagents (resolveBaseModelCandidate) via `id ===` across ALL
@@ -139,8 +144,8 @@ pi:
   # openai-codex, see model-resolver.js). So bare `gpt-5.5` is ambiguous: the match
   # count is >1, the parent provider (newapi) doesn't disambiguate, and it falls
   # through to fuzzy resolution onto a keyless built-in provider → "No API key found
-  # for openrouter" (the reviewer/oracle failure). A slash-qualified `krill/gpt-5.5`
-  # matches ONLY within the named provider (the resolver's own contract: "a
+  # for openrouter" (the reviewer/oracle failure). A slash-qualified `openai-codex/gpt-5.5`
+  # (what reviewer/oracle/default now use) matches ONLY within the named provider (the resolver's own contract: "a
   # qualified provider/id query only matches within the named provider — never
   # silently switches providers for security/cost-sensitive configs"), so it's
   # collision-proof. glm-*/deepseek-* ids happen to be unique today, but they're
@@ -150,10 +155,10 @@ pi:
   # delete it from an existing ~/.pi/agent/settings.json — prune agentOverrides there
   # too when narrowing. (Changing a model VALUE is fine: jq * overwrites scalars.)
   subagents:
-    defaultModel: krill/gpt-5.5
+    defaultModel: openai-codex/gpt-5.5
     agentOverrides:
-      oracle: { model: krill/gpt-5.5 }
-      reviewer: { model: deepseek/deepseek-v4-pro }
+      reviewer: { model: openai-codex/gpt-5.5 }
+      oracle: { model: openai-codex/gpt-5.5 }
       scout: { model: newapi/glm-4.7 }
       context-builder: { model: newapi/glm-5.2 }
       delegate: { model: newapi/glm-4.7 }
