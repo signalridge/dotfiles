@@ -108,22 +108,39 @@ pi:
     # Rollback: delete this line, `chezmoi apply`, `pi remove npm:pi-ultra-compact`.
     - npm:pi-ultra-compact@1.2.1
   # ===== Subagents config -> ~/.pi/agent/settings.json subagents =====
-  # Model routing for pi-subagents builtins. Reasoning-heavy agents (worker/
-  # reviewer/planner/oracle) + researcher run on deepseek-v4-pro (the defaultModel;
-  # quality-first, deliberately distinct from the GLM-5.2 main loop). Only the
-  # mechanical recon agents (scout=quick lookup, context-builder=assemble context,
-  # delegate=dispatch) drop to the cheap deepseek-v4-flash. researcher stays on pro
-  # because it does deep investigation + synthesis, not just lookup.
+  # Model routing for pi-subagents builtins, tiered across the three families so
+  # each agent runs on the cheapest model that still clears its bar — and so the
+  # quality gates run on a family DIFFERENT from the GLM-5.2 main loop (an
+  # independent perspective catches what the main model misses):
+  #
+  #   gpt-5.5 (krill)   -> oracle, reviewer. Premium reasoning reserved for the two
+  #                        rare, high-leverage roles (hardest one-shot question /
+  #                        adversarial review). Maximally distinct from the GLM main
+  #                        loop, so it's the strongest independent second opinion.
+  #   deepseek-v4-pro   -> worker, planner, researcher (the defaultModel). Strong,
+  #                        economical workhorse for the bulk of the coding/planning/
+  #                        investigation volume — too high-throughput for gpt pricing.
+  #   glm (newapi)      -> the cheap mechanical/recon tier, where diversity doesn't
+  #                        matter: scout=glm-4.7 (quick lookup), context-builder=
+  #                        glm-5.2 (its 1M window suits assembling large context),
+  #                        delegate=glm-4.7 (pure dispatch). Runs on the subscription
+  #                        gateway instead of burning metered deepseek-flash tokens.
+  #
+  # deepseek-v4-flash is no longer routed to any subagent (still a /model option).
+  # Bare model ids resolve to a provider automatically — each id here is unique to
+  # one provider (gpt-5.5=krill, glm-*=newapi, deepseek-*=deepseek).
   #
   # NOTE: modify_settings deep-merges (jq *), so REMOVING an override here does NOT
   # delete it from an existing ~/.pi/agent/settings.json — prune agentOverrides there
-  # too when narrowing (e.g. researcher).
+  # too when narrowing. (Changing a model VALUE is fine: jq * overwrites scalars.)
   subagents:
     defaultModel: deepseek-v4-pro
     agentOverrides:
-      scout: { model: deepseek-v4-flash }
-      context-builder: { model: deepseek-v4-flash }
-      delegate: { model: deepseek-v4-flash }
+      oracle: { model: gpt-5.5 }
+      reviewer: { model: gpt-5.5 }
+      scout: { model: glm-4.7 }
+      context-builder: { model: glm-5.2 }
+      delegate: { model: glm-4.7 }
   # ===== Custom providers -> ~/.pi/agent/models.json =====
   # Providers Pi does not know natively, OR built-in providers for which we want
   # to pin specific models Pi's built-in registry lacks (e.g. DeepSeek V4).
@@ -230,6 +247,41 @@ pi:
             thinkingFormat: deepseek
             reasoningEffortMap:
               { minimal: high, low: high, medium: high, high: high, xhigh: max }
+    krill: # Krill — gpt-5.5 served on an OpenAI-Responses endpoint
+      # (https://api.krill-ai.com). Same upstream Claude Code (anthropic-compatible
+      # /codex) and Codex (openai-responses /codex/v1) already use; here we take the
+      # Responses route because that's gpt-5.5's native transport, mirroring
+      # dot_codex [model_providers.krill] (base_url .../codex/v1, wire_api=responses).
+      # Pi's openai-responses api POSTs to <base_url>/responses, so keep the /codex/v1
+      # suffix. Key from gopass (claude/krill/private/api_key, the same secret the
+      # claude/codex configs read) → baked in at apply time, so
+      # `pi --provider krill --model gpt-5.5` works out of the box; the provider is
+      # silently skipped on a machine without the key. Pick at runtime with /model.
+      base_url: https://api.krill-ai.com/codex/v1
+      api: openai-responses
+      gopass: claude/krill/private/api_key
+      models:
+        - id: gpt-5.5
+          name: GPT-5.5 (krill)
+          # gpt-5 family = 400K total context. Set so Pi's auto-compaction can
+          # compute its threshold (contextWindow - reserveTokens); without it Pi
+          # never auto-compacts (same reason as the newapi GLM models, #795).
+          contextWindow: 400000
+          maxTokens: 128000
+          reasoning: true
+          # openai-responses sends reasoning natively as reasoning:{effort} — no
+          # thinkingFormat/compat plumbing needed (that's the openai-completions
+          # path used by newapi/deepseek). gpt-5.5 accepts effort up to xhigh
+          # (dot_codex sets model_reasoning_effort=xhigh), so map identity and do
+          # NOT let Pi clamp xhigh down to high.
+          thinkingLevelMap:
+            {
+              minimal: minimal,
+              low: low,
+              medium: medium,
+              high: high,
+              xhigh: xhigh,
+            }
     qwen: # Alibaba DashScope (OpenAI-compatible)
       base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
       api: openai-completions
