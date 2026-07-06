@@ -1,0 +1,50 @@
+#!/usr/bin/env sh
+# hypa CLI shim (chezmoi-managed) — makes `hypa` resolvable on PATH for Pi.
+#
+# Why this exists:
+#   @hypabolic/pi-hypa intercepts Pi's bash tool and rewrites commands through the
+#   `hypa rewrite` engine, which emits BARE `hypa` tokens, e.g.
+#       git status --short && echo hi
+#     → hypa git status --short && hypa -c "echo hi"
+#   Pi then runs that string via `/bin/bash -c ...`, so bash does a PATH lookup for
+#   `hypa`. With no `hypa` on PATH the command dies with "command not found" (127)
+#   and a long rewrite-timeout stall on every command.
+#
+#   pi-hypa's postinstall.js is meant to install exactly this shim to ~/.local/bin,
+#   but bun does not run dependency postinstall scripts, so the shim is never
+#   created. chezmoi owns it here instead (~/.local/bin is already on PATH).
+#
+#   NOTE: HYPA_BIN alone does NOT fix the 127 — pi-hypa only consults it for its own
+#   internal pi.exec() (the rewrite step + hypa_* tools), never for the rewritten
+#   bash string that bash actually executes. PATH is the only lever for that.
+#
+# Resolution order (fast path first — this runs once per rewritten command):
+#   1. $HYPA_BIN (dot_zshenv points it at the bundled native binary)
+#   2. the arch-matched bundled native binary (portable, no node startup)
+#   3. the bundled node launcher bin.js (arch-agnostic last resort)
+set -eu
+
+case "$(uname -s)-$(uname -m)" in
+  Darwin-arm64)              arch=darwin-arm64 ;;
+  Darwin-x86_64)             arch=darwin-x64 ;;
+  Linux-aarch64|Linux-arm64) arch=linux-arm64 ;;
+  Linux-x86_64)              arch=linux-x64 ;;
+  *)                         arch= ;;
+esac
+
+for candidate in \
+  "${HYPA_BIN:-}" \
+  "${arch:+$HOME/.pi/agent/npm/node_modules/@hypabolic/hypa-$arch/bin/hypa}"
+do
+  if [ -n "$candidate" ] && [ -x "$candidate" ]; then
+    exec "$candidate" "$@"
+  fi
+done
+
+launcher="$HOME/.pi/agent/npm/node_modules/@hypabolic/hypa/bin.js"
+if [ -f "$launcher" ]; then
+  exec node "$launcher" "$@"
+fi
+
+echo "hypa shim: no pi-bundled hypa binary found (checked \$HYPA_BIN, arch dir, bin.js)" >&2
+exit 127
