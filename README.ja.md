@@ -361,7 +361,6 @@ codex-token --check deepseek@private
 - Codex Slack は `.chezmoiscripts/run_after_13_sync-codex-connector-plugins.sh.tmpl` によって公式 connector plugin としてインストールされ、`slack@openai-curated` として有効化されます。
 - Codex、Claude、Pi の Herdr agent lifecycle integration は `.chezmoiscripts/run_after_14_sync-herdr-integrations.sh.tmpl` によってインストールされます。Codex の hook 設定は `hooks.json` ではなく `config.toml` に保持します。
 - このリポジトリは次の MCP ラッパーを提供します：
-  - `~/.local/bin/mcp-context7`
   - `~/.local/bin/mcp-tavily`
 
 #### タスク -> ツールルーティング

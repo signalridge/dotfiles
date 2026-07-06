@@ -94,7 +94,10 @@ Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 .pi/agent/auth.json
 .pi/agent/sessions/
 .pi/agent/trust.json
-.pi/agent/keybindings.json
+# keybindings.json is intentionally MANAGED (dot_pi/agent/keybindings.json): it
+# holds our declarative key remaps (e.g. app.session.rename -> shift+r, freeing
+# Ctrl+R for the vendored pi-input-history popup). Pi only reads it unless you
+# edit keys via its TUI, in which case `chezmoi diff` surfaces the drift.
 .pi/agent/npm/
 .pi/agent/git/
 .pi/agent/logs/

@@ -18,6 +18,8 @@ MCP tools are provided by the `pi-mcp-adapter` extension; servers are configured
 - Long-context / evidence compression -> hypa (rewrites shell/read/grep/find/ls, proxies MCP)
 - Browser/E2E -> agent-browser (CLI)
 - Repo Q&A -> DeepWiki (public) / gitmcp (private)
+- Paper/research -> arxiv
+- Doc→Markdown -> markitdown
 - Notes/knowledge base -> Notion official MCP/plugin when available
 
 Code-nav layering: serena for semantic "who calls / where defined" across the repo;

@@ -8,8 +8,7 @@
 {
   "mcpServers": {
     "context7": {
-      "command": "{{ .chezmoi.homeDir }}/.local/bin/mcp-context7",
-      "args": [],
+      "url": "https://mcp.context7.com/mcp",
       "lifecycle": "lazy"
     },
     "tavily": {
@@ -38,6 +37,20 @@
     },
     "deepwiki": {
       "url": "https://mcp.deepwiki.com/mcp",
+      "lifecycle": "lazy"
+    },
+    "gitmcp": {
+      "url": "https://gitmcp.io/docs",
+      "lifecycle": "lazy"
+    },
+    "markitdown": {
+      "command": "uvx",
+      "args": ["markitdown-mcp"],
+      "lifecycle": "lazy"
+    },
+    "arxiv": {
+      "command": "uv",
+      "args": ["tool", "run", "arxiv-mcp-server"],
       "lifecycle": "lazy"
     }
   }

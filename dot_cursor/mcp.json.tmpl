@@ -1,3 +1,49 @@
+{{- /*
+  ~/.cursor/mcp.json — MCP servers for Cursor. Same functional set as the CLI
+  harnesses (claude/codex/pi): remote servers use "url"; stdio servers reuse the
+  shared ~/.local/bin/mcp-* wrappers or uvx/uv. Cursor has no per-server lazy
+  lifecycle, so that pi-only field is omitted here. Managed by chezmoi.
+*/ -}}
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "context7": {
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "tavily": {
+      "command": "{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily",
+      "args": []
+    },
+    "serena": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        ".",
+        "--enable-web-dashboard",
+        "false"
+      ],
+      "env": {
+        "AQUA_GLOBAL_CONFIG": "{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml"
+      }
+    },
+    "deepwiki": {
+      "url": "https://mcp.deepwiki.com/mcp"
+    },
+    "gitmcp": {
+      "url": "https://gitmcp.io/docs"
+    },
+    "markitdown": {
+      "command": "uvx",
+      "args": ["markitdown-mcp"]
+    },
+    "arxiv": {
+      "command": "uv",
+      "args": ["tool", "run", "arxiv-mcp-server"]
+    }
+  }
 }

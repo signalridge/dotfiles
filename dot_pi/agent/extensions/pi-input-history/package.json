@@ -1,7 +1,7 @@
 {
   "name": "pi-input-history",
-  "version": "1.0.0",
-  "description": "Cross-session prompt history and fuzzy Ctrl+R search for pi.",
+  "version": "1.1.0",
+  "description": "Cross-session prompt history and an fzf/atuin-style fuzzy Ctrl+R popup for pi.",
   "keywords": [
     "pi",
     "pi-package",
@@ -10,7 +10,9 @@
     "reverse-search",
     "ctrl-r",
     "prompt-history",
-    "fuzzy-search"
+    "fuzzy-search",
+    "fzf",
+    "atuin"
   ],
   "license": "MIT",
   "author": "ouzhenkun",

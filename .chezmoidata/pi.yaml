@@ -89,15 +89,14 @@ pi:
     # or a token budget (--tokens) is hit. Pairs well with GLM-5.2's 1M context.
     # Zero deps; state is session-scoped.
     - npm:@narumitw/pi-goal
-    # input-history: cross-session prompt history. Pi's built-in ↑/↓ history is
-    # in-memory / current-session only; this preloads prior prompts (per-cwd, via
-    # SessionManager.list — reads Pi's own session JSONL, NO separate state file)
-    # into the native ↑/↓ history AND adds Ctrl+R: an fzf/atuin-style reverse-search
-    # overlay (bottom-center popup, fuzzy multi-token match + highlight, ↑/↓ or
-    # Ctrl+R/Ctrl+S to cycle, Enter fills the editor, Esc/Ctrl+G cancels). Renders
-    # natively in Pi's TUI — no fzf/atuin binary, so it coexists with herdr/ghostty.
-    # Ctrl+R is free (herdr is prefix=ctrl+b; no bare Ctrl+R binding). Zero deps.
-    - npm:pi-input-history
+    # input-history: NOT listed here — it is VENDORED (locally forked/魔改) at
+    # dot_pi/agent/extensions/pi-input-history/ and auto-discovered from
+    # ~/.pi/agent/extensions/, so no `npm:` entry is needed (listing it too would
+    # double-load it and the npm copy would win, shadowing the local edits — see
+    # the extension conflict pi reports when both exist). Our fork replaces the
+    # single-line reverse-search with a full fzf/atuin-style popup list (Ctrl+R).
+    # Ctrl+R is claimed for that popup; Pi's built-in app.session.rename is moved
+    # off Ctrl+R to shift+r in dot_pi/agent/keybindings.json to avoid the clash.
     # ultra-compact: smarter auto-compaction than Pi's built-in. Built-in does a
     # single reactive threshold + always-LLM summarize; ultra-compact adds (1) a
     # no-LLM "micro-compaction" tier at 60-90% ctx (strips reasoning + bulk tool

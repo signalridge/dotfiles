@@ -1,14 +1,16 @@
 /**
- * Persistent History + Ctrl+R Reverse Search
+ * Persistent History + Ctrl+R Fuzzy Popup (fzf / atuin style)
  *
  * - Loads recent prompts from previous sessions into up/down history on startup.
- * - Ctrl+R opens a reverse search overlay (fuzzy subsequence matching).
+ * - Ctrl+R opens a full-screen-width popup listing history with live fuzzy
+ *   filtering — a scrollable list of candidates, not a single-line prompt.
  *
  * Hotkeys while searching:
- * - Ctrl+R / ↑ : older match
- * - Ctrl+S / ↓ : newer match
- * - Enter      : accept match (fills editor)
- * - Esc/Ctrl+G : cancel
+ * - ↑ / Ctrl+P / Ctrl+R : move to older match
+ * - ↓ / Ctrl+N / Ctrl+S : move to newer match
+ * - <type>              : fuzzy-filter (subsequence, space = multi-token)
+ * - Enter               : accept selection (fills editor)
+ * - Esc / Ctrl+G / Ctrl+C : cancel
  */
 
 import {
@@ -22,12 +24,16 @@ import {
   Key,
   matchesKey,
   truncateToWidth,
+  visibleWidth,
   type Component,
   type Focusable,
   type TUI,
 } from "@earendil-works/pi-tui";
 
 const MAX_MESSAGES = 100;
+
+/** Number of history rows shown in the popup list at once. */
+const LIST_ROWS = 10;
 
 // ─── Extension Entry ───────────────────────────────────────────────────────────
 
@@ -53,9 +59,9 @@ export default function (pi: ExtensionAPI) {
     });
   });
 
-  // Ctrl+R: reverse search
+  // Ctrl+R: fuzzy history popup (fzf / atuin style)
   pi.registerShortcut("ctrl+r", {
-    description: "Reverse search through prompt history",
+    description: "Fuzzy popup search through prompt history",
     handler: async (ctx) => {
       // Merge cached history with current session's branch history
       const branchHistory = collectBranchHistory(ctx);
@@ -66,9 +72,20 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      const selected = await ctx.ui.custom<string | null>((tui, theme, _kb, done) => {
-        return new ReverseSearchComponent(tui, theme, merged, done);
-      }, { overlay: true, overlayOptions: { anchor: "bottom-center", width: "100%" } });
+      const selected = await ctx.ui.custom<string | null>(
+        (tui, theme, _kb, done) => {
+          return new HistoryPopupComponent(tui, theme, merged, done);
+        },
+        {
+          overlay: true,
+          overlayOptions: {
+            anchor: "center",
+            width: "70%",
+            minWidth: 40,
+            maxHeight: "80%",
+          },
+        },
+      );
 
       if (selected === null) return;
       ctx.ui.setEditorText(selected);
@@ -76,7 +93,7 @@ export default function (pi: ExtensionAPI) {
   });
 }
 
-// ─── Reverse Search Component ──────────────────────────────────────────────────
+// ─── Fuzzy History Popup ───────────────────────────────────────────────────────
 
 type Done = (value: string | null) => void;
 
@@ -103,7 +120,12 @@ function toSingleLinePreview(text: string): string {
 }
 
 /** Highlight matched characters (subsequence) with underline + accent color. */
-function highlightMatch(text: string, query: string, theme: any, maxWidth: number): string {
+function highlightMatch(
+  text: string,
+  query: string,
+  theme: any,
+  maxWidth: number,
+): string {
   // Truncate plain text first to ensure it fits
   const truncated = truncateToWidth(text, maxWidth);
   // Strip any ANSI that truncateToWidth might have added for ellipsis
@@ -149,12 +171,25 @@ function highlightMatch(text: string, query: string, theme: any, maxWidth: numbe
   return result;
 }
 
-class ReverseSearchComponent implements Component, Focusable {
+/**
+ * fzf / atuin style popup: a scrollable list of history candidates that filters
+ * live as you type, with the selected row rendered as a full-width highlight bar.
+ *
+ * Layout (top → bottom, anchored to the bottom of the screen):
+ *   ┌ older matches …
+ *   │ ▌ selected match      ← full-width highlight bar
+ *   └ newer matches …       ← newest match sits just above the prompt
+ *   > query█                              1/57
+ *   ↑ older · ↓ newer · enter accept · esc cancel
+ */
+class HistoryPopupComponent implements Component, Focusable {
   private _focused = false;
   private readonly input = new Input();
 
   private query = "";
+  /** Indices into `history` that match the query, newest-first. */
   private matchIndices: number[] = [];
+  /** Pointer into `matchIndices`; 0 = newest match. */
   private matchPointer = 0;
 
   constructor(
@@ -200,30 +235,46 @@ class ReverseSearchComponent implements Component, Focusable {
     return this.history[index!];
   }
 
-  private cycleOlder(): void {
+  /** Move selection toward older entries (clamped). */
+  private moveOlder(): void {
     if (this.matchIndices.length === 0) return;
-    this.matchPointer = (this.matchPointer + 1) % this.matchIndices.length;
+    this.matchPointer = Math.min(
+      this.matchPointer + 1,
+      this.matchIndices.length - 1,
+    );
   }
 
-  private cycleNewer(): void {
+  /** Move selection toward newer entries (clamped). */
+  private moveNewer(): void {
     if (this.matchIndices.length === 0) return;
-    this.matchPointer = (this.matchPointer - 1 + this.matchIndices.length) % this.matchIndices.length;
+    this.matchPointer = Math.max(this.matchPointer - 1, 0);
   }
 
   handleInput(data: string): void {
-    if (matchesKey(data, Key.ctrl("r")) || matchesKey(data, Key.up)) {
-      this.cycleOlder();
+    // Older: ↑ / Ctrl+P / Ctrl+R
+    if (
+      matchesKey(data, Key.up) ||
+      matchesKey(data, Key.ctrl("p")) ||
+      matchesKey(data, Key.ctrl("r"))
+    ) {
+      this.moveOlder();
       this.tui.requestRender();
       return;
     }
 
-    if (matchesKey(data, Key.ctrl("s")) || matchesKey(data, Key.down)) {
-      this.cycleNewer();
+    // Newer: ↓ / Ctrl+N / Ctrl+S
+    if (
+      matchesKey(data, Key.down) ||
+      matchesKey(data, Key.ctrl("n")) ||
+      matchesKey(data, Key.ctrl("s"))
+    ) {
+      this.moveNewer();
       this.tui.requestRender();
       return;
     }
 
-    if (matchesKey(data, Key.ctrl("g"))) {
+    // Cancel: Ctrl+G / Ctrl+C (Esc is handled via input.onEscape)
+    if (matchesKey(data, Key.ctrl("g")) || matchesKey(data, Key.ctrl("c"))) {
       this.done(null);
       return;
     }
@@ -240,34 +291,97 @@ class ReverseSearchComponent implements Component, Focusable {
     this.tui.requestRender();
   }
 
+  /** Compute the visible window [start, end) over matchIndices, selection centered. */
+  private windowBounds(): { start: number; end: number } {
+    const total = this.matchIndices.length;
+    const size = Math.min(LIST_ROWS, total);
+    const half = Math.floor(size / 2);
+    const start = Math.max(
+      0,
+      Math.min(this.matchPointer - half, Math.max(0, total - size)),
+    );
+    return { start, end: Math.min(start + size, total) };
+  }
+
+  /** Render one history row. Selected rows become a full-width highlight bar. */
+  private renderRow(
+    matchIdx: number,
+    isSelected: boolean,
+    width: number,
+  ): string {
+    const t = this.theme;
+    const text = toSingleLinePreview(
+      this.history[this.matchIndices[matchIdx]!]!,
+    );
+    const prefix = isSelected ? "▌ " : "  ";
+    const textWidth = Math.max(1, width - visibleWidth(prefix));
+
+    if (!isSelected) {
+      const body = truncateToWidth(text, textWidth);
+      return t.fg("muted", prefix) + t.fg("dim", body);
+    }
+
+    // Highlight matched chars, then pad to full width so the bar spans the row.
+    const body = highlightMatch(text, this.query, t, textWidth);
+    const used = visibleWidth(prefix) + visibleWidth(body);
+    const pad = " ".repeat(Math.max(0, width - used));
+    return t.bg("selectedBg", t.fg("accent", prefix) + body + pad);
+  }
+
+  /** Pad or truncate a (possibly ANSI-styled) string to exactly `w` columns. */
+  private fit(text: string, w: number): string {
+    const vis = visibleWidth(text);
+    if (vis > w) return truncateToWidth(text, w);
+    return text + " ".repeat(w - vis);
+  }
+
   render(width: number): string[] {
     const t = this.theme;
-    const currentMatch = this.getCurrentMatch();
+    const border = (s: string) => t.fg("border", s);
+    const total = this.matchIndices.length;
 
-    // Reserve space for prefix and counter (use fixed max counter width)
-    const prefix = "(reverse-search) ";
-    const maxCounterWidth = 10; // " [xx/xx]" is enough
-    const availableWidth = Math.max(10, width - prefix.length - maxCounterWidth);
+    // Interior width inside the frame: "│ " + content + " │"  ⇒  width - 4.
+    const inner = Math.max(10, width - 4);
 
-    const counterText = this.matchIndices.length > 0
-      ? ` [${this.matchPointer + 1}/${this.matchIndices.length}]`
-      : " [0/0]";
+    // ── Content lines, each rendered to `inner` columns ──────────────────────
+    const content: string[] = [];
+    if (total === 0) {
+      // Keep the box height stable so the prompt doesn't jump around.
+      for (let i = 0; i < LIST_ROWS - 1; i++) content.push("");
+      content.push(t.fg("warning", "no match"));
+    } else {
+      const { start, end } = this.windowBounds();
+      // Build rows newest-first, then reverse so the newest match sits at the
+      // bottom of the list, right above the prompt.
+      const rows: string[] = [];
+      for (let i = start; i < end; i++) {
+        rows.push(this.renderRow(i, i === this.matchPointer, inner));
+      }
+      rows.reverse();
+      while (rows.length < LIST_ROWS) rows.unshift("");
+      content.push(...rows);
+    }
 
-    const matchPreview = currentMatch
-      ? highlightMatch(toSingleLinePreview(currentMatch), this.query, t, availableWidth)
-      : t.fg("warning", "no match");
+    // Prompt line — the Input component renders its OWN "> " prompt and pads to
+    // `inner`, so we must NOT prepend another "> " (that caused the "> >" bug).
+    content.push(this.input.render(inner)[0] ?? "");
 
-    const counter = t.fg("dim", counterText);
+    // Status / help line: counter + key hints.
+    const counter = total > 0 ? `${this.matchPointer + 1}/${total}` : "0/0";
+    content.push(
+      t.fg("dim", `${counter}  ↑ older · ↓ newer · enter accept · esc cancel`),
+    );
 
-    const header =
-      t.fg("accent", prefix) +
-      matchPreview +
-      counter;
+    // ── Frame it as a floating dialog ────────────────────────────────────────
+    const title = " 🔍 history ";
+    const dashes = Math.max(0, width - 3 - visibleWidth(title));
+    const top = border("╭─" + title + "─".repeat(dashes) + "╮");
+    const bottom = border("╰" + "─".repeat(Math.max(0, width - 2)) + "╯");
+    const framed = content.map(
+      (line) => border("│") + " " + this.fit(line, inner) + " " + border("│"),
+    );
 
-    const inputLine = truncateToWidth(this.input.render(width)[0] ?? "", width);
-    const help = truncateToWidth(t.fg("dim", "ctrl+r/↑ older • ctrl+s/↓ newer • enter accept • esc cancel"), width);
-
-    return [truncateToWidth(header, width), inputLine, help];
+    return [top, ...framed, bottom];
   }
 
   invalidate(): void {
