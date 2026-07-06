@@ -59,7 +59,7 @@ packages:
   - name: casey/just@1.55.1
   - name: jesseduffield/lazygit@v0.63.0
   - name: jesseduffield/lazydocker@v0.25.2
-  - name: neovim/neovim@v0.12.3
+  - name: neovim/neovim@v0.12.4
   - name: LuaLS/lua-language-server@3.18.2
   - name: tree-sitter/tree-sitter@v0.26.10
   - name: jj-vcs/jj@v0.43.0
