@@ -151,8 +151,8 @@ pi:
         - id: glm-5.2 # flagship, startup default
           # newapi gateway routes GLM at 200K ctx; set so compaction can compute
           # its threshold (contextWindow - reserveTokens). Without it pi never auto-compacts.
-          contextWindow: 200000
-          maxTokens: 128000
+          contextWindow: 1000000
+          maxTokens: 131072
           reasoning: true
           # thinkingLevelMap declares which levels GLM supports so Pi does NOT
           # clamp xhigh down to high (agent-session _clampThinkingLevel). Without
@@ -174,8 +174,8 @@ pi:
         - id: glm-4.7 # stable fallback (both verified HTTP 200 on the gateway)
           # newapi gateway routes GLM at 200K ctx; set so compaction can compute
           # its threshold (contextWindow - reserveTokens). Without it pi never auto-compacts.
-          contextWindow: 200000
-          maxTokens: 128000
+          contextWindow: 204800
+          maxTokens: 131072
           reasoning: true
           thinkingLevelMap:
             { minimal: low, low: low, medium: medium, high: high, xhigh: xhigh }
