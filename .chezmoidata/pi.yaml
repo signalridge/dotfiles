@@ -24,14 +24,15 @@ pi:
     # Max reasoning effort by default (off<minimal<low<medium<high<xhigh).
     # Override per-turn in the TUI; subagents still use their own model routing.
     defaultThinkingLevel: xhigh
-    # GLM-5.2 via the NewAPI gateway (https://newapi.3689403.xyz/) is the startup
-    # default: key baked into models.json from gopass (claude/newapi/private/
-    # api_key), so plain `pi` works out of the box. DeepSeek V4 also wired (gopass)
-    # for /model switching; subagents still route to deepseek-v4-flash for cost
-    # (see subagents below). Switch at runtime with /model, or e.g.
-    # `pi --provider deepseek --model deepseek-v4-pro`.
-    defaultProvider: newapi
-    defaultModel: glm-5.2
+    # GPT-5.5 via the Krill gateway (https://api.krill-ai.com) is the startup
+    # default: key baked into models.json from gopass (claude/krill/private/
+    # api_key), so plain `pi` works out of the box — but Krill is silently skipped
+    # on a machine WITHOUT that key, so /model switch to newapi/glm-5.2 there.
+    # GLM-5.2 (newapi) and DeepSeek V4 also wired (gopass) for /model switching;
+    # subagents route independently (see subagents below). Switch at runtime with
+    # /model, or e.g. `pi --provider deepseek --model deepseek-v4-pro`.
+    defaultProvider: krill
+    defaultModel: gpt-5.5
     # Resolve/install Pi packages with bun instead of npm (faster, no
     # package-lock.json). Pi dispatches package ops via settings `npmCommand`
     # (default ["npm"]); the switch is global across all `npm:` packages below.
@@ -109,21 +110,25 @@ pi:
   # ===== Subagents config -> ~/.pi/agent/settings.json subagents =====
   # Model routing for pi-subagents builtins, tiered across the three families so
   # each agent runs on the cheapest model that still clears its bar — and so the
-  # quality gates run on a family DIFFERENT from the GLM-5.2 main loop (an
+  # reviewer gate runs on a family DIFFERENT from the gpt-5.5 main loop (an
   # independent perspective catches what the main model misses):
   #
-  #   gpt-5.5 (krill)   -> oracle, reviewer. Premium reasoning reserved for the two
-  #                        rare, high-leverage roles (hardest one-shot question /
-  #                        adversarial review). Maximally distinct from the GLM main
-  #                        loop, so it's the strongest independent second opinion.
+  #   gpt-5.5 (krill)   -> oracle. Premium reasoning reserved for the rare, hardest
+  #                        one-shot question. NOTE: this now matches the gpt-5.5 main
+  #                        loop, so the oracle is a weaker independent second opinion
+  #                        than when the main loop ran on GLM — move it to a distinct
+  #                        family if independence matters more than raw strength.
   #   deepseek-v4-pro   -> worker, planner, researcher (the defaultModel). Strong,
   #                        economical workhorse for the bulk of the coding/planning/
   #                        investigation volume — too high-throughput for gpt pricing.
-  #   glm (newapi)      -> the cheap mechanical/recon tier, where diversity doesn't
-  #                        matter: scout=glm-4.7 (quick lookup), context-builder=
-  #                        glm-5.2 (its 1M window suits assembling large context),
-  #                        delegate=glm-4.7 (pure dispatch). Runs on the subscription
-  #                        gateway instead of burning metered deepseek-flash tokens.
+  #   glm (newapi)      -> the reviewer plus the cheap mechanical/recon tier, a
+  #                        family distinct from the gpt-5.5 main loop: reviewer=
+  #                        glm-5.2 (adversarial review — its 1M window and non-gpt
+  #                        family make it the strongest independent gate), scout=
+  #                        glm-4.7 (quick lookup), context-builder=glm-5.2 (1M window
+  #                        suits assembling large context), delegate=glm-4.7 (pure
+  #                        dispatch). Runs on the subscription gateway instead of
+  #                        burning metered deepseek-flash tokens.
   #
   # deepseek-v4-flash is no longer routed to any subagent (still a /model option).
   #
@@ -147,7 +152,7 @@ pi:
     defaultModel: deepseek/deepseek-v4-pro
     agentOverrides:
       oracle: { model: krill/gpt-5.5 }
-      reviewer: { model: krill/gpt-5.5 }
+      reviewer: { model: newapi/glm-5.2 }
       scout: { model: newapi/glm-4.7 }
       context-builder: { model: newapi/glm-5.2 }
       delegate: { model: newapi/glm-4.7 }
