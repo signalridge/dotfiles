@@ -3,41 +3,47 @@ import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import process from "node:process";
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import type {
-	ExtensionAPI,
-	ExtensionContext,
-	ReadonlyFooterDataProvider,
-	Theme,
-	ThemeColor,
+  ExtensionAPI,
+  ExtensionContext,
+  ReadonlyFooterDataProvider,
+  Theme,
+  ThemeColor,
 } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
-import { classicExtensionSeparator, renderClassicStatusline } from "../presets/classic.js";
-import { renderTokyoNightStatusline, tokyoNightExtensionSeparator } from "../presets/tokyo-night.js";
+import {
+  classicExtensionSeparator,
+  renderClassicStatusline,
+} from "../presets/classic.js";
+import {
+  renderTokyoNightStatusline,
+  tokyoNightExtensionSeparator,
+} from "../presets/tokyo-night.js";
 import type {
-	PaletteName,
-	RenderSegment,
-	SegmentName,
-	StatuslineConfig,
-	StatuslinePresetName,
-	TokyoNightBlockName,
+  PaletteName,
+  RenderSegment,
+  SegmentName,
+  StatuslineConfig,
+  StatuslinePresetName,
+  TokyoNightBlockName,
 } from "../presets/types.js";
 
 type ThinkingLevel = ReturnType<ExtensionAPI["getThinkingLevel"]>;
 
 interface RuntimeState {
-	turnCount: number;
-	activeTools: Map<string, number>;
-	lastTool?: string;
-	lastCompletedTool?: string;
-	isStreaming: boolean;
-	thinkingLevel: ThinkingLevel;
-	duplicateExtensions: string[];
-	requestRender?: () => void;
+  turnCount: number;
+  activeTools: Map<string, number>;
+  lastTool?: string;
+  lastCompletedTool?: string;
+  isStreaming: boolean;
+  thinkingLevel: ThinkingLevel;
+  duplicateExtensions: string[];
+  requestRender?: () => void;
 }
 
 interface TokenTotals {
-	input: number;
-	output: number;
-	cost: number;
+  input: number;
+  output: number;
+  cost: number;
 }
 
 const STATUSLINE_KEY = "statusline";
@@ -46,557 +52,658 @@ const SETTINGS_FILE = "pi-statusline-settings.json";
 const DEFAULT_PRESET: StatuslinePresetName = "tokyo-night";
 
 const DEFAULT_EXTENSION_STATUS_ICONS: Record<string, string> = {
-	"chrome-devtools": "🌐",
-	"codex-usage": "📊",
-	caffeinate: "💊",
-	firecrawl: "🔥",
-	"github-pr": "🔎",
-	goal: "🎯",
-	lsp: "🧰",
-	"plan-mode": "📝",
-	pisync: "🔄",
-	subagents: "🧑‍🤝‍🧑",
-	"unknown-error-retry": "🔁",
+  "chrome-devtools": "🌐",
+  "codex-usage": "📊",
+  caffeinate: "💊",
+  firecrawl: "🔥",
+  "github-pr": "🔎",
+  goal: "🎯",
+  lsp: "🧰",
+  "plan-mode": "📝",
+  pisync: "🔄",
+  subagents: "🧑‍🤝‍🧑",
+  "unknown-error-retry": "🔁",
 };
 
 interface StatuslineSettings {
-	extensionStatusIcons: Record<string, string>;
+  extensionStatusIcons: Record<string, string>;
 }
 
+// Same information as upstream minus the π brand; decluttered by dropping the
+// decorative per-segment emoji (short text labels + only ⎇/$ glyphs kept). Renders
+// e.g. `gpt-5.5 · think high · chezmoi · ⎇ main · ▸Bash · ctx 42% · ↑12k ↓3k · $0.08 · 14:32`.
 const DEFAULT_SEGMENTS: SegmentName[] = [
-	"brand",
-	"model",
-	"thinking",
-	"cwd",
-	"branch",
-	"tools",
-	"context",
-	"tokens",
-	"cost",
-	"time",
+  "model",
+  "thinking",
+  "cwd",
+  "branch",
+  "tools",
+  "context",
+  "tokens",
+  "cost",
+  "time",
 ];
 
 const PALETTES: Record<PaletteName, ThemeColor[]> = {
-	ocean: ["accent", "muted", "success", "warning"],
-	sunset: ["warning", "accent", "success", "muted"],
-	forest: ["success", "accent", "muted", "warning"],
-	candy: ["accent", "warning", "success", "muted"],
-	neon: ["accent", "success", "warning", "error"],
-	mono: ["muted", "dim"],
+  ocean: ["accent", "muted", "success", "warning"],
+  sunset: ["warning", "accent", "success", "muted"],
+  forest: ["success", "accent", "muted", "warning"],
+  candy: ["accent", "warning", "success", "muted"],
+  neon: ["accent", "success", "warning", "error"],
+  mono: ["muted", "dim"],
 };
 
 export default function statusline(pi: ExtensionAPI) {
-	const config = createDefaultConfig();
-	const runtime: RuntimeState = {
-		turnCount: 0,
-		activeTools: new Map(),
-		isStreaming: false,
-		thinkingLevel: "off",
-		duplicateExtensions: [],
-	};
+  const config = createDefaultConfig();
+  const runtime: RuntimeState = {
+    turnCount: 0,
+    activeTools: new Map(),
+    isStreaming: false,
+    thinkingLevel: "off",
+    duplicateExtensions: [],
+  };
 
-	const refresh = () => runtime.requestRender?.();
+  const refresh = () => runtime.requestRender?.();
 
-	const installFooter = (ctx: ExtensionContext) => {
-		ctx.ui.setStatus(STATUSLINE_KEY, undefined);
-		runtime.duplicateExtensions = findDuplicateExtensions(ctx.cwd);
-		ctx.ui.setFooter((tui, theme, footerData) => {
-			runtime.requestRender = () => tui.requestRender();
+  const installFooter = (ctx: ExtensionContext) => {
+    ctx.ui.setStatus(STATUSLINE_KEY, undefined);
+    runtime.duplicateExtensions = findDuplicateExtensions(ctx.cwd);
+    ctx.ui.setFooter((tui, theme, footerData) => {
+      runtime.requestRender = () => tui.requestRender();
 
-			const branchUnsubscribe = footerData.onBranchChange(() => tui.requestRender());
-			const clock = setInterval(() => tui.requestRender(), 30_000);
+      const branchUnsubscribe = footerData.onBranchChange(() =>
+        tui.requestRender(),
+      );
+      const clock = setInterval(() => tui.requestRender(), 30_000);
 
-			return {
-				dispose() {
-					branchUnsubscribe();
-					clearInterval(clock);
-				},
-				invalidate() {},
-				render(width: number): string[] {
-					const lines = [renderStatusline(width, ctx, footerData, theme, config, runtime)];
-					lines.push(...renderExtensionStatusline(width, footerData, theme, config, runtime));
-					return lines;
-				},
-			};
-		});
-	};
+      return {
+        dispose() {
+          branchUnsubscribe();
+          clearInterval(clock);
+        },
+        invalidate() {},
+        render(width: number): string[] {
+          const lines = [
+            renderStatusline(width, ctx, footerData, theme, config, runtime),
+          ];
+          lines.push(
+            ...renderExtensionStatusline(
+              width,
+              footerData,
+              theme,
+              config,
+              runtime,
+            ),
+          );
+          return lines;
+        },
+      };
+    });
+  };
 
-	pi.on("session_start", (_event, ctx) => {
-		runtime.thinkingLevel = pi.getThinkingLevel();
-		installFooter(ctx);
-	});
+  pi.on("session_start", (_event, ctx) => {
+    runtime.thinkingLevel = pi.getThinkingLevel();
+    installFooter(ctx);
+  });
 
-	pi.on("session_tree", (_event, ctx) => {
-		installFooter(ctx);
-		refresh();
-	});
+  pi.on("session_tree", (_event, ctx) => {
+    installFooter(ctx);
+    refresh();
+  });
 
-	pi.on("session_shutdown", (_event, ctx) => {
-		ctx.ui.setFooter(undefined);
-		ctx.ui.setStatus(STATUSLINE_KEY, undefined);
-		runtime.requestRender = undefined;
-	});
+  pi.on("session_shutdown", (_event, ctx) => {
+    ctx.ui.setFooter(undefined);
+    ctx.ui.setStatus(STATUSLINE_KEY, undefined);
+    runtime.requestRender = undefined;
+  });
 
-	pi.on("model_select", () => refresh());
+  pi.on("model_select", () => refresh());
 
-	pi.on("thinking_level_select", (event) => {
-		runtime.thinkingLevel = event.level;
-		refresh();
-	});
+  pi.on("thinking_level_select", (event) => {
+    runtime.thinkingLevel = event.level;
+    refresh();
+  });
 
-	pi.on("agent_start", () => {
-		runtime.isStreaming = true;
-		refresh();
-	});
+  pi.on("agent_start", () => {
+    runtime.isStreaming = true;
+    refresh();
+  });
 
-	pi.on("agent_end", () => {
-		runtime.isStreaming = false;
-		refresh();
-	});
+  pi.on("agent_end", () => {
+    runtime.isStreaming = false;
+    refresh();
+  });
 
-	pi.on("turn_start", () => {
-		runtime.turnCount += 1;
-		runtime.isStreaming = true;
-		refresh();
-	});
+  pi.on("turn_start", () => {
+    runtime.turnCount += 1;
+    runtime.isStreaming = true;
+    refresh();
+  });
 
-	pi.on("turn_end", () => refresh());
+  pi.on("turn_end", () => refresh());
 
-	pi.on("tool_execution_start", (event) => {
-		const currentCount = runtime.activeTools.get(event.toolName) ?? 0;
-		runtime.activeTools.set(event.toolName, currentCount + 1);
-		runtime.lastTool = event.toolName;
-		refresh();
-	});
+  pi.on("tool_execution_start", (event) => {
+    const currentCount = runtime.activeTools.get(event.toolName) ?? 0;
+    runtime.activeTools.set(event.toolName, currentCount + 1);
+    runtime.lastTool = event.toolName;
+    refresh();
+  });
 
-	pi.on("tool_execution_end", (event) => {
-		const currentCount = runtime.activeTools.get(event.toolName) ?? 0;
-		if (currentCount <= 1) runtime.activeTools.delete(event.toolName);
-		else runtime.activeTools.set(event.toolName, currentCount - 1);
+  pi.on("tool_execution_end", (event) => {
+    const currentCount = runtime.activeTools.get(event.toolName) ?? 0;
+    if (currentCount <= 1) runtime.activeTools.delete(event.toolName);
+    else runtime.activeTools.set(event.toolName, currentCount - 1);
 
-		runtime.lastCompletedTool = event.toolName;
-		refresh();
-	});
+    runtime.lastCompletedTool = event.toolName;
+    refresh();
+  });
 }
 
 function createDefaultConfig(): StatuslineConfig {
-	return {
-		preset: readStatuslinePreset(),
-		palette: "candy",
-		density: "compact",
-		separator: "dot",
-		showLabels: false,
-		segments: [...DEFAULT_SEGMENTS],
-		extensionStatusIcons: readStatuslineSettings().extensionStatusIcons,
-	};
+  return {
+    preset: readStatuslinePreset(),
+    palette: "candy",
+    density: "compact",
+    separator: "dot",
+    showLabels: false,
+    segments: [...DEFAULT_SEGMENTS],
+    extensionStatusIcons: readStatuslineSettings().extensionStatusIcons,
+  };
 }
 
-export function readStatuslineSettings(settingsPath = join(getAgentDir(), SETTINGS_FILE)): StatuslineSettings {
-	try {
-		return normalizeStatuslineSettings(JSON.parse(readFileSync(settingsPath, "utf8")));
-	} catch {
-		return { extensionStatusIcons: {} };
-	}
+export function readStatuslineSettings(
+  settingsPath = join(getAgentDir(), SETTINGS_FILE),
+): StatuslineSettings {
+  try {
+    return normalizeStatuslineSettings(
+      JSON.parse(readFileSync(settingsPath, "utf8")),
+    );
+  } catch {
+    return { extensionStatusIcons: {} };
+  }
 }
 
-export function normalizeStatuslineSettings(value: unknown): StatuslineSettings {
-	if (!value || typeof value !== "object") return { extensionStatusIcons: {} };
-	const icons = (value as { extensionStatusIcons?: unknown }).extensionStatusIcons;
-	if (!icons || typeof icons !== "object" || Array.isArray(icons)) {
-		return { extensionStatusIcons: {} };
-	}
-	return {
-		extensionStatusIcons: Object.fromEntries(
-			Object.entries(icons).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
-		),
-	};
+export function normalizeStatuslineSettings(
+  value: unknown,
+): StatuslineSettings {
+  if (!value || typeof value !== "object") return { extensionStatusIcons: {} };
+  const icons = (value as { extensionStatusIcons?: unknown })
+    .extensionStatusIcons;
+  if (!icons || typeof icons !== "object" || Array.isArray(icons)) {
+    return { extensionStatusIcons: {} };
+  }
+  return {
+    extensionStatusIcons: Object.fromEntries(
+      Object.entries(icons).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
+    ),
+  };
 }
 
 function readStatuslinePreset(): StatuslinePresetName {
-	const preset = process.env.PI_STATUSLINE_PRESET?.trim().toLowerCase();
-	if (preset === "classic" || preset === "tokyo-night") return preset;
-	return DEFAULT_PRESET;
+  const preset = process.env.PI_STATUSLINE_PRESET?.trim().toLowerCase();
+  if (preset === "classic" || preset === "tokyo-night") return preset;
+  return DEFAULT_PRESET;
 }
 
 function renderStatusline(
-	width: number,
-	ctx: ExtensionContext,
-	footerData: ReadonlyFooterDataProvider,
-	theme: Theme,
-	config: StatuslineConfig,
-	runtime: RuntimeState,
+  width: number,
+  ctx: ExtensionContext,
+  footerData: ReadonlyFooterDataProvider,
+  theme: Theme,
+  config: StatuslineConfig,
+  runtime: RuntimeState,
 ): string {
-	if (width <= 0) return "";
+  if (width <= 0) return "";
 
-	const segments = config.segments
-		.map((segment, index) => buildSegment(segment, index, ctx, footerData, config, runtime))
-		.filter(
-			(segment): segment is RenderSegment => segment !== undefined && segment.text.length > 0,
-		);
+  const segments = config.segments
+    .map((segment, index) =>
+      buildSegment(segment, index, ctx, footerData, config, runtime),
+    )
+    .filter(
+      (segment): segment is RenderSegment =>
+        segment !== undefined && segment.text.length > 0,
+    );
 
-	if (segments.length === 0) return truncateToWidth(theme.fg("dim", "pi-statusline"), width);
+  if (segments.length === 0)
+    return truncateToWidth(theme.fg("dim", "pi-statusline"), width);
 
-	switch (config.preset) {
-		case "classic":
-			return renderClassicStatusline(width, segments, theme, config);
-		case "tokyo-night":
-			return renderTokyoNightStatusline(width, segments);
-	}
+  switch (config.preset) {
+    case "classic":
+      return renderClassicStatusline(width, segments, theme, config);
+    case "tokyo-night":
+      return renderTokyoNightStatusline(width, segments);
+  }
 }
 
 function renderExtensionStatusline(
-	width: number,
-	footerData: ReadonlyFooterDataProvider,
-	theme: Theme,
-	config: StatuslineConfig,
-	runtime: RuntimeState,
+  width: number,
+  footerData: ReadonlyFooterDataProvider,
+  theme: Theme,
+  config: StatuslineConfig,
+  runtime: RuntimeState,
 ): string[] {
-	const status = formatExtensionStatuses(footerData.getExtensionStatuses(), theme, config, runtime);
-	return wrapExtensionStatusline(status, width);
+  const status = formatExtensionStatuses(
+    footerData.getExtensionStatuses(),
+    theme,
+    config,
+    runtime,
+  );
+  return wrapExtensionStatusline(status, width);
 }
 
 function buildSegment(
-	name: SegmentName,
-	index: number,
-	ctx: ExtensionContext,
-	footerData: ReadonlyFooterDataProvider,
-	config: StatuslineConfig,
-	runtime: RuntimeState,
+  name: SegmentName,
+  index: number,
+  ctx: ExtensionContext,
+  footerData: ReadonlyFooterDataProvider,
+  config: StatuslineConfig,
+  runtime: RuntimeState,
 ): RenderSegment | undefined {
-	const color = pickColor(config, index);
+  const color = pickColor(config, index);
 
-	switch (name) {
-		case "brand":
-			return segment(name, "π", "accent", "header", true);
-		case "model":
-			return segment(name, `🤖 ${shortenModel(ctx.model?.id ?? "no-model")}`, color, "header");
-		case "thinking":
-			return segment(
-				name,
-				`🧠 ${runtime.thinkingLevel}`,
-				thinkingColor(runtime.thinkingLevel),
-				"header",
-			);
-		case "branch": {
-			const branch = footerData.getGitBranch();
-			const pr = branch ? prLinkFromStatuses(footerData.getExtensionStatuses()) : undefined;
-			return segment(name, pr ? `🌿 ${branch} (${pr})` : `🌿 ${branch ?? "no-git"}`, color, "git");
-		}
-		case "cwd":
-			return segment(name, `📁 ${basename(ctx.cwd) || ctx.cwd}`, color, "directory");
-		case "tools":
-			return segment(name, formatToolActivity(runtime), color, "runtime");
-		case "context": {
-			const usage = ctx.getContextUsage();
-			const value =
-				usage?.percent === null || usage?.percent === undefined
-					? "🪟 ctx ?"
-					: `🪟 ctx ${usage.percent.toFixed(0)}%`;
-			return segment(name, value, contextColor(usage?.percent), "runtime");
-		}
-		case "tokens": {
-			const totals = getTokenTotals(ctx);
-			if (totals.input === 0 && totals.output === 0)
-				return segment(name, "🔢 tok 0", color, "runtime");
-			return segment(
-				name,
-				`🔢 ↑${formatCount(totals.input)} ↓${formatCount(totals.output)}`,
-				color,
-				"runtime",
-			);
-		}
-		case "cost": {
-			const totals = getTokenTotals(ctx);
-			return segment(name, `💸 $${totals.cost.toFixed(totals.cost >= 1 ? 2 : 3)}`, color, "meter");
-		}
-		case "time":
-			return segment(name, `🕒 ${formatTime()}`, color, "meter");
-		case "turn":
-			return segment(name, `🔁 #${runtime.turnCount}`, color, "meter");
-	}
+  switch (name) {
+    case "brand":
+      return segment(name, "π", "accent", "header", true);
+    case "model":
+      return segment(
+        name,
+        shortenModel(ctx.model?.id ?? "no-model"),
+        color,
+        "header",
+      );
+    case "thinking":
+      return segment(
+        name,
+        `think ${runtime.thinkingLevel}`,
+        thinkingColor(runtime.thinkingLevel),
+        "header",
+      );
+    case "branch": {
+      const branch = footerData.getGitBranch();
+      const pr = branch
+        ? prLinkFromStatuses(footerData.getExtensionStatuses())
+        : undefined;
+      return segment(
+        name,
+        pr ? `⎇ ${branch} (${pr})` : `⎇ ${branch ?? "no-git"}`,
+        color,
+        "git",
+      );
+    }
+    case "cwd":
+      return segment(name, basename(ctx.cwd) || ctx.cwd, color, "directory");
+    case "tools":
+      return segment(name, formatToolActivity(runtime), color, "runtime");
+    case "context": {
+      const usage = ctx.getContextUsage();
+      const value =
+        usage?.percent === null || usage?.percent === undefined
+          ? "ctx ?"
+          : `ctx ${usage.percent.toFixed(0)}%`;
+      return segment(name, value, contextColor(usage?.percent), "runtime");
+    }
+    case "tokens": {
+      const totals = getTokenTotals(ctx);
+      if (totals.input === 0 && totals.output === 0)
+        return segment(name, "↑0 ↓0", color, "runtime");
+      return segment(
+        name,
+        `↑${formatCount(totals.input)} ↓${formatCount(totals.output)}`,
+        color,
+        "runtime",
+      );
+    }
+    case "cost": {
+      const totals = getTokenTotals(ctx);
+      return segment(
+        name,
+        `$${totals.cost.toFixed(totals.cost >= 1 ? 2 : 3)}`,
+        color,
+        "meter",
+      );
+    }
+    case "time":
+      return segment(name, formatTime(), color, "meter");
+    case "turn":
+      return segment(name, `🔁 #${runtime.turnCount}`, color, "meter");
+  }
 }
 
 function segment(
-	name: SegmentName,
-	text: string,
-	color: ThemeColor,
-	block: TokyoNightBlockName,
-	emphasis = false,
+  name: SegmentName,
+  text: string,
+  color: ThemeColor,
+  block: TokyoNightBlockName,
+  emphasis = false,
 ): RenderSegment {
-	return { name, text, color, block, emphasis };
+  return { name, text, color, block, emphasis };
 }
 
-function extensionStatusSeparator(presetName: StatuslinePresetName, theme: Theme): string {
-	switch (presetName) {
-		case "classic":
-			return classicExtensionSeparator(theme);
-		case "tokyo-night":
-			return tokyoNightExtensionSeparator(theme);
-	}
+function extensionStatusSeparator(
+  presetName: StatuslinePresetName,
+  theme: Theme,
+): string {
+  switch (presetName) {
+    case "classic":
+      return classicExtensionSeparator(theme);
+    case "tokyo-night":
+      return tokyoNightExtensionSeparator(theme);
+  }
 }
 
 function pickColor(config: StatuslineConfig, index: number): ThemeColor {
-	const palette = PALETTES[config.palette];
-	return palette[index % palette.length] ?? "muted";
+  const palette = PALETTES[config.palette];
+  return palette[index % palette.length] ?? "muted";
 }
 
 function thinkingColor(level: ThinkingLevel): ThemeColor {
-	switch (level) {
-		case "off":
-			return "dim";
-		case "minimal":
-			return "thinkingMinimal";
-		case "low":
-			return "thinkingLow";
-		case "medium":
-			return "thinkingMedium";
-		case "high":
-			return "thinkingHigh";
-		case "xhigh":
-			return "thinkingXhigh";
-	}
+  switch (level) {
+    case "off":
+      return "dim";
+    case "minimal":
+      return "thinkingMinimal";
+    case "low":
+      return "thinkingLow";
+    case "medium":
+      return "thinkingMedium";
+    case "high":
+      return "thinkingHigh";
+    case "xhigh":
+      return "thinkingXhigh";
+  }
 }
 
 export function contextColor(percent: number | null | undefined): ThemeColor {
-	if (percent === null || percent === undefined) return "dim";
-	if (percent >= 90) return "error";
-	if (percent >= 70) return "warning";
-	return "success";
+  if (percent === null || percent === undefined) return "dim";
+  if (percent >= 90) return "error";
+  if (percent >= 70) return "warning";
+  return "success";
 }
 
 export function formatToolActivity(runtime: RuntimeState): string {
-	const active = [...runtime.activeTools.entries()];
-	if (active.length > 0) {
-		const [name, count] = active[0] ?? ["tool", 1];
-		const suffix = count > 1 ? `×${count}` : active.length > 1 ? `+${active.length - 1}` : "";
-		return `⚙ ${name}${suffix}`;
-	}
+  const active = [...runtime.activeTools.entries()];
+  if (active.length > 0) {
+    const [name, count] = active[0] ?? ["tool", 1];
+    const suffix =
+      count > 1
+        ? `×${count}`
+        : active.length > 1
+          ? `+${active.length - 1}`
+          : "";
+    return `▸ ${name}${suffix}`;
+  }
 
-	if (runtime.isStreaming) return "💭 thinking";
-	if (runtime.lastCompletedTool) return `✅ ${runtime.lastCompletedTool}`;
-	return "💤 idle";
+  if (runtime.isStreaming) return "…thinking";
+  if (runtime.lastCompletedTool) return `✓ ${runtime.lastCompletedTool}`;
+  return "idle";
 }
 
-export function prLinkFromStatuses(statuses: ReadonlyMap<string, string>): string | undefined {
-	const value = statuses.get(GITHUB_PR_KEY);
-	if (!value) return undefined;
-	// Extract the OSC 8 hyperlink span (the clickable "#123"); skip non-PR states
-	// like "PR gh missing" that carry no link. github-pr emits exactly one link, so the
-	// first OSC 8 span is the PR number.
-	const open = value.indexOf("\x1b]8;;");
-	if (open === -1) return undefined;
-	const closeMarker = "\x1b]8;;\x07";
-	const close = value.indexOf(closeMarker, open + 1);
-	return close === -1 ? undefined : value.slice(open, close + closeMarker.length);
+export function prLinkFromStatuses(
+  statuses: ReadonlyMap<string, string>,
+): string | undefined {
+  const value = statuses.get(GITHUB_PR_KEY);
+  if (!value) return undefined;
+  // Extract the OSC 8 hyperlink span (the clickable "#123"); skip non-PR states
+  // like "PR gh missing" that carry no link. github-pr emits exactly one link, so the
+  // first OSC 8 span is the PR number.
+  const open = value.indexOf("\x1b]8;;");
+  if (open === -1) return undefined;
+  const closeMarker = "\x1b]8;;\x07";
+  const close = value.indexOf(closeMarker, open + 1);
+  return close === -1
+    ? undefined
+    : value.slice(open, close + closeMarker.length);
 }
 
 function formatExtensionStatuses(
-	statuses: ReadonlyMap<string, string>,
-	theme: Theme,
-	config: StatuslineConfig,
-	runtime: RuntimeState,
+  statuses: ReadonlyMap<string, string>,
+  theme: Theme,
+  config: StatuslineConfig,
+  runtime: RuntimeState,
 ): string {
-	const separator = extensionStatusSeparator(config.preset, theme);
-	const visibleStatuses = [
-		...formatDuplicateExtensionStatus(runtime, theme),
-		...[...statuses.entries()]
-			// github-pr is rendered inline in the branch segment, so skip it here to avoid duplication.
-			.filter(
-				([key, value]) =>
-					key !== STATUSLINE_KEY && key !== GITHUB_PR_KEY && value.trim().length > 0,
-			)
-			.map(([key, value]) => formatExtensionStatus(key, value, theme, config)),
-	].slice(0, 5);
+  const separator = extensionStatusSeparator(config.preset, theme);
+  const visibleStatuses = [
+    ...formatDuplicateExtensionStatus(runtime, theme),
+    ...[...statuses.entries()]
+      // github-pr is rendered inline in the branch segment, so skip it here to avoid duplication.
+      .filter(
+        ([key, value]) =>
+          key !== STATUSLINE_KEY &&
+          key !== GITHUB_PR_KEY &&
+          value.trim().length > 0,
+      )
+      .map(([key, value]) => formatExtensionStatus(key, value, theme, config)),
+  ].slice(0, 5);
 
-	return visibleStatuses.join(separator);
+  return visibleStatuses.join(separator);
 }
 
 export function formatExtensionStatus(
-	key: string,
-	value: string,
-	theme: Theme,
-	config: Pick<StatuslineConfig, "extensionStatusIcons">,
+  key: string,
+  value: string,
+  theme: Theme,
+  config: Pick<StatuslineConfig, "extensionStatusIcons">,
 ): string {
-	const status = splitExtensionStatusIcon(stripExtensionStatusPrefix(key, value));
-	const text = simplifyExtensionStatusText(status.text);
-	const color = extensionColor(key, value);
-	const textColor = color === "warning" ? "warning" : "muted";
-	const icon = extensionStatusIcon(key, status.icon, config.extensionStatusIcons);
-	const renderedText = theme.fg(textColor, text);
-	return icon ? `${theme.fg(color, icon)} ${renderedText}` : renderedText;
+  const status = splitExtensionStatusIcon(
+    stripExtensionStatusPrefix(key, value),
+  );
+  const text = simplifyExtensionStatusText(status.text);
+  const color = extensionColor(key, value);
+  const textColor = color === "warning" ? "warning" : "muted";
+  const icon = extensionStatusIcon(
+    key,
+    status.icon,
+    config.extensionStatusIcons,
+  );
+  const renderedText = theme.fg(textColor, text);
+  return icon ? `${theme.fg(color, icon)} ${renderedText}` : renderedText;
 }
 
 function extensionStatusIcon(
-	key: string,
-	leadingIcon: string | undefined,
-	configuredIcons: Record<string, string>,
+  key: string,
+  leadingIcon: string | undefined,
+  configuredIcons: Record<string, string>,
 ) {
-	if (Object.hasOwn(configuredIcons, key)) return configuredIcons[key];
-	return leadingIcon ?? DEFAULT_EXTENSION_STATUS_ICONS[key] ?? "🔌";
+  if (Object.hasOwn(configuredIcons, key)) return configuredIcons[key];
+  return leadingIcon ?? DEFAULT_EXTENSION_STATUS_ICONS[key] ?? "🔌";
 }
 
-export function wrapExtensionStatusline(status: string, width: number): string[] {
-	if (!status || width <= 0) return [];
-	return wrapTextWithAnsi(status, width);
+export function wrapExtensionStatusline(
+  status: string,
+  width: number,
+): string[] {
+  if (!status || width <= 0) return [];
+  return wrapTextWithAnsi(status, width);
 }
 
-function formatDuplicateExtensionStatus(runtime: RuntimeState, theme: Theme): string[] {
-	if (runtime.duplicateExtensions.length === 0) return [];
-	const names = runtime.duplicateExtensions.slice(0, 2).join(", ");
-	const suffix =
-		runtime.duplicateExtensions.length > 2 ? ` +${runtime.duplicateExtensions.length - 2}` : "";
-	return [`${theme.fg("warning", "⚠️")} ${theme.fg("warning", `dup ${names}${suffix}`)}`];
+function formatDuplicateExtensionStatus(
+  runtime: RuntimeState,
+  theme: Theme,
+): string[] {
+  if (runtime.duplicateExtensions.length === 0) return [];
+  const names = runtime.duplicateExtensions.slice(0, 2).join(", ");
+  const suffix =
+    runtime.duplicateExtensions.length > 2
+      ? ` +${runtime.duplicateExtensions.length - 2}`
+      : "";
+  return [
+    `${theme.fg("warning", "⚠️")} ${theme.fg("warning", `dup ${names}${suffix}`)}`,
+  ];
 }
 
-export function splitExtensionStatusIcon(value: string): { icon?: string; text: string } {
-	const trimmed = value.trim();
-	const [firstToken, ...restTokens] = trimmed.split(/\s+/);
-	if (firstToken && isEmojiOnlyToken(firstToken)) {
-		return { icon: firstToken, text: restTokens.join(" ") };
-	}
-	return { text: trimmed };
+export function splitExtensionStatusIcon(value: string): {
+  icon?: string;
+  text: string;
+} {
+  const trimmed = value.trim();
+  const [firstToken, ...restTokens] = trimmed.split(/\s+/);
+  if (firstToken && isEmojiOnlyToken(firstToken)) {
+    return { icon: firstToken, text: restTokens.join(" ") };
+  }
+  return { text: trimmed };
 }
 
 function isEmojiOnlyToken(value: string): boolean {
-	return /^(?=.*(?:\p{Extended_Pictographic}|\p{Regional_Indicator}|[0-9#*]\ufe0f?\u20e3))(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|\u200d|\ufe0f|[0-9#*]\ufe0f?\u20e3)+$/u.test(
-		value,
-	);
+  return /^(?=.*(?:\p{Extended_Pictographic}|\p{Regional_Indicator}|[0-9#*]\ufe0f?\u20e3))(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|\u200d|\ufe0f|[0-9#*]\ufe0f?\u20e3)+$/u.test(
+    value,
+  );
 }
 
 export function extensionColor(key: string, value: string): ThemeColor {
-	const normalized = `${key} ${value}`.toLowerCase();
-	if (/missing|error|fail|conflict|duplicate|unavailable/.test(normalized)) return "warning";
-	if (normalized.includes("codex")) return "accent";
-	if (/ready|active|running|enabled|awake|ok/.test(normalized)) return "success";
-	return "muted";
+  const normalized = `${key} ${value}`.toLowerCase();
+  if (/missing|error|fail|conflict|duplicate|unavailable/.test(normalized))
+    return "warning";
+  if (normalized.includes("codex")) return "accent";
+  if (/ready|active|running|enabled|awake|ok/.test(normalized))
+    return "success";
+  return "muted";
 }
 
 export function stripExtensionStatusPrefix(key: string, value: string): string {
-	return value.trim().replace(new RegExp(`^${escapeRegExp(key)}\\s*:\\s*`, "iu"), "");
+  return value
+    .trim()
+    .replace(new RegExp(`^${escapeRegExp(key)}\\s*:\\s*`, "iu"), "");
 }
 
 export function simplifyExtensionStatusText(value: string): string {
-	return value
-		.trim()
-		.replace(/\bready\b/giu, "✓")
-		.replace(/\bmissing\b/giu, "✗")
-		.replace(/,\s*/g, " ")
-		.replace(/\s+\([^)]*\)\s*$/, "")
-		.replace(/\s+/g, " ");
+  return value
+    .trim()
+    .replace(/\bready\b/giu, "✓")
+    .replace(/\bmissing\b/giu, "✗")
+    .replace(/,\s*/g, " ")
+    .replace(/\s+\([^)]*\)\s*$/, "")
+    .replace(/\s+/g, " ");
 }
 
 function escapeRegExp(value: string): string {
-	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function findDuplicateExtensions(cwd: string): string[] {
-	const settingsFiles = [
-		join(process.env.HOME ?? "", ".pi", "agent", "settings.json"),
-		join(cwd, ".pi", "settings.json"),
-	].filter((file) => existsSync(file));
-	const sourcesByPackage = new Map<string, Set<string>>();
+  const settingsFiles = [
+    join(process.env.HOME ?? "", ".pi", "agent", "settings.json"),
+    join(cwd, ".pi", "settings.json"),
+  ].filter((file) => existsSync(file));
+  const sourcesByPackage = new Map<string, Set<string>>();
 
-	for (const settingsFile of settingsFiles) {
-		for (const source of readPackageSources(settingsFile)) {
-			const packageName = packageNameForSource(source, dirname(settingsFile));
-			if (!packageName) continue;
-			const sources = sourcesByPackage.get(packageName) ?? new Set<string>();
-			sources.add(sourceIdentity(source, dirname(settingsFile)));
-			sourcesByPackage.set(packageName, sources);
-		}
-	}
+  for (const settingsFile of settingsFiles) {
+    for (const source of readPackageSources(settingsFile)) {
+      const packageName = packageNameForSource(source, dirname(settingsFile));
+      if (!packageName) continue;
+      const sources = sourcesByPackage.get(packageName) ?? new Set<string>();
+      sources.add(sourceIdentity(source, dirname(settingsFile)));
+      sourcesByPackage.set(packageName, sources);
+    }
+  }
 
-	return [...sourcesByPackage.entries()]
-		.filter(([, sources]) => sources.size > 1)
-		.map(([packageName]) => packageName.replace(/^@[^/]+\//, "").replace(/^pi-/, ""));
+  return [...sourcesByPackage.entries()]
+    .filter(([, sources]) => sources.size > 1)
+    .map(([packageName]) =>
+      packageName.replace(/^@[^/]+\//, "").replace(/^pi-/, ""),
+    );
 }
 
 function readPackageSources(settingsFile: string): string[] {
-	try {
-		const settings = JSON.parse(readFileSync(settingsFile, "utf8")) as { packages?: unknown[] };
-		return (settings.packages ?? [])
-			.map((entry) => {
-				if (typeof entry === "string") return entry;
-				if (
-					entry &&
-					typeof entry === "object" &&
-					typeof (entry as { source?: unknown }).source === "string"
-				) {
-					return (entry as { source: string }).source;
-				}
-				return undefined;
-			})
-			.filter((source): source is string => source !== undefined);
-	} catch {
-		return [];
-	}
+  try {
+    const settings = JSON.parse(readFileSync(settingsFile, "utf8")) as {
+      packages?: unknown[];
+    };
+    return (settings.packages ?? [])
+      .map((entry) => {
+        if (typeof entry === "string") return entry;
+        if (
+          entry &&
+          typeof entry === "object" &&
+          typeof (entry as { source?: unknown }).source === "string"
+        ) {
+          return (entry as { source: string }).source;
+        }
+        return undefined;
+      })
+      .filter((source): source is string => source !== undefined);
+  } catch {
+    return [];
+  }
 }
 
-function packageNameForSource(source: string, baseDirectory: string): string | undefined {
-	if (source.startsWith("npm:")) return npmPackageName(source);
-	const packageJson = join(resolveSourcePath(source, baseDirectory), "package.json");
-	try {
-		const packageData = JSON.parse(readFileSync(packageJson, "utf8")) as { name?: unknown };
-		return typeof packageData.name === "string" ? packageData.name : undefined;
-	} catch {
-		return undefined;
-	}
+function packageNameForSource(
+  source: string,
+  baseDirectory: string,
+): string | undefined {
+  if (source.startsWith("npm:")) return npmPackageName(source);
+  const packageJson = join(
+    resolveSourcePath(source, baseDirectory),
+    "package.json",
+  );
+  try {
+    const packageData = JSON.parse(readFileSync(packageJson, "utf8")) as {
+      name?: unknown;
+    };
+    return typeof packageData.name === "string" ? packageData.name : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function npmPackageName(source: string): string {
-	const spec = source.slice("npm:".length);
-	if (spec.startsWith("@")) return spec.split("@").slice(0, 2).join("@").replace(/^@/, "@");
-	return spec.split("@")[0] ?? spec;
+  const spec = source.slice("npm:".length);
+  if (spec.startsWith("@"))
+    return spec.split("@").slice(0, 2).join("@").replace(/^@/, "@");
+  return spec.split("@")[0] ?? spec;
 }
 
 function sourceIdentity(source: string, baseDirectory: string): string {
-	if (source.startsWith("npm:")) return `npm:${npmPackageName(source)}`;
-	return resolveSourcePath(source, baseDirectory);
+  if (source.startsWith("npm:")) return `npm:${npmPackageName(source)}`;
+  return resolveSourcePath(source, baseDirectory);
 }
 
 function resolveSourcePath(source: string, baseDirectory: string): string {
-	return isAbsolute(source) ? source : resolve(baseDirectory, source);
+  return isAbsolute(source) ? source : resolve(baseDirectory, source);
 }
 
 function getTokenTotals(ctx: ExtensionContext): TokenTotals {
-	const totals: TokenTotals = { input: 0, output: 0, cost: 0 };
+  const totals: TokenTotals = { input: 0, output: 0, cost: 0 };
 
-	for (const entry of ctx.sessionManager.getBranch()) {
-		if (entry.type !== "message" || entry.message.role !== "assistant") continue;
+  for (const entry of ctx.sessionManager.getBranch()) {
+    if (entry.type !== "message" || entry.message.role !== "assistant")
+      continue;
 
-		const usage = entry.message.usage as
-			| {
-					input?: number;
-					output?: number;
-					cost?: { total?: number };
-			  }
-			| undefined;
+    const usage = entry.message.usage as
+      | {
+          input?: number;
+          output?: number;
+          cost?: { total?: number };
+        }
+      | undefined;
 
-		totals.input += usage?.input ?? 0;
-		totals.output += usage?.output ?? 0;
-		totals.cost += usage?.cost?.total ?? 0;
-	}
+    totals.input += usage?.input ?? 0;
+    totals.output += usage?.output ?? 0;
+    totals.cost += usage?.cost?.total ?? 0;
+  }
 
-	return totals;
+  return totals;
 }
 
 export function formatCount(value: number): string {
-	if (value < 1000) return `${value}`;
-	if (value < 1_000_000) return `${(value / 1000).toFixed(value < 10_000 ? 1 : 0)}k`;
-	return `${(value / 1_000_000).toFixed(1)}m`;
+  if (value < 1000) return `${value}`;
+  if (value < 1_000_000)
+    return `${(value / 1000).toFixed(value < 10_000 ? 1 : 0)}k`;
+  return `${(value / 1_000_000).toFixed(1)}m`;
 }
 
 function formatTime(): string {
-	const now = new Date();
-	const hours = now.getHours().toString().padStart(2, "0");
-	const minutes = now.getMinutes().toString().padStart(2, "0");
-	return `${hours}:${minutes}`;
+  const now = new Date();
+  const hours = now.getHours().toString().padStart(2, "0");
+  const minutes = now.getMinutes().toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
 }
 
 export function shortenModel(model: string): string {
-	return model
-		.replace(/^claude-/, "")
-		.replace(/^gpt-/, "gpt ")
-		.replace(/-20\d{6}$/, "")
-		.replace(/-latest$/, "");
+  return model
+    .replace(/^claude-/, "")
+    .replace(/^gpt-/, "gpt ")
+    .replace(/-20\d{6}$/, "")
+    .replace(/-latest$/, "");
 }

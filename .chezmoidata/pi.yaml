@@ -24,15 +24,15 @@ pi:
     # Max reasoning effort by default (off<minimal<low<medium<high<xhigh).
     # Override per-turn in the TUI; subagents still use their own model routing.
     defaultThinkingLevel: xhigh
-    # GPT-5.5 via the Krill gateway (https://api.krill-ai.com) is the startup
-    # default: key baked into models.json from gopass (claude/krill/private/
-    # api_key), so plain `pi` works out of the box — but Krill is silently skipped
-    # on a machine WITHOUT that key, so /model switch to newapi/glm-5.2 there.
-    # GLM-5.2 (newapi) and DeepSeek V4 also wired (gopass) for /model switching;
-    # subagents route independently (see subagents below). Switch at runtime with
-    # /model, or e.g. `pi --provider deepseek --model deepseek-v4-pro`.
-    defaultProvider: krill
-    defaultModel: gpt-5.5
+    # GLM-5.2 via the NewAPI gateway (https://newapi.3689403.xyz) is the startup
+    # default: key baked into models.json from gopass (claude/newapi/private/
+    # api_key), so plain `pi` works out of the box — the provider is silently
+    # skipped on a machine WITHOUT that key, so /model switch to another provider
+    # there. GPT-5.5 (krill) and DeepSeek V4 also wired (gopass) for /model
+    # switching; subagents route independently (see subagents below). Switch at
+    # runtime with /model, or e.g. `pi --provider krill --model gpt-5.5`.
+    defaultProvider: newapi
+    defaultModel: glm-5.2
     # Resolve/install Pi packages with bun instead of npm (faster, no
     # package-lock.json). Pi dispatches package ops via settings `npmCommand`
     # (default ["npm"]); the switch is global across all `npm:` packages below.
@@ -51,13 +51,16 @@ pi:
   # dedicated chezmoi installer script.
   packages:
     - npm:pi-mcp-adapter
-    # Information-rich statusline (@narumitw/pi-statusline, most-downloaded). The
+    # Statusline is VENDORED (fork of @narumitw/pi-statusline) at
+    # dot_pi/agent/extensions/pi-statusline so we can trim it — do NOT re-add the
+    # `npm:@narumitw/pi-statusline` entry here: it double-loads with the vendored
+    # copy and the npm copy wins, making local edits dead (same trap as
+    # pi-input-history). The fork keeps all upstream segments EXCEPT the π brand
+    # (model/thinking/dir/branch/tools/context/tokens/cost/time) but strips the
+    # decorative per-segment emoji — short text labels + only ⎇ branch / $ cost. Active
     # `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv) follows the
-    # Pi theme (catppuccin-mocha / ghostty Dracula); default tokyo-night is
-    # hardcoded blue-gray. Core segment emoji are fixed but render fine in the
-    # CaskaydiaCove Nerd Font. Extension-status icons (2nd line) are tunable via
+    # Pi theme. Extension-status icons (2nd line) are tunable via
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
-    - npm:@narumitw/pi-statusline
     # Subagent delegation: child Pi sessions (NOT worktrees) for scout/researcher/
     # planner/worker/reviewer/oracle/context-builder/delegate. Natural-language
     # invoke ("Use reviewer to review this diff"). No slipway conflict.
@@ -109,26 +112,24 @@ pi:
     - npm:pi-ultra-compact@1.2.1
   # ===== Subagents config -> ~/.pi/agent/settings.json subagents =====
   # Model routing for pi-subagents builtins, tiered across the three families so
-  # each agent runs on the cheapest model that still clears its bar — and so the
-  # reviewer gate runs on a family DIFFERENT from the gpt-5.5 main loop (an
+  # the reviewer gate runs on a family DIFFERENT from the glm-5.2 main loop (an
   # independent perspective catches what the main model misses):
   #
-  #   gpt-5.5 (krill)   -> oracle. Premium reasoning reserved for the rare, hardest
-  #                        one-shot question. NOTE: this now matches the gpt-5.5 main
-  #                        loop, so the oracle is a weaker independent second opinion
-  #                        than when the main loop ran on GLM — move it to a distinct
-  #                        family if independence matters more than raw strength.
-  #   deepseek-v4-pro   -> worker, planner, researcher (the defaultModel). Strong,
-  #                        economical workhorse for the bulk of the coding/planning/
-  #                        investigation volume — too high-throughput for gpt pricing.
-  #   glm (newapi)      -> the reviewer plus the cheap mechanical/recon tier, a
-  #                        family distinct from the gpt-5.5 main loop: reviewer=
-  #                        glm-5.2 (adversarial review — its 1M window and non-gpt
-  #                        family make it the strongest independent gate), scout=
-  #                        glm-4.7 (quick lookup), context-builder=glm-5.2 (1M window
-  #                        suits assembling large context), delegate=glm-4.7 (pure
-  #                        dispatch). Runs on the subscription gateway instead of
-  #                        burning metered deepseek-flash tokens.
+  #   gpt-5.5 (krill)   -> the defaultModel: worker, planner, researcher (the bulk
+  #                        coding/planning/investigation volume) plus oracle (the
+  #                        rare hardest one-shot question). NOTE: gpt-5.5 is premium-
+  #                        priced, so this bulk tier is far costlier than the prior
+  #                        deepseek-v4-pro default — watch spend on high-throughput
+  #                        agents. Distinct family from the glm-5.2 main loop.
+  #   deepseek-v4-pro   -> reviewer. Adversarial review on a family distinct from
+  #                        BOTH the glm main loop and the gpt-5.5 worker tier — the
+  #                        strongest independent gate (its 1M window fits large diffs).
+  #   glm (newapi)      -> the cheap mechanical/recon tier, same family as the main
+  #                        loop (fine for non-adversarial dispatch): scout=glm-4.7
+  #                        (quick lookup), context-builder=glm-5.2 (1M window suits
+  #                        assembling large context), delegate=glm-4.7 (pure dispatch).
+  #                        Runs on the subscription gateway instead of burning metered
+  #                        deepseek tokens.
   #
   # deepseek-v4-flash is no longer routed to any subagent (still a /model option).
   #
@@ -149,10 +150,10 @@ pi:
   # delete it from an existing ~/.pi/agent/settings.json — prune agentOverrides there
   # too when narrowing. (Changing a model VALUE is fine: jq * overwrites scalars.)
   subagents:
-    defaultModel: deepseek/deepseek-v4-pro
+    defaultModel: krill/gpt-5.5
     agentOverrides:
       oracle: { model: krill/gpt-5.5 }
-      reviewer: { model: newapi/glm-5.2 }
+      reviewer: { model: deepseek/deepseek-v4-pro }
       scout: { model: newapi/glm-4.7 }
       context-builder: { model: newapi/glm-5.2 }
       delegate: { model: newapi/glm-4.7 }
