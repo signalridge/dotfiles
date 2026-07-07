@@ -124,15 +124,18 @@ pi:
   #                        sub these share your Codex usage limits — high-throughput
   #                        subagents can hit HTTP 429 usage_limit_reached (2-4h
   #                        lockouts); watch volume.
-  #   glm (newapi)      -> the cheap mechanical/recon tier, same family as the main
-  #                        loop (fine for non-adversarial dispatch): scout=glm-4.7
-  #                        (quick lookup), context-builder=glm-5.2 (1M window suits
-  #                        assembling large context), delegate=glm-4.7 (pure dispatch).
-  #                        Runs on the subscription gateway instead of burning metered
-  #                        deepseek tokens.
+  #   glm (newapi)      -> context-builder=glm-5.2 (1M window suits assembling large
+  #                        context), on the subscription gateway. Same family as the
+  #                        main loop; fine for non-adversarial context assembly.
+  #   deepseek (flash)  -> scout + delegate = deepseek-v4-flash (quick recon lookup /
+  #                        pure dispatch). Moved OFF newapi/glm-4.7, which was hitting
+  #                        gateway HTTP 429 under their high-frequency dispatch;
+  #                        DeepSeek Platform is a separate metered endpoint (cheap:
+  #                        $0.14/$0.28 per Mtok), so they no longer contend with the
+  #                        subscription gateway.
   #
-  # deepseek (v4-pro/flash) and the krill/gpt-5.5 proxy are no longer routed to any
-  # subagent (all remain /model options for the interactive loop).
+  # deepseek-v4-pro and the krill/gpt-5.5 proxy are not routed to any subagent
+  # (all remain /model options for the interactive loop).
   #
   # AUTH: openai-codex needs a one-time `/login` -> OpenAI in pi (browser OAuth);
   # creds land in ~/.pi/agent/auth.json (NOT this repo). Until you log in the
@@ -159,9 +162,9 @@ pi:
     agentOverrides:
       reviewer: { model: openai-codex/gpt-5.5 }
       oracle: { model: openai-codex/gpt-5.5 }
-      scout: { model: newapi/glm-4.7 }
+      scout: { model: deepseek/deepseek-v4-flash }
       context-builder: { model: newapi/glm-5.2 }
-      delegate: { model: newapi/glm-4.7 }
+      delegate: { model: deepseek/deepseek-v4-flash }
   # ===== Custom providers -> ~/.pi/agent/models.json =====
   # Providers Pi does not know natively, OR built-in providers for which we want
   # to pin specific models Pi's built-in registry lacks (e.g. DeepSeek V4).
