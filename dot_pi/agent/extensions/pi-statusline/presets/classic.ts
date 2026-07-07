@@ -12,7 +12,7 @@ export function renderClassicStatusline(
 }
 
 export function classicExtensionSeparator(theme: Theme): string {
-	return theme.fg("dim", " • ");
+	return theme.fg("dim", " · ");
 }
 
 function joinSegments(segments: RenderSegment[], theme: Theme, config: StatuslineConfig): string {
@@ -24,7 +24,7 @@ function joinSegments(segments: RenderSegment[], theme: Theme, config: Statuslin
 
 function styleSegment(
 	segment: RenderSegment,
-	index: number,
+	_index: number,
 	theme: Theme,
 	config: StatuslineConfig,
 ): string {
@@ -33,7 +33,10 @@ function styleSegment(
 	const styledText = segment.emphasis ? theme.bold(text) : text;
 
 	if (config.palette === "mono") {
-		return index === 0 ? theme.fg("muted", styledText) : theme.fg("dim", styledText);
+		if (segment.color === "error" || segment.color === "warning") {
+			return theme.fg(segment.color, styledText);
+		}
+		return theme.fg("muted", styledText);
 	}
 
 	return theme.fg(segment.color as ThemeColor, styledText);

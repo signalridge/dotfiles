@@ -73,6 +73,17 @@ const DEFAULT_SEGMENTS: SegmentName[] = [
 ];
 
 const PALETTES: Record<PaletteName, ThemeColor[]> = {
+  balanced: [
+    "syntaxType",
+    "syntaxType",
+    "syntaxString",
+    "syntaxFunction",
+    "syntaxKeyword",
+    "syntaxNumber",
+    "syntaxNumber",
+    "syntaxNumber",
+    "muted",
+  ],
   ocean: ["accent", "muted", "success", "warning"],
   sunset: ["warning", "accent", "success", "muted"],
   forest: ["success", "accent", "muted", "warning"],
@@ -190,7 +201,7 @@ export default function statusline(pi: ExtensionAPI) {
 function createDefaultConfig(): StatuslineConfig {
   return {
     preset: readStatuslinePreset(),
-    palette: "sunset",
+    palette: "balanced",
     density: "compact",
     separator: "dot",
     showLabels: false,
@@ -289,7 +300,7 @@ function buildSegment(
   config: StatuslineConfig,
   runtime: RuntimeState,
 ): RenderSegment | undefined {
-  const color = pickColor(config, index);
+  const color = pickColor(config, name, index);
 
   switch (name) {
     case "brand":
@@ -305,7 +316,9 @@ function buildSegment(
       return segment(
         name,
         `think ${runtime.thinkingLevel}`,
-        thinkingColor(runtime.thinkingLevel),
+        config.palette === "balanced"
+          ? color
+          : thinkingColor(runtime.thinkingLevel),
         "header",
       );
     case "branch": {
@@ -330,7 +343,12 @@ function buildSegment(
         usage?.percent === null || usage?.percent === undefined
           ? "ctx ?"
           : `ctx ${usage.percent.toFixed(0)}%`;
-      return segment(name, value, contextColor(usage?.percent), "runtime");
+      return segment(
+        name,
+        value,
+        config.palette === "balanced" ? color : contextColor(usage?.percent),
+        "runtime",
+      );
     }
     case "tokens": {
       const totals = getTokenTotals(ctx);
@@ -381,9 +399,37 @@ function extensionStatusSeparator(
   }
 }
 
-function pickColor(config: StatuslineConfig, index: number): ThemeColor {
+function pickColor(
+  config: StatuslineConfig,
+  name: SegmentName,
+  index: number,
+): ThemeColor {
+  if (config.palette === "balanced") return balancedSegmentColor(name);
   const palette = PALETTES[config.palette];
   return palette[index % palette.length] ?? "muted";
+}
+
+function balancedSegmentColor(name: SegmentName): ThemeColor {
+  switch (name) {
+    case "brand":
+    case "model":
+    case "thinking":
+      return "syntaxType";
+    case "cwd":
+      return "syntaxString";
+    case "branch":
+      return "syntaxFunction";
+    case "tools":
+      return "syntaxKeyword";
+    case "context":
+    case "tokens":
+    case "cost":
+      return "syntaxNumber";
+    case "time":
+      return "muted";
+    case "turn":
+      return "toolDiffAdded";
+  }
 }
 
 function thinkingColor(level: ThinkingLevel): ThemeColor {
@@ -482,8 +528,7 @@ export function formatExtensionStatus(
   const status = splitExtensionStatusIcon(displayValue);
   const text = simplifyExtensionStatusText(status.text);
   const color = extensionColor(key, plainValue);
-  const textColor = color === "warning" ? "warning" : "muted";
-  const renderedText = theme.fg(textColor, text);
+  const renderedText = theme.fg(color, text);
   return icon ? `${theme.fg(color, icon)} ${renderedText}` : renderedText;
 }
 
@@ -542,9 +587,10 @@ export function extensionColor(key: string, value: string): ThemeColor {
   const normalized = `${key} ${value}`.toLowerCase();
   if (/missing|error|fail|conflict|duplicate|unavailable/.test(normalized))
     return "warning";
-  if (normalized.includes("codex")) return "accent";
   if (/ready|active|running|enabled|awake|ok/.test(normalized))
-    return "success";
+    return "syntaxKeyword";
+  if (/receiving|stream|processing|working|thinking/.test(normalized))
+    return "syntaxOperator";
   return "muted";
 }
 

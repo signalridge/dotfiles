@@ -47,7 +47,7 @@ PI_STATUSLINE_PRESET=classic pi
 Supported presets:
 
 - `tokyo-night` — the default, inspired by the [Starship Tokyo Night preset](https://starship.rs/presets/tokyo-night), using `░▒▓` / `` powerline blocks and the Tokyo Night color ramp.
-- `classic` — a compact Pi-themed statusline with left-aligned `·` separators.
+- `classic` — a compact Pi-themed statusline with theme-scope status colors and dim `·` separators.
 
 Unset or invalid values fall back to `tokyo-night`. Both presets keep the same compact segment information.
 

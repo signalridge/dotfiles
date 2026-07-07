@@ -15,7 +15,14 @@ export type SegmentName =
 
 export type StatuslinePresetName = "classic" | "tokyo-night";
 export type TokyoNightBlockName = "header" | "directory" | "git" | "runtime" | "meter";
-export type PaletteName = "ocean" | "sunset" | "forest" | "candy" | "neon" | "mono";
+export type PaletteName =
+	| "balanced"
+	| "ocean"
+	| "sunset"
+	| "forest"
+	| "candy"
+	| "neon"
+	| "mono";
 export type Density = "compact" | "cozy";
 export type SeparatorName = "dot" | "bar" | "powerline" | "round" | "none";
 
