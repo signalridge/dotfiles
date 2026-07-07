@@ -174,6 +174,7 @@
   "baoyu-post-to-x" "social"
   "baoyu-post-to-wechat" "social"
   "baoyu-post-to-weibo" "social"
+  "drawio-skill" "design"
 }}
 
 # ------------------------------------------------------------------------------
@@ -742,6 +743,20 @@
     exact = true
     stripComponents = 4
     include = ["ui-ux-pro-max-skill-*/src/ui-ux-pro-max/scripts/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# Agents365-ai/drawio-skill (MIT) — natural-language → draw.io diagrams
+# - Single skill lives at skills/drawio-skill/ in the repo (SKILL.md + data/
+#   references/scripts/styles); land it under ~/.harnesses/skills/design/.
+# - draw.io desktop CLI + optional Graphviz are runtime deps, not bundled here.
+# ------------------------------------------------------------------------------
+[".harnesses/skills/{{ index $cat "drawio-skill" }}/drawio-skill"]
+    type = "archive"
+    url = "https://github.com/Agents365-ai/drawio-skill/archive/{{ $.versions.drawioSkillRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["drawio-skill-*/skills/drawio-skill/**"]
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------

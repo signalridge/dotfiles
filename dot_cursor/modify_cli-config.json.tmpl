@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# chezmoi modify_ script: merge managed Cursor CLI settings into
+# ~/.cursor/cli-config.json, preserving the internal/cached state that Cursor
+# writes and owns (authInfo, model/selectedModel/modelParameters, version,
+# privacyCache, showSandboxIntro, ...). Managed keys (permissions, approvalMode,
+# editor.vimMode, display) always win on re-apply.
+#
+# Mirrors the Codex (modify_config.toml) / pi (modify_settings.json) pattern:
+# the shared MCP set lives in ~/.cursor/mcp.json; this file owns the CLI posture.
+# Posture: approval-gated allowlist (like Codex's on-request approval) — safe
+# read/nav/git + all MCP auto-run, destructive/secret access denied, everything
+# else prompts. Switch model at runtime via the CLI's model picker (never here).
+set -euo pipefail
+
+EXISTING="$(cat)"
+
+# Fallbacks only fill the documented required fields when the file is new; they
+# never override anything Cursor already wrote.
+FALLBACK="$(cat <<'CURSOR_FALLBACK_EOF'
+{
+  "version": 1,
+  "editor": { "vimMode": false },
+  "permissions": { "allow": [], "deny": [] }
+}
+CURSOR_FALLBACK_EOF
+)"
+
+# Managed posture — these win over both fallback and existing.
+MANAGED="$(cat <<'CURSOR_MANAGED_EOF'
+{
+  "editor": { "vimMode": false },
+  "approvalMode": "allowlist",
+  "display": {
+    "showLineNumbers": false,
+    "showThinkingBlocks": true,
+    "showStatusIndicators": true
+  },
+  "permissions": {
+    "allow": [
+      "Read(**)",
+      "Shell(ls)",
+      "Shell(cat)",
+      "Shell(pwd)",
+      "Shell(echo)",
+      "Shell(grep)",
+      "Shell(rg)",
+      "Shell(fd)",
+      "Shell(find)",
+      "Shell(head)",
+      "Shell(tail)",
+      "Shell(wc)",
+      "Shell(sort)",
+      "Shell(uniq)",
+      "Shell(which)",
+      "Shell(tree)",
+      "Shell(jq)",
+      "Shell(git)",
+      "Shell(gh)",
+      "Shell(chezmoi)",
+      "Mcp(*:*)"
+    ],
+    "deny": [
+      "Shell(rm)",
+      "Shell(rmdir)",
+      "Shell(dd)",
+      "Shell(mkfs)",
+      "Shell(sudo)",
+      "Shell(shutdown)",
+      "Shell(reboot)",
+      "Read(**/.env*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/id_rsa*)",
+      "Read(**/*secret*)",
+      "Write(**/*.pem)",
+      "Write(**/*.key)"
+    ]
+  }
+}
+CURSOR_MANAGED_EOF
+)"
+
+if command -v jq >/dev/null 2>&1 && printf '%s' "$EXISTING" | jq -e . >/dev/null 2>&1; then
+    # Deep-merge: fallback (required-field seed) < existing (internal state) <
+    # managed (posture always wins). Arrays in managed replace existing ones.
+    jq -s '.[0] * .[1] * .[2]' \
+        <(printf '%s' "$FALLBACK") \
+        <(printf '%s' "$EXISTING") \
+        <(printf '%s' "$MANAGED")
+else
+    # New/corrupt file: emit fallback + managed so required fields are present.
+    jq -s '.[0] * .[1]' \
+        <(printf '%s' "$FALLBACK") \
+        <(printf '%s' "$MANAGED")
+fi

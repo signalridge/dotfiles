@@ -12,7 +12,7 @@
 # so the panel groups by the folder directly — no sidecar mapping file.
 #
 # Active set (flat symlinks into the shared library):
-#   current directory: ./.claude/skills/ + ./.codex/skills/ + ./.pi/skills/
+#   current directory: ./.claude/skills/ + ./.codex/skills/ + ./.pi/skills/ + ./.cursor/skills/
 #
 # Usage:
 #   skill-activate                    live on/off panel
@@ -77,10 +77,13 @@ fi
 claude_dir="$PWD/.claude/skills"
 codex_dir="$PWD/.codex/skills"
 pi_dir="$PWD/.pi/skills"
+cursor_dir="$PWD/.cursor/skills"
 # All harness skill dirs in the current project. A skill is symlinked into every
-# one so Claude, Codex, and Pi (SKILL.md format is shared) see the same set.
-active_dirs=("$claude_dir" "$codex_dir" "$pi_dir")
-target_label="Claude + Codex + Pi current dir"
+# one so Claude, Codex, Pi, and Cursor CLI (shared SKILL.md format) see the same
+# set. Cursor CLI reads ./.cursor/skills natively and follows symlinked skill
+# folders (verified), so the same flat-symlink strategy works for it too.
+active_dirs=("$claude_dir" "$codex_dir" "$pi_dir" "$cursor_dir")
+target_label="Claude + Codex + Pi + Cursor current dir"
 
 [ -d "$library" ] || {
   echo "skill-activate: library not found: $library" >&2

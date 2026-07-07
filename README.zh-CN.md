@@ -292,7 +292,7 @@ skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 - Go、Rust、Swift、TypeScript/JavaScript、Zig 语言套件
 - social、writing、media skills，包括 `xurl`、`x-create`、`daily.dev`、Reddit、Remotion 和 Humanizer 变体（`humanizer-en`、`qu-ai-wei`、`humanizer-ja`）
 
-同步后统一落到 `~/.harnesses/skills` 共享库；在项目目录运行 `skill-activate`，只会管理当前目录的 `./.claude/skills` 与 `./.codex/skills` symlink。`skill-activate --category typescript` 可为当前目录一次启用整个类别；`skill-activate --sync` 可修复已有的 Claude-only/Codex-only 半激活状态；在选择器里按 `Ctrl-A` 可切换当前高亮项所在的整个类别。
+同步后统一落到 `~/.harnesses/skills` 共享库；在项目目录运行 `skill-activate`，只会管理当前目录的 `./.claude/skills`、`./.codex/skills`、`./.pi/skills` 与 `./.cursor/skills` symlink（Cursor CLI 原生读取 `./.cursor/skills` 并会跟随 symlink 指向的技能目录）。`skill-activate --category typescript` 可为当前目录一次启用整个类别；`skill-activate --sync` 可修复各 harness 目录之间的半激活状态；在选择器里按 `Ctrl-A` 可切换当前高亮项所在的整个类别。
 
 ### 质量协议
 
@@ -327,7 +327,7 @@ skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 - 来自 `phuryn/pm-skills` 的产品管理 skills，覆盖 discovery、strategy、execution、GTM、analytics 与 AI shipping
 - social、writing、media skills，包括 `xurl`、`x-create`、`daily.dev`、Reddit、Remotion 和 Humanizer 变体（`humanizer-en`、`qu-ai-wei`、`humanizer-ja`）
 
-最终统一到 `~/.harnesses/skills` 共享库；在项目目录运行 `skill-activate`，只会管理当前目录的 `./.claude/skills` 与 `./.codex/skills` symlink。`skill-activate --category typescript` 可为当前目录一次启用整个类别；`skill-activate --sync` 可修复已有的 Claude-only/Codex-only 半激活状态；在选择器里按 `Ctrl-A` 可切换当前高亮项所在的整个类别。
+最终统一到 `~/.harnesses/skills` 共享库；在项目目录运行 `skill-activate`，只会管理当前目录的 `./.claude/skills`、`./.codex/skills`、`./.pi/skills` 与 `./.cursor/skills` symlink（Cursor CLI 原生读取 `./.cursor/skills` 并会跟随 symlink 指向的技能目录）。`skill-activate --category typescript` 可为当前目录一次启用整个类别；`skill-activate --sync` 可修复各 harness 目录之间的半激活状态；在选择器里按 `Ctrl-A` 可切换当前高亮项所在的整个类别。
 
 ### Account 与 Provider 管理
 
