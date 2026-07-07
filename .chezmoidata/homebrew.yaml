@@ -24,6 +24,7 @@ homebrew:
       - codex-app # OpenAI Codex desktop app for managing coding agents
       - displaylink # USB dock/adapter multi-monitor driver; needs reboot + manual Screen Recording grant
       - dockdoor
+      - drawio # draw.io Desktop; provides the `drawio` CLI that backs the drawio-skill (diagram gen/export)
       - visual-studio-code
       - hammerspoon
       - karabiner-elements
