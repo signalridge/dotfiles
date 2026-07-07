@@ -50,12 +50,6 @@ homebrew:
       - google-chrome
     work:
       - dbeaver-community
-      # cursor-cli ships Anysphere-signed native .node modules. macOS/MDM tags the
-      # freshly-installed files with com.apple.quarantine, so Gatekeeper blocks
-      # dlopen ("library load disallowed by system policy") and cursor-agent crashes.
-      # Homebrew 6 dropped quarantine handling (no no_quarantine arg), so the fix is
-      # stripping the flag post-install: run_after_13_cursor-cli-dequarantine.sh.
-      - cursor-cli
       - gcloud-cli
       - keepingyouawake # menu-bar utility to keep the Mac awake
     private:

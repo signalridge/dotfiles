@@ -50,20 +50,8 @@ const STATUSLINE_KEY = "statusline";
 const GITHUB_PR_KEY = "github-pr";
 const SETTINGS_FILE = "pi-statusline-settings.json";
 const DEFAULT_PRESET: StatuslinePresetName = "tokyo-night";
-
-const DEFAULT_EXTENSION_STATUS_ICONS: Record<string, string> = {
-  "chrome-devtools": "🌐",
-  "codex-usage": "📊",
-  caffeinate: "💊",
-  firecrawl: "🔥",
-  "github-pr": "🔎",
-  goal: "🎯",
-  lsp: "🧰",
-  "plan-mode": "📝",
-  pisync: "🔄",
-  subagents: "🧑‍🤝‍🧑",
-  "unknown-error-retry": "🔁",
-};
+const ANSI_ESCAPE_PATTERN =
+  /\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\))/g;
 
 interface StatuslineSettings {
   extensionStatusIcons: Record<string, string>;
@@ -71,7 +59,7 @@ interface StatuslineSettings {
 
 // Same information as upstream minus the π brand; decluttered by dropping the
 // decorative per-segment emoji (short text labels + only ⎇/$ glyphs kept). Renders
-// e.g. `gpt-5.5 · think high · chezmoi · ⎇ main · ▸Bash · ctx 42% · ↑12k ↓3k · $0.08 · 14:32`.
+// e.g. `gpt-5.5 · think high · chezmoi · ⎇ main · ▸ Bash · ctx 42% · ↑12k ↓3k · $0.08 · 14:32`.
 const DEFAULT_SEGMENTS: SegmentName[] = [
   "model",
   "thinking",
@@ -202,7 +190,7 @@ export default function statusline(pi: ExtensionAPI) {
 function createDefaultConfig(): StatuslineConfig {
   return {
     preset: readStatuslinePreset(),
-    palette: "candy",
+    palette: "sunset",
     density: "compact",
     separator: "dot",
     showLabels: false,
@@ -486,28 +474,29 @@ export function formatExtensionStatus(
   theme: Theme,
   config: Pick<StatuslineConfig, "extensionStatusIcons">,
 ): string {
-  const status = splitExtensionStatusIcon(
-    stripExtensionStatusPrefix(key, value),
-  );
+  const plainValue = stripAnsi(value);
+  const icon = extensionStatusIcon(key, config.extensionStatusIcons);
+  const displayValue = icon
+    ? stripExtensionStatusPrefix(key, plainValue)
+    : plainValue;
+  const status = splitExtensionStatusIcon(displayValue);
   const text = simplifyExtensionStatusText(status.text);
-  const color = extensionColor(key, value);
+  const color = extensionColor(key, plainValue);
   const textColor = color === "warning" ? "warning" : "muted";
-  const icon = extensionStatusIcon(
-    key,
-    status.icon,
-    config.extensionStatusIcons,
-  );
   const renderedText = theme.fg(textColor, text);
   return icon ? `${theme.fg(color, icon)} ${renderedText}` : renderedText;
 }
 
+function stripAnsi(value: string): string {
+  return value.replace(ANSI_ESCAPE_PATTERN, "");
+}
+
 function extensionStatusIcon(
   key: string,
-  leadingIcon: string | undefined,
   configuredIcons: Record<string, string>,
 ) {
   if (Object.hasOwn(configuredIcons, key)) return configuredIcons[key];
-  return leadingIcon ?? DEFAULT_EXTENSION_STATUS_ICONS[key] ?? "🔌";
+  return "";
 }
 
 export function wrapExtensionStatusline(
@@ -528,9 +517,7 @@ function formatDuplicateExtensionStatus(
     runtime.duplicateExtensions.length > 2
       ? ` +${runtime.duplicateExtensions.length - 2}`
       : "";
-  return [
-    `${theme.fg("warning", "⚠️")} ${theme.fg("warning", `dup ${names}${suffix}`)}`,
-  ];
+  return [theme.fg("warning", `dup ${names}${suffix}`)];
 }
 
 export function splitExtensionStatusIcon(value: string): {

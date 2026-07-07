@@ -50,6 +50,6 @@ function separatorText(separator: SeparatorName): string {
 		case "none":
 			return " ";
 		case "dot":
-			return " • ";
+			return " · ";
 	}
 }

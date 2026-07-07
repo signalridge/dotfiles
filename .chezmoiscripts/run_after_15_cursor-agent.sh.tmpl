@@ -1,0 +1,123 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Cursor Agent CLI — installed from the official Cursor installer metadata, not
+# Homebrew, so the same managed path works on macOS and Linux. The installer URL
+# is intentionally checked on every apply: this tool follows Cursor's latest CLI
+# release instead of a pinned dotfiles version.
+
+echo ":: [15] Installing Cursor Agent CLI"
+
+case "$(uname -s)" in
+Darwin) os="darwin" ;;
+Linux) os="linux" ;;
+*)
+    echo "    Skipped (unsupported OS: $(uname -s))"
+    exit 0
+    ;;
+esac
+
+case "$(uname -m)" in
+x86_64 | amd64) arch="x64" ;;
+arm64 | aarch64) arch="arm64" ;;
+*)
+    echo "    Skipped (unsupported architecture: $(uname -m))"
+    exit 0
+    ;;
+esac
+
+if ! command -v curl >/dev/null 2>&1; then
+    echo "    Error: curl is required to install Cursor Agent CLI" >&2
+    exit 1
+fi
+
+if ! command -v tar >/dev/null 2>&1; then
+    echo "    Error: tar is required to install Cursor Agent CLI" >&2
+    exit 1
+fi
+
+bin_dir="$HOME/.local/bin"
+agent_link="${bin_dir}/agent"
+cursor_agent_link="${bin_dir}/cursor-agent"
+
+installer_url="https://cursor.com/install"
+if ! installer="$(curl -fsSL "$installer_url")"; then
+    if [[ -x "$cursor_agent_link" ]] || command -v cursor-agent >/dev/null 2>&1; then
+        echo "    Skipped (could not check latest; cursor-agent is already installed)"
+        exit 0
+    fi
+
+    echo "    Error: could not fetch $installer_url and cursor-agent is not installed" >&2
+    exit 1
+fi
+
+version="$(
+    printf '%s\n' "$installer" |
+        sed -nE 's#.*downloads\.cursor\.com/lab/([^/]+)/.*/agent-cli-package\.tar\.gz.*#\1#p' |
+        head -n 1
+)"
+
+if [[ -z "$version" ]]; then
+    echo "    Error: could not parse Cursor Agent version from $installer_url" >&2
+    exit 1
+fi
+
+download_url="https://downloads.cursor.com/lab/${version}/${os}/${arch}/agent-cli-package.tar.gz"
+install_root="${XDG_DATA_HOME:-$HOME/.local/share}/cursor-agent/versions"
+target_dir="${install_root}/${version}"
+
+mkdir -p "$install_root" "$bin_dir"
+
+fix_macos_quarantine() {
+    [[ "$os" == "darwin" ]] || return 0
+
+    # Cursor ships signed native .node modules. Some macOS/MDM setups tag freshly
+    # downloaded files with com.apple.quarantine, which can make cursor-agent fail
+    # during dlopen with "library load disallowed by system policy".
+    if command -v xattr >/dev/null 2>&1; then
+        xattr -dr com.apple.quarantine "$1" 2>/dev/null || true
+    fi
+}
+
+ensure_links() {
+    ln -sfn "${target_dir}/cursor-agent" "$agent_link"
+    ln -sfn "${target_dir}/cursor-agent" "$cursor_agent_link"
+}
+
+if [[ -x "${target_dir}/cursor-agent" ]]; then
+    fix_macos_quarantine "$target_dir"
+    ensure_links
+    echo "    Already installed (${version})"
+    exit 0
+fi
+
+echo "    Downloading ${os}/${arch} ${version}"
+
+tmp_tgz="$(mktemp "${TMPDIR:-/tmp}/cursor-agent.XXXXXX.tar.gz")"
+tmp_dir="$(mktemp -d "${install_root}/.tmp-${version}.XXXXXX")"
+cleanup() {
+    rm -f "$tmp_tgz"
+    rm -rf "$tmp_dir"
+}
+trap cleanup EXIT
+
+if ! curl -fL --retry 5 --retry-delay 2 -o "$tmp_tgz" "$download_url"; then
+    echo "    Error: download failed (${download_url})" >&2
+    exit 1
+fi
+
+tar --strip-components=1 -xzf "$tmp_tgz" -C "$tmp_dir"
+chmod +x "${tmp_dir}/cursor-agent"
+fix_macos_quarantine "$tmp_dir"
+
+rm -rf "$target_dir"
+mv "$tmp_dir" "$target_dir"
+tmp_dir=""
+ensure_links
+
+# Prune older script-installed versions. The runtime config/state lives outside
+# versions/, under ~/.cursor and ~/.local/share/cursor-agent.
+find "$install_root" -mindepth 1 -maxdepth 1 -type d ! -name "$version" -exec rm -rf {} + 2>/dev/null || true
+
+echo "    Installed cursor-agent ${version} -> ${cursor_agent_link}"

@@ -73,4 +73,15 @@ assert_contains "$newapi_account" "provider: newapi"
 assert_contains "$newapi_account" "model: glm-5.2"
 assert_contains "$newapi_account" "auto_compact_window: 1000000"
 
+if grep -Eq '^[[:space:]]+- cursor-cli($|[[:space:]#])' "$ROOT/.chezmoidata/homebrew.yaml"; then
+    echo "cursor-cli should be installed by the managed Cursor Agent script, not Homebrew" >&2
+    exit 1
+fi
+
+cursor_agent_script="$(cat "$ROOT/.chezmoiscripts/run_after_15_cursor-agent.sh.tmpl")"
+assert_contains "$cursor_agent_script" "Darwin) os=\"darwin\""
+assert_contains "$cursor_agent_script" "Linux) os=\"linux\""
+assert_contains "$cursor_agent_script" "downloads.cursor.com/lab"
+assert_contains "$cursor_agent_script" "com.apple.quarantine"
+
 echo "test_profile_alignment: OK"

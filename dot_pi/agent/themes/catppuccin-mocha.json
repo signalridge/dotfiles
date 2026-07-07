@@ -72,13 +72,13 @@
     "syntaxType": "yellow",
     "syntaxOperator": "sky",
     "syntaxPunctuation": "overlay2",
-    "thinkingOff": "#6e6e6e",
-    "thinkingMinimal": "#6e6e6e",
-    "thinkingLow": "#6e6e6e",
-    "thinkingMedium": "#6e6e6e",
-    "thinkingHigh": "#6e6e6e",
-    "thinkingXhigh": "#6e6e6e",
-    "bashMode": "#6e6e6e"
+    "thinkingOff": "overlay0",
+    "thinkingMinimal": "overlay0",
+    "thinkingLow": "overlay1",
+    "thinkingMedium": "overlay2",
+    "thinkingHigh": "subtext0",
+    "thinkingXhigh": "subtext0",
+    "bashMode": "subtext0"
   },
   "export": {
     "pageBg": "#181825",

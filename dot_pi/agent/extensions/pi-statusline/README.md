@@ -13,7 +13,7 @@ Use it to monitor model selection, thinking level, git branch, working directory
 - Displays compact statuses published through Pi's generic extension status API.
 - Owns extension status icons through optional JSON config, including per-extension icon suppression with `""`.
 - Warns when the same extension package is installed from multiple sources.
-- Uses emoji-labeled segments for readability in both classic and Tokyo Night presets.
+- Uses compact text-labeled segments for readability in both classic and Tokyo Night presets.
 - Adapts to terminal width and wraps long extension status lines safely.
 - Requires no configuration, with optional preset selection through `PI_STATUSLINE_PRESET`.
 
@@ -47,13 +47,13 @@ PI_STATUSLINE_PRESET=classic pi
 Supported presets:
 
 - `tokyo-night` — the default, inspired by the [Starship Tokyo Night preset](https://starship.rs/presets/tokyo-night), using `░▒▓` / `` powerline blocks and the Tokyo Night color ramp.
-- `classic` — a compact Pi-themed statusline with left-aligned `•` separators.
+- `classic` — a compact Pi-themed statusline with left-aligned `·` separators.
 
-Unset or invalid values fall back to `tokyo-night`. Both presets keep the same emoji-labeled information.
+Unset or invalid values fall back to `tokyo-night`. Both presets keep the same compact segment information.
 
 ## ⚙️ Extension status icons
 
-Extension statuses use built-in icons by status key. Override or suppress them in `${PI_CODING_AGENT_DIR:-~/.pi/agent}/pi-statusline-settings.json`:
+Extension statuses are text-only by default. Add explicit icons in `${PI_CODING_AGENT_DIR:-~/.pi/agent}/pi-statusline-settings.json` when a specific status should still carry one:
 
 ```json
 {
@@ -69,12 +69,10 @@ Extension statuses use built-in icons by status key. Override or suppress them i
 }
 ```
 
-- Missing key: use the built-in icon, or `🔌` for an unknown status key.
+- Missing key: show the status text without an icon.
 - String value: use that string as the icon.
 - Empty string: show the status text without an icon.
 - `PI_STATUSLINE_PRESET` remains the only preset setting; this JSON file only controls extension status icons.
-
-During the `PI_CAFFEINATE_ICON` deprecation window, a leading emoji from `pi-caffeinate` is still used when JSON does not configure `caffeinate`. JSON wins when both are set.
 
 ## 👀 What it shows
 
