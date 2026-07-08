@@ -24,15 +24,12 @@ pi:
     # Max reasoning effort by default (off<minimal<low<medium<high<xhigh).
     # Override per-turn in the TUI; subagents still use their own model routing.
     defaultThinkingLevel: xhigh
-    # GLM-5.2 via the NewAPI gateway (https://newapi.3689403.xyz) is the startup
-    # default: key baked into models.json from gopass (claude/newapi/private/
-    # api_key), so plain `pi` works out of the box — the provider is silently
-    # skipped on a machine WITHOUT that key, so /model switch to another provider
-    # there. GPT-5.5 (krill) and DeepSeek V4 also wired (gopass) for /model
-    # switching; subagents route independently (see subagents below). Switch at
-    # runtime with /model, or e.g. `pi --provider krill --model gpt-5.5`.
-    defaultProvider: newapi
-    defaultModel: glm-5.2
+    # GPT-5.5 via Krill is the startup default. Key is baked into models.json from
+    # gopass (claude/krill/private/api_key), so plain `pi` keeps the GPT route and
+    # xhigh thinking by default. GLM-5.2 (newapi) and DeepSeek V4 are still wired
+    # for /model switching; subagents route independently (see subagents below).
+    defaultProvider: krill
+    defaultModel: gpt-5.5
     # Resolve/install Pi packages with bun instead of npm (faster, no
     # package-lock.json). Pi dispatches package ops via settings `npmCommand`
     # (default ["npm"]); the switch is global across all `npm:` packages below.
@@ -90,7 +87,8 @@ pi:
     # Zero deps. Disable with PI_CAFFEINATE_DISABLED=1.
     - npm:@narumitw/pi-caffeinate
     # goal: `/goal <objective>` autonomous mode — keeps working until goal_complete
-    # or a token budget (--tokens) is hit. Pairs well with GLM-5.2's 1M context.
+    # or a token budget (--tokens) is hit. Pairs well with long-context models;
+    # switch to GLM-5.2 when a 1M window matters more than the GPT default.
     # Zero deps; state is session-scoped.
     - npm:@narumitw/pi-goal
     # input-history: NOT listed here — it is VENDORED (locally forked/魔改) at
@@ -134,8 +132,8 @@ pi:
   #                        $0.14/$0.28 per Mtok), so they no longer contend with the
   #                        subscription gateway.
   #
-  # deepseek-v4-pro and the krill/gpt-5.5 proxy are not routed to any subagent
-  # (all remain /model options for the interactive loop).
+  # deepseek-v4-pro and the krill/gpt-5.5 proxy are not routed to any subagent;
+  # krill/gpt-5.5 is the interactive-loop default, and both remain /model options.
   #
   # AUTH: openai-codex needs a one-time `/login` -> OpenAI in pi (browser OAuth);
   # creds land in ~/.pi/agent/auth.json (NOT this repo). Until you log in the
@@ -160,11 +158,14 @@ pi:
   subagents:
     defaultModel: openai-codex/gpt-5.5
     agentOverrides:
-      reviewer: { model: openai-codex/gpt-5.5 }
-      oracle: { model: openai-codex/gpt-5.5 }
-      scout: { model: deepseek/deepseek-v4-flash }
-      context-builder: { model: newapi/glm-5.2 }
-      delegate: { model: deepseek/deepseek-v4-flash }
+      worker: { thinking: xhigh }
+      planner: { thinking: xhigh }
+      researcher: { thinking: xhigh }
+      reviewer: { model: openai-codex/gpt-5.5, thinking: xhigh }
+      oracle: { model: openai-codex/gpt-5.5, thinking: xhigh }
+      scout: { model: deepseek/deepseek-v4-flash, thinking: xhigh }
+      context-builder: { model: newapi/glm-5.2, thinking: xhigh }
+      delegate: { model: deepseek/deepseek-v4-flash, thinking: xhigh }
   # ===== Custom providers -> ~/.pi/agent/models.json =====
   # Providers Pi does not know natively, OR built-in providers for which we want
   # to pin specific models Pi's built-in registry lacks (e.g. DeepSeek V4).
@@ -183,7 +184,8 @@ pi:
   customProviders:
     newapi: # NewAPI multi-provider gateway (https://newapi.3689403.xyz/),
       # OpenAI-compatible; routes to GLM (and anything else the gateway exposes).
-      # Startup default (see defaults above). Key from gopass. base_url includes
+      # Long-context /model option and context-builder route. Key from gopass.
+      # base_url includes
       # /v1 because Pi's openai-completions api appends /chat/completions (cf.
       # doubao's /api/v3). Models below are a curated subset — extend from the
       # gateway catalogue as needed; pick at runtime with /model.
@@ -198,7 +200,7 @@ pi:
       # because the gateway returns reasoning_content on the assistant message.
       # reasoningEffortMap xhigh→xhigh: gateway accepts high/xhigh/max (all HTTP 200).
       models:
-        - id: glm-5.2 # flagship, startup default
+        - id: glm-5.2 # flagship long-context option
           # newapi gateway routes GLM-5.2 at its native 1M ctx; set so compaction
           # can compute its threshold (contextWindow - reserveTokens). Without it
           # pi never auto-compacts. (footer ctx% = usedTokens / this value.)
