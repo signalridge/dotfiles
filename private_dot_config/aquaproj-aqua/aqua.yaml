@@ -11,7 +11,7 @@ packages:
     registry: third-party
   - name: signalridge/qmk-hid-host@v2026.06.14.1
     registry: third-party
-  - name: ogulcancelik/herdr@v0.7.1
+  - name: ogulcancelik/herdr@v0.7.3
     registry: third-party
   # ----- standard registry -----
   - name: nektos/act@v0.2.89
@@ -26,14 +26,14 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.202
+  - name: anthropics/claude-code@v2.1.204
   - name: openai/codex@rust-v0.142.5
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.7.1
+  - name: jdx/mise@v2026.7.2
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
