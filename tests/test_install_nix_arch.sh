@@ -82,21 +82,25 @@ if [[ $rc -eq 0 ]]; then
     exit 1
 fi
 
+expected_aarch64_darwin="$(chezmoi execute-template --source "$ROOT" '{{ .versions.nixInstallerAarch64DarwinSha256 }}')"
+expected_aarch64_linux="$(chezmoi execute-template --source "$ROOT" '{{ .versions.nixInstallerAarch64LinuxSha256 }}')"
+expected_x86_64_linux="$(chezmoi execute-template --source "$ROOT" '{{ .versions.nixInstallerX8664LinuxSha256 }}')"
+
 [[ "$(
     NIX_INSTALLER_RUN_MAIN=0 sh -c '. "$1"; expected_sha256_for_arch aarch64-darwin' sh "$SCRIPT"
-)" == "17c0845f0133c9544b293449d853f5873ef9692b61cea1fe2ddf3b3a2500b81b" ]] || {
+)" == "$expected_aarch64_darwin" ]] || {
     echo "aarch64-darwin sha256 mismatch" >&2
     exit 1
 }
 [[ "$(
     NIX_INSTALLER_RUN_MAIN=0 sh -c '. "$1"; expected_sha256_for_arch aarch64-linux' sh "$SCRIPT"
-)" == "0b2321832c1bf10503c6b299b382bd70b00023771650c93efbf1ba4c99de8284" ]] || {
+)" == "$expected_aarch64_linux" ]] || {
     echo "aarch64-linux sha256 mismatch" >&2
     exit 1
 }
 [[ "$(
     NIX_INSTALLER_RUN_MAIN=0 sh -c '. "$1"; expected_sha256_for_arch x86_64-linux' sh "$SCRIPT"
-)" == "b7961969faefef53e5bc5a6986fd50a09b1ea3e04578ff58c5408edb0d4113b0" ]] || {
+)" == "$expected_x86_64_linux" ]] || {
     echo "x86_64-linux sha256 mismatch" >&2
     exit 1
 }
