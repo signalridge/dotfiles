@@ -55,3 +55,24 @@ do writes with a single `worker` only when implementation is explicitly requeste
 `subagent(...)` call, not hidden background automation. Skip delegation for trivial
 or single-point questions, direct commands, highly private requests, or when the
 user asks not to delegate — then just do it yourself.
+
+## Subagent acceptance levels
+
+Match the `acceptance` level to what the run can actually prove. It is chosen per
+`subagent(...)` call, not globally — `agentOverrides` silently ignores
+`acceptance` — so the dispatcher owns getting it right.
+
+- Read-only / review-only agents (`reviewer`, `scout`, `oracle`, `researcher`,
+  `context-builder`, or any "no edits" task): pass `acceptance: "none"`, or omit
+  it (`auto` infers a light `attested`).
+- Do NOT hand a no-edit run `checked`/`verified`/`reviewed`. Those levels demand
+  write-evidence (changed-files, tests-added, commands-run) it cannot produce,
+  and `reviewed` additionally needs an independent reviewer result the dispatch
+  doesn't wire up. Because the level was passed explicitly, the acceptance gate
+  then hard-fails the run (exitCode 1) even when the review itself passed — and
+  it forces a structured report whose enum is hyphenated
+  (`satisfied`/`not-satisfied`/`not-applicable`, `passed`/`failed`/`not-run`),
+  which a child easily emits as `not_satisfied` instead and gets rejected.
+- Reserve `checked`/`verified`/`reviewed` for a write-capable `worker` where you
+  actually supply the evidence, `verify` commands, and — for `reviewed` — a real
+  reviewer result (e.g. via a `/chain` or review-loop that feeds it back).
