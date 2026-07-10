@@ -1,0 +1,57 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Reconcile pi extensions (npm: packages) to latest.
+#
+# Source of truth for WHICH packages is .chezmoidata/pi.yaml -> settings.json
+# `packages` (written by dot_pi/agent/modify_settings.json.tmpl). pi itself
+# auto-installs any missing registered package on startup; this script keeps the
+# unversioned ones at latest. `pi update --extensions` updates unversioned
+# `npm:` specs and reconciles pinned git refs; version-pinned specs are skipped.
+# It writes only to ~/.pi/agent/npm/ (never settings.json), so there is no
+# chezmoi conflict.
+#
+# CADENCE: run_onchange re-fires when this rendered file changes — i.e. when the
+# package list below changes (add/remove a package) or when the ISO week rolls
+# over (routine weekly refresh), matching the aqua/brew updaters. NOTE: this goes
+# through bun/npm, NOT mise, so it is NOT subject to mise's release-age gate —
+# extensions jump straight to the newest published version.
+#
+# packages: {{ .pi.packages | toJson }}
+# weekly trigger: {{ output "date" "+%G-%V" | trim }}
+
+echo ":: [20] Updating pi extensions"
+
+# pi is mise-managed and the user strips mise shims at the zshenv phase, so this
+# non-interactive shell has neither pi nor its node/bun runtime on PATH. Inject
+# the real mise tool bin dirs via `mise env` (not `activate`, which needs a shell
+# hook that never fires here), same idiom as the aqua updater.
+aqua_bin_dir="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
+# aqua is mise's backend for some tools, so `mise env` needs it discoverable.
+# Both mise and aqua live in this dir; put it on PATH before invoking mise.
+if [[ -d "$aqua_bin_dir" ]]; then
+    export PATH="$aqua_bin_dir:$PATH"
+fi
+mise_bin="$aqua_bin_dir/mise"
+if [[ ! -x "$mise_bin" ]]; then
+    mise_bin="$(command -v mise 2>/dev/null || true)"
+fi
+if [[ -z "$mise_bin" ]]; then
+    echo "    Skipped (mise not found)"
+    exit 0
+fi
+eval "$("$mise_bin" env -s bash)"
+
+if ! command -v pi >/dev/null 2>&1; then
+    echo "    Skipped (pi not found; first pi launch will install extensions)"
+    exit 0
+fi
+
+# --no-approve: do not trust project-local files for this command.
+# Non-fatal: a transient npm/network failure must not abort `chezmoi apply`.
+if pi update --extensions --no-approve; then
+    echo "    pi extensions reconciled to latest"
+else
+    echo "    Warning: 'pi update --extensions' failed (non-fatal); retry later"
+fi

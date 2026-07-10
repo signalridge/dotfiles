@@ -122,9 +122,13 @@ pi:
   #   gpt-5.6-sol (openai-codex) -> the defaultModel (worker, planner,
   #                        researcher — the bulk volume) plus reviewer + oracle.
   #                        This uses OpenAI's official Codex OAuth provider, not
-  #                        Krill. Pi 0.80.3 stops at gpt-5.5, so the custom entry
-  #                        backports Pi >=0.80.6's GPT-5.6 metadata; remove it once
-  #                        every managed runtime has upgraded.
+  #                        Krill. Pi's built-in registry ships NO gpt-5.6 of any
+  #                        kind — VERIFIED 2026-07-11 on 0.80.6 (latest): zero
+  #                        `gpt-5.6` hits across its dist, openai-codex still
+  #                        defaults to gpt-5.5. The custom entry below is REQUIRED,
+  #                        not a temporary backport — do NOT delete it expecting a
+  #                        native definition. Re-check only when a pi release
+  #                        actually ships native openai-codex/gpt-5.6-sol.
   #   glm (newapi)      -> context-builder=glm-5.2 (1M window suits assembling large
   #                        context), on the subscription gateway. Same family as the
   #                        main loop; fine for non-adversarial context assembly.
@@ -215,10 +219,12 @@ pi:
   # Pick a model at runtime with /model.
   customProviders:
     openai-codex: # Official OpenAI Codex OAuth provider (built into Pi)
-      # Backport Pi >=0.80.6's provider-specific GPT-5.6 Sol metadata while the
-      # managed runtime remains on 0.80.3. Codex OAuth exposes a 372K window
-      # (unlike the direct OpenAI API's 1.05M); 272K is only the long-context
-      # pricing boundary. Built-in auth comes from `/login openai-codex`.
+      # Defines openai-codex/gpt-5.6-sol, which Pi's built-in registry does NOT
+      # ship — verified 2026-07-11 on 0.80.6 (the latest release): no gpt-5.6
+      # anywhere in its dist. REQUIRED for the subagent routes above to resolve;
+      # do NOT delete it expecting a native definition on 0.80.6+. Codex OAuth
+      # exposes a 372K window (unlike the direct OpenAI API's 1.05M); 272K is
+      # only the long-context pricing boundary. Auth: `/login openai-codex`.
       auth: builtin
       models:
         - id: gpt-5.6-sol
@@ -226,7 +232,7 @@ pi:
           contextWindow: 372000
           maxTokens: 128000
           reasoning: true
-          # Pi 0.80.3 cannot express the >272K pricing tier added in 0.80.6.
+          # Flat cost approximation (no >272K long-context tier expressed here).
           cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 6.25 }
           thinkingLevelMap: { minimal: low, xhigh: xhigh }
     newapi: # NewAPI multi-provider gateway (https://newapi.3689403.xyz/),
