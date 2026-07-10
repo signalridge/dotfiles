@@ -29,4 +29,16 @@ install_integration "codex"
 rm -f "$HOME/.codex/hooks.json"
 
 install_integration "claude"
-install_integration "pi"
+
+# pi: do NOT install Herdr's bundled integration. It stops reporting after an
+# in-process session switch (/resume, /new, /reload, /fork): it gates all
+# reporting on `session_start` re-arming `rootSession`, which pi does not
+# re-deliver to the rebound extension runtime, so the pane sticks at a stale
+# idle while pi is actually working. We ship a resume-safe replacement at
+# dot_pi/agent/extensions/herdr-pi-state.ts that reports as the same source
+# ("herdr:pi", authorized via remote/pi.toml's `aliases`), enables on load
+# instead of on session_start, and drives "working" from per-turn events plus an
+# isIdle() poll. Keep the bundled hook uninstalled so the two do not both report.
+if herdr integration uninstall pi >/dev/null 2>&1; then
+    echo "    Integration uninstalled: pi (replaced by herdr-pi-state.ts)"
+fi

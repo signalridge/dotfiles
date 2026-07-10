@@ -21,11 +21,12 @@ pi:
     # themes/ as a one-`/settings` switch fallback. All footer/TUI semantic
     # colors follow this theme.
     theme: catppuccin-mocha
-    # Pi's highest UI level is xhigh; GPT-5.6 maps it to provider max.
+    # Pi's highest UI level is xhigh; openai-codex/gpt-5.6-sol is kept at xhigh
+    # effort (thinkingLevelMap xhigh->xhigh), NOT the higher provider 'max'.
     # Override per-turn in the TUI; subagents still use their own model routing.
     defaultThinkingLevel: xhigh
     # GPT-5.6 Sol via the OFFICIAL OpenAI Codex OAuth provider (customProviders.
-    # openai-codex, auth: builtin) is the startup default, at xhigh -> provider max.
+    # openai-codex, auth: builtin) is the startup default, at xhigh effort.
     # No API key lives in the repo: authenticate once with `/login openai-codex`
     # (creds land in ~/.pi/agent/auth.json; until then the default fails, so /model
     # switch). Krill (gopass gpt-5.6-sol), GLM-5.2 (newapi) and DeepSeek V4 remain
@@ -40,6 +41,11 @@ pi:
       enabled: true
       reserveTokens: 65536
       keepRecentTokens: 16000
+    # Keep /tree branch summarization behavior explicit across Pi upgrades.
+    # Reserve 16K tokens for the summary and continue prompting before summarizing.
+    branchSummary:
+      reserveTokens: 16384
+      skipPrompt: false
     # Resolve/install Pi packages with bun instead of npm (faster, no
     # package-lock.json). Pi dispatches package ops via settings `npmCommand`
     # (default ["npm"]); the switch is global across all `npm:` packages below.
@@ -188,7 +194,7 @@ pi:
           maxTokens: 128000
           reasoning: true
           cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 0 }
-          thinkingLevelMap: { minimal: low, xhigh: max }
+          thinkingLevelMap: { minimal: low, xhigh: xhigh }
     newapi: # NewAPI multi-provider gateway (https://newapi.3689403.xyz/),
       # OpenAI-compatible; routes to GLM (and anything else the gateway exposes).
       # Long-context /model option and context-builder route. Key from gopass.
@@ -269,7 +275,13 @@ pi:
             requiresReasoningContentOnAssistantMessages: true
             thinkingFormat: deepseek
             reasoningEffortMap:
-              { minimal: high, low: high, medium: high, high: high, xhigh: max }
+              {
+                minimal: high,
+                low: high,
+                medium: high,
+                high: high,
+                xhigh: high,
+              }
         - id: deepseek-v4-flash
           name: DeepSeek V4 Flash
           contextWindow: 1000000
@@ -280,7 +292,13 @@ pi:
             requiresReasoningContentOnAssistantMessages: true
             thinkingFormat: deepseek
             reasoningEffortMap:
-              { minimal: high, low: high, medium: high, high: high, xhigh: max }
+              {
+                minimal: high,
+                low: high,
+                medium: high,
+                high: high,
+                xhigh: high,
+              }
     krill: # Krill — GPT-5.x served on an OpenAI-Responses endpoint
       # (https://api.krill-ai.com). Same upstream Claude Code (anthropic-compatible
       # /codex) and Codex (openai-responses /codex/v1) already use; here we take the
@@ -300,14 +318,14 @@ pi:
           # Krill live-check: /responses accepts gpt-5.6-sol/terra/luna, but not
           # the bare gpt-5.6 alias. Context is gateway-capped below official 1.05M:
           # 371,833 input tokens OK; 372,833 rejected. Keep this conservative.
-          # 5.6 rejects minimal effort, so map Pi's minimal->low; Pi has no max
-          # thinking level yet, so xhigh->max.
+          # 5.6 rejects minimal effort, so map Pi's minimal->low. xhigh->xhigh,
+          # kept off the higher 'max' effort by request.
           contextWindow: 371000
           maxTokens: 128000
           reasoning: true
           cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 6.25 }
           thinkingLevelMap:
-            { minimal: low, low: low, medium: medium, high: high, xhigh: max }
+            { minimal: low, low: low, medium: medium, high: high, xhigh: xhigh }
         - id: gpt-5.6-terra
           name: GPT-5.6 Terra (krill)
           contextWindow: 371000
@@ -315,7 +333,7 @@ pi:
           reasoning: true
           cost: { input: 2.5, output: 15, cacheRead: 0.25, cacheWrite: 3.125 }
           thinkingLevelMap:
-            { minimal: low, low: low, medium: medium, high: high, xhigh: max }
+            { minimal: low, low: low, medium: medium, high: high, xhigh: xhigh }
         - id: gpt-5.6-luna
           name: GPT-5.6 Luna (krill)
           contextWindow: 371000
@@ -323,7 +341,7 @@ pi:
           reasoning: true
           cost: { input: 1, output: 6, cacheRead: 0.1, cacheWrite: 1.25 }
           thinkingLevelMap:
-            { minimal: low, low: low, medium: medium, high: high, xhigh: max }
+            { minimal: low, low: low, medium: medium, high: high, xhigh: xhigh }
         - id: gpt-5.5
           name: GPT-5.5 (krill)
           # Kept as a fallback for /model switching while the 5.6 preview rolls out.

@@ -103,6 +103,12 @@ jq -e '
         "reserveTokens": 65536
     }
 ' "$PI_SETTINGS" >/dev/null
+jq -e '
+    .branchSummary == {
+        "reserveTokens": 16384,
+        "skipPrompt": false
+    }
+' "$PI_SETTINGS" >/dev/null
 assert_file_not_contains "$PI_SETTINGS" 'pi-ultra-compact'
 assert_file_contains "$PI_MODELS" '"openai-codex": {'
 assert_file_contains "$PI_MODELS" '"id": "gpt-5.6-sol"'
