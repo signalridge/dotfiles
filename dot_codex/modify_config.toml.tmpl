@@ -17,11 +17,6 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 {{-   $accountKey = .codexProviderAccount -}}
 {{- end -}}
 {{- $providerName := (split "@" $accountKey)._0 -}}
-{{- /* work flag may be absent when the template is rendered without chezmoi
-       config data (e.g. tests via `chezmoi execute-template`); default to the
-       personal/hot profile in that case. */ -}}
-{{- $work := false -}}
-{{- if hasKey . "work" -}}{{- $work = .work -}}{{- end -}}
 
 # =============================================================================
 # Core Settings
@@ -57,9 +52,9 @@ suppress_unstable_features_warning = true
 # Model Configuration
 # =============================================================================
 
-# Reasoning effort: none | minimal | low | medium | high | xhigh
-# Work machines run medium; personal machines run xhigh.
-model_reasoning_effort = "{{ if $work }}medium{{ else }}xhigh{{ end }}"
+# Reasoning effort: none | minimal | low | medium | high | xhigh | max
+# GPT-5.6 default: maximum reasoning effort.
+model_reasoning_effort = "max"
 
 
 # Personality: none | friendly | pragmatic
@@ -226,11 +221,11 @@ args = ["tool", "run", "arxiv-mcp-server"]
 # =============================================================================
 
 [profiles.deep-review]
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "max"
 approval_policy = "on-request"
 
 [profiles.research]
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "max"
 web_search = "live"
 
 # =============================================================================

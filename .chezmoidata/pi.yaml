@@ -21,12 +21,12 @@ pi:
     # themes/ as a one-`/settings` switch fallback. All footer/TUI semantic
     # colors follow this theme.
     theme: catppuccin-mocha
-    # Max reasoning effort by default (off<minimal<low<medium<high<xhigh).
+    # Pi's highest UI level is xhigh; GPT-5.6 maps it to provider max.
     # Override per-turn in the TUI; subagents still use their own model routing.
     defaultThinkingLevel: xhigh
     # GPT-5.6 Sol via Krill is the startup default. Key is baked into models.json from
     # gopass (claude/krill/private/api_key), so plain `pi` keeps the GPT route and
-    # xhigh thinking by default. GLM-5.2 (newapi) and DeepSeek V4 are still wired
+    # maximum thinking effort by default. GLM-5.2 (newapi) and DeepSeek V4 are still wired
     # for /model switching; subagents route independently (see subagents below).
     defaultProvider: krill
     defaultModel: gpt-5.6-sol
@@ -187,7 +187,7 @@ pi:
           maxTokens: 128000
           reasoning: true
           cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 0 }
-          thinkingLevelMap: { minimal: low, xhigh: xhigh }
+          thinkingLevelMap: { minimal: low, xhigh: max }
     newapi: # NewAPI multi-provider gateway (https://newapi.3689403.xyz/),
       # OpenAI-compatible; routes to GLM (and anything else the gateway exposes).
       # Long-context /model option and context-builder route. Key from gopass.
