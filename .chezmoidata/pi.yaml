@@ -24,12 +24,22 @@ pi:
     # Pi's highest UI level is xhigh; GPT-5.6 maps it to provider max.
     # Override per-turn in the TUI; subagents still use their own model routing.
     defaultThinkingLevel: xhigh
-    # GPT-5.6 Sol via Krill is the startup default. Key is baked into models.json from
-    # gopass (claude/krill/private/api_key), so plain `pi` keeps the GPT route and
-    # maximum thinking effort by default. GLM-5.2 (newapi) and DeepSeek V4 are still wired
-    # for /model switching; subagents route independently (see subagents below).
-    defaultProvider: krill
+    # GPT-5.6 Sol via the OFFICIAL OpenAI Codex OAuth provider (customProviders.
+    # openai-codex, auth: builtin) is the startup default, at xhigh -> provider max.
+    # No API key lives in the repo: authenticate once with `/login openai-codex`
+    # (creds land in ~/.pi/agent/auth.json; until then the default fails, so /model
+    # switch). Krill (gopass gpt-5.6-sol), GLM-5.2 (newapi) and DeepSeek V4 remain
+    # /model options; subagents route independently (see subagents below).
+    defaultProvider: openai-codex
     defaultModel: gpt-5.6-sol
+    # Use Pi's native compaction and trigger well before the model window is full.
+    # Threshold = contextWindow - reserveTokens: ~76% for OpenAI Codex 272K and
+    # ~82% for Krill 371K. The larger headroom covers long 20-30K tool turns;
+    # keeping only 16K recent tokens ensures the context drops materially.
+    compaction:
+      enabled: true
+      reserveTokens: 65536
+      keepRecentTokens: 16000
     # Resolve/install Pi packages with bun instead of npm (faster, no
     # package-lock.json). Pi dispatches package ops via settings `npmCommand`
     # (default ["npm"]); the switch is global across all `npm:` packages below.
@@ -99,15 +109,6 @@ pi:
     # single-line reverse-search with a full fzf/atuin-style popup list (Ctrl+R).
     # Ctrl+R is claimed for that popup; Pi's built-in app.session.rename is moved
     # off Ctrl+R to shift+r in dot_pi/agent/keybindings.json to avoid the clash.
-    # ultra-compact: smarter auto-compaction than Pi's built-in. Built-in does a
-    # single reactive threshold + always-LLM summarize; ultra-compact adds (1) a
-    # no-LLM "micro-compaction" tier at 60-90% ctx (strips reasoning + bulk tool
-    # output in microseconds, no summary call) and (2) a PREEMPTIVE 70% trigger
-    # that fires before the next turn, so long multi-tool turns don't overflow.
-    # Coexists with built-in compaction (fallback). PINNED @1.2.1: young, churny,
-    # single-maintainer pkg — pinning freezes it and makes `pi update` skip it.
-    # Rollback: delete this line, `chezmoi apply`, `pi remove npm:pi-ultra-compact`.
-    - npm:pi-ultra-compact@1.2.1
   # ===== Subagents config -> ~/.pi/agent/settings.json subagents =====
   # Model routing for pi-subagents builtins, tiered across families so the
   # reviewer gate can stay independent from the non-adversarial context route:

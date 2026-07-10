@@ -96,6 +96,14 @@ assert_file_not_contains "$CURSOR_MCP" '"@colbymchenry/codegraph@1.2.0"'
 assert_file_contains "$PI_SETTINGS" '"defaultModel": "openai-codex/gpt-5.6-sol"'
 assert_file_contains "$PI_SETTINGS" '"model": "openai-codex/gpt-5.6-sol"'
 assert_file_not_contains "$PI_SETTINGS" 'krill/gpt-5.6-sol'
+jq -e '
+    .compaction == {
+        "enabled": true,
+        "keepRecentTokens": 16000,
+        "reserveTokens": 65536
+    }
+' "$PI_SETTINGS" >/dev/null
+assert_file_not_contains "$PI_SETTINGS" 'pi-ultra-compact'
 assert_file_contains "$PI_MODELS" '"openai-codex": {'
 assert_file_contains "$PI_MODELS" '"id": "gpt-5.6-sol"'
 assert_file_contains "$PI_MODELS" '"xhigh": "max"'

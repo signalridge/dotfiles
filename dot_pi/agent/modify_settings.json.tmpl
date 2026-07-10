@@ -9,7 +9,7 @@ set -euo pipefail
 
 EXISTING="$(cat)"
 {{ $d := .pi.defaults -}}
-{{- $managed := dict "defaultProvider" $d.defaultProvider "defaultModel" $d.defaultModel "theme" $d.theme "defaultThinkingLevel" $d.defaultThinkingLevel "enableSkillCommands" true "npmCommand" $d.npmCommand "retry" $d.retry "packages" .pi.packages "subagents" .pi.subagents -}}
+{{- $managed := dict "defaultProvider" $d.defaultProvider "defaultModel" $d.defaultModel "theme" $d.theme "defaultThinkingLevel" $d.defaultThinkingLevel "enableSkillCommands" true "npmCommand" $d.npmCommand "compaction" $d.compaction "retry" $d.retry "packages" .pi.packages "subagents" .pi.subagents -}}
 MANAGED="$(cat <<'PI_SETTINGS_EOF'
 {{ $managed | toPrettyJson }}
 PI_SETTINGS_EOF
