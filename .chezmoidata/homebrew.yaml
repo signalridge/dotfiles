@@ -59,6 +59,7 @@ homebrew:
       - discord
       - iina # video player
       - logseq
+      - motrix # download manager
       - notion-calendar
       - setapp
       - soundsource
