@@ -10,6 +10,7 @@ import type {
   ThemeColor,
 } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
+import { registerSessionCompactRefresh } from "./context-refresh.js";
 import {
   classicExtensionSeparator,
   renderClassicStatusline,
@@ -149,6 +150,10 @@ export default function statusline(pi: ExtensionAPI) {
     installFooter(ctx);
     refresh();
   });
+
+  // Compaction updates the session context after agent_end; refresh here so the
+  // footer does not retain the pre-compaction percentage until another turn/timer.
+  registerSessionCompactRefresh(pi, refresh);
 
   pi.on("session_shutdown", (_event, ctx) => {
     ctx.ui.setFooter(undefined);

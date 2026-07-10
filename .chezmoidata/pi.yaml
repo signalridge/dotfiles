@@ -34,9 +34,9 @@ pi:
     defaultProvider: openai-codex
     defaultModel: gpt-5.6-sol
     # Use Pi's native compaction and trigger well before the model window is full.
-    # Threshold = contextWindow - reserveTokens: ~76% for OpenAI Codex 272K and
-    # ~82% for Krill 371K. The larger headroom covers long 20-30K tool turns;
-    # keeping only 16K recent tokens ensures the context drops materially.
+    # Threshold = contextWindow - reserveTokens: ~82% for both OpenAI Codex 372K
+    # and Krill 371K. The larger headroom covers long 20-30K tool turns; keeping
+    # only 16K recent tokens ensures the context drops materially.
     compaction:
       enabled: true
       reserveTokens: 65536
@@ -122,10 +122,9 @@ pi:
   #   gpt-5.6-sol (openai-codex) -> the defaultModel (worker, planner,
   #                        researcher — the bulk volume) plus reviewer + oracle.
   #                        This uses OpenAI's official Codex OAuth provider, not
-  #                        Krill. Pi 0.80.3's built-in openai-codex registry stops
-  #                        at gpt-5.5, so customProviders.openai-codex merges the
-  #                        gpt-5.6-sol entry into the built-in provider until
-  #                        upstream ships it.
+  #                        Krill. Pi 0.80.3 stops at gpt-5.5, so the custom entry
+  #                        backports Pi >=0.80.6's GPT-5.6 metadata; remove it once
+  #                        every managed runtime has upgraded.
   #   glm (newapi)      -> context-builder=glm-5.2 (1M window suits assembling large
   #                        context), on the subscription gateway. Same family as the
   #                        main loop; fine for non-adversarial context assembly.
@@ -216,17 +215,19 @@ pi:
   # Pick a model at runtime with /model.
   customProviders:
     openai-codex: # Official OpenAI Codex OAuth provider (built into Pi)
-      # Pi 0.80.3's built-in registry currently exposes openai-codex up to
-      # gpt-5.5. Merge GPT-5.6 Sol here so subagents can use the official
-      # OpenAI route via `/login openai-codex`, without a Krill API key.
+      # Backport Pi >=0.80.6's provider-specific GPT-5.6 Sol metadata while the
+      # managed runtime remains on 0.80.3. Codex OAuth exposes a 372K window
+      # (unlike the direct OpenAI API's 1.05M); 272K is only the long-context
+      # pricing boundary. Built-in auth comes from `/login openai-codex`.
       auth: builtin
       models:
         - id: gpt-5.6-sol
           name: GPT-5.6 Sol (OpenAI Codex)
-          contextWindow: 272000
+          contextWindow: 372000
           maxTokens: 128000
           reasoning: true
-          cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 0 }
+          # Pi 0.80.3 cannot express the >272K pricing tier added in 0.80.6.
+          cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 6.25 }
           thinkingLevelMap: { minimal: low, xhigh: xhigh }
     newapi: # NewAPI multi-provider gateway (https://newapi.3689403.xyz/),
       # OpenAI-compatible; routes to GLM (and anything else the gateway exposes).
@@ -377,7 +378,8 @@ pi:
             { minimal: low, low: low, medium: medium, high: high, xhigh: xhigh }
         - id: gpt-5.5
           name: GPT-5.5 (krill)
-          # Kept as a fallback for /model switching while the 5.6 preview rolls out.
+          # Gateway-specific fallback retained at its existing explicit limit;
+          # do not substitute OpenAI/Codex limits without a Krill boundary probe.
           contextWindow: 400000
           maxTokens: 128000
           reasoning: true
@@ -395,12 +397,20 @@ pi:
       base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
       api: openai-completions
       env: DASHSCOPE_API_KEY
+      # Keep limits explicit: string-only entries inherit Pi's generic 128K/16K
+      # defaults, which are wrong for both hosted Qwen models.
       models:
-        - qwen3-coder-plus
-        - qwen3-max
+        - id: qwen3-coder-plus
+          contextWindow: 1000000
+          maxTokens: 65536
+        - id: qwen3-max
+          contextWindow: 262144
+          maxTokens: 65536
     doubao: # ByteDance Ark v3 (OpenAI-compatible)
       base_url: https://ark.cn-beijing.volces.com/api/v3
       api: openai-completions
       env: ARK_API_KEY
       models:
-        - doubao-seed-1-6-thinking-250715
+        - id: doubao-seed-1-6-thinking-250715
+          contextWindow: 256000
+          maxTokens: 16000

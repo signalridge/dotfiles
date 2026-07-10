@@ -54,6 +54,7 @@ PI_MCP="$TMP_ROOT/pi-mcp.json"
 PI_SETTINGS_MODIFY="$TMP_ROOT/pi-settings-modify.sh"
 PI_SETTINGS="$TMP_ROOT/pi-settings.json"
 PI_MODELS="$TMP_ROOT/pi-models.json"
+PI_DATA="$TMP_ROOT/pi-data.json"
 CURSOR_MCP="$TMP_ROOT/cursor-mcp.json"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_codex/modify_config.toml.tmpl" >"$MODIFY_SCRIPT"
 bash "$MODIFY_SCRIPT" </dev/null >"$RENDERED"
@@ -62,6 +63,7 @@ chezmoi execute-template --source "$ROOT" <"$ROOT/dot_pi/agent/mcp.json.tmpl" >"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_pi/agent/modify_settings.json.tmpl" >"$PI_SETTINGS_MODIFY"
 bash "$PI_SETTINGS_MODIFY" </dev/null >"$PI_SETTINGS"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_pi/agent/private_models.json.tmpl" >"$PI_MODELS"
+chezmoi data --source "$ROOT" --format json >"$PI_DATA"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_cursor/mcp.json.tmpl" >"$CURSOR_MCP"
 
 assert_file_contains "$RENDERED" 'model = "gpt-5.6-sol"'
@@ -110,10 +112,33 @@ jq -e '
     }
 ' "$PI_SETTINGS" >/dev/null
 assert_file_not_contains "$PI_SETTINGS" 'pi-ultra-compact'
-assert_file_contains "$PI_MODELS" '"openai-codex": {'
-assert_file_contains "$PI_MODELS" '"id": "gpt-5.6-sol"'
-assert_file_contains "$PI_MODELS" '"xhigh": "max"'
+jq -e '
+    (.providers["openai-codex"].models[] | select(.id == "gpt-5.6-sol")) as $model
+    | $model.contextWindow == 372000
+      and $model.maxTokens == 128000
+      and $model.cost.cacheWrite == 6.25
+      and $model.thinkingLevelMap.xhigh == "xhigh"
+' "$PI_MODELS" >/dev/null
+jq -e '
+    (.providers.qwen.models[] | select(.id == "qwen3-coder-plus")) as $coder
+    | (.providers.qwen.models[] | select(.id == "qwen3-max")) as $max
+    | $coder.contextWindow == 1000000
+      and $coder.maxTokens == 65536
+      and $max.contextWindow == 262144
+      and $max.maxTokens == 65536
+' "$PI_MODELS" >/dev/null
+jq -e '
+    (.providers.doubao.models[] | select(.id == "doubao-seed-1-6-thinking-250715")) as $model
+    | $model.contextWindow == 256000
+      and $model.maxTokens == 16000
+' "$PI_MODELS" >/dev/null
+jq -e 'all(.providers[]?.models[]?; has("contextWindow") and has("maxTokens"))' \
+    "$PI_MODELS" >/dev/null
 assert_file_not_contains "$PI_MODELS" 'OPENAI-CODEX_API_KEY'
+jq -e '
+    all(.pi.customProviders[]?.models[]?;
+        type == "object" and has("contextWindow") and has("maxTokens"))
+' "$PI_DATA" >/dev/null
 
 chezmoi execute-template --source "$ROOT" \
     --override-data '{"claudeProviderAccount":"deepseek@private"}' \

@@ -46,11 +46,31 @@ const logPath = join(homedir(), ".pi", "agent", "herdr-pi-state.log");
 function log(...parts: unknown[]): void {
   if (!DEBUG) return;
   try {
-    appendFileSync(logPath, `${new Date().toISOString()} ${parts.join(" ")}\n`);
+    appendFileSync(
+      logPath,
+      `${new Date().toISOString()} [pid ${process.pid}] ${parts.join(" ")}\n`,
+    );
   } catch {
     /* ignore */
   }
 }
+function safeIdle(ctx: any): string {
+  try {
+    return String(ctx?.isIdle?.());
+  } catch {
+    return "err";
+  }
+}
+log(
+  "MODULE-EVAL pane=" +
+    paneId +
+    " enabled=" +
+    enabled() +
+    " child=" +
+    isSubagentChild +
+    " HERDR_ENV=" +
+    HERDR_ENV,
+);
 
 function parseDurationEnv(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -67,9 +87,15 @@ function enabled(): boolean {
 
 // ---- herdr socket plumbing (same wire protocol as the bundled integration) ----
 
+// Sequence numbers are herdr's staleness gate: it drops any report whose seq is
+// <= the last it saw for the pane. herdr resets a pane on session switch
+// (/new, /resume) using a CURRENT wall-clock seq, so a fixed load-time base +1
+// would be out-ranked and silently dropped afterward. Track current wall-clock
+// each call so our reports always out-rank herdr's session-reset (and any other
+// process sharing this pane, which all seed from the same clock).
 let reportSeq = Date.now() * 1000;
 function nextReportSeq(): number {
-  reportSeq += 1;
+  reportSeq = Math.max(reportSeq + 1, Date.now() * 1000);
   return reportSeq;
 }
 
@@ -98,8 +124,14 @@ function sendRequestAttempt(
   });
 }
 async function sendRequest(request: unknown): Promise<void> {
-  if (await sendRequestAttempt(request, 500)) return;
-  await sendRequestAttempt(request, 1500);
+  const m = (request as any)?.method;
+  const st = (request as any)?.params?.state ?? "";
+  if (await sendRequestAttempt(request, 500)) {
+    log("SEND ok", m, st);
+    return;
+  }
+  const ok = await sendRequestAttempt(request, 1500);
+  log("SEND", ok ? "ok-retry" : "FAILED", m, st);
 }
 
 let currentAgentSessionPath: string | undefined;
@@ -159,7 +191,13 @@ function reportState(
       state,
       message,
       seq: nextReportSeq(),
-      ...sessionRef(),
+      // NOTE: deliberately NO session ref here. herdr applies report_agent to the
+      // pane by pane_id regardless of session. Tagging state with a session path
+      // breaks after /new: herdr still associates the pane with the pre-/new
+      // session (our post-switch report_agent_session had an empty path because
+      // the new session file didn't exist yet), so a state report tagged with the
+      // NEW session is treated as a different session and dropped. Omitting it
+      // makes state apply to the pane unconditionally.
     },
   });
 }
@@ -193,7 +231,11 @@ async function drain(): Promise<void> {
 }
 
 export default function (pi: any) {
-  if (!enabled()) return;
+  if (!enabled()) {
+    log("EXPORT-CALL skipped (enabled=false)");
+    return;
+  }
+  log("EXPORT-CALL registering handlers on pi");
 
   let active = true; // report unless a session_start proves this is headless
   let working = false;
@@ -236,12 +278,34 @@ export default function (pi: any) {
     }, idleDebounceMs);
     idleTimer.unref?.();
   }
+  let lastReportedSessionPath: string | undefined;
   function sync(ctx: any): void {
     if (ctx) lastCtx = ctx;
     updateSessionRef(lastCtx);
+    // Re-bind herdr's pane to the current session whenever it changes. After a
+    // /new or /resume, herdr keeps the pane bound to the pre-switch session
+    // (often idle) and periodically overrides our reported state from it —
+    // causing working/idle flicker — until we re-send report_agent_session with
+    // the new path. That path only exists once the new session has been written
+    // (i.e. on the first turn after the switch), so re-report on change here.
+    if (
+      currentAgentSessionPath &&
+      currentAgentSessionPath !== lastReportedSessionPath
+    ) {
+      lastReportedSessionPath = currentAgentSessionPath;
+      void reportSession();
+    }
   }
 
   pi.on("session_start", (event: any, ctx: any) => {
+    log(
+      "EVT session_start reason=" +
+        event?.reason +
+        " hasUI=" +
+        ctx?.hasUI +
+        " isIdle=" +
+        safeIdle(ctx),
+    );
     sync(ctx);
     if (ctx?.hasUI === false) {
       active = false;
@@ -254,6 +318,17 @@ export default function (pi: any) {
     working = idle === false;
     log("session_start", event?.reason, "idle=", String(idle));
     publish(true);
+    // herdr's session-switch reset (/new, /resume, /reload, /fork) is async and
+    // drops source reports for a few seconds afterward. Re-assert the current
+    // state a few times so herdr converges once its reset settles.
+    if (event?.reason && event.reason !== "startup") {
+      for (const ms of [1200, 2800, 4800, 7000]) {
+        const t = setTimeout(() => {
+          if (active) publish(true);
+        }, ms);
+        t.unref?.();
+      }
+    }
   });
 
   // Per-turn "working" signals — these fire on every turn, so a resumed session
@@ -266,6 +341,7 @@ export default function (pi: any) {
     "message_start",
   ]) {
     pi.on(ev, (_event: any, ctx: any) => {
+      log("EVT", ev, "active=" + active, "isIdle=" + safeIdle(ctx));
       if (!active) return;
       sync(ctx);
       markWorking();
@@ -273,6 +349,7 @@ export default function (pi: any) {
   }
   for (const ev of ["turn_end", "agent_end"]) {
     pi.on(ev, (_event: any, ctx: any) => {
+      log("EVT", ev, "active=" + active, "isIdle=" + safeIdle(ctx));
       if (!active) return;
       sync(ctx);
       scheduleIdle();
@@ -304,22 +381,25 @@ export default function (pi: any) {
 
   // Reconciliation poll: trust pi's own isIdle() to catch any missed transition
   // (the safety net that makes a resume/new impossible to leave permanently wrong).
+  let pollTicks = 0;
   const poll = setInterval(() => {
+    pollTicks += 1;
+    if (pollTicks % 5 === 0)
+      log(
+        "poll-tick active=" +
+          active +
+          " working=" +
+          working +
+          " isIdle=" +
+          safeIdle(lastCtx),
+      );
     if (!active) return;
-    try {
-      const idle = lastCtx?.isIdle?.();
-      if (idle === true && working && blockedCount === 0) {
-        working = false;
-        publish();
-        log("poll -> idle");
-      } else if (idle === false && !working && blockedCount === 0) {
-        working = true;
-        publish();
-        log("poll -> working");
-      }
-    } catch {
-      /* ignore */
-    }
+    // Heartbeat: re-assert the event-driven state every ~2s so herdr converges
+    // after its async /new/resume reset (which drops reports for a few seconds).
+    // No ctx.isIdle() reconciliation: it is unreliable mid-turn (returns true
+    // intermittently during streaming) and caused working/idle flicker. Working
+    // and idle are driven reliably by turn events instead.
+    if (pollTicks % 2 === 0) publish(true);
   }, pollMs);
   poll.unref?.();
 
