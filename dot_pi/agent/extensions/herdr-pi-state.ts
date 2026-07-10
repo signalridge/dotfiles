@@ -347,7 +347,12 @@ export default function (pi: any) {
       markWorking();
     });
   }
-  for (const ev of ["turn_end", "agent_end"]) {
+  // Idle ONLY on agent_end — the outer boundary of a whole user-message run.
+  // NOT turn_end: that fires between LLM turns and around tool calls mid-run, so
+  // treating it as idle blinks the status to idle between turns ("gaps"). Staying
+  // working for the entire agent_start..agent_end span keeps multi-turn/tool tasks
+  // continuous.
+  for (const ev of ["agent_end"]) {
     pi.on(ev, (_event: any, ctx: any) => {
       log("EVT", ev, "active=" + active, "isIdle=" + safeIdle(ctx));
       if (!active) return;
