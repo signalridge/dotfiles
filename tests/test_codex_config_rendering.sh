@@ -58,7 +58,7 @@ chezmoi execute-template --source "$ROOT" <"$ROOT/dot_claude/settings.json.tmpl"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_pi/agent/mcp.json.tmpl" >"$PI_MCP"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_cursor/mcp.json.tmpl" >"$CURSOR_MCP"
 
-assert_file_contains "$RENDERED" 'model = "gpt-5.5"'
+assert_file_contains "$RENDERED" 'model = "gpt-5.6-sol"'
 assert_file_contains "$RENDERED" 'model_reasoning_effort = "xhigh"'
 assert_file_not_contains "$RENDERED" 'service_tier ='
 assert_file_contains "$RENDERED" 'fast_mode = false'
@@ -117,13 +117,13 @@ chezmoi execute-template --source "$ROOT" \
     --override-data '{"claudeProviderAccount":"krill@private"}' \
     <"$ROOT/dot_claude/settings.json.tmpl" >"$KRILL_CLAUDE_SETTINGS"
 assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_BASE_URL": "https://api.krill-ai.com/codex"'
-assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_MODEL": "gpt-5.5"'
+assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_MODEL": "gpt-5.6-sol"'
 assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"CLAUDE_CODE_ATTRIBUTION_HEADER": "0"'
 assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"'
 assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES": "thinking,adaptive_thinking,temperature,effort,max_effort"'
 assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES": "thinking,adaptive_thinking,temperature,effort,max_effort"'
 assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES": "thinking,adaptive_thinking,temperature,effort,max_effort"'
-assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"CLAUDE_CODE_SUBAGENT_MODEL": "gpt-5.5"'
+assert_file_contains "$KRILL_CLAUDE_SETTINGS" '"CLAUDE_CODE_SUBAGENT_MODEL": "gpt-5.6-sol"'
 assert_file_not_contains "$KRILL_CLAUDE_SETTINGS" 'CLAUDE_CODE_EFFORT_LEVEL'
 
 # Native Anthropic default must not leak krill-only env keys.

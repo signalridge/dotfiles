@@ -59,7 +59,7 @@ interface StatuslineSettings {
 
 // Same information as upstream minus the π brand; decluttered by dropping the
 // decorative per-segment emoji (short text labels + only ⎇/$ glyphs kept). Renders
-// e.g. `gpt-5.5 · think high · chezmoi · ⎇ main · ▸ Bash · ctx 42% · ↑12k ↓3k · $0.08 · 14:32`.
+// e.g. `gpt-5.6-sol · think high · chezmoi · ⎇ main · ▸ Bash · ctx 42% · ↑12k ↓3k · $0.08 · 14:32`.
 const DEFAULT_SEGMENTS: SegmentName[] = [
   "model",
   "thinking",

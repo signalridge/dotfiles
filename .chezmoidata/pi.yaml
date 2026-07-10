@@ -24,12 +24,12 @@ pi:
     # Max reasoning effort by default (off<minimal<low<medium<high<xhigh).
     # Override per-turn in the TUI; subagents still use their own model routing.
     defaultThinkingLevel: xhigh
-    # GPT-5.5 via Krill is the startup default. Key is baked into models.json from
+    # GPT-5.6 Sol via Krill is the startup default. Key is baked into models.json from
     # gopass (claude/krill/private/api_key), so plain `pi` keeps the GPT route and
     # xhigh thinking by default. GLM-5.2 (newapi) and DeepSeek V4 are still wired
     # for /model switching; subagents route independently (see subagents below).
     defaultProvider: krill
-    defaultModel: gpt-5.5
+    defaultModel: gpt-5.6-sol
     # Resolve/install Pi packages with bun instead of npm (faster, no
     # package-lock.json). Pi dispatches package ops via settings `npmCommand`
     # (default ["npm"]); the switch is global across all `npm:` packages below.
@@ -113,15 +113,12 @@ pi:
   # the reviewer gate runs on a family DIFFERENT from the glm-5.2 main loop (an
   # independent perspective catches what the main model misses):
   #
-  #   gpt-5.5 (openai-codex) -> the defaultModel (worker, planner, researcher — the
-  #                        bulk volume) plus reviewer + oracle. Served by the OFFICIAL
-  #                        OpenAI provider via ChatGPT "Sign in with ChatGPT" Codex
-  #                        OAuth (auth type "chatgpt"), NOT the krill proxy. Distinct
-  #                        family from the glm-5.2 main loop, so reviewer stays an
-  #                        independent adversarial gate. NOTE: on a ChatGPT Plus/Pro
-  #                        sub these share your Codex usage limits — high-throughput
-  #                        subagents can hit HTTP 429 usage_limit_reached (2-4h
-  #                        lockouts); watch volume.
+  #   gpt-5.6-sol (krill) -> the defaultModel (worker, planner, researcher — the
+  #                        bulk volume) plus reviewer + oracle. Krill's Responses
+  #                        route has been live-tested for gpt-5.6-sol/terra/luna;
+  #                        gpt-5.6 (bare alias) is NOT routed by Krill, so use the
+  #                        tier slug explicitly. Distinct family from the glm-5.2
+  #                        main loop, so reviewer stays an independent adversarial gate.
   #   glm (newapi)      -> context-builder=glm-5.2 (1M window suits assembling large
   #                        context), on the subscription gateway. Same family as the
   #                        main loop; fine for non-adversarial context assembly.
@@ -132,20 +129,19 @@ pi:
   #                        $0.14/$0.28 per Mtok), so they no longer contend with the
   #                        subscription gateway.
   #
-  # deepseek-v4-pro and the krill/gpt-5.5 proxy are not routed to any subagent;
-  # krill/gpt-5.5 is the interactive-loop default, and both remain /model options.
+  # deepseek-v4-pro and krill/gpt-5.5 are retained as /model fallbacks but are not
+  # routed to subagents by default.
   #
-  # AUTH: openai-codex needs a one-time `/login` -> OpenAI in pi (browser OAuth);
-  # creds land in ~/.pi/agent/auth.json (NOT this repo). Until you log in the
-  # gpt-5.5 subagents fail with an auth error; deepseek/glm (gopass) keep working.
+  # AUTH: krill uses the gopass-backed custom provider below; deepseek/glm also use
+  # gopass. No OpenAI Codex OAuth is needed for these default subagent routes.
   #
   # Each override is QUALIFIED as `provider/id`, NOT a bare id. A bare id is
   # resolved by pi-subagents (resolveBaseModelCandidate) via `id ===` across ALL
-  # registered models — and pi's BUILT-IN registry also defines `gpt-5.5` (openai /
-  # openai-codex, see model-resolver.js). So bare `gpt-5.5` is ambiguous: the match
-  # count is >1, the parent provider (newapi) doesn't disambiguate, and it falls
+  # registered models — and pi's BUILT-IN registry can define the same bare GPT ids
+  # under openai/openai-codex/openrouter. So bare GPT ids are ambiguous: the match
+  # count can be >1, the parent provider (newapi) doesn't disambiguate, and it falls
   # through to fuzzy resolution onto a keyless built-in provider → "No API key found
-  # for openrouter" (the reviewer/oracle failure). A slash-qualified `openai-codex/gpt-5.5`
+  # for openrouter" (the reviewer/oracle failure). A slash-qualified `krill/gpt-5.6-sol`
   # (what reviewer/oracle/default now use) matches ONLY within the named provider (the resolver's own contract: "a
   # qualified provider/id query only matches within the named provider — never
   # silently switches providers for security/cost-sensitive configs"), so it's
@@ -156,13 +152,13 @@ pi:
   # delete it from an existing ~/.pi/agent/settings.json — prune agentOverrides there
   # too when narrowing. (Changing a model VALUE is fine: jq * overwrites scalars.)
   subagents:
-    defaultModel: openai-codex/gpt-5.5
+    defaultModel: krill/gpt-5.6-sol
     agentOverrides:
       worker: { thinking: xhigh }
       planner: { thinking: xhigh }
       researcher: { thinking: xhigh }
-      reviewer: { model: openai-codex/gpt-5.5, thinking: xhigh }
-      oracle: { model: openai-codex/gpt-5.5, thinking: xhigh }
+      reviewer: { model: krill/gpt-5.6-sol, thinking: xhigh }
+      oracle: { model: krill/gpt-5.6-sol, thinking: xhigh }
       scout: { model: deepseek/deepseek-v4-flash, thinking: xhigh }
       context-builder: { model: newapi/glm-5.2, thinking: xhigh }
       delegate: { model: deepseek/deepseek-v4-flash, thinking: xhigh }
@@ -274,33 +270,57 @@ pi:
             thinkingFormat: deepseek
             reasoningEffortMap:
               { minimal: high, low: high, medium: high, high: high, xhigh: max }
-    krill: # Krill — gpt-5.5 served on an OpenAI-Responses endpoint
+    krill: # Krill — GPT-5.x served on an OpenAI-Responses endpoint
       # (https://api.krill-ai.com). Same upstream Claude Code (anthropic-compatible
       # /codex) and Codex (openai-responses /codex/v1) already use; here we take the
-      # Responses route because that's gpt-5.5's native transport, mirroring
+      # Responses route because that's the GPT-5.x native transport, mirroring
       # dot_codex [model_providers.krill] (base_url .../codex/v1, wire_api=responses).
       # Pi's openai-responses api POSTs to <base_url>/responses, so keep the /codex/v1
       # suffix. Key from gopass (claude/krill/private/api_key, the same secret the
       # claude/codex configs read) → baked in at apply time, so
-      # `pi --provider krill --model gpt-5.5` works out of the box; the provider is
+      # `pi --provider krill --model gpt-5.6-sol` works out of the box; the provider is
       # silently skipped on a machine without the key. Pick at runtime with /model.
       base_url: https://api.krill-ai.com/codex/v1
       api: openai-responses
       gopass: claude/krill/private/api_key
       models:
+        - id: gpt-5.6-sol
+          name: GPT-5.6 Sol (krill)
+          # Krill live-check: /responses accepts gpt-5.6-sol/terra/luna, but not
+          # the bare gpt-5.6 alias. Context is gateway-capped below official 1.05M:
+          # 371,833 input tokens OK; 372,833 rejected. Keep this conservative.
+          # 5.6 rejects minimal effort, so map Pi's minimal->low; Pi has no max
+          # thinking level yet, so xhigh->max.
+          contextWindow: 371000
+          maxTokens: 128000
+          reasoning: true
+          cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 6.25 }
+          thinkingLevelMap:
+            { minimal: low, low: low, medium: medium, high: high, xhigh: max }
+        - id: gpt-5.6-terra
+          name: GPT-5.6 Terra (krill)
+          contextWindow: 371000
+          maxTokens: 128000
+          reasoning: true
+          cost: { input: 2.5, output: 15, cacheRead: 0.25, cacheWrite: 3.125 }
+          thinkingLevelMap:
+            { minimal: low, low: low, medium: medium, high: high, xhigh: max }
+        - id: gpt-5.6-luna
+          name: GPT-5.6 Luna (krill)
+          contextWindow: 371000
+          maxTokens: 128000
+          reasoning: true
+          cost: { input: 1, output: 6, cacheRead: 0.1, cacheWrite: 1.25 }
+          thinkingLevelMap:
+            { minimal: low, low: low, medium: medium, high: high, xhigh: max }
         - id: gpt-5.5
           name: GPT-5.5 (krill)
-          # gpt-5 family = 400K total context. Set so Pi's auto-compaction can
-          # compute its threshold (contextWindow - reserveTokens); without it Pi
-          # never auto-compacts (same reason as the newapi GLM models, #795).
+          # Kept as a fallback for /model switching while the 5.6 preview rolls out.
           contextWindow: 400000
           maxTokens: 128000
           reasoning: true
-          # openai-responses sends reasoning natively as reasoning:{effort} — no
-          # thinkingFormat/compat plumbing needed (that's the openai-completions
-          # path used by newapi/deepseek). gpt-5.5 accepts effort up to xhigh
-          # (dot_codex sets model_reasoning_effort=xhigh), so map identity and do
-          # NOT let Pi clamp xhigh down to high.
+          # gpt-5.5 accepts effort up to xhigh, so map identity and do NOT let Pi
+          # clamp xhigh down to high.
           thinkingLevelMap:
             {
               minimal: minimal,

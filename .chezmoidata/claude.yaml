@@ -90,18 +90,21 @@ claude:
       disable_nonessential_traffic: true
       models:
         - ark-code-latest
-    # Krill (gpt-5.5 served on an Anthropic-compatible endpoint): https://api.krill-ai.com
+    # Krill (GPT-5.x served on an Anthropic-compatible endpoint): https://api.krill-ai.com
     krill:
       base_url: https://api.krill-ai.com/codex
       timeout_ms: 300000
       disable_nonessential_traffic: true
       # Drop the attribution header and experimental betas the proxy rejects,
-      # and advertise gpt-5.5's reasoning/effort capabilities to Claude Code.
+      # and advertise GPT-5.6's reasoning/effort capabilities to Claude Code.
       attribution_header: "0"
       disable_experimental_betas: true
       supported_capabilities: thinking,adaptive_thinking,temperature,effort,max_effort
-      subagent_model: gpt-5.5
+      subagent_model: gpt-5.6-sol
       models:
+        - gpt-5.6-sol
+        - gpt-5.6-terra
+        - gpt-5.6-luna
         - gpt-5.5
   # ===== Account Configurations =====
   # Format: provider or provider@account
@@ -149,15 +152,15 @@ claude:
       opus_model: glm-5.2
       subagent_model: glm-5.2
       auto_compact_window: 1000000
-    # gpt-5.5 via krill; attribution/betas/capabilities inherit from the provider.
+    # GPT-5.6 Sol via krill; attribution/betas/capabilities inherit from the provider.
     krill@private:
       provider: krill
-      model: gpt-5.5
-      small_model: gpt-5.5
-      haiku_model: gpt-5.5
-      sonnet_model: gpt-5.5
-      opus_model: gpt-5.5
-      subagent_model: gpt-5.5
+      model: gpt-5.6-sol
+      small_model: gpt-5.6-luna
+      haiku_model: gpt-5.6-luna
+      sonnet_model: gpt-5.6-terra
+      opus_model: gpt-5.6-sol
+      subagent_model: gpt-5.6-sol
   # ==========================================================================
   # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
   # All skills are hardcoded in .chezmoiexternal.toml.tmpl
