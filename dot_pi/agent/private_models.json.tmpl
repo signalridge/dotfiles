@@ -21,16 +21,20 @@
 {{-   range $name, $cfg := .pi.customProviders -}}
 {{-     $apiKey := "" -}}
 {{-     $skip := false -}}
+{{-     $useBuiltinAuth := and (hasKey $cfg "auth") (eq $cfg.auth "builtin") -}}
 {{-     if hasKey $cfg "gopass" -}}
 {{-       $apiKey = output "sh" "-c" (printf "gopass show --password %s 2>/dev/null | head -n1 || true" $cfg.gopass) | trim -}}
 {{-       if eq $apiKey "" -}}{{- $skip = true -}}{{- end -}}
-{{-     else -}}
+{{-     else if not $useBuiltinAuth -}}
 {{-       $env := printf "%s_API_KEY" (upper $name) -}}
 {{-       if hasKey $cfg "env" -}}{{- $env = $cfg.env -}}{{- end -}}
 {{-       $apiKey = printf "$%s" $env -}}
 {{-     end -}}
 {{-     if not $skip -}}
-{{-       $p := dict "baseUrl" $cfg.base_url "api" $cfg.api "apiKey" $apiKey -}}
+{{-       $p := dict -}}
+{{-       if hasKey $cfg "base_url" -}}{{- $p = set $p "baseUrl" $cfg.base_url -}}{{- end -}}
+{{-       if hasKey $cfg "api" -}}{{- $p = set $p "api" $cfg.api -}}{{- end -}}
+{{-       if ne $apiKey "" -}}{{- $p = set $p "apiKey" $apiKey -}}{{- end -}}
 {{-       if hasKey $cfg "models" -}}
 {{-         $models := list -}}
 {{-         range $cfg.models -}}

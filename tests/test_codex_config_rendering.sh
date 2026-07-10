@@ -51,11 +51,17 @@ CLAUDE_SETTINGS="$TMP_ROOT/settings.json"
 DEEPSEEK_CLAUDE_SETTINGS="$TMP_ROOT/settings-deepseek.json"
 NEWAPI_CLAUDE_SETTINGS="$TMP_ROOT/settings-newapi.json"
 PI_MCP="$TMP_ROOT/pi-mcp.json"
+PI_SETTINGS_MODIFY="$TMP_ROOT/pi-settings-modify.sh"
+PI_SETTINGS="$TMP_ROOT/pi-settings.json"
+PI_MODELS="$TMP_ROOT/pi-models.json"
 CURSOR_MCP="$TMP_ROOT/cursor-mcp.json"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_codex/modify_config.toml.tmpl" >"$MODIFY_SCRIPT"
 bash "$MODIFY_SCRIPT" </dev/null >"$RENDERED"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_claude/settings.json.tmpl" >"$CLAUDE_SETTINGS"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_pi/agent/mcp.json.tmpl" >"$PI_MCP"
+chezmoi execute-template --source "$ROOT" <"$ROOT/dot_pi/agent/modify_settings.json.tmpl" >"$PI_SETTINGS_MODIFY"
+bash "$PI_SETTINGS_MODIFY" </dev/null >"$PI_SETTINGS"
+chezmoi execute-template --source "$ROOT" <"$ROOT/dot_pi/agent/private_models.json.tmpl" >"$PI_MODELS"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_cursor/mcp.json.tmpl" >"$CURSOR_MCP"
 
 assert_file_contains "$RENDERED" 'model = "gpt-5.6-sol"'
@@ -87,6 +93,12 @@ assert_file_not_contains "$PI_MCP" '"codegraph"'
 assert_file_not_contains "$PI_MCP" '"@colbymchenry/codegraph@1.2.0"'
 assert_file_not_contains "$CURSOR_MCP" '"codegraph"'
 assert_file_not_contains "$CURSOR_MCP" '"@colbymchenry/codegraph@1.2.0"'
+assert_file_contains "$PI_SETTINGS" '"defaultModel": "openai-codex/gpt-5.6-sol"'
+assert_file_contains "$PI_SETTINGS" '"model": "openai-codex/gpt-5.6-sol"'
+assert_file_not_contains "$PI_SETTINGS" 'krill/gpt-5.6-sol'
+assert_file_contains "$PI_MODELS" '"openai-codex": {'
+assert_file_contains "$PI_MODELS" '"id": "gpt-5.6-sol"'
+assert_file_not_contains "$PI_MODELS" 'OPENAI-CODEX_API_KEY'
 
 chezmoi execute-template --source "$ROOT" \
     --override-data '{"claudeProviderAccount":"deepseek@private"}' \

@@ -109,16 +109,16 @@ pi:
     # Rollback: delete this line, `chezmoi apply`, `pi remove npm:pi-ultra-compact`.
     - npm:pi-ultra-compact@1.2.1
   # ===== Subagents config -> ~/.pi/agent/settings.json subagents =====
-  # Model routing for pi-subagents builtins, tiered across the three families so
-  # the reviewer gate runs on a family DIFFERENT from the glm-5.2 main loop (an
-  # independent perspective catches what the main model misses):
+  # Model routing for pi-subagents builtins, tiered across families so the
+  # reviewer gate can stay independent from the non-adversarial context route:
   #
-  #   gpt-5.6-sol (krill) -> the defaultModel (worker, planner, researcher — the
-  #                        bulk volume) plus reviewer + oracle. Krill's Responses
-  #                        route has been live-tested for gpt-5.6-sol/terra/luna;
-  #                        gpt-5.6 (bare alias) is NOT routed by Krill, so use the
-  #                        tier slug explicitly. Distinct family from the glm-5.2
-  #                        main loop, so reviewer stays an independent adversarial gate.
+  #   gpt-5.6-sol (openai-codex) -> the defaultModel (worker, planner,
+  #                        researcher — the bulk volume) plus reviewer + oracle.
+  #                        This uses OpenAI's official Codex OAuth provider, not
+  #                        Krill. Pi 0.80.3's built-in openai-codex registry stops
+  #                        at gpt-5.5, so customProviders.openai-codex merges the
+  #                        gpt-5.6-sol entry into the built-in provider until
+  #                        upstream ships it.
   #   glm (newapi)      -> context-builder=glm-5.2 (1M window suits assembling large
   #                        context), on the subscription gateway. Same family as the
   #                        main loop; fine for non-adversarial context assembly.
@@ -129,36 +129,33 @@ pi:
   #                        $0.14/$0.28 per Mtok), so they no longer contend with the
   #                        subscription gateway.
   #
-  # deepseek-v4-pro and krill/gpt-5.5 are retained as /model fallbacks but are not
+  # deepseek-v4-pro and krill/gpt-5.x are retained as /model fallbacks but are not
   # routed to subagents by default.
   #
-  # AUTH: krill uses the gopass-backed custom provider below; deepseek/glm also use
-  # gopass. No OpenAI Codex OAuth is needed for these default subagent routes.
+  # AUTH: default/reviewer/oracle use OpenAI Codex OAuth (`/login openai-codex`);
+  # deepseek/glm still use gopass-backed providers. No Krill key is needed for the
+  # default subagent routes.
   #
   # Each override is QUALIFIED as `provider/id`, NOT a bare id. A bare id is
   # resolved by pi-subagents (resolveBaseModelCandidate) via `id ===` across ALL
-  # registered models — and pi's BUILT-IN registry can define the same bare GPT ids
-  # under openai/openai-codex/openrouter. So bare GPT ids are ambiguous: the match
-  # count can be >1, the parent provider (newapi) doesn't disambiguate, and it falls
-  # through to fuzzy resolution onto a keyless built-in provider → "No API key found
-  # for openrouter" (the reviewer/oracle failure). A slash-qualified `krill/gpt-5.6-sol`
-  # (what reviewer/oracle/default now use) matches ONLY within the named provider (the resolver's own contract: "a
-  # qualified provider/id query only matches within the named provider — never
-  # silently switches providers for security/cost-sensitive configs"), so it's
-  # collision-proof. glm-*/deepseek-* ids happen to be unique today, but they're
-  # qualified too so a future built-in-registry id clash can't resurface this bug.
+  # registered models — and pi's registry can define the same bare GPT ids under
+  # openai/openai-codex/openrouter/custom providers. So bare GPT ids are ambiguous:
+  # the match count can be >1, the parent provider doesn't disambiguate, and it can
+  # fall through to a keyless provider. A slash-qualified
+  # `openai-codex/gpt-5.6-sol` matches only within the official OpenAI Codex
+  # provider, so it is collision-proof.
   #
   # NOTE: modify_settings deep-merges (jq *), so REMOVING an override here does NOT
   # delete it from an existing ~/.pi/agent/settings.json — prune agentOverrides there
   # too when narrowing. (Changing a model VALUE is fine: jq * overwrites scalars.)
   subagents:
-    defaultModel: krill/gpt-5.6-sol
+    defaultModel: openai-codex/gpt-5.6-sol
     agentOverrides:
       worker: { thinking: xhigh }
       planner: { thinking: xhigh }
       researcher: { thinking: xhigh }
-      reviewer: { model: krill/gpt-5.6-sol, thinking: xhigh }
-      oracle: { model: krill/gpt-5.6-sol, thinking: xhigh }
+      reviewer: { model: openai-codex/gpt-5.6-sol, thinking: xhigh }
+      oracle: { model: openai-codex/gpt-5.6-sol, thinking: xhigh }
       scout: { model: deepseek/deepseek-v4-flash, thinking: xhigh }
       context-builder: { model: newapi/glm-5.2, thinking: xhigh }
       delegate: { model: deepseek/deepseek-v4-flash, thinking: xhigh }
@@ -178,6 +175,19 @@ pi:
   # through verbatim (id/name/contextWindow/maxTokens/reasoning/cost/compat/...).
   # Pick a model at runtime with /model.
   customProviders:
+    openai-codex: # Official OpenAI Codex OAuth provider (built into Pi)
+      # Pi 0.80.3's built-in registry currently exposes openai-codex up to
+      # gpt-5.5. Merge GPT-5.6 Sol here so subagents can use the official
+      # OpenAI route via `/login openai-codex`, without a Krill API key.
+      auth: builtin
+      models:
+        - id: gpt-5.6-sol
+          name: GPT-5.6 Sol (OpenAI Codex)
+          contextWindow: 272000
+          maxTokens: 128000
+          reasoning: true
+          cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 0 }
+          thinkingLevelMap: { minimal: low, xhigh: xhigh }
     newapi: # NewAPI multi-provider gateway (https://newapi.3689403.xyz/),
       # OpenAI-compatible; routes to GLM (and anything else the gateway exposes).
       # Long-context /model option and context-builder route. Key from gopass.
