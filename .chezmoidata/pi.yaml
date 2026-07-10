@@ -157,15 +157,48 @@ pi:
   # too when narrowing. (Changing a model VALUE is fine: jq * overwrites scalars.)
   subagents:
     defaultModel: openai-codex/gpt-5.6-sol
+    # toolBudget: raise the per-child tool-call ceiling so heavy agents (esp. the
+    # reviewer gate on large diffs) don't get the "Tool budget soft limit reached
+    # after N tool calls ... finalize" nudge and wrap up prematurely. Builtin
+    # defaults are ~30 soft / ~50 hard. `hard` is required; `soft` nudges first;
+    # `block` (omitted) defaults to blocking read/grep/find/ls after `hard` so the
+    # child can still finalize. NOTE: this is the only budget knob agentOverrides
+    # accepts — run timeout (timeoutMs) and turnBudget are per-call args, not
+    # settings-configurable here.
     agentOverrides:
-      worker: { thinking: xhigh }
-      planner: { thinking: xhigh }
-      researcher: { thinking: xhigh }
-      reviewer: { model: openai-codex/gpt-5.6-sol, thinking: xhigh }
-      oracle: { model: openai-codex/gpt-5.6-sol, thinking: xhigh }
-      scout: { model: deepseek/deepseek-v4-flash, thinking: xhigh }
-      context-builder: { model: newapi/glm-5.2, thinking: xhigh }
-      delegate: { model: deepseek/deepseek-v4-flash, thinking: xhigh }
+      worker: { thinking: xhigh, toolBudget: { soft: 150, hard: 220 } }
+      planner: { thinking: xhigh, toolBudget: { soft: 100, hard: 150 } }
+      researcher: { thinking: xhigh, toolBudget: { soft: 100, hard: 150 } }
+      reviewer:
+        {
+          model: openai-codex/gpt-5.6-sol,
+          thinking: xhigh,
+          toolBudget: { soft: 160, hard: 240 },
+        }
+      oracle:
+        {
+          model: openai-codex/gpt-5.6-sol,
+          thinking: xhigh,
+          toolBudget: { soft: 120, hard: 180 },
+        }
+      scout:
+        {
+          model: deepseek/deepseek-v4-flash,
+          thinking: xhigh,
+          toolBudget: { soft: 80, hard: 120 },
+        }
+      context-builder:
+        {
+          model: newapi/glm-5.2,
+          thinking: xhigh,
+          toolBudget: { soft: 80, hard: 120 },
+        }
+      delegate:
+        {
+          model: deepseek/deepseek-v4-flash,
+          thinking: xhigh,
+          toolBudget: { soft: 80, hard: 120 },
+        }
   # ===== Custom providers -> ~/.pi/agent/models.json =====
   # Providers Pi does not know natively, OR built-in providers for which we want
   # to pin specific models Pi's built-in registry lacks (e.g. DeepSeek V4).
