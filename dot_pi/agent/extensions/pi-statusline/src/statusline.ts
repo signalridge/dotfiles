@@ -451,6 +451,8 @@ function thinkingColor(level: ThinkingLevel): ThemeColor {
       return "thinkingHigh";
     case "xhigh":
       return "thinkingXhigh";
+    case "max":
+      return "thinkingMax";
   }
 }
 

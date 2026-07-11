@@ -21,16 +21,14 @@ pi:
     # themes/ as a one-`/settings` switch fallback. All footer/TUI semantic
     # colors follow this theme.
     theme: catppuccin-mocha
-    # Pi's highest UI level is xhigh; openai-codex/gpt-5.6-sol is kept at xhigh
-    # effort (thinkingLevelMap xhigh->xhigh), NOT the higher provider 'max'.
-    # Override per-turn in the TUI; subagents still use their own model routing.
-    defaultThinkingLevel: xhigh
-    # GPT-5.6 Sol via the OFFICIAL OpenAI Codex OAuth provider (customProviders.
-    # openai-codex, auth: builtin) is the startup default, at xhigh effort.
-    # No API key lives in the repo: authenticate once with `/login openai-codex`
-    # (creds land in ~/.pi/agent/auth.json; until then the default fails, so /model
-    # switch). Krill (gopass gpt-5.6-sol), GLM-5.2 (newapi) and DeepSeek V4 remain
-    # /model options; subagents route independently (see subagents below).
+    # Pi 0.80.6+ exposes GPT-5.6's native `max` reasoning effort above `xhigh`.
+    # `ultra` is not a reasoning-effort value: OpenAI describes it as a
+    # multi-agent orchestration mode, so Pi/Responses API requests must use `max`.
+    defaultThinkingLevel: max
+    # GPT-5.6 Sol via Pi's built-in OpenAI Codex OAuth provider. No custom model
+    # compatibility entry is needed; authenticate once with `/login openai-codex`.
+    # Krill (gopass GPT-5.6), GLM-5.2 (newapi), and DeepSeek V4 remain /model
+    # alternatives; subagents route independently below.
     defaultProvider: openai-codex
     defaultModel: gpt-5.6-sol
     # Use Pi's native compaction and trigger well before the model window is full.
@@ -119,16 +117,12 @@ pi:
   # Model routing for pi-subagents builtins, tiered across families so the
   # reviewer gate can stay independent from the non-adversarial context route:
   #
-  #   gpt-5.6-sol (openai-codex) -> the defaultModel (worker, planner,
-  #                        researcher — the bulk volume) plus reviewer + oracle.
-  #                        This uses OpenAI's official Codex OAuth provider, not
-  #                        Krill. Pi's built-in registry ships NO gpt-5.6 of any
-  #                        kind — VERIFIED 2026-07-11 on 0.80.6 (latest): zero
-  #                        `gpt-5.6` hits across its dist, openai-codex still
-  #                        defaults to gpt-5.5. The custom entry below is REQUIRED,
-  #                        not a temporary backport — do NOT delete it expecting a
-  #                        native definition. Re-check only when a pi release
-  #                        actually ships native openai-codex/gpt-5.6-sol.
+  #   gpt-5.6-sol (openai-codex) -> defaultModel plus worker, planner,
+  #                        researcher, reviewer, and oracle. Pi 0.80.6+ ships
+  #                        native Sol/Terra/Luna metadata, including `max`.
+  #                        pi-subagents 0.34.0 only recognizes levels through
+  #                        xhigh and otherwise emits an invalid `:max:max`, so
+  #                        child agents remain xhigh until that package adds max.
   #   glm (newapi)      -> context-builder=glm-5.2 (1M window suits assembling large
   #                        context), on the subscription gateway. Same family as the
   #                        main loop; fine for non-adversarial context assembly.
@@ -142,7 +136,7 @@ pi:
   # deepseek-v4-pro and krill/gpt-5.x are retained as /model fallbacks but are not
   # routed to subagents by default.
   #
-  # AUTH: default/reviewer/oracle use OpenAI Codex OAuth (`/login openai-codex`);
+  # AUTH: GPT routes use OpenAI Codex OAuth (`/login openai-codex`);
   # deepseek/glm still use gopass-backed providers. No Krill key is needed for the
   # default subagent routes.
   #
@@ -203,8 +197,9 @@ pi:
           toolBudget: { soft: 80, hard: 120 },
         }
   # ===== Custom providers -> ~/.pi/agent/models.json =====
-  # Providers Pi does not know natively, OR built-in providers for which we want
-  # to pin specific models Pi's built-in registry lacks (e.g. DeepSeek V4).
+  # Only providers/models Pi does not ship natively belong here. Built-in model
+  # IDs must not be repeated because a custom entry with the same ID replaces
+  # Pi's metadata, including its supported thinking levels and pricing tiers.
   #
   # API key, per provider:
   #   env: <VAR>     -> models.json gets apiKey "$<VAR>" (no secret on disk; set
@@ -218,23 +213,6 @@ pi:
   # through verbatim (id/name/contextWindow/maxTokens/reasoning/cost/compat/...).
   # Pick a model at runtime with /model.
   customProviders:
-    openai-codex: # Official OpenAI Codex OAuth provider (built into Pi)
-      # Defines openai-codex/gpt-5.6-sol, which Pi's built-in registry does NOT
-      # ship — verified 2026-07-11 on 0.80.6 (the latest release): no gpt-5.6
-      # anywhere in its dist. REQUIRED for the subagent routes above to resolve;
-      # do NOT delete it expecting a native definition on 0.80.6+. Codex OAuth
-      # exposes a 372K window (unlike the direct OpenAI API's 1.05M); 272K is
-      # only the long-context pricing boundary. Auth: `/login openai-codex`.
-      auth: builtin
-      models:
-        - id: gpt-5.6-sol
-          name: GPT-5.6 Sol (OpenAI Codex)
-          contextWindow: 372000
-          maxTokens: 128000
-          reasoning: true
-          # Flat cost approximation (no >272K long-context tier expressed here).
-          cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 6.25 }
-          thinkingLevelMap: { minimal: low, xhigh: xhigh }
     newapi: # NewAPI multi-provider gateway (https://newapi.3689403.xyz/),
       # OpenAI-compatible; routes to GLM (and anything else the gateway exposes).
       # Long-context /model option and context-builder route. Key from gopass.
@@ -251,7 +229,7 @@ pi:
       # rejects with HTTP 422; false makes Pi use `system` instead (root-caused
       # via a logging proxy capturing Pi's request body). thinkingFormat:deepseek
       # because the gateway returns reasoning_content on the assistant message.
-      # reasoningEffortMap xhigh→xhigh: gateway accepts high/xhigh/max (all HTTP 200).
+      # thinkingLevelMap exposes the gateway's verified low..max effort values.
       models:
         - id: glm-5.2 # flagship long-context option
           # newapi gateway routes GLM-5.2 at its native 1M ctx; set so compaction
@@ -260,23 +238,21 @@ pi:
           contextWindow: 1000000
           maxTokens: 131072
           reasoning: true
-          # thinkingLevelMap declares which levels GLM supports so Pi does NOT
-          # clamp xhigh down to high (agent-session _clampThinkingLevel). Without
-          # it the footer shows 🧠 high even when defaultThinkingLevel=xhigh.
+          # Expose the full verified ladder through max so Pi does not clamp the
+          # configured level to high in interactive or subagent sessions.
           thinkingLevelMap:
-            { minimal: low, low: low, medium: medium, high: high, xhigh: xhigh }
+            {
+              minimal: low,
+              low: low,
+              medium: medium,
+              high: high,
+              xhigh: xhigh,
+              max: max,
+            }
           compat:
             supportsDeveloperRole: false
             thinkingFormat: deepseek
             requiresReasoningContentOnAssistantMessages: true
-            reasoningEffortMap:
-              {
-                minimal: low,
-                low: low,
-                medium: medium,
-                high: high,
-                xhigh: xhigh,
-              }
         - id: glm-4.7 # stable fallback (both verified HTTP 200 on the gateway)
           # newapi gateway routes GLM at 200K ctx; set so compaction can compute
           # its threshold (contextWindow - reserveTokens). Without it pi never auto-compacts.
@@ -284,19 +260,18 @@ pi:
           maxTokens: 131072
           reasoning: true
           thinkingLevelMap:
-            { minimal: low, low: low, medium: medium, high: high, xhigh: xhigh }
+            {
+              minimal: low,
+              low: low,
+              medium: medium,
+              high: high,
+              xhigh: xhigh,
+              max: max,
+            }
           compat:
             supportsDeveloperRole: false
             thinkingFormat: deepseek
             requiresReasoningContentOnAssistantMessages: true
-            reasoningEffortMap:
-              {
-                minimal: low,
-                low: low,
-                medium: medium,
-                high: high,
-                xhigh: xhigh,
-              }
     deepseek: # DeepSeek Platform (OpenAI-compatible). V4 models are not in Pi's
       # built-in registry yet, so we pin them here with the reasoning `compat`
       # block from the official integration doc:
@@ -311,34 +286,24 @@ pi:
           maxTokens: 384000
           reasoning: true
           cost: { input: 1.74, output: 3.48, cacheRead: 0.145, cacheWrite: 0 }
+          # DeepSeek V4 currently exposes one reasoning mode; preserve the old
+          # intent by mapping every Pi level through xhigh to provider `high`.
+          thinkingLevelMap:
+            { minimal: high, low: high, medium: high, high: high, xhigh: high }
           compat:
             requiresReasoningContentOnAssistantMessages: true
             thinkingFormat: deepseek
-            reasoningEffortMap:
-              {
-                minimal: high,
-                low: high,
-                medium: high,
-                high: high,
-                xhigh: high,
-              }
         - id: deepseek-v4-flash
           name: DeepSeek V4 Flash
           contextWindow: 1000000
           maxTokens: 384000
           reasoning: true
           cost: { input: 0.14, output: 0.28, cacheRead: 0.028, cacheWrite: 0 }
+          thinkingLevelMap:
+            { minimal: high, low: high, medium: high, high: high, xhigh: high }
           compat:
             requiresReasoningContentOnAssistantMessages: true
             thinkingFormat: deepseek
-            reasoningEffortMap:
-              {
-                minimal: high,
-                low: high,
-                medium: high,
-                high: high,
-                xhigh: high,
-              }
     krill: # Krill — GPT-5.x served on an OpenAI-Responses endpoint
       # (https://api.krill-ai.com). Same upstream Claude Code (anthropic-compatible
       # /codex) and Codex (openai-responses /codex/v1) already use; here we take the
@@ -355,17 +320,22 @@ pi:
       models:
         - id: gpt-5.6-sol
           name: GPT-5.6 Sol (krill)
-          # Krill live-check: /responses accepts gpt-5.6-sol/terra/luna, but not
-          # the bare gpt-5.6 alias. Context is gateway-capped below official 1.05M:
-          # 371,833 input tokens OK; 372,833 rejected. Keep this conservative.
-          # 5.6 rejects minimal effort, so map Pi's minimal->low. xhigh->xhigh,
-          # kept off the higher 'max' effort by request.
+          # Krill live-check: /responses accepts Sol/Terra/Luna but not the bare
+          # gpt-5.6 alias. The gateway is conservatively capped at 371K context.
+          # GPT-5.6 rejects minimal, so map it to low; expose native xhigh and max.
           contextWindow: 371000
           maxTokens: 128000
           reasoning: true
           cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 6.25 }
           thinkingLevelMap:
-            { minimal: low, low: low, medium: medium, high: high, xhigh: xhigh }
+            {
+              minimal: low,
+              low: low,
+              medium: medium,
+              high: high,
+              xhigh: xhigh,
+              max: max,
+            }
         - id: gpt-5.6-terra
           name: GPT-5.6 Terra (krill)
           contextWindow: 371000
@@ -373,7 +343,14 @@ pi:
           reasoning: true
           cost: { input: 2.5, output: 15, cacheRead: 0.25, cacheWrite: 3.125 }
           thinkingLevelMap:
-            { minimal: low, low: low, medium: medium, high: high, xhigh: xhigh }
+            {
+              minimal: low,
+              low: low,
+              medium: medium,
+              high: high,
+              xhigh: xhigh,
+              max: max,
+            }
         - id: gpt-5.6-luna
           name: GPT-5.6 Luna (krill)
           contextWindow: 371000
@@ -381,7 +358,14 @@ pi:
           reasoning: true
           cost: { input: 1, output: 6, cacheRead: 0.1, cacheWrite: 1.25 }
           thinkingLevelMap:
-            { minimal: low, low: low, medium: medium, high: high, xhigh: xhigh }
+            {
+              minimal: low,
+              low: low,
+              medium: medium,
+              high: high,
+              xhigh: xhigh,
+              max: max,
+            }
         - id: gpt-5.5
           name: GPT-5.5 (krill)
           # Gateway-specific fallback retained at its existing explicit limit;
