@@ -25,11 +25,10 @@ pi:
     # default; GPT subagents also pin `thinking: max` in their agent definitions.
     # OpenAI Ultra is a separate multi-agent mode, not a reasoning-effort value.
     defaultThinkingLevel: max
-    # GPT-5.6 Sol via Pi's built-in OpenAI Codex OAuth provider. No custom model
-    # compatibility entry is needed; authenticate once with `/login openai-codex`.
-    # Krill (gopass GPT-5.6), GLM-5.2 (newapi), and DeepSeek V4 remain /model
-    # alternatives; subagents route independently below.
-    defaultProvider: openai-codex
+    # Temporary all-GPT routing through the gopass-backed Krill gateway. The
+    # built-in OpenAI Codex OAuth provider, GLM-5.2, and DeepSeek V4 remain
+    # available as manual /model alternatives; GPT subagents pin Krill below.
+    defaultProvider: krill
     defaultModel: gpt-5.6-sol
     # Pi's native threshold stays authoritative; pi-continue evaluates the same
     # threshold inside the pre-provider `context` hook after complete tool-result

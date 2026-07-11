@@ -103,9 +103,9 @@ assert_file_not_contains "$PI_MCP" '"codegraph"'
 assert_file_not_contains "$PI_MCP" '"@colbymchenry/codegraph@1.2.0"'
 assert_file_not_contains "$CURSOR_MCP" '"codegraph"'
 assert_file_not_contains "$CURSOR_MCP" '"@colbymchenry/codegraph@1.2.0"'
-assert_file_contains "$PI_SETTINGS" '"defaultProvider": "openai-codex"'
+assert_file_contains "$PI_SETTINGS" '"defaultProvider": "krill"'
 assert_file_contains "$PI_SETTINGS" '"defaultModel": "gpt-5.6-sol"'
-assert_file_not_contains "$PI_SETTINGS" 'krill/gpt-5.6-sol'
+assert_file_not_contains "$PI_SETTINGS" '"defaultProvider": "openai-codex"'
 jq -e '
     .compaction == {
         "enabled": true,
