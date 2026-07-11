@@ -21,10 +21,10 @@ pi:
     # themes/ as a one-`/settings` switch fallback. All footer/TUI semantic
     # colors follow this theme.
     theme: catppuccin-mocha
-    # Keep the default at xhigh for a strong quality/latency balance. GPT-5.6's
-    # higher `max` effort remains available per session via /settings or Shift+Tab;
+    # GPT-5.6 supports Pi's native `max` reasoning effort. Keep it as the parent
+    # default; GPT subagents also pin `thinking: max` in their agent definitions.
     # OpenAI Ultra is a separate multi-agent mode, not a reasoning-effort value.
-    defaultThinkingLevel: xhigh
+    defaultThinkingLevel: max
     # GPT-5.6 Sol via Pi's built-in OpenAI Codex OAuth provider. No custom model
     # compatibility entry is needed; authenticate once with `/login openai-codex`.
     # Krill (gopass GPT-5.6), GLM-5.2 (newapi), and DeepSeek V4 remain /model
@@ -78,10 +78,10 @@ pi:
     # `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv) follows the
     # Pi theme. Extension-status icons (2nd line) are tunable via
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
-    # Subagent delegation: child Pi sessions (NOT worktrees) for scout/researcher/
-    # planner/worker/reviewer/oracle/context-builder/delegate. Natural-language
-    # invoke ("Use reviewer to review this diff"). No slipway conflict.
-    - npm:pi-subagents
+    # Reliable in-process subagents. Role definitions live in dot_pi/agent/agents/:
+    # GPT roles pin gpt-5.6-sol + max; scout/delegate intentionally retain
+    # deepseek-v4-flash + xhigh. Runtime policy is in dot_pi/agent/subagents.json.
+    - npm:@tintinweb/pi-subagents@0.13.0
     # Web search (zero-config Exa, no key) + fetch_content for PDF / GitHub
     # clone / YouTube / local-video. Multi-provider fallback chain. Keys optional
     # in ~/.pi/web-search.json; ffmpeg+yt-dlp (brew) optional for video frames.
@@ -119,87 +119,6 @@ pi:
     # single-line reverse-search with a full fzf/atuin-style popup list (Ctrl+R).
     # Ctrl+R is claimed for that popup; Pi's built-in app.session.rename is moved
     # off Ctrl+R to shift+r in dot_pi/agent/keybindings.json to avoid the clash.
-  # ===== Subagents config -> ~/.pi/agent/settings.json subagents =====
-  # Model routing for pi-subagents builtins, with GPT handling all heavy agents
-  # and DeepSeek retained only for lightweight recon/dispatch:
-  #
-  #   gpt-5.6-sol (openai-codex) -> defaultModel plus worker, planner,
-  #                        researcher, reviewer, oracle, and context-builder.
-  #                        Pi 0.80.6+ ships native Sol/Terra/Luna metadata,
-  #                        including `max`. pi-subagents 0.34.0 only recognizes
-  #                        levels through xhigh and otherwise emits an invalid
-  #                        `:max:max`, so child agents remain xhigh until that
-  #                        package adds max.
-  #   deepseek (flash)  -> scout + delegate = deepseek-v4-flash (quick recon lookup /
-  #                        pure dispatch). Moved OFF newapi/glm-4.7, which was hitting
-  #                        gateway HTTP 429 under their high-frequency dispatch;
-  #                        DeepSeek Platform is a separate metered endpoint (cheap:
-  #                        $0.14/$0.28 per Mtok), so they no longer contend with the
-  #                        subscription gateway.
-  #
-  # deepseek-v4-pro, newapi/glm-5.2, and krill/gpt-5.x remain available as /model
-  # fallbacks but are not routed to subagents by default.
-  #
-  # AUTH: GPT routes use OpenAI Codex OAuth (`/login openai-codex`); the DeepSeek
-  # scout/delegate route still uses its gopass-backed provider. No Krill key is
-  # needed for the default subagent routes.
-  #
-  # Each override is QUALIFIED as `provider/id`, NOT a bare id. A bare id is
-  # resolved by pi-subagents (resolveBaseModelCandidate) via `id ===` across ALL
-  # registered models — and pi's registry can define the same bare GPT ids under
-  # openai/openai-codex/openrouter/custom providers. So bare GPT ids are ambiguous:
-  # the match count can be >1, the parent provider doesn't disambiguate, and it can
-  # fall through to a keyless provider. A slash-qualified
-  # `openai-codex/gpt-5.6-sol` matches only within the official OpenAI Codex
-  # provider, so it is collision-proof.
-  #
-  # NOTE: modify_settings deep-merges (jq *), so REMOVING an override here does NOT
-  # delete it from an existing ~/.pi/agent/settings.json — prune agentOverrides there
-  # too when narrowing. (Changing a model VALUE is fine: jq * overwrites scalars.)
-  subagents:
-    defaultModel: openai-codex/gpt-5.6-sol
-    # toolBudget: raise the per-child tool-call ceiling so heavy agents (esp. the
-    # reviewer gate on large diffs) don't get the "Tool budget soft limit reached
-    # after N tool calls ... finalize" nudge and wrap up prematurely. Builtin
-    # defaults are ~30 soft / ~50 hard. `hard` is required; `soft` nudges first;
-    # `block` (omitted) defaults to blocking read/grep/find/ls after `hard` so the
-    # child can still finalize. NOTE: this is the only budget knob agentOverrides
-    # accepts — run timeout (timeoutMs) and turnBudget are per-call args, not
-    # settings-configurable here.
-    agentOverrides:
-      worker: { thinking: xhigh, toolBudget: { soft: 150, hard: 220 } }
-      planner: { thinking: xhigh, toolBudget: { soft: 100, hard: 150 } }
-      researcher: { thinking: xhigh, toolBudget: { soft: 100, hard: 150 } }
-      reviewer:
-        {
-          model: openai-codex/gpt-5.6-sol,
-          thinking: xhigh,
-          toolBudget: { soft: 160, hard: 240 },
-        }
-      oracle:
-        {
-          model: openai-codex/gpt-5.6-sol,
-          thinking: xhigh,
-          toolBudget: { soft: 120, hard: 180 },
-        }
-      scout:
-        {
-          model: deepseek/deepseek-v4-flash,
-          thinking: xhigh,
-          toolBudget: { soft: 80, hard: 120 },
-        }
-      context-builder:
-        {
-          model: openai-codex/gpt-5.6-sol,
-          thinking: xhigh,
-          toolBudget: { soft: 80, hard: 120 },
-        }
-      delegate:
-        {
-          model: deepseek/deepseek-v4-flash,
-          thinking: xhigh,
-          toolBudget: { soft: 80, hard: 120 },
-        }
   # ===== Custom providers -> ~/.pi/agent/models.json =====
   # Only providers/models Pi does not ship natively belong here. Built-in model
   # IDs must not be repeated because a custom entry with the same ID replaces

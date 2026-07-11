@@ -7,6 +7,11 @@ require_cmd() {
     command -v "$1" >/dev/null 2>&1
 }
 
+fail() {
+    echo "$*" >&2
+    exit 1
+}
+
 for c in bash chezmoi; do
     require_cmd "$c" || {
         echo "SKIP: missing dependency: $c" >&2
@@ -56,6 +61,8 @@ PI_SETTINGS="$TMP_ROOT/pi-settings.json"
 PI_MODELS="$TMP_ROOT/pi-models.json"
 PI_DATA="$TMP_ROOT/pi-data.json"
 PI_CONTINUE_CONFIG="$ROOT/dot_pi/agent/extensions/pi-continue.json"
+PI_SUBAGENTS_CONFIG="$ROOT/dot_pi/agent/subagents.json"
+PI_AGENTS_DIR="$ROOT/dot_pi/agent/agents"
 CURSOR_MCP="$TMP_ROOT/cursor-mcp.json"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_codex/modify_config.toml.tmpl" >"$MODIFY_SCRIPT"
 bash "$MODIFY_SCRIPT" </dev/null >"$RENDERED"
@@ -96,8 +103,8 @@ assert_file_not_contains "$PI_MCP" '"codegraph"'
 assert_file_not_contains "$PI_MCP" '"@colbymchenry/codegraph@1.2.0"'
 assert_file_not_contains "$CURSOR_MCP" '"codegraph"'
 assert_file_not_contains "$CURSOR_MCP" '"@colbymchenry/codegraph@1.2.0"'
-assert_file_contains "$PI_SETTINGS" '"defaultModel": "openai-codex/gpt-5.6-sol"'
-assert_file_contains "$PI_SETTINGS" '"model": "openai-codex/gpt-5.6-sol"'
+assert_file_contains "$PI_SETTINGS" '"defaultProvider": "openai-codex"'
+assert_file_contains "$PI_SETTINGS" '"defaultModel": "gpt-5.6-sol"'
 assert_file_not_contains "$PI_SETTINGS" 'krill/gpt-5.6-sol'
 jq -e '
     .compaction == {
@@ -117,10 +124,37 @@ jq -e '
     [.packages[] | select(. == "npm:pi-continue@0.9.3")] | length == 1
 ' "$PI_SETTINGS" >/dev/null
 jq -e '
-    .subagents.defaultModel == "openai-codex/gpt-5.6-sol"
-    and .subagents.agentOverrides["context-builder"].model == "openai-codex/gpt-5.6-sol"
-    and ([.subagents.agentOverrides[] | .model? // empty | select(test("glm"; "i"))] | length == 0)
+    .defaultThinkingLevel == "max"
+    and (has("subagents") | not)
+    and ([.packages[] | select(. == "npm:@tintinweb/pi-subagents@0.13.0")] | length == 1)
+    and ([.packages[] | select(. == "npm:pi-subagents")] | length == 0)
 ' "$PI_SETTINGS" >/dev/null
+jq -e '
+    . == {
+        "maxConcurrent": 4,
+        "defaultMaxTurns": 0,
+        "graceTurns": 8,
+        "defaultJoinMode": "smart",
+        "schedulingEnabled": false,
+        "scopeModels": false,
+        "disableDefaultAgents": true,
+        "toolDescriptionMode": "full",
+        "fleetView": true,
+        "widgetMode": "background"
+    }
+' "$PI_SUBAGENTS_CONFIG" >/dev/null
+for agent in worker planner researcher reviewer oracle context-builder; do
+    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'model: openai-codex/gpt-5.6-sol'
+    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'thinking: max'
+    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'max_turns: 0'
+done
+for agent in scout delegate; do
+    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'model: deepseek/deepseek-v4-flash'
+    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'thinking: xhigh'
+    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'max_turns: 0'
+    assert_file_not_contains "$PI_AGENTS_DIR/$agent.md" 'thinking: max'
+done
+[[ ! -e "$ROOT/dot_pi/agent/extensions/subagent/config.json" ]] || fail "legacy pi-subagents config still exists"
 jq -e '
     . == {
         "enabled": true,
@@ -133,12 +167,9 @@ jq -e '
         "historyMaxTokens": 16384
     }
 ' "$PI_CONTINUE_CONFIG" >/dev/null
+# openai-codex is built into Pi; models.json must contain only custom providers.
 jq -e '
-    (.providers["openai-codex"].models[] | select(.id == "gpt-5.6-sol")) as $model
-    | $model.contextWindow == 372000
-      and $model.maxTokens == 128000
-      and $model.cost.cacheWrite == 6.25
-      and $model.thinkingLevelMap.xhigh == "xhigh"
+    (.providers | has("openai-codex") | not)
 ' "$PI_MODELS" >/dev/null
 jq -e '
     (.providers.qwen.models[] | select(.id == "qwen3-coder-plus")) as $coder

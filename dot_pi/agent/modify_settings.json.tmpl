@@ -9,15 +9,16 @@ set -euo pipefail
 
 EXISTING="$(cat)"
 {{ $d := .pi.defaults -}}
-{{- $managed := dict "defaultProvider" $d.defaultProvider "defaultModel" $d.defaultModel "theme" $d.theme "defaultThinkingLevel" $d.defaultThinkingLevel "enableSkillCommands" true "npmCommand" $d.npmCommand "compaction" $d.compaction "branchSummary" $d.branchSummary "retry" $d.retry "packages" .pi.packages "subagents" .pi.subagents -}}
+{{- $managed := dict "defaultProvider" $d.defaultProvider "defaultModel" $d.defaultModel "theme" $d.theme "defaultThinkingLevel" $d.defaultThinkingLevel "enableSkillCommands" true "npmCommand" $d.npmCommand "compaction" $d.compaction "branchSummary" $d.branchSummary "retry" $d.retry "packages" .pi.packages -}}
 MANAGED="$(cat <<'PI_SETTINGS_EOF'
 {{ $managed | toPrettyJson }}
 PI_SETTINGS_EOF
 )"
 
 if command -v jq >/dev/null 2>&1 && printf '%s' "$EXISTING" | jq -e . >/dev/null 2>&1; then
-    # Deep-merge: existing settings as base, managed keys override.
-    jq -s '.[0] * .[1]' <(printf '%s' "$EXISTING") <(printf '%s' "$MANAGED")
+    # Deep-merge managed values, then remove the legacy nicobailon/pi-subagents
+    # settings block; @tintinweb/pi-subagents uses ~/.pi/agent/subagents.json.
+    jq -s '.[0] * .[1] | del(.subagents)' <(printf '%s' "$EXISTING") <(printf '%s' "$MANAGED")
 else
     printf '%s\n' "$MANAGED"
 fi

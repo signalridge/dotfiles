@@ -1,6 +1,0 @@
-{
-  "turnBudget": {
-    "maxTurns": 64,
-    "graceTurns": 8
-  }
-}
