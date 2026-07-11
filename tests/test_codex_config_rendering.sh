@@ -60,7 +60,6 @@ PI_SETTINGS_MODIFY="$TMP_ROOT/pi-settings-modify.sh"
 PI_SETTINGS="$TMP_ROOT/pi-settings.json"
 PI_MODELS="$TMP_ROOT/pi-models.json"
 PI_DATA="$TMP_ROOT/pi-data.json"
-PI_CONTINUE_CONFIG="$ROOT/dot_pi/agent/extensions/pi-continue.json"
 PI_SUBAGENTS_CONFIG="$ROOT/dot_pi/agent/subagents.json"
 PI_AGENTS_DIR="$ROOT/dot_pi/agent/agents"
 CURSOR_MCP="$TMP_ROOT/cursor-mcp.json"
@@ -121,7 +120,7 @@ jq -e '
 ' "$PI_SETTINGS" >/dev/null
 assert_file_not_contains "$PI_SETTINGS" 'pi-ultra-compact'
 jq -e '
-    [.packages[] | select(. == "npm:pi-continue@0.9.3")] | length == 1
+    [.packages[] | select(. == "npm:pi-continue@0.9.3")] | length == 0
 ' "$PI_SETTINGS" >/dev/null
 jq -e '
     .defaultThinkingLevel == "max"
@@ -149,18 +148,7 @@ for agent in worker planner researcher reviewer oracle context-builder scout del
     assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'max_turns: 0'
 done
 [[ ! -e "$ROOT/dot_pi/agent/extensions/subagent/config.json" ]] || fail "legacy pi-subagents config still exists"
-jq -e '
-    . == {
-        "enabled": true,
-        "midRunGuardEnabled": true,
-        "continuationArtifactMode": "off",
-        "agentGuideSyncMode": "off",
-        "showAfterCompact": false,
-        "summarizerModel": "inherit",
-        "reasoning": "minimal",
-        "historyMaxTokens": 16384
-    }
-' "$PI_CONTINUE_CONFIG" >/dev/null
+[[ ! -e "$ROOT/dot_pi/agent/extensions/pi-continue.json" ]] || fail "pi-continue.json still exists (extension removed)"
 # openai-codex is built into Pi; models.json must contain only custom providers.
 jq -e '
     (.providers | has("openai-codex") | not)

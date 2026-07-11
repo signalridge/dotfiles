@@ -30,11 +30,11 @@ pi:
     # available as manual /model alternatives; GPT subagents pin Krill below.
     defaultProvider: krill
     defaultModel: gpt-5.6-sol
-    # Pi's native threshold stays authoritative; pi-continue evaluates the same
-    # threshold inside the pre-provider `context` hook after complete tool-result
-    # batches, closing the long-tool-loop timing gap in Pi core. Threshold =
-    # contextWindow - reserveTokens: ~82% for OpenAI Codex 372K / Krill 371K.
-    # Keep 16K recent tokens so ordinary capped tool output remains compactable.
+    # Native compaction threshold = contextWindow - reserveTokens (~82% of the
+    # 371K Krill / 372K Codex window). Generous reserve so a long single-turn
+    # tool loop compacts well before the hard ceiling instead of hitting Pi's
+    # emergency overflow recovery. Keep 16K recent tokens so ordinary capped
+    # tool output stays compactable.
     compaction:
       enabled: true
       reserveTokens: 65536
@@ -62,11 +62,6 @@ pi:
   # dedicated chezmoi installer script.
   packages:
     - npm:pi-mcp-adapter
-    # Mid-run overflow guard: after a complete tool-call/result batch, stop before
-    # the next oversized provider request, compact, verify the saved handoff, then
-    # resume in the same session. Pin because it uses Pi compaction internals.
-    # Runtime policy is managed in extensions/pi-continue.json.
-    - npm:pi-continue@0.9.3
     # Statusline is VENDORED (fork of @narumitw/pi-statusline) at
     # dot_pi/agent/extensions/pi-statusline so we can trim it — do NOT re-add the
     # `npm:@narumitw/pi-statusline` entry here: it double-loads with the vendored
