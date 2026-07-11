@@ -49,6 +49,8 @@ chezmoi execute-template \
     >"$RENDERED_MISE_INSTALL"
 
 assert_file_contains "$ROOT/private_dot_config/aquaproj-aqua/aqua.yaml" 'jdx/mise@'
+assert_file_contains "$ROOT/private_dot_config/aquaproj-aqua/aqua.yaml" 'crates.io/eza@0.23.4'
+assert_file_not_contains "$ROOT/private_dot_config/aquaproj-aqua/aqua.yaml" 'eza-community/eza@'
 assert_file_not_contains "$ROOT/.chezmoidata/nix.yaml" '- mise # runtime/tool version manager'
 
 assert_file_contains "$RENDERED_MISE_INSTALL" 'export AQUA_GLOBAL_CONFIG="$AQUA_CONFIG_PATH"'
