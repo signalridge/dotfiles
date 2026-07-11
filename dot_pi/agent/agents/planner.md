@@ -4,7 +4,7 @@ description: Read-only implementation planner grounded in repository evidence
 tools: read, grep, find, ls, bash
 extensions: true
 skills: false
-model: openai-codex/gpt-5.6-sol
+model: krill/gpt-5.6-sol
 thinking: max
 max_turns: 0
 prompt_mode: replace
