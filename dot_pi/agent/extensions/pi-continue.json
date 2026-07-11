@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "midRunGuardEnabled": true,
+  "continuationArtifactMode": "off",
+  "agentGuideSyncMode": "off",
+  "showAfterCompact": false,
+  "summarizerModel": "inherit",
+  "reasoning": "minimal",
+  "historyMaxTokens": 16384
+}

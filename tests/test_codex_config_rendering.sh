@@ -55,6 +55,7 @@ PI_SETTINGS_MODIFY="$TMP_ROOT/pi-settings-modify.sh"
 PI_SETTINGS="$TMP_ROOT/pi-settings.json"
 PI_MODELS="$TMP_ROOT/pi-models.json"
 PI_DATA="$TMP_ROOT/pi-data.json"
+PI_CONTINUE_CONFIG="$ROOT/dot_pi/agent/extensions/pi-continue.json"
 CURSOR_MCP="$TMP_ROOT/cursor-mcp.json"
 chezmoi execute-template --source "$ROOT" <"$ROOT/dot_codex/modify_config.toml.tmpl" >"$MODIFY_SCRIPT"
 bash "$MODIFY_SCRIPT" </dev/null >"$RENDERED"
@@ -112,6 +113,26 @@ jq -e '
     }
 ' "$PI_SETTINGS" >/dev/null
 assert_file_not_contains "$PI_SETTINGS" 'pi-ultra-compact'
+jq -e '
+    [.packages[] | select(. == "npm:pi-continue@0.9.3")] | length == 1
+' "$PI_SETTINGS" >/dev/null
+jq -e '
+    .subagents.defaultModel == "openai-codex/gpt-5.6-sol"
+    and .subagents.agentOverrides["context-builder"].model == "openai-codex/gpt-5.6-sol"
+    and ([.subagents.agentOverrides[] | .model? // empty | select(test("glm"; "i"))] | length == 0)
+' "$PI_SETTINGS" >/dev/null
+jq -e '
+    . == {
+        "enabled": true,
+        "midRunGuardEnabled": true,
+        "continuationArtifactMode": "off",
+        "agentGuideSyncMode": "off",
+        "showAfterCompact": false,
+        "summarizerModel": "inherit",
+        "reasoning": "minimal",
+        "historyMaxTokens": 16384
+    }
+' "$PI_CONTINUE_CONFIG" >/dev/null
 jq -e '
     (.providers["openai-codex"].models[] | select(.id == "gpt-5.6-sol")) as $model
     | $model.contextWindow == 372000

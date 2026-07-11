@@ -21,20 +21,21 @@ pi:
     # themes/ as a one-`/settings` switch fallback. All footer/TUI semantic
     # colors follow this theme.
     theme: catppuccin-mocha
-    # Pi 0.80.6+ exposes GPT-5.6's native `max` reasoning effort above `xhigh`.
-    # `ultra` is not a reasoning-effort value: OpenAI describes it as a
-    # multi-agent orchestration mode, so Pi/Responses API requests must use `max`.
-    defaultThinkingLevel: max
+    # Keep the default at xhigh for a strong quality/latency balance. GPT-5.6's
+    # higher `max` effort remains available per session via /settings or Shift+Tab;
+    # OpenAI Ultra is a separate multi-agent mode, not a reasoning-effort value.
+    defaultThinkingLevel: xhigh
     # GPT-5.6 Sol via Pi's built-in OpenAI Codex OAuth provider. No custom model
     # compatibility entry is needed; authenticate once with `/login openai-codex`.
     # Krill (gopass GPT-5.6), GLM-5.2 (newapi), and DeepSeek V4 remain /model
     # alternatives; subagents route independently below.
     defaultProvider: openai-codex
     defaultModel: gpt-5.6-sol
-    # Use Pi's native compaction and trigger well before the model window is full.
-    # Threshold = contextWindow - reserveTokens: ~82% for both OpenAI Codex 372K
-    # and Krill 371K. The larger headroom covers long 20-30K tool turns; keeping
-    # only 16K recent tokens ensures the context drops materially.
+    # Pi's native threshold stays authoritative; pi-continue evaluates the same
+    # threshold inside the pre-provider `context` hook after complete tool-result
+    # batches, closing the long-tool-loop timing gap in Pi core. Threshold =
+    # contextWindow - reserveTokens: ~82% for OpenAI Codex 372K / Krill 371K.
+    # Keep 16K recent tokens so ordinary capped tool output remains compactable.
     compaction:
       enabled: true
       reserveTokens: 65536
@@ -62,6 +63,11 @@ pi:
   # dedicated chezmoi installer script.
   packages:
     - npm:pi-mcp-adapter
+    # Mid-run overflow guard: after a complete tool-call/result batch, stop before
+    # the next oversized provider request, compact, verify the saved handoff, then
+    # resume in the same session. Pin because it uses Pi compaction internals.
+    # Runtime policy is managed in extensions/pi-continue.json.
+    - npm:pi-continue@0.9.3
     # Statusline is VENDORED (fork of @narumitw/pi-statusline) at
     # dot_pi/agent/extensions/pi-statusline so we can trim it — do NOT re-add the
     # `npm:@narumitw/pi-statusline` entry here: it double-loads with the vendored
@@ -114,18 +120,16 @@ pi:
     # Ctrl+R is claimed for that popup; Pi's built-in app.session.rename is moved
     # off Ctrl+R to shift+r in dot_pi/agent/keybindings.json to avoid the clash.
   # ===== Subagents config -> ~/.pi/agent/settings.json subagents =====
-  # Model routing for pi-subagents builtins, tiered across families so the
-  # reviewer gate can stay independent from the non-adversarial context route:
+  # Model routing for pi-subagents builtins, with GPT handling all heavy agents
+  # and DeepSeek retained only for lightweight recon/dispatch:
   #
   #   gpt-5.6-sol (openai-codex) -> defaultModel plus worker, planner,
-  #                        researcher, reviewer, and oracle. Pi 0.80.6+ ships
-  #                        native Sol/Terra/Luna metadata, including `max`.
-  #                        pi-subagents 0.34.0 only recognizes levels through
-  #                        xhigh and otherwise emits an invalid `:max:max`, so
-  #                        child agents remain xhigh until that package adds max.
-  #   glm (newapi)      -> context-builder=glm-5.2 (1M window suits assembling large
-  #                        context), on the subscription gateway. Same family as the
-  #                        main loop; fine for non-adversarial context assembly.
+  #                        researcher, reviewer, oracle, and context-builder.
+  #                        Pi 0.80.6+ ships native Sol/Terra/Luna metadata,
+  #                        including `max`. pi-subagents 0.34.0 only recognizes
+  #                        levels through xhigh and otherwise emits an invalid
+  #                        `:max:max`, so child agents remain xhigh until that
+  #                        package adds max.
   #   deepseek (flash)  -> scout + delegate = deepseek-v4-flash (quick recon lookup /
   #                        pure dispatch). Moved OFF newapi/glm-4.7, which was hitting
   #                        gateway HTTP 429 under their high-frequency dispatch;
@@ -133,12 +137,12 @@ pi:
   #                        $0.14/$0.28 per Mtok), so they no longer contend with the
   #                        subscription gateway.
   #
-  # deepseek-v4-pro and krill/gpt-5.x are retained as /model fallbacks but are not
-  # routed to subagents by default.
+  # deepseek-v4-pro, newapi/glm-5.2, and krill/gpt-5.x remain available as /model
+  # fallbacks but are not routed to subagents by default.
   #
-  # AUTH: GPT routes use OpenAI Codex OAuth (`/login openai-codex`);
-  # deepseek/glm still use gopass-backed providers. No Krill key is needed for the
-  # default subagent routes.
+  # AUTH: GPT routes use OpenAI Codex OAuth (`/login openai-codex`); the DeepSeek
+  # scout/delegate route still uses its gopass-backed provider. No Krill key is
+  # needed for the default subagent routes.
   #
   # Each override is QUALIFIED as `provider/id`, NOT a bare id. A bare id is
   # resolved by pi-subagents (resolveBaseModelCandidate) via `id ===` across ALL
@@ -186,7 +190,7 @@ pi:
         }
       context-builder:
         {
-          model: newapi/glm-5.2,
+          model: openai-codex/gpt-5.6-sol,
           thinking: xhigh,
           toolBudget: { soft: 80, hard: 120 },
         }
