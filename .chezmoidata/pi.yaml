@@ -77,9 +77,8 @@ pi:
     # `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv) follows the
     # Pi theme. Extension-status icons (2nd line) are tunable via
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
-    # Reliable in-process subagents. Role definitions live in dot_pi/agent/agents/:
-    # GPT roles pin krill/gpt-5.6-sol + max; scout/delegate intentionally retain
-    # deepseek/deepseek-v4-flash + xhigh. Runtime policy is in dot_pi/agent/subagents.json.
+    # Reliable in-process subagents. All eight roles temporarily pin
+    # krill/gpt-5.6-sol + max; runtime policy is in dot_pi/agent/subagents.json.
     - npm:@tintinweb/pi-subagents@0.13.0
     # Web search (zero-config Exa, no key) + fetch_content for PDF / GitHub
     # clone / YouTube / local-video. Multi-provider fallback chain. Keys optional

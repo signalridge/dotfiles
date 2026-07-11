@@ -4,8 +4,8 @@ description: Fast read-only codebase reconnaissance
 tools: read, grep, find, ls, bash
 extensions: true
 skills: false
-model: deepseek/deepseek-v4-flash
-thinking: xhigh
+model: krill/gpt-5.6-sol
+thinking: max
 max_turns: 0
 prompt_mode: replace
 inherit_context: false

@@ -143,16 +143,10 @@ jq -e '
         "widgetMode": "background"
     }
 ' "$PI_SUBAGENTS_CONFIG" >/dev/null
-for agent in worker planner researcher reviewer oracle context-builder; do
+for agent in worker planner researcher reviewer oracle context-builder scout delegate; do
     assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'model: krill/gpt-5.6-sol'
     assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'thinking: max'
     assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'max_turns: 0'
-done
-for agent in scout delegate; do
-    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'model: deepseek/deepseek-v4-flash'
-    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'thinking: xhigh'
-    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'max_turns: 0'
-    assert_file_not_contains "$PI_AGENTS_DIR/$agent.md" 'thinking: max'
 done
 [[ ! -e "$ROOT/dot_pi/agent/extensions/subagent/config.json" ]] || fail "legacy pi-subagents config still exists"
 jq -e '
