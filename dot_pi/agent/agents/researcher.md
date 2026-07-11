@@ -4,7 +4,7 @@ description: External research specialist using primary sources
 tools: read, grep, find, ls, bash
 extensions: true
 skills: false
-model: openai-codex/gpt-5.6-sol
+model: krill/gpt-5.6-sol
 thinking: max
 max_turns: 0
 prompt_mode: replace
