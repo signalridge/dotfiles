@@ -144,7 +144,7 @@ jq -e '
     }
 ' "$PI_SUBAGENTS_CONFIG" >/dev/null
 for agent in worker planner researcher reviewer oracle context-builder scout delegate; do
-    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'model: krill/gpt-5.6-sol'
+    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'model: openai-codex/gpt-5.6-sol'
     assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'thinking: max'
     assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'max_turns: 0'
 done

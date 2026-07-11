@@ -4,7 +4,7 @@ description: Builds implementation handoff context from requirements and code
 tools: read, grep, find, ls, bash, write
 extensions: true
 skills: false
-model: krill/gpt-5.6-sol
+model: openai-codex/gpt-5.6-sol
 thinking: max
 max_turns: 0
 prompt_mode: replace

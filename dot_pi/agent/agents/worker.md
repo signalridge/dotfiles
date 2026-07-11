@@ -4,7 +4,7 @@ description: Single-writer implementation agent for approved changes
 tools: read, grep, find, ls, bash, edit, write
 extensions: true
 skills: false
-model: krill/gpt-5.6-sol
+model: openai-codex/gpt-5.6-sol
 thinking: max
 max_turns: 0
 prompt_mode: replace
