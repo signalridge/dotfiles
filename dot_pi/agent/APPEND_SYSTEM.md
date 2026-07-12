@@ -11,7 +11,7 @@ Repo-native first; defaults advisory (`uv/ruff`, `nix`, `aqua/mise`, `gh/ghq`); 
 MCP tools are provided by the `pi-mcp-adapter` extension; servers are configured in `~/.pi/agent/mcp.json`.
 
 - Docs/API -> Context7
-- Web/news, deep research -> Tavily (single searches; scout/researcher subagents for multi-step)
+- Web/news, deep research -> Tavily (single searches; general-purpose subagent for multi-step)
 - Web content fetch (PDF/GitHub/YouTube/local-video) -> pi-web-access `fetch_content`
 - Code navigation, semantic -> Serena (MCP; symbol/reference queries — avoid full-file reads)
 - Code navigation, in-Pi -> readseek (hash-anchored read/edit/grep + structural maps; no MCP round-trip)

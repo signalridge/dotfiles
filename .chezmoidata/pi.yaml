@@ -22,12 +22,11 @@ pi:
     # colors follow this theme.
     theme: catppuccin-mocha
     # GPT-5.6 supports Pi's native `max` reasoning effort. Keep it as the parent
-    # default; GPT subagents also pin `thinking: max` in their agent definitions.
-    # OpenAI Ultra is a separate multi-agent mode, not a reasoning-effort value.
+    # default. OpenAI Ultra is a separate multi-agent mode, not a reasoning-effort value.
     defaultThinkingLevel: max
     # Temporary all-GPT routing through the gopass-backed Krill gateway. The
     # built-in OpenAI Codex OAuth provider, GLM-5.2, and DeepSeek V4 remain
-    # available as manual /model alternatives; GPT subagents pin Krill below.
+    # available as manual /model alternatives.
     defaultProvider: krill
     defaultModel: gpt-5.6-sol
     # Native compaction threshold = contextWindow - reserveTokens (~74% of the
@@ -72,8 +71,9 @@ pi:
     # `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv) follows the
     # Pi theme. Extension-status icons (2nd line) are tunable via
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
-    # Reliable in-process subagents. All eight roles temporarily pin
-    # krill/gpt-5.6-sol + max; runtime policy is in dot_pi/agent/subagents.json.
+    # In-process subagents. Custom agent defs removed 2026-07-12; runs the built-in
+    # defaults (general-purpose/Explore/Plan) via disableDefaultAgents:false in
+    # dot_pi/agent/subagents.json. general-purpose inherits the parent model (krill).
     - npm:@tintinweb/pi-subagents@0.13.0
     # Web search (zero-config Exa, no key) + fetch_content for PDF / GitHub
     # clone / YouTube / local-video. Multi-provider fallback chain. Keys optional
@@ -131,7 +131,7 @@ pi:
   customProviders:
     newapi: # NewAPI multi-provider gateway (https://newapi.3689403.xyz/),
       # OpenAI-compatible; routes to GLM (and anything else the gateway exposes).
-      # Long-context /model option and context-builder route. Key from gopass.
+      # Long-context /model option (manual /model switch). Key from gopass.
       # base_url includes
       # /v1 because Pi's openai-completions api appends /chat/completions (cf.
       # doubao's /api/v3). Models below are a curated subset — extend from the
