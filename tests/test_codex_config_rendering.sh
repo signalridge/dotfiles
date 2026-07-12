@@ -109,7 +109,7 @@ jq -e '
     .compaction == {
         "enabled": true,
         "keepRecentTokens": 16000,
-        "reserveTokens": 65536
+        "reserveTokens": 96000
     }
 ' "$PI_SETTINGS" >/dev/null
 jq -e '
@@ -146,6 +146,15 @@ for agent in worker planner researcher reviewer oracle context-builder scout del
     assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'model: krill/gpt-5.6-sol'
     assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'thinking: max'
     assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'max_turns: 0'
+    # Serena onboarding trap: serena_initial_instructions derails short-lived GPT
+    # subagents (serena nudges every agent to call it, then its manual exhausts a
+    # bounded worker). Deny it on every agent; keep Serena's nav tools.
+    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'disallowed_tools: serena_initial_instructions'
+done
+# Read-only agents declare no edit/write built-ins, but extensions: true otherwise
+# leaks Serena's mutation tools to them. Deny those to enforce the read-only contract.
+for agent in planner researcher oracle context-builder scout; do
+    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'serena_replace_symbol_body'
 done
 [[ ! -e "$ROOT/dot_pi/agent/extensions/subagent/config.json" ]] || fail "legacy pi-subagents config still exists"
 [[ ! -e "$ROOT/dot_pi/agent/extensions/pi-continue.json" ]] || fail "pi-continue.json still exists (extension removed)"
