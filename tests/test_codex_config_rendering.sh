@@ -136,26 +136,16 @@ jq -e '
         "defaultJoinMode": "smart",
         "schedulingEnabled": false,
         "scopeModels": false,
-        "disableDefaultAgents": true,
+        "disableDefaultAgents": false,
         "toolDescriptionMode": "full",
         "fleetView": true,
         "widgetMode": "background"
     }
 ' "$PI_SUBAGENTS_CONFIG" >/dev/null
-for agent in worker planner researcher reviewer oracle context-builder scout delegate; do
-    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'model: krill/gpt-5.6-sol'
-    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'thinking: max'
-    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'max_turns: 0'
-    # Serena onboarding trap: serena_initial_instructions derails short-lived GPT
-    # subagents (serena nudges every agent to call it, then its manual exhausts a
-    # bounded worker). Deny it on every agent; keep Serena's nav tools.
-    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'disallowed_tools: serena_initial_instructions'
-done
-# Read-only agents declare no edit/write built-ins, but extensions: true otherwise
-# leaks Serena's mutation tools to them. Deny those to enforce the read-only contract.
-for agent in planner researcher oracle context-builder scout; do
-    assert_file_contains "$PI_AGENTS_DIR/$agent.md" 'serena_replace_symbol_body'
-done
+# Custom subagent defs removed 2026-07-12: pi falls back to @tintinweb/pi-subagents
+# built-in defaults (general-purpose / Explore / Plan) with disableDefaultAgents:false.
+# Ensure no stale custom agent defs remain in the source tree.
+[[ ! -d "$PI_AGENTS_DIR" ]] || [[ -z "$(find "$PI_AGENTS_DIR" -mindepth 1 -maxdepth 1 2>/dev/null)" ]] || fail "custom agent defs still present in $PI_AGENTS_DIR"
 [[ ! -e "$ROOT/dot_pi/agent/extensions/subagent/config.json" ]] || fail "legacy pi-subagents config still exists"
 [[ ! -e "$ROOT/dot_pi/agent/extensions/pi-continue.json" ]] || fail "pi-continue.json still exists (extension removed)"
 # openai-codex is built into Pi; models.json must contain only custom providers.

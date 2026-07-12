@@ -5,7 +5,7 @@
   "defaultJoinMode": "smart",
   "schedulingEnabled": false,
   "scopeModels": false,
-  "disableDefaultAgents": true,
+  "disableDefaultAgents": false,
   "toolDescriptionMode": "full",
   "fleetView": true,
   "widgetMode": "background"
