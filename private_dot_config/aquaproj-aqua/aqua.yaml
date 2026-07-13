@@ -26,7 +26,7 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.206
+  - name: anthropics/claude-code@v2.1.207
   - name: openai/codex@rust-v0.144.1
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
@@ -63,7 +63,7 @@ packages:
   - name: jesseduffield/lazydocker@v0.25.2
   - name: neovim/neovim@v0.12.4
   - name: LuaLS/lua-language-server@3.18.2
-  - name: tree-sitter/tree-sitter@v0.26.10
+  - name: tree-sitter/tree-sitter@v0.26.11
   - name: jj-vcs/jj@v0.43.0
   - name: rclone/rclone@v1.74.4
   - name: o2sh/onefetch@2.27.1
@@ -86,8 +86,8 @@ packages:
   - name: mvdan/sh@v3.13.1
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.15.21
-  - name: astral-sh/ty@0.0.58
-  - name: j178/prek@v0.4.8
+  - name: astral-sh/ty@0.0.59
+  - name: j178/prek@v0.4.9
   - name: golang.org/x/tools/gopls@v0.23.0
   - name: golangci/golangci-lint@v2.12.2
   - name: goreleaser/goreleaser@v2.17.0
@@ -95,7 +95,7 @@ packages:
   - name: numtide/treefmt@v2.5.0
   - name: XAMPPRocky/tokei@14.0.0
   - name: sharkdp/hyperfine@v1.20.0
-  - name: hatoo/oha@v1.14.0
+  - name: hatoo/oha@v1.15.0
   - name: ClementTsang/bottom@0.14.4
   - name: dalance/procs@v0.14.12
   - name: sharkdp/hexyl@v0.17.0
