@@ -24,10 +24,14 @@ pi:
     # GPT-5.6 supports Pi's native `max` reasoning effort. Keep it as the parent
     # default. OpenAI Ultra is a separate multi-agent mode, not a reasoning-effort value.
     defaultThinkingLevel: max
-    # Temporary all-GPT routing through the gopass-backed Krill gateway. The
-    # built-in OpenAI Codex OAuth provider, GLM-5.2, and DeepSeek V4 remain
-    # available as manual /model alternatives.
-    defaultProvider: krill
+    # Native OpenAI Codex OAuth provider (openai-codex; OAuth in ~/.pi/agent/auth.json).
+    # Switched off the temporary gopass-backed Krill gateway (its timeouts + high error
+    # rate). The SAME gpt-5.6-sol model is exposed under openai-codex and supports `max`
+    # reasoning, so defaultModel + defaultThinkingLevel are unchanged — this is a provider
+    # swap, not a model change. NOTE: still OpenAI, so the `cyber_policy` block on
+    # adversarial security-review prompts is unaffected by this switch. Krill, GLM-5.2,
+    # and DeepSeek V4 remain available as manual /model alternatives.
+    defaultProvider: openai-codex
     defaultModel: gpt-5.6-sol
     # Native compaction threshold = contextWindow - reserveTokens (~74% of the
     # 371K Krill / 372K Codex window). Generous reserve so a long single-turn
