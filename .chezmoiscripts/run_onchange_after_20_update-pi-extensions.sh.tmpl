@@ -48,9 +48,8 @@ if ! command -v pi >/dev/null 2>&1; then
     exit 0
 fi
 
-# --no-approve: do not trust project-local files for this command.
 # Non-fatal: a transient npm/network failure must not abort `chezmoi apply`.
-if pi update --extensions --no-approve; then
+if pi update --extensions; then
     echo "    pi extensions reconciled to latest"
 else
     echo "    Warning: 'pi update --extensions' failed (non-fatal); retry later"
