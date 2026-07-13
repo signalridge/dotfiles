@@ -86,12 +86,13 @@ lua = "5.4"
 # impeccable (pbakaus): frontend-design skill (`/impeccable` + 23 subcommands), a
 # deterministic UI anti-pattern detector (`impeccable detect <path>`), and Live Mode
 # (browser-based UI iteration). Bin is `impeccable`; pure-JS deps + NO postinstall,
-# so bun needs no `--trust` here. Same class as hyperframes above: the CLI owns skill
-# deployment — a one-off `impeccable install --scope=global` self-installs the
-# `/impeccable` skill into every detected harness (~/.claude/skills, ~/.agents/skills,
-# ...), fanned out to all agents. Refresh with `impeccable update` (`impeccable check`
-# diffs against latest first). Deliberately NOT a chezmoi external/`~/.harnesses`
-# library entry — installing both ways would double-write the skill dir.
+# so bun needs no `--trust` here. This entry installs ONLY the CLI. The `/impeccable`
+# skill is NOT deployed globally: `impeccable install --global` was intentionally removed
+# (2026-07-13) — pi double-reads ~/.pi/agent/skills + ~/.agents/skills so the global
+# fan-out collides, and a machine-wide skill in every harness is unwanted. Install per-repo
+# on demand instead: `impeccable install --project --no-hooks` in the target UI project
+# (`impeccable update`/`check` to refresh it there). Deliberately NOT a chezmoi external/
+# `~/.harnesses` entry either — installing two ways would double-write the skill dir.
 "npm:impeccable" = "latest"
 
 [settings]
