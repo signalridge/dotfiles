@@ -9,11 +9,11 @@ versions:
   nixVersion: v2.34.8
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
-  aquaVersion: v2.60.2
-  nixIndexDb: 2026-07-05-062608
+  aquaVersion: v2.61.0
+  nixIndexDb: 2026-07-12-134147
   paperlib: 3.1.12
-  claudeWshobsonAgentsRev: d7cf7dca8c4c7d0635e284f77204daa85552bfa4
-  claudeWshobsonAgentsSha256: 06afd0c7fa7745e710e794072ac28f65b1eb8b575a869478bc686a6cab8c4d3b
+  claudeWshobsonAgentsRev: 2de74ac1c8f6669821dcef13153332c3168033c1
+  claudeWshobsonAgentsSha256: 8aa855ebb3439f263b464b2f93ba590cc6e583ae9b97c2cadb6f39583edc6123
   claudeAnthropicsSkillsRev: 9d2f1ae187231d8199c64b5b762e1bdf2244733d
   claudeAnthropicsSkillsSha256: d3369ba9df41ec79bccc1ca98c63cd7c4fe866718670f34e149b2c0acc9e4c0a
   claudeBaoyuSkillsRev: 6b7a2e417500561a5ecdd0b168332f4142584617
@@ -34,13 +34,13 @@ versions:
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: bfb0f365d14f5ed63416d29aa3abbb21a613f5cb
   dailyDevSkillsRev: bfb33868bb1d70ba3098c10afd0a37d75af53d9a
-  opcSkillsRev: d72eb64f08ab19036b091fe9fa1f2436e44d1602
+  opcSkillsRev: c592527abfc6b6a517c5ddb434276b04277624ea
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 4881c01da71a890c9907257c0636d8cde75d12ca
   affaanEccRev: 40927950c49f6e742d341e20ff7b9b7e1e7bfff5
   actionbookRustSkillsRev: fa60f7931223646fb71c4586b4a6c8545016076a
-  dpearsonSwiftSkillsRev: a17a5b39d6cf4644a61862077679ebb015186400
+  dpearsonSwiftSkillsRev: fffe4c08ad2b77897779b227aa7949d98927dd44
   effectiveTypescriptRev: d754db2077d71ae1e2b57bf50ae7bc565067a2e0
   bobmatnycMpmSkillsRev: 0d2264f626be7c17d06f232721ea184b3814d9f5
   humanizerEnRev: 1b48564898e999219882660237fde01bf4843a0f
