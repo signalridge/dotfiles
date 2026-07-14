@@ -149,7 +149,7 @@ pi:
       # rejects with HTTP 422; false makes Pi use `system` instead (root-caused
       # via a logging proxy capturing Pi's request body). thinkingFormat:deepseek
       # because the gateway returns reasoning_content on the assistant message.
-      # thinkingLevelMap exposes the gateway's verified low..max effort values.
+      # thinkingLevelMap: gateway VERIFIED 2026-07-14 to honor only low/medium/high;
       models:
         - id: glm-5.2 # flagship long-context option
           # newapi gateway routes GLM-5.2 at its native 1M ctx; set so compaction
@@ -158,16 +158,19 @@ pi:
           contextWindow: 1000000
           maxTokens: 131072
           reasoning: true
-          # Expose the full verified ladder through max so Pi does not clamp the
-          # configured level to high in interactive or subagent sessions.
+          # thinkingLevelMap: newapi gateway VERIFIED (2026-07-14, live probes) to
+          # only honor low/medium/high — xhigh and max return HTTP 200 but are SILENTLY
+          # DROPPED (reasoning_content empty, model falls back to non-reasoning direct
+          # answer, slower + dumber). So clamp xhigh/max -> high, the gateway's true top.
+          # Matches GLM-5.2's official High/Max naming where the gateway only wires 'high'.
           thinkingLevelMap:
             {
               minimal: low,
               low: low,
               medium: medium,
               high: high,
-              xhigh: xhigh,
-              max: max,
+              xhigh: high,
+              max: high,
             }
           compat:
             supportsDeveloperRole: false
@@ -185,8 +188,8 @@ pi:
               low: low,
               medium: medium,
               high: high,
-              xhigh: xhigh,
-              max: max,
+              xhigh: high,
+              max: high,
             }
           compat:
             supportsDeveloperRole: false

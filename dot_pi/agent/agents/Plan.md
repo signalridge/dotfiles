@@ -1,11 +1,11 @@
 ---
 # Ejected built-in `Plan` (read-only software-architect), model pinned per user request
-# (2026-07-14): ALL subagents run openai-codex/gpt-5.6-sol, NOT inheriting the parent /model.
+# (2026-07-14): routed through krill/gpt-5.6-sol, NOT inheriting the parent /model.
 # ONLY deviation from the built-in default is the `model:` line; body = the built-in Plan prompt.
 description: "Software architect agent for designing implementation plans. Use this when you need to plan the implementation strategy for a task. Returns step-by-step plans, identifies critical files, and considers architectural trade-offs."
 display_name: Plan
 tools: read, bash, grep, find, ls
-model: openai-codex/gpt-5.6-sol
+model: krill/gpt-5.6-sol
 prompt_mode: replace
 ---
 
