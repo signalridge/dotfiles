@@ -77,7 +77,10 @@ pi:
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
     # In-process subagents. Custom agent defs removed 2026-07-12; runs the built-in
     # defaults (general-purpose/Explore/Plan) via disableDefaultAgents:false in
-    # dot_pi/agent/subagents.json. general-purpose inherits the parent model (krill).
+    # dot_pi/agent/subagents.json. general-purpose + Plan are pinned to
+    # openai-codex/gpt-5.6-sol (matching the parent default, off the krill gateway);
+    # Explore stays on the cheap deepseek-v4-flash for read-only search. Model pins live
+    # in each dot_pi/agent/agents/*.md frontmatter (the only per-subagent model lever).
     - npm:@tintinweb/pi-subagents@0.13.0
     # Web search (zero-config Exa, no key) + fetch_content for PDF / GitHub
     # clone / YouTube / local-video. Multi-provider fallback chain. Keys optional
