@@ -7,9 +7,7 @@ on:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  security-events: write
+permissions: {}
 
 jobs:
   zizmor:
@@ -37,8 +35,15 @@ jobs:
     name: Trivy Filesystem Scan
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
+    permissions:
+      # Required to upload the pinned scanner's SARIF result.
+      security-events: write
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Run Trivy vulnerability scanner (filesystem)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -60,8 +65,18 @@ jobs:
     name: Gitleaks Secret Scan
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
+    permissions:
+      # Required to upload the pinned scanner's SARIF result.
+      security-events: write
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # gitleaks detect scans Git history; checkout's default depth of one
+          # would miss secrets added and removed in earlier commits.
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Install gitleaks
         run: |

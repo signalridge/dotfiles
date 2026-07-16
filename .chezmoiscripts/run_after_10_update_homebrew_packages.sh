@@ -32,7 +32,6 @@ fi
 if ((CURRENT_TIME - LAST_UPDATE > UPDATE_INTERVAL)); then
     echo "    Last update: ${DAYS_AGO} days ago, checking for updates..."
     "$brew_cmd" update
-    echo "$CURRENT_TIME" >"$LAST_UPDATE_FILE"
 
     outdated=$("$brew_cmd" outdated --greedy)
     if [[ -z "$outdated" ]]; then
@@ -42,6 +41,12 @@ if ((CURRENT_TIME - LAST_UPDATE > UPDATE_INTERVAL)); then
         "$brew_cmd" upgrade --greedy
         "$brew_cmd" cleanup
     fi
+
+    # Advance the interval only after the complete update succeeds. Otherwise a
+    # failed upgrade/cleanup would suppress retries for another seven days.
+    tmp_update_file="$(mktemp "${LAST_UPDATE_FILE}.XXXXXX")"
+    printf '%s\n' "$CURRENT_TIME" >"$tmp_update_file"
+    mv "$tmp_update_file" "$LAST_UPDATE_FILE"
 else
     echo "    Skipped (last update: ${DAYS_AGO} days ago)"
 fi

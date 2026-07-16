@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Keys Manager - Unified backup and restore command
 # Manages SSH/GPG/Age keys with OpenSSL PBKDF2-encrypted git repository
-# Dependencies: bash, git, openssl, jq (python3 optional; fzf optional)
+# Dependencies: bash, git, openssl, jq (python3 for --password-file; fzf optional)
 set -euo pipefail
 
 # Resolve script directory robustly (works with symlinked entrypoints too).
@@ -66,34 +66,91 @@ source "$SCRIPT_DIR/lib/keys-manage/menu.sh"
 
 # ===== Main Entry Point =====
 
+# Open password files once with O_NOFOLLOW, then validate that same descriptor.
+# This avoids check/open races and never re-opens the path for reading.
+read_password_file_safely() {
+    local path="$1"
+    local password
+
+    if ! command -v python3 >/dev/null 2>&1; then
+        log_error "python3 is required for secure --password-file handling"
+        return 1
+    fi
+
+    if ! password="$(python3 - "$path" 2>/dev/null <<'PY'
+import os
+import stat
+import sys
+
+path = sys.argv[1]
+flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | os.O_NOFOLLOW
+fd = os.open(path, flags)
+try:
+    if not stat.S_ISREG(os.fstat(fd).st_mode):
+        raise OSError("not a regular file")
+    with os.fdopen(fd, "rb", closefd=False) as handle:
+        sys.stdout.buffer.write(handle.read())
+finally:
+    os.close(fd)
+PY
+    )"; then
+        log_error "Password file must be a readable regular file (not a symlink): $path"
+        return 1
+    fi
+
+    if [[ -z "$password" ]]; then
+        log_error "Password file is empty: $path"
+        return 1
+    fi
+    _CACHED_PASSWORD="$password"
+}
+
 main() {
     trap 'clear_password_cache; cleanup_registered_temp_files' EXIT
 
-    # Parse global options first
+    # Capture an automation password before spawning any helper, then remove it
+    # from the environment inherited by git, credential helpers, hooks, etc.
+    if [[ -n "${KEYS_BACKUP_PASSWORD:-}" ]]; then
+        _CACHED_PASSWORD="$KEYS_BACKUP_PASSWORD"
+        unset KEYS_BACKUP_PASSWORD
+    fi
+
+    # Password options are global and may appear before or after the command.
+    # Remove them in one pass while preserving command-specific argument order.
+    local -a remaining_args=()
+    local command_seen=false
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -h|--help)
-                show_help
-                exit 0
+                if [[ "$command_seen" == false ]]; then
+                    show_help
+                    exit 0
+                fi
+                remaining_args+=("$1")
+                shift
                 ;;
-            -p|--password)
+            --password-file)
                 if [[ $# -lt 2 ]]; then
                     log_error "Missing value for $1"
                     return 1
                 fi
-                # Avoid exporting secrets to child processes. Keep the password in-memory
-                # for this keys-manage process only.
-                _CACHED_PASSWORD="$2"
+                read_password_file_safely "$2" || return 1
                 shift 2
                 ;;
+            -p|--password)
+                log_error "$1 is unsafe because secrets appear in shell history and process arguments"
+                log_error "Use --password-file, KEYS_BACKUP_PASSWORD, gopass, or the TTY prompt"
+                return 2
+                ;;
             *)
-                # Not a global option, assume it's a command
-                break
+                remaining_args+=("$1")
+                command_seen=true
+                shift
                 ;;
         esac
     done
+    set -- "${remaining_args[@]}"
 
-    # Extract command after global options
     local cmd="${1:-}"
     shift || true
 

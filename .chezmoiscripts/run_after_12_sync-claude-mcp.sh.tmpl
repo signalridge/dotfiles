@@ -214,7 +214,8 @@ ensure_always_load() {
         echo "    alwaysLoad add: $name"
     else
         rm -f "$tmp"
-        echo "    alwaysLoad FAILED: $name"
+        echo "    alwaysLoad FAILED: $name" >&2
+        return 1
     fi
 }
 

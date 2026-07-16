@@ -319,6 +319,80 @@ run_cmd() {
     fi
 }
 
+# Serialize account mutations across manager processes. Linux uses flock on an
+# inherited descriptor; macOS uses shlock's atomic PID lock. Both reclaim locks
+# safely without a shell-level check/remove race.
+_AI_ACCOUNT_LOCK_FILE=""
+_AI_ACCOUNT_LOCK_KIND=""
+
+release_ai_account_lock() {
+    case "${_AI_ACCOUNT_LOCK_KIND:-}" in
+        flock)
+            flock -u 9 2>/dev/null || true
+            exec 9>&-
+            ;;
+        shlock)
+            local owner=""
+            if [[ -f "${_AI_ACCOUNT_LOCK_FILE:-}" && ! -L "$_AI_ACCOUNT_LOCK_FILE" ]]; then
+                owner="$(cat "$_AI_ACCOUNT_LOCK_FILE" 2>/dev/null || true)"
+            fi
+            [[ "$owner" != "$$" ]] || rm -f "$_AI_ACCOUNT_LOCK_FILE"
+            ;;
+    esac
+    _AI_ACCOUNT_LOCK_FILE=""
+    _AI_ACCOUNT_LOCK_KIND=""
+}
+
+acquire_ai_account_lock() {
+    local tool="${1:-$AI_TOOL_CONTEXT}"
+    local lock_root lock_file owner=""
+
+    [[ -z "${_AI_ACCOUNT_LOCK_KIND:-}" ]] || return 0
+    [[ "$tool" =~ ^(claude|codex)$ ]] || {
+        log_error "Invalid account lock name: $tool"
+        return 1
+    }
+
+    # Lock beside the shared HOME-scoped config. XDG variables may legitimately
+    # differ between shells and therefore cannot select the mutex path.
+    lock_root="$HOME/.cache/dotfiles-account-locks"
+    if [[ -L "$lock_root" ]]; then
+        log_error "Refusing symlinked account lock directory: $lock_root"
+        return 1
+    fi
+    mkdir -p "$lock_root" || return 1
+    chmod 700 "$lock_root" || return 1
+    # Both managers update chezmoi.toml and the rendered shared core.
+    lock_file="$lock_root/accounts.lock"
+    if [[ -L "$lock_file" ]]; then
+        log_error "Refusing symlinked account lock: $lock_file"
+        return 1
+    fi
+
+    if command -v flock >/dev/null 2>&1; then
+        exec 9>"$lock_file"
+        if ! flock -n 9; then
+            exec 9>&-
+            log_error "AI account state is being modified by another process"
+            return 1
+        fi
+        _AI_ACCOUNT_LOCK_KIND="flock"
+    elif command -v shlock >/dev/null 2>&1; then
+        if ! shlock -p "$$" -f "$lock_file"; then
+            owner="$(cat "$lock_file" 2>/dev/null || true)"
+            log_error "AI account state is being modified by process ${owner:-unknown}"
+            return 1
+        fi
+        _AI_ACCOUNT_LOCK_KIND="shlock"
+    else
+        log_error "Account changes require flock (Linux) or shlock (macOS)"
+        return 1
+    fi
+
+    _AI_ACCOUNT_LOCK_FILE="$lock_file"
+    trap 'release_ai_account_lock' EXIT
+}
+
 # Escape value for TOML basic string context.
 escape_toml_string() {
     local value="$1"

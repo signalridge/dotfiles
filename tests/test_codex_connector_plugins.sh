@@ -33,6 +33,7 @@ set -euo pipefail
 
 case "$*" in
 "plugin list")
+    [[ "${CODEX_FAKE_LIST_FAIL:-0}" != "1" ]] || exit 9
     if [[ -n "${CODEX_FAKE_LIST_FILE:-}" ]]; then
         cat "$CODEX_FAKE_LIST_FILE"
     fi
@@ -64,6 +65,13 @@ assert_contains() {
         exit 1
     fi
 }
+
+set +e
+list_failure_output="$(CODEX_FAKE_LIST_FAIL=1 "$SCRIPT" 2>&1)"
+list_failure_rc=$?
+set -e
+[[ "$list_failure_rc" -ne 0 ]]
+assert_contains "$list_failure_output" "failed to list Codex plugins"
 
 cat >"$LIST_FILE" <<'EOF'
 PLUGIN                           STATUS         VERSION  PATH

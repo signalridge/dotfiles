@@ -1,11 +1,13 @@
 name: Update flake.lock
 on:
   workflow_dispatch:
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 jobs:
   update:
+    permissions:
+      # Required only by the pinned create-pull-request step below.
+      contents: write
+      pull-requests: write
     name: Update (${{ matrix.platform }})
     strategy:
       matrix:
@@ -15,17 +17,21 @@ jobs:
           - os: ubuntu-latest
             platform: linux
     runs-on: ${{ matrix.os }}
+    env:
+      PLATFORM: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: main
+          persist-credentials: false
       - name: Setup chezmoi config
         run: |
           mkdir -p ~/.config/chezmoi
+          # shellcheck disable=SC2086 # PLATFORM expands inside the TOML heredoc.
           cat > ~/.config/chezmoi/chezmoi.toml << EOF
           [data]
           hostname = "ci-host"
-          platform = "${{ matrix.platform }}"
+          platform = "$PLATFORM"
           work = false
           private = false
           timezone = "UTC"
@@ -33,14 +39,17 @@ jobs:
           EOF
       - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
       - name: Install chezmoi
-        run: nix profile install nixpkgs#chezmoi
+        run: |
+          nixpkgs_rev=$(awk '$1 == "nixpkgsBootstrapRev:" { print $2 }' .chezmoidata/versions.yaml)
+          [[ "$nixpkgs_rev" =~ ^[0-9a-f]{40}$ ]]
+          nix profile install "github:NixOS/nixpkgs/${nixpkgs_rev}#chezmoi"
       - name: Update flake.lock
         run: |
           # Render to temp directory (avoids Git tracking issues with flakes)
           workdir=$(mktemp -d)
           mkdir -p "$workdir/modules"
           chezmoi execute-template --source . < nix-config/flake.nix.tmpl > "$workdir/flake.nix"
-          cp nix-config/.flake-${{ matrix.platform }}.lock "$workdir/flake.lock"
+          cp "nix-config/.flake-${PLATFORM}.lock" "$workdir/flake.lock"
           for f in nix-config/modules/*.tmpl; do
             chezmoi execute-template --source . < "$f" > "$workdir/modules/$(basename "${f%.tmpl}")"
           done
@@ -52,7 +61,7 @@ jobs:
           nix flake update --flake "$workdir"
 
           # Copy updated lock back to repo
-          cp "$workdir/flake.lock" nix-config/.flake-${{ matrix.platform }}.lock
+          cp "$workdir/flake.lock" "nix-config/.flake-${PLATFORM}.lock"
           rm -rf "$workdir"
       - name: Get current date
         id: date

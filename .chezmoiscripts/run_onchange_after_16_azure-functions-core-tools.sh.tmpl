@@ -14,11 +14,12 @@ set -euo pipefail
 # This CDN zip is the identical binary brew/npm ship, fetched reliably (resumable
 # curl) into a versioned dir and symlinked onto PATH.
 #
-# To upgrade: bump VERSION and BUILD_ID together (changing them re-triggers this
-# run_onchange script). Both values come from the npm package metadata:
+# To upgrade: bump version/build/checksums together in versions.yaml. Version and
+# build ID come from npm package metadata; checksums come from Microsoft's
+# matching GitHub release assets (`*.zip.sha2`).
 #   npm view azure-functions-core-tools@4 version consolidatedBuildId
-VERSION="4.12.0"
-BUILD_ID="281211" # consolidatedBuildId; CDN path uses 4.0.<BUILD_ID>
+VERSION="{{ .versions.azureFunctionsVersion }}"
+BUILD_ID="{{ .versions.azureFunctionsBuildId }}" # CDN path uses 4.0.<BUILD_ID>
 
 echo ":: [16] Azure Functions Core Tools (func) ${VERSION}"
 
@@ -27,46 +28,87 @@ target_dir="${install_root}/${VERSION}"
 bin_dir="$HOME/.local/bin"
 func_link="${bin_dir}/func"
 
-mkdir -p "$bin_dir"
+mkdir -p "$bin_dir" "$install_root"
 
-# Idempotent: already at the target version → just ensure the symlink is correct.
-if [[ -x "${target_dir}/func" ]] \
-    && current="$("${target_dir}/func" --version 2>/dev/null)" \
-    && [[ "$current" == "$VERSION" ]]; then
-    ln -sfn "${target_dir}/func" "$func_link"
-    echo "    Already installed (${VERSION})"
-    exit 0
-fi
-
-# Map platform → Azure CDN release identifier.
+# Map platform → Azure CDN release identifier before the fast path so an older,
+# unverified installation cannot bypass the newly pinned checksum.
 case "$(uname -s)-$(uname -m)" in
-    Darwin-arm64) rid="osx-arm64" ;;
-    Darwin-x86_64) rid="osx-x64" ;;
-    Linux-aarch64 | Linux-arm64) rid="linux-arm64" ;;
-    Linux-x86_64) rid="linux-x64" ;;
+    Darwin-arm64)
+        rid="osx-arm64"
+        expected_sha256="{{ .versions.azureFunctionsOsxArm64Sha256 }}"
+        ;;
+    Darwin-x86_64)
+        rid="osx-x64"
+        expected_sha256="{{ .versions.azureFunctionsOsxX64Sha256 }}"
+        ;;
+    Linux-aarch64 | Linux-arm64)
+        rid="linux-arm64"
+        expected_sha256="{{ .versions.azureFunctionsLinuxArm64Sha256 }}"
+        ;;
+    Linux-x86_64)
+        rid="linux-x64"
+        expected_sha256="{{ .versions.azureFunctionsLinuxX64Sha256 }}"
+        ;;
     *)
         echo "    Skipped (unsupported platform $(uname -s)-$(uname -m))"
         exit 0
         ;;
 esac
+expected_sha256="${AZURE_FUNCTIONS_OVERRIDE_SHA256:-$expected_sha256}"
+archive_hash_file="${target_dir}/.archive.sha256"
 
-url="https://cdn.functions.azure.com/public/4.0.${BUILD_ID}/Azure.Functions.Cli.${rid}.${VERSION}.zip"
+# Only installations created from the current verified archive get the marker.
+if [[ -x "${target_dir}/func" ]] &&
+    [[ "$(cat "$archive_hash_file" 2>/dev/null || true)" == "$expected_sha256" ]] &&
+    current="$("${target_dir}/func" --version 2>/dev/null)" &&
+    [[ "$current" == "$VERSION" ]]; then
+    ln -sfn "${target_dir}/func" "$func_link"
+    echo "    Already installed (${VERSION})"
+    exit 0
+fi
+
+url="${AZURE_FUNCTIONS_OVERRIDE_URL:-https://cdn.functions.azure.com/public/4.0.${BUILD_ID}/Azure.Functions.Cli.${rid}.${VERSION}.zip}"
 echo "    Downloading ${rid} ${VERSION} from Azure CDN (~600MB)..."
+tmp_zip=""
+tmp_dir=""
+cleanup() {
+    [[ -z "$tmp_zip" ]] || rm -f "$tmp_zip"
+    [[ -z "$tmp_dir" ]] || rm -rf "$tmp_dir"
+}
+trap cleanup EXIT
 
-tmp_zip="$(mktemp -t func.XXXXXX.zip)"
-trap 'rm -f "$tmp_zip"' EXIT
+tmp_zip="$(mktemp "${TMPDIR:-/tmp}/func.zip.XXXXXX")"
 if ! curl -fL --retry 5 --retry-delay 2 -C - -o "$tmp_zip" "$url"; then
     echo "    Error: download failed (${url})" >&2
     exit 1
 fi
 
-# Extract into a versioned dir so the binary and its sibling .NET assemblies stay
-# together, then (re)point the PATH symlink at it.
+if command -v sha256sum >/dev/null 2>&1; then
+    actual_sha256="$(sha256sum "$tmp_zip" | awk '{print $1}')"
+else
+    actual_sha256="$(shasum -a 256 "$tmp_zip" | awk '{print $1}')"
+fi
+if [[ "$actual_sha256" != "$expected_sha256" ]]; then
+    echo "    Error: SHA-256 mismatch for Azure Functions ${rid} ${VERSION}" >&2
+    exit 1
+fi
+
+# Validate a complete candidate before replacing the working version.
+tmp_dir="$(mktemp -d "${install_root}/.tmp-${VERSION}.XXXXXX")"
+unzip -oq "$tmp_zip" -d "$tmp_dir"
+rm -f "$tmp_zip"
+tmp_zip=""
+chmod +x "${tmp_dir}/func"
+chmod +x "${tmp_dir}/gozip" 2>/dev/null || true
+if [[ "$("${tmp_dir}/func" --version 2>/dev/null)" != "$VERSION" ]]; then
+    echo "    Error: downloaded func failed version smoke test" >&2
+    exit 1
+fi
+printf '%s\n' "$expected_sha256" >"${tmp_dir}/.archive.sha256"
+
 rm -rf "$target_dir"
-mkdir -p "$target_dir"
-unzip -oq "$tmp_zip" -d "$target_dir"
-chmod +x "${target_dir}/func" 2>/dev/null || true
-chmod +x "${target_dir}/gozip" 2>/dev/null || true
+mv "$tmp_dir" "$target_dir"
+tmp_dir=""
 ln -sfn "${target_dir}/func" "$func_link"
 
 # Prune older versions (~1.5GB each once extracted).

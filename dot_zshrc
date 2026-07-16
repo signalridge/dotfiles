@@ -20,6 +20,10 @@ source "$HOME/.custom/alias.sh"
 source "$HOME/.custom/functions.sh"
 source "$HOME/.custom/utils.sh"
 
+# Keep the first occurrence (the intended priority) and prevent mise/Krew hooks
+# from accumulating duplicate PATH entries across nested interactive shells.
+typeset -gU path PATH
+
 # do not save duplicates in history
 setopt hist_ignore_dups
 setopt hist_ignore_all_dups

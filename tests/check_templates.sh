@@ -40,7 +40,6 @@ installMasApps = true
 timezone = "UTC"
 gitUsername = "test"
 gitEmail = "test@test.com"
-useremail = "test@test.com"
 useEncryption = false
 headless = false
 gopassRepository = "https://github.com/test/pass.git"
@@ -139,7 +138,7 @@ done < <(find . -type f -name '*.lua' ! -path '*/Spoons/*' -print0)
 if ((${#luafiles[@]} > 0)) && [[ -f selene.toml ]]; then
     echo "Linting rendered Lua files..."
     if command -v selene >/dev/null 2>&1; then
-        selene "${luafiles[@]}" || echo "Selene warnings (non-blocking)"
+        selene "${luafiles[@]}"
     else
         echo "Selene not found; skipping Lua lint"
     fi

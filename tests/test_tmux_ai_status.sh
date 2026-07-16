@@ -196,7 +196,7 @@ TMUX_AI_STALE_BUSY_PANES="%2"
 assert_equals "$(run_status s:2)" "AI □○□"
 unset TMUX_AI_STALE_BUSY_PANES
 
-state_dir="$TMP_ROOT/tmp/tmux2k-ai-4242"
+state_dir="$TMP_ROOT/tmp/tmux2k-ai-${UID}-4242"
 mkdir -p "$state_dir"
 cat >"$state_dir/_1.state" <<'EOF'
 tool=claude
@@ -301,5 +301,20 @@ transcript_path=$claude_abort_transcript
 transcript_line_count=1
 EOF
 assert_equals "$(run_status s:1)" "AI ○□■"
+
+# A pre-created symlink must never redirect hook state writes outside the
+# private runtime directory.
+rm -rf "$state_dir"
+attack_target="$TMP_ROOT/attack-target"
+mkdir -p "$attack_target"
+ln -s "$attack_target" "$state_dir"
+TMUX_PANE=%2 \
+    PATH="$TMP_ROOT/bin:$PATH" \
+    TMPDIR="$TMP_ROOT/tmp" \
+    bash "$ROOT/dot_local/bin/executable_tmux-ai-agent-state" codex busy
+if find "$attack_target" -mindepth 1 -print -quit | grep -q .; then
+    echo "tmux hook followed an attacker-controlled cache symlink" >&2
+    exit 1
+fi
 
 echo "test_tmux_ai_status: OK"

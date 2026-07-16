@@ -40,6 +40,20 @@ if ! command -v nix >/dev/null 2>&1; then
     exit 1
 fi
 
+# Resolve only the immutable revision tracked by this repository; never trust a
+# mutable or user-configured `nixpkgs` registry during key bootstrap.
+WRAPPER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+VERSIONS_FILE="$WRAPPER_DIR/../../.chezmoidata/versions.yaml"
+AGE_NIXPKGS_REV="$(
+    sed -n 's/^[[:space:]]*nixpkgsBootstrapRev:[[:space:]]*\([0-9a-f]*\)[[:space:]]*$/\1/p' \
+        "$VERSIONS_FILE"
+)"
+if [[ ! "$AGE_NIXPKGS_REV" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "Error: invalid pinned nixpkgs bootstrap revision" >&2
+    exit 1
+fi
+AGE_INSTALLABLE="github:NixOS/nixpkgs/${AGE_NIXPKGS_REV}#age"
+
 # Install age once into the ISOLATED bootstrap profile (never the default profile),
 # then execute it. This bootstraps decryption on a cold device without clobbering
 # the flakey-profile-managed default profile.
@@ -47,10 +61,10 @@ fi
 # profile), so ensure it exists first or the add fails on a cold device.
 mkdir -p "$(dirname "$BOOTSTRAP_PROFILE")" 2>/dev/null || true
 nix --extra-experimental-features 'nix-command flakes' profile add \
-    --profile "$BOOTSTRAP_PROFILE" "nixpkgs#age" >/dev/null 2>&1 || true
+    --profile "$BOOTSTRAP_PROFILE" "$AGE_INSTALLABLE" >/dev/null 2>&1 || true
 if [[ -x "$BOOTSTRAP_AGE" ]]; then
     exec "$BOOTSTRAP_AGE" "$@"
 fi
 
 # Last-resort fallback: ephemeral run, no profile mutation.
-exec nix --extra-experimental-features 'nix-command flakes' run "nixpkgs#age" -- "$@"
+exec nix --extra-experimental-features 'nix-command flakes' run "$AGE_INSTALLABLE" -- "$@"

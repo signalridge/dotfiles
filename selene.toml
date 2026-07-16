@@ -1,6 +1,6 @@
 # Selene configuration
 # https://kampfkarren.github.io/selene/
-std = "lua52"
+std = "lua51"
 
 [lints]
 # Allow undefined globals (hs, vim, spoon are defined at runtime)

@@ -3,16 +3,13 @@
 
 set -euo pipefail
 
-{{ $flake := joinPath .chezmoi.homeDir "nix-config/flake.nix" -}}
-{{- $lock := joinPath .chezmoi.homeDir "nix-config/flake.lock" -}}
-{{- $apps := joinPath .chezmoi.homeDir "nix-config/modules/apps.nix" -}}
-{{- $system := joinPath .chezmoi.homeDir "nix-config/modules/system.nix" -}}
-{{- $hostUsers := joinPath .chezmoi.homeDir "nix-config/modules/host-users.nix" -}}
-# flake.nix: {{ if stat $flake }}{{ output "sha256sum" $flake | trim }}{{ else }}n/a{{ end }}
-# flake.lock: {{ if stat $lock }}{{ output "sha256sum" $lock | trim }}{{ else }}n/a{{ end }}
-# apps.nix: {{ if stat $apps }}{{ output "sha256sum" $apps | trim }}{{ else }}n/a{{ end }}
-# system.nix: {{ if stat $system }}{{ output "sha256sum" $system | trim }}{{ else }}n/a{{ end }}
-# host-users.nix: {{ if stat $hostUsers }}{{ output "sha256sum" $hostUsers | trim }}{{ else }}n/a{{ end }}
+# Hash rendered source state, not the pre-apply target files in $HOME. This
+# makes run_onchange converge in the same apply that changes the configuration.
+# flake.nix: {{ includeTemplate "nix-config/flake.nix.tmpl" . | sha256sum }}
+# flake.lock: {{ includeTemplate "nix-config/flake.lock.tmpl" . | sha256sum }}
+# apps.nix: {{ includeTemplate "nix-config/modules/apps.nix.tmpl" . | sha256sum }}
+# system.nix: {{ includeTemplate "nix-config/modules/system.nix.tmpl" . | sha256sum }}
+# host-users.nix: {{ include "nix-config/modules/host-users.nix" | sha256sum }}
 
 echo ":: [02] Configuring nix-darwin"
 
@@ -20,7 +17,7 @@ echo ":: [02] Configuring nix-darwin"
 {{ include ".chezmoitemplates/shell/source_nix_env.sh" }}
 if ! command -v darwin-version >/dev/null 2>&1; then
     echo "    Installing nix-darwin..."
-    sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake ~/nix-config#{{ .hostname }} --show-trace --verbose
+    sudo nix run ~/nix-config#darwin-rebuild -- switch --flake ~/nix-config#{{ .hostname }} --show-trace --verbose
 else
     echo "    Switching nix-darwin configuration..."
     sudo darwin-rebuild switch --flake ~/nix-config#{{ .hostname }} --show-trace --verbose

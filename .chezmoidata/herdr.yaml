@@ -1,13 +1,20 @@
-# Herdr plugins — reinstalled by .chezmoiscripts/run_onchange_after_14_herdr-plugins.sh.tmpl
-# Plugins are runtime git clones under ~/.config/herdr/plugins (NOT committed); this list
-# reproduces them on every machine. Each entry is `owner/repo[/subdir]` for `herdr plugin install`.
-# NOTE: third-party herdr plugins run UNSANDBOXED (build + runtime as your user). Vet before adding.
+# Herdr plugins — reinstalled by .chezmoiscripts/run_onchange_after_18_herdr-plugins.sh.tmpl
+# Plugins are runtime git clones under ~/.config/herdr/plugins (NOT committed).
+# Each entry pins the exact commit passed to `herdr plugin install --ref` because
+# third-party plugins build and run UNSANDBOXED as the current user.
 herdr:
   plugins:
-    - andrewchng/herdr-sessionizer # fuzzy project/worktree picker (≈ sesh); needs fzf
-    - rmarganti/herdr-pluck # copy paths/URLs/SHAs from a pane (≈ extrakto); builds via cargo
-    - ogulcancelik/herdr-plugin-examples/github-link-preview # ctrl+click a GitHub URL → preview (official example); needs gh
-    - cloudmanic/herdr-plus # Projects + Quick Actions launcher
-    - paulbkim-dev/vim-herdr-navigation # ctrl+hjkl nav across vim splits & herdr panes; needs jq
-    - zom-2018/herdr-ntfy-notify # ntfy phone push on agent status change; needs node + ntfy server
-    - dcolinmorgan/herdr-push # mobile monitoring + one-tap approval via herdr-remote
+    - spec: andrewchng/herdr-sessionizer # fuzzy project/worktree picker (≈ sesh); needs fzf
+      rev: 9d3ce79d4d532dcf2a8081d8c083810ca97ed1cd
+    - spec: rmarganti/herdr-pluck # copy paths/URLs/SHAs from a pane (≈ extrakto); builds via cargo
+      rev: 0c9552b8532c68d25f2fe4b277a546326e2e84b1
+    - spec: ogulcancelik/herdr-plugin-examples/github-link-preview # official example; needs gh
+      rev: 18709cdc851dd63ed0543eb8388343a5446fd8d8
+    - spec: cloudmanic/herdr-plus # Projects + Quick Actions launcher
+      rev: 013fe1667a638487004164955a01707584ab7b9e
+    - spec: paulbkim-dev/vim-herdr-navigation # ctrl+hjkl across vim splits & herdr panes; needs jq
+      rev: 548607d0e417fdb30966846fce7436aa05a6738d
+    - spec: zom-2018/herdr-ntfy-notify # ntfy phone push on agent status change; needs node + server
+      rev: 8945030287785e45f33bf78990a671c3020b0d5c
+    - spec: dcolinmorgan/herdr-push # mobile monitoring + one-tap approval via herdr-remote
+      rev: 6c022639cb3264fd5ed95d1753e1cd5a8f81bbb3

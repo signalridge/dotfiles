@@ -13,6 +13,7 @@ trap cleanup EXIT
 HOME_DIR="$TMP_ROOT/home"
 LIBRARY="$TMP_ROOT/library"
 mkdir -p "$HOME_DIR" "$LIBRARY"
+LIBRARY="$(cd "$LIBRARY" && pwd -P)"
 
 fail() {
     echo "assertion failed: $*" >&2
@@ -35,6 +36,11 @@ assert_symlink_to() {
 assert_missing() {
     local path="$1"
     [ ! -e "$path" ] || fail "expected missing path: $path"
+}
+
+assert_not_symlink() {
+    local path="$1"
+    [ ! -L "$path" ] || fail "expected symlink to be removed: $path"
 }
 
 make_skill() {
@@ -178,5 +184,41 @@ if run_skill_activate_in "$PROJECT_DIR" --category missing >"$TMP_ROOT/missing.o
     fail "expected missing category to fail"
 fi
 assert_contains "$(cat "$TMP_ROOT/missing.err")" "category not found: missing"
+
+# --clear owns only links that point into this skill library. Preserve unrelated
+# links that share the agent discovery directories.
+CLEAR_DIR="$TMP_ROOT/clear-project"
+UNMANAGED_TARGET="$TMP_ROOT/unmanaged-skill"
+mkdir -p "$CLEAR_DIR" "$UNMANAGED_TARGET"
+run_skill_activate_in "$CLEAR_DIR" --category typescript >/dev/null
+ln -s "$UNMANAGED_TARGET" "$CLEAR_DIR/.claude/skills/unmanaged"
+run_skill_activate_in "$CLEAR_DIR" --clear >/dev/null
+assert_symlink_to "$CLEAR_DIR/.claude/skills/unmanaged" "$UNMANAGED_TARGET"
+assert_not_symlink "$CLEAR_DIR/.claude/skills/ts-one"
+assert_not_symlink "$CLEAR_DIR/.codex/skills/ts-two"
+
+# A library update may delete or rename a skill after links were activated.
+# --clear must still remove those now-dangling managed links.
+run_skill_activate_in "$CLEAR_DIR" --category typescript >/dev/null
+rm -rf "$LIBRARY/typescript/ts-one"
+run_skill_activate_in "$CLEAR_DIR" --clear >/dev/null
+for active_dir in .claude .codex .pi .cursor; do
+    assert_not_symlink "$CLEAR_DIR/$active_dir/skills/ts-one"
+    assert_not_symlink "$CLEAR_DIR/$active_dir/skills/ts-two"
+done
+assert_symlink_to "$CLEAR_DIR/.claude/skills/unmanaged" "$UNMANAGED_TARGET"
+
+# Never traverse a discovery-directory symlink while clearing; that directory
+# may be owned by another project or tool.
+SYMLINK_DIR="$TMP_ROOT/symlink-clear-project"
+EXTERNAL_SKILLS="$TMP_ROOT/external-skills"
+mkdir -p "$SYMLINK_DIR/.claude" "$EXTERNAL_SKILLS"
+ln -s "$EXTERNAL_SKILLS" "$SYMLINK_DIR/.claude/skills"
+ln -s "$LIBRARY/typescript/ts-one" "$EXTERNAL_SKILLS/ts-one"
+if run_skill_activate_in "$SYMLINK_DIR" --clear >"$TMP_ROOT/symlink-clear.out" 2>"$TMP_ROOT/symlink-clear.err"; then
+    fail "expected clear through a discovery-directory symlink to fail"
+fi
+assert_contains "$(cat "$TMP_ROOT/symlink-clear.err")" "is a symlink"
+assert_symlink_to "$EXTERNAL_SKILLS/ts-one" "$LIBRARY/typescript/ts-one"
 
 echo "test_skill_activate: OK"

@@ -7,11 +7,27 @@ versions:
   nixInstallerAarch64LinuxSha256: 9f56a034a7b0fe1bb83117a0326e1b38cc30dc14cdc311abb0637db332e1826f
   nixInstallerX8664LinuxSha256: ee9c560d6f093baf7a8b342d8a00e9f8b47dd4a6367f3f523482ee96897c4179
   nixVersion: v2.34.8
+  nixpkgsBootstrapRev: 3b32825de172d0bc85664f495edb096b10862524
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
   aquaVersion: v2.61.0
   nixIndexDb: 2026-07-12-134147
   paperlib: 3.1.12
+  paperlibAmd64Sha256: 993d05c9bb9c8163f2d308736d2316ebf6db8a23b75133a170e22ea6e125746c
+  paperlibArm64Sha256: a49ab642331632719079399c15551a6d0c9b16ca2f50a2ef35c297c3a9835459
+  azureFunctionsVersion: 4.12.0
+  azureFunctionsBuildId: "281211"
+  azureFunctionsOsxArm64Sha256: 85786c1ffc3a60073a5379f3a18986dbf9397830e0af8fbc59f73cdb7b20473e
+  azureFunctionsOsxX64Sha256: abca2f642f0da3c64ea39152e4670d6398ee0673955c92b2600eea6c4574b4de
+  azureFunctionsLinuxArm64Sha256: cadf1e1c252ba7cc43a7266aef364da615911b63422dfa2173f81db6d81246ef
+  azureFunctionsLinuxX64Sha256: 6e7286080c898d1f15a62c6dd7fcc06b8b6aa4a0347c4634d207e7b5adb92acb
+  cursorAgentVersion: 2026.07.09-a3815c0
+  cursorAgentDarwinArm64Sha256: 009ee857d49f17c10e5035e33884eb258d1f3839c1d52bdb35f35a117369dfde
+  cursorAgentDarwinX64Sha256: 066c499f6ec43734254337c493aeec5aabb4a6ae6d6df7da214fa86ceda9e45d
+  cursorAgentLinuxArm64Sha256: 11b2b6801136a11a3632a4b1080ea3bfc7d97d0a68382be9ede1faf5333207fb
+  cursorAgentLinuxX64Sha256: c7c1f32249cedb99cc20cd4eed1f9308dc2299a78c283bbc6efd6d658cd4977e
+  tpmRev: e261deb1b47614eed3400089ce7197dc68acc4eb
+  tpmSha256: 72d92c512270d4857e27519ac97b92a52cf149afe4d92f26860c710f60bbbe37
   claudeWshobsonAgentsRev: b6af3711058190e4b5c5274b9758498fe626ec5a
   claudeWshobsonAgentsSha256: c663d6e1350ae2a693369c1d5b76cec0048f7f66ad8534d3ac02580c784ca335
   claudeAnthropicsSkillsRev: 9d2f1ae187231d8199c64b5b762e1bdf2244733d

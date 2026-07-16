@@ -89,6 +89,7 @@ target_label="Claude + Codex + Pi + Cursor current dir"
   echo "skill-activate: library not found: $library" >&2
   exit 1
 }
+library="$(cd "$library" && pwd -P)"
 
 require_real_dir() {
   if [ -L "$1" ]; then
@@ -299,9 +300,23 @@ category)
   exit 0
   ;;
 clear)
+  for d in "${active_dirs[@]}"; do require_real_dir "$d"; done
+  # Remove every link whose literal, traversal-free target is below the
+  # canonical library root. Scanning the discovery dirs (rather than only the
+  # current index) also removes links to skills deleted or renamed upstream.
   for d in "${active_dirs[@]}"; do
-    [ -L "$d" ] && continue
-    [ -d "$d" ] && find "$d" -maxdepth 1 -type l -delete 2>/dev/null || true
+    while IFS= read -r -d '' link; do
+      link_target=$(readlink "$link") || continue
+      case "$link_target" in
+        "$library"/*)
+          relative_target=${link_target#"$library"/}
+          case "/$relative_target/" in
+            *'/../'* | *'/./'* | *'//'*) continue ;;
+          esac
+          rm -f "$link"
+          ;;
+      esac
+    done < <(find "$d" -mindepth 1 -maxdepth 1 -type l -print0 2>/dev/null)
   done
   echo "cleared current dir ($target_label)"
   exit 0

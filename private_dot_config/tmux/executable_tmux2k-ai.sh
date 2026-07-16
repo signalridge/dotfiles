@@ -54,6 +54,25 @@ state_file_for_pane() {
     printf '%s/%s.state\n' "$cache_dir" "$safe_pane_id"
 }
 
+cache_dir_for_server() {
+    local server_pid="$1"
+    local runtime_dir uid
+    runtime_dir="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}"
+    uid="${UID:-$(id -u)}"
+    printf '%s/tmux2k-ai-%s-%s\n' "$runtime_dir" "$uid" "${server_pid:-default}"
+}
+
+prepare_cache_dir() {
+    local cache_dir="$1"
+
+    if [[ -e "$cache_dir" || -L "$cache_dir" ]]; then
+        [[ -d "$cache_dir" && ! -L "$cache_dir" && -O "$cache_dir" ]] || return 1
+    else
+        (umask 077 && mkdir "$cache_dir") || return 1
+    fi
+    chmod 700 "$cache_dir" 2>/dev/null || return 1
+}
+
 read_state_field() {
     local state_file="$1"
     local field="$2"
@@ -67,7 +86,7 @@ state_file_matches_pane() {
     local pid="$3"
     local state_tool state_pid
 
-    [[ -r "$state_file" ]] || return 1
+    [[ -r "$state_file" && ! -L "$state_file" ]] || return 1
 
     state_tool=$(read_state_field "$state_file" "tool")
     state_pid=$(read_state_field "$state_file" "pid")
@@ -267,8 +286,8 @@ main() {
     # still named "claude".
     local server_pid cache_dir
     server_pid=$(tmux display-message -p '#{pid}' 2>/dev/null || true)
-    cache_dir="${TMPDIR:-/tmp}/tmux2k-ai-${server_pid:-default}"
-    mkdir -p "$cache_dir" 2>/dev/null || return
+    cache_dir="$(cache_dir_for_server "$server_pid")"
+    prepare_cache_dir "$cache_dir" || return
 
     declare -A pane_ttys=()
     declare -A pane_ids=()

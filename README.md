@@ -36,7 +36,7 @@ A reproducible personal workstation setup built around:
 
 - `chezmoi` for dotfiles, templating, and bootstrap orchestration
 - `Nix` for declarative packages (`nix-darwin` on macOS + `flakey-profile` on macOS/Linux)
-- `aqua` + `mise` for CLI/runtime pinning outside Nix where practical
+- `aqua` + `mise` for CLI/runtime management outside Nix where practical
 - Shared AI tooling for `Claude Code` and `Codex CLI`
 
 This is a real daily-driver setup, not a demo template. The README focuses on what is actually implemented in this repository today.
@@ -45,7 +45,7 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 
 ## Highlights
 
-- Unified bootstrap pipeline (`.chezmoiscripts/00..15`) with idempotent post-apply maintenance
+- Unified bootstrap pipeline (`.chezmoiscripts/00..20`) with idempotent post-apply maintenance
 - Cross-platform package strategy:
   - Nix user packages on macOS/Linux
   - nix-darwin system config on macOS
@@ -62,7 +62,7 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 ## Why This Repo
 
 - **Profiles everywhere**: `.chezmoidata/` drives `shared` / `work` / `private` packages across Nix, Homebrew, and MAS
-- **End-to-end bootstrap**: staged scripts from `00` to `15` keep setup deterministic and composable
+- **End-to-end bootstrap**: staged scripts from `00` to `20` keep setup deterministic and composable
 - **macOS polish**: nix-darwin system defaults, Homebrew + MAS integration, post-apply maintenance scripts
 - **Workflow guardrails**: pre-commit checks + Claude hooks to reduce risky edits and command misuse
 - **DX automation**: Justfile routines, fzf navigation helpers, AI-assisted commit flows
@@ -140,7 +140,7 @@ This repository combines `chezmoi` templating with Nix-based package management 
 │   ├── versions.yaml           # Pinned tool/plugin revisions
 │   ├── aerospace.yaml          # Aerospace WM data
 │   └── hammerspoon.yaml        # Hammerspoon data
-├── .chezmoiscripts/            # Bootstrap + maintenance pipeline (00..15)
+├── .chezmoiscripts/            # Bootstrap + maintenance pipeline (00..20)
 ├── nix-config/
 │   ├── flake.nix.tmpl
 │   └── modules/
@@ -173,11 +173,16 @@ The `chezmoi` script chain is staged and numbered:
 9. `08` install pinned nix-index database
 10. `09` macOS: install/update Paperlib
 11. `10` periodic Homebrew update/upgrade (7-day interval)
-12. `11` sync AI tool integrations and Herdr agent integrations
-13. `12` work profile: install Azure Functions Core Tools
-14. `13` macOS GUI: reload managed LaunchAgents
-15. `14` sync Herdr plugins
-16. `15` Linux: reload systemd user units
+12. `11` sync Claude integration plugins
+13. `12` sync Claude MCP servers
+14. `13` sync Codex connector plugins
+15. `14` sync Herdr integrations for Claude, Codex, and Pi
+16. `15` install/update Cursor Agent CLI
+17. `16` work profile: install Azure Functions Core Tools
+18. `17` macOS GUI: reload managed LaunchAgents
+19. `18` sync Herdr plugins
+20. `19` Linux: reload systemd user units
+21. `20` reconcile Pi extensions once per ISO calendar week/package set (failures retry on the next apply)
 
 ---
 
@@ -239,7 +244,7 @@ DOTFILES_USE_ENCRYPTION=false ./init.sh
 
 For most first-time users of this repo: keep `useEncryption = false` unless you have your own keys-manage backup repo and key material.
 
-> First-run is interactive. Identity prompts (`hostname`, `gitUsername`, `useremail`, `gitEmail`) have no safe default and will hard-fail if there's no TTY — use Option 1's download-then-run pattern, not pipe-to-sh. On a re-apply where `~/.config/chezmoi/chezmoi.toml` already has these values, prompts are skipped; `DOTFILES_USE_ENCRYPTION=true|false` lets you override the encryption flag from the environment in that case.
+> First-run is interactive. Identity prompts (`hostname`, `gitUsername`, `gitEmail`) have no safe default and will hard-fail if there's no TTY — use Option 1's download-then-run pattern, not pipe-to-sh. On a re-apply where `~/.config/chezmoi/chezmoi.toml` already has these values, prompts are skipped; `DOTFILES_USE_ENCRYPTION=true|false` lets you override the encryption flag from the environment in that case.
 
 ---
 
@@ -311,7 +316,6 @@ See: `docs/claude-provider.md`.
 Claude hooks in `dot_claude/hooks/` provide workflow guardrails and formatting automation, including:
 
 - `block-git-rewrites.sh`
-- `block-main-edits.sh`
 - `format-code.sh`
 - `format-python.sh`
 
@@ -378,7 +382,9 @@ codex-token --check deepseek@private
 ## Tool Chains
 
 Classic Unix tools get aliased modern replacements; on top sits a
-domain-organized set of power-user CLIs. Everything is version-pinned via aqua.
+domain-organized set of power-user CLIs. Tools use the layer that fits them:
+aqua pins many CLIs, Nix is flake-locked, while selected mise runtimes and
+direct installers intentionally follow LTS/latest releases.
 
 ### Drop-in Replacements
 
@@ -513,11 +519,11 @@ See:
   - `nix flake check` (macOS + Linux matrix)
 
 - `.github/workflows/tests.yml`
-  - manual bootstrap/script test suite (`bash tests/run.sh`)
+  - bootstrap/script test suite on pushes, pull requests, and manual runs (`bash tests/run.sh`)
 
 ### Automated Upkeep
 
-- `.github/workflows/scheduler.yml` (twice weekly trigger)
+- `.github/workflows/scheduler.yml` (daily at 00:00 UTC)
 - `.github/workflows/update-versions.yml`
 - `.github/workflows/update-flake-lock.yml`
 - `.github/workflows/update-aqua-packages.yml`

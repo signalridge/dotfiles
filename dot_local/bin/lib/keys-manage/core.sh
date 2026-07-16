@@ -65,7 +65,7 @@ to_home_rel_path() {
 
     # Expand common forms.
     if [[ "$path" == \~/* ]]; then
-        path="$HOME/${path#~/}"
+        path="$HOME/${path#\~/}"
     fi
 
     # Defensive: if someone pasted backup-files/... into the list, accept it.
@@ -105,6 +105,29 @@ to_home_abs_path() {
     local rel
     rel=$(to_home_rel_path "$1") || return 1
     printf '%s/%s\n' "$HOME" "$rel"
+}
+
+# Reject restore targets whose existing parent path resolves outside HOME.
+# A missing suffix is safe after lexical traversal checks; the deepest existing
+# parent is what determines whether a symlink escapes the restore boundary.
+restore_target_is_safe() {
+    local target="$1"
+    local rel home_real existing_parent parent_real next_parent
+
+    rel=$(to_home_rel_path "$target" 2>/dev/null) || return 1
+    [[ "$target" == "$HOME/$rel" ]] || return 1
+    [[ ! -L "$target" ]] || return 1
+
+    home_real=$(cd -P -- "$HOME" 2>/dev/null && pwd -P) || return 1
+    existing_parent=$(dirname -- "$target")
+    while [[ ! -e "$existing_parent" && ! -L "$existing_parent" ]]; do
+        next_parent=$(dirname -- "$existing_parent")
+        [[ "$next_parent" != "$existing_parent" ]] || return 1
+        existing_parent="$next_parent"
+    done
+
+    parent_real=$(cd -P -- "$existing_parent" 2>/dev/null && pwd -P) || return 1
+    [[ "$parent_real" == "$home_real" || "$parent_real" == "$home_real/"* ]]
 }
 
 iter_backup_list_rel() {
@@ -584,8 +607,10 @@ get_backup_path() {
 # Usage: get_absolute_path "backup-files/.ssh/main" -> "/Users/user/.ssh/main"
 get_absolute_path() {
     local backup_path="$1"
-    local rel_path="${backup_path#"$BACKUP_FILES_DIR"/}"
-    echo "$HOME/$rel_path"
+    local rel_path
+    rel_path="${backup_path#"$BACKUP_FILES_DIR"/}"
+    rel_path=$(to_home_rel_path "$rel_path") || return 1
+    printf '%s/%s\n' "$HOME" "$rel_path"
 }
 
 # ===== File Discovery & Filtering =====
@@ -718,7 +743,7 @@ detect_changes() {
     # - File not in metadata (legacy backups)
     local backup_hash
     local temp_encrypted temp_decrypted
-    temp_encrypted=$(mktemp "${TMPDIR:-/tmp}/keys-detect.XXXXXX.enc")
+    temp_encrypted=$(mktemp "${TMPDIR:-/tmp}/keys-detect.enc.XXXXXX")
     temp_decrypted=$(mktemp "${TMPDIR:-/tmp}/keys-detect.XXXXXX")
     register_temp_file "$temp_encrypted"
     register_temp_file "$temp_decrypted"
@@ -980,10 +1005,11 @@ FILE_PREVIEW='
             fi
         fi
 
-        # Preview first 10 lines
+        # Never echo file contents: this selector is commonly used for private
+        # keys, credentials, and other secrets. Path/type/metadata are sufficient.
         echo ""
         echo -e "\033[1;34m━━━ Preview ━━━\033[0m"
-        head -n 10 "$file" 2>/dev/null || echo "(binary or unreadable)"
+        echo "(content hidden for security)"
     else
         echo ""
         echo -e "\033[0;31m✗ File not found\033[0m"
@@ -1487,7 +1513,6 @@ encrypt_file() {
         return 1
     }
 
-    # Get password if not provided
     if [[ -z "$password" ]]; then
         password=$(get_encryption_password) || {
             log_error "Failed to get encryption password"
@@ -1495,20 +1520,35 @@ encrypt_file() {
         }
     fi
 
-    mkdir -p "$(dirname "$dest")"
-
-    # OpenSSL AES-256-CBC with PBKDF2 (100,000 iterations)
-    # -salt: Add random salt for security (makes each encryption unique)
-    # -pbkdf2 -iter 100000: Use PBKDF2 with 100k iterations (recommended)
-    # Note: Random salt means same file encrypts differently each time (this is good!)
-    if openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt \
-        -pass fd:3 -in "$source" -out "$dest" 3<<<"$password" 2>/dev/null; then
-        chmod 600 "$dest"
-        return 0
-    else
-        log_error "Failed to encrypt file"
+    if [[ -d "$dest" ]]; then
+        log_error "Destination is a directory: $dest"
         return 1
     fi
+
+    local dest_dir tmp
+    dest_dir=$(dirname -- "$dest")
+    mkdir -p "$dest_dir"
+    tmp=$(mktemp "$dest_dir/.keys-encrypt.XXXXXX") || return 1
+    register_temp_file "$tmp"
+
+    # Write and validate the complete ciphertext before replacing an existing
+    # backup. This preserves the last good copy on interruption or OpenSSL error.
+    if openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt \
+        -pass fd:3 -in "$source" -out "$tmp" 3<<<"$password" 2>/dev/null; then
+        chmod 600 "$tmp"
+        if mv -f "$tmp" "$dest"; then
+            if [[ -f "$dest" && ! -d "$dest" ]]; then
+                return 0
+            fi
+            # If the destination became a directory after the pre-check, mv
+            # placed our temp file inside it. Remove that copy and fail closed.
+            rm -f "$dest/$(basename -- "$tmp")" 2>/dev/null || true
+        fi
+    fi
+
+    rm -f "$tmp"
+    log_error "Failed to encrypt file"
+    return 1
 }
 
 # Decrypt file using OpenSSL PBKDF2
@@ -1524,7 +1564,6 @@ decrypt_file() {
         return 1
     }
 
-    # Get password if not provided
     if [[ -z "$password" ]]; then
         password=$(get_encryption_password) || {
             log_error "Failed to get encryption password"
@@ -1532,16 +1571,32 @@ decrypt_file() {
         }
     fi
 
-    mkdir -p "$(dirname "$dest")"
-
-    # Decrypt using same parameters (permissions unchanged)
-    if openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 \
-        -pass fd:3 -in "$source" -out "$dest" 3<<<"$password" 2>/dev/null; then
-        return 0
-    else
-        log_error "Failed to decrypt file (wrong password?)"
+    if [[ -d "$dest" ]]; then
+        log_error "Destination is a directory: $dest"
         return 1
     fi
+
+    local dest_dir tmp
+    dest_dir=$(dirname -- "$dest")
+    mkdir -p "$dest_dir"
+    tmp=$(mktemp "$dest_dir/.keys-decrypt.XXXXXX") || return 1
+    register_temp_file "$tmp"
+
+    # OpenSSL may create/truncate its output before authentication/padding
+    # checks finish. Decrypt beside the destination and rename only on success.
+    if openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 \
+        -pass fd:3 -in "$source" -out "$tmp" 3<<<"$password" 2>/dev/null; then
+        if mv -f "$tmp" "$dest"; then
+            if [[ -f "$dest" && ! -d "$dest" ]]; then
+                return 0
+            fi
+            rm -f "$dest/$(basename -- "$tmp")" 2>/dev/null || true
+        fi
+    fi
+
+    rm -f "$tmp"
+    log_error "Failed to decrypt file (wrong password?)"
+    return 1
 }
 
 # Initialize repository if needed
@@ -1694,7 +1749,8 @@ Common Commands:
   password          Manage encryption password (gopass integration)
 
 Options:
-  -p, --password PWD  Encryption password (OpenSSL)
+  --password-file FILE  Read encryption password from a regular file
+  -p, --password PWD    Rejected: secrets must not be passed in process arguments
   --dry-run          Preview without changes
   --no-backup        Skip safety snapshot before overwriting local files (restore only; not recommended)
 

@@ -4,12 +4,14 @@ on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
 
-permissions:
-  pull-requests: write
-  statuses: write
+permissions: {}
 
 jobs:
   validate:
+    permissions:
+      # Required to publish the semantic PR-title check result.
+      pull-requests: write
+      statuses: write
     name: Validate PR Title
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest

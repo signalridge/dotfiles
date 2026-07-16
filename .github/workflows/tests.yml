@@ -13,9 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
       - name: Install test dependencies
         run: |
-          nix profile install nixpkgs#chezmoi nixpkgs#jq
+          nixpkgs_rev=$(awk '$1 == "nixpkgsBootstrapRev:" { print $2 }' .chezmoidata/versions.yaml)
+          [[ "$nixpkgs_rev" =~ ^[0-9a-f]{40}$ ]]
+          nixpkgs="github:NixOS/nixpkgs/${nixpkgs_rev}"
+          nix profile install "${nixpkgs}#chezmoi" "${nixpkgs}#jq"
       - name: Run tests
         run: bash tests/run.sh

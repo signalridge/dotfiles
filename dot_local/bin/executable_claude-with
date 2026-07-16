@@ -15,6 +15,15 @@
 
 set -euo pipefail
 
+_CLAUDE_WITH_TEMP_FILES=()
+cleanup_claude_with_temp_files() {
+    local path
+    for path in "${_CLAUDE_WITH_TEMP_FILES[@]}"; do
+        [[ -z "$path" ]] || rm -f -- "$path" 2>/dev/null || true
+    done
+}
+trap cleanup_claude_with_temp_files EXIT
+
 # shellcheck source=lib/ai/claude
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/lib/ai/claude"
@@ -84,6 +93,14 @@ launch_claude() {
     # Unset any existing routing variables that could interfere
     unset ANTHROPIC_API_KEY
     unset ANTHROPIC_AUTH_TOKEN
+    unset ANTHROPIC_BASE_URL
+    unset ANTHROPIC_MODEL
+    unset ANTHROPIC_SMALL_FAST_MODEL
+    unset ANTHROPIC_DEFAULT_HAIKU_MODEL
+    unset ANTHROPIC_DEFAULT_SONNET_MODEL
+    unset ANTHROPIC_DEFAULT_OPUS_MODEL
+    unset API_TIMEOUT_MS
+    unset CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
     unset CLAUDE_CODE_SUBAGENT_MODEL
     unset CLAUDE_CODE_AUTO_COMPACT_WINDOW
     unset CLAUDE_CODE_ATTRIBUTION_HEADER
@@ -157,7 +174,7 @@ launch_claude() {
     #   - Strip provider-specific keys (apiKeyHelper + ANTHROPIC_* routing/model)
     #   - Inject per-session overrides for the selected account
     #   - Start Claude Code with `--setting-sources project,local` to avoid re-loading the unmodified user settings
-    local settings_override api_key_helper_override base_url_override
+    local api_key_helper_override base_url_override
 
     if [[ -n "$base_url" ]]; then
         api_key_helper_override="$HOME/.local/bin/claude-token"
@@ -168,28 +185,39 @@ launch_claude() {
         base_url_override="https://api.anthropic.com"
     fi
 
-    local user_settings
-    user_settings=$(jq -c '
-        del(.apiKeyHelper)
-        | .env = (.env // {} | del(
-            .ANTHROPIC_BASE_URL,
-            .ANTHROPIC_MODEL,
-            .ANTHROPIC_SMALL_FAST_MODEL,
-            .ANTHROPIC_DEFAULT_HAIKU_MODEL,
-            .ANTHROPIC_DEFAULT_SONNET_MODEL,
-            .ANTHROPIC_DEFAULT_OPUS_MODEL,
-            .CLAUDE_CODE_SUBAGENT_MODEL,
-            .CLAUDE_CODE_AUTO_COMPACT_WINDOW,
-            .CLAUDE_CODE_ATTRIBUTION_HEADER,
-            .CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS,
-            .ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES,
-            .ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES,
-            .ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES
-        ))
-    ' "$HOME/.claude/settings.json" 2>/dev/null || echo '{}')
+    local sanitized_settings_file settings_file
+    sanitized_settings_file="$(mktemp "${TMPDIR:-/tmp}/claude-with-base.XXXXXX")"
+    settings_file="$(mktemp "${TMPDIR:-/tmp}/claude-with-settings.XXXXXX")"
+    _CLAUDE_WITH_TEMP_FILES+=("$sanitized_settings_file" "$settings_file")
 
-    settings_override=$(jq -nc \
-        --argjson base "$user_settings" \
+    if [[ -r "$HOME/.claude/settings.json" ]]; then
+        if ! jq -c '
+            del(.apiKeyHelper)
+            | .env = (.env // {} | del(
+                .ANTHROPIC_API_KEY,
+                .ANTHROPIC_AUTH_TOKEN,
+                .ANTHROPIC_BASE_URL,
+                .ANTHROPIC_MODEL,
+                .ANTHROPIC_SMALL_FAST_MODEL,
+                .ANTHROPIC_DEFAULT_HAIKU_MODEL,
+                .ANTHROPIC_DEFAULT_SONNET_MODEL,
+                .ANTHROPIC_DEFAULT_OPUS_MODEL,
+                .CLAUDE_CODE_SUBAGENT_MODEL,
+                .CLAUDE_CODE_AUTO_COMPACT_WINDOW,
+                .CLAUDE_CODE_ATTRIBUTION_HEADER,
+                .CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS,
+                .ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES,
+                .ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES,
+                .ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES
+            ))
+        ' "$HOME/.claude/settings.json" >"$sanitized_settings_file" 2>/dev/null; then
+            printf '{}\n' >"$sanitized_settings_file"
+        fi
+    else
+        printf '{}\n' >"$sanitized_settings_file"
+    fi
+
+    if ! jq -c \
         --arg apiKeyHelper "$api_key_helper_override" \
         --arg base_url "$base_url_override" \
         --arg model "${model:-}" \
@@ -203,7 +231,8 @@ launch_claude() {
         --arg attribution "${attribution:-}" \
         --arg disable_betas "${disable_betas:-}" \
         --arg supported_caps "${supported_caps:-}" \
-        '(
+        '. as $base
+        | (
             $base
             * {
                 apiKeyHelper: $apiKeyHelper,
@@ -228,9 +257,14 @@ launch_claude() {
                 )
             }
             | .env |= with_entries(select(.value | length > 0))
-        )')
+        )' "$sanitized_settings_file" >"$settings_file"; then
+        log_error "Failed to build isolated Claude settings"
+        return 1
+    fi
 
-    exec claude --setting-sources project,local --settings "$settings_override" "$@"
+    # --settings accepts a file path. Keeping JSON out of argv prevents settings
+    # (including unrelated user-defined secrets) from being exposed by ps(1).
+    claude --setting-sources project,local --settings "$settings_file" "$@"
 }
 
 # Show help

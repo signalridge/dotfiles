@@ -99,7 +99,7 @@ if [[ -d "$REPO_DIR/.git" && -d "$BACKUP_FILES_DIR" && -f "$HOME/.ssh/main" ]]; 
                 path="$line"
                 # shellcheck disable=SC2088 # Intentional: matching literal ~/
                 if [[ "$path" == "~/"* ]]; then
-                    path="$HOME/${path#~/}"
+                    path="$HOME/${path#\~/}"
                 fi
 
                 rel=""
@@ -181,6 +181,12 @@ require_cmd() {
 # (tmux, wget, ...). Installing here, and prepending its bin to PATH, keeps these
 # bootstrap tools available without ever touching the flakey-managed profile.
 BOOTSTRAP_PROFILE="${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/dotfiles-bootstrap"
+NIXPKGS_BOOTSTRAP_REV="{{ .versions.nixpkgsBootstrapRev }}"
+if [[ ! "$NIXPKGS_BOOTSTRAP_REV" =~ ^[0-9a-f]{40}$ ]]; then
+    err "Invalid pinned nixpkgs bootstrap revision"
+    exit 1
+fi
+NIXPKGS_BOOTSTRAP="github:NixOS/nixpkgs/${NIXPKGS_BOOTSTRAP_REV}"
 
 maybe_install_with_nix() {
     local tool="$1"
@@ -191,7 +197,7 @@ maybe_install_with_nix() {
     # default profile), so ensure it exists first or the add fails on a cold device.
     mkdir -p "$(dirname "$BOOTSTRAP_PROFILE")"
     nix --extra-experimental-features 'nix-command flakes' profile add \
-        --profile "$BOOTSTRAP_PROFILE" "nixpkgs#$tool" >/dev/null
+        --profile "$BOOTSTRAP_PROFILE" "${NIXPKGS_BOOTSTRAP}#$tool" >/dev/null
     case ":$PATH:" in
     *":$BOOTSTRAP_PROFILE/bin:"*) ;;
     *)
@@ -632,7 +638,7 @@ to_home_rel() {
 
     # shellcheck disable=SC2088 # Intentional: matching literal ~/
     if [[ "$path" == "~/"* ]]; then
-        path="$HOME/${path#~/}"
+        path="$HOME/${path#\~/}"
     fi
 
     if [[ "$path" == "$HOME/"* ]]; then
@@ -649,6 +655,23 @@ to_home_rel() {
     [[ "$path" == "../"* || "$path" == *"/../"* || "$path" == *"/.." ]] && return 1
 
     printf '%s\n' "$path"
+}
+
+restore_target_is_safe() {
+    local target="$1"
+    local home_real existing_parent parent_real next_parent
+
+    [[ "$target" == "$HOME/"* && ! -L "$target" ]] || return 1
+    home_real="$(cd -P -- "$HOME" 2>/dev/null && pwd -P)" || return 1
+    existing_parent="$(dirname -- "$target")"
+    while [[ ! -e "$existing_parent" && ! -L "$existing_parent" ]]; do
+        next_parent="$(dirname -- "$existing_parent")"
+        [[ "$next_parent" != "$existing_parent" ]] || return 1
+        existing_parent="$next_parent"
+    done
+
+    parent_real="$(cd -P -- "$existing_parent" 2>/dev/null && pwd -P)" || return 1
+    [[ "$parent_real" == "$home_real" || "$parent_real" == "$home_real/"* ]]
 }
 
 metadata_get_any() {
@@ -672,6 +695,7 @@ same=0
 missing=0
 needs_check=0
 outside_home=0
+unsafe_targets=0
 missing_in_repo=0
 
 while IFS= read -r file; do
@@ -685,6 +709,11 @@ while IFS= read -r file; do
     fi
 
     target="${HOME}/${rel}"
+    if ! restore_target_is_safe "$target"; then
+        unsafe_targets=$((unsafe_targets + 1))
+        continue
+    fi
+
     enc="${BACKUP_FILES_DIR}/${rel}"
     if [[ ! -f "$enc" ]]; then
         missing_in_repo=$((missing_in_repo + 1))
@@ -710,6 +739,10 @@ info "  - Missing locally:       $missing"
 info "  - Need check/restore:    $needs_check"
 [[ $missing_in_repo -gt 0 ]] && warn "  - Missing in repo:        $missing_in_repo (will skip)"
 [[ $outside_home -gt 0 ]] && warn "  - Outside HOME:           $outside_home (will skip)"
+if [[ $unsafe_targets -gt 0 ]]; then
+    err "Refusing restore because $unsafe_targets target(s) escape HOME or are symlinks"
+    exit 1
+fi
 
 if [[ $missing -eq 0 && $needs_check -eq 0 ]]; then
     info "Nothing to restore"
@@ -805,6 +838,11 @@ restore_file() {
     fi
 
     mkdir -p "$(dirname "$target")"
+    if ! restore_target_is_safe "$target"; then
+        warn "Restore target became unsafe: $target"
+        rm -f "$tmp"
+        return 1
+    fi
     # Harden common sensitive parent dirs.
     if [[ "$target" == "$HOME/.ssh/"* ]]; then
         mkdir -p "$HOME/.ssh"
@@ -829,8 +867,18 @@ restore_file() {
         fi
     fi
 
-    cp -f "$tmp" "$target"
-    chmod "$desired_perms" "$target" 2>/dev/null || chmod 600 "$target" 2>/dev/null || true
+    local install_tmp
+    install_tmp="$(mktemp "$(dirname "$target")/.keys-restore.XXXXXX")" || return 1
+    _tmp_files+=("$install_tmp")
+    if ! cp -f "$tmp" "$install_tmp"; then
+        rm -f "$tmp" "$install_tmp"
+        return 1
+    fi
+    chmod "$desired_perms" "$install_tmp" 2>/dev/null || chmod 600 "$install_tmp" 2>/dev/null || true
+    if ! mv -f "$install_tmp" "$target"; then
+        rm -f "$tmp" "$install_tmp"
+        return 1
+    fi
 
     rm -f "$tmp"
     info "Restored: $target"
@@ -852,6 +900,12 @@ while IFS= read -r file; do
     fi
 
     file="${HOME}/${rel}"
+    if ! restore_target_is_safe "$file"; then
+        failed=$((failed + 1))
+        warn "Skip (unsafe symlink target): $file"
+        continue
+    fi
+
     enc="${BACKUP_FILES_DIR}/${rel}"
     if [[ ! -f "$enc" ]]; then
         warn "Skip (missing in repo): $file"
@@ -895,8 +949,11 @@ info "Restore complete:"
 info "  - restored: $restored"
 info "  - skipped:  $skipped"
 info "  - kept:     $kept"
-[[ $failed -gt 0 ]] && warn "  - failed:   $failed"
 [[ "$snapshot_made" == true ]] && info "Rollback snapshot: $snapshot_dir"
+if [[ $failed -gt 0 ]]; then
+    err "Restore failed for $failed file(s); refusing to continue with partial key state"
+    exit 1
+fi
 
 # If we still don't have the identity key, fail fast (chezmoi may need it to decrypt secrets).
 if [[ ! -f "$HOME/.ssh/main" ]]; then

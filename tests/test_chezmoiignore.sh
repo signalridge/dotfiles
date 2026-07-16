@@ -82,6 +82,7 @@ forbid_entry_in() {
 # Always ignored (repo-only content).
 require_line "docs"
 require_line "tests"
+require_line "SECURITY.md"
 forbid_line ".claude"
 
 # When encryption is disabled, key-related scripts and targets must be ignored.

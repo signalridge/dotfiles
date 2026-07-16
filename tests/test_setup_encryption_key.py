@@ -178,7 +178,9 @@ def make_keys_repo(repo_dir: pathlib.Path, home: pathlib.Path, key_src: pathlib.
     target = home / ".ssh" / "main"
     pub_src = pathlib.Path(str(key_src) + ".pub")
 
-    backup_list.write_text(".ssh/main\n.ssh/main.pub\n", encoding="utf-8")
+    # Tilde-prefixed paths are part of the keys-manage list format. They must
+    # normalize to HOME-relative metadata keys rather than HOME/~/.ssh/...
+    backup_list.write_text("~/.ssh/main\n~/.ssh/main.pub\n", encoding="utf-8")
 
     openssl_encrypt(key_src, backup_files / ".ssh" / "main", PASS)
     openssl_encrypt(pub_src, backup_files / ".ssh" / "main.pub", PASS)
@@ -442,7 +444,7 @@ def main():
             sys.stderr.write(out7a)
             raise SystemExit(f"scenario7a failed rc={rc7a}")
 
-        expected_list = ".ssh/main\n.ssh/main.pub\n"
+        expected_list = "~/.ssh/main\n~/.ssh/main.pub\n"
         plain_list7 = home7 / ".local" / "share" / "keys-backup" / "backup-list.txt"
         assert plain_list7.exists(), "scenario7: expected backup-list.txt to exist after successful run"
         plain_list7.write_bytes(b"\x00\xff\x00")
@@ -453,6 +455,30 @@ def main():
             raise SystemExit(f"scenario7b failed rc={rc7b}")
 
         assert plain_list7.read_text(encoding="utf-8") == expected_list, "scenario7: control file not re-decrypted"
+
+        # Scenario 8: a parent symlink must not redirect restored keys outside HOME.
+        home8 = tmp_root / "home8"
+        repo8 = tmp_root / "repo8"
+        outside8 = tmp_root / "outside8"
+        key8 = gen_ssh_keypair(tmp_root / "gen", "key8")
+        make_keys_repo(repo8, home8, key8)
+        home8.mkdir(parents=True, exist_ok=True)
+        outside8.mkdir(parents=True, exist_ok=True)
+        (home8 / ".ssh").symlink_to(outside8, target_is_directory=True)
+
+        env8 = os.environ.copy()
+        env8.update(
+            {
+                "HOME": str(home8),
+                "KEYS_REPO": str(repo8),
+                "KEYS_BACKUP_PASSWORD": PASS,
+            }
+        )
+        rc8, _ = run_with_pty(["bash", str(rendered)], env=env8, input_bytes=b"")
+        if rc8 == 0:
+            raise SystemExit("scenario8 failed: expected symlink escape to be rejected")
+        assert not (outside8 / "main").exists(), "scenario8: private key escaped HOME"
+        assert not (outside8 / "main.pub").exists(), "scenario8: public key escaped HOME"
 
         print("test_setup_encryption_key: OK")
     finally:

@@ -4,30 +4,34 @@ on:
     # Run daily at 00:00 UTC
     - cron: "0 0 * * *"
   workflow_dispatch:
-permissions:
-  actions: write
-  contents: read
+permissions: {}
 jobs:
   trigger:
+    permissions:
+      # Required to dispatch the three maintenance workflows.
+      actions: write
     runs-on: ubuntu-latest
     steps:
       - name: Trigger update-flake-lock
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          gh workflow run update-flake-lock.yml --repo ${{ github.repository }}
+          gh workflow run update-flake-lock.yml --repo "$REPOSITORY"
           echo "Triggered update-flake-lock.yml"
       - name: Trigger update-versions
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          gh workflow run update-versions.yml --repo ${{ github.repository }}
+          gh workflow run update-versions.yml --repo "$REPOSITORY"
           echo "Triggered update-versions.yml"
       - name: Trigger update-aqua-packages
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          gh workflow run update-aqua-packages.yml --repo ${{ github.repository }}
+          gh workflow run update-aqua-packages.yml --repo "$REPOSITORY"
           echo "Triggered update-aqua-packages.yml"
       - name: Summary
         run: |

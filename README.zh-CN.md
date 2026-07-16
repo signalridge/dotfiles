@@ -36,7 +36,7 @@
 
 - `chezmoi`：管理 dotfiles、模板和 bootstrap 编排
 - `Nix`：声明式包管理（macOS 用 `nix-darwin`，macOS/Linux 都用 `flakey-profile`）
-- `aqua` + `mise`：补充 Nix 之外的 CLI 与 runtime 版本固定
+- `aqua` + `mise`：补充 Nix 之外的 CLI 与 runtime 管理
 - `Claude Code` + `Codex CLI`：共享 AI 工具链
 
 这不是展示型模板，而是日常真实使用的配置。本文档只描述仓库当前已经实现的能力。
@@ -45,7 +45,7 @@
 
 ## 亮点
 
-- 统一 bootstrap 流程（`.chezmoiscripts/00..15`），并带有幂等维护步骤
+- 统一 bootstrap 流程（`.chezmoiscripts/00..20`），并带有幂等维护步骤
 - 跨平台包管理策略：
   - macOS/Linux 共用 Nix user packages
   - macOS 使用 `nix-darwin` 管理系统配置
@@ -62,7 +62,7 @@
 ## 为什么选择这个仓库
 
 - **Profile 全覆盖**：`.chezmoidata/` 统一驱动 `shared` / `work` / `private`，覆盖 Nix、Homebrew、MAS
-- **端到端引导**：`00..15` 阶段脚本把安装、配置、工具同步串成稳定流水线
+- **端到端引导**：`00..20` 阶段脚本把安装、配置、工具同步串成稳定流水线
 - **macOS 打磨**：nix-darwin 系统项、Homebrew / MAS 联动、应用后维护脚本
 - **工作流护栏**：pre-commit + Claude hooks 组合，降低危险操作概率
 - **DX 自动化**：Justfile、fzf 导航、AI 辅助提交流程
@@ -138,7 +138,7 @@
 │   ├── versions.yaml           # 工具与插件版本固定
 │   ├── aerospace.yaml          # Aerospace WM 数据
 │   └── hammerspoon.yaml        # Hammerspoon 数据
-├── .chezmoiscripts/            # Bootstrap 与维护脚本链（00..15）
+├── .chezmoiscripts/            # Bootstrap 与维护脚本链（00..20）
 ├── nix-config/
 │   ├── flake.nix.tmpl
 │   └── modules/
@@ -171,11 +171,16 @@
 9. `08` 下载固定版本 nix-index 数据库
 10. `09` macOS：安装/更新 Paperlib
 11. `10` 周期性 Homebrew 更新（7 天间隔）
-12. `11` 同步 AI 工具集成和 Herdr agent 集成
-13. `12` work profile：安装 Azure Functions Core Tools
-14. `13` macOS GUI：重新加载托管的 LaunchAgents
-15. `14` 同步 Herdr plugins
-16. `15` Linux：重新加载 systemd user units
+12. `11` 同步 Claude integration plugins
+13. `12` 同步 Claude MCP servers
+14. `13` 同步 Codex connector plugins
+15. `14` 为 Claude、Codex 和 Pi 同步 Herdr integrations
+16. `15` 安装/更新 Cursor Agent CLI
+17. `16` work profile：安装 Azure Functions Core Tools
+18. `17` macOS GUI：重新加载托管的 LaunchAgents
+19. `18` 同步 Herdr plugins
+20. `19` Linux：重新加载 systemd user units
+21. `20` 每个 ISO 日历周/package 集合成功对齐一次 Pi extensions（失败则在下次 apply 重试）
 
 ---
 
@@ -237,7 +242,7 @@ DOTFILES_USE_ENCRYPTION=false ./init.sh
 
 对大多数首次使用者：除非你已经有自己的 keys-manage 备份仓库与密钥材料，否则建议保持 `useEncryption = false`。
 
-> 首次安装必须交互执行：身份相关 prompt（`hostname` / `gitUsername` / `useremail` / `gitEmail`）没有安全默认值，无 TTY 时会直接 fail。请用方式 1 的"先下载再运行"模式，**不要** `curl | sh`。在 `~/.config/chezmoi/chezmoi.toml` 已经写入这些值的机器上 re-apply 时 prompt 会被跳过；此场景下可以用 `DOTFILES_USE_ENCRYPTION=true|false` 通过环境变量覆盖加密开关。
+> 首次安装必须交互执行：身份相关 prompt（`hostname` / `gitUsername` / `gitEmail`）没有安全默认值，无 TTY 时会直接 fail。请用方式 1 的"先下载再运行"模式，**不要** `curl | sh`。在 `~/.config/chezmoi/chezmoi.toml` 已经写入这些值的机器上 re-apply 时 prompt 会被跳过；此场景下可以用 `DOTFILES_USE_ENCRYPTION=true|false` 通过环境变量覆盖加密开关。
 
 ---
 
@@ -309,7 +314,6 @@ skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 `dot_claude/hooks/` 提供了流程护栏与格式化自动化，核心包括：
 
 - `block-git-rewrites.sh`
-- `block-main-edits.sh`
 - `format-code.sh`
 - `format-python.sh`
 
@@ -376,7 +380,8 @@ codex-token --check deepseek@private
 ## 工具链
 
 经典 Unix 命令以别名映射到现代替代品，其上再叠加一套按领域归类的
-进阶 CLI。所有工具均通过 aqua 锁定版本。
+进阶 CLI。不同工具使用适合的管理层：大量 CLI 由 aqua 固定版本，Nix
+由 flake lock 固定；部分 mise runtime 和直接安装器则有意跟随 LTS/latest。
 
 ### 直接替代
 
@@ -511,11 +516,11 @@ chezmoi init --apply --promptBool headless=true signalridge
   - `nix flake check`（macOS + Linux 矩阵）
 
 - `.github/workflows/tests.yml`
-  - 手动触发 bootstrap/脚本测试（`bash tests/run.sh`）
+  - push、pull request 和手动触发时运行 bootstrap/脚本测试（`bash tests/run.sh`）
 
 ### 自动维护
 
-- `.github/workflows/scheduler.yml`（每周两次触发）
+- `.github/workflows/scheduler.yml`（每天 00:00 UTC 触发）
 - `.github/workflows/update-versions.yml`
 - `.github/workflows/update-flake-lock.yml`
 - `.github/workflows/update-aqua-packages.yml`

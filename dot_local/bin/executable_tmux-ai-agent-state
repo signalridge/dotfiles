@@ -43,6 +43,25 @@ state_file_for_pane() {
     printf '%s/%s.state\n' "$cache_dir" "$safe_pane_id"
 }
 
+cache_dir_for_server() {
+    local server_pid="$1"
+    local runtime_dir uid
+    runtime_dir="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}"
+    uid="${UID:-$(id -u)}"
+    printf '%s/tmux2k-ai-%s-%s\n' "$runtime_dir" "$uid" "${server_pid:-default}"
+}
+
+prepare_cache_dir() {
+    local cache_dir="$1"
+
+    if [[ -e "$cache_dir" || -L "$cache_dir" ]]; then
+        [[ -d "$cache_dir" && ! -L "$cache_dir" && -O "$cache_dir" ]] || return 1
+    else
+        (umask 077 && mkdir "$cache_dir") || return 1
+    fi
+    chmod 700 "$cache_dir" 2>/dev/null || return 1
+}
+
 read_hook_input() {
     [[ -t 0 ]] && return 0
     cat 2>/dev/null || true
@@ -113,8 +132,8 @@ write_state() {
     command -v tmux >/dev/null 2>&1 || return 0
 
     server_pid=$(tmux display-message -p '#{pid}' 2>/dev/null || true)
-    cache_dir="${TMPDIR:-/tmp}/tmux2k-ai-${server_pid:-default}"
-    mkdir -p "$cache_dir" 2>/dev/null || return 0
+    cache_dir="$(cache_dir_for_server "$server_pid")"
+    prepare_cache_dir "$cache_dir" || return 0
 
     pane_tty=$(tmux display-message -p -t "$pane_id" '#{pane_tty}' 2>/dev/null || true)
     [[ -n "$pane_tty" ]] || return 0
@@ -133,7 +152,9 @@ write_state() {
         transcript_line_count=$(line_count_for_file "$transcript_path" 2>/dev/null || true)
     fi
 
-    {
+    local tmp_state
+    tmp_state="$(mktemp "$cache_dir/.state.XXXXXX")" || return 0
+    if {
         printf 'tool=%s\n' "$tool"
         printf 'state=%s\n' "$state"
         printf 'pid=%s\n' "$pid"
@@ -141,7 +162,12 @@ write_state() {
         [[ -n "${transcript_path:-}" ]] && printf 'transcript_path=%s\n' "$transcript_path"
         [[ -n "${turn_id:-}" ]] && printf 'turn_id=%s\n' "$turn_id"
         [[ -n "${transcript_line_count:-}" ]] && printf 'transcript_line_count=%s\n' "$transcript_line_count"
-    } >"$state_file" 2>/dev/null || true
+        true
+    } >"$tmp_state" 2>/dev/null; then
+        mv -f "$tmp_state" "$state_file" 2>/dev/null || rm -f "$tmp_state"
+    else
+        rm -f "$tmp_state"
+    fi
 }
 
 main() {

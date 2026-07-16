@@ -12,16 +12,24 @@ set -euo pipefail
 # It writes only to ~/.pi/agent/npm/ (never settings.json), so there is no
 # chezmoi conflict.
 #
-# CADENCE: run_onchange re-fires when this rendered file changes — i.e. when the
-# package list below changes (add/remove a package) or when the ISO week rolls
-# over (routine weekly refresh), matching the aqua/brew updaters. NOTE: this goes
-# through bun/npm, NOT mise, so it is NOT subject to mise's release-age gate —
-# extensions jump straight to the newest published version.
-#
-# packages: {{ .pi.packages | toJson }}
-# weekly trigger: {{ output "date" "+%G-%V" | trim }}
+# CADENCE: this run_after script checks a last-success key made from the ISO week
+# and package list. A failed update remains non-fatal to chezmoi apply but is
+# retried on the next apply instead of being suppressed until the following week.
+# This goes through bun/npm, NOT mise, so it is not subject to mise's release-age
+# gate — unpinned extensions move directly to the newest published version.
+{{- $week := output "date" "+%G-%V" | trim }}
+{{ $packages := .pi.packages | toJson }}
+update_key="{{ printf "%s:%s" $week $packages | sha256sum }}"
 
 echo ":: [20] Updating pi extensions"
+
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/chezmoi"
+state_file="$state_dir/pi-extensions-last-success"
+last_success="$(cat "$state_file" 2>/dev/null || true)"
+if [[ "$last_success" == "$update_key" ]]; then
+    echo "    Skipped (extensions already reconciled for this week/package set)"
+    exit 0
+fi
 
 # pi is mise-managed and the user strips mise shims at the zshenv phase, so this
 # non-interactive shell has neither pi nor its node/bun runtime on PATH. Inject
@@ -48,9 +56,15 @@ if ! command -v pi >/dev/null 2>&1; then
     exit 0
 fi
 
-# Non-fatal: a transient npm/network failure must not abort `chezmoi apply`.
+# Keep transient npm/network failures non-fatal, but only record successful
+# reconciliation so the next apply retries a failure.
 if pi update --extensions; then
+    umask 077
+    mkdir -p "$state_dir"
+    tmp_state="$(mktemp "${state_file}.XXXXXX")"
+    printf '%s\n' "$update_key" >"$tmp_state"
+    mv "$tmp_state" "$state_file"
     echo "    pi extensions reconciled to latest"
 else
-    echo "    Warning: 'pi update --extensions' failed (non-fatal); retry later"
+    echo "    Warning: 'pi update --extensions' failed (non-fatal); next apply will retry" >&2
 fi

@@ -17,32 +17,46 @@ fi
 
 echo ":: [06] Setting up gopass password store"
 
-# Check if gopass store already exists.
-# A valid store is a cloned git repo; a bare empty directory (e.g. left behind by
-# a failed clone or created by `gopass config`) must NOT count as "already set up",
-# otherwise this script silently skips the clone and the store never initializes.
-store_dir=~/.local/share/gopass/stores/root
-if [[ -d "$store_dir/.git" ]]; then
-    echo "✓ gopass store already exists"
-    exit 0
-fi
-if [[ -d "$store_dir" ]] && [[ -z "$(ls -A "$store_dir" 2>/dev/null)" ]]; then
+# A valid store is a cloned git repo; a bare empty directory (for example,
+# one left by a failed clone) must not count as initialized.
+store_dir="$HOME/.local/share/gopass/stores/root"
+if [[ -d "$store_dir" ]] && [[ ! -d "$store_dir/.git" ]] &&
+    [[ -z "$(ls -A "$store_dir" 2>/dev/null)" ]]; then
     echo "⚠ Removing empty gopass store directory (not a valid store): $store_dir"
     rmdir "$store_dir"
 fi
 
-# Check if age key exists
-if [[ ! -f ~/.ssh/main ]]; then
+# The managed store always depends on this identity and on aqua's gopass.
+if [[ ! -f "$HOME/.ssh/main" ]]; then
     echo "⚠ Age encryption key not found at ~/.ssh/main"
     echo "Please run: chezmoi apply"
     exit 1
 fi
-
-# Check if gopass is installed
 if ! command -v gopass &>/dev/null; then
     echo "⚠ gopass not installed"
     echo "Please run: chezmoi apply"
     exit 1
+fi
+
+verify_store() {
+    local first_password
+
+    if ! gopass ls >/dev/null 2>&1; then
+        echo "✗ gopass cannot read the password store" >&2
+        return 1
+    fi
+
+    first_password="$(gopass ls --flat 2>/dev/null | head -n 1 || true)"
+    if [[ -n "$first_password" ]] && ! gopass show "$first_password" >/dev/null 2>&1; then
+        echo "✗ gopass cannot decrypt '$first_password' with ~/.ssh/main" >&2
+        return 1
+    fi
+}
+
+if [[ -d "$store_dir/.git" ]]; then
+    verify_store || exit 1
+    echo "✓ gopass store already exists and is readable"
+    exit 0
 fi
 
 echo ""
@@ -91,14 +105,10 @@ echo ""
 echo "✓ gopass password store cloned successfully"
 echo ""
 
-# Verify decryption works
+# Verify the clone before allowing run_onchange to record success.
 echo "Verifying decryption..."
-if gopass ls &>/dev/null; then
-    FIRST_PASSWORD=$(gopass ls --flat 2>/dev/null | head -1)
-    if [[ -n "$FIRST_PASSWORD" ]] && gopass show "$FIRST_PASSWORD" &>/dev/null; then
-        echo "✓ Decryption successful (using SSH key: ~/.ssh/main)"
-    fi
-fi
+verify_store || exit 1
+echo "✓ Store is readable (using SSH key: ~/.ssh/main)"
 
 echo ""
 echo "Verification commands:"

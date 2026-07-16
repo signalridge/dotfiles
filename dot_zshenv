@@ -29,7 +29,7 @@ path_add_back() {
     PATH="${PATH:+$PATH:}$p"
 }
 
-# PATH order: user dirs first, then aqua, then system package managers.
+# PATH order after front-insertion: user dirs, Homebrew/Nix, then aqua fallback.
 AQUA_BIN_DIR="${AQUA_ROOT_DIR:-${XDG_DATA_HOME}/aquaproj-aqua}/bin"
 [[ -d "$AQUA_BIN_DIR" ]] && path_add_front "$AQUA_BIN_DIR"
 
@@ -81,4 +81,15 @@ export PI_STATUSLINE_PRESET="${PI_STATUSLINE_PRESET:-classic}"
 #   - pi-hypa's own pi.exec() (rewrite step + hypa_* tools) reads HYPA_BIN below.
 # HYPA_BIN does NOT satisfy the PATH need; it only points pi.exec/the shim's fast
 # path at the bundled native binary (skips the node launcher).
-export HYPA_BIN="${HYPA_BIN:-$HOME/.pi/agent/npm/node_modules/@hypabolic/hypa-darwin-arm64/bin/hypa}"
+if [[ -z "${HYPA_BIN:-}" ]]; then
+    hypa_platform_package=""
+    case "${OSTYPE:-}:${MACHTYPE:-}" in
+    darwin*:arm64*|darwin*:aarch64*) hypa_platform_package="hypa-darwin-arm64" ;;
+    darwin*:x86_64*) hypa_platform_package="hypa-darwin-x64" ;;
+    linux*:arm64*|linux*:aarch64*) hypa_platform_package="hypa-linux-arm64" ;;
+    linux*:x86_64*) hypa_platform_package="hypa-linux-x64" ;;
+    esac
+    if [[ -n "$hypa_platform_package" ]]; then
+        export HYPA_BIN="$HOME/.pi/agent/npm/node_modules/@hypabolic/$hypa_platform_package/bin/hypa"
+    fi
+fi

@@ -41,6 +41,14 @@ assert_file_not_contains() {
 RENDERED="$TMP_ROOT/chezmoiexternal.toml"
 chezmoi execute-template --source "$ROOT" <"$ROOT/.chezmoiexternal.toml.tmpl" >"$RENDERED"
 
+tpm_rev="$(chezmoi execute-template --source "$ROOT" '{{ .versions.tpmRev }}')"
+tpm_sha="$(chezmoi execute-template --source "$ROOT" '{{ .versions.tpmSha256 }}')"
+[[ "$tpm_rev" =~ ^[0-9a-f]{40}$ ]]
+[[ "$tpm_sha" =~ ^[0-9a-f]{64}$ ]]
+assert_file_contains "$RENDERED" "https://github.com/tmux-plugins/tpm/archive/${tpm_rev}.tar.gz"
+assert_file_contains "$RENDERED" "checksum.sha256 = \"${tpm_sha}\""
+assert_file_not_contains "$RENDERED" 'tmux-plugins/tpm/archive/refs/heads/master'
+
 duplicate_targets="$(
     grep -E '^\["\.harnesses/skills/' "$RENDERED" |
         sed -E 's/^\["([^"]+)".*/\1/' |

@@ -3,7 +3,7 @@
 These are **inviolable** rules for ANY agent (Claude Code, Codex, pi, etc.) working
 in this repository. They **override** default behaviors, convenience, and general
 instincts. When anything conflicts with this file, **this file wins**. The same
-constitution is mirrored in `CLAUDE.md`; keep the two in sync.
+constitution is mirrored in the companion top-level agent-instruction file; keep both byte-identical.
 
 ---
 
@@ -21,7 +21,7 @@ constitution is mirrored in `CLAUDE.md`; keep the two in sync.
   corrupted `pi`/`claude` config in practice.
 - If you find a worktree here, treat it as a **defect**: surface it, then — with all
   commits/branches preserved — remove it (`git worktree remove [--force] <path>`;
-  `--force` discards that worktree's _uncommitted_ changes, so check
+  `--force` discards that worktree's **uncommitted** changes, so check
   `git -C <path> status` first).
 
 ## Article 2 — NEVER switch the shared main checkout.

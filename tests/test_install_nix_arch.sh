@@ -133,4 +133,60 @@ if [[ $rc -eq 0 ]]; then
     exit 1
 fi
 
+# A failed updater, or one that returns success without reaching the pinned
+# version, must leave run_onchange pending instead of being recorded as success.
+UPGRADE_STUB="$TMP_ROOT/upgrade-stub"
+mkdir -p "$UPGRADE_STUB"
+cat >"$UPGRADE_STUB/nix" <<'EOF'
+#!/bin/sh
+printf '%s\n' 'nix (Nix) 0.0.0'
+EOF
+cat >"$UPGRADE_STUB/uname" <<'EOF'
+#!/bin/sh
+[ "${1:-}" = "-s" ] && { echo Linux; exit 0; }
+exit 1
+EOF
+cat >"$UPGRADE_STUB/determinate-nixd" <<'EOF'
+#!/bin/sh
+exit 0
+EOF
+cat >"$UPGRADE_STUB/sudo" <<'EOF'
+#!/bin/sh
+exit "${NIX_TEST_SUDO_RC:-0}"
+EOF
+chmod +x "$UPGRADE_STUB/nix" "$UPGRADE_STUB/uname" \
+    "$UPGRADE_STUB/determinate-nixd" "$UPGRADE_STUB/sudo"
+
+set +e
+PATH="$UPGRADE_STUB:/usr/bin:/bin" NIX_TEST_SUDO_RC=9 bash "$SCRIPT" >/dev/null 2>&1
+upgrade_failed_rc=$?
+PATH="$UPGRADE_STUB:/usr/bin:/bin" NIX_TEST_SUDO_RC=0 bash "$SCRIPT" >/dev/null 2>&1
+wrong_version_rc=$?
+set -e
+[[ "$upgrade_failed_rc" -ne 0 ]] || {
+    echo "expected failed Nix upgrade to return non-zero" >&2
+    exit 1
+}
+[[ "$wrong_version_rc" -ne 0 ]] || {
+    echo "expected post-upgrade version mismatch to return non-zero" >&2
+    exit 1
+}
+
+# The cold-start age fallback must resolve the repository-pinned nixpkgs commit
+# for both profile installation and ephemeral execution.
+AGE_BIN="$TMP_ROOT/age-bin"
+AGE_LOG="$TMP_ROOT/age-nix.log"
+mkdir -p "$AGE_BIN" "$TMP_ROOT/age-home"
+cat >"$AGE_BIN/nix" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"${NIX_CALL_LOG:?}"
+[[ " $* " != *" profile add "* ]]
+EOF
+chmod +x "$AGE_BIN/nix"
+NIX_CALL_LOG="$AGE_LOG" HOME="$TMP_ROOT/age-home" PATH="$AGE_BIN:/usr/bin:/bin" \
+    bash "$ROOT/.chezmoitemplates/shell/age_command_wrapper.sh" --version
+nixpkgs_rev="$(awk '$1 == "nixpkgsBootstrapRev:" { print $2 }' "$ROOT/.chezmoidata/versions.yaml")"
+[[ "$nixpkgs_rev" =~ ^[0-9a-f]{40}$ ]]
+[[ "$(grep -Fc "github:NixOS/nixpkgs/${nixpkgs_rev}#age" "$AGE_LOG")" == "2" ]]
+
 echo "test_install_nix_arch: OK"

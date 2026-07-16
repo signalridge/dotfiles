@@ -84,4 +84,11 @@ assert_contains "$cursor_agent_script" "Linux) os=\"linux\""
 assert_contains "$cursor_agent_script" "downloads.cursor.com/lab"
 assert_contains "$cursor_agent_script" "com.apple.quarantine"
 
+assert_contains "$(cat "$ROOT/dot_zshrc")" "typeset -gU path PATH"
+zshenv="$(cat "$ROOT/dot_zshenv")"
+assert_contains "$zshenv" 'hypa-darwin-arm64'
+assert_contains "$zshenv" 'hypa-darwin-x64'
+assert_contains "$zshenv" 'hypa-linux-arm64'
+assert_contains "$zshenv" 'hypa-linux-x64'
+
 echo "test_profile_alignment: OK"

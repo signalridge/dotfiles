@@ -157,13 +157,19 @@ write_codex_auth_key() {
     mkdir -p "$auth_dir" || { log_error "Failed to create $auth_dir"; return 1; }
 
     local tmp_file
-    tmp_file="$(mktemp)" || { log_error "Failed to create temp file"; return 1; }
+    tmp_file="$(mktemp "$auth_dir/.auth.json.XXXXXX")" || { log_error "Failed to create temp file"; return 1; }
 
-    if ! jq -n --arg key "$key_value" '{OPENAI_API_KEY: $key}' > "$tmp_file"; then
+    # Read the key from stdin so it never appears in jq's process arguments.
+    if ! printf '%s' "$key_value" | jq -Rs '{OPENAI_API_KEY: .}' >"$tmp_file"; then
         rm -f "$tmp_file"
         log_error "Failed to write $CODEX_AUTH"
         return 1
     fi
+    chmod 600 "$tmp_file"
 
-    mv "$tmp_file" "$CODEX_AUTH"
+    if ! mv -f "$tmp_file" "$CODEX_AUTH"; then
+        rm -f "$tmp_file"
+        log_error "Failed to replace $CODEX_AUTH"
+        return 1
+    fi
 }

@@ -107,7 +107,14 @@
       # flakey-profile provides: .switch, .rollback, .pin
       # Usage: nix run .#<hostname>.switch
       # ─────────────────────────────────────────────────────────────────────────
-      packages.${system}.${hostname} = myProfile;
+      packages.${system} = {
+        ${hostname} = myProfile;
+{{- if eq .platform "darwin" }}
+        # First bootstrap uses the locked nix-darwin input, never a floating
+        # remote branch executed as root.
+        darwin-rebuild = nix-darwin.packages.${system}.default;
+{{- end }}
+      };
 
       # Formatter
       formatter.${system} = pkgs.alejandra;

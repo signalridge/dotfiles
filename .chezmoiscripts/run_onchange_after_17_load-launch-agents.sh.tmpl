@@ -3,8 +3,8 @@
 set -euo pipefail
 
 # (Re)load macOS LaunchAgents. Re-runs whenever any managed plist changes.
-# qmk-hid-host plist sha256: {{ include "private_Library/LaunchAgents/com.signalridge.qmk-hid-host.plist.tmpl" | sha256sum }}
-# mcp-reaper plist sha256: {{ include "private_Library/LaunchAgents/com.signalridge.mcp-reaper.plist.tmpl" | sha256sum }}
+# qmk-hid-host plist sha256: {{ includeTemplate "private_Library/LaunchAgents/com.signalridge.qmk-hid-host.plist.tmpl" . | sha256sum }}
+# mcp-reaper plist sha256: {{ includeTemplate "private_Library/LaunchAgents/com.signalridge.mcp-reaper.plist.tmpl" . | sha256sum }}
 {{ if and (eq .chezmoi.os "darwin") (not .headless) -}}
 domain="gui/$(id -u)"
 

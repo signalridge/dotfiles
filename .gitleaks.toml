@@ -14,7 +14,3 @@ paths = [
   '''^dot_claude/skills/review-code/rules/security-rules\.json$''',
   '''^dot_claude/skills/security-review/SKILL\.md$''',
 ]
-
-[[allowlists]]
-description = "Local linked worktrees duplicate this repository and are not scan sources."
-paths = ['''^\.worktrees/''']

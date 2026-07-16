@@ -2,8 +2,11 @@
 
 set -euo pipefail
 
-{{ $aquaConfig := joinPath .chezmoi.homeDir ".config/aquaproj-aqua/aqua.yaml" -}}
-# aqua config: {{ if stat $aquaConfig }}{{ output "sha256sum" $aquaConfig | trim }}{{ else }}n/a{{ end }}
+# Hash all source files that affect aqua resolution/approval. Target files are
+# still stale while run_onchange scripts are rendered.
+# aqua config: {{ include "private_dot_config/aquaproj-aqua/aqua.yaml" | sha256sum }}
+# aqua policy: {{ include "private_dot_config/aquaproj-aqua/aqua-policy.yaml" | sha256sum }}
+# aqua registry: {{ include "private_dot_config/aquaproj-aqua/registry.yaml" | sha256sum }}
 # weekly trigger: {{ output "date" "+%G-%V" | trim }}
 
 echo ":: [05] Installing aqua tools"

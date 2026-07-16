@@ -58,6 +58,7 @@ case "$cmd" in
     exit 0
     ;;
   ls)
+    [[ "${GOPASS_TEST_FAIL_LS:-0}" != "1" ]] || exit 7
     if [[ "${1:-}" == "--flat" ]]; then
       echo "dummy/secret"
     else
@@ -66,7 +67,7 @@ case "$cmd" in
     exit 0
     ;;
   show)
-    # Always succeed.
+    [[ "${GOPASS_TEST_FAIL_SHOW:-0}" != "1" ]] || exit 8
     exit 0
     ;;
   *)
@@ -82,17 +83,27 @@ export PATH="$BIN:$PATH"
 export GOPASS_TEST_LOG="$LOG"
 
 ###############################################################################
-# Case 1: store already exists -> exit 0 without needing gopass/ssh checks.
-###############################################################################
-mkdir -p "$HOME/.local/share/gopass/stores/root"
+# Case 1: an existing store is accepted only after read/decrypt verification.
+mkdir -p "$HOME/.local/share/gopass/stores/root/.git"
 rm -f "$LOG"
 bash "$RENDERED" </dev/null >/dev/null 2>&1
+grep -q "gopass ls" "$LOG"
+grep -q "gopass show" "$LOG"
 
-if [[ -s "$LOG" ]]; then
-    echo "expected gopass not to be called when store exists" >&2
-    cat "$LOG" >&2
+set +e
+GOPASS_TEST_FAIL_LS=1 bash "$RENDERED" </dev/null >/dev/null 2>&1
+fail_ls_rc=$?
+GOPASS_TEST_FAIL_SHOW=1 bash "$RENDERED" </dev/null >/dev/null 2>&1
+fail_show_rc=$?
+set -e
+[[ "$fail_ls_rc" -ne 0 ]] || {
+    echo "expected an unreadable existing store to fail" >&2
     exit 1
-fi
+}
+[[ "$fail_show_rc" -ne 0 ]] || {
+    echo "expected an undecryptable existing store to fail" >&2
+    exit 1
+}
 
 rm -rf "$HOME/.local/share/gopass/stores/root"
 

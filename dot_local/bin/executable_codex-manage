@@ -26,20 +26,24 @@ source "$SCRIPT_DIR/lib/ai/codex"
 # Set Codex account in chezmoi.toml
 set_chezmoi_account() {
     local account="$1"
-    local escaped_account
+    local escaped_account config_dir tmp_file
     escaped_account=$(escape_toml_string "$account")
-    local tmp_file
-    tmp_file=$(mktemp) || { log_error "Failed to create temp file"; return 1; }
+    config_dir=$(dirname -- "$CHEZMOI_CONFIG")
+    tmp_file=$(mktemp "$config_dir/.chezmoi.toml.XXXXXX") || {
+        log_error "Failed to create temporary chezmoi config"
+        return 1
+    }
 
     if grep -q "^codexProviderAccount = " "$CHEZMOI_CONFIG"; then
-        sed "s/^codexProviderAccount = .*/codexProviderAccount = \"$escaped_account\"/" "$CHEZMOI_CONFIG" > "$tmp_file"
+        sed "s/^codexProviderAccount = .*/codexProviderAccount = \"$escaped_account\"/" \
+            "$CHEZMOI_CONFIG" >"$tmp_file" || { rm -f "$tmp_file"; return 1; }
     elif grep -q "^claudeProviderAccount = " "$CHEZMOI_CONFIG"; then
         awk -v line="codexProviderAccount = \"$escaped_account\"" '
             BEGIN { inserted = 0 }
             { print }
             /^claudeProviderAccount = / && inserted == 0 { print line; inserted = 1 }
             END { if (inserted == 0) print line }
-        ' "$CHEZMOI_CONFIG" > "$tmp_file"
+        ' "$CHEZMOI_CONFIG" >"$tmp_file" || { rm -f "$tmp_file"; return 1; }
     elif grep -q "^\[data\]" "$CHEZMOI_CONFIG"; then
         awk -v line="codexProviderAccount = \"$escaped_account\"" '
             BEGIN { inserted = 0; in_data = 0 }
@@ -59,16 +63,25 @@ set_chezmoi_account() {
                     print line
                 }
             }
-        ' "$CHEZMOI_CONFIG" > "$tmp_file"
+        ' "$CHEZMOI_CONFIG" >"$tmp_file" || { rm -f "$tmp_file"; return 1; }
     else
-        cp "$CHEZMOI_CONFIG" "$tmp_file"
+        if ! cp "$CHEZMOI_CONFIG" "$tmp_file"; then
+            rm -f "$tmp_file"
+            return 1
+        fi
         {
             echo ""
             echo "[data]"
             echo "codexProviderAccount = \"$escaped_account\""
-        } >> "$tmp_file"
+        } >>"$tmp_file"
     fi
-    mv "$tmp_file" "$CHEZMOI_CONFIG"
+
+    chmod 600 "$tmp_file"
+    if ! mv -f "$tmp_file" "$CHEZMOI_CONFIG"; then
+        rm -f "$tmp_file"
+        log_error "Failed to replace $CHEZMOI_CONFIG"
+        return 1
+    fi
 }
 # FZF interactive menu
 fzf_menu() {
@@ -134,6 +147,7 @@ MENU
             quit)           return 0 ;;
             *)              log_error "Unknown command: $cmd"; return 1 ;;
         esac
+        release_ai_account_lock
 
         case "$rc" in
             0) return 0 ;;
@@ -149,6 +163,7 @@ MENU
 
 # Switch account
 cmd_switch() {
+    acquire_ai_account_lock || return 1
     local input="${1:-}"
     if [[ -z "$input" ]]; then
         if input=$(fzf_pick_account "Switch Account"); then
@@ -172,48 +187,116 @@ cmd_switch() {
     parsed=$(parse_provider_account "$input")
     acct_name="${parsed#*|}"
 
+    local api_key=""
     if is_third_party "$provider"; then
-        if require_cmd gopass >/dev/null 2>&1; then
-            if ! codex-token --check "$input" 2>/dev/null; then
-                if key_exists "$provider" "$acct_name"; then
-                    log_warn "API token entry for $input is empty or unreadable (continuing without auth update; run: codex-manage update-key $input)"
-                else
-                    log_warn "No API token for $input (continuing without auth update; run: codex-manage add-key $input)"
-                fi
-            fi
-        else
-            log_warn "gopass not found (continuing without auth update)"
+        if ! require_cmd gopass >/dev/null 2>&1; then
+            log_error "gopass is required to switch to $input"
+            return 1
         fi
+        if ! codex-token --check "$input" 2>/dev/null; then
+            if key_exists "$provider" "$acct_name"; then
+                log_error "API token entry for $input is empty or unreadable (run: codex-manage update-key $input)"
+            else
+                log_error "No API token for $input (run: codex-manage add-key $input)"
+            fi
+            return 1
+        fi
+        api_key=$(get_api_key "$provider" "$acct_name") || {
+            log_error "Failed to retrieve API key for $input"
+            return 1
+        }
+        [[ -n "$api_key" ]] || {
+            log_error "API key for $input is empty"
+            return 1
+        }
     fi
 
-    [[ "$(get_current)" == "$input" ]] && { log_warn "Already using '$input'"; return 0; }
-    set_chezmoi_account "$input"
-    echo "  ✓ Updated chezmoi.toml"
-    log_info "Applying chezmoi templates..."
-    chezmoi apply --verbose --exclude scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core"
+    local previous_account
+    previous_account="$(get_current)"
+
+    # Snapshot the small set of files touched by a switch. A failed template
+    # apply or auth write must not leave provider routing and credentials split.
+    local tx_dir
+    tx_dir="$(mktemp -d "${TMPDIR:-/tmp}/codex-switch.XXXXXX")" || return 1
+    chmod 700 "$tx_dir"
+    local had_chezmoi=false had_config=false had_auth=false had_openai_auth=false
+    if [[ -e "$CHEZMOI_CONFIG" ]]; then
+        cp -p "$CHEZMOI_CONFIG" "$tx_dir/chezmoi.toml" || { rm -rf "$tx_dir"; return 1; }
+        had_chezmoi=true
+    fi
+    if [[ -e "$CODEX_CONFIG" ]]; then
+        cp -p "$CODEX_CONFIG" "$tx_dir/config.toml" || { rm -rf "$tx_dir"; return 1; }
+        had_config=true
+    fi
+    if [[ -e "$CODEX_AUTH" ]]; then
+        cp -p "$CODEX_AUTH" "$tx_dir/auth.json" || { rm -rf "$tx_dir"; return 1; }
+        had_auth=true
+    fi
+    if [[ -e "$CODEX_AUTH_OPENAI" ]]; then
+        cp -p "$CODEX_AUTH_OPENAI" "$tx_dir/auth.openai.json" || { rm -rf "$tx_dir"; return 1; }
+        had_openai_auth=true
+    fi
+
+    local switch_rc=0
+    if [[ "$previous_account" != "$input" ]]; then
+        set_chezmoi_account "$input" || switch_rc=$?
+    else
+        log_info "Refreshing credentials for current account '$input'"
+    fi
+    if [[ $switch_rc -eq 0 ]]; then
+        log_info "Applying chezmoi templates..."
+        chezmoi apply --verbose --exclude scripts "$CODEX_CONFIG" "$SCRIPT_DIR/lib/ai/core" || switch_rc=$?
+    fi
+    if [[ $switch_rc -eq 0 ]] && is_third_party "$provider"; then
+        backup_codex_auth_openai || switch_rc=$?
+        if [[ $switch_rc -eq 0 ]]; then
+            write_codex_auth_key "$api_key" || switch_rc=$?
+        fi
+    elif [[ $switch_rc -eq 0 ]]; then
+        restore_codex_auth_openai || switch_rc=$?
+    fi
+
+    if [[ $switch_rc -ne 0 ]]; then
+        local rollback_failed=false
+        if [[ "$had_chezmoi" == true ]]; then
+            cp -p "$tx_dir/chezmoi.toml" "$CHEZMOI_CONFIG" || rollback_failed=true
+        else
+            rm -f "$CHEZMOI_CONFIG" || rollback_failed=true
+        fi
+        if [[ "$had_config" == true ]]; then
+            cp -p "$tx_dir/config.toml" "$CODEX_CONFIG" || rollback_failed=true
+        else
+            rm -f "$CODEX_CONFIG" || rollback_failed=true
+        fi
+        if [[ "$had_auth" == true ]]; then
+            cp -p "$tx_dir/auth.json" "$CODEX_AUTH" || rollback_failed=true
+        else
+            rm -f "$CODEX_AUTH" || rollback_failed=true
+        fi
+        if [[ "$had_openai_auth" == true ]]; then
+            cp -p "$tx_dir/auth.openai.json" "$CODEX_AUTH_OPENAI" || rollback_failed=true
+        else
+            rm -f "$CODEX_AUTH_OPENAI" || rollback_failed=true
+        fi
+
+        if [[ "$rollback_failed" == true ]]; then
+            log_error "Account switch and rollback failed; snapshot retained at $tx_dir"
+        else
+            rm -rf "$tx_dir"
+            log_error "Account switch failed; restored previous Codex configuration"
+        fi
+        return "$switch_rc"
+    fi
+
+    rm -rf "$tx_dir"
+    [[ "$previous_account" == "$input" ]] || echo "  ✓ Updated chezmoi.toml"
     echo "  ✓ Updated ~/.codex/config.toml"
     if is_third_party "$provider"; then
-        if require_cmd gopass >/dev/null 2>&1 && codex-token --check "$input" 2>/dev/null; then
-            backup_codex_auth_openai || return 1
-            local api_key
-            api_key=$(get_api_key "$provider" "$acct_name") || {
-                log_warn "Failed to retrieve API key (skipping auth.json update)"
-                api_key=""
-            }
-            if [[ -n "$api_key" ]]; then
-                write_codex_auth_key "$api_key" || return 1
-                echo "  ✓ Updated ~/.codex/auth.json (OPENAI_API_KEY)"
-            fi
-        else
-            log_warn "Skipping auth.json update for $input"
-        fi
+        echo "  ✓ Updated ~/.codex/auth.json (OPENAI_API_KEY)"
+    elif [[ -f "$CODEX_AUTH" ]]; then
+        echo "  ✓ Restored ~/.codex/auth.json"
     else
-        restore_codex_auth_openai || return 1
-        if [[ -f "$CODEX_AUTH" ]]; then
-            echo "  ✓ Restored ~/.codex/auth.json"
-        else
-            echo "  ✓ Removed ~/.codex/auth.json (re-login required)"
-        fi
+        echo "  ✓ Removed ~/.codex/auth.json (re-login required)"
     fi
     echo ""
     log_success "Account set to $input"
@@ -222,6 +305,7 @@ cmd_switch() {
 
 # Create account
 cmd_create_account() {
+    acquire_ai_account_lock || return 1
     require_cmd gopass || return 1
 
     local provider
@@ -275,6 +359,7 @@ cmd_create_account() {
 
 # Update account
 cmd_update_account() {
+    acquire_ai_account_lock || return 1
     local input="${1:-}"
     if [[ -z "$input" ]]; then
         if input=$(fzf_pick_account "Update Account"); then
@@ -319,6 +404,7 @@ cmd_update_account() {
 
 # Remove account
 cmd_remove_account() {
+    acquire_ai_account_lock || return 1
     local input="${1:-}"
     if [[ -z "$input" ]]; then
         if input=$(fzf_pick_account "Remove Account"); then
@@ -362,6 +448,7 @@ cmd_remove_account() {
 
 # Add API key
 cmd_add_key() {
+    acquire_ai_account_lock || return 1
     require_cmd gopass || return 1
     local input="${1:-}"
 
@@ -424,6 +511,7 @@ cmd_add_key() {
 
 # Update API key
 cmd_update_key() {
+    acquire_ai_account_lock || return 1
     require_cmd gopass || return 1
     local input="${1:-}"
 
@@ -465,6 +553,7 @@ cmd_update_key() {
 
 # Delete API key
 cmd_delete_key() {
+    acquire_ai_account_lock || return 1
     require_cmd gopass || return 1
     local input="${1:-}"
 

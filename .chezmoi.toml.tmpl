@@ -59,15 +59,6 @@ encryption = "age"
 {{-   end -}}
 {{- end -}}
 
-{{- $useremail := "" -}}
-{{- if hasKey . "useremail" -}}
-{{-   $useremail = .useremail -}}
-{{- else if stdinIsATTY -}}
-{{-   $useremail = promptStringOnce . "useremail" "Email address" -}}
-{{- else -}}
-{{-   fail (printf "useremail is unset and there is no TTY to prompt.\n%s" $nonInteractiveHelp) -}}
-{{- end -}}
-
 {{- $gitUsername := "" -}}
 {{- if hasKey . "gitUsername" -}}
 {{-   $gitUsername = .gitUsername -}}
@@ -215,7 +206,6 @@ encryption = "age"
 [data]
 hostname = {{ $hostname | quote }}
 platform = {{ .chezmoi.os | quote }}
-useremail = {{ $useremail | quote }}
 gitUsername = {{ $gitUsername | quote }}
 gitEmail = {{ $gitEmail | quote }}
 work = {{ $work }}

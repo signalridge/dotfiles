@@ -1,17 +1,22 @@
 name: Update pinned versions
 on:
   workflow_dispatch:
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 jobs:
   update:
+    permissions:
+      # Required only by the pinned create-pull-request step below.
+      contents: write
+      pull-requests: write
     name: Update versions
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: main
+          # Upstream metadata is processed later; do not leave a write token in
+          # git's credential helper for any shell step.
+          persist-credentials: false
       - name: Get latest versions
         id: versions
         env:
@@ -32,8 +37,8 @@ jobs:
             local digest
             digest="$(gh release view "$tag" --repo "$repo" --json assets -q ".assets[] | select(.name == \"$asset\") | .digest")"
             digest="${digest#sha256:}"
-            if [[ -z "$digest" || "$digest" == "null" ]]; then
-              echo "missing sha256 digest for $repo $tag $asset" >&2
+            if [[ ! "$digest" =~ ^[0-9a-f]{64}$ ]]; then
+              echo "missing or invalid sha256 digest for $repo $tag $asset" >&2
               exit 1
             fi
             printf '%s\n' "$digest"
@@ -58,12 +63,43 @@ jobs:
           nix_installer_aarch64_linux_sha256=$(release_asset_digest_sha256 DeterminateSystems/nix-installer "$nix_installer" nix-installer-aarch64-linux)
           nix_installer_x86_64_linux_sha256=$(release_asset_digest_sha256 DeterminateSystems/nix-installer "$nix_installer" nix-installer-x86_64-linux)
           nix_version=$(gh release view --repo DeterminateSystems/nix --json tagName -q '.tagName')
+          nixpkgs_bootstrap_rev=$(gh api repos/NixOS/nixpkgs/commits/nixpkgs-unstable -q '.sha')
           aqua_installer=$(gh release view --repo aquaproj/aqua-installer --json tagName -q '.tagName')
           aqua_installer_sha256=$(curl_sha256 "https://raw.githubusercontent.com/aquaproj/aqua-installer/${aqua_installer}/aqua-installer")
           aqua_version=$(gh release view --repo aquaproj/aqua --json tagName -q '.tagName')
           nix_index_db=$(gh release view --repo nix-community/nix-index-database --json tagName -q '.tagName')
           # paperlib tag format: release-electron-X.Y.Z -> extract X.Y.Z
-          paperlib=$(gh release view --repo Future-Scholars/paperlib --json tagName -q '.tagName' | sed 's/release-electron-//')
+          paperlib_tag=$(gh release view --repo Future-Scholars/paperlib --json tagName -q '.tagName')
+          paperlib=${paperlib_tag#release-electron-}
+          paperlib_amd64_sha256=$(release_asset_digest_sha256 Future-Scholars/paperlib "$paperlib_tag" "Paperlib_${paperlib}.dmg")
+          paperlib_arm64_sha256=$(release_asset_digest_sha256 Future-Scholars/paperlib "$paperlib_tag" "Paperlib_${paperlib}_arm.dmg")
+
+          cursor_installer=$(curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors https://cursor.com/install)
+          cursor_agent_version=$(
+            printf '%s\n' "$cursor_installer" \
+              | sed -nE 's#.*downloads\.cursor\.com/lab/([^/]+)/.*/agent-cli-package\.tar\.gz.*#\1#p' \
+              | sort -u
+          )
+          if [[ ! "$cursor_agent_version" =~ ^[0-9]{4}\.(0[1-9]|1[0-2])\.(0[1-9]|[12][0-9]|3[01])-[0-9a-f]{7}$ ]]; then
+            echo "invalid Cursor Agent version: $cursor_agent_version" >&2
+            exit 1
+          fi
+          current_cursor_version=$(awk '/^[[:space:]]*cursorAgentVersion:/ {print $2; exit}' .chezmoidata/versions.yaml)
+          if [[ "$cursor_agent_version" == "$current_cursor_version" ]]; then
+            cursor_agent_darwin_arm64_sha256=$(awk '/^[[:space:]]*cursorAgentDarwinArm64Sha256:/ {print $2; exit}' .chezmoidata/versions.yaml)
+            cursor_agent_darwin_x64_sha256=$(awk '/^[[:space:]]*cursorAgentDarwinX64Sha256:/ {print $2; exit}' .chezmoidata/versions.yaml)
+            cursor_agent_linux_arm64_sha256=$(awk '/^[[:space:]]*cursorAgentLinuxArm64Sha256:/ {print $2; exit}' .chezmoidata/versions.yaml)
+            cursor_agent_linux_x64_sha256=$(awk '/^[[:space:]]*cursorAgentLinuxX64Sha256:/ {print $2; exit}' .chezmoidata/versions.yaml)
+          else
+            cursor_base_url="https://downloads.cursor.com/lab/${cursor_agent_version}"
+            cursor_agent_darwin_arm64_sha256=$(curl_sha256 "${cursor_base_url}/darwin/arm64/agent-cli-package.tar.gz")
+            cursor_agent_darwin_x64_sha256=$(curl_sha256 "${cursor_base_url}/darwin/x64/agent-cli-package.tar.gz")
+            cursor_agent_linux_arm64_sha256=$(curl_sha256 "${cursor_base_url}/linux/arm64/agent-cli-package.tar.gz")
+            cursor_agent_linux_x64_sha256=$(curl_sha256 "${cursor_base_url}/linux/x64/agent-cli-package.tar.gz")
+          fi
+
+          tpm_rev=$(gh api repos/tmux-plugins/tpm/commits/master -q '.sha')
+          tpm_sha256=$(curl_sha256 "https://github.com/tmux-plugins/tpm/archive/${tpm_rev}.tar.gz")
 
           claude_wshobson_agents_rev=$(gh api repos/wshobson/agents/commits/main -q '.sha')
           claude_wshobson_agents_sha256=$(curl_sha256 "https://github.com/wshobson/agents/archive/${claude_wshobson_agents_rev}.tar.gz")
@@ -82,7 +118,6 @@ jobs:
           supabase_agent_skills_rev=$(gh api repos/supabase/agent-skills/commits/main -q '.sha')
           expo_skills_rev=$(gh api repos/expo/skills/commits/main -q '.sha')
           microsoft_skills_rev=$(gh api repos/microsoft/skills/commits/main -q '.sha')
-          sickn33_antigravity_skills_rev=$(gh api repos/sickn33/antigravity-awesome-skills/commits/main -q '.sha')
           zig_development_playbook_skill_rev=$(gh api repos/signalridge/zig-development-playbook-skill/commits/main -q '.sha')
           rust_development_playbook_skill_rev=$(gh api repos/signalridge/rust-development-playbook-skill/commits/main -q '.sha')
           claude_baoyu_skills_rev=$(gh api repos/JimLiu/baoyu-skills/commits/main -q '.sha')
@@ -108,11 +143,21 @@ jobs:
             echo "nix_installer_aarch64_linux_sha256=$nix_installer_aarch64_linux_sha256"
             echo "nix_installer_x86_64_linux_sha256=$nix_installer_x86_64_linux_sha256"
             echo "nix_version=$nix_version"
+            echo "nixpkgs_bootstrap_rev=$nixpkgs_bootstrap_rev"
             echo "aqua_installer=$aqua_installer"
             echo "aqua_installer_sha256=$aqua_installer_sha256"
             echo "aqua_version=$aqua_version"
             echo "nix_index_db=$nix_index_db"
             echo "paperlib=$paperlib"
+            echo "paperlib_amd64_sha256=$paperlib_amd64_sha256"
+            echo "paperlib_arm64_sha256=$paperlib_arm64_sha256"
+            echo "cursor_agent_version=$cursor_agent_version"
+            echo "cursor_agent_darwin_arm64_sha256=$cursor_agent_darwin_arm64_sha256"
+            echo "cursor_agent_darwin_x64_sha256=$cursor_agent_darwin_x64_sha256"
+            echo "cursor_agent_linux_arm64_sha256=$cursor_agent_linux_arm64_sha256"
+            echo "cursor_agent_linux_x64_sha256=$cursor_agent_linux_x64_sha256"
+            echo "tpm_rev=$tpm_rev"
+            echo "tpm_sha256=$tpm_sha256"
             echo "claude_wshobson_agents_rev=$claude_wshobson_agents_rev"
             echo "claude_wshobson_agents_sha256=$claude_wshobson_agents_sha256"
             echo "claude_anthropics_skills_rev=$claude_anthropics_skills_rev"
@@ -130,7 +175,6 @@ jobs:
             echo "supabase_agent_skills_rev=$supabase_agent_skills_rev"
             echo "expo_skills_rev=$expo_skills_rev"
             echo "microsoft_skills_rev=$microsoft_skills_rev"
-            echo "sickn33_antigravity_skills_rev=$sickn33_antigravity_skills_rev"
             echo "zig_development_playbook_skill_rev=$zig_development_playbook_skill_rev"
             echo "rust_development_playbook_skill_rev=$rust_development_playbook_skill_rev"
             echo "claude_baoyu_skills_rev=$claude_baoyu_skills_rev"
@@ -151,52 +195,62 @@ jobs:
             echo "humanizer_ja_rev=$humanizer_ja_rev"
           } >> "$GITHUB_OUTPUT"
       - name: Update .chezmoidata/versions.yaml
-        run: |
-          sed -i 's/nixInstaller: .*/nixInstaller: ${{ steps.versions.outputs.nix_installer }}/' .chezmoidata/versions.yaml
-          sed -i 's/nixInstallerAarch64DarwinSha256: .*/nixInstallerAarch64DarwinSha256: ${{ steps.versions.outputs.nix_installer_aarch64_darwin_sha256 }}/' .chezmoidata/versions.yaml
-          sed -i 's/nixInstallerAarch64LinuxSha256: .*/nixInstallerAarch64LinuxSha256: ${{ steps.versions.outputs.nix_installer_aarch64_linux_sha256 }}/' .chezmoidata/versions.yaml
-          sed -i 's/nixInstallerX8664LinuxSha256: .*/nixInstallerX8664LinuxSha256: ${{ steps.versions.outputs.nix_installer_x86_64_linux_sha256 }}/' .chezmoidata/versions.yaml
-          sed -i 's/nixVersion: .*/nixVersion: ${{ steps.versions.outputs.nix_version }}/' .chezmoidata/versions.yaml
-          sed -i 's/aquaInstaller: .*/aquaInstaller: ${{ steps.versions.outputs.aqua_installer }}/' .chezmoidata/versions.yaml
-          sed -i 's/aquaInstallerSha256: .*/aquaInstallerSha256: ${{ steps.versions.outputs.aqua_installer_sha256 }}/' .chezmoidata/versions.yaml
-          sed -i 's/aquaVersion: .*/aquaVersion: ${{ steps.versions.outputs.aqua_version }}/' .chezmoidata/versions.yaml
-          sed -i 's/nixIndexDb: .*/nixIndexDb: ${{ steps.versions.outputs.nix_index_db }}/' .chezmoidata/versions.yaml
-          sed -i 's/paperlib: .*/paperlib: ${{ steps.versions.outputs.paperlib }}/' .chezmoidata/versions.yaml
-          sed -i 's/claudeWshobsonAgentsRev: .*/claudeWshobsonAgentsRev: ${{ steps.versions.outputs.claude_wshobson_agents_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/claudeWshobsonAgentsSha256: .*/claudeWshobsonAgentsSha256: ${{ steps.versions.outputs.claude_wshobson_agents_sha256 }}/' .chezmoidata/versions.yaml
-          sed -i 's/claudeAnthropicsSkillsRev: .*/claudeAnthropicsSkillsRev: ${{ steps.versions.outputs.claude_anthropics_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/claudeAnthropicsSkillsSha256: .*/claudeAnthropicsSkillsSha256: ${{ steps.versions.outputs.claude_anthropics_skills_sha256 }}/' .chezmoidata/versions.yaml
-          sed -i 's/uiUxProMaxSkillRev: .*/uiUxProMaxSkillRev: ${{ steps.versions.outputs.ui_ux_pro_max_skill_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/uiUxProMaxSkillSha256: .*/uiUxProMaxSkillSha256: ${{ steps.versions.outputs.ui_ux_pro_max_skill_sha256 }}/' .chezmoidata/versions.yaml
-          sed -i 's/openaiSkillsRev: .*/openaiSkillsRev: ${{ steps.versions.outputs.openai_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/huggingfaceSkillsRev: .*/huggingfaceSkillsRev: ${{ steps.versions.outputs.huggingface_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/getsentrySkillsRev: .*/getsentrySkillsRev: ${{ steps.versions.outputs.getsentry_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/trailofbitsSkillsRev: .*/trailofbitsSkillsRev: ${{ steps.versions.outputs.trailofbits_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/cloudflareSkillsRev: .*/cloudflareSkillsRev: ${{ steps.versions.outputs.cloudflare_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/vercelLabsAgentSkillsRev: .*/vercelLabsAgentSkillsRev: ${{ steps.versions.outputs.vercel_labs_agent_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/vercelLabsNextSkillsRev: .*/vercelLabsNextSkillsRev: ${{ steps.versions.outputs.vercel_labs_next_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/vercelLabsAgentBrowserRev: .*/vercelLabsAgentBrowserRev: ${{ steps.versions.outputs.vercel_labs_agent_browser_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/supabaseAgentSkillsRev: .*/supabaseAgentSkillsRev: ${{ steps.versions.outputs.supabase_agent_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/expoSkillsRev: .*/expoSkillsRev: ${{ steps.versions.outputs.expo_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/microsoftSkillsRev: .*/microsoftSkillsRev: ${{ steps.versions.outputs.microsoft_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/sickn33AntigravitySkillsRev: .*/sickn33AntigravitySkillsRev: ${{ steps.versions.outputs.sickn33_antigravity_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/zigDevelopmentPlaybookSkillRev: .*/zigDevelopmentPlaybookSkillRev: ${{ steps.versions.outputs.zig_development_playbook_skill_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/rustDevelopmentPlaybookSkillRev: .*/rustDevelopmentPlaybookSkillRev: ${{ steps.versions.outputs.rust_development_playbook_skill_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/claudeBaoyuSkillsRev: .*/claudeBaoyuSkillsRev: ${{ steps.versions.outputs.claude_baoyu_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/phurynPmSkillsRev: .*/phurynPmSkillsRev: ${{ steps.versions.outputs.phuryn_pm_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/opcSkillsRev: .*/opcSkillsRev: ${{ steps.versions.outputs.opc_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/xSkillsRev: .*/xSkillsRev: ${{ steps.versions.outputs.x_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/xurlSkillRev: .*/xurlSkillRev: ${{ steps.versions.outputs.xurl_skill_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/dailyDevSkillsRev: .*/dailyDevSkillsRev: ${{ steps.versions.outputs.daily_dev_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/samberCcSkillsGolangRev: .*/samberCcSkillsGolangRev: ${{ steps.versions.outputs.samber_cc_skills_golang_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/affaanEccRev: .*/affaanEccRev: ${{ steps.versions.outputs.affaan_ecc_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/actionbookRustSkillsRev: .*/actionbookRustSkillsRev: ${{ steps.versions.outputs.actionbook_rust_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/dpearsonSwiftSkillsRev: .*/dpearsonSwiftSkillsRev: ${{ steps.versions.outputs.dpearson_swift_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/effectiveTypescriptRev: .*/effectiveTypescriptRev: ${{ steps.versions.outputs.effective_typescript_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/bobmatnycMpmSkillsRev: .*/bobmatnycMpmSkillsRev: ${{ steps.versions.outputs.bobmatnyc_mpm_skills_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/humanizerEnRev: .*/humanizerEnRev: ${{ steps.versions.outputs.humanizer_en_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/quAiWeiRev: .*/quAiWeiRev: ${{ steps.versions.outputs.qu_ai_wei_rev }}/' .chezmoidata/versions.yaml
-          sed -i 's/humanizerJaRev: .*/humanizerJaRev: ${{ steps.versions.outputs.humanizer_ja_rev }}/' .chezmoidata/versions.yaml
+        env:
+          U_NIX_INSTALLER: ${{ steps.versions.outputs.nix_installer }}
+          U_NIX_INSTALLER_AARCH64_DARWIN_SHA256: ${{ steps.versions.outputs.nix_installer_aarch64_darwin_sha256 }}
+          U_NIX_INSTALLER_AARCH64_LINUX_SHA256: ${{ steps.versions.outputs.nix_installer_aarch64_linux_sha256 }}
+          U_NIX_INSTALLER_X86_64_LINUX_SHA256: ${{ steps.versions.outputs.nix_installer_x86_64_linux_sha256 }}
+          U_NIX_VERSION: ${{ steps.versions.outputs.nix_version }}
+          U_NIXPKGS_BOOTSTRAP_REV: ${{ steps.versions.outputs.nixpkgs_bootstrap_rev }}
+          U_AQUA_INSTALLER: ${{ steps.versions.outputs.aqua_installer }}
+          U_AQUA_INSTALLER_SHA256: ${{ steps.versions.outputs.aqua_installer_sha256 }}
+          U_AQUA_VERSION: ${{ steps.versions.outputs.aqua_version }}
+          U_NIX_INDEX_DB: ${{ steps.versions.outputs.nix_index_db }}
+          U_PAPERLIB: ${{ steps.versions.outputs.paperlib }}
+          U_PAPERLIB_AMD64_SHA256: ${{ steps.versions.outputs.paperlib_amd64_sha256 }}
+          U_PAPERLIB_ARM64_SHA256: ${{ steps.versions.outputs.paperlib_arm64_sha256 }}
+          U_CURSOR_AGENT_VERSION: ${{ steps.versions.outputs.cursor_agent_version }}
+          U_CURSOR_AGENT_DARWIN_ARM64_SHA256: ${{ steps.versions.outputs.cursor_agent_darwin_arm64_sha256 }}
+          U_CURSOR_AGENT_DARWIN_X64_SHA256: ${{ steps.versions.outputs.cursor_agent_darwin_x64_sha256 }}
+          U_CURSOR_AGENT_LINUX_ARM64_SHA256: ${{ steps.versions.outputs.cursor_agent_linux_arm64_sha256 }}
+          U_CURSOR_AGENT_LINUX_X64_SHA256: ${{ steps.versions.outputs.cursor_agent_linux_x64_sha256 }}
+          U_TPM_REV: ${{ steps.versions.outputs.tpm_rev }}
+          U_TPM_SHA256: ${{ steps.versions.outputs.tpm_sha256 }}
+          U_CLAUDE_WSHOBSON_AGENTS_REV: ${{ steps.versions.outputs.claude_wshobson_agents_rev }}
+          U_CLAUDE_WSHOBSON_AGENTS_SHA256: ${{ steps.versions.outputs.claude_wshobson_agents_sha256 }}
+          U_CLAUDE_ANTHROPICS_SKILLS_REV: ${{ steps.versions.outputs.claude_anthropics_skills_rev }}
+          U_CLAUDE_ANTHROPICS_SKILLS_SHA256: ${{ steps.versions.outputs.claude_anthropics_skills_sha256 }}
+          U_UI_UX_PRO_MAX_SKILL_REV: ${{ steps.versions.outputs.ui_ux_pro_max_skill_rev }}
+          U_UI_UX_PRO_MAX_SKILL_SHA256: ${{ steps.versions.outputs.ui_ux_pro_max_skill_sha256 }}
+          U_OPENAI_SKILLS_REV: ${{ steps.versions.outputs.openai_skills_rev }}
+          U_HUGGINGFACE_SKILLS_REV: ${{ steps.versions.outputs.huggingface_skills_rev }}
+          U_GETSENTRY_SKILLS_REV: ${{ steps.versions.outputs.getsentry_skills_rev }}
+          U_TRAILOFBITS_SKILLS_REV: ${{ steps.versions.outputs.trailofbits_skills_rev }}
+          U_CLOUDFLARE_SKILLS_REV: ${{ steps.versions.outputs.cloudflare_skills_rev }}
+          U_VERCEL_LABS_AGENT_SKILLS_REV: ${{ steps.versions.outputs.vercel_labs_agent_skills_rev }}
+          U_VERCEL_LABS_NEXT_SKILLS_REV: ${{ steps.versions.outputs.vercel_labs_next_skills_rev }}
+          U_VERCEL_LABS_AGENT_BROWSER_REV: ${{ steps.versions.outputs.vercel_labs_agent_browser_rev }}
+          U_SUPABASE_AGENT_SKILLS_REV: ${{ steps.versions.outputs.supabase_agent_skills_rev }}
+          U_EXPO_SKILLS_REV: ${{ steps.versions.outputs.expo_skills_rev }}
+          U_MICROSOFT_SKILLS_REV: ${{ steps.versions.outputs.microsoft_skills_rev }}
+          U_ZIG_DEVELOPMENT_PLAYBOOK_SKILL_REV: ${{ steps.versions.outputs.zig_development_playbook_skill_rev }}
+          U_RUST_DEVELOPMENT_PLAYBOOK_SKILL_REV: ${{ steps.versions.outputs.rust_development_playbook_skill_rev }}
+          U_CLAUDE_BAOYU_SKILLS_REV: ${{ steps.versions.outputs.claude_baoyu_skills_rev }}
+          U_PHURYN_PM_SKILLS_REV: ${{ steps.versions.outputs.phuryn_pm_skills_rev }}
+          U_OPC_SKILLS_REV: ${{ steps.versions.outputs.opc_skills_rev }}
+          U_X_SKILLS_REV: ${{ steps.versions.outputs.x_skills_rev }}
+          U_XURL_SKILL_REV: ${{ steps.versions.outputs.xurl_skill_rev }}
+          U_DAILY_DEV_SKILLS_REV: ${{ steps.versions.outputs.daily_dev_skills_rev }}
+          U_SAMBER_CC_SKILLS_GOLANG_REV: ${{ steps.versions.outputs.samber_cc_skills_golang_rev }}
+          U_AFFAAN_ECC_REV: ${{ steps.versions.outputs.affaan_ecc_rev }}
+          U_ACTIONBOOK_RUST_SKILLS_REV: ${{ steps.versions.outputs.actionbook_rust_skills_rev }}
+          U_DPEARSON_SWIFT_SKILLS_REV: ${{ steps.versions.outputs.dpearson_swift_skills_rev }}
+          U_EFFECTIVE_TYPESCRIPT_REV: ${{ steps.versions.outputs.effective_typescript_rev }}
+          U_BOBMATNYC_MPM_SKILLS_REV: ${{ steps.versions.outputs.bobmatnyc_mpm_skills_rev }}
+          U_HUMANIZER_EN_REV: ${{ steps.versions.outputs.humanizer_en_rev }}
+          U_QU_AI_WEI_REV: ${{ steps.versions.outputs.qu_ai_wei_rev }}
+          U_HUMANIZER_JA_REV: ${{ steps.versions.outputs.humanizer_ja_rev }}
+        run: python3 .github/scripts/update_versions.py .chezmoidata/versions.yaml
       - name: Check for changes
         id: changes
         run: |
@@ -228,11 +282,21 @@ jobs:
             | nix-installer aarch64-linux sha256 | `${{ steps.versions.outputs.nix_installer_aarch64_linux_sha256 }}` |
             | nix-installer x86_64-linux sha256 | `${{ steps.versions.outputs.nix_installer_x86_64_linux_sha256 }}` |
             | nix | `${{ steps.versions.outputs.nix_version }}` |
+            | bootstrap nixpkgs | `${{ steps.versions.outputs.nixpkgs_bootstrap_rev }}` |
             | aqua-installer | `${{ steps.versions.outputs.aqua_installer }}` |
             | aqua-installer sha256 | `${{ steps.versions.outputs.aqua_installer_sha256 }}` |
             | aqua | `${{ steps.versions.outputs.aqua_version }}` |
             | nix-index-database | `${{ steps.versions.outputs.nix_index_db }}` |
             | paperlib | `${{ steps.versions.outputs.paperlib }}` |
+            | paperlib amd64 sha256 | `${{ steps.versions.outputs.paperlib_amd64_sha256 }}` |
+            | paperlib arm64 sha256 | `${{ steps.versions.outputs.paperlib_arm64_sha256 }}` |
+            | Cursor Agent | `${{ steps.versions.outputs.cursor_agent_version }}` |
+            | Cursor Agent darwin-arm64 sha256 | `${{ steps.versions.outputs.cursor_agent_darwin_arm64_sha256 }}` |
+            | Cursor Agent darwin-x64 sha256 | `${{ steps.versions.outputs.cursor_agent_darwin_x64_sha256 }}` |
+            | Cursor Agent linux-arm64 sha256 | `${{ steps.versions.outputs.cursor_agent_linux_arm64_sha256 }}` |
+            | Cursor Agent linux-x64 sha256 | `${{ steps.versions.outputs.cursor_agent_linux_x64_sha256 }}` |
+            | tmux-plugins/tpm | `${{ steps.versions.outputs.tpm_rev }}` |
+            | tmux-plugins/tpm sha256 | `${{ steps.versions.outputs.tpm_sha256 }}` |
             | openai/skills | `${{ steps.versions.outputs.openai_skills_rev }}` |
             | huggingface/skills | `${{ steps.versions.outputs.huggingface_skills_rev }}` |
             | getsentry/skills | `${{ steps.versions.outputs.getsentry_skills_rev }}` |
@@ -243,7 +307,6 @@ jobs:
             | supabase/agent-skills | `${{ steps.versions.outputs.supabase_agent_skills_rev }}` |
             | expo/skills | `${{ steps.versions.outputs.expo_skills_rev }}` |
             | microsoft/skills | `${{ steps.versions.outputs.microsoft_skills_rev }}` |
-            | sickn33/antigravity-awesome-skills | `${{ steps.versions.outputs.sickn33_antigravity_skills_rev }}` |
             | signalridge/zig-development-playbook-skill | `${{ steps.versions.outputs.zig_development_playbook_skill_rev }}` |
             | signalridge/rust-development-playbook-skill | `${{ steps.versions.outputs.rust_development_playbook_skill_rev }}` |
             | JimLiu/baoyu-skills | `${{ steps.versions.outputs.claude_baoyu_skills_rev }}` |

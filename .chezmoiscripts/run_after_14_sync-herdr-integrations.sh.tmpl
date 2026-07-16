@@ -21,12 +21,45 @@ install_integration() {
     if herdr integration install "$name" >/dev/null 2>&1; then
         echo "    Integration installed/updated: $name"
     else
-        echo "    ! failed: $name (continuing)"
+        echo "    Error: failed to install/update Herdr integration: $name" >&2
+        return 1
     fi
 }
 
 install_integration "codex"
-rm -f "$HOME/.codex/hooks.json"
+
+# Codex hooks are managed inline in dot_codex/modify_config.toml.tmpl. Herdr also
+# writes a legacy hooks.json; remove it only when every command belongs to Herdr.
+# Refuse to discard unrelated user hooks or malformed JSON.
+codex_hooks="$HOME/.codex/hooks.json"
+if [[ -f "$codex_hooks" ]]; then
+    if ! command -v jq >/dev/null 2>&1; then
+        echo "    Error: jq is required to verify $codex_hooks before removal" >&2
+        exit 1
+    fi
+    expected_command="bash '$HOME/.codex/herdr-agent-state.sh' session"
+    if ! jq -e --arg expected "$expected_command" '
+        (keys == ["hooks"])
+        and (.hooks | type == "object" and length > 0)
+        and all(.hooks | to_entries[];
+            (.value | type == "array" and length > 0)
+            and all(.value[];
+                type == "object"
+                and (.hooks | type == "array" and length > 0)
+                and all(.hooks[];
+                    type == "object"
+                    and .type == "command"
+                    and .timeout == 10
+                    and .command == $expected
+                )
+            )
+        )
+    ' "$codex_hooks" >/dev/null 2>&1; then
+        echo "    Error: preserving $codex_hooks because it contains non-Herdr hooks or invalid JSON" >&2
+        exit 1
+    fi
+    rm -f "$codex_hooks"
+fi
 
 install_integration "claude"
 

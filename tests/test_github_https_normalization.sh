@@ -27,7 +27,6 @@ cat >"$CONFIG" <<'EOF'
 hostname = "test"
 work = false
 private = true
-useremail = "test@example.com"
 homeWifiSSIDs = ""
 platform = "darwin"
 installMasApps = false
@@ -180,7 +179,7 @@ assert_identity_render_fails_without_tty() {
         echo "$stderr" >&2
         exit 1
     }
-    # Any of {hostname, useremail, gitUsername, gitEmail} should trigger the
+    # Any of {hostname, gitUsername, gitEmail} should trigger the
     # guard; the first one in source order wins. Match the shared suffix.
     if [[ "$stderr" != *"is unset and there is no TTY to prompt"* ]]; then
         echo "expected identity fail-fast message in stderr, got:" >&2

@@ -5,6 +5,7 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+permissions: {}
 jobs:
   lint:
     name: Lint
@@ -13,10 +14,20 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
       - name: Install tools
         run: |
-          nix profile install nixpkgs#pre-commit nixpkgs#treefmt nixpkgs#shfmt nixpkgs#shellcheck nixpkgs#statix nixpkgs#nixfmt nixpkgs#stylua nixpkgs#selene nixpkgs#chezmoi nixpkgs#prettier nixpkgs#typos nixpkgs#gitleaks
+          nixpkgs_rev=$(awk '$1 == "nixpkgsBootstrapRev:" { print $2 }' .chezmoidata/versions.yaml)
+          [[ "$nixpkgs_rev" =~ ^[0-9a-f]{40}$ ]]
+          nixpkgs="github:NixOS/nixpkgs/${nixpkgs_rev}"
+          packages=(pre-commit treefmt shfmt shellcheck statix nixfmt stylua selene chezmoi prettier typos gitleaks)
+          installables=()
+          for package in "${packages[@]}"; do
+            installables+=("${nixpkgs}#${package}")
+          done
+          nix profile install "${installables[@]}"
       - name: Setup chezmoi
         run: |
           mkdir -p ~/.config/chezmoi
@@ -46,20 +57,28 @@ jobs:
           - os: ubuntu-latest
             platform: linux
     runs-on: ${{ matrix.os }}
+    env:
+      PLATFORM: ${{ matrix.platform }}
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
       - name: Install chezmoi
-        run: nix profile install nixpkgs#chezmoi
+        run: |
+          nixpkgs_rev=$(awk '$1 == "nixpkgsBootstrapRev:" { print $2 }' .chezmoidata/versions.yaml)
+          [[ "$nixpkgs_rev" =~ ^[0-9a-f]{40}$ ]]
+          nix profile install "github:NixOS/nixpkgs/${nixpkgs_rev}#chezmoi"
       - name: Setup chezmoi
         run: |
           mkdir -p ~/.config/chezmoi
+          # shellcheck disable=SC2086 # PLATFORM expands inside the TOML heredoc.
           cat > ~/.config/chezmoi/chezmoi.toml << EOF
           [data]
           hostname = "ci-host"
-          platform = "${{ matrix.platform }}"
+          platform = "$PLATFORM"
           work = false
           private = false
           timezone = "UTC"
@@ -72,7 +91,7 @@ jobs:
           echo "WORKDIR=$workdir" >> "$GITHUB_ENV"
           mkdir -p "$workdir/modules"
           chezmoi execute-template --source . < nix-config/flake.nix.tmpl > "$workdir/flake.nix"
-          cp nix-config/.flake-${{ matrix.platform }}.lock "$workdir/flake.lock"
+          cp "nix-config/.flake-${PLATFORM}.lock" "$workdir/flake.lock"
           for f in nix-config/modules/*.tmpl; do
             chezmoi execute-template --source . < "$f" > "$workdir/modules/$(basename "${f%.tmpl}")"
           done

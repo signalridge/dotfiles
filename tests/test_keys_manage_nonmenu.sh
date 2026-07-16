@@ -17,6 +17,7 @@ require_cmd chezmoi || {
     echo "SKIP: missing dependency: chezmoi" >&2
     exit 0
 }
+REAL_OPENSSL="$(command -v openssl)"
 
 PASS="test-pass-123"
 
@@ -49,6 +50,22 @@ chezmoi execute-template --source "$ROOT" <"$ROOT/dot_local/bin/lib/common" >"$B
 cp "$ROOT/dot_local/bin/lib/keys-manage/"*.sh "$BIN/lib/keys-manage/"
 chmod +x "$BIN/keys-manage" "$BIN/lib/common"
 export PATH="$BIN:$PATH"
+
+set +e
+unsafe_password_output="$(keys-manage --password secret status 2>&1)"
+unsafe_password_rc=$?
+set -e
+[[ "$unsafe_password_rc" -eq 2 ]]
+grep -Fq "unsafe because secrets appear" <<<"$unsafe_password_output"
+password_file="$TMP_ROOT/password"
+printf '%s\n' "$PASS" >"$password_file"
+chmod 600 "$password_file"
+keys-manage --password-file "$password_file" --help >/dev/null 2>&1
+ln -s "$password_file" "$TMP_ROOT/password-link"
+if keys-manage --password-file "$TMP_ROOT/password-link" --help >/dev/null 2>&1; then
+    echo "expected symlinked password file to be rejected" >&2
+    exit 1
+fi
 
 # Create a local working repo that tracks the bare remote.
 mkdir -p "$LOCAL_REPO"
@@ -97,10 +114,8 @@ echo "dummy-key-content" >"$SECRET_FILE"
 chmod 600 "$SECRET_FILE"
 echo "dummy-pub-content" >"$SECRET_FILE.pub"
 chmod 644 "$SECRET_FILE.pub"
-{
-    echo ".ssh/main"
-    echo ".ssh/main.pub"
-} >>"$LOCAL_REPO/backup-list.txt"
+# shellcheck disable=SC2088 # Literal tilde paths exercise list normalization.
+printf '%s\n' "~/.ssh/main" "~/.ssh/main.pub" >>"$LOCAL_REPO/backup-list.txt"
 
 # Sync should encrypt, update metadata, commit, and push.
 KEYS_BACKUP_PASSWORD="$PASS" KEYS_MANAGE_CONTROL_CONFLICT_POLICY=local keys-manage sync >/dev/null
@@ -159,8 +174,86 @@ if data != b"Salted__":
   raise SystemExit(f"expected encrypted pub key (Salted__), got: {data!r}")
 PY
 
-# Verify should succeed and must not crash.
+# Restore primitives must preserve the old destination on decryption failure and
+# reject traversal/symlink escapes from HOME.
+(
+    # shellcheck disable=SC2329 # Called by sourced library functions.
+    log_error() { :; }
+    # shellcheck disable=SC2034 # Consumed while sourcing the library.
+    BACKUP_FILES_DIR="backup-files"
+    # shellcheck disable=SC2034 # Expanded while sourcing the library.
+    METADATA_FILE="$LOCAL_REPO/backup-metadata.json"
+    # shellcheck source=../dot_local/bin/lib/keys-manage/core.sh
+    source "$ROOT/dot_local/bin/lib/keys-manage/core.sh"
+
+    preserved="$TMP_ROOT/preserved-secret"
+    printf '%s\n' "keep-me" >"$preserved"
+    if decrypt_file "$LOCAL_REPO/backup-files/.ssh/main" "$preserved" "wrong-password" 2>/dev/null; then
+        echo "expected wrong-password decryption to fail" >&2
+        exit 1
+    fi
+    [[ "$(cat "$preserved")" == "keep-me" ]]
+
+    directory_dest="$TMP_ROOT/directory-destination"
+    mkdir -p "$directory_dest"
+    if decrypt_file "$LOCAL_REPO/backup-files/.ssh/main" "$directory_dest" "$PASS" 2>/dev/null; then
+        echo "expected decryption to a directory to fail" >&2
+        exit 1
+    fi
+    if encrypt_file "$SECRET_FILE" "$directory_dest" "$PASS" 2>/dev/null; then
+        echo "expected encryption to a directory to fail" >&2
+        exit 1
+    fi
+    if find "$directory_dest" -maxdepth 1 \
+        \( -name '.keys-decrypt.*' -o -name '.keys-encrypt.*' \) \
+        -print -quit | grep -q .; then
+        echo "secret temp file leaked into destination directory" >&2
+        exit 1
+    fi
+
+    encrypted_preserved="$TMP_ROOT/preserved-ciphertext"
+    printf '%s\n' "last-good-ciphertext" >"$encrypted_preserved"
+    mkdir -p "$TMP_ROOT/failing-bin"
+    printf '#!/bin/sh\nexit 1\n' >"$TMP_ROOT/failing-bin/openssl"
+    chmod +x "$TMP_ROOT/failing-bin/openssl"
+    if PATH="$TMP_ROOT/failing-bin:$PATH" encrypt_file "$SECRET_FILE" "$encrypted_preserved" "$PASS" 2>/dev/null; then
+        echo "expected injected encryption failure" >&2
+        exit 1
+    fi
+    [[ "$(cat "$encrypted_preserved")" == "last-good-ciphertext" ]]
+
+    if get_absolute_path "backup-files/../outside" >/dev/null 2>&1; then
+        echo "expected traversal restore path to be rejected" >&2
+        exit 1
+    fi
+
+    outside="$TMP_ROOT/outside-home"
+    mkdir -p "$outside"
+    ln -s "$outside" "$HOME/escaped-parent"
+    if restore_target_is_safe "$HOME/escaped-parent/secret"; then
+        echo "expected symlink escape restore target to be rejected" >&2
+        exit 1
+    fi
+)
+
+# Global password-file works after the command as documented.
+keys-manage verify --password-file "$password_file" >/dev/null
+
+# Environment-provided passwords are captured and unset before any child process.
+export REAL_OPENSSL
+export OPENSSL_ENV_LOG="$TMP_ROOT/openssl-env.log"
+cat >"$BIN/openssl" <<'EOF'
+#!/usr/bin/env bash
+if [[ -n "${KEYS_BACKUP_PASSWORD+x}" ]]; then
+    echo set >"$OPENSSL_ENV_LOG"
+else
+    echo unset >"$OPENSSL_ENV_LOG"
+fi
+exec "$REAL_OPENSSL" "$@"
+EOF
+chmod +x "$BIN/openssl"
 KEYS_BACKUP_PASSWORD="$PASS" keys-manage verify >/dev/null
+[[ "$(cat "$OPENSSL_ENV_LOG")" == "unset" ]]
 
 # History ordering: deterministic blocks, latest-first.
 cat >"$LOCAL_REPO/backup-history.log" <<'LOG'

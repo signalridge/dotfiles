@@ -131,7 +131,14 @@ cmd_restore() {
             fi
 
             backup_path="backup-files/$selected_file"
-            target_path=$(get_absolute_path "$BACKUP_FILES_DIR/$selected_file")
+            if ! target_path=$(get_absolute_path "$BACKUP_FILES_DIR/$selected_file"); then
+                log_error "Unsafe restore path: $selected_file"
+                return 1
+            fi
+            if ! restore_target_is_safe "$target_path"; then
+                log_error "Restore target escapes HOME or is a symlink: $target_path"
+                return 1
+            fi
             selected_commit=""
         fi
 
@@ -322,7 +329,7 @@ cmd_restore() {
     }
 
     local temp_encrypted
-    temp_encrypted=$(mktemp "${TMPDIR:-/tmp}/keys-restore.XXXXXX.enc")
+    temp_encrypted=$(mktemp "${TMPDIR:-/tmp}/keys-restore.enc.XXXXXX")
     register_temp_file "$temp_encrypted"
     local filename
     filename=$(basename "$target_path")
@@ -334,8 +341,14 @@ cmd_restore() {
         return 1
     fi
 
-    # Decrypt and restore
+    # Decrypt and restore. Re-check after creating the parent to narrow the
+    # symlink race window; decrypt_file itself replaces the target atomically.
     mkdir -p "$(dirname "$target_path")"
+    if ! restore_target_is_safe "$target_path"; then
+        log_error "Restore target became unsafe: $target_path"
+        rm -f "$temp_encrypted"
+        return 1
+    fi
     if decrypt_file "$temp_encrypted" "$target_path" "$password" 2>/dev/null; then
         # Restore original permissions from metadata
         local original_perms

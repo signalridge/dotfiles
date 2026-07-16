@@ -26,13 +26,17 @@ source "$SCRIPT_DIR/lib/ai/claude"
 # Set account in chezmoi.toml
 set_chezmoi_account() {
     local account="$1"
-    local escaped_account
+    local escaped_account config_dir tmp_file
     escaped_account=$(escape_toml_string "$account")
-    local tmp_file
-    tmp_file=$(mktemp) || { log_error "Failed to create temp file"; return 1; }
+    config_dir=$(dirname -- "$CHEZMOI_CONFIG")
+    tmp_file=$(mktemp "$config_dir/.chezmoi.toml.XXXXXX") || {
+        log_error "Failed to create temporary chezmoi config"
+        return 1
+    }
 
     if grep -q "^claudeProviderAccount = " "$CHEZMOI_CONFIG"; then
-        sed "s/^claudeProviderAccount = .*/claudeProviderAccount = \"$escaped_account\"/" "$CHEZMOI_CONFIG" > "$tmp_file"
+        sed "s/^claudeProviderAccount = .*/claudeProviderAccount = \"$escaped_account\"/" \
+            "$CHEZMOI_CONFIG" >"$tmp_file" || { rm -f "$tmp_file"; return 1; }
     elif grep -q "^claudeProvider = " "$CHEZMOI_CONFIG"; then
         # Keep claudeProvider intact; insert claudeProviderAccount after it.
         awk -v line="claudeProviderAccount = \"$escaped_account\"" '
@@ -40,12 +44,21 @@ set_chezmoi_account() {
             { print }
             /^claudeProvider = / && inserted == 0 { print line; inserted = 1 }
             END { if (inserted == 0) print line }
-        ' "$CHEZMOI_CONFIG" > "$tmp_file"
+        ' "$CHEZMOI_CONFIG" >"$tmp_file" || { rm -f "$tmp_file"; return 1; }
     else
-        cp "$CHEZMOI_CONFIG" "$tmp_file"
-        echo "claudeProviderAccount = \"$escaped_account\"" >> "$tmp_file"
+        if ! cp "$CHEZMOI_CONFIG" "$tmp_file" \
+            || ! printf 'claudeProviderAccount = "%s"\n' "$escaped_account" >>"$tmp_file"; then
+            rm -f "$tmp_file"
+            return 1
+        fi
     fi
-    mv "$tmp_file" "$CHEZMOI_CONFIG"
+
+    chmod 600 "$tmp_file"
+    if ! mv -f "$tmp_file" "$CHEZMOI_CONFIG"; then
+        rm -f "$tmp_file"
+        log_error "Failed to replace $CHEZMOI_CONFIG"
+        return 1
+    fi
 }
 
 # FZF interactive menu
@@ -111,6 +124,7 @@ MENU
             quit)           return 0 ;;
             *)              log_error "Unknown command: $cmd"; return 1 ;;
         esac
+        release_ai_account_lock
 
         case "$rc" in
             0) return 0 ;;
@@ -126,6 +140,7 @@ MENU
 
 # Switch account
 cmd_switch() {
+    acquire_ai_account_lock || return 1
     local input="${1:-}"
     if [[ -z "$input" ]]; then
         if input=$(fzf_pick_account "Switch Account" "token-known"); then
@@ -160,12 +175,56 @@ cmd_switch() {
         return 1
     fi
 
-    [[ "$(get_current)" == "$input" ]] && { log_warn "Already using '$input'"; return 0; }
+    local previous_account
+    previous_account="$(get_current)"
+    [[ "$previous_account" == "$input" ]] && { log_warn "Already using '$input'"; return 0; }
+
+    local tx_dir core_file
+    tx_dir="$(mktemp -d "${TMPDIR:-/tmp}/claude-switch.XXXXXX")" || return 1
+    chmod 700 "$tx_dir"
+    core_file="$SCRIPT_DIR/lib/ai/core"
+    local had_settings=false had_core=false
+    cp -p "$CHEZMOI_CONFIG" "$tx_dir/chezmoi.toml" || { rm -rf "$tx_dir"; return 1; }
+    if [[ -e "$SETTINGS_FILE" ]]; then
+        cp -p "$SETTINGS_FILE" "$tx_dir/settings.json" || { rm -rf "$tx_dir"; return 1; }
+        had_settings=true
+    fi
+    if [[ -e "$core_file" ]]; then
+        cp -p "$core_file" "$tx_dir/core" || { rm -rf "$tx_dir"; return 1; }
+        had_core=true
+    fi
 
     log_info "Setting default to $input..."
-    set_chezmoi_account "$input"
+    local switch_rc=0
+    set_chezmoi_account "$input" || switch_rc=$?
+    if [[ $switch_rc -eq 0 ]]; then
+        chezmoi apply --verbose --exclude scripts "$SETTINGS_FILE" "$core_file" || switch_rc=$?
+    fi
+    if [[ $switch_rc -ne 0 ]]; then
+        local rollback_failed=false
+        cp -p "$tx_dir/chezmoi.toml" "$CHEZMOI_CONFIG" || rollback_failed=true
+        if [[ "$had_settings" == true ]]; then
+            cp -p "$tx_dir/settings.json" "$SETTINGS_FILE" || rollback_failed=true
+        else
+            rm -f "$SETTINGS_FILE" || rollback_failed=true
+        fi
+        if [[ "$had_core" == true ]]; then
+            cp -p "$tx_dir/core" "$core_file" || rollback_failed=true
+        else
+            rm -f "$core_file" || rollback_failed=true
+        fi
+
+        if [[ "$rollback_failed" == true ]]; then
+            log_error "Account switch and rollback failed; snapshot retained at $tx_dir"
+        else
+            rm -rf "$tx_dir"
+            log_error "Account switch failed; restored previous Claude configuration"
+        fi
+        return "$switch_rc"
+    fi
+
+    rm -rf "$tx_dir"
     echo "  ✓ Updated chezmoi.toml"
-    chezmoi apply --verbose --exclude scripts "$SETTINGS_FILE" "$SCRIPT_DIR/lib/ai/core"
     echo "  ✓ Applied chezmoi"
     echo ""
     log_success "Default set to $input"
@@ -229,6 +288,7 @@ ensure_third_party_account_models() {
 
 # Create account
 cmd_create_account() {
+    acquire_ai_account_lock || return 1
     require_cmd fzf yq || return 1
 
     log_info "Add New Account"
@@ -331,6 +391,7 @@ cmd_create_account() {
 
 # Update account
 cmd_update_account() {
+    acquire_ai_account_lock || return 1
     require_cmd yq || return 1
 
     local input="${1:-}"
@@ -419,6 +480,7 @@ cmd_update_account() {
 
 # Remove account
 cmd_remove_account() {
+    acquire_ai_account_lock || return 1
     require_cmd yq || return 1
 
     local input="${1:-}"
@@ -438,6 +500,10 @@ cmd_remove_account() {
     fi
 
     is_known_account "$input" || { log_error "Unknown account '$input'"; return 1; }
+    if [[ "$input" == "$(get_current)" ]]; then
+        log_error "Cannot remove current account. Switch first."
+        return 1
+    fi
 
     local has_profile=0
     if ACCOUNT_NAME="$input" yq -e '.claude.accounts[strenv(ACCOUNT_NAME)] // empty' "$CLAUDE_YAML" >/dev/null 2>&1; then
@@ -452,6 +518,12 @@ cmd_remove_account() {
     fi
     read -r confirm
     [[ "$confirm" != "y" && "$confirm" != "Y" ]] && { echo "Cancelled"; return 0; }
+
+    # The selected account can change while the confirmation prompt is open.
+    if [[ "$input" == "$(get_current)" ]]; then
+        log_error "Cannot remove current account. Switch first."
+        return 1
+    fi
 
     local provider
     provider=$(get_provider "$input")
@@ -487,6 +559,7 @@ cmd_remove_account() {
 
 # Add API key
 cmd_add_key() {
+    acquire_ai_account_lock || return 1
     require_cmd gopass || return 1
     local input="${1:-}"
 
@@ -550,6 +623,7 @@ cmd_add_key() {
 
 # Update API key
 cmd_update_key() {
+    acquire_ai_account_lock || return 1
     require_cmd gopass || return 1
     local input="${1:-}"
 
@@ -592,6 +666,7 @@ cmd_update_key() {
 
 # Delete API key
 cmd_delete_key() {
+    acquire_ai_account_lock || return 1
     require_cmd gopass || return 1
     local input="${1:-}"
 

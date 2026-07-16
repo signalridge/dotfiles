@@ -246,14 +246,22 @@ main() {
             # upgrade`). Linux has no .pkg, so keep the cache-based upgrade path.
             if [ "$(uname -s)" = "Darwin" ]; then
                 info "upgrading via Determinate .pkg..."
-                upgrade_via_pkg || warn "upgrade failed"
+                upgrade_via_pkg || die "Nix upgrade failed"
             elif command -v determinate-nixd >/dev/null 2>&1; then
                 info "upgrading via determinate-nixd..."
-                sudo determinate-nixd upgrade || warn "upgrade failed"
+                sudo determinate-nixd upgrade || die "Nix upgrade failed"
             else
                 info "upgrading via nix upgrade-nix..."
-                sudo nix upgrade-nix || warn "upgrade failed"
+                sudo nix upgrade-nix || die "Nix upgrade failed"
             fi
+
+            # A successful command is not enough: the updater may resolve a
+            # different channel version. Do not consume run_onchange until the
+            # installed binary matches the repository pin.
+            hash -r
+            current_version=$(nix --version 2>/dev/null | awk '{print $NF}')
+            [ "$current_version" = "${NIX_VERSION#v}" ] ||
+                die "Nix upgrade completed but version is $current_version (expected ${NIX_VERSION#v})"
         fi
         return 0
     fi
@@ -320,7 +328,7 @@ main() {
     # Verify installation
     if command -v /nix/nix-installer >/dev/null 2>&1; then
         info "running self-test..."
-        /nix/nix-installer self-test || warn "self-test failed"
+        /nix/nix-installer self-test || die "Nix installer self-test failed"
     fi
 }
 

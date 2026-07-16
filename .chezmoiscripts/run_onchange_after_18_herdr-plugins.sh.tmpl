@@ -6,7 +6,7 @@ set -euo pipefail
 # run_onchange: re-runs only when the embedded list below changes.
 # Plugins (hash trigger):
 {{- range .herdr.plugins }}
-#   - {{ . }}
+#   - {{ .spec }}@{{ .rev }}
 {{- end }}
 
 echo ":: [18] Installing herdr plugins"
@@ -16,8 +16,8 @@ aqua_bin_dir="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqu
 [[ -d "$aqua_bin_dir" ]] && export PATH="$aqua_bin_dir:$PATH"
 
 if ! command -v herdr >/dev/null 2>&1; then
-    echo "    Skipped (herdr not found)"
-    exit 0
+    echo "    Error: herdr not found; script 05 must install it first" >&2
+    exit 1
 fi
 
 # Some plugins build via cargo/bun/node; put the mise-managed toolchains on PATH.
@@ -26,26 +26,42 @@ if [[ -x "$mise_bin" ]]; then
     eval "$("$mise_bin" env -s bash 2>/dev/null)" || true
 fi
 
-installed="$(herdr plugin list 2>/dev/null || true)"
+if ! installed="$(herdr plugin list)"; then
+    echo "    Error: unable to list herdr plugins" >&2
+    exit 1
+fi
+failed_plugins=0
 
 install_plugin() {
     local spec="$1"
-    # `herdr plugin list` prints "[github:<owner>/<repo>[/subdir]@<sha>]" — match on that.
-    if printf '%s\n' "$installed" | grep -qF "github:${spec}"; then
-        echo "    ✓ ${spec} (present)"
+    local rev="$2"
+    if [[ ! "$rev" =~ ^[0-9a-f]{40}$ ]]; then
+        echo "    ! invalid pinned revision for ${spec}: ${rev}" >&2
+        failed_plugins=$((failed_plugins + 1))
         return 0
     fi
-    echo "    + ${spec}"
-    # --yes: required when stdin is non-interactive (chezmoi run scripts).
-    if herdr plugin install "$spec" --yes </dev/null; then
-        echo "    ✓ ${spec}"
+    # `herdr plugin list` includes the resolved commit after @.
+    if printf '%s\n' "$installed" | grep -qF "github:${spec}@${rev}"; then
+        echo "    ✓ ${spec}@${rev} (present)"
+        return 0
+    fi
+    echo "    + ${spec}@${rev}"
+    # --yes is required non-interactively; --ref prevents default-branch drift.
+    if herdr plugin install "$spec" --ref "$rev" --yes </dev/null; then
+        echo "    ✓ ${spec}@${rev}"
     else
-        echo "    ! failed: ${spec} (continuing)"
+        echo "    ! failed: ${spec}@${rev}" >&2
+        failed_plugins=$((failed_plugins + 1))
     fi
 }
 
 {{ range .herdr.plugins -}}
-install_plugin "{{ . }}"
+install_plugin "{{ .spec }}" "{{ .rev }}"
 {{ end }}
+if ((failed_plugins > 0)); then
+    echo "    Error: ${failed_plugins} herdr plugin(s) failed to install; retry on next apply" >&2
+    exit 1
+fi
+
 echo "    Done. Active plugins:"
 herdr plugin list 2>/dev/null | grep -E 'enabled|disabled' || true

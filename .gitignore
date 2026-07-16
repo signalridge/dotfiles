@@ -4,9 +4,6 @@
 .pi
 .serena/
 
-# Git worktrees (project-local isolated workspaces)
-.worktrees/
-
 # macOS
 .DS_Store
 .AppleDouble
@@ -50,7 +47,8 @@ backups/
 node_modules/
 backup/
 
-# Python bytecode (defensive -- some test paths or future skills may invoke python)
+# Python bytecode and tool caches
+.ruff_cache/
 __pycache__/
 *.pyc
 

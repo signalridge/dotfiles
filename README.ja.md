@@ -36,7 +36,7 @@
 
 - `chezmoi`: dotfiles 管理、テンプレート展開、ブートストラップのオーケストレーション
 - `Nix`: 宣言的パッケージ管理（macOS は `nix-darwin`、macOS/Linux 共通で `flakey-profile`）
-- `aqua` + `mise`: 必要に応じて Nix 外で CLI/ランタイムをピン留め
+- `aqua` + `mise`: 必要に応じて Nix 外で CLI/ランタイムを管理
 - `Claude Code` と `Codex CLI`: 共有 AI ツールチェーン
 
 これはデモ用テンプレートではなく、日常運用している実構成です。README では、このリポジトリで現在実装されている内容のみを扱います。
@@ -45,7 +45,7 @@
 
 ## ハイライト
 
-- `.chezmoiscripts/00..15` による統一ブートストラップパイプライン（再実行しても破綻しにくい設計）
+- `.chezmoiscripts/00..20` による統一ブートストラップパイプライン（再実行しても破綻しにくい設計）
 - クロスプラットフォームなパッケージ戦略：
   - macOS/Linux 共通の Nix ユーザーパッケージ
   - macOS の `nix-darwin` システム設定
@@ -62,7 +62,7 @@
 ## なぜこのリポジトリか
 
 - **プロファイル横断管理**: `.chezmoidata/` が `shared` / `work` / `private` を駆動し、Nix・Homebrew・MAS を横断して一元管理
-- **エンドツーエンドブートストラップ**: `00..15` の段階実行で、初期化を再現可能かつ段階的に組み合わせられる形で維持
+- **エンドツーエンドブートストラップ**: `00..20` の段階実行で、初期化を再現可能かつ段階的に組み合わせられる形で維持
 - **macOS 向け最適化**: nix-darwin のシステム既定、Homebrew + MAS 連携、適用後の保守スクリプト
 - **ワークフローガードレール**: pre-commit と Claude Hooks で危険な編集やコマンド誤用を抑止
 - **DX 自動化**: Justfile ルーチン、fzf ナビゲーション、AI 補助コミットフロー
@@ -140,7 +140,7 @@
 │   ├── versions.yaml           # ツール/プラグインのピン留め
 │   ├── aerospace.yaml          # Aerospace WM データ
 │   └── hammerspoon.yaml        # Hammerspoon データ
-├── .chezmoiscripts/            # ブートストラップ/保守パイプライン（00..15）
+├── .chezmoiscripts/            # ブートストラップ/保守パイプライン（00..20）
 ├── nix-config/
 │   ├── flake.nix.tmpl
 │   └── modules/
@@ -173,11 +173,16 @@
 9. `08` ピン留め済み nix-index DB を導入
 10. `09` macOS: Paperlib をインストール/更新
 11. `10` Homebrew 更新（7 日間隔）
-12. `11` AI ツール連携と Herdr agent 連携を同期
-13. `12` work profile: Azure Functions Core Tools を導入
-14. `13` macOS GUI: 管理対象 LaunchAgents を再読み込み
-15. `14` Herdr plugins を同期
-16. `15` Linux: systemd user units を再読み込み
+12. `11` Claude integration plugins を同期
+13. `12` Claude MCP servers を同期
+14. `13` Codex connector plugins を同期
+15. `14` Claude・Codex・Pi の Herdr integrations を同期
+16. `15` Cursor Agent CLI をインストール/更新
+17. `16` work profile: Azure Functions Core Tools を導入
+18. `17` macOS GUI: 管理対象 LaunchAgents を再読み込み
+19. `18` Herdr plugins を同期
+20. `19` Linux: systemd user units を再読み込み
+21. `20` ISO 暦週/package 集合ごとに Pi extensions を一度同期（失敗時は次回 apply で再試行）
 
 ---
 
@@ -239,7 +244,7 @@ DOTFILES_USE_ENCRYPTION=false ./init.sh
 
 このリポジトリを初回利用する場合、keys-manage バックアップと鍵を自分で用意していない限り、`useEncryption = false` を推奨します。
 
-> 初回インストールは対話実行が前提です：身分関連の prompt（`hostname` / `gitUsername` / `useremail` / `gitEmail`）には安全な default がなく、TTY が無いと明示的に fail します。方式 1 の「ダウンロードしてから実行」を使ってください（`curl | sh` は NG）。`~/.config/chezmoi/chezmoi.toml` に既に値が書かれているマシンで再 apply する場合は prompt がスキップされ、その場面では `DOTFILES_USE_ENCRYPTION=true|false` で encryption フラグを環境変数から上書きできます。
+> 初回インストールは対話実行が前提です：身分関連の prompt（`hostname` / `gitUsername` / `gitEmail`）には安全な default がなく、TTY が無いと明示的に fail します。方式 1 の「ダウンロードしてから実行」を使ってください（`curl | sh` は NG）。`~/.config/chezmoi/chezmoi.toml` に既に値が書かれているマシンで再 apply する場合は prompt がスキップされ、その場面では `DOTFILES_USE_ENCRYPTION=true|false` で encryption フラグを環境変数から上書きできます。
 
 ---
 
@@ -311,7 +316,6 @@ Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期さ�
 `dot_claude/hooks/` にはワークフローガードと自動整形 Hooks が含まれます。主なもの：
 
 - `block-git-rewrites.sh`
-- `block-main-edits.sh`
 - `format-code.sh`
 - `format-python.sh`
 
@@ -378,7 +382,9 @@ codex-token --check deepseek@private
 ## ツールチェーン
 
 従来の Unix コマンドにはモダン代替をエイリアスで割り当て、その上に
-ドメイン別に整理したパワーユーザー向け CLI 群を重ねています。すべて aqua でバージョン固定。
+ドメイン別に整理したパワーユーザー向け CLI 群を重ねています。多くの
+CLI は aqua、Nix は flake lock で固定し、一部の mise ランタイムと直接
+インストーラは意図的に LTS/latest を追従します。
 
 ### ドロップイン置き換え
 
@@ -513,11 +519,11 @@ chezmoi init --apply --promptBool headless=true signalridge
   - `nix flake check`（macOS + Linux マトリクス）
 
 - `.github/workflows/tests.yml`
-  - 手動実行のブートストラップ/スクリプトテスト（`bash tests/run.sh`）
+  - push、pull request、手動実行でブートストラップ/スクリプトテストを実行（`bash tests/run.sh`）
 
 ### 定期メンテナンス
 
-- `.github/workflows/scheduler.yml`（週 2 回トリガー）
+- `.github/workflows/scheduler.yml`（毎日 00:00 UTC に実行）
 - `.github/workflows/update-versions.yml`
 - `.github/workflows/update-flake-lock.yml`
 - `.github/workflows/update-aqua-packages.yml`

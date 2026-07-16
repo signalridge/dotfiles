@@ -3,6 +3,9 @@
 # ─────────────────────────────────────────────────────────────────────────────
 *.tmp
 README.md
+README.ja.md
+README.zh-CN.md
+SECURITY.md
 CLAUDE.md
 AGENTS.md
 
@@ -14,8 +17,6 @@ AGENTS.md
 # OS-specific lock files (used by flake.lock.tmpl)
 nix-config/.flake-darwin.lock
 nix-config/.flake-linux.lock
-README.ja.md
-README.zh-CN.md
 .editorconfig
 .git/
 .gitignore

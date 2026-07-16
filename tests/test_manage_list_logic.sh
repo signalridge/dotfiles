@@ -13,6 +13,7 @@ for c in bash chezmoi jq; do
         exit 0
     }
 done
+REAL_CP="$(command -v cp)"
 
 TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/manage-list-test.XXXXXX")"
 cleanup() {
@@ -80,6 +81,7 @@ JSON
     exit 0
 fi
 if [[ "${1:-}" == "apply" ]]; then
+    [[ "${CHEZMOI_APPLY_FAIL:-0}" != "1" ]]
     exit 0
 fi
 exit 0
@@ -219,7 +221,11 @@ case "${1:-}" in
         esac
         ;;
     --config)
-        echo '{"provider":"qwen","model":"qwen3-coder-plus","base_url":"https://dashscope.aliyuncs.com/apps/anthropic"}'
+        if [[ "${2:-}" == "anthropic" ]]; then
+            echo '{"provider":"anthropic","model":"","base_url":""}'
+        else
+            echo '{"provider":"qwen","model":"qwen3-coder-plus","base_url":"https://dashscope.aliyuncs.com/apps/anthropic"}'
+        fi
         exit 0
         ;;
     *)
@@ -263,6 +269,22 @@ cat <<'OUT'
 OUT
 EOF
 
+cat >"$STUB/cp" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+source_path=""
+for arg in "$@"; do
+    [[ "$arg" == -* ]] && continue
+    source_path="$arg"
+    break
+done
+if [[ -n "${ROLLBACK_COPY_FAIL:-}" \
+    && "$source_path" == *"/${ROLLBACK_COPY_FAIL}-switch."*/chezmoi.toml ]]; then
+    exit 1
+fi
+exec "${REAL_CP:?}" "$@"
+EOF
+
 cat >"$STUB/codex" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -272,11 +294,27 @@ EOF
 cat >"$STUB/claude" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ -n "${CLAUDE_ENV_LOG:-}" ]]; then
+    env | LC_ALL=C sort >"$CLAUDE_ENV_LOG"
+fi
+if [[ -n "${CLAUDE_ARGS_LOG:-}" ]]; then
+    printf '%s\n' "$@" >"$CLAUDE_ARGS_LOG"
+fi
+while (($# > 0)); do
+    if [[ "$1" == "--settings" && $# -ge 2 ]]; then
+        [[ -f "$2" ]]
+        [[ -z "${CLAUDE_SETTINGS_PATH_LOG:-}" ]] || printf '%s\n' "$2" >"$CLAUDE_SETTINGS_PATH_LOG"
+        [[ -z "${CLAUDE_SETTINGS_COPY:-}" ]] || cp "$2" "$CLAUDE_SETTINGS_COPY"
+        break
+    fi
+    shift
+done
 exit 0
 EOF
 
+export REAL_CP
 chmod +x "$STUB/chezmoi" "$STUB/gopass" "$STUB/codex-token" "$STUB/claude-token" \
-    "$STUB/curl" "$STUB/codex" "$STUB/claude"
+    "$STUB/curl" "$STUB/cp" "$STUB/codex" "$STUB/claude"
 
 BASE_PATH="$STUB:$BIN:$PATH"
 NOJQ_PATH="$TMP_ROOT/no-jq-bin"
@@ -345,7 +383,102 @@ assert_contains "$claude_list" "kimi@private (no key)"
 assert_not_contains "$claude_list" "qwen@private"
 
 # list-visible runtime accounts must be operable for switch.
+# A failed apply must roll selector, rendered config, and auth back together.
+sed -i.bak 's/codexProviderAccount = ".*"/codexProviderAccount = "deepseek@private"/' \
+    "$HOME/.config/chezmoi/chezmoi.toml"
+rm -f "$HOME/.config/chezmoi/chezmoi.toml.bak"
+printf '%s\n' '{"tokens":{"access_token":"old-oauth"}}' >"$HOME/.codex/auth.json"
+
+# A live manager process owns the mutation lock; a concurrent switch must fail
+# before changing selector/config/auth. A malformed stale lock is reclaimed by
+# the next mutation.
+lock_root="$HOME/.cache/dotfiles-account-locks"
+mkdir -p "$lock_root"
+lock_holder_pid=""
+if command -v flock >/dev/null 2>&1; then
+    : >"$lock_root/hold"
+    (
+        exec 9>"$lock_root/accounts.lock"
+        flock 9
+        : >"$lock_root/ready"
+        while [[ -e "$lock_root/hold" ]]; do sleep 0.1; done
+    ) &
+    lock_holder_pid=$!
+    while [[ ! -e "$lock_root/ready" ]]; do sleep 0.05; done
+else
+    printf '%s\n' "$$" >"$lock_root/accounts.lock"
+fi
+for invocation in "codex-manage openai" "claude-manage anthropic"; do
+    manager=${invocation%% *}
+    account=${invocation#* }
+    set +e
+    PATH="$BASE_PATH" "$BIN/$manager" switch "$account" >/dev/null 2>&1
+    locked_rc=$?
+    set -e
+    [[ "$locked_rc" -ne 0 ]]
+done
+grep -Fq 'codexProviderAccount = "deepseek@private"' "$HOME/.config/chezmoi/chezmoi.toml"
+grep -Fq 'claudeProviderAccount = "anthropic"' "$HOME/.config/chezmoi/chezmoi.toml"
+if [[ -n "$lock_holder_pid" ]]; then
+    rm -f "$lock_root/hold"
+    wait "$lock_holder_pid"
+else
+    rm -f "$lock_root/accounts.lock"
+fi
+cp "$HOME/.codex/config.toml" "$TMP_ROOT/config.before-switch"
+set +e
+CHEZMOI_APPLY_FAIL=1 PATH="$BASE_PATH" "$BIN/codex-manage" switch openai >/dev/null 2>&1
+failed_switch_rc=$?
+set -e
+[[ "$failed_switch_rc" -ne 0 ]]
+grep -Fq 'codexProviderAccount = "deepseek@private"' "$HOME/.config/chezmoi/chezmoi.toml"
+cmp -s "$TMP_ROOT/config.before-switch" "$HOME/.codex/config.toml"
+jq -e '.tokens.access_token == "old-oauth"' "$HOME/.codex/auth.json" >/dev/null
+
+set +e
+rollback_failure_output="$(
+    TMPDIR="$TMP_ROOT" ROLLBACK_COPY_FAIL=codex CHEZMOI_APPLY_FAIL=1 \
+        PATH="$BASE_PATH" "$BIN/codex-manage" switch openai 2>&1
+)"
+rollback_failure_rc=$?
+set -e
+[[ "$rollback_failure_rc" -ne 0 ]]
+assert_contains "$rollback_failure_output" "snapshot retained at"
+retained_tx="$(find "$TMP_ROOT" -maxdepth 1 -type d -name 'codex-switch.*' -print -quit)"
+[[ -d "$retained_tx" ]]
+[[ -f "$retained_tx/chezmoi.toml" ]]
+"$REAL_CP" -p "$retained_tx/chezmoi.toml" "$HOME/.config/chezmoi/chezmoi.toml"
+rm -rf "$retained_tx"
 PATH="$BASE_PATH" "$BIN/codex-manage" switch deepseek@private >/dev/null
+jq -e '. == {"OPENAI_API_KEY":"test-key"}' "$HOME/.codex/auth.json" >/dev/null
+if stat -f '%Lp' "$HOME/.codex/auth.json" >/dev/null 2>&1; then
+    auth_mode="$(stat -f '%Lp' "$HOME/.codex/auth.json")"
+else
+    auth_mode="$(stat -c '%a' "$HOME/.codex/auth.json")"
+fi
+assert_equals "$auth_mode" "600"
+set +e
+codex_no_key_switch="$(PATH="$BASE_PATH" "$BIN/codex-manage" switch kimi@private 2>&1)"
+codex_no_key_switch_rc=$?
+set -e
+assert_equals "$codex_no_key_switch_rc" "1"
+assert_contains "$codex_no_key_switch" "API token entry for kimi@private is empty or unreadable"
+
+# Claude switches roll selector and rendered targets back on apply failure.
+sed -i.bak 's/claudeProviderAccount = ".*"/claudeProviderAccount = "qwen@beta"/' \
+    "$HOME/.config/chezmoi/chezmoi.toml"
+rm -f "$HOME/.config/chezmoi/chezmoi.toml.bak"
+mkdir -p "$HOME/.claude"
+printf '%s\n' '{"marker":"old-settings"}' >"$HOME/.claude/settings.json"
+cp "$BIN/lib/ai/core" "$TMP_ROOT/claude-core.before-switch"
+set +e
+CHEZMOI_APPLY_FAIL=1 PATH="$BASE_PATH" "$BIN/claude-manage" switch anthropic >/dev/null 2>&1
+claude_failed_switch_rc=$?
+set -e
+[[ "$claude_failed_switch_rc" -ne 0 ]]
+grep -Fq 'claudeProviderAccount = "qwen@beta"' "$HOME/.config/chezmoi/chezmoi.toml"
+jq -e '.marker == "old-settings"' "$HOME/.claude/settings.json" >/dev/null
+cmp -s "$TMP_ROOT/claude-core.before-switch" "$BIN/lib/ai/core"
 PATH="$BASE_PATH" "$BIN/claude-manage" switch deepseek@private >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-manage" switch qwen@beta >/dev/null
 
@@ -370,6 +503,58 @@ assert_contains "$claude_fail_output" "Network error"
 PATH="$BASE_PATH" "$BIN/codex-with" deepseek@private --version >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-with" deepseek@private --version >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-with" qwen@beta --version >/dev/null
+
+# User settings must be passed by private file, not embedded in argv, and auth
+# fields from the default account must not bleed into the selected account.
+mkdir -p "$HOME/.claude"
+cat >"$HOME/.claude/settings.json" <<'JSON'
+{
+  "env": {
+    "ANTHROPIC_API_KEY": "default-api-secret",
+    "ANTHROPIC_AUTH_TOKEN": "default-auth-secret"
+  },
+  "customSecret": "unrelated-user-secret"
+}
+JSON
+claude_args_log="$TMP_ROOT/claude-args.log"
+claude_settings_copy="$TMP_ROOT/claude-settings.json"
+claude_settings_path_log="$TMP_ROOT/claude-settings-path.log"
+CLAUDE_ARGS_LOG="$claude_args_log" \
+    CLAUDE_SETTINGS_COPY="$claude_settings_copy" \
+    CLAUDE_SETTINGS_PATH_LOG="$claude_settings_path_log" \
+    PATH="$BASE_PATH" "$BIN/claude-with" qwen@beta --version >/dev/null
+! grep -Fq 'default-api-secret' "$claude_args_log"
+! grep -Fq 'default-auth-secret' "$claude_args_log"
+! grep -Fq 'unrelated-user-secret' "$claude_args_log"
+jq -e '.env | has("ANTHROPIC_API_KEY") | not' "$claude_settings_copy" >/dev/null
+jq -e '.env | has("ANTHROPIC_AUTH_TOKEN") | not' "$claude_settings_copy" >/dev/null
+jq -e '.customSecret == "unrelated-user-secret"' "$claude_settings_copy" >/dev/null
+[[ ! -e "$(cat "$claude_settings_path_log")" ]]
+
+# Native/empty profiles must not inherit routing/model values from the parent
+# shell. Otherwise switching accounts can silently use the previous provider.
+CLAUDE_ENV_LOG="$TMP_ROOT/claude-env.log" \
+    ANTHROPIC_BASE_URL=leaked ANTHROPIC_MODEL=leaked \
+    PATH="$BASE_PATH" "$BIN/claude-with" anthropic --version >/dev/null
+for leaked_var in ANTHROPIC_BASE_URL ANTHROPIC_MODEL; do
+    assert_not_contains "$(cat "$TMP_ROOT/claude-env.log")" "${leaked_var}=leaked"
+done
+
+# Match codex-manage's safety rule: the active selector cannot be deleted.
+YQ_STUB_DIR="$TMP_ROOT/yq-stub"
+mkdir -p "$YQ_STUB_DIR"
+cat >"$YQ_STUB_DIR/yq" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+chmod +x "$YQ_STUB_DIR/yq"
+set +e
+remove_current_output="$(printf 'y\n' | PATH="$YQ_STUB_DIR:$BASE_PATH" \
+    "$BIN/claude-manage" remove-account qwen@beta 2>&1)"
+remove_current_rc=$?
+set -e
+assert_equals "$remove_current_rc" "1"
+assert_contains "$remove_current_output" "Cannot remove current account. Switch first."
 
 # doctor: parity diagnostics should be available in both tools.
 codex_doctor="$(PATH="$BASE_PATH" "$BIN/codex-manage" doctor | strip_ansi)"

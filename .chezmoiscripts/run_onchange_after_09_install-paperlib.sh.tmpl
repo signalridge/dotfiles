@@ -1,5 +1,9 @@
 {{- $suffix := "_arm" -}}
-{{- if eq .chezmoi.arch "amd64" -}}{{- $suffix = "" -}}{{- end -}}
+{{- $sha256 := .versions.paperlibArm64Sha256 -}}
+{{- if eq .chezmoi.arch "amd64" -}}
+{{-   $suffix = "" -}}
+{{-   $sha256 = .versions.paperlibAmd64Sha256 -}}
+{{- end -}}
 #!/bin/bash
 
 set -euo pipefail
@@ -9,8 +13,47 @@ echo ":: [09] Installing Paperlib"
 VERSION="{{ .versions.paperlib }}"
 REPO="Future-Scholars/paperlib"
 DMG_NAME="Paperlib_${VERSION}{{ $suffix }}.dmg"
-DMG_URL="https://github.com/${REPO}/releases/download/release-electron-${VERSION}/${DMG_NAME}"
-TEMP_DMG="/tmp/${DMG_NAME}"
+DMG_URL="${PAPERLIB_OVERRIDE_URL:-https://github.com/${REPO}/releases/download/release-electron-${VERSION}/${DMG_NAME}}"
+EXPECTED_SHA256="${PAPERLIB_OVERRIDE_SHA256:-{{ $sha256 }}}"
+APPLICATIONS_DIR="${PAPERLIB_APPLICATIONS_DIR:-/Applications}"
+TEMP_DMG="$(mktemp "${TMPDIR:-/tmp}/paperlib.dmg.XXXXXX")"
+VOLUME=""
+INSTALL_TMP=""
+BACKUP_ROOT=""
+BACKUP_PATH=""
+DESTINATION=""
+NEW_INSTALLED=false
+INSTALL_COMMITTED=false
+cleanup() {
+    if [[ -n "$VOLUME" ]]; then
+        hdiutil detach "$VOLUME" -quiet 2>/dev/null || true
+    fi
+    rm -f "$TEMP_DMG"
+
+    if [[ "$NEW_INSTALLED" == true && "$INSTALL_COMMITTED" != true && -n "$DESTINATION" ]]; then
+        rm -rf "$DESTINATION" 2>/dev/null || true
+    fi
+    if [[ "$INSTALL_COMMITTED" != true && -n "$BACKUP_PATH" ]] &&
+        [[ -e "$BACKUP_PATH" || -L "$BACKUP_PATH" ]]; then
+        if [[ ! -e "$DESTINATION" && ! -L "$DESTINATION" ]] &&
+            mv "$BACKUP_PATH" "$DESTINATION" 2>/dev/null; then
+            BACKUP_PATH=""
+        else
+            echo "    CRITICAL: Paperlib rollback could not complete; backup retained at $BACKUP_PATH" >&2
+        fi
+    fi
+
+    [[ -z "$INSTALL_TMP" ]] || rm -rf "$INSTALL_TMP"
+    if [[ -n "$BACKUP_ROOT" && -z "$BACKUP_PATH" ]]; then
+        rm -rf "$BACKUP_ROOT"
+    fi
+}
+trap cleanup EXIT
+
+if [[ ! "$EXPECTED_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+    echo "    Invalid Paperlib SHA-256" >&2
+    exit 1
+fi
 
 # Download with explicit error handling
 if ! curl -fsSL "$DMG_URL" -o "$TEMP_DMG"; then
@@ -19,18 +62,79 @@ if ! curl -fsSL "$DMG_URL" -o "$TEMP_DMG"; then
     exit 1
 fi
 
-# Verify download is a valid DMG (not an error page)
+actual_sha256="$(shasum -a 256 "$TEMP_DMG" | awk '{print $1}')"
+if [[ "$actual_sha256" != "$EXPECTED_SHA256" ]]; then
+    echo "    SHA-256 mismatch for $DMG_NAME" >&2
+    exit 1
+fi
+
+# Defense in depth: reject an error page even if release metadata is miswired.
 if ! file "$TEMP_DMG" | grep -q "zlib compressed"; then
     echo "    Downloaded file is not a valid DMG"
     rm -f "$TEMP_DMG"
     exit 1
 fi
 
-VOLUME=$(hdiutil attach "$TEMP_DMG" | grep Volumes | awk '{print $3,$4,$5,$6}' | sed 's/ *$//')
-APP_NAME=$(basename "$(find "$VOLUME" -maxdepth 1 -name '*.app' -print -quit)")
+VOLUME="$(hdiutil attach -nobrowse -readonly "$TEMP_DMG" | awk -F '\t' '/\/Volumes\// && !found { print $NF; found=1 }')"
+if [[ -z "$VOLUME" ]]; then
+    echo "    Failed to locate mounted Paperlib volume" >&2
+    exit 1
+fi
+APP_PATH="$(find "$VOLUME" -maxdepth 1 -type d -name '*.app' -print -quit)"
+if [[ -z "$APP_PATH" ]]; then
+    echo "    Paperlib app not found in mounted DMG" >&2
+    exit 1
+fi
+APP_NAME="$(basename "$APP_PATH")"
 
-echo "    Installing $APP_NAME to /Applications"
-cp -R "$VOLUME/$APP_NAME" /Applications/
+if ! codesign --verify --deep --strict "$APP_PATH"; then
+    echo "    Paperlib code signature verification failed" >&2
+    exit 1
+fi
 
+if [[ ! -d "$APPLICATIONS_DIR" || -L "$APPLICATIONS_DIR" ]]; then
+    echo "    Applications directory is missing or unsafe: $APPLICATIONS_DIR" >&2
+    exit 1
+fi
+APPLICATIONS_DIR="$(cd -P -- "$APPLICATIONS_DIR" && pwd -P)"
+INSTALL_TMP="$(mktemp -d "${APPLICATIONS_DIR}/.paperlib-install.XXXXXX")"
+CANDIDATE_APP="${INSTALL_TMP}/${APP_NAME}"
+ditto "$APP_PATH" "$CANDIDATE_APP"
+if ! codesign --verify --deep --strict "$CANDIDATE_APP"; then
+    echo "    Copied Paperlib app failed signature verification" >&2
+    exit 1
+fi
+
+# The candidate no longer depends on the mounted image.
 hdiutil detach "$VOLUME" -quiet
-rm "$TEMP_DMG"
+VOLUME=""
+
+DESTINATION="${APPLICATIONS_DIR}/${APP_NAME}"
+if [[ -e "$DESTINATION" || -L "$DESTINATION" ]]; then
+    BACKUP_ROOT="$(mktemp -d "${APPLICATIONS_DIR}/.paperlib-backup.XXXXXX")"
+    BACKUP_PATH="${BACKUP_ROOT}/${APP_NAME}"
+    if ! mv "$DESTINATION" "$BACKUP_PATH"; then
+        echo "    Failed to stage the existing Paperlib app for replacement" >&2
+        exit 1
+    fi
+fi
+
+if ! mv "$CANDIDATE_APP" "$DESTINATION"; then
+    echo "    Failed to install the Paperlib candidate" >&2
+    exit 1
+fi
+NEW_INSTALLED=true
+
+if ! codesign --verify --deep --strict "$DESTINATION"; then
+    echo "    Installed Paperlib app failed signature verification; rolling back" >&2
+    exit 1
+fi
+INSTALL_COMMITTED=true
+
+[[ -z "$BACKUP_ROOT" ]] || rm -rf "$BACKUP_ROOT"
+BACKUP_ROOT=""
+BACKUP_PATH=""
+rm -rf "$INSTALL_TMP"
+INSTALL_TMP=""
+
+echo "    Installed $APP_NAME to $APPLICATIONS_DIR"

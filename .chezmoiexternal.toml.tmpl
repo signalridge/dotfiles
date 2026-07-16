@@ -8,12 +8,13 @@
 #
 # Uses `type = "archive"` (anonymous HTTPS tarball download) instead of
 # `type = "git-repo"` to keep cold-start independent of git/SSH/insteadOf
-# rewrites. tpm itself almost never changes, so losing `git pull` ergonomics
-# is a non-issue.
+# rewrites. The commit and archive checksum are pinned in versions.yaml; tpm
+# itself almost never changes, so losing `git pull` ergonomics is a non-issue.
 # ==============================================================================
 [".config/tmux/plugins/tpm"]
     type = "archive"
-    url = "https://github.com/tmux-plugins/tpm/archive/refs/heads/master.tar.gz"
+    url = "https://github.com/tmux-plugins/tpm/archive/{{ .versions.tpmRev }}.tar.gz"
+    checksum.sha256 = "{{ .versions.tpmSha256 }}"
     exact = true
     stripComponents = 1
     refreshPeriod = "168h"
