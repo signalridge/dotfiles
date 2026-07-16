@@ -10,6 +10,7 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "$TMP_ROOT/bin" "$TMP_ROOT/tmp"
+export XDG_RUNTIME_DIR="$TMP_ROOT/tmp"
 
 cat >"$TMP_ROOT/bin/tmux" <<'STUB'
 #!/usr/bin/env bash
