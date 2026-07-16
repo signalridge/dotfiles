@@ -11,7 +11,7 @@ packages:
     registry: third-party
   - name: signalridge/qmk-hid-host@v2026.06.14.1
     registry: third-party
-  - name: ogulcancelik/herdr@v0.7.3
+  - name: ogulcancelik/herdr@v0.7.4
     registry: third-party
   # ----- standard registry -----
   - name: nektos/act@v0.2.89
@@ -26,14 +26,14 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.210
+  - name: anthropics/claude-code@v2.1.211
   - name: openai/codex@rust-v0.144.4
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.7.6
+  - name: jdx/mise@v2026.7.7
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -59,7 +59,7 @@ packages:
   - name: tldr-pages/tlrc@v1.13.1
   - name: ast-grep/ast-grep@0.44.1
   - name: casey/just@1.56.0
-  - name: jesseduffield/lazygit@v0.63.0
+  - name: jesseduffield/lazygit@v0.63.1
   - name: jesseduffield/lazydocker@v0.25.2
   - name: neovim/neovim@v0.12.4
   - name: LuaLS/lua-language-server@3.18.2
@@ -70,7 +70,7 @@ packages:
   - name: ip7z/7zip@26.02
   - name: ouch-org/ouch@0.8.1
   - name: Nukesor/pueue/pueue@v4.0.4
-  - name: BurntSushi/ripgrep@15.1.0
+  - name: BurntSushi/ripgrep@15.2.0
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.1.0
   - name: ducaale/xh@v0.26.1
