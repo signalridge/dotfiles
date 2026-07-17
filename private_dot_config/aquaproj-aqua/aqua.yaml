@@ -26,8 +26,8 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.211
-  - name: openai/codex@rust-v0.144.4
+  - name: anthropics/claude-code@v2.1.212
+  - name: openai/codex@rust-v0.144.5
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
@@ -85,9 +85,9 @@ packages:
   - name: koalaman/shellcheck@v0.11.0
   - name: mvdan/sh@v3.13.1
   - name: rhysd/actionlint@v1.7.12
-  - name: astral-sh/ruff@0.15.21
-  - name: astral-sh/ty@0.0.59
-  - name: j178/prek@v0.4.9
+  - name: astral-sh/ruff@0.15.22
+  - name: astral-sh/ty@0.0.60
+  - name: j178/prek@v0.4.10
   - name: golang.org/x/tools/gopls@v0.23.0
   - name: golangci/golangci-lint@v2.12.2
   - name: goreleaser/goreleaser@v2.17.0
@@ -114,8 +114,8 @@ packages:
   - name: ahmetb/kubectx@v0.11.0
   - name: kubernetes-sigs/krew@v0.5.0
   - name: aquasecurity/trivy@v0.72.0
-  - name: anchore/syft@v1.46.0
-  - name: anchore/grype@v0.115.0
+  - name: anchore/syft@v1.48.0
+  - name: anchore/grype@v0.116.0
   - name: LucasPickering/slumber@v5.3.0
   - name: charmbracelet/gum@v0.17.0
   - name: charmbracelet/vhs@v0.11.0
