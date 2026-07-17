@@ -66,6 +66,7 @@ ENV_BY_KEY = {
     "humanizerEnRev": "U_HUMANIZER_EN_REV",
     "quAiWeiRev": "U_QU_AI_WEI_REV",
     "humanizerJaRev": "U_HUMANIZER_JA_REV",
+    "beautifyGithubReadmeSkillRev": "U_BEAUTIFY_GITHUB_README_SKILL_REV",
 }
 
 HEX_40_RE = re.compile(r"[0-9a-f]{40}")
@@ -112,8 +113,7 @@ def update_file(path: pathlib.Path, updates: dict[str, str]) -> None:
     lines = original.splitlines(keepends=True)
     counts = dict.fromkeys(updates, 0)
     patterns = {
-        key: re.compile(rf"^(?P<indent>\s*){re.escape(key)}:\s*.*$")
-        for key in updates
+        key: re.compile(rf"^(?P<indent>\s*){re.escape(key)}:\s*.*$") for key in updates
     }
 
     rendered: list[str] = []
@@ -132,7 +132,9 @@ def update_file(path: pathlib.Path, updates: dict[str, str]) -> None:
             rendered.append(line)
             continue
         counts[matched_key] += 1
-        rendered.append(f"{matched_indent}{matched_key}: {updates[matched_key]}{ending}")
+        rendered.append(
+            f"{matched_indent}{matched_key}: {updates[matched_key]}{ending}"
+        )
 
     invalid_counts = {key: count for key, count in counts.items() if count != 1}
     if invalid_counts:

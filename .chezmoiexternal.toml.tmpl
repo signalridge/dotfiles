@@ -47,6 +47,7 @@
   "bash-defensive-patterns" "shell"
   "bats-testing-patterns" "shell"
   "bazel-build-optimization" "devtools"
+  "beautify-github-readme" "design"
   "brand-guidelines" "design"
   "canvas-design" "design"
   "changelog-automation" "dev-docs"
@@ -758,6 +759,21 @@
     exact = true
     stripComponents = 3
     include = ["drawio-skill-*/skills/drawio-skill/**"]
+    refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# oil-oil/beautify-github-readme (MIT) — redesign a repo README into a cohesive,
+# theme-specific homepage (SVG heroes/section headers + maintainable Markdown).
+# Single skill at skills/beautify-github-readme/ (SKILL.md + agents/references/
+# scripts); lands under ~/.harnesses/skills/design/. Same <top>/skills/<skill>/**
+# shape as the anthropics block → stripComponents = 3.
+# ------------------------------------------------------------------------------
+[".harnesses/skills/{{ index $cat "beautify-github-readme" }}/beautify-github-readme"]
+    type = "archive"
+    url = "https://github.com/oil-oil/beautify-github-readme/archive/{{ $.versions.beautifyGithubReadmeSkillRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["beautify-github-readme-*/skills/beautify-github-readme/**"]
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------

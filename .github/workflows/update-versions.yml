@@ -147,6 +147,7 @@ jobs:
           humanizer_en_rev=$(gh api repos/blader/humanizer/commits/main -q '.sha')
           qu_ai_wei_rev=$(gh api repos/LifelongLazyLearner/qu-ai-wei/commits/main -q '.sha')
           humanizer_ja_rev=$(gh api repos/kgraph57/humanizer-ja/commits/main -q '.sha')
+          beautify_github_readme_skill_rev=$(gh api repos/oil-oil/beautify-github-readme/commits/main -q '.sha')
 
           {
             echo "nix_installer=$nix_installer"
@@ -204,6 +205,7 @@ jobs:
             echo "humanizer_en_rev=$humanizer_en_rev"
             echo "qu_ai_wei_rev=$qu_ai_wei_rev"
             echo "humanizer_ja_rev=$humanizer_ja_rev"
+            echo "beautify_github_readme_skill_rev=$beautify_github_readme_skill_rev"
           } >> "$GITHUB_OUTPUT"
       - name: Update .chezmoidata/versions.yaml
         env:
@@ -261,6 +263,7 @@ jobs:
           U_HUMANIZER_EN_REV: ${{ steps.versions.outputs.humanizer_en_rev }}
           U_QU_AI_WEI_REV: ${{ steps.versions.outputs.qu_ai_wei_rev }}
           U_HUMANIZER_JA_REV: ${{ steps.versions.outputs.humanizer_ja_rev }}
+          U_BEAUTIFY_GITHUB_README_SKILL_REV: ${{ steps.versions.outputs.beautify_github_readme_skill_rev }}
         run: python3 .github/scripts/update_versions.py .chezmoidata/versions.yaml
       - name: Check for changes
         id: changes
@@ -335,3 +338,4 @@ jobs:
             | humanizer-en | `${{ steps.versions.outputs.humanizer_en_rev }}` |
             | qu-ai-wei | `${{ steps.versions.outputs.qu_ai_wei_rev }}` |
             | humanizer-ja | `${{ steps.versions.outputs.humanizer_ja_rev }}` |
+            | oil-oil/beautify-github-readme | `${{ steps.versions.outputs.beautify_github_readme_skill_rev }}` |
