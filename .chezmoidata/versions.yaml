@@ -6,7 +6,7 @@ versions:
   nixInstallerAarch64DarwinSha256: a3bd3e7fef7233ba9882ce7640853e7117bc372297397a5880c4c6861cd8b567
   nixInstallerAarch64LinuxSha256: afa197be4d4dd48b57ffc2de7d32d1fbc464a22b45477f2b8e8e25562f5c9869
   nixInstallerX8664LinuxSha256: dce3363351d5886e996a7ce42619f4fd498939f5f881e40e0e39731175dd424e
-  nixVersion: v2.35.1
+  nixVersion: v3.21.7
   nixpkgsBootstrapRev: 6368bc923cec55a5f78960ade0cb4dd99580e087
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146

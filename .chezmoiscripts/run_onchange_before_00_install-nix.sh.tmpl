@@ -229,6 +229,29 @@ upgrade_via_pkg() {
     return "$rc"
 }
 
+# --- Version parsing ---
+#
+# Determinate Nix reports two versions:
+#   nix (Determinate Nix 3.21.7) 2.34.8
+#          ^ Determinate version   ^ bundled upstream nix
+# We pin/assert against the *Determinate version*, because the macOS `stable`
+# .pkg channel (and the nix-installer) are versioned by it. The bundled upstream
+# nix version is promoted ahead of the stable channel, so matching on it makes
+# this gate fail whenever a logged-out `dot apply` installs the (older) stable
+# .pkg. Fall back to the last field for a non-Determinate nix.
+nix_installed_version() {
+    local v
+    v=$(nix --version 2>/dev/null)
+    case "$v" in
+    *"Determinate Nix "*)
+        printf '%s\n' "$v" | sed -n 's/.*Determinate Nix \([0-9][0-9A-Za-z.-]*\)).*/\1/p'
+        ;;
+    *)
+        printf '%s\n' "$v" | awk '{print $NF}'
+        ;;
+    esac
+}
+
 # --- Main ---
 
 main() {
@@ -236,7 +259,7 @@ main() {
         info "nix already installed"
 
         # Show version info
-        current_version=$(nix --version 2>/dev/null | awk '{print $NF}')
+        current_version=$(nix_installed_version)
         info "current: $current_version, pinned: $NIX_VERSION"
 
         # Upgrade if version mismatch
@@ -259,7 +282,7 @@ main() {
             # different channel version. Do not consume run_onchange until the
             # installed binary matches the repository pin.
             hash -r
-            current_version=$(nix --version 2>/dev/null | awk '{print $NF}')
+            current_version=$(nix_installed_version)
             [ "$current_version" = "${NIX_VERSION#v}" ] ||
                 die "Nix upgrade completed but version is $current_version (expected ${NIX_VERSION#v})"
         fi

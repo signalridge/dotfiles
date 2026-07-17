@@ -62,7 +62,18 @@ jobs:
           nix_installer_aarch64_darwin_sha256=$(release_asset_digest_sha256 DeterminateSystems/nix-installer "$nix_installer" nix-installer-aarch64-darwin)
           nix_installer_aarch64_linux_sha256=$(release_asset_digest_sha256 DeterminateSystems/nix-installer "$nix_installer" nix-installer-aarch64-linux)
           nix_installer_x86_64_linux_sha256=$(release_asset_digest_sha256 DeterminateSystems/nix-installer "$nix_installer" nix-installer-x86_64-linux)
-          nix_version=$(gh release view --repo DeterminateSystems/nix --json tagName -q '.tagName')
+          # nixVersion tracks the Determinate .pkg *stable channel* (versioned by the
+          # Determinate Nix version, e.g. v3.21.7) — NOT the DeterminateSystems/nix
+          # release tag (the upstream nix version). The release tag is promoted ahead
+          # of the stable channel, so pinning it makes the installer's exact-match gate
+          # fail on macOS until stable catches up. The stable channel stays in lockstep
+          # with nix-installer.
+          nix_version=$(curl -fsSI "https://install.determinate.systems/determinate-pkg/stable/Universal" \
+            | tr -d '\r' | sed -n 's#^[Ll]ocation:[[:space:]]*.*/tag/\(v[0-9][0-9.]*\)/.*#\1#p' | head -n1)
+          if [[ ! "$nix_version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "failed to resolve Determinate stable channel version (got: '$nix_version')" >&2
+            exit 1
+          fi
           nixpkgs_bootstrap_rev=$(gh api repos/NixOS/nixpkgs/commits/nixpkgs-unstable -q '.sha')
           aqua_installer=$(gh release view --repo aquaproj/aqua-installer --json tagName -q '.tagName')
           aqua_installer_sha256=$(curl_sha256 "https://raw.githubusercontent.com/aquaproj/aqua-installer/${aqua_installer}/aqua-installer")
