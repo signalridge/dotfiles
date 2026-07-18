@@ -229,6 +229,46 @@ upgrade_via_pkg() {
     return "$rc"
 }
 
+# --- macOS: re-point the default profile at the pinned Determinate Nix ---
+#
+# The signed .pkg drops the pinned closure into /nix/store and upgrades the
+# determinate-nixd daemon, but its `setup_default_profile` action is
+# create-if-absent: it will NOT overwrite an existing default profile. If the
+# machine's default profile still carries an older (or upstream) nix, the
+# closure sits in the store yet `nix --version` (resolved via
+# /nix/var/nix/profiles/default) stays stale. `determinate-nixd upgrade` can't
+# rescue this either — it compares the *daemon* version, not the on-PATH CLI.
+# So when the closure is present but the profile is stale, swap it explicitly.
+swap_default_profile() {
+    local want="$1" # pinned Determinate version, no leading "v"
+    local profile="/nix/var/nix/profiles/default"
+    local metapath=""
+    local candidate
+
+    # The meta-package store path is exactly `*-determinate-nix-<version>`;
+    # the glob does NOT match the component packages (`-cmd-`, `-store-`,
+    # `-flake-`, ...), which carry an extra segment before the version.
+    for candidate in /nix/store/*-determinate-nix-"${want}"; do
+        [ -x "${candidate}/bin/nix" ] || continue
+        case "$("${candidate}/bin/nix" --version 2>/dev/null)" in
+        *"Determinate Nix ${want}"*)
+            metapath="$candidate"
+            break
+            ;;
+        esac
+    done
+
+    [ -n "$metapath" ] || return 1
+
+    # Remove whatever currently provides `nix` — the pname may be either
+    # upstream `nix` or `determinate-nix` — then install the pinned
+    # meta-package. Use the freshly-installed nix-env so an ancient CLI in the
+    # stale profile can't choke on the operation.
+    sudo "${metapath}/bin/nix-env" -p "$profile" -e nix >/dev/null 2>&1 || true
+    sudo "${metapath}/bin/nix-env" -p "$profile" -e determinate-nix >/dev/null 2>&1 || true
+    sudo "${metapath}/bin/nix-env" -p "$profile" -i "$metapath" || return 1
+}
+
 # --- Version parsing ---
 #
 # Determinate Nix reports two versions:
@@ -283,6 +323,19 @@ main() {
             # installed binary matches the repository pin.
             hash -r
             current_version=$(nix_installed_version)
+
+            # macOS fallback: the .pkg may have landed the pinned closure while
+            # leaving a stale default profile in place (see swap_default_profile).
+            # If PATH's nix is still behind but the pinned closure is already in
+            # the store, re-point the default profile, then re-check.
+            if [ "$current_version" != "${NIX_VERSION#v}" ] && [ "$(uname -s)" = "Darwin" ]; then
+                info "default profile still $current_version; re-pointing to ${NIX_VERSION#v}..."
+                swap_default_profile "${NIX_VERSION#v}" ||
+                    die "Nix upgrade failed: pinned determinate-nix ${NIX_VERSION#v} not found in /nix/store"
+                hash -r
+                current_version=$(nix_installed_version)
+            fi
+
             [ "$current_version" = "${NIX_VERSION#v}" ] ||
                 die "Nix upgrade completed but version is $current_version (expected ${NIX_VERSION#v})"
         fi
