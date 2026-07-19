@@ -7,7 +7,7 @@ versions:
   nixInstallerAarch64LinuxSha256: afa197be4d4dd48b57ffc2de7d32d1fbc464a22b45477f2b8e8e25562f5c9869
   nixInstallerX8664LinuxSha256: dce3363351d5886e996a7ce42619f4fd498939f5f881e40e0e39731175dd424e
   nixVersion: v3.21.7
-  nixpkgsBootstrapRev: a47c123a609287a012dfc44d281de2dd4ed13394
+  nixpkgsBootstrapRev: 20535e48e12c86043b577b8518234ff5dbb26957
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
   aquaVersion: v2.62.0
@@ -28,8 +28,8 @@ versions:
   cursorAgentLinuxX64Sha256: 106acf6b3a3781cd279038726abc4f79f987449b9f5219b0f6e62d96c88fee6d
   tpmRev: e261deb1b47614eed3400089ce7197dc68acc4eb
   tpmSha256: 72d92c512270d4857e27519ac97b92a52cf149afe4d92f26860c710f60bbbe37
-  claudeWshobsonAgentsRev: b6af3711058190e4b5c5274b9758498fe626ec5a
-  claudeWshobsonAgentsSha256: c663d6e1350ae2a693369c1d5b76cec0048f7f66ad8534d3ac02580c784ca335
+  claudeWshobsonAgentsRev: c4b82b0ad771190355eb8e204b1329732a18449a
+  claudeWshobsonAgentsSha256: ada3f8e177be3b522e63b77f14fac4bc95b0b1e6e73e9342028dba55004a2bb3
   claudeAnthropicsSkillsRev: fa0fa64bdc967915dc8399e803be67759e1e62b8
   claudeAnthropicsSkillsSha256: 3fa5cb4472fc79626be4ebc3bf997b1ef57e413b8801a7ccac874860b287317f
   claudeBaoyuSkillsRev: 6b7a2e417500561a5ecdd0b168332f4142584617
@@ -50,7 +50,7 @@ versions:
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 1b68527de26e1f54dc875de4cff63b4b84c8be5b
   dailyDevSkillsRev: bfb33868bb1d70ba3098c10afd0a37d75af53d9a
-  opcSkillsRev: 768bcddd5af848d58578fdb0d3284496feb960ea
+  opcSkillsRev: 7022e7b158bb7d6d73063bc9b67b92a11c9afde8
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 4158351dd5420c027755953fb73baa92d59a8b7b
@@ -58,7 +58,7 @@ versions:
   actionbookRustSkillsRev: fa60f7931223646fb71c4586b4a6c8545016076a
   dpearsonSwiftSkillsRev: 90c9573272531337962fbb3505036d61ed23389a
   effectiveTypescriptRev: d754db2077d71ae1e2b57bf50ae7bc565067a2e0
-  bobmatnycMpmSkillsRev: 0d2264f626be7c17d06f232721ea184b3814d9f5
+  bobmatnycMpmSkillsRev: 718070a7d622921b01687799a1f9613f36c6f615
   humanizerEnRev: 1b48564898e999219882660237fde01bf4843a0f
   humanizerJaRev: 1b850cfe8529f7836025b2edd15b3d64447f8fb6
   quAiWeiRev: 1600d3fcb5ec9f4db8835f48681b50e3e7f56fff
