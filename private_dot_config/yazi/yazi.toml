@@ -40,13 +40,13 @@ reveal = [
 [open]
 rules = [
   # Text files
-  { name = "*.{txt,md,json,yaml,yml,toml,ini,conf,sh,zsh,bash,fish}", use = ["edit", "reveal"] },
+  { url = "*.{txt,md,json,yaml,yml,toml,ini,conf,sh,zsh,bash,fish}", use = ["edit", "reveal"] },
   # Code files
-  { name = "*.{rs,go,py,js,ts,tsx,jsx,c,cpp,h,hpp,java,kt,swift}", use = ["edit", "reveal"] },
+  { url = "*.{rs,go,py,js,ts,tsx,jsx,c,cpp,h,hpp,java,kt,swift}", use = ["edit", "reveal"] },
   # Nix files
-  { name = "*.nix", use = ["edit", "reveal"] },
+  { url = "*.nix", use = ["edit", "reveal"] },
   # Fallback
-  { name = "*", use = ["open", "reveal"] },
+  { url = "*", use = ["open", "reveal"] },
 ]
 
 [tasks]

@@ -5,7 +5,7 @@
 [flavor]
 use = ""
 
-[manager]
+[mgr]
 cwd = { fg = "#8be9fd" }
 hovered = { bg = "#44475a", bold = true }
 preview_hovered = { bg = "#44475a" }
@@ -89,33 +89,33 @@ title_error = { fg = "#ff5555" }
 [filetype]
 rules = [
   # Directories
-  { name = "*/", fg = "#8be9fd", bold = true },
+  { url = "*/", fg = "#8be9fd", bold = true },
 
   # Hidden files
-  { name = ".*", fg = "#6272a4" },
+  { url = ".*", fg = "#6272a4" },
 
   # Code files
-  { name = "*.rs", fg = "#ffb86c" },
-  { name = "*.go", fg = "#8be9fd" },
-  { name = "*.py", fg = "#f1fa8c" },
-  { name = "*.js", fg = "#f1fa8c" },
-  { name = "*.ts", fg = "#8be9fd" },
-  { name = "*.tsx", fg = "#8be9fd" },
-  { name = "*.jsx", fg = "#f1fa8c" },
-  { name = "*.nix", fg = "#bd93f9" },
-  { name = "*.sh", fg = "#50fa7b" },
+  { url = "*.rs", fg = "#ffb86c" },
+  { url = "*.go", fg = "#8be9fd" },
+  { url = "*.py", fg = "#f1fa8c" },
+  { url = "*.js", fg = "#f1fa8c" },
+  { url = "*.ts", fg = "#8be9fd" },
+  { url = "*.tsx", fg = "#8be9fd" },
+  { url = "*.jsx", fg = "#f1fa8c" },
+  { url = "*.nix", fg = "#bd93f9" },
+  { url = "*.sh", fg = "#50fa7b" },
 
   # Config files
-  { name = "*.{json,yaml,yml,toml}", fg = "#ff79c6" },
+  { url = "*.{json,yaml,yml,toml}", fg = "#ff79c6" },
 
   # Documents
-  { name = "*.{md,txt,pdf}", fg = "#f8f8f2" },
+  { url = "*.{md,txt,pdf}", fg = "#f8f8f2" },
 
   # Media
-  { name = "*.{jpg,jpeg,png,gif,webp,svg}", fg = "#ffb86c" },
-  { name = "*.{mp3,flac,wav,m4a}", fg = "#50fa7b" },
-  { name = "*.{mp4,mkv,avi,mov}", fg = "#ff79c6" },
+  { url = "*.{jpg,jpeg,png,gif,webp,svg}", fg = "#ffb86c" },
+  { url = "*.{mp3,flac,wav,m4a}", fg = "#50fa7b" },
+  { url = "*.{mp4,mkv,avi,mov}", fg = "#ff79c6" },
 
   # Archives
-  { name = "*.{zip,tar,gz,7z,rar}", fg = "#ff5555" },
+  { url = "*.{zip,tar,gz,7z,rar}", fg = "#ff5555" },
 ]
