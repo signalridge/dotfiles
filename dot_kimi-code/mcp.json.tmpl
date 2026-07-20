@@ -1,0 +1,61 @@
+{{- /*
+  ~/.kimi-code/mcp.json — user-global MCP servers for Kimi Code (K3).
+
+  Kimi loads MCP declarations from three files and merges them, later files
+  overriding earlier ones (verified in the kimi-code binary):
+    1. user-global   ~/.kimi-code/mcp.json   ← THIS file (lowest precedence)
+    2. project-root  <repo>/.mcp.json         (Claude-compatible, per-repo)
+    3. project-local <cwd>/.kimi-code/mcp.json (highest precedence)
+  So this file is the shared default set; a repo can still override any entry.
+
+  Same functional set as the other harnesses (claude/codex/pi/cursor). Kimi's
+  schema is a discriminatedUnion on "transport" with a preprocessor that infers
+  it: a bare "url" → http, a bare "command" → stdio, so no explicit type is
+  needed (same shape as ~/.cursor/mcp.json). stdio servers reuse the shared
+  ~/.local/bin/mcp-* wrappers or uvx/uv; remote servers use "url". The pi-only
+  "lifecycle"/"directTools" fields are omitted — Kimi has no such lifecycle.
+  Managed by chezmoi (dot_kimi-code/mcp.json.tmpl).
+*/ -}}
+{
+  "mcpServers": {
+    "context7": {
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "tavily": {
+      "command": "{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily",
+      "args": []
+    },
+    "serena": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        ".",
+        "--enable-web-dashboard",
+        "false"
+      ],
+      "env": {
+        "AQUA_GLOBAL_CONFIG": "{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml"
+      }
+    },
+    "deepwiki": {
+      "url": "https://mcp.deepwiki.com/mcp"
+    },
+    "gitmcp": {
+      "url": "https://gitmcp.io/docs"
+    },
+    "markitdown": {
+      "command": "uvx",
+      "args": ["markitdown-mcp"]
+    },
+    "arxiv": {
+      "command": "uv",
+      "args": ["tool", "run", "arxiv-mcp-server"]
+    }
+  }
+}
