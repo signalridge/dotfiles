@@ -57,6 +57,25 @@ packages:
     supported_envs:
       - darwin
       - linux
+  - type: http
+    repo_owner: MoonshotAI
+    repo_name: kimi-code
+    description: Kimi Code CLI — native single-binary AI coding agent (Kimi K3)
+    # Binaries live on Moonshot's CDN, NOT GitHub Releases (whose assets are empty;
+    # the repo only carries npm-style tags `@moonshot-ai/kimi-code@X`). version_prefix
+    # strips that tag prefix into {{.SemVer}} ({{.Version}} keeps the full tag).
+    # CDN layout: binaries/<semver>/kimi-code-<os>-<arch> — a raw, self-contained
+    # Node-SEA binary (no Node runtime needed). Arch amd64->x64; darwin/linux only.
+    version_prefix: "@moonshot-ai/kimi-code@"
+    url: "https://code.kimi.com/kimi-code/binaries/{{.SemVer}}/kimi-code-{{.OS}}-{{.Arch}}"
+    format: raw
+    files:
+      - name: kimi
+    replacements:
+      amd64: x64
+    supported_envs:
+      - darwin
+      - linux
   - type: github_release
     repo_owner: mr-karan
     repo_name: doggo

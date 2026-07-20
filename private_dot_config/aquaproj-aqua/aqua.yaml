@@ -13,6 +13,13 @@ packages:
     registry: third-party
   - name: ogulcancelik/herdr@v0.7.4
     registry: third-party
+  # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
+  # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
+  # Moonshot's CDN (self-contained Node-SEA, no Node runtime). NOTE: the CDN's
+  # `latest` can lag GitHub tags, so `aqua up` may propose a version not yet on the
+  # CDN — keep this at a CDN-present version (binaries/<ver>/manifest.json resolves).
+  - name: MoonshotAI/kimi-code@0.27.0
+    registry: third-party
   # ----- standard registry -----
   - name: nektos/act@v0.2.89
   - name: FiloSottile/age@v1.3.1

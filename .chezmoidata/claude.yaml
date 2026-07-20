@@ -38,14 +38,19 @@ claude:
       models:
         - deepseek-v4-pro[1m]
         - deepseek-v4-flash
-    # Kimi K2 (Moonshot): https://github.com/MoonshotAI/kimi-cli/blob/main/docs/en/configuration/providers.md
+    # Kimi Code (Moonshot subscription, Kimi K3): https://www.kimi.com/code/docs
+    # Anthropic-compatible coding endpoint; API keys from www.kimi.com/code/console.
+    # NOTE: distinct from Moonshot's pay-per-token open platform (api.moonshot.ai),
+    # which aichat still uses via gopass claude/kimi/private/api_key.
     kimi:
       base_url: https://api.kimi.com/coding
       timeout_ms: 300000
       disable_nonessential_traffic: true
+      default_model: k3
       models:
-        - kimi-k2.5
-        - kimi-k2
+        - k3 # Kimi K3 (Moderato+ members)
+        - kimi-for-coding # Kimi K2.7 Code (all members)
+        - kimi-for-coding-highspeed # K2.7 Code high-speed (Allegretto+ members)
     # GLM Coding Plan: https://docs.bigmodel.cn/cn/coding-plan/latest-model
     glm:
       base_url: https://api.z.ai/api/anthropic
@@ -138,11 +143,11 @@ claude:
       sonnet_model: ark-code-latest
       opus_model: ark-code-latest
     kimi@private:
-      model: kimi-k2.5
-      small_model: kimi-k2.5
-      haiku_model: kimi-k2.5
-      sonnet_model: kimi-k2.5
-      opus_model: kimi-k2.5
+      model: k3
+      small_model: kimi-for-coding-highspeed
+      haiku_model: kimi-for-coding-highspeed
+      sonnet_model: kimi-for-coding
+      opus_model: k3
     newapi@private:
       provider: newapi
       model: glm-5.2
