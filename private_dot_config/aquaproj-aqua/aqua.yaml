@@ -11,14 +11,14 @@ packages:
     registry: third-party
   - name: signalridge/qmk-hid-host@v2026.06.14.1
     registry: third-party
-  - name: ogulcancelik/herdr@v0.7.4
+  - name: ogulcancelik/herdr@v0.7.5
     registry: third-party
   # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
   # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
   # Moonshot's CDN (self-contained Node-SEA, no Node runtime). NOTE: the CDN's
   # `latest` can lag GitHub tags, so `aqua up` may propose a version not yet on the
   # CDN — keep this at a CDN-present version (binaries/<ver>/manifest.json resolves).
-  - name: MoonshotAI/kimi-code@0.27.0
+  - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@0.28.1
     registry: third-party
   # ----- standard registry -----
   - name: nektos/act@v0.2.89
@@ -33,14 +33,14 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.214
-  - name: openai/codex@rust-v0.144.6
+  - name: anthropics/claude-code@v2.1.217
+  - name: openai/codex@rust-v0.145.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.7.7
+  - name: jdx/mise@v2026.7.11
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -49,7 +49,7 @@ packages:
   - name: Wilfred/difftastic@0.69.0
   # Darwin uses Cargo for eza. Track crates.io releases directly: GitHub tag
   # v0.23.5 existed before its crate, which made aqua's Cargo install impossible.
-  - name: crates.io/eza@0.23.4
+  - name: crates.io/eza@0.23.5
   - name: fastfetch-cli/fastfetch@2.66.0
   - name: sharkdp/fd@v10.4.2
   - name: junegunn/fzf@v0.74.1
@@ -65,7 +65,7 @@ packages:
   - name: ynqa/jnv@v0.7.1
   - name: tldr-pages/tlrc@v1.13.1
   - name: ast-grep/ast-grep@0.44.1
-  - name: casey/just@1.56.0
+  - name: casey/just@1.57.0
   - name: jesseduffield/lazygit@v0.63.1
   - name: jesseduffield/lazydocker@v0.25.2
   - name: neovim/neovim@v0.12.4
@@ -87,7 +87,7 @@ packages:
   - name: JohnnyMorganz/StyLua@v2.5.2
   - name: Kampfkarren/selene@0.31.0
   - name: crate-ci/typos@v1.48.0
-  - name: zizmorcore/zizmor@v1.27.0
+  - name: zizmorcore/zizmor@v1.28.0
   - name: gitleaks/gitleaks@v8.30.1
   - name: koalaman/shellcheck@v0.11.0
   - name: mvdan/sh@v3.13.1
@@ -103,7 +103,7 @@ packages:
   - name: XAMPPRocky/tokei@14.0.0
   - name: sharkdp/hyperfine@v1.20.0
   - name: hatoo/oha@v1.15.0
-  - name: ClementTsang/bottom@0.14.5
+  - name: ClementTsang/bottom@0.14.6
   - name: dalance/procs@v0.14.12
   - name: sharkdp/hexyl@v0.17.0
   - name: mr-karan/doggo@v1.2.0
@@ -121,7 +121,7 @@ packages:
   - name: ahmetb/kubectx@v0.11.0
   - name: kubernetes-sigs/krew@v0.5.0
   - name: aquasecurity/trivy@v0.72.0
-  - name: anchore/syft@v1.48.0
+  - name: anchore/syft@v1.49.0
   - name: anchore/grype@v0.116.0
   - name: LucasPickering/slumber@v5.3.0
   - name: charmbracelet/gum@v0.17.0
