@@ -1,67 +1,146 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { CustomEditor } from "@earendil-works/pi-coding-agent";
+import {
+  CustomEditor,
+  type ExtensionAPI,
+  type KeybindingsManager,
+} from "@earendil-works/pi-coding-agent";
+import {
+  visibleWidth,
+  type EditorTheme,
+  type TUI,
+} from "@earendil-works/pi-tui";
 
-// Codex-style leading prompt marker for pi's input textbox.
-//
-// pi has NO config key for an input prefix: the interactive editor
-// (pi-tui Editor.render) draws only the text with left padding — no marker,
-// and footer.json `promptInput.prefix` is dead config (pi reads settings.json
-// only). The supported way to customize the input component is the extension
-// API `ctx.ui.setEditorComponent(factory)` (ExtensionContext passed to event
-// handlers), which the docs recommend driving by subclassing CustomEditor.
-//
-// The marker is rendered BOLD for a heavier look. Default glyph is "❯".
-// Override the glyph:  env PI_INPUT_PREFIX (single-width char recommended).
-// Disable entirely:    remove this extension dir + restart pi.
+import {
+  ansiRgb,
+  detachLeadingShellBang,
+  highlightLeadingSlashToken,
+  injectPromptSymbol,
+  KIMI_DARK_EDITOR_RGB,
+  wrapWithRoundedBorder,
+  type Paint,
+} from "./render.js";
 
-// First code point of the configured marker, then a space -> 2 visible columns.
-const MARKER = (process.env.PI_INPUT_PREFIX || "❯").at(0) ?? "❯";
-const PREFIX = MARKER + " ";
-const PREFIX_COLS = 2;
+// Kimi Code-style input textbox for Pi. Kimi's editor is also built on
+// pi-tui: four columns of padding reserve room for a `>`/`!` prompt token,
+// while a render post-pass turns Pi's horizontal rules into a rounded box.
+// This keeps Pi's native editing, autocomplete, history, IME, and app-level
+// shortcuts intact.
+//
+// Override the normal prompt glyph with PI_INPUT_PREFIX. A single-cell glyph
+// is required so the visual overlay does not disturb Pi's cursor math.
+const configuredMarker = (process.env.PI_INPUT_PREFIX || ">").at(0) ?? ">";
+const PROMPT_MARKER = visibleWidth(configuredMarker) === 1 ? configuredMarker : ">";
+const EDITOR_PADDING = 4;
 const BOLD = "\x1b[1m";
 const RESET = "\x1b[0m";
+const INVERSE_ON = "\x1b[7m";
+const INVERSE_OFF = "\x1b[27m";
 
-class PrefixEditor extends CustomEditor {
-  // The host forces setPaddingX(defaultEditor.getPaddingX()) right after the
-  // factory runs (interactive-mode setCustomEditorComponent), and the default
-  // is 0. Floor it so there are always >= PREFIX_COLS left-padding columns to
-  // overwrite, keeping text columns and cursor math untouched.
+interface KimiEditorColors {
+  normal: Paint;
+  focus: Paint;
+  muted: Paint;
+  shell: Paint;
+  slashToken: Paint;
+}
+
+const KIMI_EDITOR_COLORS: KimiEditorColors = {
+  normal: ansiRgb(...KIMI_DARK_EDITOR_RGB.border),
+  focus: ansiRgb(...KIMI_DARK_EDITOR_RGB.primary),
+  muted: ansiRgb(...KIMI_DARK_EDITOR_RGB.muted),
+  shell: ansiRgb(...KIMI_DARK_EDITOR_RGB.shell),
+  slashToken: ansiRgb(...KIMI_DARK_EDITOR_RGB.primary, { bold: true }),
+};
+
+class KimiStyleEditor extends CustomEditor {
+  private readonly colors: KimiEditorColors;
+
+  constructor(
+    tui: TUI,
+    theme: EditorTheme,
+    keybindings: KeybindingsManager,
+    colors: KimiEditorColors,
+  ) {
+    const kimiTheme: EditorTheme = {
+      ...theme,
+      borderColor: colors.normal,
+      selectList: {
+        ...theme.selectList,
+        selectedPrefix: colors.focus,
+        selectedText: colors.focus,
+        description: colors.muted,
+        scrollInfo: colors.muted,
+        noMatch: colors.muted,
+      },
+    };
+    super(tui, kimiTheme, keybindings, { paddingX: EDITOR_PADDING });
+    this.colors = colors;
+  }
+
+  // Pi copies the default editor's padding immediately after the custom editor
+  // factory returns. Keep Kimi's four-column layout even when that default is 0.
   setPaddingX(padding: number): void {
-    super.setPaddingX(Math.max(PREFIX_COLS, padding));
+    super.setPaddingX(Math.max(EDITOR_PADDING, padding));
   }
 
   render(width: number): string[] {
-    const lines = super.render(width);
+    const original = super.render(width);
+    if (original.length < 3) return original;
+
     try {
-      // lines[0] = top border; lines[1] = first content line (always present:
-      // an empty editor still renders one cursor line). The content line begins
-      // with `paddingX` literal spaces, so replacing the first PREFIX_COLS of
-      // them with an equal-width bold+colored marker preserves total visible
-      // width (ANSI styling is zero-width; RESET keeps the input text clean).
-      if (lines.length >= 2 && this.getPaddingX() >= PREFIX_COLS) {
-        const color = this.borderColor ?? ((s: string) => s);
-        lines[1] =
-          `${BOLD}${color(PREFIX)}${RESET}` + lines[1].slice(PREFIX_COLS);
+      const lines = [...original];
+      const text = this.getText();
+      const isShell = text.startsWith("!");
+      const isSlashCommand = !isShell && text.trimStart().startsWith("/");
+      // Use Kimi Code's exact dark palette rather than Pi's thinking-level
+      // border: neutral at rest, primary for slash commands, violet in shell mode.
+      const border = isShell
+        ? this.colors.shell
+        : isSlashCommand
+          ? this.colors.focus
+          : this.colors.normal;
+
+      let prompt = PROMPT_MARKER;
+      const firstContentIndex = 1;
+      const firstContent = lines[firstContentIndex];
+
+      if (firstContent !== undefined) {
+        if (isSlashCommand) {
+          const highlighted = highlightLeadingSlashToken(firstContent, this.colors.slashToken);
+          if (highlighted !== undefined) lines[firstContentIndex] = highlighted;
+        }
+
+        if (isShell) {
+          const detached = detachLeadingShellBang(firstContent);
+          lines[firstContentIndex] = detached.line;
+
+          const bang = border("!");
+          prompt = detached.cursorOnPrompt
+            ? `${detached.hardwareCursorMarker}${INVERSE_ON}${bang}${INVERSE_OFF}`
+            : bang;
+        }
+
+        const withPrompt = injectPromptSymbol(lines[firstContentIndex]!, prompt);
+        if (withPrompt !== undefined) lines[firstContentIndex] = withPrompt;
       }
+
+      const label = isShell
+        ? ` ${BOLD}${border("! shell mode")}${RESET} `
+        : undefined;
+      return wrapWithRoundedBorder(lines, border, { label });
     } catch {
-      // A cosmetic overlay must never break the input box: fall through to the
-      // untouched super.render() output on any error.
+      // Cosmetic rendering must never make the editor unusable.
+      return original;
     }
-    return lines;
   }
 }
 
 export default function (pi: ExtensionAPI) {
-  // ctx.ui.setEditorComponent swaps the editor live (preserving text, border
-  // color, keybindings, autocomplete). `ui` lives on the ExtensionContext
-  // passed to the handler, NOT on the top-level ExtensionAPI.
   pi.on("session_start", (_event, ctx) => {
-    try {
-      ctx.ui.setEditorComponent(
-        (tui, theme, keybindings) => new PrefixEditor(tui, theme, keybindings),
-      );
-    } catch {
-      // Non-interactive mode: no editor to swap.
-    }
+    if (ctx.mode !== "tui") return;
+
+    ctx.ui.setEditorComponent(
+      (tui, theme, keybindings) =>
+        new KimiStyleEditor(tui, theme, keybindings, KIMI_EDITOR_COLORS),
+    );
   });
 }

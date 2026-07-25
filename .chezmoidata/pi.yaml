@@ -11,16 +11,14 @@ pi:
 
   # ===== Startup defaults -> ~/.pi/agent/settings.json =====
   defaults:
-    # Custom Pi theme: Catppuccin Mocha. Loaded from
-    # ~/.pi/agent/themes/catppuccin-mocha.json (Pi auto-discovers themes/*.json;
-    # hot-reloads on edit). Soft pastel palette (mauve accent, blue functions,
-    # green strings, peach numbers); the background-tint tokens
-    # (userMessageBg/tool*Bg/selectionBg) are tuned to sit on the ghostty #282a36
-    # bg rather than Mocha's own #1e1e2e, so the boxes read naturally on the
-    # actual terminal background. The old signalridge-dracula.json is kept in
-    # themes/ as a one-`/settings` switch fallback. All footer/TUI semantic
-    # colors follow this theme.
-    theme: catppuccin-mocha
+    # Saturated Dracula theme aligned with Ghostty's native palette. Kimi's
+    # hierarchy is retained: cyan is the primary interaction color, purple is the
+    # secondary/shell color, and green/orange/red communicate state. Neutral text
+    # stays bright while comment/muted colors remain subdued, so chromatic accents
+    # read clearly without making every line neon. The custom input editor uses
+    # Kimi Code's exact dark colors independently: #5a5a5a, #4fa8ff, #6b6b6b,
+    # and #bd93f9. Catppuccin Mocha remains available from `/settings`.
+    theme: signalridge-dracula
     # GPT-5.6 supports Pi's native `max` reasoning effort. Keep it as the parent
     # default. OpenAI Ultra is a separate multi-agent mode, not a reasoning-effort value.
     defaultThinkingLevel: max

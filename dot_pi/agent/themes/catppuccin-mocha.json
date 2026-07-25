@@ -21,6 +21,9 @@
     "teal": "#94e2d5",
     "sky": "#89dceb",
     "blue": "#89b4fa",
+    "draculaBorder": "#6272a4",
+    "draculaFocus": "#8be9fd",
+    "draculaShell": "#bd93f9",
     "selectionBg": "#3a3d52",
     "toolPendingBg": "#2b2d3d",
     "toolSuccessBg": "#243230",
@@ -29,8 +32,8 @@
   },
   "colors": {
     "accent": "mauve",
-    "border": "overlay0",
-    "borderAccent": "sky",
+    "border": "draculaBorder",
+    "borderAccent": "draculaFocus",
     "borderMuted": "surface1",
     "success": "green",
     "error": "red",
@@ -78,7 +81,7 @@
     "thinkingMedium": "overlay2",
     "thinkingHigh": "subtext0",
     "thinkingXhigh": "subtext0",
-    "bashMode": "subtext0"
+    "bashMode": "draculaShell"
   },
   "export": {
     "pageBg": "#181825",

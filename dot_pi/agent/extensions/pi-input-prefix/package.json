@@ -2,7 +2,7 @@
   "name": "pi-ext-input-prefix",
   "version": "0.1.0",
   "private": true,
-  "description": "Codex-style leading prompt marker for pi's input textbox",
+  "description": "Kimi Code-style rounded input textbox for pi",
   "type": "module",
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*"

@@ -39,30 +39,46 @@ const LIST_ROWS = 10;
 
 export default function (pi: ExtensionAPI) {
   let historyCache: string[] = [];
+  let historyReady: Promise<void> = Promise.resolve();
+  let loadGeneration = 0;
 
-  pi.on("session_start", async (_event, ctx) => {
-    const items = await loadRecentPrompts(ctx.cwd, MAX_MESSAGES);
-    historyCache = items;
+  pi.on("session_start", (_event, ctx) => {
+    const generation = ++loadGeneration;
+    historyCache = [];
 
-    if (items.length === 0) return;
+    // Do not block later session_start handlers: the Kimi editor must replace
+    // Pi's bootstrap editor immediately instead of waiting for session I/O.
+    historyReady = loadRecentPrompts(ctx.cwd, MAX_MESSAGES).then((items) => {
+      if (generation !== loadGeneration) return;
+      historyCache = items;
+      if (items.length === 0) return;
 
-    const prevComponentFactory = ctx.ui.getEditorComponent();
-    ctx.ui.setEditorComponent((tui, theme, keybindings) => {
-      const editor =
-        prevComponentFactory?.(tui, theme, keybindings) ??
-        new CustomEditor(tui, theme, keybindings);
+      const prevComponentFactory = ctx.ui.getEditorComponent();
+      ctx.ui.setEditorComponent((tui, theme, keybindings) => {
+        const editor =
+          prevComponentFactory?.(tui, theme, keybindings) ??
+          new CustomEditor(tui, theme, keybindings);
 
-      for (let i = items.length - 1; i >= 0; i--) {
-        editor.addToHistory?.(items[i]!);
-      }
-      return editor;
-    });
+        for (let i = items.length - 1; i >= 0; i--) {
+          editor.addToHistory?.(items[i]!);
+        }
+        return editor;
+      });
+    }).catch(() => undefined);
+  });
+
+  pi.on("session_shutdown", () => {
+    loadGeneration++;
+    historyReady = Promise.resolve();
   });
 
   // Ctrl+R: fuzzy history popup (fzf / atuin style)
   pi.registerShortcut("ctrl+r", {
     description: "Fuzzy popup search through prompt history",
     handler: async (ctx) => {
+      // If invoked during startup, wait for the background history scan rather
+      // than briefly reporting an empty history.
+      await historyReady;
       // Merge cached history with current session's branch history
       const branchHistory = collectBranchHistory(ctx);
       const merged = mergeHistory(branchHistory, historyCache);
