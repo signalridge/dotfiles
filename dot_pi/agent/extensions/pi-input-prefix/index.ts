@@ -10,20 +10,17 @@ import {
 } from "@earendil-works/pi-tui";
 
 import {
-  ansiRgb,
   detachLeadingShellBang,
   highlightLeadingSlashToken,
   injectPromptSymbol,
-  KIMI_DARK_EDITOR_RGB,
   wrapWithRoundedBorder,
   type Paint,
 } from "./render.js";
 
-// Kimi Code-style input textbox for Pi. Kimi's editor is also built on
-// pi-tui: four columns of padding reserve room for a `>`/`!` prompt token,
-// while a render post-pass turns Pi's horizontal rules into a rounded box.
-// This keeps Pi's native editing, autocomplete, history, IME, and app-level
-// shortcuts intact.
+// Rounded, theme-following input textbox for Pi. Four columns of padding
+// reserve room for a `>`/`!` prompt token, while a render post-pass turns
+// Pi's horizontal rules into a rounded box. Native editing, autocomplete,
+// history, IME, app shortcuts, and the active Pi theme remain intact.
 //
 // Override the normal prompt glyph with PI_INPUT_PREFIX. A single-cell glyph
 // is required so the visual overlay does not disturb Pi's cursor math.
@@ -35,7 +32,7 @@ const RESET = "\x1b[0m";
 const INVERSE_ON = "\x1b[7m";
 const INVERSE_OFF = "\x1b[27m";
 
-interface KimiEditorColors {
+interface EditorColors {
   normal: Paint;
   focus: Paint;
   muted: Paint;
@@ -43,41 +40,28 @@ interface KimiEditorColors {
   slashToken: Paint;
 }
 
-const KIMI_EDITOR_COLORS: KimiEditorColors = {
-  normal: ansiRgb(...KIMI_DARK_EDITOR_RGB.border),
-  focus: ansiRgb(...KIMI_DARK_EDITOR_RGB.primary),
-  muted: ansiRgb(...KIMI_DARK_EDITOR_RGB.muted),
-  shell: ansiRgb(...KIMI_DARK_EDITOR_RGB.shell),
-  slashToken: ansiRgb(...KIMI_DARK_EDITOR_RGB.primary, { bold: true }),
-};
-
-class KimiStyleEditor extends CustomEditor {
-  private readonly colors: KimiEditorColors;
+class RoundedPromptEditor extends CustomEditor {
+  private readonly colors: EditorColors;
 
   constructor(
     tui: TUI,
     theme: EditorTheme,
     keybindings: KeybindingsManager,
-    colors: KimiEditorColors,
   ) {
-    const kimiTheme: EditorTheme = {
-      ...theme,
-      borderColor: colors.normal,
-      selectList: {
-        ...theme.selectList,
-        selectedPrefix: colors.focus,
-        selectedText: colors.focus,
-        description: colors.muted,
-        scrollInfo: colors.muted,
-        noMatch: colors.muted,
-      },
+    const focus = theme.selectList.selectedText;
+    const colors: EditorColors = {
+      normal: theme.borderColor,
+      focus,
+      muted: theme.selectList.description,
+      shell: focus,
+      slashToken: (text) => `${BOLD}${focus(text)}${RESET}`,
     };
-    super(tui, kimiTheme, keybindings, { paddingX: EDITOR_PADDING });
+    super(tui, theme, keybindings, { paddingX: EDITOR_PADDING });
     this.colors = colors;
   }
 
   // Pi copies the default editor's padding immediately after the custom editor
-  // factory returns. Keep Kimi's four-column layout even when that default is 0.
+  // factory returns. Keep four columns even when that default is 0.
   setPaddingX(padding: number): void {
     super.setPaddingX(Math.max(EDITOR_PADDING, padding));
   }
@@ -91,8 +75,8 @@ class KimiStyleEditor extends CustomEditor {
       const text = this.getText();
       const isShell = text.startsWith("!");
       const isSlashCommand = !isShell && text.trimStart().startsWith("/");
-      // Use Kimi Code's exact dark palette rather than Pi's thinking-level
-      // border: neutral at rest, primary for slash commands, violet in shell mode.
+      // Follow the active Pi theme: default border at rest, accent for slash
+      // commands and shell mode.
       const border = isShell
         ? this.colors.shell
         : isSlashCommand
@@ -140,7 +124,7 @@ export default function (pi: ExtensionAPI) {
 
     ctx.ui.setEditorComponent(
       (tui, theme, keybindings) =>
-        new KimiStyleEditor(tui, theme, keybindings, KIMI_EDITOR_COLORS),
+        new RoundedPromptEditor(tui, theme, keybindings),
     );
   });
 }

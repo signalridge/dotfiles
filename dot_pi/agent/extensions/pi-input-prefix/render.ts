@@ -8,39 +8,6 @@ const EDITOR_LEFT_PADDING = "    ";
 
 export type Paint = (text: string) => string;
 
-/** Exact upstream Kimi Code dark-editor palette (MoonshotAI/kimi-code). */
-export const KIMI_DARK_EDITOR_RGB = {
-  border: [90, 90, 90],
-  primary: [79, 168, 255],
-  muted: [107, 107, 107],
-  shell: [189, 147, 249],
-} as const;
-
-/** Chalk-compatible true-colour painter without adding a runtime dependency. */
-export function ansiRgb(
-  red: number,
-  green: number,
-  blue: number,
-  options: { readonly bold?: boolean } = {},
-): Paint {
-  for (const channel of [red, green, blue]) {
-    if (!Number.isInteger(channel) || channel < 0 || channel > 255) {
-      throw new RangeError(`Invalid RGB channel: ${channel}`);
-    }
-  }
-
-  const foreground = `\x1b[38;2;${red};${green};${blue}m`;
-  const open = options.bold ? `${foreground}\x1b[1m` : foreground;
-  const close = options.bold ? "\x1b[22m\x1b[39m" : "\x1b[39m";
-
-  return (text) => {
-    // Reopen the requested style after embedded cursor/reset sequences, matching
-    // Chalk's nesting behaviour when a slash token contains the block cursor.
-    const nested = text.replace(ANSI_SGR, (sequence) => `${sequence}${open}`);
-    return `${open}${nested}${close}`;
-  };
-}
-
 export interface DetachedShellPrompt {
   line: string;
   cursorOnPrompt: boolean;
@@ -54,7 +21,7 @@ function stripSgr(text: string): string {
 
 /**
  * Remove Pi's semantic leading `!` from the rendered content row so it can be
- * displayed as a Kimi-style prompt token without changing the editor buffer.
+ * displayed as a prompt token without changing the editor buffer.
  * The removed cell is restored at the right edge to preserve rendered width.
  */
 export function detachLeadingShellBang(line: string): DetachedShellPrompt {
@@ -133,7 +100,7 @@ function mapVisibleIndexToRaw(line: string, visibleIndex: number): number {
   return rawIndex;
 }
 
-/** Bold-colour the leading slash-command token, as Kimi's editor does. */
+/** Bold-colour the leading slash-command token with the supplied theme painter. */
 export function highlightLeadingSlashToken(line: string, paint: Paint): string | undefined {
   const visible = stripVisualControls(line);
   const slashIndex = visible.indexOf("/");
@@ -156,8 +123,8 @@ export function highlightLeadingSlashToken(line: string, paint: Paint): string |
 }
 
 /**
- * Turn pi-tui's horizontal editor rules into Kimi-style rounded full borders.
- * Content and autocomplete rows retain their existing ANSI styling; only the
+ * Turn pi-tui's horizontal editor rules into a rounded full border.
+ * Content and autocomplete rows retain their existing theme styling; only the
  * outer cells are replaced.
  */
 export function wrapWithRoundedBorder(

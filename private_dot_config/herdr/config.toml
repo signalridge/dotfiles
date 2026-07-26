@@ -21,7 +21,6 @@ channel = "stable"                     # version is pinned by aqua — do NOT us
 [ui]
 prompt_new_tab_name = false            # new tab = no naming prompt
 show_agent_labels_on_pane_borders = true
-agent_panel_scope = "all"              # sidebar shows agents across all workspaces
 confirm_close = true
 mouse_scroll_lines = 3                 # == tmux @scroll-speed-num-lines-per-scroll '3'
 sidebar_width = 28
