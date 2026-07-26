@@ -33,7 +33,7 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.219
+  - name: anthropics/claude-code@v2.1.220
   - name: openai/codex@rust-v0.145.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
