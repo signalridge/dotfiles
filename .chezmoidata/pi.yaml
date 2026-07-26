@@ -27,11 +27,11 @@ pi:
     # reasoning defaults stay unchanged.
     defaultProvider: krill
     defaultModel: gpt-5.6-sol
-    # Native compaction threshold = contextWindow - reserveTokens (~74% of the
-    # 371K Krill / 372K Codex window). Pi 0.80.6 checks that threshold only at
-    # agent_end, so the global pi-early-compaction extension mirrors the same
-    # formula after each tool-use turn, compacts before the next provider call,
-    # then resumes the interrupted task. Keep 16K recent tokens compactable.
+    # Trigger threshold = contextWindow - reserveTokens (~74% of the 371K Krill /
+    # 372K Codex window). Pi 0.80.6 checks only at agent_end, so the global
+    # pi-early-compaction extension checks after each tool-use turn. Its custom
+    # summary path folds split turns into one low-reasoning request capped at 8K
+    # output tokens, then resumes the interrupted task. Keep 16K recent tokens.
     compaction:
       enabled: true
       reserveTokens: 96000
