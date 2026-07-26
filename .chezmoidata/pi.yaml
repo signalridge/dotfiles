@@ -11,31 +11,27 @@ pi:
 
   # ===== Startup defaults -> ~/.pi/agent/settings.json =====
   defaults:
-    # Saturated Dracula theme aligned with Ghostty's native palette. Kimi's
-    # hierarchy is retained: cyan is the primary interaction color, purple is the
-    # secondary/shell color, and green/orange/red communicate state. Neutral text
-    # stays bright while comment/muted colors remain subdued, so chromatic accents
-    # read clearly without making every line neon. The custom input editor uses
-    # Kimi Code's exact dark colors independently: #5a5a5a, #4fa8ff, #6b6b6b,
-    # and #bd93f9. Catppuccin Mocha remains available from `/settings`.
+    # Saturated Dracula theme aligned with Ghostty's native palette. Purple is
+    # the primary interaction color (matching Herdr's active border); cyan stays
+    # available for links and syntax while green/orange/red communicate state.
+    # The rounded input editor follows these Pi theme colors instead of carrying
+    # an independent Kimi Code palette. Catppuccin Mocha remains available from
+    # `/settings`.
     theme: signalridge-dracula
     # GPT-5.6 supports Pi's native `max` reasoning effort. Keep it as the parent
     # default. OpenAI Ultra is a separate multi-agent mode, not a reasoning-effort value.
     defaultThinkingLevel: max
-    # Native OpenAI Codex OAuth provider (openai-codex; OAuth in ~/.pi/agent/auth.json).
-    # Switched off the temporary gopass-backed Krill gateway (its timeouts + high error
-    # rate). The SAME gpt-5.6-sol model is exposed under openai-codex and supports `max`
-    # reasoning, so defaultModel + defaultThinkingLevel are unchanged — this is a provider
-    # swap, not a model change. NOTE: still OpenAI, so the `cyber_policy` block on
-    # adversarial security-review prompts is unaffected by this switch. Krill, GLM-5.2,
-    # and DeepSeek V4 remain available as manual /model alternatives.
-    defaultProvider: openai-codex
+    # User-requested switch back to the gopass-backed Krill gateway. The parent and
+    # all GPT subagents use krill/gpt-5.6-sol; native openai-codex OAuth remains a
+    # manual fallback. This is a provider route change only, so model and max
+    # reasoning defaults stay unchanged.
+    defaultProvider: krill
     defaultModel: gpt-5.6-sol
     # Native compaction threshold = contextWindow - reserveTokens (~74% of the
-    # 371K Krill / 372K Codex window). Generous reserve so a long single-turn
-    # tool loop compacts well before the hard ceiling instead of hitting Pi's
-    # emergency overflow recovery. Keep 16K recent tokens so ordinary capped
-    # tool output stays compactable.
+    # 371K Krill / 372K Codex window). Pi 0.80.6 checks that threshold only at
+    # agent_end, so the global pi-early-compaction extension mirrors the same
+    # formula after each tool-use turn, compacts before the next provider call,
+    # then resumes the interrupted task. Keep 16K recent tokens compactable.
     compaction:
       enabled: true
       reserveTokens: 96000
@@ -73,12 +69,11 @@ pi:
     # `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv) follows the
     # Pi theme. Extension-status icons (2nd line) are tunable via
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
-    # In-process subagents. Custom agent defs removed 2026-07-12; runs the built-in
-    # defaults (general-purpose/Explore/Plan) via disableDefaultAgents:false in
-    # dot_pi/agent/subagents.json. general-purpose + Plan are pinned to
-    # openai-codex/gpt-5.6-sol (matching the parent default, off the krill gateway);
-    # Explore stays on the cheap deepseek-v4-flash for read-only search. Model pins live
-    # in each dot_pi/agent/agents/*.md frontmatter (the only per-subagent model lever).
+    # In-process subagents use the built-in general-purpose/Explore/Plan definitions
+    # via disableDefaultAgents:false in dot_pi/agent/subagents.json. general-purpose
+    # and Plan are pinned to krill/gpt-5.6-sol, matching the parent default; Explore
+    # stays on deepseek-v4-flash for cheap read-only search. Pins live in each
+    # dot_pi/agent/agents/*.md frontmatter.
     - npm:@tintinweb/pi-subagents@0.13.0
     # Web search (zero-config Exa, no key) + fetch_content for PDF / GitHub
     # clone / YouTube / local-video. Multi-provider fallback chain. Keys optional
@@ -95,11 +90,6 @@ pi:
     # reducers + evidence record; rewrites shell/read/grep/find/ls and proxies
     # MCP to cut context pollution. Top-downloaded Pi package; pairs with readseek.
     - npm:@hypabolic/pi-hypa
-    # retry: widens what counts as retryable (provider "unknown error", Codex
-    # ws-limit, and a stall watchdog that aborts a frozen stream after ~90s) and
-    # hands off to Pi's built-in retry path. COMPLEMENTS defaults.retry above
-    # (that caps backoff; this adds trigger conditions). Zero deps/config.
-    - npm:@narumitw/pi-retry
     # caffeinate: inhibits macOS sleep (system `caffeinate`) while the agent is
     # processing a long turn; releases on idle/shutdown. /caffeinate to control.
     # Zero deps. Disable with PI_CAFFEINATE_DISABLED=1.
