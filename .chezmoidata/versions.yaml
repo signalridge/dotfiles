@@ -7,7 +7,7 @@ versions:
   nixInstallerAarch64LinuxSha256: fa5b3a13dffd70ea8f9575c3d0fe3af4cb2f881dfcb03983634dbe6756d4e39e
   nixInstallerX8664LinuxSha256: eecf66f62b044f40b0632d8e9ea72ffc3bd3214357d09317117febff748e71b3
   nixVersion: v3.21.8
-  nixpkgsBootstrapRev: 7525d999cd850b9a488817abc89c75dc733acf17
+  nixpkgsBootstrapRev: 335f0738cb2fa9708f3f428e39d2eae975d1338d
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
   aquaVersion: v2.62.1
@@ -37,8 +37,8 @@ versions:
   uiUxProMaxSkillRev: 1307d97a72e6c1cda572cb65471ae5ce82995218
   uiUxProMaxSkillSha256: 5eeb6c0d48aa93da4554320d788dcc0144cb193a310e3231d928ec2984a5161a
   openaiSkillsRev: 49f948faa9258a0c61caceaf225e179651397431
-  huggingfaceSkillsRev: 28525c599a24af10eff5900513261e6dc6631543
-  getsentrySkillsRev: 9a85b59acc928789b49907109483f46aee1050cd
+  huggingfaceSkillsRev: 87f9ee5b670a630b022809a8742606c6da21812c
+  getsentrySkillsRev: e7a87fa72645158f9b5e722cbb1c7e09266f48f1
   trailofbitsSkillsRev: cfe5d7b1619e47fb5b38b7e2561dad7e5f1e89af
   cloudflareSkillsRev: 30553f89ae1ef1e3c2917cd09d72dac992bb4e9a
   vercelLabsAgentSkillsRev: 7c180d9044c9ae2b442b567aad4e42a28dd5ed62
@@ -50,11 +50,11 @@ versions:
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 41259e8aef85f847145c383d02be6a40a2435466
   dailyDevSkillsRev: bfb33868bb1d70ba3098c10afd0a37d75af53d9a
-  opcSkillsRev: 0befbe7149ef7eaade41664c37caaabeedd1cbc6
+  opcSkillsRev: c45e47568c90a92b65eb951b228685ce0f981057
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 709b18186985c2ae7b6b5eb9cded2c635aa74be5
-  affaanEccRev: abe185c6a46c312d526c215abfcafe98ed9e951b
+  affaanEccRev: ac30ff3ea249bf5f94dbc5e9b18ab681cc9af91d
   actionbookRustSkillsRev: fa60f7931223646fb71c4586b4a6c8545016076a
   dpearsonSwiftSkillsRev: 90c9573272531337962fbb3505036d61ed23389a
   effectiveTypescriptRev: d754db2077d71ae1e2b57bf50ae7bc565067a2e0
