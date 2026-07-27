@@ -7,11 +7,11 @@ versions:
   nixInstallerAarch64LinuxSha256: fa5b3a13dffd70ea8f9575c3d0fe3af4cb2f881dfcb03983634dbe6756d4e39e
   nixInstallerX8664LinuxSha256: eecf66f62b044f40b0632d8e9ea72ffc3bd3214357d09317117febff748e71b3
   nixVersion: v3.21.8
-  nixpkgsBootstrapRev: 335f0738cb2fa9708f3f428e39d2eae975d1338d
+  nixpkgsBootstrapRev: e318e6adc497b5e8a5ac433c6c6ed21ecdab9029
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
   aquaVersion: v2.62.1
-  nixIndexDb: 2026-07-19-053822
+  nixIndexDb: 2026-07-26-054738
   paperlib: 3.1.12
   paperlibAmd64Sha256: 993d05c9bb9c8163f2d308736d2316ebf6db8a23b75133a170e22ea6e125746c
   paperlibArm64Sha256: a49ab642331632719079399c15551a6d0c9b16ca2f50a2ef35c297c3a9835459
@@ -50,11 +50,11 @@ versions:
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 41259e8aef85f847145c383d02be6a40a2435466
   dailyDevSkillsRev: bfb33868bb1d70ba3098c10afd0a37d75af53d9a
-  opcSkillsRev: c45e47568c90a92b65eb951b228685ce0f981057
+  opcSkillsRev: db8eff6a07fbde5bc41a33934e82af1c949ab63d
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
-  samberCcSkillsGolangRev: 709b18186985c2ae7b6b5eb9cded2c635aa74be5
-  affaanEccRev: ac30ff3ea249bf5f94dbc5e9b18ab681cc9af91d
+  samberCcSkillsGolangRev: 15b1a0fcf1b39f7aa7075094e1228cf4cbbb7c3b
+  affaanEccRev: 6a9f075cd97c139a5f7e84e1e3f2c9ab095adf64
   actionbookRustSkillsRev: fa60f7931223646fb71c4586b4a6c8545016076a
   dpearsonSwiftSkillsRev: 90c9573272531337962fbb3505036d61ed23389a
   effectiveTypescriptRev: d754db2077d71ae1e2b57bf50ae7bc565067a2e0
@@ -63,4 +63,4 @@ versions:
   humanizerJaRev: 1b850cfe8529f7836025b2edd15b3d64447f8fb6
   quAiWeiRev: 1600d3fcb5ec9f4db8835f48681b50e3e7f56fff
   drawioSkillRev: 89ff88cb27cd876d9085071d4f73c2502d0492e4
-  beautifyGithubReadmeSkillRev: fa477898d7f62b3c4cf19224a6a4eb7ce4b4defc
+  beautifyGithubReadmeSkillRev: 65085439a4586a99b99a154b6e3ecfaff83342f3
