@@ -295,5 +295,7 @@
   },
   "skipDangerousModePermissionPrompt": true,
   "alwaysThinkingEnabled": true,
-  "effortLevel": "{{ if $work }}medium{{ else }}max{{ end }}"
+  {{- /* Personal profile tracks the user's `/effort` default (xhigh since 2026-07-29);
+       `/effort` writes this same key, and a full-file apply would otherwise revert it. */}}
+  "effortLevel": "{{ if $work }}medium{{ else }}xhigh{{ end }}"
 }
