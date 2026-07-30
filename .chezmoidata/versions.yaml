@@ -7,10 +7,10 @@ versions:
   nixInstallerAarch64LinuxSha256: fa5b3a13dffd70ea8f9575c3d0fe3af4cb2f881dfcb03983634dbe6756d4e39e
   nixInstallerX8664LinuxSha256: eecf66f62b044f40b0632d8e9ea72ffc3bd3214357d09317117febff748e71b3
   nixVersion: v3.21.8
-  nixpkgsBootstrapRev: 38a4887411571457d700c51c64a6e49ead2ed5ab
+  nixpkgsBootstrapRev: 9bc02893134c733dd85de46ee4fb2fac696b5529
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
-  aquaVersion: v2.62.1
+  aquaVersion: v2.62.2
   nixIndexDb: 2026-07-26-054738
   paperlib: 3.1.12
   paperlibAmd64Sha256: 993d05c9bb9c8163f2d308736d2316ebf6db8a23b75133a170e22ea6e125746c
@@ -39,7 +39,7 @@ versions:
   openaiSkillsRev: 49f948faa9258a0c61caceaf225e179651397431
   huggingfaceSkillsRev: 87f9ee5b670a630b022809a8742606c6da21812c
   getsentrySkillsRev: e7a87fa72645158f9b5e722cbb1c7e09266f48f1
-  trailofbitsSkillsRev: cfe5d7b1619e47fb5b38b7e2561dad7e5f1e89af
+  trailofbitsSkillsRev: ca08fc8a91f64d80b00d48597907c579d0a85c6f
   cloudflareSkillsRev: 30553f89ae1ef1e3c2917cd09d72dac992bb4e9a
   vercelLabsAgentSkillsRev: 7c180d9044c9ae2b442b567aad4e42a28dd5ed62
   vercelLabsNextSkillsRev: b76d687cf3e026eac3b1032f610f06b47a56377c
@@ -49,12 +49,12 @@ versions:
   microsoftSkillsRev: 4a2873faffc1b101a33a0b59c24713d4ed78142f
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 41259e8aef85f847145c383d02be6a40a2435466
-  dailyDevSkillsRev: bfb33868bb1d70ba3098c10afd0a37d75af53d9a
-  opcSkillsRev: 590ef066dd72fdd4b8b912ec98a60560d40159f0
+  dailyDevSkillsRev: fcd5a55984b4b5db437711454a5d88d37b00a3db
+  opcSkillsRev: dd8b3b797e1eb342a55dfbea9cb2a4111fc262da
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: e27d59ca42b5d16204a0af1e99e77b9546754ad3
-  affaanEccRev: 4e973d3eaf92d97f8d2e2d8abb39d8bdc8711b38
+  affaanEccRev: e4e4163101f162881e628f300a9ca4e6a940bcea
   actionbookRustSkillsRev: fa60f7931223646fb71c4586b4a6c8545016076a
   dpearsonSwiftSkillsRev: 90c9573272531337962fbb3505036d61ed23389a
   effectiveTypescriptRev: d754db2077d71ae1e2b57bf50ae7bc565067a2e0
