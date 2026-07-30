@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 
 const piData = await readFile(new URL("../.chezmoidata/pi.yaml", import.meta.url), "utf8");
-assert.match(piData, /^\s{4}defaultProvider: krill$/m);
+assert.match(piData, /^\s{4}defaultProvider: openai-codex$/m);
 assert.match(piData, /^\s{4}defaultModel: gpt-5\.6-sol$/m);
 
 const agentsDir = new URL("../dot_pi/agent/agents/", import.meta.url);
@@ -16,9 +16,12 @@ for (const name of agentFiles) {
 }
 
 assert.deepEqual(gptRoutes, [
-  { name: "Plan.md", model: "krill/gpt-5.6-sol" },
-  { name: "general-purpose.md", model: "krill/gpt-5.6-sol" },
+  { name: "Plan.md", model: "openai-codex/gpt-5.6-sol" },
+  { name: "general-purpose.md", model: "openai-codex/gpt-5.6-sol" },
 ]);
-assert.ok(gptRoutes.every(({ model }) => model.startsWith("krill/")));
+assert.ok(gptRoutes.every(({ model }) => model.startsWith("openai-codex/")));
+
+// krill stays defined as a manual /model fallback for the same model.
+assert.match(piData, /^\s{4}krill:(\s|#)/m);
 
 console.log("test_pi_gpt_routes: OK");
