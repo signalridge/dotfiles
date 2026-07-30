@@ -21,11 +21,13 @@ pi:
     # GPT-5.6 supports Pi's native `max` reasoning effort. Keep it as the parent
     # default. OpenAI Ultra is a separate multi-agent mode, not a reasoning-effort value.
     defaultThinkingLevel: max
-    # User-requested switch back to the gopass-backed Krill gateway. The parent and
-    # all GPT subagents use krill/gpt-5.6-sol; native openai-codex OAuth remains a
-    # manual fallback. This is a provider route change only, so model and max
-    # reasoning defaults stay unchanged.
-    defaultProvider: krill
+    # User-requested switch back to the native OpenAI Codex OAuth provider
+    # (openai-codex; OAuth in ~/.pi/agent/auth.json). The parent and all GPT
+    # subagents use openai-codex/gpt-5.6-sol; the gopass-backed Krill gateway
+    # stays defined below as a manual /model fallback. gpt-5.6-sol is exposed
+    # under both providers and supports `max` reasoning, so this is a provider
+    # route change only — model and reasoning defaults stay unchanged.
+    defaultProvider: openai-codex
     defaultModel: gpt-5.6-sol
     # Trigger threshold = contextWindow - reserveTokens (~74% of the 371K Krill /
     # 372K Codex window). Pi 0.80.6 checks only at agent_end, so the global
@@ -71,7 +73,7 @@ pi:
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
     # In-process subagents use the built-in general-purpose/Explore/Plan definitions
     # via disableDefaultAgents:false in dot_pi/agent/subagents.json. general-purpose
-    # and Plan are pinned to krill/gpt-5.6-sol, matching the parent default; Explore
+    # and Plan are pinned to openai-codex/gpt-5.6-sol, matching the parent default; Explore
     # stays on deepseek-v4-flash for cheap read-only search. Pins live in each
     # dot_pi/agent/agents/*.md frontmatter.
     - npm:@tintinweb/pi-subagents@0.13.0

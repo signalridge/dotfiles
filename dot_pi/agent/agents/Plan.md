@@ -1,12 +1,13 @@
 ---
 # Ejected built-in `Plan` (read-only software architect), model pinned per user request
-# (2026-07-26): routed through krill/gpt-5.6-sol, matching the parent default while
+# (2026-07-29): routed through openai-codex/gpt-5.6-sol (native Codex OAuth, same swap
+# as the parent default), matching the parent default while
 # remaining independent from later parent /model changes. The only deviation from
 # the built-in default is the `model:` line; body = the built-in Plan prompt.
 description: "Software architect agent for designing implementation plans. Use this when you need to plan the implementation strategy for a task. Returns step-by-step plans, identifies critical files, and considers architectural trade-offs."
 display_name: Plan
 tools: read, bash, grep, find, ls
-model: krill/gpt-5.6-sol
+model: openai-codex/gpt-5.6-sol
 prompt_mode: replace
 ---
 
