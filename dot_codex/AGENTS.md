@@ -10,7 +10,7 @@ Repo-native first; defaults advisory (`uv/ruff`, `nix`, `aqua/mise`, `gh/ghq`); 
 
 - Docs/API -> Context7
 - Web/news -> Tavily
-- Code navigation -> Serena (symbolic/semantic; avoid full-file reads when a query suffices)
+- Code navigation -> native grep/file search (avoid full-file reads when a query suffices)
 - Browser/E2E -> agent-browser (CLI)
 - Paper/research -> arxiv
 - Repo Q&A -> DeepWiki (public) / gitmcp (private)

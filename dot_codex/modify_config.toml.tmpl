@@ -191,13 +191,6 @@ url = "https://mcp.notion.com/mcp"
 # @upstash/context7-mcp@2.1.1 and can fail repeated Streamable HTTP handshakes.
 url = "https://mcp.context7.com/mcp"
 
-[mcp_servers.serena]
-command = "uvx"
-args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "codex", "--project", ".", "--enable-web-dashboard", "false"]
-startup_timeout_sec = 30
-[mcp_servers.serena.env]
-AQUA_GLOBAL_CONFIG = "{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml"
-
 [mcp_servers.tavily]
 command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily"
 args = []

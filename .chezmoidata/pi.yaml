@@ -85,8 +85,8 @@ pi:
     # external_directory, mcp. Policy at dot_pi/agent/extensions/pi-permission-system/
     # config.json. Fails CLOSED — keep JSON strict (no comments/trailing commas).
     - npm:@gotgenes/pi-permission-system
-    # readseek: hash-anchored read/edit/grep + structural code maps/search
-    # (complements serena's semantic nav with hash-anchored edit safety).
+    # readseek: hash-anchored read/edit/grep + structural code maps/search.
+    # Primary code-nav tool since serena was removed (2026-07-31).
     - npm:pi-readseek
     # hypa: local context runtime — long-context compression, deterministic
     # reducers + evidence record; rewrites shell/read/grep/find/ls and proxies

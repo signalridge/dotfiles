@@ -14,9 +14,8 @@
   true) — they show up in the tool list alongside read/bash/edit and get called
   like any native tool. The `mcp` proxy is KEPT (no disableProxyTool) as the
   fallback for the niche servers left on proxy (arxiv: many tools; markitdown:
-  rare). Cost ~150-300 tokens/tool in the system prompt; serena's 21 are the
-  most expensive slice but requested in full. Direct tools register from
-  mcp-cache.json, so no startup connection is needed; on first add a server
+  rare). Cost ~150-300 tokens/tool in the system prompt. Direct tools register
+  from mcp-cache.json, so no startup connection is needed; on first add a server
   falls back to proxy until its cache populates (force with /mcp reconnect).
 */ -}}
 {
@@ -29,26 +28,6 @@
     "tavily": {
       "command": "{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily",
       "args": [],
-      "lifecycle": "lazy",
-      "directTools": true
-    },
-    "serena": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/oraios/serena",
-        "serena",
-        "start-mcp-server",
-        "--context",
-        "ide-assistant",
-        "--project",
-        ".",
-        "--enable-web-dashboard",
-        "false"
-      ],
-      "env": {
-        "AQUA_GLOBAL_CONFIG": "{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml"
-      },
       "lifecycle": "lazy",
       "directTools": true
     },

@@ -4,16 +4,16 @@ description: 'Fast read-only search/navigation agent for locating code. Find fil
 # Fast/cheap non-OpenAI model for read-only search (was built-in anthropic/claude-haiku-4-5).
 model: deepseek/deepseek-v4-flash
 # tools: scopes only the BUILTIN tools to a read-only set. extensions:true is what pulls in the
-# real search power — serena (symbol nav), readseek (code maps), tavily/context7/deepwiki/gitmcp,
-# pi-web-access, hypa. Do NOT narrow this to bare builtins; that would strip the search enhancers.
+# real search power — readseek (structural code maps + hash-anchored read/grep),
+# tavily/context7/deepwiki/gitmcp, pi-web-access, hypa. Do NOT narrow this to bare builtins;
+# that would strip the search enhancers.
 tools: read, grep, find, ls, bash
 extensions: true
 skills: false
-# Keep ALL serena nav/search tools (find_symbol, find_referencing_symbols, find_declaration,
-# find_implementations, get_symbols_overview, get_diagnostics_for_file). Disable ONLY the
-# onboarding+memory tools (bounded-agent onboarding trap) and the symbol/content MUTATION tools
-# (read-only integrity) — none of these are search tools.
-disallowed_tools: serena_initial_instructions, serena_onboarding, serena_read_memory, serena_write_memory, serena_list_memories, serena_delete_memory, serena_rename_memory, serena_edit_memory, serena_replace_content, serena_replace_in_files, serena_replace_symbol_body, serena_insert_after_symbol, serena_insert_before_symbol, serena_rename_symbol, serena_safe_delete_symbol
+# NOTE: disallowed_tools is gone because every entry it held was a serena tool (serena removed
+# 2026-07-31 — see run_after_12_sync-claude-mcp.sh). It blocked serena's onboarding+memory tools
+# (bounded-agent onboarding trap) and its symbol/content MUTATION tools. readseek's own mutators
+# were never on that list, so read-only posture is unchanged: it rests on the prompt below.
 max_turns: 0
 prompt_mode: replace
 inherit_context: false
@@ -33,11 +33,8 @@ Bash ONLY for read-only operations (ls, git status/log/diff, find, cat, head, ta
 
 You have enhanced search/navigation tools beyond the builtins. USE THEM:
 
-- Serena (semantic/symbolic nav): `find_symbol`, `find_referencing_symbols`, `find_declaration`,
-  `find_implementations`, `get_symbols_overview` — prefer these for "where is X defined / who
-  calls Y / what implements Z". Serena onboarding + memory tools are intentionally disabled;
-  never attempt onboarding.
-- readseek: structural code maps + hash-anchored read/grep for precise navigation.
+- readseek: structural code maps + hash-anchored read/grep — prefer these for "where is X
+  defined / who calls Y / what implements Z" and for precise navigation.
 - When the answer is not in local code: tavily (web search), context7 (library/API docs),
   deepwiki (public repo Q&A), gitmcp (repo docs), pi-web-access (`fetch_content` for URLs/PDF/GitHub).
 - hypa transparently compresses long tool output — lean on it for large files.

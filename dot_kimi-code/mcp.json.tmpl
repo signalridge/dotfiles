@@ -25,24 +25,6 @@
       "command": "{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily",
       "args": []
     },
-    "serena": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/oraios/serena",
-        "serena",
-        "start-mcp-server",
-        "--context",
-        "ide-assistant",
-        "--project",
-        ".",
-        "--enable-web-dashboard",
-        "false"
-      ],
-      "env": {
-        "AQUA_GLOBAL_CONFIG": "{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml"
-      }
-    },
     "deepwiki": {
       "url": "https://mcp.deepwiki.com/mcp"
     },

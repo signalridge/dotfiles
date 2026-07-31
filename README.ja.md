@@ -369,13 +369,13 @@ codex-token --check deepseek@private
 
 #### タスク -> ツールルーティング
 
-| タスク種別                                 | 優先ツール             | フォールバック             |
-| ------------------------------------------ | ---------------------- | -------------------------- |
-| ライブラリ/フレームワーク/API ドキュメント | Context7               | Tavily -> 内蔵 web search  |
-| Web/ニュース/一般調査                      | Tavily                 | 内蔵 web search            |
-| シンボリックなコードナビゲーション         | Serena                 | repo grep/codesearch + LSP |
-| チームチャット                             | Slack connector/plugin | Slack API または web UI    |
-| ノート/ナレッジベース                      | Notion MCP/plugin      | Notion API または web UI   |
+| タスク種別                                 | 優先ツール             | フォールバック            |
+| ------------------------------------------ | ---------------------- | ------------------------- |
+| ライブラリ/フレームワーク/API ドキュメント | Context7               | Tavily -> 内蔵 web search |
+| Web/ニュース/一般調査                      | Tavily                 | 内蔵 web search           |
+| コードナビゲーション                       | repo grep/codesearch   | readseek (pi) / LSP       |
+| チームチャット                             | Slack connector/plugin | Slack API または web UI   |
+| ノート/ナレッジベース                      | Notion MCP/plugin      | Notion API または web UI  |
 
 ---
 

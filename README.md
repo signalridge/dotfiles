@@ -373,7 +373,7 @@ codex-token --check deepseek@private
 | -------------------------- | ---------------------- | ----------------------------- |
 | Library/framework/API docs | Context7               | Tavily -> built-in web search |
 | Web/news/general research  | Tavily                 | built-in web search           |
-| Symbolic code navigation   | Serena                 | repo grep/codesearch + LSP    |
+| Code navigation            | repo grep/codesearch   | readseek (pi) / LSP in editor |
 | Team chat                  | Slack connector/plugin | Slack API or web UI           |
 | Notes/knowledge base       | Notion MCP/plugin      | Notion API or web UI          |
 

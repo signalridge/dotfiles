@@ -4,8 +4,8 @@
 # Rendered by chezmoi per-OS: the log path and the set of "orphan parent" PIDs
 # differ between macOS (launchd) and Linux (systemd --user). The body is shared.
 #
-# MCP servers are spawned per session (node via `bunx <pkg>-mcp`, serena via
-# `uv ... serena start-mcp-server`). On a crash/SIGKILL they are reparented and
+# MCP servers are spawned per session (node via `bunx <pkg>-mcp`, python via
+# `uvx <pkg>`). On a crash/SIGKILL they are reparented and
 # linger, piling up across sessions. This logs a CPU/mem snapshot, then kills
 # only orphans — never a process under a live session, so the sessions you keep
 # on purpose are safe.
@@ -28,9 +28,9 @@ mkdir -p "$LOG_DIR"
 
 ts() { date '+%Y-%m-%dT%H:%M:%S%z'; }
 
-# node/bunx MCP servers + uv/python MCP servers (serena, markitdown, arxiv).
+# node/bunx MCP servers + uv/python MCP servers (markitdown, arxiv).
 # uv-launched servers don't share the bunx- prefix, so match them by name.
-PATTERN='bunx-[0-9]+-.*mcp|serena.*start-mcp-server|markitdown-mcp|arxiv-mcp-server'
+PATTERN='bunx-[0-9]+-.*mcp|markitdown-mcp|arxiv-mcp-server'
 
 match_procs() {
   ps -axww -o pid=,ppid=,pcpu=,pmem=,etime=,command= \
@@ -55,7 +55,7 @@ if [ -n "$snapshot" ]; then
   } >>"$LOG"
 fi
 
-# Reap orphans. Two passes: killing an orphaned serena uv launcher reparents its
+# Reap orphans. Two passes: killing an orphaned uvx launcher reparents its
 # python child, caught on the second pass.
 reaped=""
 for _pass in 1 2; do

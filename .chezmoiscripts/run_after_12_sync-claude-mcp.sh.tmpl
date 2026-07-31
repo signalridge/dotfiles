@@ -222,9 +222,14 @@ ensure_always_load() {
 remove_user_mcp_if_present "slack"
 remove_user_mcp_if_present "notion"
 remove_user_mcp_if_present "codex-mcp"
+# serena: removed 2026-07-31. Its rust-analyzer backend held ~2-3GB per session
+# and nothing is shared — Serena's active project is process-global (one
+# SerenaAgent per server, and switching projects shuts the previous one's
+# language servers down), so it cannot be collapsed into a shared daemon the
+# way context7 was. Ten concurrent sessions on one Rust workspace cost ~21GB.
+remove_user_mcp_if_present "serena"
 
 ensure_user_mcp_http "context7" "https://mcp.context7.com/mcp"
-ensure_user_mcp_json "serena" '{"command":"uvx","args":["--from","git+https://github.com/oraios/serena","serena","start-mcp-server","--context","ide-assistant","--project",".","--enable-web-dashboard","false"],"env":{"AQUA_GLOBAL_CONFIG":"{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml"}}'
 ensure_user_mcp_json "markitdown" '{"command":"uvx","args":["markitdown-mcp"]}'
 ensure_user_mcp_json "arxiv-mcp-server" '{"command":"uv","args":["tool","run","arxiv-mcp-server"]}'
 ensure_user_mcp_json "tavily" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily","args":[]}'
@@ -233,7 +238,6 @@ ensure_user_mcp_http "deepwiki" "https://mcp.deepwiki.com/mcp"
 
 # Pin high-value servers so their tools are always in context (never deferred).
 # arxiv/markitdown/gitmcp stay deferrable (rarely used, fine behind ToolSearch).
-ensure_always_load "serena"
 ensure_always_load "context7"
 ensure_always_load "tavily"
 ensure_always_load "deepwiki"

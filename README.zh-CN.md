@@ -371,7 +371,7 @@ codex-token --check deepseek@private
 | -------------------------- | ---------------------- | -------------------------- |
 | 库 / 框架 / API 文档       | Context7               | Tavily -> 内置 web search  |
 | 通用网页 / 新闻 / 背景调研 | Tavily                 | 内置 web search            |
-| 语义级代码导航             | Serena                 | repo grep/codesearch + LSP |
+| 代码导航                   | repo grep/codesearch   | readseek (pi) / 编辑器 LSP |
 | 团队聊天                   | Slack connector/plugin | Slack API 或 web UI        |
 | 笔记 / 知识库              | Notion MCP/plugin      | Notion API 或 web UI       |
 
