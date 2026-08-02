@@ -310,9 +310,18 @@ Return ONLY the commit message, nothing else."
         case "$p" in
         claude)
             command -v claude &>/dev/null || continue
-            error_output=$(echo "$prompt" | claude --print 2>&1) || continue
-            [[ "$error_output" == *"error"* || "$error_output" == *"auth"* ]] && continue
-            message=$(echo "$error_output" | head -1)
+            local claude_out claude_err
+            claude_out=$(mktemp)
+            claude_err=$(mktemp)
+            # Keep stderr OUT of the message. Claude Code prints config warnings
+            # (e.g. an invalid permission rule) on stderr, and folding them into
+            # stdout with 2>&1 lets a warning become the commit message.
+            if echo "$prompt" | claude --print >"$claude_out" 2>"$claude_err"; then
+                message=$(grep -m1 -v '^[[:space:]]*$' "$claude_out")
+            else
+                error_output=$(cat "$claude_err")
+            fi
+            rm -f "$claude_out" "$claude_err"
             ;;
         codex)
             command -v codex &>/dev/null || continue
@@ -338,6 +347,18 @@ Return ONLY the commit message, nothing else."
 
     # Clean up: remove quotes, backticks, leading/trailing whitespace
     message=$(echo "$message" | sed -E 's/^[[:space:]`"'"'"']+//; s/[`"'"'"'[:space:]]+$//')
+
+    # Last line of defence: never turn provider noise into a commit. If a warning
+    # or preamble still reaches this point, it will not look like a conventional
+    # commit subject, so refuse rather than commit it.
+    local allowed_types='feat|fix|docs|style|refactor|perf|test|chore|build|ci|revert'
+    [[ -n "$type_override" ]] && allowed_types="${allowed_types}|${type_override}"
+    local conventional_re="^(${allowed_types})(\([^)]+\))?!?: .+"
+    if ! [[ "$message" =~ $conventional_re ]]; then
+        echo "Refusing to commit: [$provider] did not return a conventional commit message." >&2
+        echo "  got: $message" >&2
+        return 1
+    fi
 
     if $dry_run; then
         echo "[$provider] $message"
