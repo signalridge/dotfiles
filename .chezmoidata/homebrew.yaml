@@ -32,7 +32,10 @@ homebrew:
       - keyboardcleantool
       - vial
       - ghostty
-      - muxy # macOS-first terminal (SwiftUI + libghostty) for AI-agent workflows
+      # Must stay fully qualified: `brew bundle` only derives a trust entry from
+      # `tap/owner/token` names, so a bare `muxy` leaves the cask untrusted and
+      # the activation's `brew cleanup` refuses to load it (Homebrew 6.0+).
+      - muxy-app/tap/muxy # macOS-first terminal (SwiftUI + libghostty) for AI-agent workflows
       - mockoon
       - notion
       - nikitabobko/tap/aerospace

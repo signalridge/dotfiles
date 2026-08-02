@@ -32,7 +32,11 @@
       upgrade = true; # Upgrade outdated casks and formulae (mas upgrade still fails due to root requirement on macOS 15.4+)
       extraEnv = {
         # nix-darwin activation runs under sudo and does not inherit dot_zshenv.
-        # Keep Homebrew trust lookup on the managed XDG config path.
+        # Pin the trust store to ~/.config/homebrew/trust.json so it is not
+        # written under root's home. The file is owned by Homebrew, not chezmoi:
+        # `brew bundle --force-cleanup` calls Trust.replace! and rebuilds it from
+        # the Brewfile, so trust is declared by fully-qualifying tap-sourced
+        # brews/casks in .chezmoidata/homebrew.yaml.
         XDG_CONFIG_HOME = "{{ .chezmoi.homeDir }}/.config";
       };
       # 'zap': uninstalls all formulae(and related files) not listed in the generated Brewfile
