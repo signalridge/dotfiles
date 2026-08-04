@@ -9,13 +9,8 @@ enable-normalization-opposite-orientation-for-nested-containers = true
 accordion-padding = 30
 default-root-container-layout = 'tiles'
 default-root-container-orientation = 'auto'
-# Disabled 2026-07-20: this synthetic cursor warp on monitor-focus change triggers
-# Ghostty 1.3.x's phantom-mouse-event regression (pointer flicker + clicks wedge
-# after a Ghostty restart; other terminals are unaffected). Re-enable once Ghostty
-# ships a fix (>1.3.1). Tradeoff while off: mouse no longer follows monitor focus.
-# on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
+on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 automatically-unhide-macos-hidden-apps = true
-after-startup-command = ['exec-and-forget borders']
 
 [key-mapping]
 preset = 'qwerty'

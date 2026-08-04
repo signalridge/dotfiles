@@ -44,13 +44,14 @@ nix-config/modules/host-users.nix
 .chezmoiscripts/09_install-paperlib.sh
 .chezmoiscripts/10_update_homebrew_packages.sh
 .chezmoiscripts/17_load-launch-agents.sh
+.chezmoiscripts/21_terminal-profile.sh
 
 # macOS-only GUI apps (target paths)
 Library/
 .config/aerospace/
-.config/borders/
 .config/karabiner/
-.config/ghostty/
+.config/rio/
+.config/terminal/
 .config/hammerspoon/
 {{- else }}
 # Linux-only: systemd --user units have no meaning on macOS (launchd is used
@@ -69,9 +70,9 @@ Library/
 .chezmoiscripts/17_load-launch-agents.sh
 Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 .config/aerospace/
-.config/borders/
 .config/karabiner/
-.config/ghostty/
+.config/rio/
+.config/terminal/
 .config/hammerspoon/
 {{- end }}
 

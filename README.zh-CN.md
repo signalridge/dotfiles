@@ -22,8 +22,8 @@
 [![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=1000&color=BD93F9&center=true&vCenter=true&width=600&lines=chezmoi+%2B+Nix+%E5%A3%B0%E6%98%8E%E5%BC%8F%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83;%E8%B7%A8%E5%B9%B3%E5%8F%B0+macOS+%2B+Linux+%E6%94%AF%E6%8C%81;Claude+Code+%E8%87%AA%E5%8A%A8%E6%8F%92%E4%BB%B6%E5%90%8C%E6%AD%A5;%E7%8E%B0%E4%BB%A3+Rust+CLI+%E5%B7%A5%E5%85%B7%E9%93%BE)](https://git.io/typing-svg)
 
 <p>
-  <img src="docs/images/preview.png" alt="桌面预览 —— Ghostty 终端、AeroSpace 平铺窗口与 fastfetch 系统信息" width="400" />
-  <img src="docs/images/herdr-lazyvim-preview.png" alt="Herdr 工作区预览 —— Ghostty 中的 LazyVim、仓库列表与 agent 状态侧栏" width="400" />
+  <img src="docs/images/preview.png" alt="桌面预览 —— Rio 终端、AeroSpace 平铺窗口与 fastfetch 系统信息" width="400" />
+  <img src="docs/images/herdr-lazyvim-preview.png" alt="Herdr 工作区预览 —— Rio 中的 LazyVim、仓库列表与 agent 状态侧栏" width="400" />
 </p>
 
 </div>

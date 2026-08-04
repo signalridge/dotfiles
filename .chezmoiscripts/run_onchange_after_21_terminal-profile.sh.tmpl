@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Install the managed Terminal.app profile and make it the default. Re-runs
+# whenever the profile file changes.
+# Dracula.terminal sha256: {{ include "private_dot_config/terminal/Dracula.terminal" | sha256sum }}
+{{ if and (eq .chezmoi.os "darwin") (not .headless) -}}
+profile="${HOME}/.config/terminal/Dracula.terminal"
+name="Dracula"
+
+echo ":: [21] Installing Terminal.app profile '${name}'"
+
+if [[ ! -f "$profile" ]]; then
+    echo "    profile not found at ${profile}, skipping"
+    exit 0
+fi
+
+# Terminal stores profiles inside its preferences, not as files, so the .terminal
+# document has to be injected into the "Window Settings" dict. `defaults` parses
+# the XML plist passed as the value, which keeps the NSKeyedArchiver blobs (the
+# NSFont and the 16 NSColor entries) intact, and writing through `defaults`
+# rather than editing the plist directly keeps cfprefsd in sync.
+defaults write com.apple.Terminal "Window Settings" -dict-add "$name" "$(cat "$profile")"
+defaults write com.apple.Terminal "Default Window Settings" -string "$name"
+defaults write com.apple.Terminal "Startup Window Settings" -string "$name"
+
+echo "    installed; already-open Terminal windows keep their previous profile"
+{{- end }}

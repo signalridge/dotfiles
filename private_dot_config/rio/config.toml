@@ -1,0 +1,80 @@
+# Rio terminal -- https://rioterm.com/docs/config
+
+# Outer spacing. rioterm.com documents a top-level `padding`, but this binary
+# (0.5.9) has no such field -- `strings` on the Config struct shows the top-level
+# set as ...fonts/editor/margin/panel/option-as-alt..., so `padding` was silently
+# ignored. `margin` is the real key here; `padding` lives under [panel].
+# CSS order: [top, right, bottom, left].
+margin = [0, 16, 2, 16]
+
+option-as-alt = 'both'
+
+hide-mouse-cursor-when-typing = false
+
+[fonts]
+size = 14
+
+# Monaspace Xenon replaced CaskaydiaCove because it covers U+23F4/U+23F5 (⏴ ⏵).
+# Rio does not normalise the metrics of glyphs it sources from a fallback font,
+# so anything missing from the primary family renders off-baseline -- and a
+# `symbol-map` entry could not fix it either (a digits-only control range proved
+# symbol-map works, but it never took effect for 23f4-23f5). Keeping every glyph
+# in the primary family sidesteps the whole problem.
+#
+# weight 800 rather than 700: these are static faces, and 700 was matching
+# SemiBold. `style` values follow rioterm.com.
+[fonts.regular]
+family = "MonaspiceXe Nerd Font Mono"
+style = "default"
+
+[fonts.bold]
+family = "MonaspiceXe Nerd Font Mono"
+style = "default"
+weight = 800
+
+[fonts.italic]
+family = "MonaspiceXe Nerd Font Mono"
+style = "italic"
+
+[fonts.bold-italic]
+family = "MonaspiceXe Nerd Font Mono"
+style = "italic"
+weight = 800
+
+# shift+enter sends a literal newline (multi-line input in TUIs and agents).
+[bindings]
+keys = [{ key = "Enter", with = "shift", esc = "\n" }]
+
+# Dracula, inlined rather than `theme = "dracula"` so the config stays a single
+# self-contained file -- a named theme would need a separate
+# ~/.config/rio/themes/dracula.toml that chezmoi would also have to manage.
+[colors]
+background = '#282a36'
+foreground = '#f8f8f2'
+cursor = '#f8f8f2'
+
+selection-background = '#44475a'
+selection-foreground = '#f8f8f2'
+
+black = '#21222c'
+red = '#ff5555'
+green = '#50fa7b'
+yellow = '#f1fa8c'
+blue = '#bd93f9'
+magenta = '#ff79c6'
+cyan = '#8be9fd'
+white = '#f8f8f2'
+
+light-black = '#6272a4'
+light-red = '#ff6e6e'
+light-green = '#69ff94'
+light-yellow = '#ffffa5'
+light-blue = '#d6acff'
+light-magenta = '#ff92df'
+light-cyan = '#a4ffff'
+light-white = '#ffffff'
+
+tabs = '#6272a4'
+tabs-active = '#bd93f9'
+split = '#44475a'
+split-active = '#bd93f9'

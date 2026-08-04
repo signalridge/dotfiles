@@ -3,8 +3,13 @@ extend-exclude = [
   "private_dot_config/hammerspoon/Spoons/**",
   "private_dot_config/nvim/lazy-lock.json",
   "private_dot_ssh/**",
+  # .terminal profiles are plists whose NSFont/NSColor values are base64 blobs;
+  # typos reads them as prose and flags fragments like "OT" and "ace".
+  "private_dot_config/terminal/**",
 ]
 
 [default.extend-words]
 enhancd = "enhancd"
 noice = "noice"
+# `tre` is a real binary (dduan/tre, gitignore-aware tree), not a typo for "tree".
+tre = "tre"

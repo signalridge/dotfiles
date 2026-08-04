@@ -9,7 +9,7 @@
 onboarding = false
 
 [theme]
-name = "dracula"                       # matches Ghostty's fixed Dracula scheme
+name = "dracula"                       # matches the terminal's Dracula scheme
 
 [terminal]
 shell_mode = "login"                   # login shells pick up full env

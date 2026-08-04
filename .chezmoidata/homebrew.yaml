@@ -2,15 +2,12 @@ homebrew:
   taps:
     shared:
       - nikitabobko/tap
-      - FelixKratz/formulae
-      - muxy-app/tap # muxy cask source
     work: [] # azure/functions removed — repo GitHub-staff-disabled 2026-06-05 (untappable); func now installed from Azure CDN via run_onchange_after_12_azure-functions-core-tools
     private: []
   brews:
     shared:
       - macos-trash
       - mole
-      - felixkratz/formulae/borders
     work:
       - cliclick # macOS only - GUI automation
       - awscli
@@ -31,11 +28,7 @@ homebrew:
       - keka
       - keyboardcleantool
       - vial
-      - ghostty
-      # Must stay fully qualified: `brew bundle` only derives a trust entry from
-      # `tap/owner/token` names, so a bare `muxy` leaves the cask untrusted and
-      # the activation's `brew cleanup` refuses to load it (Homebrew 6.0+).
-      - muxy-app/tap/muxy # macOS-first terminal (SwiftUI + libghostty) for AI-agent workflows
+      - rio # GPU terminal (Rust)
       - mockoon
       - notion
       - nikitabobko/tap/aerospace

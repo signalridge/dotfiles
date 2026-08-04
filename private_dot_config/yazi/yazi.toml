@@ -22,7 +22,7 @@ max_height = 1000
 image_filter = "lanczos3"
 image_quality = 90
 # Use ueberzugpp for image preview in terminal
-# Ghostty supports sixel, so this should work
+# Rio supports sixel, so this should work
 sixel_fraction = 10
 
 [opener]

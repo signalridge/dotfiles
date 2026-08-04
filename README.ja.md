@@ -22,8 +22,8 @@
 [![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=1000&color=BD93F9&center=true&vCenter=true&width=600&lines=chezmoi+%2B+Nix+%E5%AE%A3%E8%A8%80%E7%9A%84%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83;%E3%82%AF%E3%83%AD%E3%82%B9%E3%83%97%E3%83%A9%E3%83%83%E3%83%88%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0+macOS+%2B+Linux;Claude+Code+%E8%87%AA%E5%8B%95%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E5%90%8C%E6%9C%9F;%E3%83%A2%E3%83%80%E3%83%B3+Rust+CLI+%E3%83%84%E3%83%BC%E3%83%AB%E3%83%81%E3%82%A7%E3%83%BC%E3%83%B3)](https://git.io/typing-svg)
 
 <p>
-  <img src="docs/images/preview.png" alt="デスクトップのプレビュー —— Ghostty ターミナル、AeroSpace タイリング、fastfetch のシステム情報" width="400" />
-  <img src="docs/images/herdr-lazyvim-preview.png" alt="Herdr ワークスペースのプレビュー —— Ghostty 上の LazyVim、リポジトリ一覧、agent ステータスのサイドバー" width="400" />
+  <img src="docs/images/preview.png" alt="デスクトップのプレビュー —— Rio ターミナル、AeroSpace タイリング、fastfetch のシステム情報" width="400" />
+  <img src="docs/images/herdr-lazyvim-preview.png" alt="Herdr ワークスペースのプレビュー —— Rio 上の LazyVim、リポジトリ一覧、agent ステータスのサイドバー" width="400" />
 </p>
 
 </div>
