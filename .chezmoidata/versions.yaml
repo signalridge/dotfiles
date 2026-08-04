@@ -7,7 +7,7 @@ versions:
   nixInstallerAarch64LinuxSha256: 3e4f83cc87025c2890293cd2a8b6889ad2a0f7c5394f87ba8ad4fc958cf2aaea
   nixInstallerX8664LinuxSha256: 58cf15422853e95187405d66b0cdb306e66f602218ee0032386c46b1b776a6d1
   nixVersion: v3.21.9
-  nixpkgsBootstrapRev: a5cbcfe954791221bfffe2307f7d1a1bf61a871e
+  nixpkgsBootstrapRev: 104240a772428cc2e20d8fd86c9ddbb886bbaff2
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
   aquaVersion: v2.62.3
@@ -34,12 +34,12 @@ versions:
   claudeAnthropicsSkillsSha256: c3832f49600230dc30ccecb770bea6887dab5341632652f0e56b1c41278d474c
   claudeBaoyuSkillsRev: 6b7a2e417500561a5ecdd0b168332f4142584617
   phurynPmSkillsRev: 18468a95b427e70e258b51389796367c6f684e7d
-  uiUxProMaxSkillRev: 14ddef5c05e52d7c253b8f0129de7bcd1045ae5b
-  uiUxProMaxSkillSha256: 435d094d86105cebb0382d08d5dd359321ccdf35600b675422a6257532b9e0c6
+  uiUxProMaxSkillRev: 4d140cf8ff6842de13213c7214eff3810371beb2
+  uiUxProMaxSkillSha256: 2304a6d47b9d5ddb73d8622dfbe4f16f8aaf3251c50a0548552dbd2f65e83f4a
   openaiSkillsRev: 49f948faa9258a0c61caceaf225e179651397431
-  huggingfaceSkillsRev: 87f9ee5b670a630b022809a8742606c6da21812c
+  huggingfaceSkillsRev: 32f8bb0928e95fc9d47ca9fbf69cbfbaf2bc2bda
   getsentrySkillsRev: e7a87fa72645158f9b5e722cbb1c7e09266f48f1
-  trailofbitsSkillsRev: 1256982d4d925a0acfe11e26c2253c32052c6247
+  trailofbitsSkillsRev: 9ea55c598763f7cb87ab56933d773d7dc34344a0
   cloudflareSkillsRev: 30553f89ae1ef1e3c2917cd09d72dac992bb4e9a
   vercelLabsAgentSkillsRev: 7c180d9044c9ae2b442b567aad4e42a28dd5ed62
   vercelLabsNextSkillsRev: b76d687cf3e026eac3b1032f610f06b47a56377c
@@ -49,7 +49,7 @@ versions:
   microsoftSkillsRev: 4a2873faffc1b101a33a0b59c24713d4ed78142f
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 41259e8aef85f847145c383d02be6a40a2435466
-  dailyDevSkillsRev: 9232ee5e4e54b1ab5b873476f8792f9093595184
+  dailyDevSkillsRev: 8d8500939e06eb00db2e7b77be5f7142a330aeb0
   opcSkillsRev: 1934a9ec33164f2d426f7fc162dc40ab6b83b8f1
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
