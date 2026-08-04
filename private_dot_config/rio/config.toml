@@ -14,30 +14,32 @@ hide-mouse-cursor-when-typing = false
 [fonts]
 size = 14
 
-# Monaspace Xenon replaced CaskaydiaCove because it covers U+23F4/U+23F5 (⏴ ⏵).
-# Rio does not normalise the metrics of glyphs it sources from a fallback font,
-# so anything missing from the primary family renders off-baseline -- and a
-# `symbol-map` entry could not fix it either (a digits-only control range proved
-# symbol-map works, but it never took effect for 23f4-23f5). Keeping every glyph
-# in the primary family sidesteps the whole problem.
+# CaskaydiaCove lacks U+23F4/U+23F5 (⏴ ⏵), so those two render off-baseline: Rio
+# does not normalise the metrics of glyphs it sources from a fallback font. That
+# is accepted here. Leaving the family unset does NOT avoid it -- Rio then falls
+# back to the macOS default monospace, which lacks the codepoints too and carries
+# no Nerd Font icons either, so it loses the icons for nothing. Of the 68 Nerd
+# Fonts checked only AdwaitaMono, ZedMono, Monaspace and Iosevka cover them, and
+# all were rejected on looks. A `symbol-map` entry does not help: a digits-only
+# control range proved symbol-map works, but it never took effect for 23f4-23f5.
 #
-# weight 800 rather than 700: these are static faces, and 700 was matching
-# SemiBold. `style` values follow rioterm.com.
+# weight 800 rather than 700: these are static faces (SemiBold 600, Bold 700 are
+# separate files), and 700 was matching SemiBold. `style` follows rioterm.com.
 [fonts.regular]
-family = "MonaspiceXe Nerd Font Mono"
+family = "CaskaydiaCove NFM"
 style = "default"
 
 [fonts.bold]
-family = "MonaspiceXe Nerd Font Mono"
+family = "CaskaydiaCove NFM"
 style = "default"
 weight = 800
 
 [fonts.italic]
-family = "MonaspiceXe Nerd Font Mono"
+family = "CaskaydiaCove NFM"
 style = "italic"
 
 [fonts.bold-italic]
-family = "MonaspiceXe Nerd Font Mono"
+family = "CaskaydiaCove NFM"
 style = "italic"
 weight = 800
 
