@@ -103,11 +103,6 @@ claude:
       models: [glm-5.2, glm-4.7]
       default_model: glm-5.2
       subagent_model: glm-5.2
-    newapi:
-      base_url: https://newapi.3689403.xyz/
-      models: [glm-5.2, glm-4.7]
-      default_model: glm-5.2
-      subagent_model: glm-5.2
 
   # Account configurations (model selection + settings)
   accounts:
@@ -136,15 +131,6 @@ claude:
       sonnet_model: kimi-k2.5
       opus_model: kimi-k2.5
       timeout_ms: 300000
-    newapi@private:
-      provider: newapi
-      model: glm-5.2
-      small_model: glm-4.7
-      haiku_model: glm-4.7
-      sonnet_model: glm-5.2
-      opus_model: glm-5.2
-      subagent_model: glm-5.2
-      auto_compact_window: 1000000
 ```
 
 ## Environment Variable Mapping

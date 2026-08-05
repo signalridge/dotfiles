@@ -64,16 +64,6 @@ claude:
         - glm-5.2
         - glm-4.7
         - glm-4.5-air
-    # Private GLM-compatible proxy.
-    newapi:
-      base_url: https://newapi.3689403.xyz/
-      timeout_ms: 300000
-      disable_nonessential_traffic: true
-      default_model: glm-5.2
-      subagent_model: glm-5.2
-      models:
-        - glm-5.2
-        - glm-4.7
     # Qwen (Alibaba): https://help.aliyun.com/zh/model-studio/claude-code
     qwen:
       base_url: https://dashscope.aliyuncs.com/apps/anthropic
@@ -155,15 +145,6 @@ claude:
       haiku_model: kimi-for-coding-highspeed
       sonnet_model: kimi-for-coding
       opus_model: k3
-    newapi@private:
-      provider: newapi
-      model: glm-5.2
-      small_model: glm-4.7
-      haiku_model: glm-4.7
-      sonnet_model: glm-5.2
-      opus_model: glm-5.2
-      subagent_model: glm-5.2
-      auto_compact_window: 1000000
     # GPT-5.6 Sol via krill; attribution/betas/capabilities inherit from the provider.
     krill@private:
       provider: krill

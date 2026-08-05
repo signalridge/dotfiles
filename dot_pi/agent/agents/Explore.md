@@ -1,8 +1,13 @@
 ---
 display_name: Explore
 description: 'Fast read-only search/navigation agent for locating code. Find files by pattern (e.g. src/**/*.tsx), grep for symbols or keywords, or answer "where is X defined / which files reference Y." Do NOT use for code review, design-doc auditing, cross-file consistency checks, or open-ended analysis — it reads excerpts, not whole files. Specify breadth: "quick" (single lookup), "medium" (moderate), or "very thorough" (many locations/naming conventions).'
-# Fast/cheap non-OpenAI model for read-only search (was built-in anthropic/claude-haiku-4-5).
-model: deepseek/deepseek-v4-flash
+# Moved onto the OpenAI Codex OAuth provider per user request (2026-08-05), so every
+# subagent shares the parent's provider. gpt-5.6-luna is the cheapest GPT-5.6 tier —
+# the closest match to the previous deepseek-v4-flash role — kept at thinking `max`
+# because search breadth still benefits from reasoning. Note the context window drops
+# from deepseek's 1M to 372K; this agent reads excerpts, so that is not a regression.
+model: openai-codex/gpt-5.6-luna
+thinking: max
 # tools: scopes only the BUILTIN tools to a read-only set. extensions:true is what pulls in the
 # real search power — readseek (structural code maps + hash-anchored read/grep),
 # tavily/context7/deepwiki/gitmcp, pi-web-access, hypa. Do NOT narrow this to bare builtins;

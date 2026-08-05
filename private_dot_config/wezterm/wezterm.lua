@@ -60,7 +60,13 @@ config.font_rules = {
 -- Ghostty had top = 0, but there the tabs sat in the macOS titlebar. Here the
 -- tab bar is drawn by wezterm directly above the content, so 0 puts the first
 -- row flush against it.
-config.window_padding = { left = 12, right = 8, top = 6, bottom = 2 }
+--
+-- The horizontal pair is deliberately wider than Ghostty's and symmetric: the
+-- prompt sat almost flush against the window edge otherwise. No scrollbar is
+-- enabled, so `right` is pure breathing room and matching `left` keeps text
+-- centred. Bumping these costs columns, not just margin -- each ~8.4px here is
+-- one cell of the 14pt CaskaydiaCove face -- so keep them in that ballpark.
+config.window_padding = { left = 20, right = 20, top = 6, bottom = 2 }
 
 -- No separate title bar -- the traffic-light buttons move into the tab bar.
 -- Closest equivalent to Ghostty's `macos-titlebar-style = tabs`, and the thing

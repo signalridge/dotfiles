@@ -1,13 +1,15 @@
 ---
 # Ejected built-in `Plan` (read-only software architect), model pinned per user request
-# (2026-07-29): routed through openai-codex/gpt-5.6-sol (native Codex OAuth, same swap
-# as the parent default), matching the parent default while
-# remaining independent from later parent /model changes. The only deviation from
-# the built-in default is the `model:` line; body = the built-in Plan prompt.
+# (2026-08-05): routed through openai-codex/gpt-5.6-luna at thinking `max` — the same
+# native Codex OAuth provider as the parent, one price tier below its gpt-5.6-sol, with
+# reasoning effort left at the top (planning is reasoning-bound, not breadth-bound). Stays
+# independent from later parent /model changes. The only deviations from the built-in
+# default are the `model:`/`thinking:` lines; body = the built-in Plan prompt.
 description: "Software architect agent for designing implementation plans. Use this when you need to plan the implementation strategy for a task. Returns step-by-step plans, identifies critical files, and considers architectural trade-offs."
 display_name: Plan
 tools: read, bash, grep, find, ls
-model: openai-codex/gpt-5.6-sol
+model: openai-codex/gpt-5.6-luna
+thinking: max
 prompt_mode: replace
 ---
 

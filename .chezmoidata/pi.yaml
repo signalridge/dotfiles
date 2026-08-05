@@ -22,11 +22,11 @@ pi:
     # default. OpenAI Ultra is a separate multi-agent mode, not a reasoning-effort value.
     defaultThinkingLevel: max
     # User-requested switch back to the native OpenAI Codex OAuth provider
-    # (openai-codex; OAuth in ~/.pi/agent/auth.json). The parent and all GPT
-    # subagents use openai-codex/gpt-5.6-sol; the gopass-backed Krill gateway
-    # stays defined below as a manual /model fallback. gpt-5.6-sol is exposed
-    # under both providers and supports `max` reasoning, so this is a provider
-    # route change only — model and reasoning defaults stay unchanged.
+    # (openai-codex; OAuth in ~/.pi/agent/auth.json). openai-codex is now the ONLY
+    # provider anything defaults to: the parent runs gpt-5.6-sol and every subagent
+    # runs gpt-5.6-luna (see the pi-subagents note below). The gopass-backed Krill
+    # gateway stays defined under customProviders as a manual /model fallback, and
+    # deepseek/qwen/doubao remain available the same way.
     defaultProvider: openai-codex
     defaultModel: gpt-5.6-sol
     # Trigger threshold = contextWindow - reserveTokens (~74% of the 371K Krill /
@@ -72,10 +72,11 @@ pi:
     # Pi theme. Extension-status icons (2nd line) are tunable via
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
     # In-process subagents use the built-in general-purpose/Explore/Plan definitions
-    # via disableDefaultAgents:false in dot_pi/agent/subagents.json. general-purpose
-    # and Plan are pinned to openai-codex/gpt-5.6-sol, matching the parent default; Explore
-    # stays on deepseek-v4-flash for cheap read-only search. Pins live in each
-    # dot_pi/agent/agents/*.md frontmatter.
+    # via disableDefaultAgents:false in dot_pi/agent/subagents.json. All three are
+    # pinned to openai-codex/gpt-5.6-luna at thinking `max` (user request 2026-08-05):
+    # same OpenAI Codex OAuth provider as the parent, one tier down on price so the
+    # fan-out is cheap, but with reasoning effort left at the top. Pins live in each
+    # dot_pi/agent/agents/*.md frontmatter (`model:` + `thinking:`).
     - npm:@tintinweb/pi-subagents@0.13.0
     # Web search (zero-config Exa, no key) + fetch_content for PDF / GitHub
     # clone / YouTube / local-video. Multi-provider fallback chain. Keys optional
@@ -98,7 +99,7 @@ pi:
     - npm:@narumitw/pi-caffeinate
     # goal: `/goal <objective>` autonomous mode — keeps working until goal_complete
     # or a token budget (--tokens) is hit. Pairs well with long-context models;
-    # switch to GLM-5.2 when a 1M window matters more than the GPT default.
+    # switch to deepseek-v4-pro when a 1M window matters more than the GPT default.
     # Zero deps; state is session-scoped.
     - npm:@narumitw/pi-goal
     # input-history: NOT listed here — it is VENDORED (locally forked/魔改) at
@@ -126,68 +127,6 @@ pi:
   # through verbatim (id/name/contextWindow/maxTokens/reasoning/cost/compat/...).
   # Pick a model at runtime with /model.
   customProviders:
-    newapi: # NewAPI multi-provider gateway (https://newapi.3689403.xyz/),
-      # OpenAI-compatible; routes to GLM (and anything else the gateway exposes).
-      # Long-context /model option (manual /model switch). Key from gopass.
-      # base_url includes
-      # /v1 because Pi's openai-completions api appends /chat/completions (cf.
-      # doubao's /api/v3). Models below are a curated subset — extend from the
-      # gateway catalogue as needed; pick at runtime with /model.
-      base_url: https://newapi.3689403.xyz/v1
-      api: openai-completions
-      gopass: claude/newapi/private/api_key
-      # reasoning: true so Pi's thinking level applies to GLM (footer shows 🧠).
-      # compat.supportsDeveloperRole:false is REQUIRED — for reasoning models Pi
-      # sends the system prompt as OpenAI's `developer` role, which this gateway
-      # rejects with HTTP 422; false makes Pi use `system` instead (root-caused
-      # via a logging proxy capturing Pi's request body). thinkingFormat:deepseek
-      # because the gateway returns reasoning_content on the assistant message.
-      # thinkingLevelMap: gateway VERIFIED 2026-07-14 to honor only low/medium/high;
-      models:
-        - id: glm-5.2 # flagship long-context option
-          # newapi gateway routes GLM-5.2 at its native 1M ctx; set so compaction
-          # can compute its threshold (contextWindow - reserveTokens). Without it
-          # pi never auto-compacts. (footer ctx% = usedTokens / this value.)
-          contextWindow: 1000000
-          maxTokens: 131072
-          reasoning: true
-          # thinkingLevelMap: newapi gateway VERIFIED (2026-07-14, live probes) to
-          # only honor low/medium/high — xhigh and max return HTTP 200 but are SILENTLY
-          # DROPPED (reasoning_content empty, model falls back to non-reasoning direct
-          # answer, slower + dumber). So clamp xhigh/max -> high, the gateway's true top.
-          # Matches GLM-5.2's official High/Max naming where the gateway only wires 'high'.
-          thinkingLevelMap:
-            {
-              minimal: low,
-              low: low,
-              medium: medium,
-              high: high,
-              xhigh: high,
-              max: high,
-            }
-          compat:
-            supportsDeveloperRole: false
-            thinkingFormat: deepseek
-            requiresReasoningContentOnAssistantMessages: true
-        - id: glm-4.7 # stable fallback (both verified HTTP 200 on the gateway)
-          # newapi gateway routes GLM at 200K ctx; set so compaction can compute
-          # its threshold (contextWindow - reserveTokens). Without it pi never auto-compacts.
-          contextWindow: 204800
-          maxTokens: 131072
-          reasoning: true
-          thinkingLevelMap:
-            {
-              minimal: low,
-              low: low,
-              medium: medium,
-              high: high,
-              xhigh: high,
-              max: high,
-            }
-          compat:
-            supportsDeveloperRole: false
-            thinkingFormat: deepseek
-            requiresReasoningContentOnAssistantMessages: true
     deepseek: # DeepSeek Platform (OpenAI-compatible). V4 models are not in Pi's
       # built-in registry yet, so we pin them here with the reasoning `compat`
       # block from the official integration doc:
