@@ -20,6 +20,23 @@ Repo-native first; defaults advisory (`uv/ruff`, `nix`, `aqua/mise`, `gh/ghq`); 
 
 User preference overrides; fall back when unavailable; no sensitive data in queries.
 
+## Local CLI toolbelt
+
+All installed (aqua/mise/nix). Prefer these over POSIX defaults — don't fall back to `grep`/`find`/`sed` out of habit:
+
+- text search -> `rg`; structural/AST search & rewrite -> `ast-grep` (`sg`)
+- file search -> `fd`
+- JSON / YAML / multi-format -> `jq` / `yq` / `dasel`
+- in-place edit -> `sd` (literal by default; avoids `sed -i` escaping)
+- diff -> `difft` (syntax-aware), `delta` (git pager)
+- code stats -> `tokei`
+- HTTP -> `xh`; load test -> `oha`; DNS -> `doggo`
+- disk / process -> `dust`, `duf`, `procs`, `btm`
+- benchmark -> `hyperfine`; watch & rerun -> `watchexec`; job queue -> `pueue`
+- task runner -> `just`
+
+Full inventory (VCS, k8s, security, media, docs): `~/.harnesses/skills/dev/toolbelt/SKILL.md`.
+
 ## Workflow & guardrails
 
 - Worktree default `one-task-one-branch-one-worktree` (`.worktrees/<branch>`, named `wt-*`).
