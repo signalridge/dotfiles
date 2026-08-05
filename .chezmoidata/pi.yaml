@@ -11,7 +11,7 @@ pi:
 
   # ===== Startup defaults -> ~/.pi/agent/settings.json =====
   defaults:
-    # Saturated Dracula theme aligned with Ghostty's native palette. Purple is
+    # Saturated Dracula theme aligned with the terminal palette. Purple is
     # the primary interaction color (matching Herdr's active border); cyan stays
     # available for links and syntax while green/orange/red communicate state.
     # The rounded input editor follows these Pi theme colors instead of carrying
