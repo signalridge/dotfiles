@@ -50,7 +50,7 @@ nix-config/modules/host-users.nix
 Library/
 .config/aerospace/
 .config/karabiner/
-.config/rio/
+.config/wezterm/
 .config/terminal/
 .config/hammerspoon/
 {{- else }}
@@ -71,7 +71,7 @@ Library/
 Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 .config/aerospace/
 .config/karabiner/
-.config/rio/
+.config/wezterm/
 .config/terminal/
 .config/hammerspoon/
 {{- end }}

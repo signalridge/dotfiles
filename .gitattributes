@@ -44,7 +44,6 @@ private_dot_config/just/dot_justfile.tmpl linguist-language=Makefile
 private_dot_config/nix/nix.conf linguist-language=INI
 dot_gitconfig.tmpl linguist-language=INI
 private_dot_config/bat/config linguist-language=Shell
-private_dot_config/ghostty/config linguist-language=INI
 private_dot_config/git/ignore linguist-language=Git-Ignore
 private_dot_config/git/message linguist-documentation
 

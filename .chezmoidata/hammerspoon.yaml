@@ -15,7 +15,7 @@ hammerspoon:
       # Dev tools -> English
       - app: Visual Studio Code
         ime: en
-      - app: Ghostty
+      - app: WezTerm
         ime: en
       - app: OrbStack
         ime: en

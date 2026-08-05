@@ -22,7 +22,10 @@ max_height = 1000
 image_filter = "lanczos3"
 image_quality = 90
 # Use ueberzugpp for image preview in terminal
-# Rio supports sixel, so this should work
+# The terminal here is WezTerm, which implements the kitty graphics protocol
+# (`enable_kitty_graphics`), so image previews do render. This value only affects
+# the sixel path; it is inert in the fallback terminal (Terminal.app), which has
+# no graphics protocol at all.
 sixel_fraction = 10
 
 [opener]

@@ -28,7 +28,10 @@ homebrew:
       - keka
       - keyboardcleantool
       - vial
-      - rio # GPU terminal (Rust)
+      # @nightly, not the plain `wezterm` cask: upstream's newest stable is
+      # 20240203 (Feb 2024) with no release since, too old to trust on macOS 26.x.
+      # Drop the `@nightly` suffix to pin stable.
+      - wezterm@nightly
       - mockoon
       - notion
       - nikitabobko/tap/aerospace
