@@ -5,7 +5,7 @@ set -euo pipefail
 # Install the managed Terminal.app profile and make it the default. Re-runs
 # whenever the profile file changes.
 # Dracula.terminal sha256: {{ include "private_dot_config/terminal/Dracula.terminal" | sha256sum }}
-{{ if and (eq .chezmoi.os "darwin") (not .headless) -}}
+{{- if and (eq .chezmoi.os "darwin") (not .headless) }}
 profile="${HOME}/.config/terminal/Dracula.terminal"
 name="Dracula"
 
