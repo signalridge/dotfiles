@@ -18,7 +18,7 @@ packages:
   # Moonshot's CDN (self-contained Node-SEA, no Node runtime). NOTE: the CDN's
   # `latest` can lag GitHub tags, so `aqua up` may propose a version not yet on the
   # CDN — keep this at a CDN-present version (binaries/<ver>/manifest.json resolves).
-  - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@0.31.1
+  - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@0.32.0
     registry: third-party
   # ----- standard registry -----
   - name: nektos/act@v0.2.89
@@ -33,7 +33,7 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.221
+  - name: anthropics/claude-code@v2.1.222
   - name: openai/codex@rust-v0.146.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
@@ -66,7 +66,7 @@ packages:
   - name: tldr-pages/tlrc@v1.13.1
   - name: ast-grep/ast-grep@0.45.0
   - name: casey/just@1.58.0
-  - name: jesseduffield/lazygit@v0.63.1
+  - name: jesseduffield/lazygit@v0.64.0
   - name: jesseduffield/lazydocker@v0.25.2
   - name: neovim/neovim@v0.12.4
   - name: LuaLS/lua-language-server@3.18.2
@@ -93,7 +93,7 @@ packages:
   - name: mvdan/sh@v3.13.1
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.16.1
-  - name: astral-sh/ty@0.0.65
+  - name: astral-sh/ty@0.0.66
   - name: j178/prek@v0.4.12
   - name: golang.org/x/tools/gopls@v0.23.0
   - name: golangci/golangci-lint@v2.12.2
