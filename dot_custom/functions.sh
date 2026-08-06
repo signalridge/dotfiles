@@ -233,6 +233,17 @@ mkcd() {
 }
 alias take="mkcd" # Alternative name
 
+# _aicommit_subject - Pull the commit subject out of a provider's raw output
+# Drops markdown code fences first, then takes the first non-blank line. Both
+# CLIs routinely wrap the message in ``` despite being told to return only the
+# message; without this filter the fence line itself becomes the "message", and
+# aicommit's quote/backtick cleanup then strips it to an empty string — which
+# trips the conventional-commit guard below with a blank `got:` and hides a
+# perfectly good subject on the next line.
+_aicommit_subject() {
+    grep -v '^[[:space:]]*```' "$1" 2>/dev/null | grep -m1 -v '^[[:space:]]*$'
+}
+
 # ─────────────────────────────────────────────────────────────
 # aicommit - Generate commit message with AI CLI
 # Usage: aicommit [--dry-run|-n] [provider] [type]
@@ -317,7 +328,7 @@ Return ONLY the commit message, nothing else."
             # (e.g. an invalid permission rule) on stderr, and folding them into
             # stdout with 2>&1 lets a warning become the commit message.
             if echo "$prompt" | claude --print >"$claude_out" 2>"$claude_err"; then
-                message=$(grep -m1 -v '^[[:space:]]*$' "$claude_out")
+                message=$(_aicommit_subject "$claude_out")
             else
                 error_output=$(cat "$claude_err")
             fi
@@ -332,7 +343,7 @@ Return ONLY the commit message, nothing else."
                 rm -f "$tmp_out"
                 continue
             }
-            message=$(head -1 "$tmp_out" 2>/dev/null)
+            message=$(_aicommit_subject "$tmp_out")
             rm -f "$tmp_out"
             [[ -z "$message" ]] && continue
             ;;
