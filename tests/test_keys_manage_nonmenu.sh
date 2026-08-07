@@ -186,13 +186,33 @@ PY
     # shellcheck source=../dot_local/bin/lib/keys-manage/core.sh
     source "$ROOT/dot_local/bin/lib/keys-manage/core.sh"
 
+    # openssl enc -aes-256-cbc is unauthenticated, so a wrong password is only
+    # rejected when the decrypted final block fails its PKCS#7 padding check --
+    # which a random key passes roughly 1 time in 256. Drive the
+    # preserve-on-failure assertion with an injected openssl failure (as the
+    # encrypt side below already does) instead of a wrong password, and assert
+    # separately the property a wrong password always has: it can never
+    # reproduce the original plaintext.
+    mkdir -p "$TMP_ROOT/failing-bin"
+    printf '#!/bin/sh\nexit 1\n' >"$TMP_ROOT/failing-bin/openssl"
+    chmod +x "$TMP_ROOT/failing-bin/openssl"
+
     preserved="$TMP_ROOT/preserved-secret"
     printf '%s\n' "keep-me" >"$preserved"
-    if decrypt_file "$LOCAL_REPO/backup-files/.ssh/main" "$preserved" "wrong-password" 2>/dev/null; then
-        echo "expected wrong-password decryption to fail" >&2
+    if PATH="$TMP_ROOT/failing-bin:$PATH" \
+        decrypt_file "$LOCAL_REPO/backup-files/.ssh/main" "$preserved" "$PASS" 2>/dev/null; then
+        echo "expected injected decryption failure" >&2
         exit 1
     fi
     [[ "$(cat "$preserved")" == "keep-me" ]]
+
+    wrong_password_dest="$TMP_ROOT/wrong-password-output"
+    if decrypt_file "$LOCAL_REPO/backup-files/.ssh/main" "$wrong_password_dest" "wrong-password" 2>/dev/null &&
+        cmp -s "$wrong_password_dest" "$SECRET_FILE"; then
+        echo "wrong-password decryption reproduced the plaintext" >&2
+        exit 1
+    fi
+    rm -f "$wrong_password_dest"
 
     directory_dest="$TMP_ROOT/directory-destination"
     mkdir -p "$directory_dest"
@@ -213,9 +233,6 @@ PY
 
     encrypted_preserved="$TMP_ROOT/preserved-ciphertext"
     printf '%s\n' "last-good-ciphertext" >"$encrypted_preserved"
-    mkdir -p "$TMP_ROOT/failing-bin"
-    printf '#!/bin/sh\nexit 1\n' >"$TMP_ROOT/failing-bin/openssl"
-    chmod +x "$TMP_ROOT/failing-bin/openssl"
     if PATH="$TMP_ROOT/failing-bin:$PATH" encrypt_file "$SECRET_FILE" "$encrypted_preserved" "$PASS" 2>/dev/null; then
         echo "expected injected encryption failure" >&2
         exit 1
