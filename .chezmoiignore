@@ -45,6 +45,7 @@ nix-config/modules/host-users.nix
 .chezmoiscripts/10_update_homebrew_packages.sh
 .chezmoiscripts/17_load-launch-agents.sh
 .chezmoiscripts/21_terminal-profile.sh
+.chezmoiscripts/22_wezterm-icon.sh
 
 # macOS-only GUI apps (target paths)
 Library/
@@ -68,6 +69,7 @@ Library/
 # GUI apps (not needed on headless servers)
 .chezmoiscripts/09_install-paperlib.sh
 .chezmoiscripts/17_load-launch-agents.sh
+.chezmoiscripts/22_wezterm-icon.sh
 Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 .config/aerospace/
 .config/karabiner/

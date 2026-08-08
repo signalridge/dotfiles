@@ -11,7 +11,12 @@ repos:
         exclude: \.tmpl$
       - id: check-toml
       - id: check-added-large-files
-        args: [--maxkb=500]
+        # 600 accommodates the 569 KiB WezTerm icns (ten slots up to 1024px)
+        # with little room to spare. Preferred over excluding that path, which
+        # would let it grow unbounded, and over a round 1 MB ceiling, which
+        # would stop catching genuinely oversized additions. Next largest file
+        # in the repo is 260 KB.
+        args: [--maxkb=600]
       - id: check-merge-conflict
       - id: detect-private-key
   - repo: local
