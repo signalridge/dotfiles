@@ -12,7 +12,7 @@ MCP tools are provided by the `pi-mcp-adapter` extension; servers are configured
 
 - Docs/API -> Context7
 - Web/news, deep research -> Tavily (single searches; general-purpose subagent for multi-step)
-- Web content fetch (PDF/GitHub/YouTube/local-video) -> pi-web-access `fetch_content`
+- Web content extraction -> Tavily extract/crawl; repository content -> DeepWiki/gitmcp
 - Code navigation -> readseek (hash-anchored read/edit/grep + structural maps; no MCP round-trip)
 - Long-context / evidence compression -> hypa (rewrites shell/read/grep/find/ls, proxies MCP)
 - Browser/E2E -> agent-browser (CLI)
@@ -26,6 +26,12 @@ local structural maps; hypa when context is large. They complement — don't inv
 for one lookup.
 
 User preference overrides; fall back when unavailable; no sensitive data in queries.
+
+## Authentication safety
+
+- Built-in OpenAI Codex OAuth is allowed.
+- Never read or reuse browser cookies, browser profiles, password stores, or signed-in web sessions for model or search authentication. Never use reverse-engineered/private AI web endpoints.
+- Do not install or configure Pi extensions that provide those capabilities. Web research must use API/MCP providers; ordinary browser/E2E work does not authorize access to signed-in AI websites.
 
 ## Local CLI toolbelt
 

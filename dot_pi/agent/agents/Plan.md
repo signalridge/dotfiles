@@ -10,6 +10,14 @@ display_name: Plan
 tools: read, bash, grep, find, ls
 model: openai-codex/gpt-5.6-luna
 thinking: max
+# Drop the extensions that only make sense in a session with a TUI, plus the two whose
+# job the parent already owns (caffeinate) or that a child must not run (goal). See the
+# fuller rationale in Explore.md — same list, same reason. readseek/hypa/web-access/mcp
+# and the permission gate stay loaded; planning still needs to read widely.
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal
+# Read-only agent, so cap the turns and let subagents.json's graceTurns actually apply.
+# Planning is reasoning-bound rather than breadth-bound; 30 turns is generous for it.
+max_turns: 30
 prompt_mode: replace
 ---
 

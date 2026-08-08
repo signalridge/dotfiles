@@ -1,12 +1,13 @@
 {
-  "maxConcurrent": 4,
+  "maxConcurrent": 10,
   "defaultMaxTurns": 0,
-  "graceTurns": 8,
+  "graceTurns": 20,
   "defaultJoinMode": "smart",
-  "schedulingEnabled": false,
+  "schedulingEnabled": true,
   "scopeModels": false,
   "disableDefaultAgents": false,
   "toolDescriptionMode": "full",
   "fleetView": true,
-  "widgetMode": "background"
+  "widgetMode": "background",
+  "outputTranscript": true
 }

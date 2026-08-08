@@ -12,10 +12,35 @@ register_temp_file() {
 
 cleanup_registered_temp_files() {
     local path
-    for path in "${_TEMP_FILES[@]}"; do
+    # ${arr[@]+"${arr[@]}"} — expanding an EMPTY array as a bare "${arr[@]}" is an
+    # "unbound variable" error under `set -u` on bash 3.2, which is what macOS ships
+    # as /bin/bash. Cleanup routinely runs with nothing registered, so this one is
+    # always reachable while empty. Same guard applies everywhere an array can be
+    # empty at expansion time (see backup.sh's pending_* lists).
+    for path in ${_TEMP_FILES[@]+"${_TEMP_FILES[@]}"}; do
         [[ -n "$path" ]] && rm -f "$path" 2>/dev/null || true
     done
     _TEMP_FILES=()
+}
+
+# Membership test over a newline-delimited set.
+#
+# macOS ships bash 3.2, which has NO associative arrays. `local -A set` there is a
+# hard error, and `set["$path"]=1` degrades into an INDEXED array subscript, which
+# arithmetic-evaluates the path — `.ssh/id_ed25519` becomes a syntax error and a
+# numeric-looking path silently collapses onto index 0. That made every membership
+# test in backup.sh return garbage, including the one gating `rm -f` during sync.
+#
+# Newline is a safe delimiter here: every member is one line of a line-based control
+# file (backup-list.txt), so a member can never itself contain a newline.
+# Add with: set_var+="$member"$'\n'   (skip empty members)
+set_contains() {
+    local haystack="$1" needle="$2"
+    [[ -n "$needle" ]] || return 1
+    case $'\n'"$haystack" in
+    *$'\n'"$needle"$'\n'*) return 0 ;;
+    esac
+    return 1
 }
 
 # Log event to history

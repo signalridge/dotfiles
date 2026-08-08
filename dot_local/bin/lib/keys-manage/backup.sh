@@ -257,9 +257,11 @@ cmd_select() {
         local remove_count=${#pending_remove[@]}
         local final_count=$((total_files + add_count - remove_count))
 
-        # Write pending lists to temp files for preview
-        printf '%s\n' "${pending_add[@]}" >"$pending_add_file"
-        printf '%s\n' "${pending_remove[@]}" >"$pending_remove_file"
+        # Write pending lists to temp files for preview. Both lists are empty on the
+        # first iteration, so they need the bash 3.2 empty-array guard (see
+        # cleanup_registered_temp_files in core.sh).
+        printf '%s\n' ${pending_add[@]+"${pending_add[@]}"} >"$pending_add_file"
+        printf '%s\n' ${pending_remove[@]+"${pending_remove[@]}"} >"$pending_remove_file"
 
         # Action menu with expanded variables
         local action
@@ -335,7 +337,7 @@ cmd_select() {
                         # Check if in pending remove (cancel removal)
                         local in_pending_remove=false
                         local new_pending_remove=()
-                        for pending_file in "${pending_remove[@]}"; do
+                        for pending_file in ${pending_remove[@]+"${pending_remove[@]}"}; do
                             if [[ "$file" == "$pending_file" ]]; then
                                 in_pending_remove=true
                                 log_success "Cancelled removal: $(basename "$file")"
@@ -344,7 +346,8 @@ cmd_select() {
                             fi
                         done
                         if [[ "$in_pending_remove" == true ]]; then
-                            pending_remove=("${new_pending_remove[@]}")
+                            # Empty when the cancelled entry was the only pending one.
+                            pending_remove=(${new_pending_remove[@]+"${new_pending_remove[@]}"})
                             continue
                         fi
 
@@ -359,7 +362,7 @@ cmd_select() {
 
                         # Check if already in pending add
                         local already_pending=false
-                        for pending_file in "${pending_add[@]}"; do
+                        for pending_file in ${pending_add[@]+"${pending_add[@]}"}; do
                             if [[ "$file" == "$pending_file" ]]; then
                                 already_pending=true
                                 break
@@ -394,8 +397,8 @@ cmd_select() {
             # Remove files (record only, don't delete yet)
             # Build list: current_files + pending_add
             local removable_files=()
-            removable_files+=("${current_files[@]}")
-            removable_files+=("${pending_add[@]}")
+            removable_files+=(${current_files[@]+"${current_files[@]}"})
+            removable_files+=(${pending_add[@]+"${pending_add[@]}"})
 
             if [[ ${#removable_files[@]} -eq 0 ]]; then
                 log_warn "No files to remove"
@@ -421,7 +424,7 @@ cmd_select() {
                         # Check if in pending add (cancel addition)
                         local in_pending_add=false
                         local new_pending_add=()
-                        for pending_file in "${pending_add[@]}"; do
+                        for pending_file in ${pending_add[@]+"${pending_add[@]}"}; do
                             if [[ "$file" == "$pending_file" ]]; then
                                 in_pending_add=true
                                 log_success "Cancelled addition: $(basename "$file")"
@@ -430,13 +433,14 @@ cmd_select() {
                             fi
                         done
                         if [[ "$in_pending_add" == true ]]; then
-                            pending_add=("${new_pending_add[@]}")
+                            # Empty when the cancelled entry was the only pending one.
+                            pending_add=(${new_pending_add[@]+"${new_pending_add[@]}"})
                             continue
                         fi
 
                         # Check if already in pending remove
                         local already_pending=false
-                        for pending_file in "${pending_remove[@]}"; do
+                        for pending_file in ${pending_remove[@]+"${pending_remove[@]}"}; do
                             if [[ "$file" == "$pending_file" ]]; then
                                 already_pending=true
                                 break
@@ -475,23 +479,24 @@ cmd_select() {
             tmp=$(mktemp)
             register_temp_file "$tmp"
 
-            # Build removal set (HOME-relative).
-            local -A remove_set=()
+            # Build removal set (HOME-relative). Newline-delimited, not an associative
+            # array — see set_contains in core.sh for why.
+            local remove_set=""
             local pending_file rel
-            for pending_file in "${pending_remove[@]}"; do
+            for pending_file in ${pending_remove[@]+"${pending_remove[@]}"}; do
                 rel=$(to_home_rel_path "$pending_file" 2>/dev/null || true)
-                [[ -n "$rel" ]] && remove_set["$rel"]=1
+                [[ -n "$rel" ]] && remove_set+="$rel"$'\n'
             done
 
             # Keep existing entries not marked for removal.
             while IFS= read -r rel; do
                 [[ -z "$rel" ]] && continue
-                [[ -n "${remove_set[$rel]:-}" ]] && continue
+                set_contains "$remove_set" "$rel" && continue
                 echo "$rel" >>"$tmp"
             done < <(iter_backup_list_rel)
 
             # Add new entries (HOME-relative).
-            for pending_file in "${pending_add[@]}"; do
+            for pending_file in ${pending_add[@]+"${pending_add[@]}"}; do
                 rel=$(to_home_rel_path "$pending_file" 2>/dev/null || true)
                 [[ -n "$rel" ]] && echo "$rel" >>"$tmp"
             done
@@ -501,7 +506,7 @@ cmd_select() {
 
             # Optionally clean metadata entries for removed files (local only).
             if [[ -f "$METADATA_FILE" ]] && [[ ${#pending_remove[@]} -gt 0 ]]; then
-                for pending_file in "${pending_remove[@]}"; do
+                for pending_file in ${pending_remove[@]+"${pending_remove[@]}"}; do
                     remove_file_metadata "$pending_file" || true
                 done
             fi
@@ -801,17 +806,18 @@ cmd_remove() {
     tmp=$(mktemp)
     register_temp_file "$tmp"
 
-    local -A remove_set=()
+    # Newline-delimited set, not an associative array — see set_contains in core.sh.
+    local remove_set=""
     while IFS= read -r file; do
         [[ -z "$file" ]] && continue
         local rel
         rel=$(to_home_rel_path "$file") || continue
-        remove_set["$rel"]=1
+        remove_set+="$rel"$'\n'
     done <<<"$to_remove"
 
     while IFS= read -r rel; do
         [[ -z "$rel" ]] && continue
-        [[ -n "${remove_set[$rel]:-}" ]] && continue
+        set_contains "$remove_set" "$rel" && continue
         echo "$rel" >>"$tmp"
     done < <(iter_backup_list_rel)
 
@@ -984,9 +990,11 @@ cmd_sync() {
     # [2/5] Remove encrypted files no longer present in backup list
     echo "[2/5] Cleaning removed files..."
     local removed_count=0
-    local -A keep_rel=()
+    # Newline-delimited set, not an associative array — see set_contains in core.sh.
+    # This set gates `rm -f` below, so a broken membership test here is destructive.
+    local keep_rel=""
     while IFS= read -r rel; do
-        [[ -n "$rel" ]] && keep_rel["$rel"]=1
+        [[ -n "$rel" ]] && keep_rel+="$rel"$'\n'
     done < <(iter_backup_list_rel)
 
     # Safety: avoid wiping the entire backup repo if the control file is missing/empty.
@@ -1012,7 +1020,7 @@ cmd_sync() {
             local rel_path
             rel_path="${encrypted_file#"$REPO_DIR/$BACKUP_FILES_DIR"/}"
 
-            if [[ -z "${keep_rel[$rel_path]:-}" ]]; then
+            if ! set_contains "$keep_rel" "$rel_path"; then
                 rm -f "$encrypted_file"
                 remove_file_metadata "$rel_path"
                 removed_count=$((removed_count + 1))

@@ -81,7 +81,11 @@ JSON
     exit 0
 fi
 if [[ "${1:-}" == "apply" ]]; then
-    [[ "${CHEZMOI_APPLY_FAIL:-0}" != "1" ]]
+    # Exit explicitly. A bare [[ ]] here is swallowed by the `exit 0` below on bash 3.2
+    # (macOS /bin/bash), whose set -e does not abort in this position the way bash 4+
+    # does — the stub then reported success, the switch never saw a failed apply, and
+    # every rollback assertion below silently passed against an un-rolled-back state.
+    [[ "${CHEZMOI_APPLY_FAIL:-0}" != "1" ]] || exit 1
     exit 0
 fi
 exit 0

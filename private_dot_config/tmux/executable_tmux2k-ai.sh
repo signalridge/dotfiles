@@ -17,6 +17,27 @@
 # Loaded directly from tmux.conf post-TPM, independent of tmux2k's
 # plugin discovery. No symlink needed.
 
+# REQUIRES BASH 4+. The pane/tty bookkeeping below is built on associative arrays,
+# which bash 3.2 does not have. macOS ships 3.2 as /bin/bash and PATH puts /bin ahead
+# of nix's bash 5, so both `#!/usr/bin/env bash` and a bare `bash <this script>` land
+# on 3.2 — where every `declare -A` errors out and each lookup returns nothing, so the
+# segment silently renders every agent as idle instead of failing loudly.
+#
+# Re-exec once under the first bash 4+ found. If there is none, exit quietly: an empty
+# AI segment is a far better failure mode for a status bar than repeated
+# `declare: -A: invalid option` noise, and it matches the documented "no agents" state.
+if [[ -z "${TMUX2K_AI_BASH_REEXEC:-}" ]] && ((${BASH_VERSINFO[0]:-0} < 4)); then
+    export TMUX2K_AI_BASH_REEXEC=1
+    for _modern_bash in \
+        /run/current-system/sw/bin/bash \
+        /opt/homebrew/bin/bash \
+        /usr/local/bin/bash \
+        "$HOME/.nix-profile/bin/bash"; do
+        [[ -x "$_modern_bash" ]] && exec "$_modern_bash" "$0" "$@"
+    done
+    exit 0
+fi
+
 get_tmux_option() {
     local option_value
     option_value=$(tmux show-option -gqv "$1" 2>/dev/null || true)

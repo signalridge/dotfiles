@@ -15,6 +15,13 @@
                           key is missing, so `chezmoi apply` still works fresh.
 
   models: a string entry becomes {id: <string>}; a map entry is emitted verbatim.
+
+  modelOverrides: emitted verbatim. Unlike `models` (which REPLACES a built-in
+  model of the same id), modelOverrides patches individual fields on built-in
+  models and leaves the provider's model list intact — the right tool for
+  retuning one field (contextWindow, maxTokens, cost, ...) on a provider Pi
+  already ships. Pair it with `auth: builtin` so no apiKey is emitted and the
+  provider's existing OAuth/registry auth keeps working.
 */ -}}
 {{- $providers := dict -}}
 {{- if hasKey .pi "customProviders" -}}
@@ -43,6 +50,7 @@
 {{-         end -}}
 {{-         $p = set $p "models" $models -}}
 {{-       end -}}
+{{-       if hasKey $cfg "modelOverrides" -}}{{- $p = set $p "modelOverrides" $cfg.modelOverrides -}}{{- end -}}
 {{-       $providers = set $providers $name $p -}}
 {{-     end -}}
 {{-   end -}}

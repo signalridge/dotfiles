@@ -10,16 +10,31 @@ model: openai-codex/gpt-5.6-luna
 thinking: max
 # tools: scopes only the BUILTIN tools to a read-only set. extensions:true is what pulls in the
 # real search power — readseek (structural code maps + hash-anchored read/grep),
-# tavily/context7/deepwiki/gitmcp, pi-web-access, hypa. Do NOT narrow this to bare builtins;
+# tavily/context7/deepwiki/gitmcp, and hypa. Do NOT narrow this to bare builtins;
 # that would strip the search enhancers.
 tools: read, grep, find, ls, bash
 extensions: true
+# exclude_extensions is the OTHER axis: `tools:` narrows what surfaces, this decides
+# what LOADS. A subagent session is headless, so every UI-only extension here renders
+# into a void while still binding lifecycle hooks; pi-caffeinate re-does what the
+# parent already holds, and pi-goal's autonomous loop has no business inside a child.
+# herdr-pi-state already self-disables via PI_SUBAGENT_CHILD — listed anyway so the
+# load is skipped outright. Everything that actually powers search (readseek, hypa,
+# pi-mcp-adapter) and the permission gate stays loaded.
+# NOTE: names must match a discovered extension or pi emits an `extension-error:`
+# warning — keep this list to chezmoi-managed and npm-managed extensions only, since
+# those are the ones guaranteed to exist on every machine.
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal
 skills: false
 # NOTE: disallowed_tools is gone because every entry it held was a serena tool (serena removed
 # 2026-07-31 — see run_after_12_sync-claude-mcp.sh). It blocked serena's onboarding+memory tools
 # (bounded-agent onboarding trap) and its symbol/content MUTATION tools. readseek's own mutators
 # were never on that list, so read-only posture is unchanged: it rests on the prompt below.
-max_turns: 0
+# max_turns was 0 (unlimited), which also made subagents.json's `graceTurns: 8` dead
+# config — the grace window only opens at the turn limit. 30 turns is well clear of a
+# "very thorough" sweep while still capping a search that has started spinning; hitting
+# it triggers the wrap-up steer, not a hard abort, so partial findings still come back.
+max_turns: 30
 prompt_mode: replace
 inherit_context: false
 ---
@@ -40,8 +55,8 @@ You have enhanced search/navigation tools beyond the builtins. USE THEM:
 
 - readseek: structural code maps + hash-anchored read/grep — prefer these for "where is X
   defined / who calls Y / what implements Z" and for precise navigation.
-- When the answer is not in local code: tavily (web search), context7 (library/API docs),
-  deepwiki (public repo Q&A), gitmcp (repo docs), pi-web-access (`fetch_content` for URLs/PDF/GitHub).
+- When the answer is not in local code: tavily (web search/extraction), context7 (library/API
+  docs), deepwiki (public repo Q&A), and gitmcp (repo docs/content).
 - hypa transparently compresses long tool output — lean on it for large files.
 
 # Tool usage

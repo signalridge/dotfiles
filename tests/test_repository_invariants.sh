@@ -9,6 +9,15 @@ if ! cmp -s "$ROOT/AGENTS.md" "$ROOT/CLAUDE.md"; then
     exit 1
 fi
 
+# Keep browser-session authentication out of managed Pi configuration. The only
+# subscription OAuth intentionally retained is Pi's built-in OpenAI Codex provider.
+if grep -REni \
+    'npm:pi-web-access|allowBrowserCookies["[:space:]]*:[[:space:]]*true|PI_ALLOW_BROWSER_COOKIES[[:space:]]*=[[:space:]]*1|FEYNMAN_ALLOW_BROWSER_COOKIES[[:space:]]*=[[:space:]]*1' \
+    "$ROOT/.chezmoidata" "$ROOT/dot_pi" "$ROOT/private_dot_config" "$ROOT/dot_zshenv"; then
+    echo "managed Pi config must not enable browser-cookie/private-web authentication" >&2
+    exit 1
+fi
+
 [[ -x "$ROOT/init.sh" ]] || {
     echo "init.sh must be executable because the documented clone flow uses ./init.sh" >&2
     exit 1

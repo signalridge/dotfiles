@@ -68,3 +68,52 @@ if pi update --extensions; then
 else
     echo "    Warning: 'pi update --extensions' failed (non-fatal); next apply will retry" >&2
 fi
+
+# ---- Vendored fork upstream watch (advisory only; never updates anything) ----
+#
+# `pi update --extensions` only knows the `packages` list, so the VENDORED forks under
+# ~/.pi/agent/extensions/ are the one pi component nothing can keep current — a rebase
+# would clobber the local changes, so it stays a human decision. What this closes is the
+# blind spot: it reports when an upstream publishes something new, once per release.
+#
+# Deliberately compares against the LAST SEEN upstream version, not the fork's own
+# version (forks renumber themselves), so the first run just records a baseline
+# silently and later runs speak up only when upstream actually moves.
+fork_state="$state_dir/pi-vendored-upstream"
+forks=(
+{{- range .pi.vendoredForks }}
+    {{ printf "%s|%s" .dir .upstream | quote }}
+{{- end }}
+)
+
+if [[ ${#forks[@]} -gt 0 ]] && command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+    fork_state_next=""
+    for fork_entry in ${forks[@]+"${forks[@]}"}; do
+        fork_dir="${fork_entry%%|*}"
+        fork_pkg="${fork_entry#*|}"
+        # Scoped names need the slash percent-encoded for the registry path.
+        fork_latest="$(curl -fsS --max-time 10 \
+            "https://registry.npmjs.org/${fork_pkg//\//%2F}/latest" 2>/dev/null |
+            jq -r '.version // empty' 2>/dev/null || true)"
+        # A lookup that failed (offline, rate limited, renamed package) carries its
+        # previous baseline forward untouched rather than resetting it.
+        if [[ -z "$fork_latest" ]]; then
+            fork_prev_line="$(grep -F "$fork_pkg	" "$fork_state" 2>/dev/null || true)"
+            [[ -n "$fork_prev_line" ]] && fork_state_next+="$fork_prev_line"$'\n'
+            continue
+        fi
+        fork_seen="$(awk -F'\t' -v k="$fork_pkg" '$1 == k { print $2 }' "$fork_state" 2>/dev/null || true)"
+        if [[ -n "$fork_seen" && "$fork_seen" != "$fork_latest" ]]; then
+            echo "    Note: upstream $fork_pkg moved $fork_seen -> $fork_latest;" \
+                "vendored fork dot_pi/agent/extensions/$fork_dir may need a rebase" >&2
+        fi
+        fork_state_next+="$fork_pkg	$fork_latest"$'\n'
+    done
+    if [[ -n "$fork_state_next" ]]; then
+        umask 077
+        mkdir -p "$state_dir"
+        tmp_fork_state="$(mktemp "${fork_state}.XXXXXX")"
+        printf '%s' "$fork_state_next" >"$tmp_fork_state"
+        mv "$tmp_fork_state" "$fork_state"
+    fi
+fi

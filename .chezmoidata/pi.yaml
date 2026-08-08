@@ -29,14 +29,62 @@ pi:
     # deepseek/qwen/doubao remain available the same way.
     defaultProvider: openai-codex
     defaultModel: gpt-5.6-sol
-    # Trigger threshold = contextWindow - reserveTokens (~74% of the 371K Krill /
-    # 372K Codex window). Pi 0.80.6 checks only at agent_end, so the global
-    # pi-early-compaction extension checks after each tool-use turn. Its custom
-    # summary path folds split turns into one low-reasoning request capped at 8K
-    # output tokens, then resumes the interrupted task. Keep 16K recent tokens.
+    # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
+    # the ACTIVE provider/model's. Verify with `pi --list-models <id>` before
+    # touching this number — the two gpt-5.6-sol entries differ, and the Codex
+    # one is only 372K because of the modelOverrides block under
+    # customProviders below (its server catalog says 272K):
+    #   krill         gpt-5.6-sol  371K   (manual /model fallback, capped below)
+    #   openai-codex  gpt-5.6-sol  372K   (the startup default -> what applies)
+    #
+    # SIZING (measured 2026-08-09, not theoretical). Pi evaluates the threshold
+    # at only two points — after an agent run ends and before the next prompt
+    # (the two `_checkCompaction` call sites in core/agent-session.js) — and
+    # NEVER between tool calls. reserveTokens is therefore not just a trigger
+    # offset: it is the UNCHECKED HEADROOM that one entire tool loop plus its
+    # final response has to fit inside. Size it against a loop, not a turn.
+    # Evidence under the previous 40K reserve (trigger 332K):
+    #   - session 2026-08-08T15-57 (~/.pi/agent/sessions): 76 of 88 assistant
+    #     messages stopped on `toolUse`, i.e. unchecked; compaction actually
+    #     fired at tokensBefore=360452 — 28K past the trigger, 11K from the wall.
+    #   - other sessions lost the race outright: consecutive toolUse messages
+    #     climbing 360731 -> 370478, then "Your input exceeds the context window
+    #     of this model" (>=0.84.0 then compact-and-retries, at the cost of a
+    #     wasted request); one truncated at `length` with tot=371566.
+    # maxTokens is 128K, so reserve >= 128K is the correctness floor: a single
+    # maximal response must not be able to cross the wall on its own. 130K fires
+    # at 242K ≈ 65% and leaves 130K of headroom instead of 40K. This lowers the
+    # probability of hitting the wall; it cannot eliminate it, because no
+    # threshold can bound growth that is never measured.
+    # Accepted costs: usable working context 332K -> 242K, and compaction runs
+    # more often (more lossy summaries, more prompt-cache invalidation). Note
+    # reserveTokens is double-duty — the summary's own output budget is
+    # min(0.8*reserveTokens, maxTokens) = 104K here (core/compaction/
+    # compaction.js), a cap rather than a target.
+    # Bonus: 242K now sits BELOW the 272K premium-pricing line, so the tail of a
+    # long session no longer bills at 2x input / 1.5x output.
+    #
+    # This is now the ONLY compaction trigger. The locally authored
+    # pi-early-compaction extension was deleted on 2026-08-08: it re-checked the
+    # same `contextWindow - reserveTokens` inequality at every tool-use turn_end
+    # with a hardcoded reserve of 96000 — identical to the native value — and
+    # drove it through `ctx.compact()`, whose first act is `await this.abort()`.
+    # That abort ends the agent run, so pi's own post-run `_checkCompaction`
+    # fired on the same crossing and raced the extension's still-in-flight
+    # manual compaction. Both prepared from the same state (identical
+    # `Compacted from N tokens` lines); the loser threw `Already compacted`.
+    # Same trap that removed pi-continue. Do NOT reintroduce a second trigger
+    # sharing this threshold. A LOWER threshold would dodge that particular race
+    # (the native check would see a sub-threshold context and return false), but
+    # it is still not a fix: `ctx.compact()` opens with `await this.abort()`,
+    # which ends the agent run — so any extension-driven mid-loop compaction
+    # severs the tool loop it was meant to protect. Sizing reserveTokens is the
+    # only clean lever pi exposes; there is no interval/percentage knob
+    # (getCompactionSettings reads exactly enabled/reserveTokens/
+    # keepRecentTokens).
     compaction:
       enabled: true
-      reserveTokens: 96000
+      reserveTokens: 130000
       keepRecentTokens: 16000
     # Keep /tree branch summarization behavior explicit across Pi upgrades.
     # Reserve 16K tokens for the summary and continue prompting before summarizing.
@@ -77,11 +125,19 @@ pi:
     # same OpenAI Codex OAuth provider as the parent, one tier down on price so the
     # fan-out is cheap, but with reasoning effort left at the top. Pins live in each
     # dot_pi/agent/agents/*.md frontmatter (`model:` + `thinking:`).
-    - npm:@tintinweb/pi-subagents@0.13.0
-    # Web search (zero-config Exa, no key) + fetch_content for PDF / GitHub
-    # clone / YouTube / local-video. Multi-provider fallback chain. Keys optional
-    # in ~/.pi/web-search.json; ffmpeg+yt-dlp (brew) optional for video frames.
-    - npm:pi-web-access
+    # UNPINNED on 2026-08-08 (was `@0.13.0`). The pin was the only versioned spec in
+    # this list, and `pi update --extensions` (script 20) skips version-pinned specs —
+    # so it silently froze while everything else tracked latest. 0.13.0 snapshots
+    # `extension.tools` into a static allowlist *before* `session_start` fires, and pi
+    # gates tool REGISTRATION on that list, so every MCP-backed tool (tavily, context7,
+    # deepwiki, gitmcp, arxiv, markitdown) was permanently dropped from every subagent —
+    # while Explore.md's prompt still instructed it to use them. 0.14.3 fixes exactly
+    # this (upstream #141); 0.14.1 also makes `thinking: max` an advertised level rather
+    # than one that happened to work. Peer floor is pi >=0.80.0, satisfied here.
+    - npm:@tintinweb/pi-subagents
+    # Browser-cookie and private web-session extensions are intentionally excluded.
+    # Web research stays on API-backed MCP providers; built-in OpenAI Codex OAuth
+    # remains the only permitted subscription-backed integration in this setup.
     # Permission policy engine: allow/ask/deny gates over tools, bash, path,
     # external_directory, mcp. Policy at dot_pi/agent/extensions/pi-permission-system/
     # config.json. Fails CLOSED — keep JSON strict (no comments/trailing commas).
@@ -110,6 +166,26 @@ pi:
     # single-line reverse-search with a full fzf/atuin-style popup list (Ctrl+R).
     # Ctrl+R is claimed for that popup; Pi's built-in app.session.rename is moved
     # off Ctrl+R to shift+r in dot_pi/agent/keybindings.json to avoid the clash.
+  # ===== Vendored fork upstreams (advisory watch, used by script 20) =====
+  # Every other pi component has a periodic update path: the CLI rides mise `latest`
+  # + `mise up` (script 23), and the `packages` above ride `pi update --extensions`
+  # (script 20). The VENDORED extensions under dot_pi/agent/extensions/ have neither —
+  # they are local forks, so nothing can update them without clobbering the local
+  # changes, and their drift is invisible until something breaks.
+  #
+  # This list does not update them. It tells the weekly script which upstream to watch
+  # so it can report "upstream published X since you last looked" and leave the rebase
+  # decision to a human. Only forks that HAVE an upstream belong here — pi-input-prefix,
+  # tmux-state and herdr-pi-state are locally authored.
+  #
+  # NOTE: a fork's own `version` in package.json is NOT comparable to upstream's (the
+  # input-history fork sits at 1.1.0 while upstream is 1.0.1), which is exactly why the
+  # check watches for *changes* in the upstream release instead of diffing versions.
+  vendoredForks:
+    - dir: pi-statusline
+      upstream: "@narumitw/pi-statusline"
+    - dir: pi-input-history
+      upstream: pi-input-history
   # ===== Custom providers -> ~/.pi/agent/models.json =====
   # Only providers/models Pi does not ship natively belong here. Built-in model
   # IDs must not be repeated because a custom entry with the same ID replaces
@@ -127,6 +203,41 @@ pi:
   # through verbatim (id/name/contextWindow/maxTokens/reasoning/cost/compat/...).
   # Pick a model at runtime with /model.
   customProviders:
+    openai-codex: # BUILT-IN provider — this entry only PATCHES model metadata.
+      # `auth: builtin` emits no apiKey, so the existing Codex OAuth in
+      # ~/.pi/agent/auth.json keeps working; `modelOverrides` patches single
+      # fields without replacing the provider's model list (a `models:` entry
+      # with a matching id would replace the built-in model wholesale — not
+      # what we want here).
+      #
+      # Why: gpt-5.6-sol's published spec is a 1,050,000 context window, but
+      # Codex's server-delivered catalog reports 272,000 — see
+      # ~/.pi/agent/models-store.json, which pi refreshes over HTTP. That 272K
+      # is a BILLING boundary, not a capability limit: OpenAI prices prompts
+      # over 272K input at 2x input / 1.5x output for the FULL request, and
+      # Codex pinned its catalog to the line so default sessions cannot
+      # silently cross it (codex PR #33972, merged 2026-07-18, cut the catalog
+      # from 372,000 to 272,000; issue #32486 is the complaint it answered).
+      # Before that PR, 372,000 was Codex's real value — the old comment in
+      # this file was correct when written and was invalidated upstream.
+      #
+      # 372,000 restores the pre-2026-07-18 Codex window. Tokens between 272K
+      # and the 332K compaction trigger DO bill at the premium tier, which is
+      # the accepted trade for the extra headroom. Raise to 1050000 for the
+      # full published window, or delete this block to fall back to the
+      # server catalog's 272,000 (and drop reserveTokens back to ~40K/272K).
+      # An OpenAI engineer has said the cut is temporary and 372K will return;
+      # once the catalog reports it again this block becomes a no-op.
+      #
+      # Verify any change with `pi --list-models gpt-5.6-sol`, never by
+      # reading this comment.
+      auth: builtin
+      modelOverrides:
+        gpt-5.6-sol: { contextWindow: 372000 }
+        # Subagents run luna (dot_pi/agent/agents/*.md); terra is included so a
+        # runtime /model switch does not silently drop back to 272K.
+        gpt-5.6-luna: { contextWindow: 372000 }
+        gpt-5.6-terra: { contextWindow: 372000 }
     deepseek: # DeepSeek Platform (OpenAI-compatible). V4 models are not in Pi's
       # built-in registry yet, so we pin them here with the reasoning `compat`
       # block from the official integration doc:

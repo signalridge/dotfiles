@@ -25,7 +25,7 @@ chmod +x "$RENDERED"
 cat >"$TMP_ROOT/bin/herdr" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-[[ "${1:-}" == "integration" ]]
+[[ "${1:-}" == "integration" ]] || exit 64
 case "${2:-}" in
     install)
         [[ "${HERDR_TEST_FAIL_INSTALL:-}" != "${3:-}" ]]

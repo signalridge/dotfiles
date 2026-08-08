@@ -34,7 +34,7 @@ EOF
 cat >"$PI_BIN/pi" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-[[ "${1:-}" == "update" && "${2:-}" == "--extensions" ]]
+[[ "${1:-}" == "update" && "${2:-}" == "--extensions" ]] || exit 64
 printf 'update\n' >>"${PI_TEST_LOG:?}"
 [[ "${PI_TEST_FAIL:-0}" != "1" ]]
 EOF
