@@ -25,6 +25,7 @@ nix-config/.flake-linux.lock
 init.sh
 docs/
 node_modules/
+tools/
 selene.toml
 stylua.toml
 treefmt.toml
