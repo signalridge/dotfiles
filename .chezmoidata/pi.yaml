@@ -39,11 +39,11 @@ pi:
     # gopass-backed Krill gateway stays defined under customProviders as a manual
     # /model fallback, and deepseek/qwen/doubao remain available the same way.
     defaultProvider: openai-codex
-    # The parent model + effort are MACHINE-SCOPED and shared with Codex — both
-    # live in .chezmoidata/models.yaml (`agentModels`), resolved against
-    # chezmoi's `work` flag in dot_pi/agent/modify_settings.json.tmpl. They are
-    # deliberately NOT duplicated here; see that file for why the branch cannot
-    # live in the data itself. Whichever applies, the model is 372K/128K on
+    # The parent model + effort are MACHINE-SCOPED, so they are NOT set here:
+    # static data cannot branch. Both are resolved against chezmoi's `work` flag
+    # in dot_pi/agent/modify_settings.json.tmpl (work -> gpt-5.6-luna at max,
+    # private -> gpt-5.6-sol at xhigh), with the same pair kept in lockstep in
+    # dot_codex/modify_config.toml.tmpl. Either model is 372K/128K on
     # openai-codex, so the reserveTokens maths below is unaffected.
     # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
     # the ACTIVE provider/model's. Verify with `pi --list-models <id>` before

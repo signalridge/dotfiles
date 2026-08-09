@@ -9,7 +9,16 @@ set -euo pipefail
 
 EXISTING="$(cat)"
 {{ $d := .pi.defaults -}}
-{{- $managed := dict "defaultProvider" $d.defaultProvider "defaultModel" $d.defaultModel "theme" $d.theme "defaultThinkingLevel" $d.defaultThinkingLevel "enableSkillCommands" true "npmCommand" $d.npmCommand "compaction" $d.compaction "branchSummary" $d.branchSummary "retry" $d.retry "packages" .pi.packages -}}
+{{/* Parent model + effort, machine-scoped: work -> luna/max, private -> sol/xhigh.
+     KEEP IN LOCKSTEP with dot_codex/modify_config.toml.tmpl, which carries the
+     same two lines — the point of the pair is that pi and codex agree. It has to
+     be duplicated: .chezmoidata files cannot be templates (chezmoi reads them
+     before the template engine starts), and .chezmoi.toml.tmpl's data section,
+     which can, only runs on `chezmoi init` — a value resolved there would freeze
+     into the user's config and stop tracking this repo on a plain apply. */ -}}
+{{- $model := ternary "gpt-5.6-luna" "gpt-5.6-sol" .work -}}
+{{- $effort := ternary "max" "xhigh" .work -}}
+{{- $managed := dict "defaultProvider" $d.defaultProvider "defaultModel" $model "theme" $d.theme "quietStartup" $d.quietStartup "defaultThinkingLevel" $effort "enableSkillCommands" true "npmCommand" $d.npmCommand "compaction" $d.compaction "branchSummary" $d.branchSummary "retry" $d.retry "packages" .pi.packages -}}
 MANAGED="$(cat <<'PI_SETTINGS_EOF'
 {{ $managed | toPrettyJson }}
 PI_SETTINGS_EOF
