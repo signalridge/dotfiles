@@ -8,7 +8,10 @@ export function renderClassicStatusline(
 	theme: Theme,
 	config: StatuslineConfig,
 ): string {
-	return truncateToWidth(joinSegments(segments, theme, config), width, "");
+	// One column of left margin. Kimi Code indents its whole UI by a column, and
+	// pi's own message column is padded the same way (`outputPad`), so a
+	// flush-left statusline was the one thing touching the terminal edge.
+	return ` ${truncateToWidth(joinSegments(segments, theme, config), Math.max(0, width - 1), "")}`;
 }
 
 export function classicExtensionSeparator(theme: Theme): string {

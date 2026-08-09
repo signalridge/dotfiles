@@ -58,19 +58,22 @@ interface StatuslineSettings {
   extensionStatusIcons: Record<string, string>;
 }
 
-// Same information as upstream minus the π brand; decluttered by dropping the
-// decorative per-segment emoji (short text labels + only ⎇/$ glyphs kept). Renders
-// e.g. `gpt-5.6-sol · think high · chezmoi · ⎇ main · ▸ Bash · ctx 42% · ↑12k ↓3k · $0.08 · 14:32`.
+// Upstream minus the π brand, minus the decorative per-segment emoji (short text
+// labels + only the ⎇ glyph kept), and minus five segments that duplicate
+// information already on screen or that nothing is ever acted on:
+//   cwd    - the shell prompt and the window/tab title already carry it
+//   tools  - the tool card above the statusline shows the same run/✓/✗ state
+//   tokens - `context` expresses the number that actually matters (headroom)
+//   cost   - a running total, not a per-turn signal
+//   time   - the system clock owns this
+// What is left is the state you cannot get anywhere else: which model, at what
+// reasoning effort, on which branch, with how much context left. Renders e.g.
+// `gpt-5.6-sol · think max · ⎇ main · ctx 42%`.
 const DEFAULT_SEGMENTS: SegmentName[] = [
   "model",
   "thinking",
-  "cwd",
   "branch",
-  "tools",
   "context",
-  "tokens",
-  "cost",
-  "time",
 ];
 
 const PALETTES: Record<PaletteName, ThemeColor[]> = {
@@ -556,7 +559,11 @@ export function wrapExtensionStatusline(
   width: number,
 ): string[] {
   if (!status || width <= 0) return [];
-  return wrapTextWithAnsi(status, width);
+  // Same one-column left margin as the main statusline, so the two footer lines
+  // share an edge instead of the extension row hanging out further left.
+  return wrapTextWithAnsi(status, Math.max(1, width - 1)).map(
+    (line) => ` ${line}`,
+  );
 }
 
 function formatDuplicateExtensionStatus(
