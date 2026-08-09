@@ -1,39 +1,13 @@
 ---
 display_name: Explore
 description: 'Fast read-only search/navigation agent for locating code. Find files by pattern (e.g. src/**/*.tsx), grep for symbols or keywords, or answer "where is X defined / which files reference Y." Do NOT use for code review, design-doc auditing, cross-file consistency checks, or open-ended analysis — it reads excerpts, not whole files. Specify breadth: "quick" (single lookup), "medium" (moderate), or "very thorough" (many locations/naming conventions).'
-# Moved onto the OpenAI Codex OAuth provider per user request (2026-08-05), so every
-# subagent shares the parent's provider. gpt-5.6-luna is the cheapest GPT-5.6 tier —
-# the closest match to the previous deepseek-v4-flash role — kept at thinking `max`
-# because search breadth still benefits from reasoning. Note the context window drops
-# from deepseek's 1M to 372K; this agent reads excerpts, so that is not a regression.
-model: openai-codex/gpt-5.6-luna
+model: deepseek/deepseek-v4-flash
 thinking: max
-# tools: scopes only the BUILTIN tools to a read-only set. extensions:true is what pulls in the
-# real search power — readseek (structural code maps + hash-anchored read/grep),
-# tavily/context7/deepwiki/gitmcp, and hypa. Do NOT narrow this to bare builtins;
-# that would strip the search enhancers.
 tools: read, grep, find, ls, bash
 extensions: true
-# exclude_extensions is the OTHER axis: `tools:` narrows what surfaces, this decides
-# what LOADS. A subagent session is headless, so every UI-only extension here renders
-# into a void while still binding lifecycle hooks; pi-caffeinate re-does what the
-# parent already holds, and pi-goal's autonomous loop has no business inside a child.
-# herdr-pi-state already self-disables via PI_SUBAGENT_CHILD — listed anyway so the
-# load is skipped outright. Everything that actually powers search (readseek, hypa,
-# pi-mcp-adapter) and the permission gate stays loaded.
-# NOTE: names must match a discovered extension or pi emits an `extension-error:`
-# warning — keep this list to chezmoi-managed and npm-managed extensions only, since
-# those are the ones guaranteed to exist on every machine.
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome
 skills: false
-# NOTE: disallowed_tools is gone because every entry it held was a serena tool (serena removed
-# 2026-07-31 — see run_after_12_sync-claude-mcp.sh). It blocked serena's onboarding+memory tools
-# (bounded-agent onboarding trap) and its symbol/content MUTATION tools. readseek's own mutators
-# were never on that list, so read-only posture is unchanged: it rests on the prompt below.
-# max_turns was 0 (unlimited), which also made subagents.json's `graceTurns: 8` dead
-# config — the grace window only opens at the turn limit. 30 turns is well clear of a
-# "very thorough" sweep while still capping a search that has started spinning; hitting
-# it triggers the wrap-up steer, not a hard abort, so partial findings still come back.
+disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename
 max_turns: 30
 prompt_mode: replace
 inherit_context: false

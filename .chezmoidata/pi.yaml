@@ -139,12 +139,74 @@ pi:
     # Active `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv)
     # follows the Pi theme. Extension-status icons (2nd line) are tunable via
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
-    # In-process subagents use the built-in general-purpose/Explore/Plan definitions
-    # via disableDefaultAgents:false in dot_pi/agent/subagents.json. All three are
-    # pinned to openai-codex/gpt-5.6-luna at thinking `max` (user request 2026-08-05):
-    # same OpenAI Codex OAuth provider as the parent, one tier down on price so the
-    # fan-out is cheap, but with reasoning effort left at the top. Pins live in each
-    # dot_pi/agent/agents/*.md frontmatter (`model:` + `thinking:`).
+    # In-process subagents: 9 EJECTED definitions in dot_pi/agent/agents/*.md, not the
+    # built-ins. disableDefaultAgents stays false in dot_pi/agent/subagents.json, but
+    # Explore.md / Plan.md / general-purpose.md override the three built-ins by EXACT
+    # name — registerAgents() overlays a case-SENSITIVE Map, so those three filenames
+    # must keep upstream's casing (DEFAULT_AGENT_NAMES = general-purpose, Explore,
+    # Plan). Renaming Explore.md to explore.md would register BOTH, and lookup returns
+    # the first case-insensitive hit in insertion order — the built-in — silently
+    # discarding every pin below. New agents follow the same PascalCase convention.
+    #
+    # Roster rebuilt 2026-08-09. Two axes, deliberately NOT collapsed into one scale:
+    # role decides the BOUNDARY, tier decides model+effort.
+    #
+    #                  ordinary difficulty         hard
+    #   ~372K ctx      gpt-5.6-luna  / max         gpt-5.6-sol     / xhigh
+    #   1M ctx         deepseek-v4-flash / max     deepseek-v4-pro / xhigh
+    #
+    # The 1M row is only for agents whose INPUT IS TEXT THEY DO NOT CONTROL (external
+    # doc dumps, whole-repo sweeps). Plan/Review/Verify choose their own bounded input,
+    # so they stay on the GPT row however hard the judgment gets.
+    #
+    #   Explore        flash / max    locate in-repo: "where is X"
+    #   Research       flash / max    outside the repo, one authoritative source
+    #   Research-deep  pro   / xhigh  outside the repo, sources disagree
+    #   Plan           luna  / max    design a bounded change
+    #   Plan-deep      sol   / xhigh  3+ subsystems, schema/interface, migration
+    #   Review         luna  / max    judge an existing diff
+    #   Review-deep    sol   / xhigh  concurrency, auth, crypto, money, migration
+    #   Verify         luna  / max    refute ONE stated claim (no -deep sibling yet)
+    #   general-purpose luna / max    the only agent that may WRITE
+    #
+    # Prevailing practice (surveyed 2026-08-09) is that overlapping `description`
+    # fields are the top cause of misrouted delegation, so each -deep sibling states
+    # OBJECTIVE escalation triggers rather than asking anyone to judge "is this hard".
+    # Keep every description disjoint; if two overlap, merge the agents instead.
+    #
+    # The agent .md files are CONFIG, so they carry no comments (user call
+    # 2026-08-09) — every non-obvious invariant behind their frontmatter lives here:
+    #   * `model:` has to be in frontmatter. SubagentsSettings (the whole
+    #     subagents.json schema) has NO model field, and `scopeModels` is a boolean
+    #     allowlist guard, not a default-setter. Per-agent frontmatter is the only
+    #     lever pi exposes. Frontmatter is also AUTHORITATIVE: a pinned field cannot
+    #     be raised by an Agent(...) call, so a caller passing model: to a pinned
+    #     agent is silently ignored. Leave a field OUT to let the caller fill it.
+    #   * `disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename` on every
+    #     read-only agent. `tools:` scopes the 7 BUILTINS only and cannot reach
+    #     extension tools, so with extensions:true readseek's mutators would be live
+    #     write paths inside agents whose prompts promise editing will fail.
+    #     pi-permission-system does not catch them either (policy is `"*": "allow"`
+    #     apart from a few secret paths). Not closed: bash and hypa_shell can still
+    #     write — accepted, since these agents genuinely need a shell.
+    #   * `exclude_extensions` drops what a headless child cannot use: five TUI-only
+    #     (pi-welcome would additionally shell out to git and push a startup card
+    #     into a transcript nobody reads), herdr-pi-state (already self-disables via
+    #     PI_SUBAGENT_CHILD), pi-caffeinate (parent holds the lock), pi-goal (its
+    #     autonomous loop must not run in a child). Names must match a discovered
+    #     extension or pi emits `extension-error:`.
+    #   * pi-gpt-fast is DELIBERATELY NOT excluded (user call 2026-08-09). Its
+    #     before_provider_request hook reads the shared settings.json toggle in the
+    #     child too, so with /gpt-fast on, subagent traffic also goes out at the
+    #     priority service tier for every model on its allowlist — gpt-5.6-luna
+    #     included. Intended trade (latency over cost); do not "fix" it.
+    #   * `max_turns` is a SOFT limit; the hard abort is max_turns + graceTurns, and
+    #     graceTurns is 20 in subagents.json. Hitting max_turns triggers a wrap-up
+    #     steer, so partial findings still come back. max_turns: 0 disables the
+    #     grace window entirely by never opening it.
+    #   * `prompt_mode: replace` means NO AGENTS.md / CLAUDE.md inheritance — each
+    #     such agent's body tells it to read those files itself. general-purpose is
+    #     the sole `append` (parent twin, empty body) and inherits them for free.
     # UNPINNED on 2026-08-08 (was `@0.13.0`). The pin was the only versioned spec in
     # this list, and `pi update --extensions` (script 20) skips version-pinned specs —
     # so it silently froze while everything else tracked latest. 0.13.0 snapshots
