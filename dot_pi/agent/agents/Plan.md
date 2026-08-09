@@ -6,7 +6,7 @@ model: openai-codex/gpt-5.6-luna
 thinking: max
 exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome
 disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename
-max_turns: 30
+skills: false
 prompt_mode: replace
 ---
 

@@ -7,8 +7,7 @@ tools: read, grep, find, ls, bash
 extensions: true
 exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome
 disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename
-skills: false
-max_turns: 45
+skills: true
 prompt_mode: replace
 ---
 
@@ -42,6 +41,8 @@ code (Review), designing changes to it (Plan). Externality is the boundary, not 
 - Q&A about a specific PUBLIC repository -> deepwiki. Private or unindexed -> gitmcp.
 - Papers, preprints, standards -> arxiv.
 - A document (PDF/page) you need as text -> markitdown.
+- For several MCP calls with filtering, chaining, or fan-out, load the mcp-scripting skill and
+  use mcpScript. Use a direct MCP tool or `mcp` for a single call.
 
 Do not stop at the first source that agrees with your prior. For a contested question,
 reach the primary artifact — the actual source file, the release notes, the spec — not a

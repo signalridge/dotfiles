@@ -200,13 +200,22 @@ pi:
     #     child too, so with /gpt-fast on, subagent traffic also goes out at the
     #     priority service tier for every model on its allowlist — gpt-5.6-luna
     #     included. Intended trade (latency over cost); do not "fix" it.
-    #   * `max_turns` is a SOFT limit; the hard abort is max_turns + graceTurns, and
-    #     graceTurns is 20 in subagents.json. Hitting max_turns triggers a wrap-up
-    #     steer, so partial findings still come back. max_turns: 0 disables the
-    #     grace window entirely by never opening it.
-    #   * `prompt_mode: replace` means NO AGENTS.md / CLAUDE.md inheritance — each
-    #     such agent's body tells it to read those files itself. general-purpose is
-    #     the sole `append` (parent twin, empty body) and inherits them for free.
+    #   * Per-agent `max_turns` is intentionally OMITTED. The global
+    #     subagents.json defaultMaxTurns: 0 is the user's overall unlimited default,
+    #     while omission keeps Agent({ max_turns: N }) usable for one bounded run.
+    #     graceTurns: 20 matters only for such finite per-call limits.
+    #   * `skills` is role-scoped: general-purpose and both Research agents use
+    #     `true`, which lets Pi discover the packaged mcp-scripting skill; local
+    #     navigation/planning/review/verification agents use `false`. Do not replace
+    #     this with `skills: mcp-scripting`: pi-subagents 0.14.3 named preloading
+    #     searches local/global skill roots, not npm package skill manifests.
+    #   * `prompt_mode: replace` means NO automatic AGENTS.md / CLAUDE.md inheritance.
+    #     Local-tree specialists tell the child to read applicable convention files;
+    #     external-only Research agents intentionally do not. general-purpose is the
+    #     sole `append` parent twin and inherits the full parent prompt.
+    #   * maxConcurrent: 16 is deliberate: this machine/user preference allows more
+    #     than ten background agents. Foreground agents and scheduled fires have the
+    #     package's documented queue-bypass semantics.
     # UNPINNED on 2026-08-08 (was `@0.13.0`). The pin was the only versioned spec in
     # this list, and `pi update --extensions` (script 20) skips version-pinned specs —
     # so it silently froze while everything else tracked latest. 0.13.0 snapshots

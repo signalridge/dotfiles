@@ -8,7 +8,6 @@ extensions: true
 exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome
 disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename
 skills: false
-max_turns: 50
 prompt_mode: replace
 ---
 

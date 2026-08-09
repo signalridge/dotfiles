@@ -4,6 +4,8 @@ display_name: Agent
 tools: all
 model: openai-codex/gpt-5.6-luna
 thinking: max
+extensions: true
 exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome
+skills: true
 prompt_mode: append
 ---
