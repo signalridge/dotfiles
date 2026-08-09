@@ -5,8 +5,8 @@ model: kimi/k3
 thinking: high
 tools: read, grep, find, ls, bash
 extensions: true
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome
-disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome, pi-dynamic-workflows
+disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
 skills: true
 prompt_mode: replace
 ---

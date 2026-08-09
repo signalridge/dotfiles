@@ -33,11 +33,10 @@ pi:
     # compare if you ever suspect drift.
     quietStartup: true
     # User-requested switch back to the native OpenAI Codex OAuth provider
-    # (openai-codex; OAuth in ~/.pi/agent/auth.json). openai-codex is now the ONLY
-    # provider anything defaults to: the parent runs the model chosen below and
-    # every subagent runs gpt-5.6-luna (see the pi-subagents note below). The
-    # gopass-backed Krill gateway stays defined under customProviders as a manual
-    # /model fallback, and deepseek/qwen/doubao remain available the same way.
+    # (openai-codex; OAuth in ~/.pi/agent/auth.json). The parent and all local
+    # planning/implementation/review agents default to GPT-5.6; high-volume search
+    # and external research deliberately route to the DeepSeek/Kimi pins documented
+    # in the subagent roster below. Krill remains a manual /model fallback.
     defaultProvider: openai-codex
     # The parent model + effort are MACHINE-SCOPED, so they are NOT set here:
     # static data cannot branch. Both are resolved against chezmoi's `work` flag
@@ -139,14 +138,10 @@ pi:
     # Active `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv)
     # follows the Pi theme. Extension-status icons (2nd line) are tunable via
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
-    # In-process subagents: 9 EJECTED definitions in dot_pi/agent/agents/*.md, not the
-    # built-ins. disableDefaultAgents stays false in dot_pi/agent/subagents.json, but
-    # Explore.md / Plan.md / general-purpose.md override the three built-ins by EXACT
-    # name — registerAgents() overlays a case-SENSITIVE Map, so those three filenames
-    # must keep upstream's casing (DEFAULT_AGENT_NAMES = general-purpose, Explore,
-    # Plan). Renaming Explore.md to explore.md would register BOTH, and lookup returns
-    # the first case-insensitive hit in insertion order — the built-in — silently
-    # discarding every pin below. New agents follow the same PascalCase convention.
+    # In-process subagents: 10 EJECTED definitions in dot_pi/agent/agents/*.md.
+    # disableDefaultAgents=true makes this roster authoritative instead of relying on
+    # fragile case-sensitive overlays of upstream's general-purpose/Explore/Plan.
+    # Keep PascalCase filenames for named specialists and general-purpose lowercase.
     #
     # Roster rebuilt 2026-08-09. Two axes, deliberately NOT collapsed into one scale:
     # role decides the BOUNDARY, tier decides model+effort.
@@ -159,15 +154,16 @@ pi:
     # doc dumps, whole-repo sweeps). Plan/Review/Verify choose their own bounded input,
     # so they stay on the GPT row however hard the judgment gets.
     #
-    #   Explore        flash / max    locate in-repo: "where is X"
-    #   Research       flash / max    outside the repo, one authoritative source
-    #   Research-deep  k3    / high   outside the repo, sources disagree
-    #   Plan           luna  / max    design a bounded change
-    #   Plan-deep      sol   / xhigh  3+ subsystems, schema/interface, migration
-    #   Review         luna  / max    judge an existing diff
-    #   Review-deep    sol   / xhigh  concurrency, auth, crypto, money, migration
-    #   Verify         luna  / max    refute ONE stated claim (no -deep sibling yet)
-    #   general-purpose luna / max    the only agent that may WRITE
+    #   Explore         flash / max    locate in-repo: "where is X"
+    #   Research        flash / max    outside the repo, one authoritative source
+    #   Research-deep   k3    / high   outside the repo, sources disagree
+    #   Plan            luna  / max    design a bounded change
+    #   Plan-deep       sol   / xhigh  3+ subsystems, schema/interface, migration
+    #   Implement       luna  / max    execute an already-bounded change end-to-end
+    #   Review          luna  / max    judge an existing diff
+    #   Review-deep     sol   / xhigh  concurrency, auth, crypto, money, migration
+    #   Verify          luna  / max    refute ONE stated claim (no -deep sibling yet)
+    #   general-purpose luna  / max    mixed investigation + execution / fallback
     #
     # Prevailing practice (surveyed 2026-08-09) is that overlapping `description`
     # fields are the top cause of misrouted delegation, so each -deep sibling states
@@ -182,19 +178,17 @@ pi:
     #     lever pi exposes. Frontmatter is also AUTHORITATIVE: a pinned field cannot
     #     be raised by an Agent(...) call, so a caller passing model: to a pinned
     #     agent is silently ignored. Leave a field OUT to let the caller fill it.
-    #   * `disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename` on every
-    #     read-only agent. `tools:` scopes the 7 BUILTINS only and cannot reach
-    #     extension tools, so with extensions:true readseek's mutators would be live
-    #     write paths inside agents whose prompts promise editing will fail.
-    #     pi-permission-system does not catch them either (policy is `"*": "allow"`
-    #     apart from a few secret paths). Not closed: bash and hypa_shell can still
-    #     write — accepted, since these agents genuinely need a shell.
+    #   * `disallowed_tools` removes readseek's three mutators plus hypa_shell from
+    #     every read-only agent. `tools:` scopes the 7 BUILTINS only and cannot reach
+    #     extension tools, so both layers are required. Built-in bash remains for git,
+    #     tests and version probes; its read-only use is a prompt-enforced boundary.
     #   * `exclude_extensions` drops what a headless child cannot use: five TUI-only
     #     (pi-welcome would additionally shell out to git and push a startup card
     #     into a transcript nobody reads), herdr-pi-state (already self-disables via
     #     PI_SUBAGENT_CHILD), pi-caffeinate (parent holds the lock), pi-goal (its
-    #     autonomous loop must not run in a child). Names must match a discovered
-    #     extension or pi emits `extension-error:`.
+    #     autonomous loop must not run in a child), and pi-dynamic-workflows (parent-
+    #     only orchestration; no recursive fan-out). The worktree guard intentionally
+    #     remains loaded in writable children. Names must match a discovered extension.
     #   * pi-gpt-fast is DELIBERATELY NOT excluded (user call 2026-08-09). Its
     #     before_provider_request hook reads the shared settings.json toggle in the
     #     child too, so with /gpt-fast on, subagent traffic also goes out at the
@@ -203,16 +197,17 @@ pi:
     #   * Per-agent `max_turns` is intentionally OMITTED. The global
     #     subagents.json defaultMaxTurns: 0 is the user's overall unlimited default,
     #     while omission keeps Agent({ max_turns: N }) usable for one bounded run.
-    #     graceTurns: 20 matters only for such finite per-call limits.
-    #   * `skills` is role-scoped: general-purpose and both Research agents use
+    #     graceTurns: 8 matters only for such finite per-call limits.
+    #   * `skills` is role-scoped: Implement, general-purpose and both Research agents use
     #     `true`, which lets Pi discover the packaged mcp-scripting skill; local
     #     navigation/planning/review/verification agents use `false`. Do not replace
     #     this with `skills: mcp-scripting`: pi-subagents 0.14.3 named preloading
     #     searches local/global skill roots, not npm package skill manifests.
     #   * `prompt_mode: replace` means NO automatic AGENTS.md / CLAUDE.md inheritance.
     #     Local-tree specialists tell the child to read applicable convention files;
-    #     external-only Research agents intentionally do not. general-purpose is the
-    #     sole `append` parent twin and inherits the full parent prompt.
+    #     external-only Research agents intentionally do not. Implement and
+    #     general-purpose use `append` and inherit the full parent prompt because both
+    #     may mutate the checkout and must retain every project safety constraint.
     #   * maxConcurrent: 16 is deliberate: this machine/user preference allows more
     #     than ten background agents. Foreground agents and scheduled fires have the
     #     package's documented queue-bypass semantics.
@@ -226,9 +221,19 @@ pi:
     # this (upstream #141); 0.14.1 also makes `thinking: max` an advertised level rather
     # than one that happened to work. Peer floor is pi >=0.80.0, satisfied here.
     - npm:@tintinweb/pi-subagents
+    # Claude-Code-style code-mode orchestration: generated JavaScript workflows fan
+    # work out through isolated in-memory agents, then verify/synthesize it. Includes
+    # /workflows, /effort high|ultra, /ultracode, resumable journals, model tiers and
+    # real token/cost accounting. Kept unpinned like the other packages so script 20
+    # tracks latest; current peer floor pi >=0.80.8 is satisfied by our mise-managed Pi.
+    # Safety/cost defaults live in dot_pi/workflows/settings.json and model routing in
+    # dot_pi/workflows/model-tiers.json. Its optional isolation:"worktree" creates an
+    # IN-REPO .pi/worktrees directory, so it is categorically forbidden in this chezmoi
+    # source tree by AGENTS.md; dot_pi/agent/extensions/pi-worktree-guard.ts enforces it.
+    - npm:@quintinshaw/pi-dynamic-workflows
     # Browser-cookie and private web-session extensions are intentionally excluded.
-    # Web research stays on API-backed MCP providers; built-in OpenAI Codex OAuth
-    # remains the only permitted subscription-backed integration in this setup.
+    # Web research stays on API-backed MCP providers; only explicitly configured
+    # provider integrations (including built-in Codex OAuth and Kimi Code) are allowed.
     # Permission policy engine: allow/ask/deny gates over tools, bash, path,
     # external_directory, mcp. Policy at dot_pi/agent/extensions/pi-permission-system/
     # config.json. Fails CLOSED — keep JSON strict (no comments/trailing commas).
@@ -343,8 +348,8 @@ pi:
       auth: builtin
       modelOverrides:
         gpt-5.6-sol: { contextWindow: 372000 }
-        # Subagents run luna (dot_pi/agent/agents/*.md); terra is included so a
-        # runtime /model switch does not silently drop back to 272K.
+        # Local planning/implementation/review agents run luna; terra is included so
+        # a runtime /model switch does not silently drop back to 272K.
         gpt-5.6-luna: { contextWindow: 372000 }
         gpt-5.6-terra: { contextWindow: 372000 }
     deepseek: # DeepSeek Platform (OpenAI-compatible). V4 models are not in Pi's
@@ -361,10 +366,17 @@ pi:
           maxTokens: 384000
           reasoning: true
           cost: { input: 1.74, output: 3.48, cacheRead: 0.145, cacheWrite: 0 }
-          # DeepSeek V4 currently exposes one reasoning mode; preserve the old
-          # intent by mapping every Pi level through xhigh to provider `high`.
+          # DeepSeek V4 currently exposes one reasoning mode; map every advertised Pi
+          # level, including max, to provider `high` instead of silently clamping max.
           thinkingLevelMap:
-            { minimal: high, low: high, medium: high, high: high, xhigh: high }
+            {
+              minimal: high,
+              low: high,
+              medium: high,
+              high: high,
+              xhigh: high,
+              max: high,
+            }
           compat:
             requiresReasoningContentOnAssistantMessages: true
             thinkingFormat: deepseek
@@ -375,7 +387,14 @@ pi:
           reasoning: true
           cost: { input: 0.14, output: 0.28, cacheRead: 0.028, cacheWrite: 0 }
           thinkingLevelMap:
-            { minimal: high, low: high, medium: high, high: high, xhigh: high }
+            {
+              minimal: high,
+              low: high,
+              medium: high,
+              high: high,
+              xhigh: high,
+              max: high,
+            }
           compat:
             requiresReasoningContentOnAssistantMessages: true
             thinkingFormat: deepseek

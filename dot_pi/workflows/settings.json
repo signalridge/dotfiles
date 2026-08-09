@@ -1,0 +1,17 @@
+{
+  "keywordTriggerEnabled": false,
+  "defaultAgentTimeoutMs": 3600000,
+  "defaultTokenBudget": 500000,
+  "defaultConcurrency": 16,
+  "defaultAgentRetries": 1,
+  "progressPanelMode": "detailed",
+  "progressPanelMaxAgents": 16,
+  "persistAgentSessions": false,
+  "excludeSubagentTools": [
+    "Agent",
+    "get_subagent_result",
+    "steer_subagent",
+    "goal_complete",
+    "goal_blocked"
+  ]
+}

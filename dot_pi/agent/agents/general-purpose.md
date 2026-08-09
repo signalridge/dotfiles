@@ -1,11 +1,11 @@
 ---
-description: "Open-ended multi-step work that requires WRITING as well as reading — implement a change, run and iterate on tests, drive a task through to completion. This is the ONLY agent in the roster that can modify files. Use it when a task needs both investigation and execution, or when no specialized agent fits. Do NOT use it to search for code (Explore is faster and cheaper), to design a change that does not exist yet (Plan), or to judge existing code (Review — which cannot accidentally edit what it is judging)."
+description: "Mixed investigation-and-execution agent for open-ended work where the scope or approach is not yet bounded but the task must still be driven through implementation and verification. Use it when discovery and writing are inseparable or no specialist fits. Prefer Implement when the desired behavior and change boundary are already clear; use Explore for lookup-only work, Plan for design-only work, and Review for judging existing code."
 display_name: Agent
 tools: all
 model: openai-codex/gpt-5.6-luna
 thinking: max
 extensions: true
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome, pi-dynamic-workflows
 skills: true
 prompt_mode: append
 ---

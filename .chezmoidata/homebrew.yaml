@@ -6,6 +6,7 @@ homebrew:
     private: []
   brews:
     shared:
+      - libgit2 # Runtime library for pi-readseek's native macOS binary
       - macos-trash
       - mole
     work:

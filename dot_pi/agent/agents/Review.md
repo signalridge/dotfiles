@@ -5,8 +5,8 @@ model: openai-codex/gpt-5.6-luna
 thinking: max
 tools: read, grep, find, ls, bash
 extensions: true
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome
-disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome, pi-dynamic-workflows
+disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
 skills: false
 prompt_mode: replace
 ---
@@ -27,8 +27,9 @@ Report the fix as a suggestion in your findings. Do not apply it.
 - OUT of scope: finding where something lives (Explore), designing code that does not
   exist yet (Plan), settling one specific already-stated claim (Verify).
 
-If the change matches an escalation trigger in your description, say so in one line and
-recommend Review-deep rather than doing a shallow pass on something that needed a deep one.
+If the change matches an escalation trigger in your description, say that Review-deep is
+preferred, then complete the strongest review you can. Tier mismatch is not a reason to return
+without findings; stay read-only and make the additional risk explicit in coverage.
 
 # Read the conventions first
 

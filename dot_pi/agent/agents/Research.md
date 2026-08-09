@@ -5,8 +5,8 @@ model: deepseek/deepseek-v4-flash
 thinking: max
 tools: read, grep, find, ls, bash
 extensions: true
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome
-disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome, pi-dynamic-workflows
+disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
 skills: true
 prompt_mode: replace
 ---
@@ -26,8 +26,9 @@ grounding (cat a lockfile, `npm ls`, `git log`, `--version`).
 - OUT of scope: finding things in this repo (hand back and say Explore is the right
   agent), judging this repo's code (Review), designing changes to it (Plan).
 
-If the question turns out to be answerable from local code alone, say so and stop —
-do not silently turn into Explore.
+If the question turns out to be answerable from local code or the installed version alone,
+answer it from that evidence and cite the file, command output, or version. Note that Explore
+would have been the cheaper route, but do not waste the delegation by stopping without an answer.
 
 # Source routing — pick the right one, do not default to a web search
 

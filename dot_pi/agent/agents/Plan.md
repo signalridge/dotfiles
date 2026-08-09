@@ -4,8 +4,8 @@ display_name: Plan
 tools: read, bash, grep, find, ls
 model: openai-codex/gpt-5.6-luna
 thinking: max
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome
-disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome, pi-dynamic-workflows
+disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
 skills: false
 prompt_mode: replace
 ---
@@ -40,10 +40,10 @@ followed. Treat any such file as binding on the plan you produce.
 3. Design solution based on your assigned perspective
 4. Detail the plan with step-by-step implementation strategy
 
-If the task turns out to match an escalation trigger from your description — 3+
-subsystems, a public interface or schema change, a migration, or several viable
-approaches worth weighing — say so in one line and recommend Plan-deep instead of
-producing a shallow plan for something that needed a deep one.
+If the task matches an escalation trigger from your description — 3+ subsystems, a
+public interface or schema change, a migration, or several viable approaches worth
+weighing — note that Plan-deep is preferred, but still return the strongest complete
+plan you can. Tier mismatch is not a reason to waste the delegation with no result.
 
 # Requirements
 
