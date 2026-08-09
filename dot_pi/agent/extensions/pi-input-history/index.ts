@@ -2,12 +2,14 @@
  * Persistent History + Ctrl+R Fuzzy Popup (fzf / atuin style)
  *
  * - Loads recent prompts from previous sessions into up/down history on startup.
- * - Ctrl+R opens a full-screen-width popup listing history with live fuzzy
- *   filtering — a scrollable list of candidates, not a single-line prompt.
+ * - Ctrl+R opens a large two-pane popup: a filterable list on the left (row
+ *   number + age + one-line summary) and the FULL text of the highlighted entry
+ *   on the right, `fzf --preview` style. Newest entry sits at the top.
  *
  * Hotkeys while searching:
- * - ↑ / Ctrl+P / Ctrl+R : move to older match
- * - ↓ / Ctrl+N / Ctrl+S : move to newer match
+ * - ↑ / Ctrl+P / Ctrl+S : move up (toward newer)
+ * - ↓ / Ctrl+N / Ctrl+R : move down (toward older — "press ctrl+R again to go further back")
+ * - Ctrl+D / Ctrl+U     : scroll the preview pane
  * - <type>              : fuzzy-filter (subsequence, space = multi-token)
  * - Enter               : accept selection (fills editor)
  * - Esc / Ctrl+G / Ctrl+C : cancel
@@ -25,6 +27,7 @@ import {
   matchesKey,
   truncateToWidth,
   visibleWidth,
+  wrapTextWithAnsi,
   type Component,
   type Focusable,
   type TUI,
@@ -32,13 +35,36 @@ import {
 
 const MAX_MESSAGES = 100;
 
-/** Number of history rows shown in the popup list at once. */
-const LIST_ROWS = 10;
+/** Popup footprint, as a fraction of the terminal. */
+const POPUP_WIDTH = "90%";
+const POPUP_MAX_HEIGHT = "85%";
+/** Same fraction as POPUP_MAX_HEIGHT — used to size the list to the popup. */
+const POPUP_HEIGHT_FRACTION = 0.85;
+
+/** Share of the popup interior handed to the preview pane. */
+const PREVIEW_FRACTION = 0.42;
+/** Columns the preview never drops below, and the list never drops below. */
+const MIN_PREVIEW_WIDTH = 24;
+const MIN_LIST_WIDTH = 30;
+/** Under this total width there is no room to split; the list goes full-width. */
+const MIN_WIDTH_FOR_PREVIEW = 76;
+
+/** Ceiling on the list height, so a very tall terminal does not get an absurd popup. */
+const MAX_LIST_ROWS = 40;
+
+/** Width of the right-aligned age column ("now", "59m", "23h", "364d"). */
+const AGE_WIDTH = 4;
+
+interface HistoryEntry {
+  text: string;
+  /** Epoch ms taken from the session entry that recorded this prompt. */
+  timestamp?: number;
+}
 
 // ─── Extension Entry ───────────────────────────────────────────────────────────
 
 export default function (pi: ExtensionAPI) {
-  let historyCache: string[] = [];
+  let historyCache: HistoryEntry[] = [];
   let historyReady: Promise<void> = Promise.resolve();
   let loadGeneration = 0;
 
@@ -48,23 +74,25 @@ export default function (pi: ExtensionAPI) {
 
     // Do not block later session_start handlers: the Kimi editor must replace
     // Pi's bootstrap editor immediately instead of waiting for session I/O.
-    historyReady = loadRecentPrompts(ctx.cwd, MAX_MESSAGES).then((items) => {
-      if (generation !== loadGeneration) return;
-      historyCache = items;
-      if (items.length === 0) return;
+    historyReady = loadRecentPrompts(ctx.cwd, MAX_MESSAGES)
+      .then((items) => {
+        if (generation !== loadGeneration) return;
+        historyCache = items;
+        if (items.length === 0) return;
 
-      const prevComponentFactory = ctx.ui.getEditorComponent();
-      ctx.ui.setEditorComponent((tui, theme, keybindings) => {
-        const editor =
-          prevComponentFactory?.(tui, theme, keybindings) ??
-          new CustomEditor(tui, theme, keybindings);
+        const prevComponentFactory = ctx.ui.getEditorComponent();
+        ctx.ui.setEditorComponent((tui, theme, keybindings) => {
+          const editor =
+            prevComponentFactory?.(tui, theme, keybindings) ??
+            new CustomEditor(tui, theme, keybindings);
 
-        for (let i = items.length - 1; i >= 0; i--) {
-          editor.addToHistory?.(items[i]!);
-        }
-        return editor;
-      });
-    }).catch(() => undefined);
+          for (let i = items.length - 1; i >= 0; i--) {
+            editor.addToHistory?.(items[i]!.text);
+          }
+          return editor;
+        });
+      })
+      .catch(() => undefined);
   });
 
   pi.on("session_shutdown", () => {
@@ -96,9 +124,9 @@ export default function (pi: ExtensionAPI) {
           overlay: true,
           overlayOptions: {
             anchor: "center",
-            width: "70%",
+            width: POPUP_WIDTH,
             minWidth: 40,
-            maxHeight: "80%",
+            maxHeight: POPUP_MAX_HEIGHT,
           },
         },
       );
@@ -133,6 +161,20 @@ function fuzzyMatch(item: string, query: string): boolean {
 
 function toSingleLinePreview(text: string): string {
   return text.replace(/\s+/g, " ").trim();
+}
+
+/** Compact age for the list gutter; "" when the session recorded no timestamp. */
+function relativeAge(timestamp: number | undefined, now: number): string {
+  if (timestamp === undefined) return "";
+  const diff = now - timestamp;
+  if (diff < 60_000) return "now";
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 365) return `${days}d`;
+  return `${Math.floor(days / 365)}y`;
 }
 
 /** Highlight matched characters (subsequence) with underline + accent color. */
@@ -188,36 +230,40 @@ function highlightMatch(
 }
 
 /**
- * fzf / atuin style popup: a scrollable list of history candidates that filters
- * live as you type, with the selected row rendered as a full-width highlight bar.
+ * fzf-style two-pane popup. The list filters live as you type; the pane on the
+ * right always shows the full, unsquashed text of the highlighted entry, which
+ * is the whole point — one-line summaries cannot tell two long prompts apart.
  *
- * Layout (top → bottom, anchored to the bottom of the screen):
- *   ┌ older matches …
- *   │ ▌ selected match      ← full-width highlight bar
- *   └ newer matches …       ← newest match sits just above the prompt
- *   > query█                              1/57
- *   ↑ older · ↓ newer · enter accept · esc cancel
+ * Layout (newest entry first, so the list reads top-down like a transcript):
+ *   ╭─ history ────────────────────────┬──────────────────╮
+ *   │    1  5m   newest match          │ full text of the │
+ *   │ ▌  2  2h   selected match        │ highlighted      │
+ *   │    3  1d   older match           │ entry, wrapped   │
+ *   │ > query█                    2/57 │ and scrollable   │
+ *   │ ↑↓ move · enter accept · …       │                  │
+ *   ╰──────────────────────────────────┴──────────────────╯
  */
-class HistoryPopupComponent implements Component, Focusable {
+export class HistoryPopupComponent implements Component, Focusable {
   private _focused = false;
   private readonly input = new Input();
 
   private query = "";
   /** Indices into `history` that match the query, newest-first. */
   private matchIndices: number[] = [];
-  /** Pointer into `matchIndices`; 0 = newest match. */
+  /** Pointer into `matchIndices`; 0 = newest match = top row. */
   private matchPointer = 0;
+  /** First visible preview line; reset whenever the selection moves. */
+  private previewOffset = 0;
 
   constructor(
     private readonly tui: TUI,
     private readonly theme: any,
-    private readonly history: string[],
+    private readonly history: HistoryEntry[],
     private readonly done: Done,
   ) {
     this.input.onEscape = () => this.done(null);
     this.input.onSubmit = () => {
-      const match = this.getCurrentMatch();
-      this.done(match ?? null);
+      this.done(this.getCurrentEntry()?.text ?? null);
     };
     this.recomputeMatches(true);
   }
@@ -234,7 +280,7 @@ class HistoryPopupComponent implements Component, Focusable {
   private recomputeMatches(resetPointer: boolean): void {
     const matches: number[] = [];
     for (let i = 0; i < this.history.length; i++) {
-      if (fuzzyMatch(this.history[i]!, this.query)) {
+      if (fuzzyMatch(this.history[i]!.text, this.query)) {
         matches.push(i);
       }
     }
@@ -243,48 +289,65 @@ class HistoryPopupComponent implements Component, Focusable {
     if (this.matchPointer >= this.matchIndices.length) {
       this.matchPointer = Math.max(0, this.matchIndices.length - 1);
     }
+    this.previewOffset = 0;
   }
 
-  private getCurrentMatch(): string | undefined {
+  private getCurrentEntry(): HistoryEntry | undefined {
     if (this.matchIndices.length === 0) return undefined;
-    const index = this.matchIndices[this.matchPointer];
-    return this.history[index!];
+    return this.history[this.matchIndices[this.matchPointer]!];
   }
 
-  /** Move selection toward older entries (clamped). */
-  private moveOlder(): void {
+  /** Move up the list, i.e. toward newer entries (clamped). */
+  private moveUp(): void {
+    if (this.matchIndices.length === 0) return;
+    this.matchPointer = Math.max(this.matchPointer - 1, 0);
+    this.previewOffset = 0;
+  }
+
+  /** Move down the list, i.e. toward older entries (clamped). */
+  private moveDown(): void {
     if (this.matchIndices.length === 0) return;
     this.matchPointer = Math.min(
       this.matchPointer + 1,
       this.matchIndices.length - 1,
     );
-  }
-
-  /** Move selection toward newer entries (clamped). */
-  private moveNewer(): void {
-    if (this.matchIndices.length === 0) return;
-    this.matchPointer = Math.max(this.matchPointer - 1, 0);
+    this.previewOffset = 0;
   }
 
   handleInput(data: string): void {
-    // Older: ↑ / Ctrl+P / Ctrl+R
+    // Newer: ↑ / Ctrl+P (previous line) / Ctrl+S (forward-search counterpart)
     if (
       matchesKey(data, Key.up) ||
       matchesKey(data, Key.ctrl("p")) ||
-      matchesKey(data, Key.ctrl("r"))
+      matchesKey(data, Key.ctrl("s"))
     ) {
-      this.moveOlder();
+      this.moveUp();
       this.tui.requestRender();
       return;
     }
 
-    // Newer: ↓ / Ctrl+N / Ctrl+S
+    // Older: ↓ / Ctrl+N (next line) / Ctrl+R (press again to search further back)
     if (
       matchesKey(data, Key.down) ||
       matchesKey(data, Key.ctrl("n")) ||
-      matchesKey(data, Key.ctrl("s"))
+      matchesKey(data, Key.ctrl("r"))
     ) {
-      this.moveNewer();
+      this.moveDown();
+      this.tui.requestRender();
+      return;
+    }
+
+    // Preview scrolling — half a pane per press, like less/fzf.
+    if (matchesKey(data, Key.ctrl("d"))) {
+      this.previewOffset += Math.max(1, Math.floor(this.layout().rows / 2));
+      this.tui.requestRender();
+      return;
+    }
+    if (matchesKey(data, Key.ctrl("u"))) {
+      this.previewOffset = Math.max(
+        0,
+        this.previewOffset - Math.max(1, Math.floor(this.layout().rows / 2)),
+      );
       this.tui.requestRender();
       return;
     }
@@ -307,10 +370,34 @@ class HistoryPopupComponent implements Component, Focusable {
     this.tui.requestRender();
   }
 
-  /** Compute the visible window [start, end) over matchIndices, selection centered. */
-  private windowBounds(): { start: number; end: number } {
+  /**
+   * Rows the list gets, derived from the live terminal height. `render` only
+   * receives a width, and the overlay sizes itself to whatever we return, so
+   * the height budget has to be reconstructed from the same fraction the
+   * overlay caps us at, minus the frame (2) and the query + help lines (2).
+   */
+  private layout(): { rows: number; showHelp: boolean } {
+    const terminalRows = process.stdout.rows ?? 24;
+    // Must mirror the overlay's own maths exactly: it resolves "85%" as
+    // floor(termHeight * 85 / 100) and then hard-truncates anything taller with
+    // `overlayLines.slice(0, maxHeight)` — from the BOTTOM, which would eat the
+    // query line and leave a popup you cannot type into. So the cap is a
+    // ceiling to fit under, never something to pad up to.
+    const cap = Math.floor(terminalRows * POPUP_HEIGHT_FRACTION);
+    // The frame (2) and the query line (1) are non-negotiable; the help line is
+    // the first thing to drop when the terminal cannot afford it.
+    const showHelp = cap >= 5;
+    const rows = Math.max(
+      1,
+      Math.min(MAX_LIST_ROWS, cap - 3 - (showHelp ? 1 : 0)),
+    );
+    return { rows, showHelp };
+  }
+
+  /** Visible window over matchIndices, selection kept centered where possible. */
+  private windowBounds(rows: number): { start: number; end: number } {
     const total = this.matchIndices.length;
-    const size = Math.min(LIST_ROWS, total);
+    const size = Math.min(rows, total);
     const half = Math.floor(size / 2);
     const start = Math.max(
       0,
@@ -319,29 +406,74 @@ class HistoryPopupComponent implements Component, Focusable {
     return { start, end: Math.min(start + size, total) };
   }
 
-  /** Render one history row. Selected rows become a full-width highlight bar. */
+  /** Render one list row. The selected row becomes a full-width highlight bar. */
   private renderRow(
     matchIdx: number,
     isSelected: boolean,
     width: number,
+    indexWidth: number,
+    now: number,
   ): string {
     const t = this.theme;
-    const text = toSingleLinePreview(
-      this.history[this.matchIndices[matchIdx]!]!,
+    const entry = this.history[this.matchIndices[matchIdx]!]!;
+    const text = toSingleLinePreview(entry.text);
+
+    const marker = isSelected ? "▌ " : "  ";
+    const gutter = `${String(matchIdx + 1).padStart(indexWidth)} ${relativeAge(
+      entry.timestamp,
+      now,
+    ).padStart(AGE_WIDTH)}  `;
+    const textWidth = Math.max(
+      1,
+      width - visibleWidth(marker) - visibleWidth(gutter),
     );
-    const prefix = isSelected ? "▌ " : "  ";
-    const textWidth = Math.max(1, width - visibleWidth(prefix));
 
     if (!isSelected) {
-      const body = truncateToWidth(text, textWidth);
-      return t.fg("muted", prefix) + t.fg("dim", body);
+      return (
+        t.fg("border", marker) +
+        t.fg("dim", gutter) +
+        t.fg("muted", truncateToWidth(text, textWidth))
+      );
     }
 
     // Highlight matched chars, then pad to full width so the bar spans the row.
     const body = highlightMatch(text, this.query, t, textWidth);
-    const used = visibleWidth(prefix) + visibleWidth(body);
+    const used =
+      visibleWidth(marker) + visibleWidth(gutter) + visibleWidth(body);
     const pad = " ".repeat(Math.max(0, width - used));
-    return t.bg("selectedBg", t.fg("accent", prefix) + body + pad);
+    return t.bg(
+      "selectedBg",
+      t.fg("accent", marker) + t.fg("dim", gutter) + body + pad,
+    );
+  }
+
+  /** Full text of the selected entry, wrapped to the pane and scroll-clamped. */
+  private renderPreview(width: number, height: number): string[] {
+    const t = this.theme;
+    const entry = this.getCurrentEntry();
+    if (!entry || height <= 0) return [];
+
+    const wrapped = wrapTextWithAnsi(entry.text, width);
+    const maxOffset = Math.max(0, wrapped.length - height);
+    // Clamp here rather than in the key handler: the pane height is only known
+    // at render time, so Ctrl+D cannot know where the end is.
+    this.previewOffset = Math.min(this.previewOffset, maxOffset);
+
+    const lines = wrapped
+      .slice(this.previewOffset, this.previewOffset + height)
+      .map((line) => t.fg("text", line));
+
+    if (maxOffset > 0 && lines.length > 0) {
+      // Spend the last row on a scroll indicator — without it, a truncated
+      // preview is indistinguishable from a short prompt.
+      const remaining = maxOffset - this.previewOffset;
+      const hint =
+        remaining > 0
+          ? `↓ ${remaining} more line${remaining === 1 ? "" : "s"} · ctrl+d/u`
+          : "↑ ctrl+u to scroll back";
+      lines[lines.length - 1] = t.fg("dim", truncateToWidth(hint, width));
+    }
+    return lines;
   }
 
   /** Pad or truncate a (possibly ANSI-styled) string to exactly `w` columns. */
@@ -355,49 +487,112 @@ class HistoryPopupComponent implements Component, Focusable {
     const t = this.theme;
     const border = (s: string) => t.fg("border", s);
     const total = this.matchIndices.length;
+    const { rows, showHelp } = this.layout();
+    const now = Date.now();
 
-    // Interior width inside the frame: "│ " + content + " │"  ⇒  width - 4.
-    const inner = Math.max(10, width - 4);
-
-    // ── Content lines, each rendered to `inner` columns ──────────────────────
-    const content: string[] = [];
-    if (total === 0) {
-      // Keep the box height stable so the prompt doesn't jump around.
-      for (let i = 0; i < LIST_ROWS - 1; i++) content.push("");
-      content.push(t.fg("warning", "no match"));
-    } else {
-      const { start, end } = this.windowBounds();
-      // Build rows newest-first, then reverse so the newest match sits at the
-      // bottom of the list, right above the prompt.
-      const rows: string[] = [];
-      for (let i = start; i < end; i++) {
-        rows.push(this.renderRow(i, i === this.matchPointer, inner));
-      }
-      rows.reverse();
-      while (rows.length < LIST_ROWS) rows.unshift("");
-      content.push(...rows);
+    // Two-pane frame spends 7 columns on chrome: "│ " + list + " │ " + preview + " │".
+    // Single-pane spends 4: "│ " + list + " │".
+    const twoPane = width >= MIN_WIDTH_FOR_PREVIEW;
+    const usable = twoPane ? Math.max(10, width - 7) : Math.max(10, width - 4);
+    let previewWidth = 0;
+    let listWidth = usable;
+    if (twoPane) {
+      previewWidth = Math.max(
+        MIN_PREVIEW_WIDTH,
+        Math.min(
+          Math.floor(usable * PREVIEW_FRACTION),
+          usable - MIN_LIST_WIDTH,
+        ),
+      );
+      listWidth = usable - previewWidth;
     }
 
-    // Prompt line — the Input component renders its OWN "> " prompt and pads to
-    // `inner`, so we must NOT prepend another "> " (that caused the "> >" bug).
-    content.push(this.input.render(inner)[0] ?? "");
+    // ── Left pane: list + query + help ───────────────────────────────────────
+    const left: string[] = [];
+    if (total === 0) {
+      left.push(t.fg("warning", "no match"));
+      while (left.length < rows) left.push("");
+    } else {
+      const indexWidth = Math.max(2, String(total).length);
+      const { start, end } = this.windowBounds(rows);
+      for (let i = start; i < end; i++) {
+        left.push(
+          this.renderRow(
+            i,
+            i === this.matchPointer,
+            listWidth,
+            indexWidth,
+            now,
+          ),
+        );
+      }
+      while (left.length < rows) left.push("");
+    }
 
-    // Status / help line: counter + key hints.
-    const counter = total > 0 ? `${this.matchPointer + 1}/${total}` : "0/0";
-    content.push(
-      t.fg("dim", `${counter}  ↑ older · ↓ newer · enter accept · esc cancel`),
-    );
+    // The Input renders its OWN "> " prompt and pads to the width it is handed,
+    // so the counter has to live in columns withheld from it — appending to a
+    // full-width render is what produced the old "> >" bug.
+    const counter = ` ${total > 0 ? `${this.matchPointer + 1}/${total}` : "0/0"}`;
+    const queryWidth = Math.max(4, listWidth - visibleWidth(counter));
+    left.push((this.input.render(queryWidth)[0] ?? "") + t.fg("dim", counter));
+    if (showHelp) {
+      left.push(
+        t.fg("dim", "↑↓ move · enter accept · ctrl+d/u preview · esc cancel"),
+      );
+    }
 
-    // ── Frame it as a floating dialog ────────────────────────────────────────
-    const title = " 🔍 history ";
-    const dashes = Math.max(0, width - 3 - visibleWidth(title));
-    const top = border("╭─" + title + "─".repeat(dashes) + "╮");
-    const bottom = border("╰" + "─".repeat(Math.max(0, width - 2)) + "╯");
-    const framed = content.map(
-      (line) => border("│") + " " + this.fit(line, inner) + " " + border("│"),
-    );
+    // ── Right pane: full text of the selection ───────────────────────────────
+    const preview = twoPane
+      ? this.renderPreview(previewWidth, left.length)
+      : [];
 
-    return [top, ...framed, bottom];
+    // ── Frame ────────────────────────────────────────────────────────────────
+    const title = " history ";
+    const body = left.map((line, i) => {
+      const listCell = border("│") + " " + this.fit(line, listWidth) + " ";
+      if (!twoPane) return listCell + border("│");
+      return (
+        listCell +
+        border("│") +
+        " " +
+        this.fit(preview[i] ?? "", previewWidth) +
+        " " +
+        border("│")
+      );
+    });
+
+    if (!twoPane) {
+      const dashes = Math.max(0, width - 3 - visibleWidth(title));
+      return [
+        border("╭─" + title + "─".repeat(dashes) + "╮"),
+        ...body,
+        border("╰" + "─".repeat(Math.max(0, width - 2)) + "╯"),
+      ];
+    }
+
+    // Tee the borders where the panes meet so the split reads as one frame.
+    const leadIn = listWidth + 3 - 2 - visibleWidth(title);
+    const top =
+      leadIn >= 0
+        ? "╭─" +
+          title +
+          "─".repeat(leadIn) +
+          "┬" +
+          "─".repeat(previewWidth + 2) +
+          "╮"
+        : "╭" +
+          "─".repeat(listWidth + 2) +
+          "┬" +
+          "─".repeat(previewWidth + 2) +
+          "╮";
+    const bottom =
+      "╰" +
+      "─".repeat(listWidth + 2) +
+      "┴" +
+      "─".repeat(previewWidth + 2) +
+      "╯";
+
+    return [border(top), ...body, border(bottom)];
   }
 
   invalidate(): void {
@@ -407,36 +602,40 @@ class HistoryPopupComponent implements Component, Focusable {
 
 // ─── History Collection ────────────────────────────────────────────────────────
 
+function parseTimestamp(value: unknown): number | undefined {
+  if (typeof value !== "string") return undefined;
+  const ms = Date.parse(value);
+  return Number.isNaN(ms) ? undefined : ms;
+}
+
 /** Collect user messages from the current session branch (for up-to-date search). */
-function collectBranchHistory(ctx: any): string[] {
-  const history: string[] = [];
+function collectBranchHistory(ctx: any): HistoryEntry[] {
+  const history: HistoryEntry[] = [];
   try {
     for (const entry of ctx.sessionManager.getBranch()) {
       if (entry.type !== "message") continue;
       const message = entry.message as Record<string, any>;
       if (message.role !== "user") continue;
       const text = extractText(message.content)?.trim();
-      if (text && text.length > 0) history.push(text);
+      if (text && text.length > 0) {
+        history.push({ text, timestamp: parseTimestamp(entry.timestamp) });
+      }
     }
   } catch {}
   return history.reverse(); // newest first
 }
 
 /** Merge branch history (current session) with cached cross-session history, deduplicated. */
-function mergeHistory(branchHistory: string[], cached: string[]): string[] {
+function mergeHistory(
+  branchHistory: HistoryEntry[],
+  cached: HistoryEntry[],
+): HistoryEntry[] {
   const seen = new Set<string>();
-  const merged: string[] = [];
-  for (const item of branchHistory) {
-    if (!seen.has(item)) {
-      seen.add(item);
-      merged.push(item);
-    }
-  }
-  for (const item of cached) {
-    if (!seen.has(item)) {
-      seen.add(item);
-      merged.push(item);
-    }
+  const merged: HistoryEntry[] = [];
+  for (const entry of [...branchHistory, ...cached]) {
+    if (seen.has(entry.text)) continue;
+    seen.add(entry.text);
+    merged.push(entry);
   }
   return merged;
 }
@@ -444,13 +643,13 @@ function mergeHistory(branchHistory: string[], cached: string[]): string[] {
 async function loadRecentPrompts(
   cwd: string,
   maxMessages: number,
-): Promise<string[]> {
+): Promise<HistoryEntry[]> {
   try {
     const sessions = await SessionManager.list(cwd);
     const sorted = sessions.sort(
       (a, b) => b.modified.getTime() - a.modified.getTime(),
     );
-    const allMessages: string[] = [];
+    const allMessages: HistoryEntry[] = [];
     const seen = new Set<string>();
 
     for (const session of sorted) {
@@ -458,10 +657,10 @@ async function loadRecentPrompts(
       const userMessages = extractUserMessages(session.path);
       for (const msg of userMessages) {
         if (allMessages.length >= maxMessages) break;
-        const trimmed = msg.trim();
+        const trimmed = msg.text.trim();
         if (trimmed && !seen.has(trimmed)) {
           seen.add(trimmed);
-          allMessages.push(trimmed);
+          allMessages.push({ text: trimmed, timestamp: msg.timestamp });
         }
       }
     }
@@ -471,14 +670,16 @@ async function loadRecentPrompts(
   }
 }
 
-function extractUserMessages(sessionPath: string): string[] {
+function extractUserMessages(sessionPath: string): HistoryEntry[] {
   try {
     const entries = SessionManager.open(sessionPath).getEntries();
-    const messages: string[] = [];
+    const messages: HistoryEntry[] = [];
     for (const entry of entries) {
       if (entry.type !== "message" || entry.message.role !== "user") continue;
       const text = extractText(entry.message.content);
-      if (text) messages.push(text);
+      if (text) {
+        messages.push({ text, timestamp: parseTimestamp(entry.timestamp) });
+      }
     }
     // Reverse so newest messages come first within each session
     return messages.reverse();
