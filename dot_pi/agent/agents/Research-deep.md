@@ -1,8 +1,8 @@
 ---
 display_name: Research-deep
 description: 'Read-only deep-research agent for CONTESTED external questions — where sources disagree, the answer spans several documents or repos, the doc is known to lag the code, or the question is "which of these approaches actually holds up." Returns a synthesis with the disagreement made explicit and each position attributed. Use plain Research instead when one authoritative source settles it; that is the common case and this agent is markedly more expensive.'
-model: deepseek/deepseek-v4-pro
-thinking: xhigh
+model: kimi/k3
+thinking: high
 tools: read, grep, find, ls, bash
 extensions: true
 exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome

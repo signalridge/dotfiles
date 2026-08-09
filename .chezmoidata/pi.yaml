@@ -153,7 +153,7 @@ pi:
     #
     #                  ordinary difficulty         hard
     #   ~372K ctx      gpt-5.6-luna  / max         gpt-5.6-sol     / xhigh
-    #   1M ctx         deepseek-v4-flash / max     deepseek-v4-pro / xhigh
+    #   1M ctx         deepseek-v4-flash / max     kimi k3 / high
     #
     # The 1M row is only for agents whose INPUT IS TEXT THEY DO NOT CONTROL (external
     # doc dumps, whole-repo sweeps). Plan/Review/Verify choose their own bounded input,
@@ -161,7 +161,7 @@ pi:
     #
     #   Explore        flash / max    locate in-repo: "where is X"
     #   Research       flash / max    outside the repo, one authoritative source
-    #   Research-deep  pro   / xhigh  outside the repo, sources disagree
+    #   Research-deep  k3    / high   outside the repo, sources disagree
     #   Plan           luna  / max    design a bounded change
     #   Plan-deep      sol   / xhigh  3+ subsystems, schema/interface, migration
     #   Review         luna  / max    judge an existing diff
@@ -449,6 +449,101 @@ pi:
               high: high,
               xhigh: xhigh,
             }
+    kimi: # Kimi Code (Moonshot subscription) — OpenAI-compatible route
+      # Pi DOES ship a built-in `kimi-coding` provider, but it is STALE and this
+      # entry deliberately does not touch it: the built-in carries only k2p7 /
+      # kimi-for-coding / kimi-k2-thinking, all at contextWindow 262144, and it
+      # speaks the Anthropic protocol (api: anthropic-messages, baseUrl
+      # https://api.kimi.com/coding). The current lineup is k3 / k3-256k /
+      # kimi-for-coding / kimi-for-coding-highspeed. A separate provider name
+      # keeps Pi's built-in metadata intact — per the warning above, reusing a
+      # built-in model ID would overwrite its thinking levels and pricing.
+      # OpenAI protocol chosen per user (2026-08-09) and corroborated live: the
+      # Anthropic route (/coding/v1/messages) rejects this key with a hard
+      # authentication_error, while the OpenAI route accepts it and fails only on
+      # membership verification. Same provider name + base_url as the codex
+      # `[model_providers.kimi]` block, so the two harnesses agree.
+      # Docs: https://www.kimi.com/code/docs/en/kimi-code/models.html
+      # Keys: www.kimi.com/code/console (max 5, each shown once at creation).
+      base_url: https://api.kimi.com/coding/v1
+      api: openai-completions
+      # Shares CODEX's key, not claude's, and the split is by PROTOCOL rather than
+      # by harness: dot_codex/modify_config.toml.tmpl `[model_providers.kimi]`
+      # points at this exact base_url (https://api.kimi.com/coding/v1, OpenAI
+      # wire), so that key is the one already provisioned for this route. The
+      # claude side targets the Anthropic route (https://api.kimi.com/coding) —
+      # a different protocol, hence a different key slot, even though today both
+      # paths happen to hold the same secret.
+      # A missing key is not fatal: private_models.json.tmpl silently SKIPS the
+      # provider, so `chezmoi apply` still succeeds and kimi just does not appear
+      # in `pi --list-models` until the secret exists.
+      gopass: codex/kimi/private/api_key
+      # Subscription/quota billing, not per-token, so cost is zeroed like Pi's
+      # own kimi-coding entries — a running total here would be fiction.
+      # Effort levels: K3 exposes low / high (its default) / max. K2.7 Code
+      # exposes none, so those two models carry no thinkingLevelMap.
+      models:
+        - id: k3
+          name: Kimi K3
+          # 1M is an Allegretto-and-above benefit; Moderato caps K3 at 256K. Pi
+          # derives its compaction trigger from contextWindow, so on a lower tier
+          # this number is a wall waiting to be hit — use k3-256k there, or drop
+          # this to 262144. Verify the tier before trusting 1M.
+          contextWindow: 1000000
+          maxTokens: 32768
+          reasoning: true
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }
+          compat:
+            supportsDeveloperRole: false
+          thinkingLevelMap:
+            {
+              off: none,
+              minimal: low,
+              low: low,
+              medium: high,
+              high: high,
+              xhigh: max,
+              max: max,
+            }
+        - id: k3-256k
+          name: Kimi K3 (256K)
+          # Same quality as k3 within 256K at roughly half the quota draw, and
+          # unlike k3 its window does not depend on membership tier.
+          contextWindow: 262144
+          maxTokens: 32768
+          reasoning: true
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }
+          compat:
+            supportsDeveloperRole: false
+          thinkingLevelMap:
+            {
+              off: none,
+              minimal: low,
+              low: low,
+              medium: high,
+              high: high,
+              xhigh: max,
+              max: max,
+            }
+        - id: kimi-for-coding
+          name: Kimi K2.7 Code
+          contextWindow: 262144
+          maxTokens: 32768
+          reasoning: true
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }
+          compat:
+            supportsDeveloperRole: false
+            supportsReasoningEffort: false
+        - id: kimi-for-coding-highspeed
+          name: Kimi K2.7 Code HighSpeed
+          # ~5-6x faster output at 3x quota draw; Allegretto and above only.
+          contextWindow: 262144
+          maxTokens: 32768
+          reasoning: true
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }
+          compat:
+            supportsDeveloperRole: false
+            supportsReasoningEffort: false
     qwen: # Alibaba DashScope (OpenAI-compatible)
       base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
       api: openai-completions
