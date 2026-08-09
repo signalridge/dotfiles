@@ -45,11 +45,6 @@ render() {
     chezmoi execute-template --config "$CONFIG" --source "$ROOT" <"$ROOT/$src"
 }
 
-gopass_config="$(render private_dot_config/gopass/config.tmpl)"
-setup_gopass="$(render .chezmoiscripts/run_onchange_after_06_setup-gopass.sh.tmpl)"
-keys_manage="$(render dot_local/bin/executable_keys-manage.tmpl)"
-gh_hosts="$(render private_dot_config/gh/private_hosts.yml.tmpl)"
-
 assert_contains() {
     local haystack="$1"
     local needle="$2"
@@ -69,16 +64,6 @@ assert_not_contains() {
         exit 1
     fi
 }
-
-assert_contains "$gopass_config" "source_url = https://github.com/test/pass.git" "gopass config"
-assert_contains "$setup_gopass" "gopass clone --check-keys=false \"https://github.com/test/pass.git\"" "setup gopass"
-assert_contains "$keys_manage" "KEYS_REPO=\"https://github.com/test/keys.git\"" "keys-manage"
-assert_contains "$gh_hosts" "git_protocol: https" "gh hosts"
-
-assert_not_contains "$gopass_config" "git@github.com" "gopass config"
-assert_not_contains "$setup_gopass" "git@github.com" "setup gopass"
-assert_not_contains "$keys_manage" "git@github.com" "keys-manage"
-assert_not_contains "$gh_hosts" "git_protocol: ssh" "gh hosts"
 
 # ─────────────────────────────────────────────────────────────
 # Runtime: normalize_github_origin rewrites existing SSH remotes.

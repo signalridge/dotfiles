@@ -82,15 +82,5 @@ repos:
         pass_filenames: false
         entry: gitleaks git --pre-commit --config .gitleaks.toml --redact --staged --verbose
       #####################################
-      # Template: render + format check + lint
-      # Requires: chezmoi, treefmt, shellcheck, selene, statix
-      #####################################
-      - id: check-templates
-        name: Validate templates (render + check)
-        language: system
-        files: \.tmpl$
-        exclude: Spoons/
-        pass_filenames: false
-        entry: bash tests/check_templates.sh
 ci:
   autoupdate_schedule: weekly

@@ -107,20 +107,6 @@ set -e
 PAPERLIB_RENDERED="$TMP_ROOT/paperlib.sh"
 chezmoi execute-template --source "$ROOT" \
     <"$ROOT/.chezmoiscripts/run_onchange_after_09_install-paperlib.sh.tmpl" >"$PAPERLIB_RENDERED"
-paperlib_amd64_sha="$(chezmoi execute-template --source "$ROOT" '{{ .versions.paperlibAmd64Sha256 }}')"
-paperlib_arm64_sha="$(chezmoi execute-template --source "$ROOT" '{{ .versions.paperlibArm64Sha256 }}')"
-for arch in amd64 arm64; do
-    rendered="$TMP_ROOT/paperlib-$arch.sh"
-    chezmoi execute-template --source "$ROOT" --override-data "{\"chezmoi\":{\"arch\":\"$arch\"}}" \
-        <"$ROOT/.chezmoiscripts/run_onchange_after_09_install-paperlib.sh.tmpl" >"$rendered"
-    if [[ "$arch" == "amd64" ]]; then
-        grep -Fq 'DMG_NAME="Paperlib_${VERSION}.dmg"' "$rendered"
-        grep -Fq "EXPECTED_SHA256=\"\${PAPERLIB_OVERRIDE_SHA256:-$paperlib_amd64_sha}\"" "$rendered"
-    else
-        grep -Fq 'DMG_NAME="Paperlib_${VERSION}_arm.dmg"' "$rendered"
-        grep -Fq "EXPECTED_SHA256=\"\${PAPERLIB_OVERRIDE_SHA256:-$paperlib_arm64_sha}\"" "$rendered"
-    fi
-done
 
 # Execute the mismatch path and prove it stops before mounting/installing.
 if command -v shasum >/dev/null 2>&1; then

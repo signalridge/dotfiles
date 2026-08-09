@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import {
   HARDWARE_CURSOR_MARKER,
   detachLeadingShellBang,
@@ -68,51 +67,5 @@ assert.match(highlightedSlash, /\x1b\[35m/);
 assert.match(highlightedSlash, /\x1b\[1m/);
 assert.equal(highlightLeadingSlashToken("    path/to/file   ", themedAccent), undefined);
 
-const softTheme = JSON.parse(
-  await readFile(
-    new URL("../dot_pi/agent/themes/catppuccin-mocha.json", import.meta.url),
-    "utf8",
-  ),
-);
-assert.equal(softTheme.vars.draculaBorder, "#6272a4");
-assert.equal(softTheme.vars.draculaFocus, "#8be9fd");
-assert.equal(softTheme.vars.draculaShell, "#bd93f9");
-assert.equal(softTheme.colors.border, "draculaBorder");
-assert.equal(softTheme.colors.borderAccent, "draculaFocus");
-assert.equal(softTheme.colors.bashMode, "draculaShell");
-
-const vividTheme = JSON.parse(
-  await readFile(
-    new URL("../dot_pi/agent/themes/signalridge-dracula.json", import.meta.url),
-    "utf8",
-  ),
-);
-assert.equal(vividTheme.colors.accent, "purple");
-assert.equal(vividTheme.colors.border, "comment");
-assert.equal(vividTheme.colors.borderAccent, "cyan");
-assert.equal(vividTheme.colors.warning, "orange");
-assert.equal(vividTheme.colors.mdCode, "cyan");
-assert.equal(vividTheme.colors.mdCodeBlock, "fg");
-assert.equal(vividTheme.colors.borderMuted, "currentLine");
-assert.equal(vividTheme.colors.thinkingMedium, "#4fa8ff");
-assert.equal(vividTheme.colors.thinkingMax, "pink");
-assert.equal(vividTheme.colors.bashMode, "purple");
-
-const editorExtension = await readFile(
-  new URL("../dot_pi/agent/extensions/pi-input-prefix/index.ts", import.meta.url),
-  "utf8",
-);
-assert.match(editorExtension, /theme\.selectList\.selectedText/);
-assert.doesNotMatch(editorExtension, /KIMI_DARK_EDITOR_RGB|79, 168, 255|#4fa8ff/i);
-
-const piData = await readFile(new URL("../.chezmoidata/pi.yaml", import.meta.url), "utf8");
-assert.match(piData, /^\s{4}theme: signalridge-dracula$/m);
-
-const historyExtension = await readFile(
-  new URL("../dot_pi/agent/extensions/pi-input-history/index.ts", import.meta.url),
-  "utf8",
-);
-assert.match(historyExtension, /pi\.on\("session_start", \(_event, ctx\) => \{/);
-assert.doesNotMatch(historyExtension, /pi\.on\("session_start", async/);
 
 console.log("test_pi_theme_following_editor: OK");

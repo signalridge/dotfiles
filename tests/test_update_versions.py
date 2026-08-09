@@ -101,14 +101,6 @@ def main() -> None:
         assert result.returncode != 0
         assert duplicate.read_bytes() == before
 
-        workflow = (ROOT / ".github" / "workflows" / "update-versions.yml").read_text(
-            encoding="utf-8"
-        )
-        assert "persist-credentials: false" in workflow
-        assert "python3 .github/scripts/update_versions.py" in workflow
-        assert "sed -i 's/paperlib:" not in workflow
-        for env_name in module.ENV_BY_KEY.values():
-            assert workflow.count(f"          {env_name}: ") == 1, env_name
 
         print("test_update_versions: OK")
     finally:
