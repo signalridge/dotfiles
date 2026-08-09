@@ -40,7 +40,7 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.224
+  - name: anthropics/claude-code@v2.1.226
   - name: openai/codex@rust-v0.147.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
@@ -77,7 +77,7 @@ packages:
   - name: jesseduffield/lazydocker@v0.25.2
   - name: neovim/neovim@v0.12.4
   - name: LuaLS/lua-language-server@3.19.0
-  - name: tree-sitter/tree-sitter@v0.26.11
+  - name: tree-sitter/tree-sitter@v0.26.12
   - name: jj-vcs/jj@v0.44.0
   - name: rclone/rclone@v1.75.0
   - name: o2sh/onefetch@2.27.1
