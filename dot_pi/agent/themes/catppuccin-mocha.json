@@ -43,6 +43,7 @@
     "text": "text",
     "thinkingText": "overlay1",
     "selectedBg": "selectionBg",
+    "scrollbarThumb": "surface2",
     "userMessageBg": "surface0",
     "userMessageText": "text",
     "customMessageBg": "customMsgBg",
@@ -75,12 +76,13 @@
     "syntaxType": "yellow",
     "syntaxOperator": "sky",
     "syntaxPunctuation": "overlay2",
-    "thinkingOff": "overlay0",
+    "thinkingOff": "surface2",
     "thinkingMinimal": "overlay0",
     "thinkingLow": "overlay1",
     "thinkingMedium": "overlay2",
     "thinkingHigh": "subtext0",
-    "thinkingXhigh": "subtext0",
+    "thinkingXhigh": "mauve",
+    "thinkingMax": "pink",
     "bashMode": "draculaShell"
   },
   "export": {

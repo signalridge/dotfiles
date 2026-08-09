@@ -41,6 +41,7 @@
     "text": "text",
     "thinkingText": "subtle",
     "selectedBg": "selectionBg",
+    "scrollbarThumb": "faint",
     "userMessageBg": "surfaceRaised",
     "userMessageText": "text",
     "customMessageBg": "customMsgBg",
@@ -78,7 +79,8 @@
     "thinkingLow": "#7f849c",
     "thinkingMedium": "#9399b2",
     "thinkingHigh": "#a6adc8",
-    "thinkingXhigh": "borderStrong",
+    "thinkingXhigh": "iris",
+    "thinkingMax": "rose",
     "bashMode": "orange"
   },
   "export": {
