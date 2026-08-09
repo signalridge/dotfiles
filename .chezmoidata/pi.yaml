@@ -18,17 +18,33 @@ pi:
     # an independent Kimi Code palette. Catppuccin Mocha remains available from
     # `/settings`.
     theme: signalridge-dracula
-    # GPT-5.6 supports Pi's native `max` reasoning effort. Keep it as the parent
-    # default. OpenAI Ultra is a separate multi-agent mode, not a reasoning-effort value.
-    defaultThinkingLevel: max
+    # Silences BOTH of pi's startup blocks — the three-line header and, via the
+    # same flag, showLoadedResources():
+    #   const showListing = force || verbose || !getQuietStartup()
+    # That is deliberate. pi renders those into containers that always sort
+    # above the transcript (documentContainer: header -> loadedResources ->
+    # chat), so while they exist the Kimi-style card — a custom entry, hence
+    # part of the transcript — can only ever appear BELOW them. Silencing them
+    # is the only way to put the card first.
+    # Nothing is lost: dot_pi/agent/extensions/pi-welcome.ts rebuilds the
+    # [Context]/[Skills]/[Prompts]/[Themes]/[Extensions] listing inside the card
+    # from pi's OWN DefaultResourceLoader, so it is the same data pi would have
+    # printed, not a second opinion. Run `pi --verbose` to see pi's version and
+    # compare if you ever suspect drift.
+    quietStartup: true
     # User-requested switch back to the native OpenAI Codex OAuth provider
     # (openai-codex; OAuth in ~/.pi/agent/auth.json). openai-codex is now the ONLY
-    # provider anything defaults to: the parent runs gpt-5.6-sol and every subagent
-    # runs gpt-5.6-luna (see the pi-subagents note below). The gopass-backed Krill
-    # gateway stays defined under customProviders as a manual /model fallback, and
-    # deepseek/qwen/doubao remain available the same way.
+    # provider anything defaults to: the parent runs the model chosen below and
+    # every subagent runs gpt-5.6-luna (see the pi-subagents note below). The
+    # gopass-backed Krill gateway stays defined under customProviders as a manual
+    # /model fallback, and deepseek/qwen/doubao remain available the same way.
     defaultProvider: openai-codex
-    defaultModel: gpt-5.6-sol
+    # The parent model + effort are MACHINE-SCOPED and shared with Codex — both
+    # live in .chezmoidata/models.yaml (`agentModels`), resolved against
+    # chezmoi's `work` flag in dot_pi/agent/modify_settings.json.tmpl. They are
+    # deliberately NOT duplicated here; see that file for why the branch cannot
+    # live in the data itself. Whichever applies, the model is 372K/128K on
+    # openai-codex, so the reserveTokens maths below is unaffected.
     # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
     # the ACTIVE provider/model's. Verify with `pi --list-models <id>` before
     # touching this number — the two gpt-5.6-sol entries differ, and the Codex
@@ -113,11 +129,15 @@ pi:
     # dot_pi/agent/extensions/pi-statusline so we can trim it — do NOT re-add the
     # `npm:@narumitw/pi-statusline` entry here: it double-loads with the vendored
     # copy and the npm copy wins, making local edits dead (same trap as
-    # pi-input-history). The fork keeps all upstream segments EXCEPT the π brand
-    # (model/thinking/dir/branch/tools/context/tokens/cost/time) but strips the
-    # decorative per-segment emoji — short text labels + only ⎇ branch / $ cost. Active
-    # `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv) follows the
-    # Pi theme. Extension-status icons (2nd line) are tunable via
+    # pi-input-history). The fork drops the π brand, the decorative per-segment
+    # emoji, and (2026-08-09) the five segments that duplicate what is already on
+    # screen: cwd (shell prompt + window title), tools (the tool card itself),
+    # tokens (`context` carries the number that matters), cost (a running total,
+    # not a per-turn signal) and time (the system clock). DEFAULT_SEGMENTS in
+    # src/statusline.ts is now model/thinking/branch/context — e.g.
+    # `gpt-5.6-sol · think max · ⎇ main · ctx 42%`; edit that array to restore any.
+    # Active `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv)
+    # follows the Pi theme. Extension-status icons (2nd line) are tunable via
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
     # In-process subagents use the built-in general-purpose/Explore/Plan definitions
     # via disableDefaultAgents:false in dot_pi/agent/subagents.json. All three are
@@ -158,12 +178,30 @@ pi:
     # switch to deepseek-v4-pro when a 1M window matters more than the GPT default.
     # Zero deps; state is session-scoped.
     - npm:@narumitw/pi-goal
+    # gpt-fast: also NOT listed here — local extension at
+    # dot_pi/agent/extensions/pi-gpt-fast.ts. `/gpt-fast [on|off|toggle]` (and
+    # `pi --gpt-fast`) injects `service_tier: "priority"` into OpenAI/Codex
+    # requests via the `before_provider_request` hook — same model, same
+    # reasoning effort, lower latency. Upstream prior art measured 1.57x wall on
+    # gpt-5.6-sol and 2.25x on gpt-5.6-luna. NOT installed from npm on purpose:
+    # calesennett/pi-codex-fast carries no license at all, and the unscoped
+    # `pi-codex-fast` on npm is a DIFFERENT author's package (wobondar); the MIT
+    # alternative, npm:pi-openai-fast-mode, names its command `/fast` and renders
+    # its indicator as a full-width widget instead of a footer status. State
+    # persists under the `pi-gpt-fast` key in ~/.pi/agent/settings.json, which
+    # the modify_ script preserves.
     # input-history: NOT listed here — it is VENDORED (locally forked/魔改) at
     # dot_pi/agent/extensions/pi-input-history/ and auto-discovered from
     # ~/.pi/agent/extensions/, so no `npm:` entry is needed (listing it too would
     # double-load it and the npm copy would win, shadowing the local edits — see
     # the extension conflict pi reports when both exist). Our fork replaces the
     # single-line reverse-search with a full fzf/atuin-style popup list (Ctrl+R).
+    # Reworked 2026-08-09 into a `fzf --preview` two-pane dialog (90% wide, 85%
+    # tall): left = newest-first list, each row `<n> <age> <summary>`; right =
+    # the FULL text of the highlighted entry, ctrl+d/u to scroll it. Ages come
+    # from each session entry's `timestamp`. Arrows/ctrl+p/ctrl+n follow the
+    # list; ctrl+r/ctrl+s keep their shell meaning (ctrl+r walks older). Under
+    # 76 columns the preview is dropped and the list goes full-width.
     # Ctrl+R is claimed for that popup; Pi's built-in app.session.rename is moved
     # off Ctrl+R to shift+r in dot_pi/agent/keybindings.json to avoid the clash.
   # ===== Vendored fork upstreams (advisory watch, used by script 20) =====
