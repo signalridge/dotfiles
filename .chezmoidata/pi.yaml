@@ -185,12 +185,12 @@ pi:
     #     extension tools, so both layers are required. Built-in bash remains for git,
     #     tests and version probes; its read-only use is a prompt-enforced boundary.
     #   * `exclude_extensions` drops what a headless child cannot use: five TUI-only
-    #     (pi-welcome would additionally shell out to git and push a startup card
-    #     into a transcript nobody reads), herdr-pi-state (already self-disables via
-    #     PI_SUBAGENT_CHILD), pi-caffeinate (parent holds the lock), pi-goal (its
-    #     autonomous loop must not run in a child), and pi-dynamic-workflows (parent-
-    #     only orchestration; no recursive fan-out). The worktree guard intentionally
-    #     remains loaded in writable children. Names must match a discovered extension.
+    #     extensions (pi-welcome would additionally shell out to git and push a startup
+    #     card into a transcript nobody reads), herdr-pi-state (already self-disables via
+    #     PI_SUBAGENT_CHILD), pi-goal (its autonomous loop must not run in a child), and
+    #     pi-dynamic-workflows (parent-only orchestration; no recursive fan-out). The
+    #     worktree guard intentionally remains loaded in writable children. Names must
+    #     match a discovered extension.
     #   * pi-gpt-fast is DELIBERATELY NOT excluded (user call 2026-08-09). Its
     #     before_provider_request hook reads the shared settings.json toggle in the
     #     child too, so with /gpt-fast on, subagent traffic also goes out at the
@@ -247,10 +247,6 @@ pi:
     # reducers + evidence record; rewrites shell/read/grep/find/ls and proxies
     # MCP to cut context pollution. Top-downloaded Pi package; pairs with readseek.
     - npm:@hypabolic/pi-hypa
-    # caffeinate: inhibits macOS sleep (system `caffeinate`) while the agent is
-    # processing a long turn; releases on idle/shutdown. /caffeinate to control.
-    # Zero deps. Disable with PI_CAFFEINATE_DISABLED=1.
-    - npm:@narumitw/pi-caffeinate
     # goal: `/goal <objective>` autonomous mode — keeps working until goal_complete
     # or a token budget (--tokens) is hit. Pairs well with long-context models;
     # switch to deepseek-v4-pro when a 1M window matters more than the GPT default.
