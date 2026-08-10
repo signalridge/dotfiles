@@ -40,7 +40,7 @@ pi:
     defaultProvider: openai-codex
     # The parent model + effort are MACHINE-SCOPED, so they are NOT set here:
     # static data cannot branch. Both are resolved against chezmoi's `work` flag
-    # in dot_pi/agent/modify_settings.json.tmpl (work -> gpt-5.6-luna at max,
+    # in dot_pi/agent/modify_settings.json.tmpl (work -> gpt-5.6-luna at xhigh,
     # private -> gpt-5.6-sol at xhigh), with the same pair kept in lockstep in
     # dot_codex/modify_config.toml.tmpl. Either model is 372K/128K on
     # openai-codex, so the reserveTokens maths below is unaffected.
@@ -134,11 +134,11 @@ pi:
     # tokens (`context` carries the number that matters), cost (a running total,
     # not a per-turn signal) and time (the system clock). DEFAULT_SEGMENTS in
     # src/statusline.ts is now model/thinking/branch/context — e.g.
-    # `gpt-5.6-sol · think max · ⎇ main · ctx 42%`; edit that array to restore any.
+    # `gpt-5.6-sol · think xhigh · ⎇ main · ctx 42%`; edit that array to restore any.
     # Active `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv)
     # follows the Pi theme. Extension-status icons (2nd line) are tunable via
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
-    # In-process subagents: 10 EJECTED definitions in dot_pi/agent/agents/*.md.
+    # In-process subagents: 10 EJECTED target definitions; machine-scoped sources use .md.tmpl.
     # disableDefaultAgents=true makes this roster authoritative instead of relying on
     # fragile case-sensitive overlays of upstream's general-purpose/Explore/Plan.
     # Keep PascalCase filenames for named specialists and general-purpose lowercase.
@@ -146,24 +146,26 @@ pi:
     # Roster rebuilt 2026-08-09. Two axes, deliberately NOT collapsed into one scale:
     # role decides the BOUNDARY, tier decides model+effort.
     #
-    #                  ordinary difficulty         hard
-    #   ~372K ctx      gpt-5.6-luna  / max         gpt-5.6-sol     / xhigh
-    #   1M ctx         deepseek-v4-flash / max     kimi k3 / high
+    #   GPT tier                 work machine           private machine
+    #   ordinary difficulty     luna / xhigh           luna / max
+    #   hard                    luna / max             sol  / xhigh
+    #   1M external research    flash / max            flash / max
+    #   contested research      k3 / high              k3 / high
     #
-    # The 1M row is only for agents whose INPUT IS TEXT THEY DO NOT CONTROL (external
-    # doc dumps, whole-repo sweeps). Plan/Review/Verify choose their own bounded input,
-    # so they stay on the GPT row however hard the judgment gets.
+    # The 1M routes are only for agents whose INPUT IS TEXT THEY DO NOT CONTROL
+    # (external doc dumps, whole-repo sweeps). Plan/Review/Verify choose their own
+    # bounded input, so they stay on the GPT tier however hard the judgment gets.
     #
-    #   Explore         flash / max    locate in-repo: "where is X"
-    #   Research        flash / max    outside the repo, one authoritative source
-    #   Research-deep   k3    / high   outside the repo, sources disagree
-    #   Plan            luna  / max    design a bounded change
-    #   Plan-deep       sol   / xhigh  3+ subsystems, schema/interface, migration
-    #   Implement       luna  / max    execute an already-bounded change end-to-end
-    #   Review          luna  / max    judge an existing diff
-    #   Review-deep     sol   / xhigh  concurrency, auth, crypto, money, migration
-    #   Verify          luna  / max    refute ONE stated claim (no -deep sibling yet)
-    #   general-purpose luna  / max    mixed investigation + execution / fallback
+    #   Explore         flash / max              locate in-repo: "where is X"
+    #   Research        flash / max              outside the repo, one authoritative source
+    #   Research-deep   k3 / high                outside the repo, sources disagree
+    #   Plan            luna / xhigh | max       work | private; design a bounded change
+    #   Plan-deep       luna / max | sol/xhigh   work | private; schema/migration/escalation
+    #   Implement       luna / xhigh | max       work | private; execute a bounded change
+    #   Review          luna / xhigh | max       work | private; judge an existing diff
+    #   Review-deep     luna / max | sol/xhigh   work | private; high-risk review
+    #   Verify          luna / xhigh | max       work | private; refute ONE stated claim
+    #   general-purpose luna / xhigh | max       work | private; mixed fallback
     #
     # Prevailing practice (surveyed 2026-08-09) is that overlapping `description`
     # fields are the top cause of misrouted delegation, so each -deep sibling states

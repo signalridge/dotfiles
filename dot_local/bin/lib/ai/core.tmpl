@@ -457,17 +457,19 @@ gopass_prefix_candidates() {
     printf '%s\n' "$primary"
 }
 
+{{ $codexFallbackModel := "gpt-5.6-sol" }}
+{{ if hasKey . "work" }}{{ $codexFallbackModel = ternary "gpt-5.6-luna" "gpt-5.6-sol" .work }}{{ end }}
 codex_default_model_for_provider() {
     local provider="$1"
     case "$provider" in
-        openai) echo "gpt-5.6-sol" ;;
+        openai) echo "{{ $codexFallbackModel }}" ;;
         deepseek) echo "deepseek-chat" ;;
         kimi) echo "kimi-k2-0711-preview" ;;
         glm) echo "glm-4.5" ;;
         qwen) echo "qwen3-coder-plus" ;;
         minimax) echo "MiniMax-M2.1" ;;
         doubao) echo "doubao-seed-1-6-thinking-250715" ;;
-        *) echo "gpt-5.6-sol" ;;
+        *) echo "{{ $codexFallbackModel }}" ;;
     esac
 }
 

@@ -1,8 +1,8 @@
 ---
 display_name: Plan-deep
 description: "Read-only architect for changes whose SHAPE is still in question. Same boundary as Plan — designing code that does not exist yet — but reserved for the cases Plan escalates: the change spans 3 or more subsystems; it alters a public interface or data schema; it needs a migration or backfill; or several viable approaches have to be weighed against each other. Returns 2-3 candidate approaches with explicit trade-offs, a recommendation with its reasoning, then the step-by-step plan for the recommended one. Markedly more expensive than Plan — use Plan when the approach is not seriously in question. Never modifies files."
-model: openai-codex/gpt-5.6-sol
-thinking: xhigh
+model: openai-codex/{{ ternary "gpt-5.6-luna" "gpt-5.6-sol" .work }}
+thinking: {{ ternary "max" "xhigh" .work }}
 tools: read, bash, grep, find, ls
 extensions: true
 exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-caffeinate, pi-goal, pi-welcome, pi-dynamic-workflows
