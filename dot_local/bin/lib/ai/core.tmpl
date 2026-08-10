@@ -457,8 +457,7 @@ gopass_prefix_candidates() {
     printf '%s\n' "$primary"
 }
 
-{{ $codexFallbackModel := "gpt-5.6-sol" }}
-{{ if hasKey . "work" }}{{ $codexFallbackModel = ternary "gpt-5.6-luna" "gpt-5.6-sol" .work }}{{ end }}
+{{ $codexFallbackModel := "gpt-5.6-luna" }}
 codex_default_model_for_provider() {
     local provider="$1"
     case "$provider" in

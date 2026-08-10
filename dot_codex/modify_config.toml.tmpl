@@ -17,18 +17,18 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 {{-   $accountKey = .codexProviderAccount -}}
 {{- end -}}
 {{- $providerName := (split "@" $accountKey)._0 -}}
-{{- /* Model + effort, machine-scoped: work -> luna/xhigh, private -> sol/xhigh.
+{{- /* Model + effort, machine-scoped: work -> luna/xhigh, private -> luna/max.
        KEEP IN LOCKSTEP with dot_pi/agent/modify_settings.json.tmpl, which
        carries the same two lines and explains why they cannot live in shared
        data. */ -}}
-{{- $model := ternary "gpt-5.6-luna" "gpt-5.6-sol" .work -}}
-{{- $effort := "xhigh" -}}
+{{- $model := "gpt-5.6-luna" -}}
+{{- $effort := ternary "xhigh" "max" .work -}}
 
 # =============================================================================
 # Core Settings
 # =============================================================================
 
-# Default model (machine-scoped: work -> luna, private -> sol)
+# Default model (machine-scoped: both -> luna)
 model = "{{ $model }}"
 
 # Model provider (only for third-party providers)
@@ -59,7 +59,7 @@ suppress_unstable_features_warning = true
 # =============================================================================
 
 # Reasoning effort: none | minimal | low | medium | high | xhigh | max
-# Machine-scoped: work/private -> xhigh.
+# Machine-scoped: work -> xhigh, private -> max.
 model_reasoning_effort = "{{ $effort }}"
 
 

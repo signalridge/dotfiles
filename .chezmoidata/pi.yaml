@@ -41,16 +41,16 @@ pi:
     # The parent model + effort are MACHINE-SCOPED, so they are NOT set here:
     # static data cannot branch. Both are resolved against chezmoi's `work` flag
     # in dot_pi/agent/modify_settings.json.tmpl (work -> gpt-5.6-luna at xhigh,
-    # private -> gpt-5.6-sol at xhigh), with the same pair kept in lockstep in
+    # private -> gpt-5.6-luna at max), with the same pair kept in lockstep in
     # dot_codex/modify_config.toml.tmpl. Either model is 372K/128K on
     # openai-codex, so the reserveTokens maths below is unaffected.
     # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
     # the ACTIVE provider/model's. Verify with `pi --list-models <id>` before
-    # touching this number — the two gpt-5.6-sol entries differ, and the Codex
-    # one is only 372K because of the modelOverrides block under
+    # touching this number — the gpt-5.6-luna entries differ, and the Codex one
+    # is only 372K because of the modelOverrides block under
     # customProviders below (its server catalog says 272K):
     #   krill         gpt-5.6-sol  371K   (manual /model fallback, capped below)
-    #   openai-codex  gpt-5.6-sol  372K   (the startup default -> what applies)
+    #   openai-codex  gpt-5.6-luna 372K   (the startup default -> what applies)
     #
     # SIZING (measured 2026-08-09, not theoretical). Pi evaluates the threshold
     # at only two points — after an agent run ends and before the next prompt
@@ -134,7 +134,7 @@ pi:
     # tokens (`context` carries the number that matters), cost (a running total,
     # not a per-turn signal) and time (the system clock). DEFAULT_SEGMENTS in
     # src/statusline.ts is now model/thinking/branch/context — e.g.
-    # `gpt-5.6-sol · think xhigh · ⎇ main · ctx 42%`; edit that array to restore any.
+    # `gpt-5.6-luna · think max · ⎇ main · ctx 42%`; edit that array to restore any.
     # Active `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv)
     # follows the Pi theme. Extension-status icons (2nd line) are tunable via
     # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
@@ -147,10 +147,15 @@ pi:
     # role decides the BOUNDARY, tier decides model+effort.
     #
     #   GPT tier                 work machine           private machine
-    #   ordinary difficulty     luna / xhigh           luna / max
-    #   hard                    luna / max             sol  / xhigh
+    #   ordinary difficulty      luna / xhigh           luna / max
+    #   hard                     luna / max             sol  / xhigh
     #   1M external research    flash / max            flash / max
     #   contested research      k3 / high              k3 / high
+    #
+    #   Dynamic workflow tier    work machine           private machine
+    #   small                    terra / max            sol  / xhigh
+    #   medium                   luna / max             terra / max
+    #   big                      muna / xhigh           luna / max
     #
     # The 1M routes are only for agents whose INPUT IS TEXT THEY DO NOT CONTROL
     # (external doc dumps, whole-repo sweeps). Plan/Review/Verify choose their own
@@ -194,8 +199,9 @@ pi:
     #   * pi-gpt-fast is DELIBERATELY NOT excluded (user call 2026-08-09). Its
     #     before_provider_request hook reads the shared settings.json toggle in the
     #     child too, so with /gpt-fast on, subagent traffic also goes out at the
-    #     priority service tier for every model on its allowlist — gpt-5.6-luna
-    #     included. Intended trade (latency over cost); do not "fix" it.
+    #     priority service tier for every model on its allowlist — gpt-5.6-terra,
+    #     gpt-5.6-luna and gpt-5.6-muna included. Intended trade (latency over
+    #     cost); do not "fix" it.
     #   * Per-agent `max_turns` is intentionally OMITTED. The global
     #     subagents.json defaultMaxTurns: 0 is the user's overall unlimited default,
     #     while omission keeps Agent({ max_turns: N }) usable for one bounded run.
@@ -346,10 +352,11 @@ pi:
       auth: builtin
       modelOverrides:
         gpt-5.6-sol: { contextWindow: 372000 }
-        # Local planning/implementation/review agents run luna; terra is included so
-        # a runtime /model switch does not silently drop back to 272K.
+        # Local planning/implementation/review agents run luna; terra and muna are
+        # included so a runtime /model switch does not silently drop back to 272K.
         gpt-5.6-luna: { contextWindow: 372000 }
         gpt-5.6-terra: { contextWindow: 372000 }
+        gpt-5.6-muna: { contextWindow: 372000 }
     deepseek: # DeepSeek Platform (OpenAI-compatible). V4 models are not in Pi's
       # built-in registry yet, so we pin them here with the reasoning `compat`
       # block from the official integration doc:

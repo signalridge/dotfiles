@@ -87,6 +87,6 @@ openai_model="$(
 
 assert_equals "$deepseek_model" "deepseek-chat"
 assert_equals "$kimi_model" "kimi-k2-0711-preview"
-assert_equals "$openai_model" "gpt-5.6-sol"
+assert_equals "$openai_model" "gpt-5.6-luna"
 
 echo "test_codex_model_selection: OK"
