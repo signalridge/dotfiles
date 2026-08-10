@@ -1,7 +1,10 @@
 ---
 registries:
   - type: standard
-    ref: v4.470.0
+    # v4.532+ switches openai/codex to codex-package-*.tar.gz (ships
+    # codex-code-mode-host beside the CLI). Older refs only fetched the bare
+    # codex-*.zst, so Code Mode failed closed after host became default.
+    ref: v4.550.0
   - name: third-party
     type: local
     path: registry.yaml
@@ -13,13 +16,6 @@ packages:
     registry: third-party
   - name: ogulcancelik/herdr@v0.8.0
     registry: third-party
-  # Google Antigravity CLI (`agy`). In the standard registry upstream, but not in
-  # the v4.470.0 ref pinned below — see registry.yaml for the local copy and the
-  # note on retiring it. Installed via aqua instead of the vendor's
-  # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
-  # profiles (PATH + alias purging) outside chezmoi's control.
-  - name: google-antigravity/antigravity-cli@1.1.11
-    registry: third-party
   # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
   # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
   # Moonshot's CDN (self-contained Node-SEA, no Node runtime). NOTE: the CDN's
@@ -28,6 +24,10 @@ packages:
   - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@0.34.0
     registry: third-party
   # ----- standard registry -----
+  # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
+  # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
+  # profiles (PATH + alias purging) outside chezmoi's control.
+  - name: google-antigravity/antigravity-cli@1.1.11
   - name: nektos/act@v0.2.89
   - name: FiloSottile/age@v1.3.1
   - name: asciinema/asciinema@v3.2.1

@@ -77,32 +77,6 @@ packages:
       - darwin
       - linux
   - type: github_release
-    repo_owner: google-antigravity
-    repo_name: antigravity-cli
-    description: Google Antigravity CLI — terminal agent harness (`agy`)
-    # Mirrors pkgs/google-antigravity/antigravity-cli in the STANDARD registry
-    # (added upstream 2026-06-02). It is kept here only because aqua.yaml pins the
-    # standard registry at v4.470.0, which predates it — drop this entry and switch
-    # to `registry: standard` whenever that ref is bumped past v4.548.0.
-    # Assets are agy_cli_<mac|linux|windows>_<arm64|x64>.<tar.gz|zip>; the archive
-    # holds one binary named `antigravity`, installed as `agy` (the name the
-    # official installer and all docs use).
-    asset: "agy_cli_{{.OS}}_{{.Arch}}.{{.Format}}"
-    format: tar.gz
-    files:
-      - name: agy
-        src: antigravity
-    replacements:
-      amd64: x64
-      darwin: mac
-    overrides:
-      - goos: windows
-        format: zip
-    supported_envs:
-      - darwin
-      - linux
-      - windows
-  - type: github_release
     repo_owner: mr-karan
     repo_name: doggo
     description: ":dog: Command-line DNS Client for Humans. Written in Golang"
