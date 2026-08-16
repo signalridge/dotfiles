@@ -17,18 +17,18 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 {{-   $accountKey = .codexProviderAccount -}}
 {{- end -}}
 {{- $providerName := (split "@" $accountKey)._0 -}}
-{{- /* Model + effort, machine-scoped: work -> luna/xhigh, private -> luna/max.
-       KEEP IN LOCKSTEP with dot_pi/agent/modify_settings.json.tmpl, which
-       carries the same two lines and explains why they cannot live in shared
-       data. */ -}}
-{{- $model := "gpt-5.6-luna" -}}
-{{- $effort := ternary "xhigh" "max" .work -}}
+{{- /* Native OpenAI uses two tiers: the primary effort is machine-scoped;
+       every spawned subagent uses the maximum-effort tier. */ -}}
+{{- $model := "gpt-5.6-sol" -}}
+{{- $effort := ternary "max" "xhigh" .work -}}
+{{- $subagentModel := "gpt-5.6-sol" -}}
+{{- $subagentEffort := "max" -}}
 
 # =============================================================================
 # Core Settings
 # =============================================================================
 
-# Default model (machine-scoped: both -> luna)
+# Primary model: work/private -> sol
 model = "{{ $model }}"
 
 # Model provider (only for third-party providers)
@@ -59,7 +59,7 @@ suppress_unstable_features_warning = true
 # =============================================================================
 
 # Reasoning effort: none | minimal | low | medium | high | xhigh | max
-# Machine-scoped: work -> xhigh, private -> max.
+# Primary effort: work -> max, private -> xhigh.
 model_reasoning_effort = "{{ $effort }}"
 
 
@@ -78,6 +78,18 @@ web_search = "live"
 
 project_doc_fallback_filenames = ["CLAUDE.md", "TEAM_GUIDE.md", ".harnesses.md", "CODEX.md"]
 project_doc_max_bytes = 65536
+
+# =============================================================================
+# Subagents
+# =============================================================================
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 4
+{{ if eq $providerName "openai" -}}
+default_subagent_model = "{{ $subagentModel }}"
+default_subagent_reasoning_effort = "{{ $subagentEffort }}"
+{{ end }}
 
 # =============================================================================
 # Feature Flags
@@ -171,12 +183,6 @@ base_url = "https://open.bigmodel.cn/api/paas/v4"
 name = "Kimi Code"
 base_url = "https://api.kimi.com/coding/v1"
 
-[model_providers.krill]
-name = "krill"
-base_url = "https://api.krill-ai.com/codex/v1"
-requires_openai_auth = true
-wire_api = "responses"
-
 [model_providers.minimax]
 name = "Minimax"
 base_url = "https://api.minimax.io/v1"
@@ -220,11 +226,11 @@ args = ["tool", "run", "arxiv-mcp-server"]
 # =============================================================================
 
 [profiles.deep-review]
-model_reasoning_effort = "{{ ternary "xhigh" "max" .work }}"
+model_reasoning_effort = "{{ $effort }}"
 approval_policy = "on-request"
 
 [profiles.research]
-model_reasoning_effort = "{{ ternary "xhigh" "max" .work }}"
+model_reasoning_effort = "{{ $effort }}"
 web_search = "live"
 
 # =============================================================================

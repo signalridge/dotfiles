@@ -25,20 +25,19 @@ pi:
     # (openai-codex; OAuth in ~/.pi/agent/auth.json). The parent and all local
     # planning/implementation/review agents default to GPT-5.6; high-volume search
     # and external research deliberately route to the DeepSeek/Kimi pins documented
-    # in the subagent roster below. Krill remains a manual /model fallback.
+    # in the subagent roster below.
     defaultProvider: openai-codex
     # The parent model + effort are MACHINE-SCOPED, so they are NOT set here:
     # static data cannot branch. Both are resolved against chezmoi's `work` flag
     # in dot_pi/agent/modify_settings.json.tmpl (work -> gpt-5.6-luna at xhigh,
-    # private -> gpt-5.6-luna at max), with the same pair kept in lockstep in
-    # dot_codex/modify_config.toml.tmpl. Either model is 372K/128K on
-    # openai-codex, so the reserveTokens maths below is unaffected.
+    # private -> gpt-5.6-luna at max). Pi is configured independently from Codex.
+    # Either Pi parent model is 372K/128K on openai-codex, so the reserveTokens
+    # maths below is unaffected.
     # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
     # the ACTIVE provider/model's. Verify with `pi --list-models <id>` before
     # touching this number — the gpt-5.6-luna entries differ, and the Codex one
     # is only 372K because of the modelOverrides block under
     # customProviders below (its server catalog says 272K):
-    #   krill         gpt-5.6-sol  371K   (manual /model fallback, capped below)
     #   openai-codex  gpt-5.6-luna 372K   (the startup default -> what applies)
     #
     # SIZING (measured 2026-08-09, not theoretical). Pi evaluates the threshold
@@ -260,85 +259,6 @@ pi:
           compat:
             requiresReasoningContentOnAssistantMessages: true
             thinkingFormat: deepseek
-    krill: # Krill — GPT-5.x served on an OpenAI-Responses endpoint
-      # (https://api.krill-ai.com). Same upstream Claude Code (anthropic-compatible
-      # /codex) and Codex (openai-responses /codex/v1) already use; here we take the
-      # Responses route because that's the GPT-5.x native transport, mirroring
-      # dot_codex [model_providers.krill] (base_url .../codex/v1, wire_api=responses).
-      # Pi's openai-responses api POSTs to <base_url>/responses, so keep the /codex/v1
-      # suffix. Key from gopass (claude/krill/private/api_key, the same secret the
-      # claude/codex configs read) → baked in at apply time, so
-      # `pi --provider krill --model gpt-5.6-sol` works out of the box; the provider is
-      # silently skipped on a machine without the key. Pick at runtime with /model.
-      base_url: https://api.krill-ai.com/codex/v1
-      api: openai-responses
-      gopass: claude/krill/private/api_key
-      models:
-        - id: gpt-5.6-sol
-          name: GPT-5.6 Sol (krill)
-          # Krill live-check: /responses accepts Sol/Terra/Luna but not the bare
-          # gpt-5.6 alias. The gateway is conservatively capped at 371K context.
-          # GPT-5.6 rejects minimal, so map it to low; expose native xhigh and max.
-          contextWindow: 371000
-          maxTokens: 128000
-          reasoning: true
-          cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 6.25 }
-          thinkingLevelMap:
-            {
-              minimal: low,
-              low: low,
-              medium: medium,
-              high: high,
-              xhigh: xhigh,
-              max: max,
-            }
-        - id: gpt-5.6-terra
-          name: GPT-5.6 Terra (krill)
-          contextWindow: 371000
-          maxTokens: 128000
-          reasoning: true
-          cost: { input: 2.5, output: 15, cacheRead: 0.25, cacheWrite: 3.125 }
-          thinkingLevelMap:
-            {
-              minimal: low,
-              low: low,
-              medium: medium,
-              high: high,
-              xhigh: xhigh,
-              max: max,
-            }
-        - id: gpt-5.6-luna
-          name: GPT-5.6 Luna (krill)
-          contextWindow: 371000
-          maxTokens: 128000
-          reasoning: true
-          cost: { input: 1, output: 6, cacheRead: 0.1, cacheWrite: 1.25 }
-          thinkingLevelMap:
-            {
-              minimal: low,
-              low: low,
-              medium: medium,
-              high: high,
-              xhigh: xhigh,
-              max: max,
-            }
-        - id: gpt-5.5
-          name: GPT-5.5 (krill)
-          # Gateway-specific fallback retained at its existing explicit limit;
-          # do not substitute OpenAI/Codex limits without a Krill boundary probe.
-          contextWindow: 400000
-          maxTokens: 128000
-          reasoning: true
-          # gpt-5.5 accepts effort up to xhigh, so map identity and do NOT let Pi
-          # clamp xhigh down to high.
-          thinkingLevelMap:
-            {
-              minimal: minimal,
-              low: low,
-              medium: medium,
-              high: high,
-              xhigh: xhigh,
-            }
     kimi: # Kimi Code (Moonshot subscription) — OpenAI-compatible route
       # Pi DOES ship a built-in `kimi-coding` provider, but it is STALE and this
       # entry deliberately does not touch it: the built-in carries only k2p7 /
