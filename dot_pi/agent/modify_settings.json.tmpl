@@ -9,12 +9,14 @@ set -euo pipefail
 
 EXISTING="$(cat)"
 {{ $d := .pi.defaults -}}
-{{/* Parent model + effort. ONE pin on every machine as of 2026-08-17: the
-     startup default is DeepSeek's own deepseek-v4-flash at thinking level max,
-     matching all three pi-subagents tiers in subagents.json.tmpl. The `work`
-     ternaries that used to pick between luna/xhigh and luna/max are gone; these
-     values stay in a template only because settings.json is assembled here, and
-     `defaultProvider` (deepseek) still comes from .chezmoidata/pi.yaml.
+{{/* Parent model + effort. ONE pin on every machine as of 2026-08-17:
+     deepseek-v4-flash at thinking level max, matching all three pi-subagents
+     tiers in subagents.json.tmpl. The `work` ternaries that used to pick between
+     luna/xhigh and luna/max are gone; these values stay in a template only
+     because settings.json is assembled here. `defaultProvider` (opencode-go —
+     the subscription gateway, not DeepSeek's own API) still comes from
+     .chezmoidata/pi.yaml, so the model id here is intentionally bare: it is
+     resolved against whatever that provider is.
      Pi is intentionally configured independently from Codex. */ -}}
 {{- $model := "deepseek-v4-flash" -}}
 {{- $effort := "max" -}}

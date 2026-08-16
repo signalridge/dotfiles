@@ -7,11 +7,13 @@
   directly.
 
   As of 2026-08-17 the three profiles are DELIBERATELY IDENTICAL: every subagent
-  runs deepseek/deepseek-v4-flash at thinking level max, the same pin the parent
+  runs opencode-go/deepseek-v4-flash at thinking level max, the same pin the parent
   session carries in modify_settings.json.tmpl (user request — one model, one
-  effort, everywhere). `max` is a real provider rung here, not a nominal one — see
-  the corrected thinkingLevelMap in .chezmoidata/pi.yaml, which used to flatten it
-  to `high`. The catalogue keys are kept rather than collapsed to a single
+  effort, everywhere). That is the opencode Go SUBSCRIPTION route; the per-token
+  direct route to the same model stays configured as `deepseek/deepseek-v4-flash`.
+  `max` is a real provider rung on both, not a nominal one — see the
+  thinkingLevelMaps in .chezmoidata/pi.yaml, where the direct provider's used to
+  flatten it to `high`. The catalogue keys are kept rather than collapsed to a single
   profile so that `tier` values already passed by prompts and by pi-workflows keep
   resolving, and so re-differentiating later is a value edit rather than a
   protocol change. Descriptions state the routing INTENT, not a current difference.
@@ -22,7 +24,7 @@
   Note the `.work` ternaries that used to vary model and thinking budget per
   machine are gone; nothing in this file branches on chezmoi data any more.
 */ -}}
-{{- $model := "deepseek/deepseek-v4-flash" -}}
+{{- $model := "opencode-go/deepseek-v4-flash" -}}
 {{- $thinking := "max" -}}
 {
   "maxConcurrent": 16,
