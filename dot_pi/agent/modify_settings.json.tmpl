@@ -9,12 +9,15 @@ set -euo pipefail
 
 EXISTING="$(cat)"
 {{ $d := .pi.defaults -}}
-{{/* Parent model + effort, machine-scoped: work -> luna/xhigh, private -> luna/max.
-     Pi is intentionally configured independently from Codex. These values have to
-     stay in a template: .chezmoidata files cannot branch on the machine-scoped
-     `work` flag because chezmoi reads them before the template engine starts. */ -}}
-{{- $model := "gpt-5.6-luna" -}}
-{{- $effort := ternary "xhigh" "max" .work -}}
+{{/* Parent model + effort. ONE pin on every machine as of 2026-08-17: the
+     startup default is DeepSeek's own deepseek-v4-flash at thinking level max,
+     matching all three pi-subagents tiers in subagents.json.tmpl. The `work`
+     ternaries that used to pick between luna/xhigh and luna/max are gone; these
+     values stay in a template only because settings.json is assembled here, and
+     `defaultProvider` (deepseek) still comes from .chezmoidata/pi.yaml.
+     Pi is intentionally configured independently from Codex. */ -}}
+{{- $model := "deepseek-v4-flash" -}}
+{{- $effort := "max" -}}
 {{/* Keep external npm dependencies first, then the exact pi.signalridgePackages
      order rendered as unpinned npm specs. No version suffix is emitted on
      purpose: Pi resolves the latest release at install time and

@@ -26,24 +26,32 @@ pi:
     # while quiet, so nothing actionable is hidden. Set false to get Pi's own
     # block back above the card.
     quietStartup: true
-    # User-requested switch back to the native OpenAI Codex OAuth provider
-    # (openai-codex; OAuth in ~/.pi/agent/auth.json). The parent and all local
-    # planning/implementation/review agents default to GPT-5.6; high-volume search
-    # and external research deliberately route to the DeepSeek/Kimi pins documented
-    # in the subagent roster below.
-    defaultProvider: openai-codex
-    # The parent model + effort are MACHINE-SCOPED, so they are NOT set here:
-    # static data cannot branch. Both are resolved against chezmoi's `work` flag
-    # in dot_pi/agent/modify_settings.json.tmpl (work -> gpt-5.6-luna at xhigh,
-    # private -> gpt-5.6-luna at max). Pi is configured independently from Codex.
-    # Either Pi parent model is 372K/128K on openai-codex, so the reserveTokens
-    # maths below is unaffected.
+    # User-requested switch (2026-08-17) to DeepSeek's own platform. ONE model now
+    # runs everything: the parent session and all three pi-subagents tiers are
+    # deepseek/deepseek-v4-flash at thinking level max. openai-codex keeps its
+    # OAuth in ~/.pi/agent/auth.json and stays one `/model` switch away, as does
+    # Kimi Code below.
+    # This is the DIRECT provider (api.deepseek.com), deliberately not a reseller:
+    # an opencode Go gateway entry (opencode.ai/zen/go/v1) was written and then
+    # dropped the same day at the user's request. If it is ever revived, note that
+    # `pi/opencode/api_key` in gopass does not exist — the old opencode key was
+    # deleted with the rest of the claude/, codex/ and opencode/ trees.
+    defaultProvider: deepseek
+    # The parent model + effort are still emitted from
+    # dot_pi/agent/modify_settings.json.tmpl rather than from here, because that is
+    # where settings.json is assembled — but they are no longer machine-scoped: both
+    # `work` and private resolve to deepseek-v4-flash at max, so the chezmoi `work`
+    # ternaries that used to pick between gpt-5.6-luna/xhigh and gpt-5.6-luna/max
+    # are gone. Pi remains configured independently from Codex.
     # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
-    # the ACTIVE provider/model's. Verify with `pi --list-models <id>` before
-    # touching this number — the gpt-5.6-luna entries differ, and the Codex one
-    # is only 372K because of the modelOverrides block under
-    # customProviders below (its server catalog says 272K):
-    #   openai-codex  gpt-5.6-luna 372K   (the startup default -> what applies)
+    # the ACTIVE provider/model's. The two candidates differ by more than 2x, and
+    # reserveTokens is a single global number, so it has to satisfy BOTH:
+    #   deepseek      deepseek-v4-flash  1M     (the startup default -> what applies)
+    #   openai-codex  gpt-5.6-luna       372K   (the /model fallback)
+    # A reserve sized for flash's real 384K output cap (>= 384000) would make
+    # `372000 - reserveTokens` NEGATIVE and put every codex turn permanently over
+    # the threshold. That is why the deepseek-v4-flash entry below pins maxTokens
+    # to 128000 instead of the model's true 384000 — see the comment there.
     #
     # SIZING (measured 2026-08-09, not theoretical). Pi evaluates the threshold
     # at only two points — after an agent run ends and before the next prompt
@@ -59,18 +67,25 @@ pi:
     #     climbing 360731 -> 370478, then "Your input exceeds the context window
     #     of this model" (>=0.84.0 then compact-and-retries, at the cost of a
     #     wasted request); one truncated at `length` with tot=371566.
-    # maxTokens is 128K, so reserve >= 128K is the correctness floor: a single
-    # maximal response must not be able to cross the wall on its own. 130K fires
-    # at 242K ≈ 65% and leaves 130K of headroom instead of 40K. This lowers the
-    # probability of hitting the wall; it cannot eliminate it, because no
-    # threshold can bound growth that is never measured.
-    # Accepted costs: usable working context 332K -> 242K, and compaction runs
-    # more often (more lossy summaries, more prompt-cache invalidation). Note
-    # reserveTokens is double-duty — the summary's own output budget is
-    # min(0.8*reserveTokens, maxTokens) = 104K here (core/compaction/
+    # maxTokens is 128K for BOTH candidates — natively on codex, and by the
+    # deliberate pin in the deepseek block below — so reserve >= 128K is the
+    # correctness floor: a single maximal response must not be able to cross the
+    # wall on its own. 130K clears that floor and leaves 130K of unchecked
+    # headroom instead of 40K. This lowers the probability of hitting the wall;
+    # it cannot eliminate it, because no threshold can bound growth that is never
+    # measured. Where 130K lands, per active model:
+    #   deepseek/deepseek-v4-flash  1M   -> trigger 870K (87%)
+    #   openai-codex/gpt-5.6-luna   372K -> trigger 242K (65%)
+    # Accepted costs: on the codex fallback, usable working context 332K -> 242K
+    # and compaction runs more often (more lossy summaries, more prompt-cache
+    # invalidation). Note reserveTokens is double-duty — the summary's own output
+    # budget is min(0.8*reserveTokens, maxTokens) = 104K here (core/compaction/
     # compaction.js), a cap rather than a target.
-    # Bonus: 242K now sits BELOW the 272K premium-pricing line, so the tail of a
-    # long session no longer bills at 2x input / 1.5x output.
+    # Bonus, codex fallback only: 242K sits BELOW the 272K premium-pricing line,
+    # so the tail of a long session no longer bills at 2x input / 1.5x output.
+    # DeepSeek has no equivalent pricing cliff — it bills one flat per-token rate
+    # (discounted off-peak) with no context-length tier — so the 870K trigger on
+    # the default model is a context-safety number only.
     #
     # This is now the ONLY compaction trigger. The locally authored
     # pi-early-compaction extension was deleted on 2026-08-08: it re-checked the
@@ -225,24 +240,44 @@ pi:
       # https://api-docs.deepseek.com/quick_start/agent_integrations/pi_mono
       base_url: https://api.deepseek.com
       api: openai-completions
-      gopass: claude/deepseek/private/api_key
+      # Was claude/deepseek/private/api_key until 2026-08-17, when the whole
+      # claude/, codex/ and opencode/ gopass trees were deleted and per-harness
+      # key namespacing was dropped: one key per SERVICE under pi/.
+      # This provider is now the STARTUP DEFAULT, so a missing key is no longer a
+      # cosmetic gap — private_models.json.tmpl skips keyless providers, and pi
+      # would start pointed at a provider that is not in models.json.
+      gopass: pi/deepseek/api_key
       models:
         - id: deepseek-v4-pro
           name: DeepSeek V4 Pro
           contextWindow: 1000000
+          # NOT capped the way flash is below, because pro is not the default. If
+          # you /model onto it, you are running maxTokens 384000 against
+          # reserveTokens 130000, which breaks the `reserve >= maxTokens` floor
+          # documented in the compaction block above — a single maximal response
+          # can then cross the context wall on its own. Cap this to 128000 too if
+          # pro ever becomes a routine target.
           maxTokens: 384000
           reasoning: true
           cost: { input: 1.74, output: 3.48, cacheRead: 0.145, cacheWrite: 0 }
-          # DeepSeek V4 currently exposes one reasoning mode; map every advertised Pi
-          # level, including max, to provider `high` instead of silently clamping max.
+          # CORRECTED 2026-08-17. The previous map sent every Pi level, `max`
+          # included, to provider `high`, on the stated grounds that "DeepSeek V4
+          # currently exposes one reasoning mode". That is not true of V4: both
+          # models.dev's registry entry (reasoning_options.effort) and DeepSeek's
+          # own Pi integration doc show a real ladder — low | high | max — and
+          # the doc's own recommended map already routes `xhigh` to `max`. Under
+          # the old map a session pinned to max was silently downgraded to high,
+          # which defeated the whole point of the pin. Rungs below xhigh follow
+          # the vendor doc verbatim (all -> high); `max: max` is the addition the
+          # doc omits.
           thinkingLevelMap:
             {
               minimal: high,
               low: high,
               medium: high,
               high: high,
-              xhigh: high,
-              max: high,
+              xhigh: max,
+              max: max,
             }
           compat:
             requiresReasoningContentOnAssistantMessages: true
@@ -250,17 +285,29 @@ pi:
         - id: deepseek-v4-flash
           name: DeepSeek V4 Flash
           contextWindow: 1000000
-          maxTokens: 384000
+          # DELIBERATELY 128000, not the model's real 384000 output cap, because
+          # this is the startup default. Pi's `compaction.reserveTokens` is ONE
+          # global number shared by every provider and the floor is
+          # `reserveTokens >= maxTokens` (see the SIZING block above). Honouring
+          # 384000 would force reserveTokens to >= 384000, at which point
+          # `372000 - reserveTokens` goes negative and the openai-codex fallback
+          # compacts on every single turn. 128K is already ~4x a normal agentic
+          # response, so the cap costs nothing in practice. To reclaim the full
+          # 384K output, raise reserveTokens past 384000 AND accept that codex
+          # models become unusable without a second edit.
+          maxTokens: 128000
           reasoning: true
           cost: { input: 0.14, output: 0.28, cacheRead: 0.028, cacheWrite: 0 }
+          # Same correction as pro above — this is the one that matters, since
+          # every session and every subagent tier is pinned to `max` on this model.
           thinkingLevelMap:
             {
               minimal: high,
               low: high,
               medium: high,
               high: high,
-              xhigh: high,
-              max: high,
+              xhigh: max,
+              max: max,
             }
           compat:
             requiresReasoningContentOnAssistantMessages: true
@@ -283,17 +330,17 @@ pi:
       # Keys: www.kimi.com/code/console (max 5, each shown once at creation).
       base_url: https://api.kimi.com/coding/v1
       api: openai-completions
-      # Shares CODEX's key, not claude's, and the split is by PROTOCOL rather than
-      # by harness: dot_codex/modify_config.toml.tmpl `[model_providers.kimi]`
-      # points at this exact base_url (https://api.kimi.com/coding/v1, OpenAI
-      # wire), so that key is the one already provisioned for this route. The
-      # claude side targets the Anthropic route (https://api.kimi.com/coding) —
-      # a different protocol, hence a different key slot, even though today both
-      # paths happen to hold the same secret.
+      # Was codex/kimi/private/api_key until 2026-08-17. The old per-harness
+      # split (claude/* vs codex/*) is gone along with those gopass trees; keys
+      # are now namespaced by SERVICE under pi/. This one is Kimi CODE — the
+      # subscription behind https://api.kimi.com/coding/v1 — and is NOT the same
+      # secret as the Moonshot platform key that aichat uses
+      # (https://api.moonshot.ai/v1, now pi/moonshot/api_key). Two services, two
+      # keys; do not collapse them.
       # A missing key is not fatal: private_models.json.tmpl silently SKIPS the
       # provider, so `chezmoi apply` still succeeds and kimi just does not appear
       # in `pi --list-models` until the secret exists.
-      gopass: codex/kimi/private/api_key
+      gopass: pi/kimi/api_key
       # Subscription/quota billing, not per-token, so cost is zeroed like Pi's
       # own kimi-coding entries — a running total here would be fiction.
       # Effort levels: K3 exposes low / high (its default) / max. K2.7 Code

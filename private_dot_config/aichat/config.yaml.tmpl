@@ -1,10 +1,18 @@
 {{- /*
   aichat config — kimi + doubao (火山) only.
-  API keys: gopass `claude/{kimi,doubao}/private/api_key`. Missing keys are
-  silently skipped so `chezmoi apply` still works on a fresh machine.
+  API keys: gopass `pi/{moonshot,doubao}/api_key`. Missing keys are silently
+  skipped so `chezmoi apply` still works on a fresh machine.
+
+  Moved off `claude/{kimi,doubao}/private/api_key` on 2026-08-17, when the
+  claude/, codex/ and opencode/ gopass trees were deleted and keys were
+  renamespaced one-per-SERVICE under pi/. The kimi client here talks to the
+  MOONSHOT PLATFORM (api.moonshot.ai), which is a different service and a
+  different secret from the Kimi Code subscription that pi's `kimi` provider uses
+  (api.kimi.com/coding/v1, gopass pi/kimi/api_key) — hence `pi/moonshot`, not
+  `pi/kimi`. Do not collapse the two.
 */ -}}
-{{- $kimi := output "sh" "-c" "gopass show --password claude/kimi/private/api_key 2>/dev/null | head -n1 || true" | trim -}}
-{{- $doubao := output "sh" "-c" "gopass show --password claude/doubao/private/api_key 2>/dev/null | head -n1 || true" | trim -}}
+{{- $kimi := output "sh" "-c" "gopass show --password pi/moonshot/api_key 2>/dev/null | head -n1 || true" | trim -}}
+{{- $doubao := output "sh" "-c" "gopass show --password pi/doubao/api_key 2>/dev/null | head -n1 || true" | trim -}}
 # Managed by chezmoi. Edit the template, not this file.
 model: kimi:kimi-k2.5
 temperature: 0.3

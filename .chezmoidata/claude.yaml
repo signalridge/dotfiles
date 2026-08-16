@@ -43,7 +43,9 @@ claude:
     # Kimi Code (Moonshot subscription, Kimi K3): https://www.kimi.com/code/docs
     # Anthropic-compatible coding endpoint; API keys from www.kimi.com/code/console.
     # NOTE: distinct from Moonshot's pay-per-token open platform (api.moonshot.ai),
-    # which aichat still uses via gopass claude/kimi/private/api_key.
+    # which aichat still uses — as of 2026-08-17 via gopass pi/moonshot/api_key
+    # (the claude/ tree was deleted and keys were renamespaced one-per-service
+    # under pi/).
     kimi:
       base_url: https://api.kimi.com/coding
       timeout_ms: 300000

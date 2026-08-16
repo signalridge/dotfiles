@@ -6,14 +6,24 @@
   If omitted, agentTiers.defaultTier applies. The host cannot pass model or thinking
   directly.
 
-  The short-context profiles use GPT and differ by model and thinking budget. Keep
-  these names separate from pi-workflows' `workflow.tiers`, whose fixed protocol
-  remains portable.
+  As of 2026-08-17 the three profiles are DELIBERATELY IDENTICAL: every subagent
+  runs deepseek/deepseek-v4-flash at thinking level max, the same pin the parent
+  session carries in modify_settings.json.tmpl (user request — one model, one
+  effort, everywhere). `max` is a real provider rung here, not a nominal one — see
+  the corrected thinkingLevelMap in .chezmoidata/pi.yaml, which used to flatten it
+  to `high`. The catalogue keys are kept rather than collapsed to a single
+  profile so that `tier` values already passed by prompts and by pi-workflows keep
+  resolving, and so re-differentiating later is a value edit rather than a
+  protocol change. Descriptions state the routing INTENT, not a current difference.
+
+  Keep these names separate from pi-workflows' `workflow.tiers`, whose fixed
+  protocol remains portable.
+
+  Note the `.work` ternaries that used to vary model and thinking budget per
+  machine are gone; nothing in this file branches on chezmoi data any more.
 */ -}}
-{{- $highModel   := ternary "gpt-5.6-luna" "gpt-5.6-sol"  .work -}}
-{{- $highThink   := ternary "max"          "xhigh"        .work -}}
-{{- $mediumThink := ternary "xhigh"        "max"          .work -}}
-{{- $lowThink    := ternary "high"         "xhigh"        .work -}}
+{{- $model := "deepseek/deepseek-v4-flash" -}}
+{{- $thinking := "max" -}}
 {
   "maxConcurrent": 16,
   "defaultMaxTurns": 0,
@@ -29,19 +39,19 @@
     "defaultTier": "medium",
     "profiles": {
       "low": {
-        "description": "Short context, economical: search, navigation, and read-heavy work where breadth beats depth",
-        "model": "openai-codex/gpt-5.6-luna",
-        "thinking": "{{ $lowThink }}"
+        "description": "Search, navigation, and read-heavy work where breadth beats depth",
+        "model": "{{ $model }}",
+        "thinking": "{{ $thinking }}"
       },
       "medium": {
-        "description": "Short context, balanced: planning, implementation, review, and verification",
-        "model": "openai-codex/gpt-5.6-luna",
-        "thinking": "{{ $mediumThink }}"
+        "description": "Planning, implementation, review, and verification",
+        "model": "{{ $model }}",
+        "thinking": "{{ $thinking }}"
       },
       "high": {
-        "description": "Short context, strongest: architecture and high-risk review, where a wrong call is expensive to reverse",
-        "model": "openai-codex/{{ $highModel }}",
-        "thinking": "{{ $highThink }}"
+        "description": "Architecture and high-risk review, where a wrong call is expensive to reverse",
+        "model": "{{ $model }}",
+        "thinking": "{{ $thinking }}"
       }
     }
   }
