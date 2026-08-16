@@ -1,0 +1,9 @@
+{
+  "tavilyApiKey": "!{{ .chezmoi.homeDir }}/.local/share/aquaproj-aqua/bin/gopass show --password tavily/api_key",
+  "workflow": "none",
+  "allowBrowserCookies": false,
+  "searchRouting": {
+    "providers": ["exa", "tavily"],
+    "fallbackOn": ["quota", "network", "transient", "invalid-response"]
+  }
+}

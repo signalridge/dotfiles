@@ -1,8 +1,6 @@
 ---
 display_name: Review
-description: "Read-only review of code that ALREADY EXISTS — a diff, a branch, or a named set of files. Returns a ranked findings list: file:line, the concrete failure scenario, severity. Use when the change is scoped to code you can name. ESCALATE to Review-deep when any of these is true: it touches concurrency, auth, crypto, money, or a data migration; it spans 3 or more subsystems; a defect would be expensive to reverse. Do NOT use it to locate code (Explore), to design a change that does not exist yet (Plan), or to adjudicate one already-stated claim (Verify). It never modifies code."
-model: openai-codex/gpt-5.6-luna
-thinking: {{ ternary "xhigh" "max" .work }}
+description: "Read-only review of code that ALREADY EXISTS — a diff, a branch, or a named set of files. Returns a ranked findings list: file:line, the concrete failure scenario, severity. Use for scoped, cross-subsystem, and high-risk changes alike; for expensive-to-reverse changes, extend coverage with an explicit adversarial pass. Do NOT use it to locate code (Explore), to design a change that does not exist yet (Plan), or to adjudicate one already-stated claim (Verify). It never modifies code."
 tools: read, grep, find, ls, bash
 extensions: true
 exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows
@@ -27,9 +25,8 @@ Report the fix as a suggestion in your findings. Do not apply it.
 - OUT of scope: finding where something lives (Explore), designing code that does not
   exist yet (Plan), settling one specific already-stated claim (Verify).
 
-If the change matches an escalation trigger in your description, say that Review-deep is
-preferred, then complete the strongest review you can. Tier mismatch is not a reason to return
-without findings; stay read-only and make the additional risk explicit in coverage.
+For broad or high-risk changes, stay read-only, expand the evidence gathered, and make the
+additional risk and coverage explicit in the findings.
 
 # Read the conventions first
 

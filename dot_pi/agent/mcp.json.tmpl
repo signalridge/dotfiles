@@ -18,16 +18,21 @@
   from mcp-cache.json, so no startup connection is needed; on first add a server
   falls back to proxy until its cache populates (force with /mcp reconnect).
 */ -}}
+{{- /*
+  showStatusIcon false: the footer is text-first. pi-statusline applies its own
+  semantic colors and its own icon map (empty by default), so a badge is the
+  user's choice, never an extension's. The adapter otherwise prefixes its status
+  with a plug emoji, and it arrives wrapped in the adapter's own ANSI color,
+  which is what let it slip past the footer's icon strip. Turning it off here
+  also fixes the currently published pi-statusline, which predates that strip.
+*/ -}}
 {
+  "settings": {
+    "showStatusIcon": false
+  },
   "mcpServers": {
     "context7": {
       "url": "https://mcp.context7.com/mcp",
-      "lifecycle": "lazy",
-      "directTools": true
-    },
-    "tavily": {
-      "command": "{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily",
-      "args": [],
       "lifecycle": "lazy",
       "directTools": true
     },

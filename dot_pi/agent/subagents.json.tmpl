@@ -1,0 +1,48 @@
+{{- /*
+  ~/.pi/agent/subagents.json — pi-subagents runtime policy.
+
+  agentTiers is the catalogue of named model profiles. Agent files do not pin a
+  profile; the host may pass a catalogue key on an Agent call for explicit routing.
+  If omitted, agentTiers.defaultTier applies. The host cannot pass model or thinking
+  directly.
+
+  The short-context profiles use GPT and differ by model and thinking budget. Keep
+  these names separate from pi-workflows' `workflow.tiers`, whose fixed protocol
+  remains portable.
+*/ -}}
+{{- $highModel   := ternary "gpt-5.6-luna" "gpt-5.6-sol"  .work -}}
+{{- $highThink   := ternary "max"          "xhigh"        .work -}}
+{{- $mediumThink := ternary "xhigh"        "max"          .work -}}
+{{- $lowThink    := ternary "high"         "xhigh"        .work -}}
+{
+  "maxConcurrent": 16,
+  "defaultMaxTurns": 0,
+  "graceTurns": 8,
+  "defaultJoinMode": "smart",
+  "schedulingEnabled": true,
+  "scopeModels": false,
+  "disableDefaultAgents": true,
+  "toolDescriptionMode": "full",
+  "fleetView": true,
+  "outputTranscript": true,
+  "agentTiers": {
+    "defaultTier": "medium",
+    "profiles": {
+      "low": {
+        "description": "Short context, economical: search, navigation, and read-heavy work where breadth beats depth",
+        "model": "openai-codex/gpt-5.6-luna",
+        "thinking": "{{ $lowThink }}"
+      },
+      "medium": {
+        "description": "Short context, balanced: planning, implementation, review, and verification",
+        "model": "openai-codex/gpt-5.6-luna",
+        "thinking": "{{ $mediumThink }}"
+      },
+      "high": {
+        "description": "Short context, strongest: architecture and high-risk review, where a wrong call is expensive to reverse",
+        "model": "openai-codex/{{ $highModel }}",
+        "thinking": "{{ $highThink }}"
+      }
+    }
+  }
+}

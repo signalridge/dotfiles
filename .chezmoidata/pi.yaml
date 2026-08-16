@@ -17,10 +17,15 @@ pi:
     # no extension carries a second hard-coded palette. Dracula and Aurora remain
     # available from `/settings` for rollback.
     theme: signalridge-ridgeline
-    # Keep Pi's native startup header and loaded-resource listing. The public
-    # extension API does not expose the active resource loader without reloading
-    # extension factories, so pi-welcome intentionally does not rebuild it.
-    quietStartup: false
+    # Silence Pi's own startup header and [Section] resource listing so the
+    # pi-welcome card is the whole opening screen. Keeping both showed two
+    # unrelated designs stacked to roughly forty-five lines. The card carries
+    # the pieces worth keeping — the key hints, and counts of context files,
+    # skills, prompts, commands and tools derived from Pi's public API — and
+    # diagnostics (resource collisions, extension load errors) are still shown
+    # while quiet, so nothing actionable is hidden. Set false to get Pi's own
+    # block back above the card.
+    quietStartup: true
     # User-requested switch back to the native OpenAI Codex OAuth provider
     # (openai-codex; OAuth in ~/.pi/agent/auth.json). The parent and all local
     # planning/implementation/review agents default to GPT-5.6; high-volume search
@@ -116,6 +121,7 @@ pi:
   # and rendered with the `npm:@signalridge/` prefix.
   packages:
     - npm:pi-mcp-adapter
+    - npm:pi-web-access
     - npm:@gotgenes/pi-permission-system
     - npm:pi-readseek
     - npm:@hypabolic/pi-hypa

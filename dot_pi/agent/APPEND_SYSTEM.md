@@ -11,8 +11,8 @@ Repo-native first; defaults advisory (`uv/ruff`, `nix`, `aqua/mise`, `gh/ghq`); 
 MCP tools are provided by the `pi-mcp-adapter` extension; servers are configured in `~/.pi/agent/mcp.json`.
 
 - Docs/API -> Context7
-- Web/news -> Tavily for a single lookup; Research for multi-step sourced work; Research-deep when sources conflict
-- Web content extraction -> Tavily extract/crawl; repository content -> DeepWiki/gitmcp
+- Web/news -> pi-web-access `web_search`; Research for multi-step sourced work, including when sources conflict
+- Web content extraction -> pi-web-access `fetch_content`/`get_search_content`; repository content -> DeepWiki/gitmcp
 - Code navigation -> readseek (hash-anchored read/edit/grep + structural maps; no MCP round-trip)
 - Long-context / evidence compression -> hypa (rewrites shell/read/grep/find/ls, proxies MCP)
 - Browser/E2E -> agent-browser (CLI)
@@ -53,6 +53,7 @@ Full inventory (VCS, k8s, security, media, docs): `~/.harnesses/skills/dev/toolb
 ## Workflow & guardrails
 
 - Route an already-bounded code change to Implement; use general-purpose only when investigation and execution are genuinely inseparable.
+- The host may pass one of the catalogue keys shown in the Agent tool description as `tier` on an Agent call for deliberate routing. If omitted, `agentTiers.defaultTier` applies; the agent inherits the parent only when no default tier is configured. A passed key selects a named profile; `model` and `thinking` are not callable parameters.
 - Agent runs are completion-bounded, not turn-bounded: omit `max_turns` by default so the configured `defaultMaxTurns: 0` remains unlimited. Pass `max_turns` only when the user explicitly requests a hard turn limit for that run; never add one merely to control cost or audit scope.
 - Use dynamic workflows for broad decomposable work that benefits from parallel independent evidence, not routine edits. Keep one writer in a shared checkout, use the configured token budget, and do not nest Agent delegation inside workflow children.
 - Worktree default is `one-task-one-branch-one-worktree` (`.worktrees/<branch>`, named `wt-*`) only when applicable repository instructions allow it. Any repository prohibition wins. The chezmoi source tree forbids all worktrees and branch switching; never request workflow `isolation: "worktree"` there.
