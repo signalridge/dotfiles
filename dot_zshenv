@@ -71,9 +71,11 @@ export SLUMBER_CONFIG_PATH="${SLUMBER_CONFIG_PATH:-${XDG_CONFIG_HOME}/slumber/co
 [[ -z "${PUPPETEER_EXECUTABLE_PATH:-}" && -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]] \
     && export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
-# Pi statusline (@narumitw/pi-statusline): classic preset follows the Pi theme
-# (catppuccin-mocha); default tokyo-night is hardcoded blue-gray.
+# Pi presentation: the repository-owned extensions follow the active Ridgeline
+# theme. These defaults are user-overridable without changing the managed files.
 export PI_STATUSLINE_PRESET="${PI_STATUSLINE_PRESET:-classic}"
+export PI_INPUT_PREFIX="${PI_INPUT_PREFIX:-›}"
+export PI_TAB_STATUS_STYLE="${PI_TAB_STATUS_STYLE:-ridgeline}"
 
 # pi-hypa rewrites Pi's bash commands into bare `hypa …` calls. Two separate needs:
 #   - the `hypa` token in the rewritten string must be on PATH (else code 127) —

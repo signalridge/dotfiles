@@ -11,27 +11,16 @@ pi:
 
   # ===== Startup defaults -> ~/.pi/agent/settings.json =====
   defaults:
-    # Saturated Dracula theme aligned with the terminal palette. Purple is
-    # the primary interaction color (matching Herdr's active border); cyan stays
-    # available for links and syntax while green/orange/red communicate state.
-    # The rounded input editor follows these Pi theme colors instead of carrying
-    # an independent Kimi Code palette. Catppuccin Mocha remains available from
-    # `/settings`.
-    theme: signalridge-dracula
-    # Silences BOTH of pi's startup blocks — the three-line header and, via the
-    # same flag, showLoadedResources():
-    #   const showListing = force || verbose || !getQuietStartup()
-    # That is deliberate. pi renders those into containers that always sort
-    # above the transcript (documentContainer: header -> loadedResources ->
-    # chat), so while they exist the Kimi-style card — a custom entry, hence
-    # part of the transcript — can only ever appear BELOW them. Silencing them
-    # is the only way to put the card first.
-    # Nothing is lost: dot_pi/agent/extensions/pi-welcome.ts rebuilds the
-    # [Context]/[Skills]/[Prompts]/[Themes]/[Extensions] listing inside the card
-    # from pi's OWN DefaultResourceLoader, so it is the same data pi would have
-    # printed, not a second opinion. Run `pi --verbose` to see pi's version and
-    # compare if you ever suspect drift.
-    quietStartup: true
+    # Signalridge Ridgeline: a deep, low-noise surface with violet interaction
+    # focus, cyan information, and semantic green/amber/red state colors. The
+    # rounded input editor and startup card consume these same Pi theme tokens;
+    # no extension carries a second hard-coded palette. Dracula and Aurora remain
+    # available from `/settings` for rollback.
+    theme: signalridge-ridgeline
+    # Keep Pi's native startup header and loaded-resource listing. The public
+    # extension API does not expose the active resource loader without reloading
+    # extension factories, so pi-welcome intentionally does not rebuild it.
+    quietStartup: false
     # User-requested switch back to the native OpenAI Codex OAuth provider
     # (openai-codex; OAuth in ~/.pi/agent/auth.json). The parent and all local
     # planning/implementation/review agents default to GPT-5.6; high-volume search
@@ -122,188 +111,57 @@ pi:
   # Pi installs missing packages from this settings field when it resolves
   # resources. Keep third-party packages explicit here instead of using a
   # dedicated chezmoi installer script.
+  # ===== External Pi packages -> ~/.pi/agent/settings.json =====
+  # Infrastructure owned by the runtime environment rather than by
+  # signalridge/pi-extensions. Signalridge packages are listed separately below
+  # and rendered with the `npm:@signalridge/` prefix.
   packages:
     - npm:pi-mcp-adapter
-    # Statusline is VENDORED (fork of @narumitw/pi-statusline) at
-    # dot_pi/agent/extensions/pi-statusline so we can trim it — do NOT re-add the
-    # `npm:@narumitw/pi-statusline` entry here: it double-loads with the vendored
-    # copy and the npm copy wins, making local edits dead (same trap as
-    # pi-input-history). The fork drops the π brand, the decorative per-segment
-    # emoji, and (2026-08-09) the five segments that duplicate what is already on
-    # screen: cwd (shell prompt + window title), tools (the tool card itself),
-    # tokens (`context` carries the number that matters), cost (a running total,
-    # not a per-turn signal) and time (the system clock). DEFAULT_SEGMENTS in
-    # src/statusline.ts is now model/thinking/branch/context — e.g.
-    # `gpt-5.6-luna · think max · ⎇ main · ctx 42%`; edit that array to restore any.
-    # Active `classic` preset (env PI_STATUSLINE_PRESET=classic in dot_zshenv)
-    # follows the Pi theme. Extension-status icons (2nd line) are tunable via
-    # ~/.pi/agent/pi-statusline-settings.json extensionStatusIcons ("" removes one).
-    # In-process subagents: 10 EJECTED target definitions; machine-scoped sources use .md.tmpl.
-    # disableDefaultAgents=true makes this roster authoritative instead of relying on
-    # fragile case-sensitive overlays of upstream's general-purpose/Explore/Plan.
-    # Keep PascalCase filenames for named specialists and general-purpose lowercase.
-    #
-    # Roster rebuilt 2026-08-09. Two axes, deliberately NOT collapsed into one scale:
-    # role decides the BOUNDARY, tier decides model+effort.
-    #
-    #   GPT tier                 work machine           private machine
-    #   ordinary difficulty      luna / xhigh           luna / max
-    #   hard                     luna / max             sol  / xhigh
-    #   1M external research    flash / max            flash / max
-    #   contested research      k3 / high              k3 / high
-    #
-    #   Dynamic workflow tier    work machine           private machine
-    #   small                    terra / max            sol  / xhigh
-    #   medium                   luna / max             terra / max
-    #   big                      muna / xhigh           luna / max
-    #
-    # The 1M routes are only for agents whose INPUT IS TEXT THEY DO NOT CONTROL
-    # (external doc dumps, whole-repo sweeps). Plan/Review/Verify choose their own
-    # bounded input, so they stay on the GPT tier however hard the judgment gets.
-    #
-    #   Explore         flash / max              locate in-repo: "where is X"
-    #   Research        flash / max              outside the repo, one authoritative source
-    #   Research-deep   k3 / high                outside the repo, sources disagree
-    #   Plan            luna / xhigh | max       work | private; design a bounded change
-    #   Plan-deep       luna / max | sol/xhigh   work | private; schema/migration/escalation
-    #   Implement       luna / xhigh | max       work | private; execute a bounded change
-    #   Review          luna / xhigh | max       work | private; judge an existing diff
-    #   Review-deep     luna / max | sol/xhigh   work | private; high-risk review
-    #   Verify          luna / xhigh | max       work | private; refute ONE stated claim
-    #   general-purpose luna / xhigh | max       work | private; mixed fallback
-    #
-    # Prevailing practice (surveyed 2026-08-09) is that overlapping `description`
-    # fields are the top cause of misrouted delegation, so each -deep sibling states
-    # OBJECTIVE escalation triggers rather than asking anyone to judge "is this hard".
-    # Keep every description disjoint; if two overlap, merge the agents instead.
-    #
-    # The agent .md files are CONFIG, so they carry no comments (user call
-    # 2026-08-09) — every non-obvious invariant behind their frontmatter lives here:
-    #   * `model:` has to be in frontmatter. SubagentsSettings (the whole
-    #     subagents.json schema) has NO model field, and `scopeModels` is a boolean
-    #     allowlist guard, not a default-setter. Per-agent frontmatter is the only
-    #     lever pi exposes. Frontmatter is also AUTHORITATIVE: a pinned field cannot
-    #     be raised by an Agent(...) call, so a caller passing model: to a pinned
-    #     agent is silently ignored. Leave a field OUT to let the caller fill it.
-    #   * `disallowed_tools` removes readseek's three mutators plus hypa_shell from
-    #     every read-only agent. `tools:` scopes the 7 BUILTINS only and cannot reach
-    #     extension tools, so both layers are required. Built-in bash remains for git,
-    #     tests and version probes; its read-only use is a prompt-enforced boundary.
-    #   * `exclude_extensions` drops what a headless child cannot use: five TUI-only
-    #     extensions (pi-welcome would additionally shell out to git and push a startup
-    #     card into a transcript nobody reads), herdr-pi-state (already self-disables via
-    #     PI_SUBAGENT_CHILD), pi-goal (its autonomous loop must not run in a child), and
-    #     pi-dynamic-workflows (parent-only orchestration; no recursive fan-out). The
-    #     worktree guard intentionally remains loaded in writable children. Names must
-    #     match a discovered extension.
-    #   * pi-gpt-fast is DELIBERATELY NOT excluded (user call 2026-08-09). Its
-    #     before_provider_request hook reads the shared settings.json toggle in the
-    #     child too, so with /gpt-fast on, subagent traffic also goes out at the
-    #     priority service tier for every model on its allowlist — gpt-5.6-terra,
-    #     gpt-5.6-luna and gpt-5.6-muna included. Intended trade (latency over
-    #     cost); do not "fix" it.
-    #   * Per-agent `max_turns` is intentionally OMITTED. The global
-    #     subagents.json defaultMaxTurns: 0 is the user's overall unlimited default,
-    #     while omission keeps Agent({ max_turns: N }) usable for one bounded run.
-    #     graceTurns: 8 matters only for such finite per-call limits.
-    #   * `skills` is role-scoped: Implement, general-purpose and both Research agents use
-    #     `true`, which lets Pi discover the packaged mcp-scripting skill; local
-    #     navigation/planning/review/verification agents use `false`. Do not replace
-    #     this with `skills: mcp-scripting`: pi-subagents 0.14.3 named preloading
-    #     searches local/global skill roots, not npm package skill manifests.
-    #   * `prompt_mode: replace` means NO automatic AGENTS.md / CLAUDE.md inheritance.
-    #     Local-tree specialists tell the child to read applicable convention files;
-    #     external-only Research agents intentionally do not. Implement and
-    #     general-purpose use `append` and inherit the full parent prompt because both
-    #     may mutate the checkout and must retain every project safety constraint.
-    #   * maxConcurrent: 16 is deliberate: this machine/user preference allows more
-    #     than ten background agents. Foreground agents and scheduled fires have the
-    #     package's documented queue-bypass semantics.
-    # UNPINNED on 2026-08-08 (was `@0.13.0`). The pin was the only versioned spec in
-    # this list, and `pi update --extensions` (script 20) skips version-pinned specs —
-    # so it silently froze while everything else tracked latest. 0.13.0 snapshots
-    # `extension.tools` into a static allowlist *before* `session_start` fires, and pi
-    # gates tool REGISTRATION on that list, so every MCP-backed tool (tavily, context7,
-    # deepwiki, gitmcp, arxiv, markitdown) was permanently dropped from every subagent —
-    # while Explore.md's prompt still instructed it to use them. 0.14.3 fixes exactly
-    # this (upstream #141); 0.14.1 also makes `thinking: max` an advertised level rather
-    # than one that happened to work. Peer floor is pi >=0.80.0, satisfied here.
-    - npm:@tintinweb/pi-subagents
-    # Claude-Code-style code-mode orchestration: generated JavaScript workflows fan
-    # work out through isolated in-memory agents, then verify/synthesize it. Includes
-    # /workflows, /effort high|ultra, /ultracode, resumable journals, model tiers and
-    # real token/cost accounting. Kept unpinned like the other packages so script 20
-    # tracks latest; current peer floor pi >=0.80.8 is satisfied by our mise-managed Pi.
-    # Safety/cost defaults live in dot_pi/workflows/settings.json and model routing in
-    # dot_pi/workflows/model-tiers.json. Its optional isolation:"worktree" creates an
-    # IN-REPO .pi/worktrees directory, so it is categorically forbidden in this chezmoi
-    # source tree by AGENTS.md; dot_pi/agent/extensions/pi-worktree-guard.ts enforces it.
-    - npm:@quintinshaw/pi-dynamic-workflows
-    # Browser-cookie and private web-session extensions are intentionally excluded.
-    # Web research stays on API-backed MCP providers; only explicitly configured
-    # provider integrations (including built-in Codex OAuth and Kimi Code) are allowed.
-    # Permission policy engine: allow/ask/deny gates over tools, bash, path,
-    # external_directory, mcp. Policy at dot_pi/agent/extensions/pi-permission-system/
-    # config.json. Fails CLOSED — keep JSON strict (no comments/trailing commas).
     - npm:@gotgenes/pi-permission-system
-    # readseek: hash-anchored read/edit/grep + structural code maps/search.
-    # Primary code-nav tool since serena was removed (2026-07-31).
     - npm:pi-readseek
-    # hypa: local context runtime — long-context compression, deterministic
-    # reducers + evidence record; rewrites shell/read/grep/find/ls and proxies
-    # MCP to cut context pollution. Top-downloaded Pi package; pairs with readseek.
     - npm:@hypabolic/pi-hypa
-    # goal: `/goal <objective>` autonomous mode — keeps working until goal_complete
-    # or a token budget (--tokens) is hit. Pairs well with long-context models;
-    # switch to deepseek-v4-pro when a 1M window matters more than the GPT default.
-    # Zero deps; state is session-scoped.
-    - npm:@narumitw/pi-goal
-    # gpt-fast: also NOT listed here — local extension at
-    # dot_pi/agent/extensions/pi-gpt-fast.ts. `/gpt-fast [on|off|toggle]` (and
-    # `pi --gpt-fast`) injects `service_tier: "priority"` into OpenAI/Codex
-    # requests via the `before_provider_request` hook — same model, same
-    # reasoning effort, lower latency. Upstream prior art measured 1.57x wall on
-    # gpt-5.6-sol and 2.25x on gpt-5.6-luna. NOT installed from npm on purpose:
-    # calesennett/pi-codex-fast carries no license at all, and the unscoped
-    # `pi-codex-fast` on npm is a DIFFERENT author's package (wobondar); the MIT
-    # alternative, npm:pi-openai-fast-mode, names its command `/fast` and renders
-    # its indicator as a full-width widget instead of a footer status. State
-    # persists under the `pi-gpt-fast` key in ~/.pi/agent/settings.json, which
-    # the modify_ script preserves.
-    # input-history: NOT listed here — it is VENDORED (locally forked/魔改) at
-    # dot_pi/agent/extensions/pi-input-history/ and auto-discovered from
-    # ~/.pi/agent/extensions/, so no `npm:` entry is needed (listing it too would
-    # double-load it and the npm copy would win, shadowing the local edits — see
-    # the extension conflict pi reports when both exist). Our fork replaces the
-    # single-line reverse-search with a full fzf/atuin-style popup list (Ctrl+R).
-    # Reworked 2026-08-09 into a `fzf --preview` two-pane dialog (90% wide, 85%
-    # tall): left = newest-first list, each row `<n> <age> <summary>`; right =
-    # the FULL text of the highlighted entry, ctrl+d/u to scroll it. Ages come
-    # from each session entry's `timestamp`. Arrows/ctrl+p/ctrl+n follow the
-    # list; ctrl+r/ctrl+s keep their shell meaning (ctrl+r walks older). Under
-    # 76 columns the preview is dropped and the list goes full-width.
-    # Ctrl+R is claimed for that popup; Pi's built-in app.session.rename is moved
-    # off Ctrl+R to shift+r in dot_pi/agent/keybindings.json to avoid the clash.
-  # ===== Vendored fork upstreams (advisory watch, used by script 20) =====
-  # Every other pi component has a periodic update path: the CLI rides mise `latest`
-  # + `mise up` (script 23), and the `packages` above ride `pi update --extensions`
-  # (script 20). The VENDORED extensions under dot_pi/agent/extensions/ have neither —
-  # they are local forks, so nothing can update them without clobbering the local
-  # changes, and their drift is invisible until something breaks.
+  # ===== Signalridge Pi packages -> ~/.pi/agent/settings.json =====
+  # Published packages from github.com/signalridge/pi-extensions, installed from
+  # npm by Pi itself. Bare names only: modify_settings.json.tmpl renders each as
+  # `npm:@signalridge/<name>` with NO version, so Pi resolves the latest release
+  # on first install and run_after_20_update-pi-extensions.sh keeps it current.
+  # Never add a `@version` suffix here — pinning is deliberately not done.
   #
-  # This list does not update them. It tells the weekly script which upstream to watch
-  # so it can report "upstream published X since you last looked" and leave the rebase
-  # decision to a human. Only forks that HAVE an upstream belong here — pi-input-prefix,
-  # tmux-state and herdr-pi-state are locally authored.
+  # The checkout at ~/ghq/github.com/signalridge/pi-extensions is a development
+  # source only; Pi must not load it, or any legacy ~/.pi/agent/extensions copy,
+  # as a second implementation of the same extension.
   #
-  # NOTE: a fork's own `version` in package.json is NOT comparable to upstream's (the
-  # input-history fork sits at 1.1.0 while upstream is 1.0.1), which is exactly why the
-  # check watches for *changes* in the upstream release instead of diffing versions.
-  vendoredForks:
-    - dir: pi-statusline
-      upstream: "@narumitw/pi-statusline"
-    - dir: pi-input-history
-      upstream: pi-input-history
+  # Excluded on purpose:
+  #   pi-worktree   — repository constitution forbids worktrees (CLAUDE.md Art. 1)
+  #   pi-worktime   — publishable but opt-in; not yet released to npm
+  #   pi-recall, pi-codex-compact, pi-analytics — experimental, opt-in
+  #   pi-subagents-protocol — pure library, a dependency and never a Pi resource
+  signalridgePackages:
+    # Orchestration
+    - pi-subagents
+    - pi-workflows
+    - pi-goal
+    - pi-ralph-wiggum
+    - pi-plan-mode
+    # Environment bridges
+    - pi-herdr-state
+    - pi-gpt-fast
+    - pi-agent-guidance
+    # Input, chrome, and session UI
+    - pi-input-history
+    - pi-input-prefix
+    - pi-statusline
+    - pi-tab-status
+    - pi-welcome
+    - pi-session-recap
+    - pi-usage-extension
+    - pi-stamp
+    # Developer tools
+    - pi-lsp
+    - pi-github-pr
+    - pi-files-widget
+    - pi-code-actions
+    - pi-btw
   # ===== Custom providers -> ~/.pi/agent/models.json =====
   # Only providers/models Pi does not ship natively belong here. Built-in model
   # IDs must not be repeated because a custom entry with the same ID replaces
@@ -352,11 +210,10 @@ pi:
       auth: builtin
       modelOverrides:
         gpt-5.6-sol: { contextWindow: 372000 }
-        # Local planning/implementation/review agents run luna; terra and muna are
-        # included so a runtime /model switch does not silently drop back to 272K.
+        # Local planning/implementation/review agents run luna; terra is included so
+        # a runtime /model switch does not silently drop back to 272K.
         gpt-5.6-luna: { contextWindow: 372000 }
         gpt-5.6-terra: { contextWindow: 372000 }
-        gpt-5.6-muna: { contextWindow: 372000 }
     deepseek: # DeepSeek Platform (OpenAI-compatible). V4 models are not in Pi's
       # built-in registry yet, so we pin them here with the reasoning `compat`
       # block from the official integration doc:

@@ -159,14 +159,18 @@ config.keys = {
   { key = "k", mods = "CMD", action = act.ClearScrollback("ScrollbackAndViewport") },
 }
 
--- Tab titles: index + foreground process, instead of the raw pane title (which
--- is usually a long command line or shell path).
+-- Tab titles: Pi owns a compact semantic title while other panes use the
+-- foreground process. This makes the Pi Ridgeline state visible in WezTerm
+-- without changing titles for shells or unrelated programs.
 wezterm.on("format-tab-title", function(tab)
   local pane = tab.active_pane
   local proc = pane.foreground_process_name or ""
   proc = proc:gsub("^.*/", "") -- basename
-  if proc == "" then
-    proc = (pane.title or ""):gsub("^.*/", "")
+  local paneTitle = pane.title or ""
+  if proc == "pi" or paneTitle:match("^pi%s") or paneTitle:match("^pi%s·") then
+    proc = paneTitle ~= "" and paneTitle or "pi"
+  elseif proc == "" then
+    proc = paneTitle:gsub("^.*/", "")
   end
   return string.format("  %d  %s  ", tab.tab_index + 1, proc)
 end)

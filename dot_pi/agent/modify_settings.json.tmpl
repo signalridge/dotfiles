@@ -18,15 +18,25 @@ EXISTING="$(cat)"
      into the user's config and stop tracking this repo on a plain apply. */ -}}
 {{- $model := "gpt-5.6-luna" -}}
 {{- $effort := ternary "xhigh" "max" .work -}}
-{{- $managed := dict "defaultProvider" $d.defaultProvider "defaultModel" $model "theme" $d.theme "quietStartup" $d.quietStartup "defaultThinkingLevel" $effort "enableSkillCommands" true "npmCommand" $d.npmCommand "compaction" $d.compaction "branchSummary" $d.branchSummary "retry" $d.retry "packages" .pi.packages -}}
+{{/* Keep external npm dependencies first, then the exact pi.signalridgePackages
+     order rendered as unpinned npm specs. No version suffix is emitted on
+     purpose: Pi resolves the latest release at install time and
+     run_after_20_update-pi-extensions.sh keeps it current. The rendered array is
+     asserted by tests/test_pi_packages.sh so dropping a package cannot be hidden
+     by a count-only check. */ -}}
+{{- $packageSources := .pi.packages -}}
+{{- range .pi.signalridgePackages -}}
+{{- $packageSources = append $packageSources (printf "npm:@signalridge/%s" .) -}}
+{{- end -}}
+{{- $managed := dict "defaultProvider" $d.defaultProvider "defaultModel" $model "theme" $d.theme "quietStartup" $d.quietStartup "defaultThinkingLevel" $effort "enableSkillCommands" true "npmCommand" $d.npmCommand "compaction" $d.compaction "branchSummary" $d.branchSummary "retry" $d.retry "packages" $packageSources -}}
 MANAGED="$(cat <<'PI_SETTINGS_EOF'
 {{ $managed | toPrettyJson }}
 PI_SETTINGS_EOF
 )"
 
 if command -v jq >/dev/null 2>&1 && printf '%s' "$EXISTING" | jq -e . >/dev/null 2>&1; then
-    # Deep-merge managed values, then remove the legacy nicobailon/pi-subagents
-    # settings block; @tintinweb/pi-subagents uses ~/.pi/agent/subagents.json.
+    # Deep-merge managed values, then remove the legacy pi-subagents settings
+    # block; the repository-owned package reads ~/.pi/agent/subagents.json.
     jq -s '.[0] * .[1] | del(.subagents)' <(printf '%s' "$EXISTING") <(printf '%s' "$MANAGED")
 else
     printf '%s\n' "$MANAGED"

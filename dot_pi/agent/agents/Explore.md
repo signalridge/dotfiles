@@ -5,7 +5,7 @@ model: deepseek/deepseek-v4-flash
 thinking: max
 tools: read, grep, find, ls, bash
 extensions: true
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, tmux-state, herdr-pi-state, pi-goal, pi-welcome, pi-dynamic-workflows
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows
 skills: false
 disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
 prompt_mode: replace
