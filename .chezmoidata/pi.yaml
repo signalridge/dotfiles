@@ -36,12 +36,12 @@ pi:
     # per-token), in key (`pi/opencode/api_key` vs `pi/deepseek/api_key`), and in
     # advertised effort ladder. The direct provider is kept configured as the
     # fallback — reach it as `deepseek/deepseek-v4-flash`.
-    # `pi/opencode/api_key` EXISTS and authenticates. What it does not yet have is
-    # a workspace payment method, so every model currently answers CreditsError,
-    # and the two DeepSeek models answer RegionError until China-hosting is opted
-    # into separately. Both are account settings, not config defects — but until
-    # they are cleared this default cannot serve a request, and the working route
-    # is `deepseek/deepseek-v4-flash` (verified live).
+    # VERIFIED END TO END 2026-08-17: `pi/opencode/api_key` authenticates and all
+    # 19 built-in opencode-go models answer on their own protocol. A live
+    # deepseek-v4-flash call with reasoning_effort=max returned `content` +
+    # `reasoning_content` and 92 reasoning_tokens, confirming both the `max` rung
+    # and the deepseek thinkingFormat. `deepseek/deepseek-v4-flash` (direct,
+    # per-token) is the verified fallback.
     defaultProvider: opencode-go
     # The parent model + effort are still emitted from
     # dot_pi/agent/modify_settings.json.tmpl rather than from here, because that is
@@ -255,10 +255,19 @@ pi:
       # sources already disagree on protocol for minimax-m2.7 and qwen3.6-plus.
       #
       # Docs: https://opencode.ai/docs/zen/  Keys: https://opencode.ai/auth
-      # Account gates hit while configuring this (both are workspace settings, not
-      # config errors): every model returns CreditsError until a payment method
-      # exists, and the two DeepSeek models additionally return RegionError until
-      # China-hosting is opted into — a SEPARATE switch that paying does not clear.
+      # Two workspace-level gates were hit while configuring this, both since
+      # cleared — recorded because they present as config errors and are not:
+      #   CreditsError  every model, until the workspace has a payment method
+      #                 (/workspace/<id>/billing)
+      #   RegionError   deepseek-v4-{flash,pro} only, until "models hosted in
+      #                 China" is opted into (/workspace/<id>/go). A SEPARATE
+      #                 switch that paying does not clear — opencode serves US
+      #                 hosts by default, but DeepSeek V4's latest build is
+      #                 China-only, so consent is required. Browser only; there is
+      #                 no API path to opt in.
+      # Verified 2026-08-17 after clearing both: all 19 built-in models answer on
+      # their own protocol, and a deepseek-v4-flash call at reasoning_effort=max
+      # returned reasoning_content with 92 reasoning_tokens.
       gopass: pi/opencode/api_key
       modelOverrides:
         # Built-in says 384000. reserveTokens is one global number with a
