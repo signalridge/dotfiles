@@ -85,7 +85,7 @@ project_doc_max_bytes = 65536
 
 [agents]
 enabled = true
-max_concurrent_threads_per_session = 4
+max_concurrent_threads_per_session = 8
 {{ if eq $providerName "openai" -}}
 default_subagent_model = "{{ $subagentModel }}"
 default_subagent_reasoning_effort = "{{ $subagentEffort }}"
