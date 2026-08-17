@@ -7,11 +7,11 @@ versions:
   nixInstallerAarch64LinuxSha256: 3e4f83cc87025c2890293cd2a8b6889ad2a0f7c5394f87ba8ad4fc958cf2aaea
   nixInstallerX8664LinuxSha256: 58cf15422853e95187405d66b0cdb306e66f602218ee0032386c46b1b776a6d1
   nixVersion: v3.21.9
-  nixpkgsBootstrapRev: 6b5e5b7a6631f065bf6908986990b37d845f847f
+  nixpkgsBootstrapRev: 8be7bd0c83f12e2e3bbba07c9044d6fed9e66f7f
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
   aquaVersion: v2.62.3
-  nixIndexDb: 2026-08-09-040451
+  nixIndexDb: 2026-08-16-033510
   paperlib: 3.1.12
   paperlibAmd64Sha256: 993d05c9bb9c8163f2d308736d2316ebf6db8a23b75133a170e22ea6e125746c
   paperlibArm64Sha256: a49ab642331632719079399c15551a6d0c9b16ca2f50a2ef35c297c3a9835459
@@ -50,17 +50,17 @@ versions:
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 41259e8aef85f847145c383d02be6a40a2435466
   dailyDevSkillsRev: cf21b4a8a226da8035736a5a53cd3e1b6287d4d1
-  opcSkillsRev: 2fd8f5853891ecb2918c316c5795eceefb1155e1
+  opcSkillsRev: 6eb6fbbf78b5af1ae6b5ac29c2eba27114e9369d
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 30cdf15cde8db8730c42a2918d7cdb4505f5ff54
-  affaanEccRev: f1923017275a69516822ad551a8dfed34a772723
+  affaanEccRev: 06c5e118c4d3e6c3b7f9445f973a2194c82de193
   actionbookRustSkillsRev: fa60f7931223646fb71c4586b4a6c8545016076a
   dpearsonSwiftSkillsRev: 8d90fd121a263355a4fb44fd082af1416a5c1c2a
   effectiveTypescriptRev: d754db2077d71ae1e2b57bf50ae7bc565067a2e0
   bobmatnycMpmSkillsRev: 718070a7d622921b01687799a1f9613f36c6f615
   humanizerEnRev: 523374dee72d67c7b2b5f858ea0094ffda49c3ac
   humanizerJaRev: 1b850cfe8529f7836025b2edd15b3d64447f8fb6
-  quAiWeiRev: 4436e465d43e361a81b2ae41f9c8634b886df281
+  quAiWeiRev: 39da1cfac4f0e3e4d2b46bc7188a0edc762b8d17
   drawioSkillRev: 89ff88cb27cd876d9085071d4f73c2502d0492e4
   beautifyGithubReadmeSkillRev: 55bdb1c05414cd7a0cf911d02e55ece79777206e
