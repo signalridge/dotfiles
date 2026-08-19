@@ -1,0 +1,36 @@
+# Antigravity CLI (Google DeepMind) — managed slice of ~/.gemini/antigravity-cli/settings.json
+#
+# Binary: aqua `google-antigravity/antigravity-cli` (see .chezmoidata/versions.yaml).
+# Rendered by dot_gemini/antigravity-cli/private_modify_settings.json.tmpl, which
+# DEEP-MERGES these keys into the live file instead of replacing it. That matters:
+# the CLI writes the same file at runtime (`/config`, `/permissions`, `/model`, and
+# every "trust this folder" prompt appends to `trustedWorkspaces`), so a full-file
+# template would silently revert the user's own choices on each `chezmoi apply` —
+# the exact trap already hit with ~/.claude/settings.json. Only the keys listed
+# here are owned; everything else in that file is left alone.
+antigravity:
+  settings:
+    # Tool approval policy. Four rungs, least to most permissive:
+    #   strict              tightest
+    #   request-review      approve every tool call individually (CLI default)
+    #   proceed-in-sandbox  auto-approve commands INSIDE the sandbox; prompt only
+    #                       when one tries to escape it. Needs a sandbox to mean
+    #                       anything — pair it with enableTerminalSandbox: true,
+    #                       or it grants the same reach as always-proceed.
+    #   always-proceed      auto-approve everything ("YOLD")
+    toolPermission: always-proceed
+
+    # Read/write outside the workspace root. SEPARATE gate from toolPermission —
+    # leaving this false is what makes the CLI re-prompt on every single
+    # `Read(~/ghq/.../other-repo/file)` even under always-proceed, because the
+    # approval is per-file and is never persisted as a grant (only `command(...)`
+    # grants are). Set true to work across repos from one session; the narrower
+    # alternative is launching with `--add-dir <path>` per extra directory.
+    allowNonWorkspaceAccess: true
+
+    # Deliberately NOT managed here, because the CLI owns them at runtime and a
+    # managed value would fight the UI:
+    #   trustedWorkspaces   appended by the "trust this folder" prompt
+    #   model               set by /model
+    #   permissions         the allow/deny rule table edited by /permissions
+    #   enableTerminalSandbox  currently false; see proceed-in-sandbox above
