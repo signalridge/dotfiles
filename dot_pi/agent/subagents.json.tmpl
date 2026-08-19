@@ -6,17 +6,30 @@
   If omitted, agentTiers.defaultTier applies. The host cannot pass model or thinking
   directly.
 
-  As of 2026-08-17 the three profiles are DELIBERATELY IDENTICAL: every subagent
-  runs opencode-go/deepseek-v4-flash at thinking level max, the same pin the parent
-  session carries in modify_settings.json.tmpl (user request — one model, one
-  effort, everywhere). That is the opencode Go SUBSCRIPTION route; the per-token
-  direct route to the same model stays configured as `deepseek/deepseek-v4-flash`.
-  `max` is a real provider rung on both, not a nominal one — see the
-  thinkingLevelMaps in .chezmoidata/pi.yaml, where the direct provider's used to
-  flatten it to `high`. The catalogue keys are kept rather than collapsed to a single
-  profile so that `tier` values already passed by prompts and by pi-workflows keep
-  resolving, and so re-differentiating later is a value edit rather than a
-  protocol change. Descriptions state the routing INTENT, not a current difference.
+  The three profiles are DELIBERATELY IDENTICAL: every subagent runs one model at
+  thinking level max. As of 2026-08-19 that model is opencode-go/muse-spark-1.2
+  (user request), over the opencode Go SUBSCRIPTION route.
+
+  This MATCHES THE PARENT, which carries the same pin in
+  modify_settings.json.tmpl — the standing "one model, one effort, everywhere"
+  request. Both sides ran opencode-go/deepseek-v4-flash from 2026-08-17 and moved
+  together on 2026-08-19. Change both or neither.
+
+  `max` is NOT a provider rung on muse-spark-1.2 — unlike deepseek-v4-flash, where
+  it is real on both the subscription and the direct `deepseek/deepseek-v4-flash`
+  route. The gateway rejects `"effort":"max"` outright with invalid_request_error
+  (probed 2026-08-19, alongside minimal/low/medium/high/xhigh which all answer
+  200). `thinking: max` below is still correct and still the right value: pi
+  clamps a rung a model does not offer down to its top one before sending
+  (clampThinkingLevel in pi-ai/dist/models.js), so this dispatches at xhigh. Keep
+  it at max rather than "honestly" writing xhigh — max is the only value that
+  reaches the TOP rung of every model reachable from here, and
+  deepseek-v4-flash's built-in map has no `xhigh` key at all.
+
+  The catalogue keys are kept rather than collapsed to a single profile so that
+  `tier` values already passed by prompts and by pi-workflows keep resolving, and
+  so re-differentiating later is a value edit rather than a protocol change.
+  Descriptions state the routing INTENT, not a current difference.
 
   Keep these names separate from pi-workflows' `workflow.tiers`, whose fixed
   protocol remains portable.
@@ -24,7 +37,7 @@
   Note the `.work` ternaries that used to vary model and thinking budget per
   machine are gone; nothing in this file branches on chezmoi data any more.
 */ -}}
-{{- $model := "opencode-go/deepseek-v4-flash" -}}
+{{- $model := "opencode-go/muse-spark-1.2" -}}
 {{- $thinking := "max" -}}
 {
   "maxConcurrent": 16,

@@ -9,16 +9,27 @@ set -euo pipefail
 
 EXISTING="$(cat)"
 {{ $d := .pi.defaults -}}
-{{/* Parent model + effort. ONE pin on every machine as of 2026-08-17:
-     deepseek-v4-flash at thinking level max, matching all three pi-subagents
-     tiers in subagents.json.tmpl. The `work` ternaries that used to pick between
-     luna/xhigh and luna/max are gone; these values stay in a template only
-     because settings.json is assembled here. `defaultProvider` (opencode-go —
-     the subscription gateway, not DeepSeek's own API) still comes from
-     .chezmoidata/pi.yaml, so the model id here is intentionally bare: it is
+{{/* Parent model + effort. ONE pin on every machine, matching all three
+     pi-subagents tiers in subagents.json.tmpl: one model, one effort, everywhere.
+     muse-spark-1.2 as of 2026-08-19 (was deepseek-v4-flash from 2026-08-17).
+     The `work` ternaries that used to pick between luna/xhigh and luna/max are
+     gone; these values stay in a template only because settings.json is assembled
+     here. `defaultProvider` (opencode-go — the subscription gateway) still comes
+     from .chezmoidata/pi.yaml, so the model id here is intentionally bare: it is
      resolved against whatever that provider is.
+
+     KEEP $effort AS max, and do not "correct" it to xhigh on the grounds that
+     muse-spark-1.2 has no max rung. max is the only value that reaches the TOP
+     rung of every model reachable from here, because each one translates it
+     through its own thinkingLevelMap:
+       opencode-go/muse-spark-1.2   max -> xhigh  (its top; set in .chezmoidata/pi.yaml)
+       opencode-go/deepseek-v4-flash max -> max   (its top)
+       openai-codex/gpt-5.6-*        max -> max   (its top)
+     xhigh would look more literal and be worse: deepseek-v4-flash's built-in map
+     has no `xhigh` key at all, so a /model switch back would silently drop the
+     effort instead of landing on max.
      Pi is intentionally configured independently from Codex. */ -}}
-{{- $model := "deepseek-v4-flash" -}}
+{{- $model := "muse-spark-1.2" -}}
 {{- $effort := "max" -}}
 {{/* Keep external npm dependencies first, then the exact pi.signalridgePackages
      order rendered as unpinned npm specs. No version suffix is emitted on

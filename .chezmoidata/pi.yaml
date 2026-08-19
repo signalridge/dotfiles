@@ -52,8 +52,12 @@ pi:
     # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
     # the ACTIVE provider/model's. The two candidates differ by more than 2x, and
     # reserveTokens is a single global number, so it has to satisfy BOTH:
-    #   opencode-go   deepseek-v4-flash  1M     (the startup default -> what applies)
+    #   opencode-go   muse-spark-1.2     1M     (the startup default -> what applies)
     #   openai-codex  gpt-5.6-luna       372K   (the /model fallback)
+    # The startup default moved deepseek-v4-flash -> muse-spark-1.2 on 2026-08-19.
+    # Every number below survives that move unchanged: both are 1M-window models
+    # pinned to maxTokens 128000, so the floor, the trigger and the headroom are
+    # identical. deepseek-v4-flash stays configured and keeps its own 128K pin.
     # A reserve sized for flash's real 384K output cap (>= 384000) would make
     # `372000 - reserveTokens` NEGATIVE and put every codex turn permanently over
     # the threshold. That is why BOTH deepseek-v4-flash entries below (the
@@ -315,23 +319,41 @@ pi:
           # unverified on this gateway.
           input: [text, image]
           contextWindow: 1048576
-          # Its real cap. Note this is 131072 > the global reserveTokens of
-          # 130000, so /model-switching here re-enters the same sizing landmine
-          # already flagged for grok-4.5 (500K) and kimi-k2.7-code (262K).
-          maxTokens: 131072
+          # PINNED DOWN from its real cap of 131072, for the same reason
+          # deepseek-v4-flash is pinned down from 384000 in modelOverrides
+          # below: reserveTokens is a single global 130000 and the SIZING block
+          # above sets a `reserveTokens >= maxTokens` correctness floor, so that
+          # one maximal response cannot cross the context wall unchecked on its
+          # own. 131072 misses that floor by 1072. The 3072-token haircut (2.3%)
+          # is the cheapest way to keep the floor exact, and it matters more
+          # here than for a model reachable only by a manual /model switch:
+          # subagents.json.tmpl routes EVERY subagent tier through this model.
+          # Its 1M window is untouched — the compaction trigger is
+          # 1048576 - 130000 = 918576 (88%), which is roomy.
+          maxTokens: 128000
           cost: { input: 0.1, output: 0.2, cacheRead: 0.002, cacheWrite: 0 }
+          # Uniform across this gateway's openai-responses route, not a per-model
+          # quirk: gpt-5.6-luna, grok-4.5 and upstream's own
+          # muse-spark-1.2-contributor all carry it, so its absence here was a gap.
+          compat:
+            sessionAffinityFormat: openai-nosession
           # models.dev reasoning_options.effort = minimal|low|medium|high|xhigh.
           # There is NO `max` rung, so `max` is mapped to the real top (xhigh)
           # rather than dropped — the global defaultThinkingLevel is `max`, and a
           # null here would silently send no effort at all.
-          # THIS LINE IS LOAD-BEARING, not cosmetic. Probed 2026-08-19: the
-          # gateway answers 200 for minimal/low/medium/high/xhigh and rejects
-          # `max` outright with
-          #   invalid_request_error: Upstream request failed
-          # so without the max -> xhigh entry EVERY call would fail, since pi
-          # sends the session's thinking level and the default here is max.
-          # Confirmed both ways: raw `"effort":"max"` errors, while
-          # `pi -p --model opencode-go/muse-spark-1.2:max` succeeds.
+          # NOT load-bearing — kept as explicit documentation only. An earlier
+          # revision of this file claimed that without it every call would fail,
+          # because the gateway does reject `"effort":"max"` outright
+          # (invalid_request_error, probed 2026-08-19, while
+          # minimal/low/medium/high/xhigh all answer 200). That claim was WRONG:
+          # pi never sends `max` here with or without this line. With no `max`
+          # key, getSupportedThinkingLevels marks the rung unsupported and
+          # clampThinkingLevel drops to xhigh on its own — confirmed by deleting
+          # the key and re-running `pi -p --model opencode-go/muse-spark-1.2:max`,
+          # which still answered normally. Writing it out just makes `max` a
+          # first-class supported rung instead of a clamped one; same request on
+          # the wire. Upstream's own muse-spark-1.2-contributor ships max -> null,
+          # which is equally correct, not a defect to be reconciled.
           thinkingLevelMap:
             {
               off: null,
