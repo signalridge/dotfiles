@@ -21,13 +21,13 @@ packages:
   # Moonshot's CDN (self-contained Node-SEA, no Node runtime). NOTE: the CDN's
   # `latest` can lag GitHub tags, so `aqua up` may propose a version not yet on the
   # CDN — keep this at a CDN-present version (binaries/<ver>/manifest.json resolves).
-  - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@0.36.1
+  - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@0.37.2
     registry: third-party
   # ----- standard registry -----
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
-  - name: google-antigravity/antigravity-cli@1.1.13
+  - name: google-antigravity/antigravity-cli@1.1.14
   - name: nektos/act@v0.2.89
   - name: FiloSottile/age@v1.3.1
   - name: asciinema/asciinema@v3.2.1
@@ -40,8 +40,8 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.234
-  - name: openai/codex@rust-v0.147.0
+  - name: anthropics/claude-code@v2.1.235
+  - name: openai/codex@rust-v0.148.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
