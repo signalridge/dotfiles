@@ -406,6 +406,29 @@ pi:
         # Local planning/implementation/review agents run luna; terra is included so
         # a runtime /model switch does not silently drop back to 272K.
         gpt-5.6-luna: { contextWindow: 372000 }
+        # THINKING LADDER — exactly ONE repair is needed here, and only here.
+        # Audited 2026-08-19 across every model in ~/.pi/agent/models-store.json.
+        # pi ALREADY handles ladder mismatches by itself and needs no help in the
+        # general case: getSupportedThinkingLevels treats a `null` value — and, for
+        # xhigh/max only, an ABSENT key — as "this model does not offer that rung",
+        # then clampThinkingLevel walks up and, failing that, down to the nearest
+        # rung the model does offer (pi-ai/dist/models.js). So `max` on a model
+        # topping out at xhigh is sent as xhigh with no config at all. Verified by
+        # deleting keys and re-running: opencode-go/deepseek-v4-flash answers at
+        # :minimal, :medium, :xhigh and :max although its map nulls minimal and
+        # medium and has no xhigh key whatsoever. Do NOT hand-write full ladders
+        # to "fix" maps that look sparse — sparse is the intended encoding.
+        #
+        # gpt-5.4-mini is the one real defect: models.dev gives it a genuine `max`
+        # rung (low|medium|high|xhigh|max), but its shipped map is
+        # `{xhigh: xhigh, minimal: low}` with no max key, so pi classifies max as
+        # unsupported and clamps it DOWN to xhigh. The model's top rung is
+        # therefore unreachable — the opposite of the clamp being harmless. Its
+        # three siblings (gpt-5.3-codex-spark, gpt-5.4, gpt-5.5) really do stop at
+        # xhigh per models.dev, so their identical-looking maps are correct and
+        # deliberately left alone.
+        gpt-5.4-mini:
+          thinkingLevelMap: { max: max }
         gpt-5.6-terra: { contextWindow: 372000 }
     deepseek: # BUILT-IN provider — this entry ONLY supplies the API key + 1 patch.
       # DeepSeek's own platform (api.deepseek.com), the per-token FALLBACK to the
