@@ -269,6 +269,79 @@ pi:
       # their own protocol, and a deepseek-v4-flash call at reasoning_effort=max
       # returned reasoning_content with 92 reasoning_tokens.
       gopass: pi/opencode/api_key
+      models:
+        # THE ONE MODEL THIS BLOCK ADDS. Everything else the Go docs table lists
+        # is already built in — do not add the rest (see the warning above).
+        #
+        # Audited 2026-08-19 against `GET /zen/go/v1/models` (27 ids) and
+        # models.dev: the gateway's 20 CURRENT models are exactly pi 0.84.2's 19
+        # built-ins plus muse-spark-1.2 (released 2026-08-05, after pi's
+        # registry snapshot). The other 6 gateway ids — glm-5, kimi-k2.5,
+        # mimo-v2-pro, mimo-v2-omni, qwen3.5-plus, minimax-m2.5 — all carry
+        # models.dev `status: deprecated` and are deliberately omitted. That
+        # retires the older note above about minimax-m2.7 / qwen3.6-plus
+        # "protocol disagreement": both ids were probed live on 2026-08-19 and
+        # BOTH answer 200 on /v1/chat/completions AND /v1/messages, so the
+        # gateway multiplexes and the built-in's openai-completions choice is
+        # not a conflict. Nothing to patch there.
+        #
+        # DATA-POLICY GATE — opted in 2026-08-19, verified working. This is a
+        # THIRD workspace gate, distinct from the CreditsError and RegionError
+        # documented above, and unlike them it trades data for access: prompts
+        # and code sent to this model are retained for training. Until the
+        # workspace opts in (browser only, no API path, at
+        # https://opencode.ai/workspace/<workspace-id>/go) every call returns
+        #   HTTP 403 DataPolicyError: "This model collects data used to improve
+        #   its quality and requires explicit opt in"
+        # so expect that on any OTHER workspace this key is used from. Delete
+        # this entry instead if that trade is not wanted.
+        #
+        # api/baseUrl are MANDATORY here, not optional polish: for an id absent
+        # from the built-ins, provider-composer.js:102 falls back to
+        # `defaults = models[0]` — the first model of the base list, whose
+        # protocol is unrelated. Every other field is spelled out for the same
+        # reason: modelFromJson reads ONLY api and baseUrl from `defaults` and
+        # resets the rest to hardcoded values (contextWindow 128000, maxTokens
+        # 16384, reasoning false, zero cost).
+        - id: muse-spark-1.2
+          name: Muse Spark 1.2
+          api: openai-responses
+          # No trailing /v1 mismatch: the responses route is …/zen/go/v1, the
+          # anthropic one is …/zen/go. Same split as the built-ins.
+          baseUrl: https://opencode.ai/zen/go/v1
+          reasoning: true
+          # models.dev advertises image/video/pdf/audio too; kept to the pair the
+          # built-in opencode-go models declare, since the extra modalities are
+          # unverified on this gateway.
+          input: [text, image]
+          contextWindow: 1048576
+          # Its real cap. Note this is 131072 > the global reserveTokens of
+          # 130000, so /model-switching here re-enters the same sizing landmine
+          # already flagged for grok-4.5 (500K) and kimi-k2.7-code (262K).
+          maxTokens: 131072
+          cost: { input: 0.1, output: 0.2, cacheRead: 0.002, cacheWrite: 0 }
+          # models.dev reasoning_options.effort = minimal|low|medium|high|xhigh.
+          # There is NO `max` rung, so `max` is mapped to the real top (xhigh)
+          # rather than dropped — the global defaultThinkingLevel is `max`, and a
+          # null here would silently send no effort at all.
+          # THIS LINE IS LOAD-BEARING, not cosmetic. Probed 2026-08-19: the
+          # gateway answers 200 for minimal/low/medium/high/xhigh and rejects
+          # `max` outright with
+          #   invalid_request_error: Upstream request failed
+          # so without the max -> xhigh entry EVERY call would fail, since pi
+          # sends the session's thinking level and the default here is max.
+          # Confirmed both ways: raw `"effort":"max"` errors, while
+          # `pi -p --model opencode-go/muse-spark-1.2:max` succeeds.
+          thinkingLevelMap:
+            {
+              off: null,
+              minimal: minimal,
+              low: low,
+              medium: medium,
+              high: high,
+              xhigh: xhigh,
+              max: xhigh,
+            }
       modelOverrides:
         # Built-in says 384000. reserveTokens is one global number with a
         # `reserveTokens >= maxTokens` floor (see the SIZING block above), so the
