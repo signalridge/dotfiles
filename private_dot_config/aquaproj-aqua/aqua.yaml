@@ -14,7 +14,7 @@ packages:
     registry: third-party
   - name: signalridge/qmk-hid-host@v2026.06.14.1
     registry: third-party
-  - name: ogulcancelik/herdr@v0.8.0
+  - name: ogulcancelik/herdr@v0.8.2
     registry: third-party
   # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
   # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
@@ -27,7 +27,7 @@ packages:
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
-  - name: google-antigravity/antigravity-cli@1.1.14
+  - name: google-antigravity/antigravity-cli@1.1.15
   - name: nektos/act@v0.2.89
   - name: FiloSottile/age@v1.3.1
   - name: asciinema/asciinema@v3.2.1
@@ -40,18 +40,18 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.235
+  - name: anthropics/claude-code@v2.1.236
   - name: openai/codex@rust-v0.148.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.8.8
+  - name: jdx/mise@v2026.8.9
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
-  - name: bootandy/dust@v1.2.4
+  - name: bootandy/dust@v1.2.5
   - name: dandavison/delta@0.19.2
   - name: Wilfred/difftastic@0.70.0
   # Darwin uses Cargo for eza. Track crates.io releases directly: GitHub tag
@@ -100,10 +100,10 @@ packages:
   - name: mvdan/sh@v3.13.1
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.16.3
-  - name: astral-sh/ty@0.0.72
+  - name: astral-sh/ty@0.0.73
   - name: j178/prek@v0.4.14
   - name: golang.org/x/tools/gopls@v0.23.0
-  - name: golangci/golangci-lint@v2.12.2
+  - name: golangci/golangci-lint@v2.13.0
   - name: goreleaser/goreleaser@v2.17.1
   - name: orhun/git-cliff@v2.13.1
   - name: numtide/treefmt@v2.5.0
@@ -118,7 +118,7 @@ packages:
   - name: sharkdp/vivid@v0.11.1
   - name: dduan/tre@v0.4.0
   - name: sxyazi/yazi@v26.8.15
-  - name: mikefarah/yq@v4.53.3
+  - name: mikefarah/yq@v4.53.4
   - name: ajeetdsouza/zoxide@v0.10.0
   - name: derailed/k9s@v0.51.0
   - name: kubernetes/kubernetes/kubectl@v1.36.3
