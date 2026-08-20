@@ -26,45 +26,64 @@ pi:
     # while quiet, so nothing actionable is hidden. Set false to get Pi's own
     # block back above the card.
     quietStartup: true
-    # User-requested (2026-08-17): ONE model runs everything — the parent session
-    # and all three pi-subagents tiers are opencode-go/deepseek-v4-flash at
-    # thinking level max. openai-codex keeps its OAuth in ~/.pi/agent/auth.json
-    # and stays one `/model` switch away, as do Kimi Code and the DIRECT DeepSeek
-    # platform below.
-    # The route is the opencode Go SUBSCRIPTION gateway, not DeepSeek's own API.
-    # Both carry the same model; they differ in billing (flat allowance vs
-    # per-token), in key (`pi/opencode/api_key` vs `pi/deepseek/api_key`), and in
-    # advertised effort ladder. The direct provider is kept configured as the
-    # fallback — reach it as `deepseek/deepseek-v4-flash`.
-    # VERIFIED END TO END 2026-08-17: `pi/opencode/api_key` authenticates and all
-    # 19 built-in opencode-go models answer on their own protocol. A live
-    # deepseek-v4-flash call with reasoning_effort=max returned `content` +
-    # `reasoning_content` and 92 reasoning_tokens, confirming both the `max` rung
-    # and the deepseek thinkingFormat. `deepseek/deepseek-v4-flash` (direct,
-    # per-token) is the verified fallback.
-    defaultProvider: opencode-go
+    # User-requested (2026-08-20): ONE model runs everything — the parent session
+    # and all three pi-subagents tiers are openai-codex/gpt-5.6-luna at thinking
+    # level max. The route is the native Codex OAuth already in
+    # ~/.pi/agent/auth.json; the openai-codex block below emits no apiKey for it.
+    # (Earlier the same day this was gpt-5.6-sol at xhigh; luna measured the same
+    # 921K input ceiling as sol at a fraction of the input price, so the family's
+    # cheaper member won.)
+    #
+    # Why the provider moved off opencode-go: the Go gateway does serve
+    # gpt-5.6-luna, but not gpt-5.6-sol or -terra — `GET /zen/go/v1/models` on
+    # 2026-08-20 returned 27 ids and luna is the only gpt-5.6 among them. Staying
+    # on openai-codex keeps all three one `/model` switch apart on one route with
+    # one set of measured numbers. `opencode-go/gpt-5.6-luna` remains available
+    # as the subscription-billed alternative to the same model.
+    #
+    # Two things surfaced by that switch, both load-bearing:
+    #   - opencode-go RETIRED `muse-spark-1.2`, the 2026-08-19 default. The
+    #     gateway now answers `401 ModelError: Model muse-spark-1.2 is not
+    #     supported` and omits it from /v1/models, while the same request shape
+    #     still answers 200 for `muse-spark-1.2-contributor` and `gpt-5.6-luna`
+    #     on the same key. Its hand-written entry was deleted below.
+    #   - gpt-5.6-sol's REAL context window is 1,050,000, not the 272,000 its
+    #     Codex catalog reports — MEASURED against the live route, not read off a
+    #     spec sheet. See the modelOverrides comment in the openai-codex block.
+    #
+    # opencode-go, Kimi Code and the DIRECT DeepSeek platform all stay configured
+    # and are one `/model` switch away. They differ in billing (flat allowance vs
+    # per-token) and in key (`pi/opencode/api_key` vs `pi/deepseek/api_key`);
+    # `deepseek/deepseek-v4-flash` remains the verified per-token fallback.
+    defaultProvider: openai-codex
     # The parent model + effort are still emitted from
     # dot_pi/agent/modify_settings.json.tmpl rather than from here, because that is
-    # where settings.json is assembled — but they are no longer machine-scoped: both
-    # `work` and private resolve to deepseek-v4-flash at max, so the chezmoi `work`
+    # where settings.json is assembled — but they are no longer machine-scoped:
+    # every machine resolves to gpt-5.6-sol at xhigh, so the chezmoi `work`
     # ternaries that used to pick between gpt-5.6-luna/xhigh and gpt-5.6-luna/max
     # are gone. Pi remains configured independently from Codex.
     # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
-    # the ACTIVE provider/model's. The two candidates differ by more than 2x, and
-    # reserveTokens is a single global number, so it has to satisfy BOTH:
-    #   opencode-go   muse-spark-1.2     1M     (the startup default -> what applies)
-    #   openai-codex  gpt-5.6-luna       372K   (the /model fallback)
-    # The startup default moved deepseek-v4-flash -> muse-spark-1.2 on 2026-08-19.
-    # Every number below survives that move unchanged: both are 1M-window models
-    # pinned to maxTokens 128000, so the floor, the trigger and the headroom are
-    # identical. deepseek-v4-flash stays configured and keeps its own 128K pin.
-    # A reserve sized for flash's real 384K output cap (>= 384000) would make
-    # `372000 - reserveTokens` NEGATIVE and put every codex turn permanently over
-    # the threshold. That is why BOTH deepseek-v4-flash entries below (the
-    # opencode-go one and the direct one) carry a `modelOverrides` pin of
-    # maxTokens 128000 over the built-in registry's true 384000 — see the comments
-    # there. Every other model keeps its real output cap, so a /model switch to
-    # e.g. grok-4.5 (500K out) or kimi-k2.7-code (262K) re-enters this landmine.
+    # the ACTIVE provider/model's. reserveTokens is a single global number, so it
+    # has to satisfy every candidate:
+    #   openai-codex  gpt-5.6-luna       921K   (the startup default -> what applies)
+    #   opencode-go   deepseek-v4-flash  1M     (the /model fallback)
+    # 921K is NOT the codex models' advertised window — it is their measured
+    # INPUT ceiling, and pinning that number rather than the spec is the whole
+    # point. See the openai-codex modelOverrides block for the measurement and
+    # for why the 1,050,000 spec value is actively dangerous here.
+    # The startup default moved muse-spark-1.2 -> gpt-5.6-sol -> gpt-5.6-luna on
+    # 2026-08-20. Both current candidates are capped at maxTokens 128000 —
+    # natively on codex, by the modelOverrides pin on flash — so the reserve
+    # floor is the same for both. The old hazard this paragraph used to warn
+    # about (a 372K fallback window that a large reserve would push permanently
+    # over the threshold) died with the 372K pin itself.
+    # A reserve sized for flash's real 384K output cap (>= 384000) would still be
+    # wrong for the same reason it always was. That is why BOTH deepseek-v4-flash
+    # entries below (the opencode-go one and the direct one) carry a
+    # `modelOverrides` pin of maxTokens 128000 over the built-in registry's true
+    # 384000 — see the comments there. Every other model keeps its real output
+    # cap, so a /model switch to e.g. grok-4.5 (500K out) or kimi-k2.7-code
+    # (262K) re-enters this landmine.
     #
     # SIZING (measured 2026-08-09, not theoretical). Pi evaluates the threshold
     # at only two points — after an agent run ends and before the next prompt
@@ -87,18 +106,34 @@ pi:
     # headroom instead of 40K. This lowers the probability of hitting the wall;
     # it cannot eliminate it, because no threshold can bound growth that is never
     # measured. Where 130K lands, per active model:
-    #   opencode-go/deepseek-v4-flash  1M   -> trigger 870K (87%)
-    #   openai-codex/gpt-5.6-luna      372K -> trigger 242K (65%)
-    # Accepted costs: on the codex fallback, usable working context 332K -> 242K
-    # and compaction runs more often (more lossy summaries, more prompt-cache
-    # invalidation). Note reserveTokens is double-duty — the summary's own output
-    # budget is min(0.8*reserveTokens, maxTokens) = 104K here (core/compaction/
+    #   openai-codex/gpt-5.6-luna      921K -> trigger 791K
+    #   opencode-go/deepseek-v4-flash  1M   -> trigger 870K
+    # THE COMPARISON IS AGAINST INPUT, WHICH IS WHY THE 921K PIN MATTERS.
+    # `shouldCompact(contextTokens, contextWindow, settings)` is exactly
+    # `contextTokens > contextWindow - settings.reserveTokens`
+    # (pi-agent-core/dist/harness/compaction/compaction.js:125). contextTokens is
+    # conversation input, so `contextWindow` has to be the number the request
+    # will actually be REJECTED at, not the number on the spec sheet. Pinning the
+    # advertised 1,050,000 instead — as this file briefly did on 2026-08-20 —
+    # puts the trigger at 920,000 against a real 922,000 wall, i.e. it reduces
+    # the unchecked headroom this whole section exists to size from 130,000 to
+    # about 2,000, while LOOKING correct. With 921,000 pinned, the 130,000 is
+    # real again.
+    # Note reserveTokens is double-duty — the summary's own output budget is
+    # min(0.8*reserveTokens, maxTokens) = 104K here (core/compaction/
     # compaction.js), a cap rather than a target.
-    # Bonus, codex fallback only: 242K sits BELOW the 272K premium-pricing line,
-    # so the tail of a long session no longer bills at 2x input / 1.5x output.
-    # DeepSeek has no equivalent pricing cliff — it bills one flat per-token rate
-    # (discounted off-peak) with no context-length tier — so the 870K trigger on
-    # the default model is a context-safety number only.
+    # OPEN QUESTION, deliberately not guessed at: the deepseek fallback's
+    # 1,000,000 is a built-in advertised window and has NOT been probed for the
+    # same input/output-reserve gap. If it has one, its 870K trigger is
+    # optimistic in the same way. Probe it before relying on that route for a
+    # very long session.
+    # Pricing, codex only: everything above 272K input bills at 2x input / 1.5x
+    # output for the FULL request, so a session that runs out toward this trigger
+    # spends most of its life on the premium tier. That is the accepted cost of
+    # using the real window rather than the catalog's 272K, and it is the reverse
+    # of the trade the previous 372K/242K pin made. DeepSeek has no equivalent
+    # cliff — one flat per-token rate (discounted off-peak), no context-length
+    # tier — so the 870K trigger on the fallback is a context-safety number only.
     #
     # This is now the ONLY compaction trigger. The locally authored
     # pi-early-compaction extension was deleted on 2026-08-08: it re-checked the
@@ -213,7 +248,8 @@ pi:
   # Pick a model at runtime with /model.
   customProviders:
     opencode-go: # BUILT-IN provider — this entry ONLY supplies the API key + 1 patch.
-      # THE STARTUP DEFAULT (deepseek-v4-flash at thinking max).
+      # The per-allowance FALLBACK route since 2026-08-20; it was the startup
+      # default until then. Reach it as `opencode-go/deepseek-v4-flash`.
       #
       # Pi SHIPS opencode-go natively (pi-ai dist/providers/data/opencode-go.json,
       # 19 models). Do NOT re-declare its catalogue here. The Go gateway speaks
@@ -273,97 +309,44 @@ pi:
       # their own protocol, and a deepseek-v4-flash call at reasoning_effort=max
       # returned reasoning_content with 92 reasoning_tokens.
       gopass: pi/opencode/api_key
-      models:
-        # THE ONE MODEL THIS BLOCK ADDS. Everything else the Go docs table lists
-        # is already built in — do not add the rest (see the warning above).
-        #
-        # Audited 2026-08-19 against `GET /zen/go/v1/models` (27 ids) and
-        # models.dev: the gateway's 20 CURRENT models are exactly pi 0.84.2's 19
-        # built-ins plus muse-spark-1.2 (released 2026-08-05, after pi's
-        # registry snapshot). The other 6 gateway ids — glm-5, kimi-k2.5,
-        # mimo-v2-pro, mimo-v2-omni, qwen3.5-plus, minimax-m2.5 — all carry
-        # models.dev `status: deprecated` and are deliberately omitted. That
-        # retires the older note above about minimax-m2.7 / qwen3.6-plus
-        # "protocol disagreement": both ids were probed live on 2026-08-19 and
-        # BOTH answer 200 on /v1/chat/completions AND /v1/messages, so the
-        # gateway multiplexes and the built-in's openai-completions choice is
-        # not a conflict. Nothing to patch there.
-        #
-        # DATA-POLICY GATE — opted in 2026-08-19, verified working. This is a
-        # THIRD workspace gate, distinct from the CreditsError and RegionError
-        # documented above, and unlike them it trades data for access: prompts
-        # and code sent to this model are retained for training. Until the
-        # workspace opts in (browser only, no API path, at
-        # https://opencode.ai/workspace/<workspace-id>/go) every call returns
-        #   HTTP 403 DataPolicyError: "This model collects data used to improve
-        #   its quality and requires explicit opt in"
-        # so expect that on any OTHER workspace this key is used from. Delete
-        # this entry instead if that trade is not wanted.
-        #
-        # api/baseUrl are MANDATORY here, not optional polish: for an id absent
-        # from the built-ins, provider-composer.js:102 falls back to
-        # `defaults = models[0]` — the first model of the base list, whose
-        # protocol is unrelated. Every other field is spelled out for the same
-        # reason: modelFromJson reads ONLY api and baseUrl from `defaults` and
-        # resets the rest to hardcoded values (contextWindow 128000, maxTokens
-        # 16384, reasoning false, zero cost).
-        - id: muse-spark-1.2
-          name: Muse Spark 1.2
-          api: openai-responses
-          # No trailing /v1 mismatch: the responses route is …/zen/go/v1, the
-          # anthropic one is …/zen/go. Same split as the built-ins.
-          baseUrl: https://opencode.ai/zen/go/v1
-          reasoning: true
-          # models.dev advertises image/video/pdf/audio too; kept to the pair the
-          # built-in opencode-go models declare, since the extra modalities are
-          # unverified on this gateway.
-          input: [text, image]
-          contextWindow: 1048576
-          # PINNED DOWN from its real cap of 131072, for the same reason
-          # deepseek-v4-flash is pinned down from 384000 in modelOverrides
-          # below: reserveTokens is a single global 130000 and the SIZING block
-          # above sets a `reserveTokens >= maxTokens` correctness floor, so that
-          # one maximal response cannot cross the context wall unchecked on its
-          # own. 131072 misses that floor by 1072. The 3072-token haircut (2.3%)
-          # is the cheapest way to keep the floor exact, and it matters more
-          # here than for a model reachable only by a manual /model switch:
-          # subagents.json.tmpl routes EVERY subagent tier through this model.
-          # Its 1M window is untouched — the compaction trigger is
-          # 1048576 - 130000 = 918576 (88%), which is roomy.
-          maxTokens: 128000
-          cost: { input: 0.1, output: 0.2, cacheRead: 0.002, cacheWrite: 0 }
-          # Uniform across this gateway's openai-responses route, not a per-model
-          # quirk: gpt-5.6-luna, grok-4.5 and upstream's own
-          # muse-spark-1.2-contributor all carry it, so its absence here was a gap.
-          compat:
-            sessionAffinityFormat: openai-nosession
-          # models.dev reasoning_options.effort = minimal|low|medium|high|xhigh.
-          # There is NO `max` rung, so `max` is mapped to the real top (xhigh)
-          # rather than dropped — the global defaultThinkingLevel is `max`, and a
-          # null here would silently send no effort at all.
-          # NOT load-bearing — kept as explicit documentation only. An earlier
-          # revision of this file claimed that without it every call would fail,
-          # because the gateway does reject `"effort":"max"` outright
-          # (invalid_request_error, probed 2026-08-19, while
-          # minimal/low/medium/high/xhigh all answer 200). That claim was WRONG:
-          # pi never sends `max` here with or without this line. With no `max`
-          # key, getSupportedThinkingLevels marks the rung unsupported and
-          # clampThinkingLevel drops to xhigh on its own — confirmed by deleting
-          # the key and re-running `pi -p --model opencode-go/muse-spark-1.2:max`,
-          # which still answered normally. Writing it out just makes `max` a
-          # first-class supported rung instead of a clamped one; same request on
-          # the wire. Upstream's own muse-spark-1.2-contributor ships max -> null,
-          # which is equally correct, not a defect to be reconciled.
-          thinkingLevelMap:
-            {
-              off: null,
-              minimal: minimal,
-              low: low,
-              medium: medium,
-              high: high,
-              xhigh: xhigh,
-              max: xhigh,
-            }
+      # NO `models:` KEY, ON PURPOSE. Everything on this gateway worth reaching is
+      # already built in.
+      #
+      # Audited 2026-08-19 against `GET /zen/go/v1/models` and models.dev, and
+      # re-probed 2026-08-20 (27 ids). The gateway ids pi omits — glm-5,
+      # kimi-k2.5, mimo-v2-pro, mimo-v2-omni, qwen3.5-plus, minimax-m2.5 — all
+      # carry models.dev `status: deprecated` and are deliberately left out. That
+      # also retires an older note here about a minimax-m2.7 / qwen3.6-plus
+      # "protocol disagreement": both ids answer 200 on /v1/chat/completions AND
+      # /v1/messages, so the gateway multiplexes and the built-in's
+      # openai-completions choice is not a conflict.
+      #
+      # This block used to add ONE hand-written model, `muse-spark-1.2` — the
+      # startup default from 2026-08-19. THE GATEWAY RETIRED IT. As of 2026-08-20
+      # it is absent from /v1/models and a call returns
+      #   401 ModelError: "Model muse-spark-1.2 is not supported"
+      # while the identical request answers 200 for `muse-spark-1.2-contributor`
+      # and `gpt-5.6-luna` on the same key. The contributor variant is the
+      # survivor and pi ships it built in, so nothing needs re-declaring; the
+      # entry was deleted (git has it) and the default moved to
+      # openai-codex/gpt-5.6-sol.
+      #
+      # Deleted with it, but worth keeping: the DATA-POLICY GATE. It is a THIRD
+      # workspace opt-in, distinct from the CreditsError and RegionError above,
+      # and unlike them it trades data for access — the muse-spark models retain
+      # prompts and code for training. Until a workspace opts in (browser only,
+      # no API path, https://opencode.ai/workspace/<workspace-id>/go) every call
+      # to one returns
+      #   403 DataPolicyError: "This model collects data used to improve its
+      #   quality and requires explicit opt in"
+      # This workspace opted in on 2026-08-19. Expect the 403 on any other.
+      #
+      # If a model is ever re-added here, `api` and `baseUrl` are MANDATORY, not
+      # polish: for an id absent from the built-ins, provider-composer.js:102
+      # falls back to `defaults = models[0]` — the first model of the base list,
+      # whose protocol is unrelated — and modelFromJson reads ONLY api and
+      # baseUrl from `defaults`, resetting everything else to hardcoded values
+      # (contextWindow 128000, maxTokens 16384, reasoning false, zero cost).
       modelOverrides:
         # Built-in says 384000. reserveTokens is one global number with a
         # `reserveTokens >= maxTokens` floor (see the SIZING block above), so the
@@ -379,33 +362,71 @@ pi:
       # with a matching id would replace the built-in model wholesale — not
       # what we want here).
       #
-      # Why: gpt-5.6-sol's published spec is a 1,050,000 context window, but
-      # Codex's server-delivered catalog reports 272,000 — see
-      # ~/.pi/agent/models-store.json, which pi refreshes over HTTP. That 272K
-      # is a BILLING boundary, not a capability limit: OpenAI prices prompts
-      # over 272K input at 2x input / 1.5x output for the FULL request, and
-      # Codex pinned its catalog to the line so default sessions cannot
-      # silently cross it (codex PR #33972, merged 2026-07-18, cut the catalog
-      # from 372,000 to 272,000; issue #32486 is the complaint it answered).
-      # Before that PR, 372,000 was Codex's real value — the old comment in
-      # this file was correct when written and was invalidated upstream.
+      # Why: the gpt-5.6 family's published spec is a 1,050,000 context window,
+      # but Codex's server-delivered catalog reports 272,000 — see
+      # ~/.pi/agent/models-store.json, which pi refreshes over HTTP and which
+      # still said 272,000 after a refresh on 2026-08-20. That 272K is a BILLING
+      # boundary, not a capability limit: OpenAI prices prompts over 272K input
+      # at 2x input / 1.5x output for the FULL request, and Codex pinned its
+      # catalog to the line so default sessions cannot silently cross it (codex
+      # PR #33972, merged 2026-07-18, cut the catalog from 372,000 to 272,000;
+      # issue #32486 is the complaint it answered). Before that PR, 372,000 was
+      # Codex's real value, and this block used to pin exactly that.
       #
-      # 372,000 restores the pre-2026-07-18 Codex window. Tokens between 272K
-      # and the 332K compaction trigger DO bill at the premium tier, which is
-      # the accepted trade for the extra headroom. Raise to 1050000 for the
-      # full published window, or delete this block to fall back to the
-      # server catalog's 272,000 (and drop reserveTokens back to ~40K/272K).
-      # An OpenAI engineer has said the cut is temporary and 372K will return;
-      # once the catalog reports it again this block becomes a no-op.
+      # 921,000 is a MEASURED INPUT CEILING, and it is deliberately NOT either
+      # number you would copy off a page — not the catalog's 272,000 and not the
+      # spec's 1,050,000. Probed 2026-08-20 against the route pi actually uses
+      # (POST chatgpt.com/backend-api/codex/responses with the OAuth token from
+      # ~/.pi/agent/auth.json), walking DOWN from an oversized prompt so that
+      # every rejection costs nothing — only the final accepted probe is billed.
+      # All THREE models were bracketed, and all three came back identical:
+      #                  ACCEPTED (completed)   REJECTED (context_length_exceeded)
+      #   gpt-5.6-sol      898,071 input tokens   950,000 and up
+      #   gpt-5.6-luna     921,030                930,000 and up
+      #   gpt-5.6-terra    898,071                950,000 and up
+      # (luna was bracketed tightest because it became the default; the other two
+      # were left at the coarser 898K/950K bracket they share.)
       #
-      # Verify any change with `pi --list-models gpt-5.6-sol`, never by
-      # reading this comment.
+      # So the family is uniform, and all three clear both the 272,000 catalog
+      # value and the 372,000 this block used to pin — the cut PR #33972 made has
+      # been reversed server-side, whatever the catalog still says. The wall sits
+      # just above 921,030 and below 930,000, exactly where a 1,050,000 window
+      # lands once Codex reserves the model's full 128,000 output:
+      # 1,050,000 - 128,000 = 922,000. That reserve is not negotiable — the
+      # backend rejects an explicit max_output_tokens with "Unsupported
+      # parameter" — so 1,050,000 tokens of INPUT are never available and the
+      # spec number would be a lie in the one place pi consumes it.
+      #
+      # WHY THE PIN IS THE INPUT CEILING AND NOT THE SPEC. pi's only use of
+      # contextWindow is `contextTokens > contextWindow - reserveTokens`
+      # (compaction.js:125), compared against conversation INPUT. Pinning
+      # 1,050,000 with reserveTokens 130,000 puts the trigger at 920,000 against
+      # a ~922,000 wall — it silently collapses the unchecked-tool-loop headroom
+      # from 130,000 to ~2,000 while every number still reads plausibly. 921,000
+      # (the largest input actually observed to complete, rounded down) restores
+      # it: trigger 791,000, a real 130,000 to the wall. If a future probe moves
+      # the wall, move this number, not reserveTokens — the reserve is global and
+      # shared with the deepseek fallback, this is per-model.
+      #
+      # Cost of using the full window: every request above 272K input bills at
+      # the premium tier (2x input / 1.5x output on the FULL request), the
+      # reverse of the trade the 372K pin made. Delete this block to fall back to
+      # the catalog's 272,000 (and drop reserveTokens back to ~40K).
+      #
+      # Verify any change with `pi --list-models gpt-5.6-luna`, never by reading
+      # this comment.
       auth: builtin
       modelOverrides:
-        gpt-5.6-sol: { contextWindow: 372000 }
-        # Local planning/implementation/review agents run luna; terra is included so
-        # a runtime /model switch does not silently drop back to 272K.
-        gpt-5.6-luna: { contextWindow: 372000 }
+        # THE STARTUP DEFAULT (defaults.defaultProvider above), and the model all
+        # three pi-subagents tiers run. Bracketed tightest of the three.
+        gpt-5.6-luna: { contextWindow: 921000 }
+        # sol and terra are pinned too so a runtime /model switch does not
+        # silently drop back to 272K. Not an assumption carried over from luna:
+        # both were bracketed independently. Their brackets are coarser (accepted
+        # 898,071, rejected 950,000), so 921,000 is the shared family value
+        # rather than a separately proven per-model one; it is within their
+        # bracket and consistent with the same 1,050,000 - 128,000 arithmetic.
+        gpt-5.6-sol: { contextWindow: 921000 }
         # THINKING LADDER — exactly ONE repair is needed here, and only here.
         # Audited 2026-08-19 across every model in ~/.pi/agent/models-store.json.
         # pi ALREADY handles ladder mismatches by itself and needs no help in the
@@ -429,7 +450,7 @@ pi:
         # deliberately left alone.
         gpt-5.4-mini:
           thinkingLevelMap: { max: max }
-        gpt-5.6-terra: { contextWindow: 372000 }
+        gpt-5.6-terra: { contextWindow: 921000 }
     deepseek: # BUILT-IN provider — this entry ONLY supplies the API key + 1 patch.
       # DeepSeek's own platform (api.deepseek.com), the per-token FALLBACK to the
       # same models the opencode Go subscription above resells. Reach it as

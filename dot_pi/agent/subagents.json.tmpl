@@ -3,28 +3,30 @@
 
   agentTiers is the catalogue of named model profiles. Agent files do not pin a
   profile; the host may pass a catalogue key on an Agent call for explicit routing.
-  If omitted, agentTiers.defaultTier applies. The host cannot pass model or thinking
-  directly.
+  If omitted, agentTiers.defaultTier applies (medium). The host cannot pass model
+  or thinking directly.
 
   The three profiles are DELIBERATELY IDENTICAL: every subagent runs one model at
-  thinking level max. As of 2026-08-19 that model is opencode-go/muse-spark-1.2
-  (user request), over the opencode Go SUBSCRIPTION route.
+  one effort. As of 2026-08-20 that is openai-codex/gpt-5.6-luna at thinking max
+  (user request), over the native Codex OAuth in ~/.pi/agent/auth.json.
 
   This MATCHES THE PARENT, which carries the same pin in
   modify_settings.json.tmpl — the standing "one model, one effort, everywhere"
-  request. Both sides ran opencode-go/deepseek-v4-flash from 2026-08-17 and moved
-  together on 2026-08-19. Change both or neither.
+  request. Both sides moved together three times on 2026-08-20
+  (muse-spark-1.2/max -> gpt-5.6-sol/xhigh -> gpt-5.6-luna/max). Change both or
+  neither.
 
-  `max` is NOT a provider rung on muse-spark-1.2 — unlike deepseek-v4-flash, where
-  it is real on both the subscription and the direct `deepseek/deepseek-v4-flash`
-  route. The gateway rejects `"effort":"max"` outright with invalid_request_error
-  (probed 2026-08-19, alongside minimal/low/medium/high/xhigh which all answer
-  200). `thinking: max` below is still correct and still the right value: pi
-  clamps a rung a model does not offer down to its top one before sending
-  (clampThinkingLevel in pi-ai/dist/models.js), so this dispatches at xhigh. Keep
-  it at max rather than "honestly" writing xhigh — max is the only value that
-  reaches the TOP rung of every model reachable from here, and
-  deepseek-v4-flash's built-in map has no `xhigh` key at all.
+  Why luna: probed against the same route on the same day, luna and sol share the
+  same measured ~921K input ceiling, and luna's input price is a fraction of
+  sol's. Same window, cheaper token. The numbers and the probe method are in the
+  openai-codex block of .chezmoidata/pi.yaml.
+
+  `max` is a REAL rung on gpt-5.6-luna, not a clamp — its thinkingLevelMap is
+  {minimal: low, xhigh: xhigh, max: max} — and it is also the value that survives
+  a runtime /model switch intact: max reaches the TOP rung of every model
+  reachable from here because each translates it through its own map, whereas
+  xhigh clamps DOWN to high on any model whose map has no xhigh key
+  (opencode-go/deepseek-v4-flash and the direct deepseek route both qualify).
 
   The catalogue keys are kept rather than collapsed to a single profile so that
   `tier` values already passed by prompts and by pi-workflows keep resolving, and
@@ -34,10 +36,9 @@
   Keep these names separate from pi-workflows' `workflow.tiers`, whose fixed
   protocol remains portable.
 
-  Note the `.work` ternaries that used to vary model and thinking budget per
-  machine are gone; nothing in this file branches on chezmoi data any more.
+  Nothing in this file branches on chezmoi data.
 */ -}}
-{{- $model := "opencode-go/muse-spark-1.2" -}}
+{{- $model := "openai-codex/gpt-5.6-luna" -}}
 {{- $thinking := "max" -}}
 {
   "maxConcurrent": 16,
