@@ -21,11 +21,6 @@
 
 [![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=1000&color=BD93F9&center=true&vCenter=true&width=600&lines=chezmoi+%2B+Nix+%E5%A3%B0%E6%98%8E%E5%BC%8F%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83;%E8%B7%A8%E5%B9%B3%E5%8F%B0+macOS+%2B+Linux+%E6%94%AF%E6%8C%81;Claude+Code+%E8%87%AA%E5%8A%A8%E6%8F%92%E4%BB%B6%E5%90%8C%E6%AD%A5;%E7%8E%B0%E4%BB%A3+Rust+CLI+%E5%B7%A5%E5%85%B7%E9%93%BE)](https://git.io/typing-svg)
 
-<p>
-  <img src="docs/images/preview.png" alt="桌面预览 —— Rio 终端、AeroSpace 平铺窗口与 fastfetch 系统信息" width="400" />
-  <img src="docs/images/herdr-lazyvim-preview.png" alt="Herdr 工作区预览 —— Rio 中的 LazyVim、仓库列表与 agent 状态侧栏" width="400" />
-</p>
-
 </div>
 
 ---
@@ -45,7 +40,7 @@
 
 ## 亮点
 
-- 统一 bootstrap 流程（`.chezmoiscripts/00..20`），并带有幂等维护步骤
+- 统一 bootstrap 流程（`.chezmoiscripts/00..23`），并带有幂等维护步骤
 - 跨平台包管理策略：
   - macOS/Linux 共用 Nix user packages
   - macOS 使用 `nix-darwin` 管理系统配置
@@ -62,7 +57,7 @@
 ## 为什么选择这个仓库
 
 - **Profile 全覆盖**：`.chezmoidata/` 统一驱动 `shared` / `work` / `private`，覆盖 Nix、Homebrew、MAS
-- **端到端引导**：`00..20` 阶段脚本把安装、配置、工具同步串成稳定流水线
+- **端到端引导**：`00..23` 阶段脚本把安装、配置、工具同步串成稳定流水线
 - **macOS 打磨**：nix-darwin 系统项、Homebrew / MAS 联动、应用后维护脚本
 - **工作流护栏**：pre-commit + Claude hooks 组合，降低危险操作概率
 - **DX 自动化**：Justfile、fzf 导航、AI 辅助提交流程
@@ -138,7 +133,7 @@
 │   ├── versions.yaml           # 工具与插件版本固定
 │   ├── aerospace.yaml          # Aerospace WM 数据
 │   └── hammerspoon.yaml        # Hammerspoon 数据
-├── .chezmoiscripts/            # Bootstrap 与维护脚本链（00..20）
+├── .chezmoiscripts/            # Bootstrap 与维护脚本链（00..23）
 ├── nix-config/
 │   ├── flake.nix.tmpl
 │   └── modules/
@@ -181,6 +176,9 @@
 19. `18` 同步 Herdr plugins
 20. `19` Linux：重新加载 systemd user units
 21. `20` 每个 ISO 日历周/package 集合成功对齐一次 Pi extensions（失败则在下次 apply 重试）
+22. `21` macOS terminal profile 设置
+23. `22` macOS WezTerm 图标维护
+24. `23` 周期性 mise 更新（7 天间隔）
 
 ---
 
@@ -296,6 +294,7 @@ skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 - Hugging Face、Cloudflare、Vercel、Supabase、Expo、Microsoft 以及精选社区仓库的 vendor/platform skills
 - Go、Rust、Swift、TypeScript/JavaScript、Zig 语言套件
 - social、writing、media skills，包括 `xurl`、`x-create`、`daily.dev`、Reddit、Remotion 和 Humanizer 变体（`humanizer-en`、`qu-ai-wei`、`humanizer-ja`）
+- 全局 `ai-research-skills` CLI 由 mise 的 `pipx` backend 使用 `uvx` 管理；不会安装 host skills 或 commands。
 
 同步后统一落到 `~/.harnesses/skills` 共享库；在项目目录运行 `skill-activate`，只会管理当前目录的 `./.claude/skills`、`./.codex/skills`、`./.pi/skills`、`./.cursor/skills` 与 `./.kimi-code/skills` symlink（Cursor CLI 原生读取 `./.cursor/skills` 并会跟随 symlink 指向的技能目录；Kimi Code 自动发现 `./.kimi-code/skills`）。`skill-activate --category typescript` 可为当前目录一次启用整个类别；`skill-activate --sync` 可修复各 harness 目录之间的半激活状态；在选择器里按 `Ctrl-A` 可切换当前高亮项所在的整个类别。
 
@@ -330,6 +329,7 @@ skills 由 `.chezmoiexternal.toml.tmpl` 从以下来源同步：
 - Go、Rust、Swift、TypeScript/JavaScript、Zig 语言套件
 - 来自 `phuryn/pm-skills` 的产品管理 skills，覆盖 discovery、strategy、execution、GTM、analytics 与 AI shipping
 - social、writing、media skills，包括 `xurl`、`x-create`、`daily.dev`、Reddit、Remotion 和 Humanizer 变体（`humanizer-en`、`qu-ai-wei`、`humanizer-ja`）
+- 全局 `ai-research-skills` CLI 由 mise 的 `pipx` backend 使用 `uvx` 管理；不会安装 host skills 或 commands。
 
 最终统一到 `~/.harnesses/skills` 共享库；在项目目录运行 `skill-activate`，只会管理当前目录的 `./.claude/skills`、`./.codex/skills`、`./.pi/skills`、`./.cursor/skills` 与 `./.kimi-code/skills` symlink（Cursor CLI 原生读取 `./.cursor/skills` 并会跟随 symlink 指向的技能目录；Kimi Code 自动发现 `./.kimi-code/skills`）。`skill-activate --category typescript` 可为当前目录一次启用整个类别；`skill-activate --sync` 可修复各 harness 目录之间的半激活状态；在选择器里按 `Ctrl-A` 可切换当前高亮项所在的整个类别。
 
@@ -533,6 +533,7 @@ chezmoi init --apply --promptBool headless=true signalridge
 - `docs/keys-manage-guide.md`
 - `docs/gopass-new-device-setup.md`
 - `docs/tmux.md`
+- `docs/social-publishing.md`
 
 ---
 

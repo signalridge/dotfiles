@@ -13,7 +13,7 @@ topic / release
                              post-only, loads secrets from gopass
                  ├─ crosspost -<plat> --file …   (x, bluesky, devto)
                  └─ reddit-submit submit …       (reddit)
-  └─ /social-publish         explicit command entry that runs the oss-launch flow
+  └─ oss-launch skill         explicit entry that runs the publishing flow
 ```
 
 - **Auto-publish (API):** X, Bluesky, dev.to, Reddit.
@@ -77,7 +77,7 @@ minted in memory at send time and never stored.
   existing helper:
 
   ```bash
-  SKILL=~/.harnesses/skills/oss-x-post
+  SKILL=~/.harnesses/skills/social/oss-x-post
   bash "$SKILL/scripts/reddit-submit" auth-url --client-id <id>      # open URL, authorize, copy the code
   bash "$SKILL/scripts/reddit-submit" exchange-code --client-id <id> --code <code>
   # The response (incl. refresh_token) is written to a mode-600 tempfile under $TMPDIR
@@ -93,7 +93,7 @@ minted in memory at send time and never stored.
 ## Usage
 
 ```bash
-SKILL=~/.harnesses/skills/oss-x-post
+SKILL=~/.harnesses/skills/social/oss-x-post
 
 # preview (dry-run, no credentials needed)
 bash "$SKILL/scripts/social-post" bluesky --file tmp/launch/bluesky.md
@@ -103,7 +103,7 @@ bash "$SKILL/scripts/social-post" bluesky --file tmp/launch/bluesky.md --yes
 bash "$SKILL/scripts/social-post" reddit  --subreddit rust --title "<title>" --file tmp/launch/reddit-rust.md --yes
 ```
 
-Or drive the whole flow with the `oss-launch` skill / `/social-publish` command, which
+Or drive the whole flow with the explicit `oss-launch` skill, which
 drafts every platform from one topic, waits for your approval, then sends through
 `social-post`.
 

@@ -21,11 +21,6 @@
 
 [![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=1000&color=BD93F9&center=true&vCenter=true&width=600&lines=chezmoi+%2B+Nix+%E5%AE%A3%E8%A8%80%E7%9A%84%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83;%E3%82%AF%E3%83%AD%E3%82%B9%E3%83%97%E3%83%A9%E3%83%83%E3%83%88%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0+macOS+%2B+Linux;Claude+Code+%E8%87%AA%E5%8B%95%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E5%90%8C%E6%9C%9F;%E3%83%A2%E3%83%80%E3%83%B3+Rust+CLI+%E3%83%84%E3%83%BC%E3%83%AB%E3%83%81%E3%82%A7%E3%83%BC%E3%83%B3)](https://git.io/typing-svg)
 
-<p>
-  <img src="docs/images/preview.png" alt="デスクトップのプレビュー —— Rio ターミナル、AeroSpace タイリング、fastfetch のシステム情報" width="400" />
-  <img src="docs/images/herdr-lazyvim-preview.png" alt="Herdr ワークスペースのプレビュー —— Rio 上の LazyVim、リポジトリ一覧、agent ステータスのサイドバー" width="400" />
-</p>
-
 </div>
 
 ---
@@ -45,7 +40,7 @@
 
 ## ハイライト
 
-- `.chezmoiscripts/00..20` による統一ブートストラップパイプライン（再実行しても破綻しにくい設計）
+- `.chezmoiscripts/00..23` による統一ブートストラップパイプライン（再実行しても破綻しにくい設計）
 - クロスプラットフォームなパッケージ戦略：
   - macOS/Linux 共通の Nix ユーザーパッケージ
   - macOS の `nix-darwin` システム設定
@@ -62,7 +57,7 @@
 ## なぜこのリポジトリか
 
 - **プロファイル横断管理**: `.chezmoidata/` が `shared` / `work` / `private` を駆動し、Nix・Homebrew・MAS を横断して一元管理
-- **エンドツーエンドブートストラップ**: `00..20` の段階実行で、初期化を再現可能かつ段階的に組み合わせられる形で維持
+- **エンドツーエンドブートストラップ**: `00..23` の段階実行で、初期化を再現可能かつ段階的に組み合わせられる形で維持
 - **macOS 向け最適化**: nix-darwin のシステム既定、Homebrew + MAS 連携、適用後の保守スクリプト
 - **ワークフローガードレール**: pre-commit と Claude Hooks で危険な編集やコマンド誤用を抑止
 - **DX 自動化**: Justfile ルーチン、fzf ナビゲーション、AI 補助コミットフロー
@@ -140,7 +135,7 @@
 │   ├── versions.yaml           # ツール/プラグインのピン留め
 │   ├── aerospace.yaml          # Aerospace WM データ
 │   └── hammerspoon.yaml        # Hammerspoon データ
-├── .chezmoiscripts/            # ブートストラップ/保守パイプライン（00..20）
+├── .chezmoiscripts/            # ブートストラップ/保守パイプライン（00..23）
 ├── nix-config/
 │   ├── flake.nix.tmpl
 │   └── modules/
@@ -183,6 +178,9 @@
 19. `18` Herdr plugins を同期
 20. `19` Linux: systemd user units を再読み込み
 21. `20` ISO 暦週/package 集合ごとに Pi extensions を一度同期（失敗時は次回 apply で再試行）
+22. `21` macOS terminal profile 設定
+23. `22` macOS WezTerm icon 保守
+24. `23` mise の定期更新（7 日間隔）
 
 ---
 
@@ -298,6 +296,7 @@ Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期さ�
 - Hugging Face、Cloudflare、Vercel、Supabase、Expo、Microsoft、および選定したコミュニティ repo の vendor/platform skills
 - Go、Rust、Swift、TypeScript/JavaScript、Zig の言語別 suite
 - `xurl`、`x-create`、`daily.dev`、Reddit、Remotion、Humanizer 系（`humanizer-en`、`qu-ai-wei`、`humanizer-ja`）などの social/writing/media skills
+- グローバルの `ai-research-skills` CLI は mise の `pipx` backend が `uvx` で管理し、host の skills や commands はインストールしません。
 
 同期先は `~/.harnesses/skills` の共有ライブラリです。プロジェクトディレクトリで `skill-activate` を実行すると、そのディレクトリの `./.claude/skills`・`./.codex/skills`・`./.pi/skills`・`./.cursor/skills`・`./.kimi-code/skills` の symlink だけを管理します（Cursor CLI は `./.cursor/skills` をネイティブに読み込み、symlink されたスキルフォルダも辿ります。Kimi Code は `./.kimi-code/skills` を自動検出します）。`skill-activate --category typescript` で現在のディレクトリにカテゴリ全体を有効化できます。`skill-activate --sync` は各 harness ディレクトリ間の半端な状態を修復します。ピッカーでは `Ctrl-A` でハイライト中の項目のカテゴリ全体を切り替えます。
 
@@ -332,6 +331,7 @@ Skills は `.chezmoiexternal.toml.tmpl` 経由で次のソースから同期さ�
 - Go、Rust、Swift、TypeScript/JavaScript、Zig の言語別 suite
 - discovery、strategy、execution、GTM、analytics、AI shipping を扱う `phuryn/pm-skills` のプロダクトマネジメント skills
 - `xurl`、`x-create`、`daily.dev`、Reddit、Remotion、Humanizer 系（`humanizer-en`、`qu-ai-wei`、`humanizer-ja`）などの social/writing/media skills
+- グローバルの `ai-research-skills` CLI は mise の `pipx` backend が `uvx` で管理し、host の skills や commands はインストールしません。
 
 同期先は `~/.harnesses/skills` の共有ライブラリです。プロジェクトディレクトリで `skill-activate` を実行すると、そのディレクトリの `./.claude/skills`・`./.codex/skills`・`./.pi/skills`・`./.cursor/skills`・`./.kimi-code/skills` の symlink だけを管理します（Cursor CLI は `./.cursor/skills` をネイティブに読み込み、symlink されたスキルフォルダも辿ります。Kimi Code は `./.kimi-code/skills` を自動検出します）。`skill-activate --category typescript` で現在のディレクトリにカテゴリ全体を有効化できます。`skill-activate --sync` は各 harness ディレクトリ間の半端な状態を修復します。ピッカーでは `Ctrl-A` でハイライト中の項目のカテゴリ全体を切り替えます。
 
@@ -536,6 +536,7 @@ chezmoi init --apply --promptBool headless=true signalridge
 - `docs/keys-manage-guide.md`
 - `docs/gopass-new-device-setup.md`
 - `docs/tmux.md`
+- `docs/social-publishing.md`
 
 ---
 

@@ -21,6 +21,9 @@ python = "3.12"
 # uv (Python package manager)
 uv = "latest"
 
+# AI research toolbox (installed through mise's pipx backend using uvx).
+"pipx:git+https://github.com/signalridge/ai-research-skills.git" = { version = "latest", uvx = "true" }
+
 # Poetry (Python dependency manager, via pipx/uvx)
 "pipx:poetry" = "latest"
 

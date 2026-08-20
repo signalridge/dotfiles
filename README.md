@@ -21,11 +21,6 @@
 
 [![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=1000&color=BD93F9&center=true&vCenter=true&width=600&lines=Declarative+dev+environment+with+chezmoi+%2B+Nix;Cross-platform+macOS+%2B+Linux+support;Automated+plugin+sync+for+Claude+Code;Modern+CLI+toolchain+with+Rust-based+tools)](https://git.io/typing-svg)
 
-<p>
-  <img src="docs/images/preview.png" alt="Desktop preview — Rio terminal with AeroSpace tiling and a fastfetch system summary" width="400" />
-  <img src="docs/images/herdr-lazyvim-preview.png" alt="Herdr workspace preview — LazyVim in Rio with repository and agent status sidebars" width="400" />
-</p>
-
 </div>
 
 ---
@@ -45,7 +40,7 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 
 ## Highlights
 
-- Unified bootstrap pipeline (`.chezmoiscripts/00..20`) with idempotent post-apply maintenance
+- Unified bootstrap pipeline (`.chezmoiscripts/00..23`) with idempotent post-apply maintenance
 - Cross-platform package strategy:
   - Nix user packages on macOS/Linux
   - nix-darwin system config on macOS
@@ -62,7 +57,7 @@ This is a real daily-driver setup, not a demo template. The README focuses on wh
 ## Why This Repo
 
 - **Profiles everywhere**: `.chezmoidata/` drives `shared` / `work` / `private` packages across Nix, Homebrew, and MAS
-- **End-to-end bootstrap**: staged scripts from `00` to `20` keep setup deterministic and composable
+- **End-to-end bootstrap**: staged scripts from `00` to `23` keep setup deterministic and composable
 - **macOS polish**: nix-darwin system defaults, Homebrew + MAS integration, post-apply maintenance scripts
 - **Workflow guardrails**: pre-commit checks + Claude hooks to reduce risky edits and command misuse
 - **DX automation**: Justfile routines, fzf navigation helpers, AI-assisted commit flows
@@ -140,7 +135,7 @@ This repository combines `chezmoi` templating with Nix-based package management 
 │   ├── versions.yaml           # Pinned tool/plugin revisions
 │   ├── aerospace.yaml          # Aerospace WM data
 │   └── hammerspoon.yaml        # Hammerspoon data
-├── .chezmoiscripts/            # Bootstrap + maintenance pipeline (00..20)
+├── .chezmoiscripts/            # Bootstrap + maintenance pipeline (00..23)
 ├── nix-config/
 │   ├── flake.nix.tmpl
 │   └── modules/
@@ -183,6 +178,9 @@ The `chezmoi` script chain is staged and numbered:
 19. `18` sync Herdr plugins
 20. `19` Linux: reload systemd user units
 21. `20` reconcile Pi extensions once per ISO calendar week/package set (failures retry on the next apply)
+22. `21` macOS terminal profile setup
+23. `22` macOS WezTerm icon maintenance
+24. `23` periodic mise upgrade (7-day interval)
 
 ---
 
@@ -298,6 +296,7 @@ Skills are synced via `.chezmoiexternal.toml.tmpl` from:
 - platform/vendor packs from Hugging Face, Cloudflare, Vercel, Supabase, Expo, Microsoft, and selected community repos
 - language suites for Go, Rust, Swift, TypeScript/JavaScript, and Zig
 - social, writing, and media skills including `xurl`, `x-create`, `daily.dev`, Reddit, Remotion, and Humanizer variants (`humanizer-en`, `qu-ai-wei`, `humanizer-ja`)
+- The global `ai-research-skills` CLI is managed by mise's `pipx` backend using `uvx`; no host skills or commands are installed.
 
 They are normalized into `~/.harnesses/skills` as a shared library; use `skill-activate` from a project directory to curate active symlinks in `./.claude/skills`, `./.codex/skills`, `./.pi/skills`, `./.cursor/skills`, and `./.kimi-code/skills` (Cursor CLI reads `./.cursor/skills` natively and follows symlinked skill folders; Kimi Code auto-discovers `./.kimi-code/skills`). `skill-activate --category typescript` activates a whole category for the current directory, `skill-activate --sync` repairs partial pairs across the harness dirs, and `Ctrl-A` toggles the highlighted category in the picker.
 
@@ -332,6 +331,7 @@ Claude hooks in `dot_claude/hooks/` provide workflow guardrails and formatting a
 - language suites for Go, Rust, Swift, TypeScript/JavaScript, and Zig
 - product-management skills from `phuryn/pm-skills` for discovery, strategy, execution, GTM, analytics, and AI shipping
 - social, writing, and media skills including `xurl`, `x-create`, `daily.dev`, Reddit, Remotion, and Humanizer variants (`humanizer-en`, `qu-ai-wei`, `humanizer-ja`)
+- The global `ai-research-skills` CLI is managed by mise's `pipx` backend using `uvx`; no host skills or commands are installed.
 
 They are normalized into `~/.harnesses/skills` as a shared library; use `skill-activate` from a project directory to curate active symlinks in `./.claude/skills`, `./.codex/skills`, `./.pi/skills`, `./.cursor/skills`, and `./.kimi-code/skills` (Cursor CLI reads `./.cursor/skills` natively and follows symlinked skill folders; Kimi Code auto-discovers `./.kimi-code/skills`). `skill-activate --category typescript` activates a whole category for the current directory, `skill-activate --sync` repairs partial pairs across the harness dirs, and `Ctrl-A` toggles the highlighted category in the picker.
 
@@ -536,6 +536,7 @@ See:
 - `docs/keys-manage-guide.md`
 - `docs/gopass-new-device-setup.md`
 - `docs/tmux.md`
+- `docs/social-publishing.md`
 
 ---
 
