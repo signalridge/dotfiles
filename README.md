@@ -280,7 +280,7 @@ just darwin-build
 ### Tests
 
 ```bash
-bash tests/run.sh
+just test
 pre-commit run --all-files
 ```
 
