@@ -58,4 +58,27 @@ bash "$RENDERED" >/dev/null
 bash "$RENDERED" >/dev/null
 [[ "$(wc -l <"$PI_TEST_LOG" | tr -d ' ')" == "2" ]]
 
+# Exercise the macOS shasum fallback by hiding sha256sum from PATH.
+portable_bin="$TMP_ROOT/portable-bin"
+mkdir -p "$portable_bin"
+for command in awk bash cat env mkdir mktemp mv rm; do
+    ln -s "$(command -v "$command")" "$portable_bin/$command"
+done
+cat >"$portable_bin/shasum" <<'EOF'
+#!/bin/bash
+set -euo pipefail
+[[ "${1:-}" == "-a" && "${2:-}" == "256" ]]
+cat >/dev/null
+printf 'portable-test-hash  -\n'
+EOF
+chmod +x "$portable_bin/shasum"
+
+original_path="$PATH"
+export PATH="$portable_bin"
+rm -f "$state_file" "$PI_TEST_LOG"
+"$BASH" "$RENDERED" >/dev/null
+export PATH="$original_path"
+[[ "$(cat "$state_file")" == "portable-test-hash" ]]
+[[ "$(wc -l <"$PI_TEST_LOG" | tr -d ' ')" == "1" ]]
+
 echo "test_pi_extension_update: OK"
