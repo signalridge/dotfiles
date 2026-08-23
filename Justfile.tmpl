@@ -9,6 +9,11 @@ hostname := `hostname -s`
 default:
     @just --list
 
+# Run the repository regression suite
+[group('quality')]
+test:
+    bash "$(chezmoi source-path)/tests/run.sh"
+
 ############################################################################
 #
 #  Chezmoi related commands
