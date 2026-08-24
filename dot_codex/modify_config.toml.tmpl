@@ -17,6 +17,10 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 {{-   $accountKey = .codexProviderAccount -}}
 {{- end -}}
 {{- $providerName := (split "@" $accountKey)._0 -}}
+{{- /* work may be absent when rendered in tests or headless mode; use the
+       private/high-effort profile by default, matching Claude's template. */ -}}
+{{- $work := false -}}
+{{- if hasKey . "work" -}}{{- $work = .work -}}{{- end -}}
 {{- /* Keep the default model valid when a third-party provider is selected.
        Each provider block below is an endpoint, not a shared model registry. */ -}}
 {{- $model := "gpt-5.6-sol" -}}
@@ -40,7 +44,7 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 {{-   $model = "qwen3-coder-plus" -}}
 {{-   $subagentModel = "qwen3-coder-plus" -}}
 {{- end -}}
-{{- $effort := ternary "max" "xhigh" .work -}}
+{{- $effort := ternary "max" "xhigh" $work -}}
 {{- $subagentEffort := "max" -}}
 
 # =============================================================================
