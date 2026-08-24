@@ -69,9 +69,10 @@ assert config["default_plan_mode"] is False
 PY
 
 render dot_pi/agent/subagents.json.tmpl | jq -e '
-  .defaultMaxTurns == 80 and
-  .defaultMaxToolCalls == 300 and
-  .graceTurns == 5 and
+  .defaultMaxTurns == 640 and
+  .defaultMaxToolCalls == 1024 and
+  .defaultMaxTokens == 3000000 and
+  .graceTurns == 8 and
   .fallbackSubagent == "none" and
   .disableDefaultAgents == true
 ' >/dev/null

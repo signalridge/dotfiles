@@ -42,9 +42,10 @@
 {{- $thinking := "max" -}}
 {
   "maxConcurrent": 16,
-  "defaultMaxTurns": 80,
-  "defaultMaxToolCalls": 300,
-  "graceTurns": 5,
+  "defaultMaxTurns": 640,
+  "defaultMaxToolCalls": 1024,
+  "defaultMaxTokens": 3000000,
+  "graceTurns": 8,
   "defaultJoinMode": "smart",
   "schedulingEnabled": true,
   "scopeModels": false,
