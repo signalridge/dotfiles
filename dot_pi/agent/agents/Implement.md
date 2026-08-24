@@ -3,7 +3,7 @@ display_name: Implement
 description: "Primary execution agent for an already-bounded change whose intended behavior is clear. Modify files, run focused and broader validation, diagnose failures, and iterate until the implementation is complete. Use for a concrete fix/refactor/feature request. Do not use it for open-ended architecture discovery, lookup-only work, or read-only review."
 tools: all
 extensions: true
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows, pi-plan-mode
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows
 skills: true
 prompt_mode: append
 ---

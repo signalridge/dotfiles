@@ -1,7 +1,7 @@
 # Antigravity CLI (Google DeepMind) — managed slice of ~/.gemini/antigravity-cli/settings.json
 #
 # Binary: aqua `google-antigravity/antigravity-cli` (see .chezmoidata/versions.yaml).
-# Rendered by dot_gemini/antigravity-cli/private_modify_settings.json.tmpl, which
+# Rendered by dot_gemini/antigravity-cli/modify_private_settings.json.tmpl, which
 # DEEP-MERGES these keys into the live file instead of replacing it. That matters:
 # the CLI writes the same file at runtime (`/config`, `/permissions`, `/model`, and
 # every "trust this folder" prompt appends to `trustedWorkspaces`), so a full-file
@@ -18,19 +18,20 @@ antigravity:
     #                       anything — pair it with enableTerminalSandbox: true,
     #                       or it grants the same reach as always-proceed.
     #   always-proceed      auto-approve everything ("YOLD")
-    toolPermission: always-proceed
+    # Keep the default approval-gated; sandboxed auto-approval is opt-in per task.
+    toolPermission: request-review
 
-    # Read/write outside the workspace root. SEPARATE gate from toolPermission —
-    # leaving this false is what makes the CLI re-prompt on every single
-    # `Read(~/ghq/.../other-repo/file)` even under always-proceed, because the
-    # approval is per-file and is never persisted as a grant (only `command(...)`
-    # grants are). Set true to work across repos from one session; the narrower
-    # alternative is launching with `--add-dir <path>` per extra directory.
-    allowNonWorkspaceAccess: true
+    # Keep access scoped to the current workspace. Use `--add-dir <path>` when a
+    # task deliberately needs another repository or directory.
+    allowNonWorkspaceAccess: false
+
+    # Keep terminal execution inside the CLI sandbox. The user can still opt into
+    # a different mode interactively for a specific session without changing this
+    # managed baseline.
+    enableTerminalSandbox: true
 
     # Deliberately NOT managed here, because the CLI owns them at runtime and a
     # managed value would fight the UI:
     #   trustedWorkspaces   appended by the "trust this folder" prompt
     #   model               set by /model
     #   permissions         the allow/deny rule table edited by /permissions
-    #   enableTerminalSandbox  currently false; see proceed-in-sandbox above

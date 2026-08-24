@@ -57,8 +57,14 @@
 {{- if and $provider (hasKey $provider "base_url") }}
     "ANTHROPIC_BASE_URL": "{{ $provider.base_url }}",
 {{- end }}
-{{- if and $account (hasKey $account "model") }}
-    "ANTHROPIC_MODEL": "{{ $account.model }}",
+{{- $model := "" -}}
+{{- if and $account (hasKey $account "model") -}}
+{{-   $model = $account.model -}}
+{{- else if and $provider (hasKey $provider "default_model") -}}
+{{-   $model = $provider.default_model -}}
+{{- end -}}
+{{- if $model }}
+    "ANTHROPIC_MODEL": "{{ $model }}",
 {{- end }}
 {{- if and $account (hasKey $account "small_model") }}
     "ANTHROPIC_SMALL_FAST_MODEL": "{{ $account.small_model }}",
@@ -155,7 +161,6 @@
       "Bash(uvx:*)",
       "Bash(ruff:*)",
       "Bash(git:*)",
-      "Bash(gh:*)",
       "Bash(just:*)",
       "Bash(mise:*)",
       "Bash(npm:*)",
@@ -166,6 +171,16 @@
       "Bash(chezmoi:*)"
     ],
     "deny": [
+      "Bash(git worktree:*)",
+      "Bash(git switch:*)",
+      "Bash(git checkout -b:*)",
+      "Bash(git checkout --orphan:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -fd:*)",
+      "Bash(sudo:*)",
+      "Bash(shutdown:*)",
+      "Bash(reboot:*)",
+      "Bash(rm -rf:*)",
       "Bash(sudo rm -rf:*)",
       "Bash(rm -rf /*)",
       "Bash(pip install:*)",
@@ -293,7 +308,7 @@
     "type": "command",
     "command": "bash $HOME/.claude/statusline-command.sh"
   },
-  "skipDangerousModePermissionPrompt": true,
+  "skipDangerousModePermissionPrompt": false,
   "alwaysThinkingEnabled": true,
   {{- /* Personal profile tracks the user's `/effort` default (xhigh since 2026-07-29);
        `/effort` writes this same key, and a full-file apply would otherwise revert it. */}}

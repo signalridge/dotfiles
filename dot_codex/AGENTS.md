@@ -37,7 +37,15 @@ All installed (aqua/mise/nix). Prefer these over POSIX defaults — don't fall b
 
 Full inventory (VCS, k8s, security, media, docs): `~/.harnesses/skills/dev/toolbelt/SKILL.md`.
 
+## Repository guardrails
+
+- In `~/.local/share/chezmoi`, never run `git worktree add`, `git switch`, or
+  `git checkout -b`. The live source is the shared `main` checkout; edit it directly.
+- Never read or reuse browser cookies, browser profiles, password stores, or signed-in
+  web sessions for model/search authentication. Never use private AI endpoints.
+
 ## Workflow & guardrails
 
-- Worktree default `one-task-one-branch-one-worktree` (`.worktrees/<branch>`, named `wt-*`).
+- Worktree isolation is repository-controlled. Outside chezmoi, follow the target
+  repository's policy; inside chezmoi, the no-worktree rule above always wins.
 - Installs: detect lockfiles, resolve signal-vs-preference conflicts explicitly, no mixed managers without confirmation.

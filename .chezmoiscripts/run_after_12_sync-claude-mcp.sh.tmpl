@@ -219,19 +219,15 @@ ensure_always_load() {
     fi
 }
 
-remove_user_mcp_if_present "slack"
-remove_user_mcp_if_present "notion"
-remove_user_mcp_if_present "codex-mcp"
-# serena: removed 2026-07-31. Its rust-analyzer backend held ~2-3GB per session
-# and nothing is shared — Serena's active project is process-global (one
-# SerenaAgent per server, and switching projects shuts the previous one's
-# language servers down), so it cannot be collapsed into a shared daemon the
-# way context7 was. Ten concurrent sessions on one Rust workspace cost ~21GB.
-remove_user_mcp_if_present "serena"
+# Reconcile only the MCP servers owned by this repository. User-added servers
+# (including Slack, Notion, and project-specific tools) are never deleted.
+# Remove the one legacy name that this script itself used before canonicalizing
+# the cross-harness name to `arxiv`.
+remove_user_mcp_if_present "arxiv-mcp-server"
 
 ensure_user_mcp_http "context7" "https://mcp.context7.com/mcp"
 ensure_user_mcp_json "markitdown" '{"command":"uvx","args":["markitdown-mcp"]}'
-ensure_user_mcp_json "arxiv-mcp-server" '{"command":"uv","args":["tool","run","arxiv-mcp-server"]}'
+ensure_user_mcp_json "arxiv" '{"command":"uv","args":["tool","run","arxiv-mcp-server"]}'
 ensure_user_mcp_json "tavily" '{"command":"{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily","args":[]}'
 ensure_user_mcp_http "gitmcp" "https://gitmcp.io/docs"
 ensure_user_mcp_http "deepwiki" "https://mcp.deepwiki.com/mcp"

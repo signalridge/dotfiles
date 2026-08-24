@@ -3,7 +3,7 @@ display_name: Explore
 description: 'Fast read-only search/navigation agent for locating code. Find files by pattern (e.g. src/**/*.tsx), grep for symbols or keywords, or answer "where is X defined / which files reference Y." Do NOT use for code review, design-doc auditing, cross-file consistency checks, or open-ended analysis — it reads excerpts, not whole files. Specify breadth: "quick" (single lookup), "medium" (moderate), or "very thorough" (many locations/naming conventions).'
 tools: read, grep, find, ls, bash
 extensions: true
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows, pi-plan-mode
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows
 skills: false
 disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
 prompt_mode: replace

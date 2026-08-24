@@ -17,11 +17,30 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 {{-   $accountKey = .codexProviderAccount -}}
 {{- end -}}
 {{- $providerName := (split "@" $accountKey)._0 -}}
-{{- /* Native OpenAI uses two tiers: the primary effort is machine-scoped;
-       every spawned subagent uses the maximum-effort tier. */ -}}
+{{- /* Keep the default model valid when a third-party provider is selected.
+       Each provider block below is an endpoint, not a shared model registry. */ -}}
 {{- $model := "gpt-5.6-sol" -}}
-{{- $effort := ternary "max" "xhigh" .work -}}
 {{- $subagentModel := "gpt-5.6-sol" -}}
+{{- if eq $providerName "deepseek" -}}
+{{-   $model = "deepseek-v4-flash" -}}
+{{-   $subagentModel = "deepseek-v4-flash" -}}
+{{- else if eq $providerName "doubao" -}}
+{{-   $model = "ark-code-latest" -}}
+{{-   $subagentModel = "ark-code-latest" -}}
+{{- else if eq $providerName "glm" -}}
+{{-   $model = "glm-5.2" -}}
+{{-   $subagentModel = "glm-5.2" -}}
+{{- else if eq $providerName "kimi" -}}
+{{-   $model = "kimi-for-coding" -}}
+{{-   $subagentModel = "kimi-for-coding" -}}
+{{- else if eq $providerName "minimax" -}}
+{{-   $model = "MiniMax-M2.1" -}}
+{{-   $subagentModel = "MiniMax-M2.1" -}}
+{{- else if eq $providerName "qwen" -}}
+{{-   $model = "qwen3-coder-plus" -}}
+{{-   $subagentModel = "qwen3-coder-plus" -}}
+{{- end -}}
+{{- $effort := ternary "max" "xhigh" .work -}}
 {{- $subagentEffort := "max" -}}
 
 # =============================================================================
@@ -39,11 +58,9 @@ model_provider = "{{ $providerName }}"
 # Approval policy: untrusted | on-failure | on-request | never
 approval_policy = "on-request"
 
-# Sandbox mode: read-only | workspace-write | danger-full-access
-sandbox_mode = "danger-full-access"
-
-# Network access: enabled | disabled
-network_access = "enabled"
+# Keep writes inside the current workspace; network is enabled only in the
+# workspace sandbox below for the configured MCP/HTTP providers.
+sandbox_mode = "workspace-write"
 
 # Disable response storage
 disable_response_storage = true
@@ -76,7 +93,7 @@ web_search = "live"
 # Project Documentation
 # =============================================================================
 
-project_doc_fallback_filenames = ["CLAUDE.md", "TEAM_GUIDE.md", ".harnesses.md", "CODEX.md"]
+project_doc_fallback_filenames = ["AGENTS.md", "CLAUDE.md", "TEAM_GUIDE.md", ".harnesses.md", "CODEX.md"]
 project_doc_max_bytes = 65536
 
 # =============================================================================
@@ -240,7 +257,7 @@ web_search = "live"
 [shell_environment_policy]
 inherit = "all"
 exclude = []
-ignore_default_excludes = true
+ignore_default_excludes = false
 experimental_use_profile = true
 
 # =============================================================================
@@ -249,7 +266,7 @@ experimental_use_profile = true
 
 [sandbox_workspace_write]
 network_access = true
-exclude_slash_tmp = false
+exclude_slash_tmp = true
 CHEZMOI_TEMPLATE_EOF
 
 preserve_toml_tables() {

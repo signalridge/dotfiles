@@ -8,8 +8,9 @@
 # Mirrors the Codex (modify_config.toml) / pi (modify_settings.json) pattern:
 # the shared MCP set lives in ~/.cursor/mcp.json; this file owns the CLI posture.
 # Posture: approval-gated allowlist (like Codex's on-request approval) — safe
-# read/nav/git + all MCP auto-run, destructive/secret access denied, everything
-# else prompts. Switch model at runtime via the CLI's model picker (never here).
+# read/navigation utilities auto-run; git, chezmoi, MCP, destructive commands, and
+# secret access remain approval-gated or denied. Switch model at runtime via the
+# CLI's model picker (never here).
 set -euo pipefail
 
 EXISTING="$(cat)"
@@ -53,11 +54,7 @@ MANAGED="$(cat <<'CURSOR_MANAGED_EOF'
       "Shell(uniq)",
       "Shell(which)",
       "Shell(tree)",
-      "Shell(jq)",
-      "Shell(git)",
-      "Shell(gh)",
-      "Shell(chezmoi)",
-      "Mcp(*:*)"
+      "Shell(jq)"
     ],
     "deny": [
       "Shell(rm)",

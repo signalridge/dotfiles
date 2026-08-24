@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # skill-activate — a live on/off panel for curating which library skills are
-# active for Claude plus the matching current-directory Codex set.
+# active for Claude, Codex, Pi, Cursor, and Kimi in the current directory.
 # Tab/Space flips one skill on/off in place (the ● updates live). Ctrl-A flips
 # every skill in the highlighted row's category; Enter leaves.
 # Toggling is fast — the library is scanned ONCE up front and the panel just

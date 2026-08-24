@@ -3,7 +3,7 @@ display_name: Research
 description: "Read-only research agent for questions whose answer lives OUTSIDE this repository: library/framework APIs, version and migration details, third-party error messages, how a public project behaves, papers, and multi-source or contested external questions. Returns a SOURCED answer — every claim carries the URL, doc section, or installed version it came from. Do NOT use it to locate code in the local tree (that is Explore) and do NOT use it to judge local code (that is Review)."
 tools: read, grep, find, ls, bash
 extensions: true
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows, pi-plan-mode
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows
 disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
 skills: true
 prompt_mode: replace

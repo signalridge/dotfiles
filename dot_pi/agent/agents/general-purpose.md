@@ -3,7 +3,7 @@ description: "Mixed investigation-and-execution agent for open-ended work where 
 display_name: Agent
 tools: all
 extensions: true
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows, pi-plan-mode
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows
 skills: true
 prompt_mode: append
 ---

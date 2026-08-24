@@ -9,6 +9,7 @@ unset XDG_CONFIG_HOME || true
 
 echo "== Running bootstrap tests =="
 
+bash "$ROOT/tests/test_harness_config_alignment.sh"
 python3 "$ROOT/tests/test_setup_encryption_key.py"
 bash "$ROOT/tests/test_init_args.sh"
 bash "$ROOT/tests/test_github_https_normalization.sh"

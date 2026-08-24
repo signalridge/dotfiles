@@ -22,6 +22,10 @@ tool_name=$(echo "$input" | jq -r '.tool_name // ""' 2>/dev/null || echo "")
 command=$(echo "$input" | jq -r '.tool_input.command // ""' 2>/dev/null || echo "")
 [[ -n "$command" ]] || exit 0
 
+cwd=$(echo "$input" | jq -r '.cwd // .workspace.current_dir // ""' 2>/dev/null || echo "")
+[[ -n "$cwd" ]] || cwd="$PWD"
+chezmoi_source="$HOME/.local/share/chezmoi"
+
 protected_branches='main|master|develop|release'
 
 matches() {
@@ -51,6 +55,18 @@ Next: ${next}"
 }
 
 # --- BLOCK rules (truly dangerous, no recovery) ---
+
+# The chezmoi source tree is the live main checkout. Worktrees and branch
+# switching are forbidden there because chezmoi recursively consumes its data.
+if [[ "$cwd" == "$chezmoi_source" || "$cwd" == "$chezmoi_source/"* ]]; then
+    if matches 'git[[:space:]]+worktree([[:space:]]|$)'; then
+        block "GIT-WORKTREE" "Worktrees are forbidden in the chezmoi source tree." "Edit the shared main checkout instead."
+    fi
+
+    if matches 'git[[:space:]]+switch([[:space:]]|$)|git[[:space:]]+checkout[[:space:]]+(-b|--branch|--orphan)([[:space:]]|$)'; then
+        block "GIT-BRANCH-SWITCH" "Branch switching or creation is forbidden in the chezmoi source tree." "Stay on the shared main checkout."
+    fi
+fi
 
 if matches 'git[[:space:]]+rebase[[:space:]]+(-i|--interactive)'; then
     block "GIT-REBASE-I" "Interactive rebase requires manual input." "Use regular rebase or merge instead."

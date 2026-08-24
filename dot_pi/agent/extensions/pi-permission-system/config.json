@@ -1,4 +1,7 @@
 {
+  "$schema": "https://raw.githubusercontent.com/gotgenes/pi-packages/main/packages/pi-permission-system/schemas/permissions.schema.json",
+  "doublePressToConfirm": true,
+  "permissionReviewLog": true,
   "permission": {
     "*": "allow",
     "path": {
@@ -12,10 +15,37 @@
       "**/.config/gopass/*": "deny"
     },
     "bash": {
-      "*": "allow"
+      "*": "ask",
+      "git status": "allow",
+      "git diff": "allow",
+      "git log": "allow",
+      "git show": "allow",
+      "git branch --show-current": "allow",
+      "git rev-parse *": "allow",
+      "git worktree": "deny",
+      "git worktree *": "deny",
+      "git switch": "deny",
+      "git switch *": "deny",
+      "git checkout -b *": "deny",
+      "git checkout --orphan *": "deny",
+      "git reset --hard *": "deny",
+      "git clean -f*": "deny",
+      "rm -rf": "deny",
+      "rm -rf *": "deny",
+      "sudo *": "deny",
+      "pip install *": "deny",
+      "pip3 install *": "deny",
+      "python -m pip *": "deny",
+      "python3 -m pip *": "deny"
+    },
+    "mcp": {
+      "*": "ask"
     },
     "external_directory": {
-      "*": "allow"
+      "*": "ask",
+      "~/.pi/agent/*": "allow",
+      "~/.harnesses/*": "allow",
+      "~/.local/bin/*": "allow"
     }
   }
 }

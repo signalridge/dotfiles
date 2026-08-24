@@ -59,9 +59,8 @@ pi:
     # The parent model + effort are still emitted from
     # dot_pi/agent/modify_settings.json.tmpl rather than from here, because that is
     # where settings.json is assembled — but they are no longer machine-scoped:
-    # every machine resolves to gpt-5.6-sol at xhigh, so the chezmoi `work`
-    # ternaries that used to pick between gpt-5.6-luna/xhigh and gpt-5.6-luna/max
-    # are gone. Pi remains configured independently from Codex.
+    # every machine resolves to gpt-5.6-luna at max, so the startup pin is
+    # stable across hosts. Pi remains configured independently from Codex.
     # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
     # the ACTIVE provider/model's. reserveTokens is a single global number, so it
     # has to satisfy every candidate:
@@ -210,9 +209,6 @@ pi:
     - pi-workflows
     - pi-goal
     - pi-ralph-wiggum
-    # Parent-session Plan mode only. All custom subagents exclude this extension;
-    # loading it in a child exposes plan_mode_complete without interactive Plan state.
-    - pi-plan-mode
     # Environment bridges
     - pi-herdr-state
     - pi-gpt-fast
@@ -331,7 +327,7 @@ pi:
       # and `gpt-5.6-luna` on the same key. The contributor variant is the
       # survivor and pi ships it built in, so nothing needs re-declaring; the
       # entry was deleted (git has it) and the default moved to
-      # openai-codex/gpt-5.6-sol.
+      # openai-codex/gpt-5.6-luna.
       #
       # Deleted with it, but worth keeping: the DATA-POLICY GATE. It is a THIRD
       # workspace opt-in, distinct from the CreditsError and RegionError above,

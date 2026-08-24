@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# chezmoi modify_ script: manage only Kimi's safety defaults while preserving
+# providers, models, OAuth state, services, and all other user-owned settings.
+set -euo pipefail
+
+EXISTING="$(cat)"
+
+# Keep Kimi approval-gated and disable its optional plan mode. Put the managed
+# scalar keys before every TOML table so the result remains valid TOML; remove
+# any prior copies first so repeated chezmoi applies are idempotent.
+printf '%s\n' "$EXISTING" | awk '
+BEGIN {
+  print "default_permission_mode = \"manual\""
+  print "default_plan_mode = false"
+}
+/^default_permission_mode[[:space:]]*=/ { next }
+/^default_plan_mode[[:space:]]*=/ { next }
+{ print }
+'

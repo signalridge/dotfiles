@@ -3,7 +3,7 @@ display_name: Review
 description: "Read-only review of code that ALREADY EXISTS — a diff, a branch, or a named set of files. Returns a ranked findings list: file:line, the concrete failure scenario, severity. Use for scoped, cross-subsystem, and high-risk changes alike; for expensive-to-reverse changes, extend coverage with an explicit adversarial pass. Do NOT use it to locate code (Explore), to answer external questions (Research), or to adjudicate one already-stated claim (Verify). It never modifies code."
 tools: read, grep, find, ls, bash
 extensions: true
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows, pi-plan-mode
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows
 disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
 skills: false
 prompt_mode: replace
