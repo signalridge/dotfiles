@@ -17,7 +17,8 @@ render() {
 }
 
 render dot_claude/settings.json.tmpl >"$tmp_root/claude.json"
-jq -e '.["skipDangerousModePermissionPrompt"] == false and
+jq -e '.["skipDangerousModePermissionPrompt"] == true and
+       .permissions.defaultMode == "bypassPermissions" and
        (.["permissions"]["deny"] | index("Bash(git worktree:*)")) != null' \
     "$tmp_root/claude.json" >/dev/null
 
@@ -30,26 +31,28 @@ import tomllib
 
 with open(sys.argv[1], "rb") as handle:
     config = tomllib.load(handle)
-assert config["sandbox_mode"] == "workspace-write"
+assert config["approval_policy"] == "never"
+assert config["sandbox_mode"] == "danger-full-access"
 assert config["sandbox_workspace_write"]["network_access"] is True
-assert config["sandbox_workspace_write"]["exclude_slash_tmp"] is True
-assert config["shell_environment_policy"]["ignore_default_excludes"] is False
+assert config["sandbox_workspace_write"]["exclude_slash_tmp"] is False
+assert config["shell_environment_policy"]["ignore_default_excludes"] is True
 assert "AGENTS.md" in config["project_doc_fallback_filenames"]
 PY
 
 render dot_cursor/modify_cli-config.json.tmpl >"$tmp_root/cursor.sh"
 bash -n "$tmp_root/cursor.sh"
 printf '{}' | bash "$tmp_root/cursor.sh" >"$tmp_root/cursor.json"
-jq -e '(.approvalMode == "allowlist") and
-       ((.permissions.allow | index("Mcp(*:*)")) == null)' \
+jq -e '(.approvalMode == "unrestricted") and
+       ((.permissions.allow | index("Mcp(*:*)")) != null) and
+       (.permissions.deny == [])' \
     "$tmp_root/cursor.json" >/dev/null
 
 render dot_gemini/antigravity-cli/modify_private_settings.json.tmpl >"$tmp_root/antigravity.sh"
 bash -n "$tmp_root/antigravity.sh"
 printf '{}' | bash "$tmp_root/antigravity.sh" >"$tmp_root/antigravity.json"
-jq -e '.toolPermission == "request-review" and
-       .allowNonWorkspaceAccess == false and
-       .enableTerminalSandbox == true' \
+jq -e '.toolPermission == "always-proceed" and
+       .allowNonWorkspaceAccess == true and
+       .enableTerminalSandbox == false' \
     "$tmp_root/antigravity.json" >/dev/null
 
 render dot_kimi-code/modify_config.toml.tmpl >"$tmp_root/kimi.sh"
@@ -61,7 +64,7 @@ import tomllib
 
 with open(sys.argv[1], "rb") as handle:
     config = tomllib.load(handle)
-assert config["default_permission_mode"] == "manual"
+assert config["default_permission_mode"] == "yolo"
 assert config["default_plan_mode"] is False
 PY
 
@@ -72,7 +75,11 @@ render dot_pi/agent/subagents.json.tmpl | jq -e '
   .fallbackSubagent == "none" and
   .disableDefaultAgents == true
 ' >/dev/null
-jq -e . "$ROOT/dot_pi/agent/extensions/pi-permission-system/config.json" >/dev/null
+jq -e '.permission["*"] == "allow" and
+       .permission.bash["*"] == "allow" and
+       .permission.mcp["*"] == "allow" and
+       .permission.external_directory["*"] == "allow"' \
+    "$ROOT/dot_pi/agent/extensions/pi-permission-system/config.json" >/dev/null
 
 [[ ! -e "$ROOT/dot_pi/agent/agents/Plan.md" ]]
 ! rg -n -i -S 'pi-plan-mode|display_name: Plan|agents/Plan|core-plan' \

@@ -5,47 +5,22 @@
   "permission": {
     "*": "allow",
     "path": {
-      "*": "allow",
-      "*.env": "deny",
-      "*.env.*": "deny",
-      "*.env.example": "allow",
-      "~/.ssh/*": "deny",
-      "~/.gnupg/*": "deny",
-      "**/.aws/credentials": "deny",
-      "**/.config/gopass/*": "deny"
+      "*": "allow"
     },
     "bash": {
-      "*": "ask",
-      "git status": "allow",
-      "git diff": "allow",
-      "git log": "allow",
-      "git show": "allow",
-      "git branch --show-current": "allow",
-      "git rev-parse *": "allow",
+      "*": "allow",
       "git worktree": "deny",
       "git worktree *": "deny",
       "git switch": "deny",
       "git switch *": "deny",
       "git checkout -b *": "deny",
-      "git checkout --orphan *": "deny",
-      "git reset --hard *": "deny",
-      "git clean -f*": "deny",
-      "rm -rf": "deny",
-      "rm -rf *": "deny",
-      "sudo *": "deny",
-      "pip install *": "deny",
-      "pip3 install *": "deny",
-      "python -m pip *": "deny",
-      "python3 -m pip *": "deny"
+      "git checkout --orphan *": "deny"
     },
     "mcp": {
-      "*": "ask"
+      "*": "allow"
     },
     "external_directory": {
-      "*": "ask",
-      "~/.pi/agent/*": "allow",
-      "~/.harnesses/*": "allow",
-      "~/.local/bin/*": "allow"
+      "*": "allow"
     }
   }
 }

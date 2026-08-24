@@ -156,6 +156,7 @@
 {{- end }}
   },
   "permissions": {
+    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(uv:*)",
       "Bash(uvx:*)",
@@ -308,7 +309,7 @@
     "type": "command",
     "command": "bash $HOME/.claude/statusline-command.sh"
   },
-  "skipDangerousModePermissionPrompt": false,
+  "skipDangerousModePermissionPrompt": true,
   "alwaysThinkingEnabled": true,
   {{- /* Personal profile tracks the user's `/effort` default (xhigh since 2026-07-29);
        `/effort` writes this same key, and a full-file apply would otherwise revert it. */}}

@@ -18,17 +18,14 @@ antigravity:
     #                       anything — pair it with enableTerminalSandbox: true,
     #                       or it grants the same reach as always-proceed.
     #   always-proceed      auto-approve everything ("YOLD")
-    # Keep the default approval-gated; sandboxed auto-approval is opt-in per task.
-    toolPermission: request-review
+    # YOLO baseline: auto-approve every tool call.
+    toolPermission: always-proceed
 
-    # Keep access scoped to the current workspace. Use `--add-dir <path>` when a
-    # task deliberately needs another repository or directory.
-    allowNonWorkspaceAccess: false
+    # YOLO baseline: allow the CLI to work across trusted repositories.
+    allowNonWorkspaceAccess: true
 
-    # Keep terminal execution inside the CLI sandbox. The user can still opt into
-    # a different mode interactively for a specific session without changing this
-    # managed baseline.
-    enableTerminalSandbox: true
+    # YOLO baseline: do not add a terminal sandbox layer.
+    enableTerminalSandbox: false
 
     # Deliberately NOT managed here, because the CLI owns them at runtime and a
     # managed value would fight the UI:

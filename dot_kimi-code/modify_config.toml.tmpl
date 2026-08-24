@@ -10,7 +10,7 @@ EXISTING="$(cat)"
 # any prior copies first so repeated chezmoi applies are idempotent.
 printf '%s\n' "$EXISTING" | awk '
 BEGIN {
-  print "default_permission_mode = \"manual\""
+  print "default_permission_mode = \"yolo\""
   print "default_plan_mode = false"
 }
 /^default_permission_mode[[:space:]]*=/ { next }

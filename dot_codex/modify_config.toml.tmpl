@@ -56,11 +56,11 @@ model_provider = "{{ $providerName }}"
 {{- end }}
 
 # Approval policy: untrusted | on-failure | on-request | never
-approval_policy = "on-request"
+approval_policy = "never"
 
-# Keep writes inside the current workspace; network is enabled only in the
-# workspace sandbox below for the configured MCP/HTTP providers.
-sandbox_mode = "workspace-write"
+# YOLO baseline: no approval prompts and no filesystem sandbox. This is the
+# config.toml equivalent of --dangerously-bypass-approvals-and-sandbox.
+sandbox_mode = "danger-full-access"
 
 # Disable response storage
 disable_response_storage = true
@@ -257,7 +257,7 @@ web_search = "live"
 [shell_environment_policy]
 inherit = "all"
 exclude = []
-ignore_default_excludes = false
+ignore_default_excludes = true
 experimental_use_profile = true
 
 # =============================================================================
@@ -266,7 +266,7 @@ experimental_use_profile = true
 
 [sandbox_workspace_write]
 network_access = true
-exclude_slash_tmp = true
+exclude_slash_tmp = false
 CHEZMOI_TEMPLATE_EOF
 
 preserve_toml_tables() {

@@ -7,10 +7,9 @@
 #
 # Mirrors the Codex (modify_config.toml) / pi (modify_settings.json) pattern:
 # the shared MCP set lives in ~/.cursor/mcp.json; this file owns the CLI posture.
-# Posture: approval-gated allowlist (like Codex's on-request approval) — safe
-# read/navigation utilities auto-run; git, chezmoi, MCP, destructive commands, and
-# secret access remain approval-gated or denied. Switch model at runtime via the
-# CLI's model picker (never here).
+# Posture: unrestricted/yolo — Cursor's persistent equivalent of --yolo.
+# The managed allow list is intentionally broad and the deny list is empty;
+# switch model at runtime via the CLI's model picker (never here).
 set -euo pipefail
 
 EXISTING="$(cat)"
@@ -30,7 +29,7 @@ CURSOR_FALLBACK_EOF
 MANAGED="$(cat <<'CURSOR_MANAGED_EOF'
 {
   "editor": { "vimMode": false },
-  "approvalMode": "allowlist",
+  "approvalMode": "unrestricted",
   "display": {
     "showLineNumbers": false,
     "showThinkingBlocks": true,
@@ -39,39 +38,12 @@ MANAGED="$(cat <<'CURSOR_MANAGED_EOF'
   "permissions": {
     "allow": [
       "Read(**)",
-      "Shell(ls)",
-      "Shell(cat)",
-      "Shell(pwd)",
-      "Shell(echo)",
-      "Shell(grep)",
-      "Shell(rg)",
-      "Shell(fd)",
-      "Shell(find)",
-      "Shell(head)",
-      "Shell(tail)",
-      "Shell(wc)",
-      "Shell(sort)",
-      "Shell(uniq)",
-      "Shell(which)",
-      "Shell(tree)",
-      "Shell(jq)"
+      "Write(**)",
+      "Shell(*)",
+      "Mcp(*:*)",
+      "WebFetch(*)"
     ],
-    "deny": [
-      "Shell(rm)",
-      "Shell(rmdir)",
-      "Shell(dd)",
-      "Shell(mkfs)",
-      "Shell(sudo)",
-      "Shell(shutdown)",
-      "Shell(reboot)",
-      "Read(**/.env*)",
-      "Read(**/*.pem)",
-      "Read(**/*.key)",
-      "Read(**/id_rsa*)",
-      "Read(**/*secret*)",
-      "Write(**/*.pem)",
-      "Write(**/*.key)"
-    ]
+    "deny": []
   }
 }
 CURSOR_MANAGED_EOF

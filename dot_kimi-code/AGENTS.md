@@ -9,7 +9,7 @@ Repo-native first; defaults advisory (`uv/ruff`, `nix`, `aqua/mise`, `gh/ghq`); 
 ## Tool integration routing
 
 MCP servers are configured in `~/.kimi-code/mcp.json`.
-The managed `~/.kimi-code/config.toml` keeps approval mode manual and disables
+The managed `~/.kimi-code/config.toml` keeps Kimi in YOLO mode and disables
 Kimi's optional plan mode; use OAuth or environment-backed credentials, never
 plaintext API keys in the TOML file.
 
