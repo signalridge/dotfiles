@@ -24,7 +24,7 @@ export HOME="$TMP_ROOT/home"
 mkdir -p "$HOME/.nix-profile/bin"
 
 SCRIPT="$TMP_ROOT/sync-codex-connector-plugins.sh"
-chezmoi execute-template --source "$ROOT" <"$ROOT/.chezmoiscripts/run_after_13_sync-codex-connector-plugins.sh.tmpl" >"$SCRIPT"
+chezmoi execute-template --source "$ROOT" <"$ROOT/.chezmoiscripts/run_after_13_sync-codex-connector-plugins.sh" >"$SCRIPT"
 chmod +x "$SCRIPT"
 
 cat >"$HOME/.nix-profile/bin/codex" <<'EOF'

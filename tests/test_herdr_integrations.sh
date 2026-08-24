@@ -19,7 +19,7 @@ export HOME="$TMP_ROOT/home"
 mkdir -p "$HOME/.codex" "$TMP_ROOT/bin"
 RENDERED="$TMP_ROOT/herdr-integrations.sh"
 chezmoi execute-template --source "$ROOT" \
-    <"$ROOT/.chezmoiscripts/run_after_14_sync-herdr-integrations.sh.tmpl" >"$RENDERED"
+    <"$ROOT/.chezmoiscripts/run_after_14_sync-herdr-integrations.sh" >"$RENDERED"
 chmod +x "$RENDERED"
 
 cat >"$TMP_ROOT/bin/herdr" <<'EOF'

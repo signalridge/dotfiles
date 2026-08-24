@@ -10,6 +10,8 @@ repos:
         args: [--allow-multiple-documents]
         exclude: \.tmpl$
       - id: check-toml
+        # chezmoi modify_ scripts use the target's .toml suffix but contain Bash.
+        exclude: (^|/)modify_[^/]*\.toml$
       - id: check-added-large-files
         # 600 accommodates the 569 KiB WezTerm icns (ten slots up to 1024px)
         # with little room to spare. Preferred over excluding that path, which

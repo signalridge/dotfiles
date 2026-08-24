@@ -16,7 +16,8 @@ EXISTING="$(cat)"
 
 # Fallbacks only fill the documented required fields when the file is new; they
 # never override anything Cursor already wrote.
-FALLBACK="$(cat <<'CURSOR_FALLBACK_EOF'
+FALLBACK="$(
+    cat <<'CURSOR_FALLBACK_EOF'
 {
   "version": 1,
   "editor": { "vimMode": false },
@@ -26,7 +27,8 @@ CURSOR_FALLBACK_EOF
 )"
 
 # Managed posture — these win over both fallback and existing.
-MANAGED="$(cat <<'CURSOR_MANAGED_EOF'
+MANAGED="$(
+    cat <<'CURSOR_MANAGED_EOF'
 {
   "editor": { "vimMode": false },
   "approvalMode": "unrestricted",

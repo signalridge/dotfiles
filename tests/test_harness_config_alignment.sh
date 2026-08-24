@@ -39,7 +39,7 @@ assert config["shell_environment_policy"]["ignore_default_excludes"] is True
 assert "AGENTS.md" in config["project_doc_fallback_filenames"]
 PY
 
-render dot_cursor/modify_cli-config.json.tmpl >"$tmp_root/cursor.sh"
+render dot_cursor/modify_cli-config.json >"$tmp_root/cursor.sh"
 bash -n "$tmp_root/cursor.sh"
 printf '{}' | bash "$tmp_root/cursor.sh" >"$tmp_root/cursor.json"
 jq -e '(.approvalMode == "unrestricted") and
@@ -55,7 +55,7 @@ jq -e '.toolPermission == "always-proceed" and
        .enableTerminalSandbox == false' \
     "$tmp_root/antigravity.json" >/dev/null
 
-render dot_kimi-code/modify_config.toml.tmpl >"$tmp_root/kimi.sh"
+render dot_kimi-code/modify_config.toml >"$tmp_root/kimi.sh"
 bash -n "$tmp_root/kimi.sh"
 printf '' | bash "$tmp_root/kimi.sh" >"$tmp_root/kimi.toml"
 python3 - "$tmp_root/kimi.toml" <<'PY'

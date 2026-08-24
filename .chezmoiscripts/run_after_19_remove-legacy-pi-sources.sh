@@ -135,7 +135,7 @@ for settings_file in \
 done
 
 if ((removed > 0)); then
-    echo "    Removed $removed legacy Pi extension source/install entr$( ((removed == 1)) && printf 'y' || printf 'ies' )"
+    echo "    Removed $removed legacy Pi extension source/install entr$( ((removed == 1)) && printf 'y' || printf 'ies')"
 else
     echo "    No legacy Pi extension sources found"
 fi
