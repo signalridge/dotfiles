@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
-for command in bash chezmoi jq python3; do
+for command in bash chezmoi jq python3 grep; do
     command -v "$command" >/dev/null 2>&1 || {
         echo "SKIP: missing dependency: $command"
         exit 0
@@ -82,17 +82,20 @@ jq -e '.permission["*"] == "allow" and
     "$ROOT/dot_pi/agent/extensions/pi-permission-system/config.json" >/dev/null
 
 [[ ! -e "$ROOT/dot_pi/agent/agents/Plan.md" ]]
-! rg -n -i -S 'pi-plan-mode|display_name: Plan|agents/Plan|core-plan' \
-    "$ROOT/dot_pi" "$ROOT/dot_codex" "$ROOT/.chezmoidata/pi.yaml"
+if grep -R -E -n 'pi-plan-mode|display_name: Plan|agents/Plan|core-plan' \
+    "$ROOT/dot_pi" "$ROOT/dot_codex" "$ROOT/.chezmoidata/pi.yaml"; then
+    exit 1
+fi
 
 for path in "$ROOT"/dot_pi/agent/agents/*.md; do
-    ! rg -q 'pi-plan-mode' "$path"
+    ! grep -q 'pi-plan-mode' "$path"
 done
 
 core_links=()
-while IFS= read -r path; do
+for path in "$ROOT"/dot_codex/prompts/symlink_core-*.tmpl; do
+    [ -f "$path" ] || continue
     core_links+=("$path")
-done < <(fd --type f --max-depth 1 'symlink_core-.*\.tmpl$' "$ROOT/dot_codex/prompts" | sort)
+done
 [[ "${#core_links[@]}" -eq 1 ]]
 [[ "$(basename "${core_links[0]}")" == "symlink_core-commit.md.tmpl" ]]
 
