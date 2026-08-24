@@ -210,6 +210,8 @@ pi:
     - pi-workflows
     - pi-goal
     - pi-ralph-wiggum
+    # Parent-session Plan mode only. All custom subagents exclude this extension;
+    # loading it in a child exposes plan_mode_complete without interactive Plan state.
     - pi-plan-mode
     # Environment bridges
     - pi-herdr-state

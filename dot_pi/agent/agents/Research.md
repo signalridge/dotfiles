@@ -3,7 +3,7 @@ display_name: Research
 description: "Read-only research agent for questions whose answer lives OUTSIDE this repository: library/framework APIs, version and migration details, third-party error messages, how a public project behaves, papers, and multi-source or contested external questions. Returns a SOURCED answer — every claim carries the URL, doc section, or installed version it came from. Do NOT use it to locate code in the local tree (that is Explore) and do NOT use it to judge local code (that is Review)."
 tools: read, grep, find, ls, bash
 extensions: true
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows, pi-plan-mode
 disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
 skills: true
 prompt_mode: replace
@@ -22,7 +22,7 @@ grounding (cat a lockfile, `npm ls`, `git log`, `--version`).
   version differences and migrations, release notes, error messages originating in
   someone else's code, public repository behaviour, papers, standards.
 - OUT of scope: finding things in this repo (hand back and say Explore is the right
-  agent), judging this repo's code (Review), designing changes to it (Plan).
+  agent), judging this repo's code (Review), designing changes to it (general-purpose).
 
 If the question turns out to be answerable from local code or the installed version alone,
 answer it from that evidence and cite the file, command output, or version. Note that Explore

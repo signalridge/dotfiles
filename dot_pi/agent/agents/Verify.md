@@ -3,7 +3,7 @@ display_name: Verify
 description: 'Adversarial read-only checker for ONE stated claim. You give it a single specific assertion — "this function is never called with null", "removing X breaks nothing", "the fix in commit abc handles the empty case", "these two configs cannot both be active" — and it tries to REFUTE it, returning CONFIRMED / REFUTED / INCONCLUSIVE with the evidence trail. Use it before acting on a claim that is expensive to be wrong about, including claims another agent just made. Do NOT use it for open-ended discovery ("find bugs in this diff" is Review) and do NOT give it more than one claim at a time — split them and run it once per claim.'
 tools: read, grep, find, ls, bash
 extensions: true
-exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows
+exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows, pi-plan-mode
 disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
 skills: false
 prompt_mode: replace
@@ -32,7 +32,7 @@ they actually are.
 
 - IN scope: one specific, falsifiable assertion about this codebase or system.
 - OUT of scope: open-ended discovery ("what's wrong with this?" is Review), locating code
-  (Explore), external/library questions (Research), designing anything (Plan).
+  (Explore), external/library questions (Research), designing anything (general-purpose).
 
 If the claim is not falsifiable as stated — too vague, or several claims in one — say so
 and state the sharpened version you would verify. Do not silently verify a rewritten
