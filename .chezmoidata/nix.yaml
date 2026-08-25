@@ -59,8 +59,14 @@ nix:
       - statix # Nix linter
       - nixfmt
       - tlrc
-      # tmux is added in profile.nix.tmpl so macOS can pass the allocator flag
-      # required by tmux 3.7c.
+      - |
+        (if stdenv.hostPlatform.isDarwin then
+          tmux.overrideAttrs (old: {
+            configureFlags = (old.configureFlags or []) ++ [ "--enable-jemalloc" ];
+            buildInputs = (old.buildInputs or []) ++ [ jemalloc ];
+          })
+        else
+          tmux)
       - wget
       - zstd
     work:
