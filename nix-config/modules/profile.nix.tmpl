@@ -9,6 +9,15 @@ flakey-profile.lib.mkProfile {
     {{- range .nix.homepkgs.shared }}
     {{ . }}
     {{- end }}
+    {{- if eq .platform "darwin" }}
+    # tmux 3.7c's macOS configure check requires an explicit allocator choice.
+    (tmux.overrideAttrs (old: {
+      configureFlags = (old.configureFlags or []) ++ [ "--enable-jemalloc" ];
+      buildInputs = (old.buildInputs or []) ++ [ jemalloc ];
+    }))
+    {{- else }}
+    tmux
+    {{- end }}
     {{- if .work }}
     {{- range .nix.homepkgs.work }}
     {{ . }}

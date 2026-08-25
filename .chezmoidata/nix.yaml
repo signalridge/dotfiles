@@ -59,7 +59,8 @@ nix:
       - statix # Nix linter
       - nixfmt
       - tlrc
-      - tmux
+      # tmux is added in profile.nix.tmpl so macOS can pass the allocator flag
+      # required by tmux 3.7c.
       - wget
       - zstd
     work:
