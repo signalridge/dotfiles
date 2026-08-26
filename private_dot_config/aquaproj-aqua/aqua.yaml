@@ -27,11 +27,11 @@ packages:
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
-  - name: google-antigravity/antigravity-cli@1.1.19
+  - name: google-antigravity/antigravity-cli@1.1.20
   - name: nektos/act@v0.2.89
   - name: FiloSottile/age@v1.3.1
   - name: asciinema/asciinema@v3.2.1
-  - name: atuinsh/atuin@v18.19.0
+  - name: atuinsh/atuin@v18.20.0
   - name: axodotdev/cargo-dist@v0.32.0 # `dist` — was a live-only cargo install
   - name: sigoden/aichat@v0.30.0
   - name: sharkdp/bat@v0.26.1
@@ -40,14 +40,14 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.243
+  - name: anthropics/claude-code@v2.1.246
   - name: openai/codex@rust-v0.149.1
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.8.12
+  - name: jdx/mise@v2026.8.13
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -124,7 +124,7 @@ packages:
   - name: kubernetes/kubernetes/kubectl@v1.36.4
   - name: helm/helm@v4.2.4
   - name: stern/stern@v1.34.0
-  - name: kubecolor/kubecolor@v0.6.0
+  - name: kubecolor/kubecolor@v0.7.1
   - name: ahmetb/kubectx@v0.11.0
   - name: kubernetes-sigs/krew@v0.5.0
   - name: aquasecurity/trivy@v0.74.0
