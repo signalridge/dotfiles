@@ -36,12 +36,15 @@
   Keep these names separate from pi-workflows' `workflow.tiers`, whose fixed
   protocol remains portable.
 
+  maxConcurrent matches pi-workflows' hard cap so a workflow requesting
+  concurrency 40 is not queue-limited here; provider rate limits may still apply.
+
   Nothing in this file branches on chezmoi data.
 */ -}}
 {{- $model := "openai-codex/gpt-5.6-luna" -}}
 {{- $thinking := "max" -}}
 {
-  "maxConcurrent": 16,
+  "maxConcurrent": 40,
   "defaultMaxTurns": 640,
   "defaultMaxToolCalls": 1024,
   "defaultMaxTokens": 3000000,
