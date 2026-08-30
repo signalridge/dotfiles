@@ -63,8 +63,18 @@ if [[ "$cwd" == "$chezmoi_source" || "$cwd" == "$chezmoi_source/"* ]]; then
         block "GIT-WORKTREE" "Worktrees are forbidden in the chezmoi source tree." "Edit the shared main checkout instead."
     fi
 
-    if matches 'git[[:space:]]+switch([[:space:]]|$)|git[[:space:]]+checkout[[:space:]]+(-b|--branch|--orphan)([[:space:]]|$)'; then
+    if matches 'git[[:space:]]+switch([[:space:]]|$)'; then
         block "GIT-BRANCH-SWITCH" "Branch switching or creation is forbidden in the chezmoi source tree." "Stay on the shared main checkout."
+    fi
+
+    # Any checkout that can move HEAD. The previous pattern matched only the
+    # flag forms (-b/--branch/--orphan), so a plain `git checkout <branch>` --
+    # the whole switch, minus the flag -- walked straight through it; pairing it
+    # with `git branch <name>` reproduced exactly what -b does. `git checkout --
+    # <path>` restores a file without leaving the branch, so it stays allowed.
+    if matches 'git[[:space:]]+checkout([[:space:]]|$)' &&
+        ! matches 'git[[:space:]]+checkout[[:space:]]+--([[:space:]]|$)'; then
+        block "GIT-BRANCH-SWITCH" "Branch switching or creation is forbidden in the chezmoi source tree." "Stay on the shared main checkout; use 'git restore' to discard file changes."
     fi
 fi
 
