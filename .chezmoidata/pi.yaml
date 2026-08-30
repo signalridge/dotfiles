@@ -26,30 +26,25 @@ pi:
     # while quiet, so nothing actionable is hidden. Set false to get Pi's own
     # block back above the card.
     quietStartup: true
-    # User-requested (2026-08-20): ONE model runs everything — the parent session
-    # and all three pi-subagents tiers are openai-codex/gpt-5.6-luna at thinking
-    # level max. The route is the native Codex OAuth already in
-    # ~/.pi/agent/auth.json; the openai-codex block below emits no apiKey for it.
-    # (Earlier the same day this was gpt-5.6-sol at xhigh; luna measured the same
-    # 921K input ceiling as sol at a fraction of the input price, so the family's
-    # cheaper member won.)
+    # The parent and subagent policies use the native openai-codex route, but
+    # preserve the three semantic tiers and their work/private split. Since
+    # pi-subagents 1.9.0 / pi-workflows 1.5.0 (protocol v4) there is ONE tier
+    # vocabulary: `low | medium | high`, the keys of agentTiers.profiles in
+    # dot_pi/agent/subagents.json.tmpl. The workflow-only `small | medium | large`
+    # labels and the layer that mapped them are gone; a managed workflow spawn
+    # names an Agent tier key directly.
     #
-    # Why the provider moved off opencode-go: the Go gateway does serve
-    # gpt-5.6-luna, but not gpt-5.6-sol or -terra — `GET /zen/go/v1/models` on
-    # 2026-08-20 returned 27 ids and luna is the only gpt-5.6 among them. Staying
-    # on openai-codex keeps all three one `/model` switch apart on one route with
-    # one set of measured numbers. `opencode-go/gpt-5.6-luna` remains available
-    # as the subscription-billed alternative to the same model.
+    #   work machine:    low = luna/high,  medium = luna/xhigh, high = luna/max
+    #   private machine: low = luna/xhigh, medium = luna/max,   high = sol/xhigh
     #
-    # Two things surfaced by that switch, both load-bearing:
-    #   - opencode-go RETIRED `muse-spark-1.2`, the 2026-08-19 default. The
-    #     gateway now answers `401 ModelError: Model muse-spark-1.2 is not
-    #     supported` and omits it from /v1/models, while the same request shape
-    #     still answers 200 for `muse-spark-1.2-contributor` and `gpt-5.6-luna`
-    #     on the same key. Its hand-written entry was deleted below.
-    #   - gpt-5.6-sol's REAL context window is 1,050,000, not the 272,000 its
-    #     Codex catalog reports — MEASURED against the live route, not read off a
-    #     spec sheet. See the modelOverrides comment in the openai-codex block.
+    # The parent startup setting is the medium/default baseline: work -> luna/xhigh,
+    # private -> luna/max. The machine-scoped values are emitted by the two Pi
+    # templates because the static .chezmoidata pass cannot branch on `.work`.
+    #
+    # The route is the native Codex OAuth already in ~/.pi/agent/auth.json; the
+    # openai-codex block below emits no apiKey for it. gpt-5.6-sol's measured
+    # context window is retained for the private high tier; see the
+    # modelOverrides comment in the openai-codex block.
     #
     # opencode-go, Kimi Code and the DIRECT DeepSeek platform all stay configured
     # and are one `/model` switch away. They differ in billing (flat allowance vs
@@ -58,9 +53,11 @@ pi:
     defaultProvider: openai-codex
     # The parent model + effort are still emitted from
     # dot_pi/agent/modify_settings.json.tmpl rather than from here, because that is
-    # where settings.json is assembled — but they are no longer machine-scoped:
-    # every machine resolves to gpt-5.6-luna at max, so the startup pin is
-    # stable across hosts. Pi remains configured independently from Codex.
+    # where settings.json is assembled. They remain machine-scoped: work resolves
+    # to gpt-5.6-luna at xhigh, private resolves to gpt-5.6-luna at max. This is
+    # the medium/default baseline shared by the Agent tier catalogue and by every
+    # managed workflow spawn that names no tier of its own.
+    # Pi remains configured independently from Codex.
     # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
     # the ACTIVE provider/model's. reserveTokens is a single global number, so it
     # has to satisfy every candidate:

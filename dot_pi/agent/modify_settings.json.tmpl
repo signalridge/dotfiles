@@ -9,31 +9,23 @@ set -euo pipefail
 
 EXISTING="$(cat)"
 {{ $d := .pi.defaults -}}
-{{/* Parent model + effort. ONE pin on every machine, matching all three
-     pi-subagents tiers in subagents.json.tmpl: one model, one effort, everywhere.
-     gpt-5.6-luna at max as of 2026-08-20 (user request). Same day, in order:
-     muse-spark-1.2/max -> gpt-5.6-sol/xhigh -> gpt-5.6-luna/max.
-     `defaultProvider` — openai-codex, the native Codex OAuth route — still comes
-     from .chezmoidata/pi.yaml, so the model id here is intentionally bare: it is
-     resolved against whatever that provider is. Nothing here branches on chezmoi
-     data; these values stay in a template only because settings.json is
-     assembled here.
+{{/* Parent model + effort are the medium/default baseline and remain
+     machine-scoped to match the Agent tier catalogue in subagents.json.tmpl —
+     since protocol v4 the single tier vocabulary, which managed workflow spawns
+     name directly: work -> gpt-5.6-luna at xhigh, private -> gpt-5.6-luna at
+     max. `defaultProvider` — openai-codex, the native Codex OAuth route — still
+     comes from .chezmoidata/pi.yaml, so the model id here is intentionally bare
+     and resolved against that provider. These values stay in a template because
+     the machine-scoped `work` flag is not available in the static .chezmoidata
+     data pass.
 
-     Why luna over sol: they were probed against the same route on the same day
-     and share the same measured ~921K input ceiling (see the openai-codex
-     modelOverrides block in .chezmoidata/pi.yaml), while luna's input price is a
-     fraction of sol's. Same window, cheaper token.
-
-     $effort is `max`, and on luna that is a REAL rung, not a clamp: its
-     thinkingLevelMap is {minimal: low, xhigh: xhigh, max: max}. max is also the
-     value that keeps working after a runtime /model switch — it is the only one
-     that reaches the TOP rung of every model reachable from here, because each
-     translates it through its own map, whereas `xhigh` clamps DOWN to high on
-     any model whose map lacks an xhigh key (opencode-go/deepseek-v4-flash and
-     the direct deepseek route both qualify).
-     Pi is intentionally configured independently from Codex. */ -}}
+     On the private machine the default medium tier is luna/max; on the work
+     machine it is luna/xhigh. The private high tier may use sol/xhigh, while the
+     work high tier stays on luna/max. A managed workflow call that names no tier
+     falls back to the shipped `medium`, which is this same profile. Pi is
+     intentionally configured independently from Codex. */ -}}
 {{- $model := "gpt-5.6-luna" -}}
-{{- $effort := "max" -}}
+{{- $effort := ternary "xhigh" "max" .work -}}
 {{/* Keep external npm dependencies first, then the exact pi.signalridgePackages
      order rendered as unpinned npm specs. No version suffix is emitted on
      purpose: Pi resolves the latest release at install time and

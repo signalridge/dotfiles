@@ -6,43 +6,48 @@
   If omitted, agentTiers.defaultTier applies (medium). The host cannot pass model
   or thinking directly.
 
-  The three profiles are DELIBERATELY IDENTICAL: every subagent runs one model at
-  one effort. As of 2026-08-20 that is openai-codex/gpt-5.6-luna at thinking max
-  (user request), over the native Codex OAuth in ~/.pi/agent/auth.json.
+  The ordinary Agent catalogue is the single model-policy source. It keeps its
+  user-facing `low | medium | high` keys and is machine-scoped:
+    work machine:    low = luna/high, medium = luna/xhigh, high = luna/max
+    private machine: low = luna/xhigh, medium = luna/max, high = sol/xhigh
 
-  This MATCHES THE PARENT, which carries the same pin in
-  modify_settings.json.tmpl — the standing "one model, one effort, everywhere"
-  request. Both sides moved together three times on 2026-08-20
-  (muse-spark-1.2/max -> gpt-5.6-sol/xhigh -> gpt-5.6-luna/max). Change both or
-  neither.
+  The parent session is the medium/default baseline and is emitted separately by
+  modify_settings.json.tmpl: work -> luna/xhigh, private -> luna/max. Keep the
+  model and thinking values here in lockstep with that parent policy; do not
+  collapse the rungs back to one model/effort without an explicit policy change.
 
-  Why luna: probed against the same route on the same day, luna and sol share the
-  same measured ~921K input ceiling, and luna's input price is a fraction of
-  sol's. Same window, cheaper token. The numbers and the probe method are in the
-  openai-codex block of .chezmoidata/pi.yaml.
+  Protocol v4 (pi-subagents >= 1.9.0 with pi-workflows >= 1.5.0) removed the
+  separate `small | medium | large` workflow vocabulary and the layer that mapped
+  it: a managed workflow spawn names a key from THIS catalogue and
+  resolveAgentTier() is the only resolver. Per-call `model`/`thinking` are now
+  rejected by the validator, and the retired `workflow` settings key must not be
+  reintroduced — `agentTiers.defaultTier` below replaces `workflow.defaultTier`.
+  The two packages move together: pi-workflows declares `pi-subagents >= 1.9.0`
+  and fails its startup handshake against an older peer.
 
-  `max` is a REAL rung on gpt-5.6-luna, not a clamp — its thinkingLevelMap is
-  {minimal: low, xhigh: xhigh, max: max} — and it is also the value that survives
-  a runtime /model switch intact: max reaches the TOP rung of every model
-  reachable from here because each translates it through its own map, whereas
-  xhigh clamps DOWN to high on any model whose map has no xhigh key
-  (opencode-go/deepseek-v4-flash and the direct deepseek route both qualify).
+  low/medium/high are also the profile names pi-subagents ships (all inheriting
+  the parent model), so the built-in workflows and the ad-hoc script resolve
+  against real profiles here instead of being dropped to the default. The shipped
+  `fast` profile is gone; nothing here or in dot_pi/agent/agents/ may name it. A
+  managed call that names no tier falls back to `medium` — the shipped fallback,
+  which is separate from `defaultTier` and is what the parent baseline in
+  modify_settings.json.tmpl is kept in step with.
 
-  The catalogue keys are kept rather than collapsed to a single profile so that
-  `tier` values already passed by prompts and by pi-workflows keep resolving, and
-  so re-differentiating later is a value edit rather than a protocol change.
-  Descriptions state the routing INTENT, not a current difference.
+  The concrete provider/model references are intentionally in the user-owned
+  chezmoi policy rather than in the public extension package. `max` is a real
+  rung on gpt-5.6-luna; `xhigh` is the requested top rung for gpt-5.6-sol.
+  Verify model availability with Pi's model registry before changing these pins.
 
-  Keep these names separate from pi-workflows' `workflow.tiers`, whose fixed
-  protocol remains portable.
-
-  maxConcurrent matches pi-workflows' hard cap so a workflow requesting
-  concurrency 40 is not queue-limited here; provider rate limits may still apply.
+  maxConcurrent is 40 for direct Agent fan-out. pi-workflows may enforce its own
+  lower package-level cap independently of this setting.
 
   Nothing in this file branches on chezmoi data.
 */ -}}
+{{- $highModel := ternary "gpt-5.6-luna" "gpt-5.6-sol" .work -}}
+{{- $highThink := ternary "max" "xhigh" .work -}}
+{{- $mediumThink := ternary "xhigh" "max" .work -}}
+{{- $lowThink := ternary "high" "xhigh" .work -}}
 {{- $model := "openai-codex/gpt-5.6-luna" -}}
-{{- $thinking := "max" -}}
 {
   "maxConcurrent": 40,
   "defaultMaxTurns": 640,
@@ -63,17 +68,17 @@
       "low": {
         "description": "Search, navigation, and read-heavy work where breadth beats depth",
         "model": "{{ $model }}",
-        "thinking": "{{ $thinking }}"
+        "thinking": "{{ $lowThink }}"
       },
       "medium": {
         "description": "Implementation, review, and verification",
         "model": "{{ $model }}",
-        "thinking": "{{ $thinking }}"
+        "thinking": "{{ $mediumThink }}"
       },
       "high": {
         "description": "Architecture and high-risk review, where a wrong call is expensive to reverse",
-        "model": "{{ $model }}",
-        "thinking": "{{ $thinking }}"
+        "model": "openai-codex/{{ $highModel }}",
+        "thinking": "{{ $highThink }}"
       }
     }
   }
