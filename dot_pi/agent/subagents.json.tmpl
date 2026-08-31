@@ -25,6 +25,27 @@
   The two packages move together: pi-workflows declares `pi-subagents >= 1.9.0`
   and fails its startup handshake against an older peer.
 
+  pi-workflows >= 1.6.0 has a `strengths` setting of its own, mapping a workflow
+  strength onto a key from THIS catalogue. It is not a reintroduction of that
+  layer and must not become one: what v4 deleted carried its own model and
+  thinking values, so a workflow spawn was resolved by a second resolver against
+  a second policy, whereas `strengths` carries only keys from here.
+  resolveAgentTier() stays the only resolver and this catalogue the only model
+  policy. Nothing about it belongs in this file — the vocabulary is pi-workflows'
+  business, the models are this machine's — and no `workflow` key may reappear
+  here. This machine defines no strengths, so each one runs on the profile of the
+  same name below and the built-in workflows resolve `low` and `medium` exactly
+  as any other spawn does. That also means workflow fan-outs share these rungs
+  with every ordinary spawn: pricing workflow work separately would mean adding
+  a profile here and pointing a strength at it from pi-workflows, not editing a
+  rung the rest of the catalogue uses.
+
+  One shift in 1.6.0 to be aware of when reading costs off this file: the
+  `verify` and `judgePanel` quality helpers now request `low` where they used to
+  name no tier and fall through to `medium`. `completenessCheck` requests
+  `medium`, which is where it already landed. A tier a call requests outranks
+  defaultTier, so those three no longer follow it.
+
   low/medium/high are also the profile names pi-subagents ships (all inheriting
   the parent model), so the built-in workflows and the ad-hoc script resolve
   against real profiles here instead of being dropped to the default. The shipped
