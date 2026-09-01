@@ -18,9 +18,50 @@ render() {
 
 render dot_claude/settings.json.tmpl >"$tmp_root/claude.json"
 jq -e '.["skipDangerousModePermissionPrompt"] == true and
-       .permissions.defaultMode == "bypassPermissions" and
-       (.["permissions"]["deny"] | index("Bash(git worktree:*)")) != null' \
+       .permissions.defaultMode == "bypassPermissions"' \
     "$tmp_root/claude.json" >/dev/null
+
+# The chezmoi git worktree/branch guard is cwd-scoped, so it lives in the PreToolUse hook
+# and not in the static deny list: a deny entry cannot say "only inside the
+# chezmoi source tree", and the copy that tried blocked branch creation in every
+# unrelated repository. Assert the hook is wired, then assert what it decides.
+jq -e '[.hooks.PreToolUse[] | select(.matcher == "Bash") | .hooks[].command]
+       | any(test("block-git-rewrites\\.sh$"))' \
+    "$tmp_root/claude.json" >/dev/null
+
+guard="$ROOT/dot_claude/hooks/executable_block-git-rewrites.sh"
+guard_home="$tmp_root/guard-home"
+guard_source="$guard_home/.local/share/chezmoi"
+
+# The hook's decision for <command> in <cwd>, empty when it stays silent.
+guard_decision() {
+    jq -n --arg command "$1" --arg cwd "$2" \
+        '{tool_name: "Bash", tool_input: {command: $command}, cwd: $cwd}' |
+        HOME="$guard_home" bash "$guard" | jq -r '.decision // ""'
+}
+
+# Inside the chezmoi source tree, everything that can move HEAD is refused.
+for blocked in \
+    "git worktree add ../wt-x" \
+    "git switch -c feature" \
+    "git checkout -b feature" \
+    "git checkout main"; do
+    [[ "$(guard_decision "$blocked" "$guard_source")" == "block" ]]
+    [[ "$(guard_decision "$blocked" "$guard_source/dot_pi")" == "block" ]]
+done
+
+# Restoring a file never leaves the branch, so it stays allowed.
+[[ -z "$(guard_decision "git checkout -- README.md" "$guard_source")" ]]
+[[ -z "$(guard_decision "git status" "$guard_source")" ]]
+
+# Outside the source tree the rule does not apply at all.
+for allowed in \
+    "git worktree add ../wt-x" \
+    "git switch -c feature" \
+    "git checkout -b feature" \
+    "git checkout main"; do
+    [[ -z "$(guard_decision "$allowed" "$guard_home/src/other-repo")" ]]
+done
 
 render dot_codex/modify_config.toml.tmpl >"$tmp_root/codex.sh"
 bash -n "$tmp_root/codex.sh"
