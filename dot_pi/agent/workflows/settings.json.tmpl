@@ -1,0 +1,67 @@
+{{- /*
+  ~/.pi/agent/workflows/settings.json — pi-workflows machine-wide settings.
+
+  This file exists for exactly one key. pi-workflows >= 1.6.0 stopped letting a
+  workflow script name an Agent tier: a script names a *strength* — `low`,
+  `medium`, `high`, that package's own word for how much effort a step deserves
+  — and `strengths` is the only thing that binds one to a key in the Agent tier
+  catalogue in subagents.json.tmpl. Read the long note there before editing
+  either file; the two are one policy split across two packages.
+
+  Only the global file is written here. `/workflows strength` and every other
+  in-app settings edit go to `<agent dir>/workflows/projects/<project>/settings.json`
+  (saveWorkflowSettings always writes project scope), so a full-file template is
+  safe at this path — unlike dot_claude/settings.json, which the app rewrites in
+  place and which therefore has to be a modify_ script.
+
+  WHY THIS IS PINNED RATHER THAN LEFT ABSENT
+  An absent file does not mean "no mappings". pi-workflows computes a default
+  table at run start — each strength on the catalogue tier of the same name,
+  wherever this host defines one — which on this machine is exactly the identity
+  table written below. So this file changes no cost today, and that is the point:
+  it states the mapping instead of deriving it. The derivation is silent when it
+  stops matching. Rename or drop a profile in subagents.json and the default
+  table simply stops mapping that strength, every call naming it falls through
+  to pi-subagents' managed `medium` fallback, and nothing in this repository
+  changed to say so. A written entry whose tier the catalogue no longer defines
+  is reported once at run start instead, which is the whole difference.
+
+  WHY IT IS NOT A NO-OP
+  `low -> low` in a written table is a real entry, not a redundant one. A table
+  that is present replaces the shipped default outright rather than merging into
+  it, so a strength omitted here is *unmapped* even though this host defines a
+  tier of the same name. Deleting a line below is therefore a behaviour change,
+  not a cleanup.
+
+  WHAT THIS FILE MAY NEVER CONTAIN
+  A model or a thinking level. Every value below is a key in the one catalogue in
+  subagents.json.tmpl; pi-subagents still owns every model, every thinking level,
+  and the only resolveAgentTier(). That is the line between this key and the
+  retired `workflow.tiers`, which carried its own model/thinking values and so
+  became a second model policy behind a second resolver.
+
+  HOW TO RE-PRICE WORKFLOW WORK
+  Not by editing a rung below — `low` is shared with the Explore agent, which
+  ships `tier: low` so read-only search stays cheap, and with every ordinary
+  spawn that names it. Re-pricing a rung drags all of them. Add a new profile to
+  agentTiers.profiles in subagents.json.tmpl and point a strength at it here.
+  Any key the catalogue defines is legal; it is checked against the live
+  catalogue at run start, one hop, never chained.
+
+  Costs to read off subagents.json.tmpl for the built-in workflows as of 1.6.0:
+  the `verify` and `judgePanel` quality helpers request `low`, and
+  `completenessCheck` requests `medium`. A tier a call requests outranks
+  defaultTier, so those do not follow it. A call naming no strength sends no
+  tier at all and takes the agent's ordinary default.
+
+  Deliberately not set here: progressMode, maxAgentsShown, effort, and the
+  keyword-trigger keys. Those are presentation and session preferences the app
+  edits per project; leaving them absent keeps this file about routing only.
+*/ -}}
+{
+  "strengths": {
+    "low": "low",
+    "medium": "medium",
+    "high": "high"
+  }
+}

@@ -118,6 +118,27 @@ render dot_pi/agent/subagents.json.tmpl | jq -e '
   .fallbackSubagent == "none" and
   .disableDefaultAgents == true
 ' >/dev/null
+# pi-workflows routing. A workflow script names a strength, and this table is the
+# only thing binding one to a key in the Agent tier catalogue above. Assert the
+# closed vocabulary on the key side, and on the value side that every tier named
+# actually exists in subagents.json -- that coupling is the point of the test.
+# pi-workflows reports an unknown tier once at run start and then leaves the
+# strength unmapped, so a profile rename would otherwise drop every workflow call
+# onto the managed `medium` fallback with nothing in this repository to show it.
+render dot_pi/agent/workflows/settings.json.tmpl >"$tmp_root/workflows.json"
+render dot_pi/agent/subagents.json.tmpl >"$tmp_root/subagents.json"
+jq -e --slurpfile subagents "$tmp_root/subagents.json" '
+  ($subagents[0].agentTiers.profiles | keys) as $tiers
+  | (.strengths | keys) as $strengths
+  | ($strengths | length) > 0
+    and ($strengths - ["low", "medium", "high"] | length) == 0
+    and ([.strengths[]] - $tiers | length) == 0
+' "$tmp_root/workflows.json" >/dev/null
+
+# A strengths entry is a catalogue key and never its own model policy: that is
+# the line between this table and the retired `workflow.tiers` key.
+jq -e '[.strengths[] | type] | all(. == "string")' "$tmp_root/workflows.json" >/dev/null
+
 jq -e '.permission["*"] == "allow" and
        .permission.bash["*"] == "allow" and
        .permission.mcp["*"] == "allow" and
