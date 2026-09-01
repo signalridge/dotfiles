@@ -1,214 +1,151 @@
-# gopass New Device Setup Guide
+# Gopass New-Device Setup
 
-Complete workflow for restoring gopass password manager on a new device.
+This guide describes the encryption-enabled path of this repository. It uses
+HTTPS GitHub access and the existing `gh` credential helper; SSH URLs are
+legacy input and are normalized to HTTPS.
 
 ## Prerequisites
 
-- Access to your `keys-manage` backup repository (Git remote)
-- Keys-backup encryption password (used by `keys-manage` / OpenSSL)
-- GitHub SSH access
-- Network connection
+- Access to the keys-manage backup repository
+- Its OpenSSL encryption password
+- The gopass repository URL
+- Network access
+- A GitHub credential method: an existing `gh` login, `GH_TOKEN`/`GITHUB_TOKEN`,
+  or an interactive `gh` device-code login
 
-## Step 1: Initialize chezmoi
+## 1. Initialize chezmoi
+
+Use the downloaded-script form so the first-run prompts can read from the
+terminal:
 
 ```bash
-# Clone your dotfiles repository and apply configuration
-chezmoi init --apply https://github.com/YOUR_USERNAME/dotfiles.git
+curl -fsSL https://raw.githubusercontent.com/signalridge/dotfiles/main/init.sh -o /tmp/init.sh
+sh /tmp/init.sh
 ```
 
-chezmoi will automatically:
+Choose `useEncryption = true` and provide `keysRepository` and
+`gopassRepository` when prompted. The relevant order is:
 
-1. Install required tools (git, openssl, age, gopass)
-2. (If `useEncryption` enabled) Clone your keys-backup repo and restore `~/.ssh/main` (prompts for repo URL + backup password)
-3. Create gopass configuration file `~/.config/gopass/config`
+1. Script `00` installs or upgrades pinned Nix.
+2. Script `01` clones/pulls `keysRepository` and restores the keys-manage files.
+3. The restored `~/.ssh/main` key lets chezmoi decrypt its age-managed files.
+4. Script `06` verifies or clones the gopass store from `gopassRepository`.
 
-## Step 2: Clone Password Store
+If the key repository is private and credentials are not configured, script `01`
+can use a GitHub device-code login. For unattended use, provide
+`GH_TOKEN`/`GITHUB_TOKEN` and `KEYS_BACKUP_PASSWORD` securely in the environment.
 
-### Option A: Automatic (Recommended)
+When `useEncryption = false`, script `01`, script `06`, the gopass config, and
+managed `~/.ssh/*` targets are ignored. No gopass store is expected in that
+profile.
 
-During `chezmoi apply`, you'll be prompted:
+## 2. Clone the password store
+
+### Automatic
+
+During `chezmoi apply`, script `06` asks:
 
 ```text
 Clone password store now? (yes/no):
 ```
 
-Type `yes` to auto-clone.
+Answer `yes`. The script runs `gopass clone --check-keys=false`, then verifies
+that the store is readable with `~/.ssh/main`.
 
-### Option B: Manual
+### Manual
 
-```bash
-# Get repository URL from your dotfiles configuration
-REPO_URL=$(yq -r '.gopass.repository // "https://github.com/signalridge/password-store.git"' ~/.chezmoidata/gopass.yaml 2>/dev/null || echo "https://github.com/signalridge/password-store.git")
-
-gopass clone "$REPO_URL"
-```
-
-## Step 3: Verification
+The URL is stored as the top-level chezmoi data key `gopassRepository`, not in a
+`gopass.yaml` file:
 
 ```bash
-# List all passwords
+# Inspect the configured value without inventing a repository name.
+chezmoi data --format json | jq -r '.gopassRepository'
+
+gopass clone --check-keys=false https://github.com/YOUR_USER/YOUR_PASSWORD_STORE.git
 gopass ls
-
-# Test token helpers (AI tools)
-claude-token --check kimi@private
-codex-token --check deepseek@smoke
 ```
 
-If you are migrating from legacy key paths, re-add keys via `claude-manage add-key` or `codex-manage add-key`, then verify with `*-token --check`.
-
-## Configuration Details
-
-### Automatically Created Files
-
-1. **`~/.ssh/main`** - age encryption private key (restored from keys-backup repo)
-2. **`~/.ssh/main.pub`** - age encryption public key
-3. **`~/.config/gopass/config`** - gopass configuration:
-
-```toml
-[mounts]
-    crypto = age
-    path = /Users/username/.local/share/gopass/stores/root
-
-[age]
-    ssh-key-path = /Users/username/.ssh/main
-
-[core]
-    autopush = true
-    autosync = true
-    # ... other settings
-```
-
-4. **`~/.local/share/gopass/stores/root/.age-recipients`** - public key list (from Git):
+The generated config is `~/.config/gopass/config` and points at:
 
 ```text
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIERhZXwpwu3dcWOyNU/LfSe/D83R+aImQ9k6Ss4dBwKX
+store: ~/.local/share/gopass/stores/root
+age key: ~/.ssh/main
 ```
 
-### Why No Manual Public Key Configuration?
+## 3. Verify AI credentials
 
-The `.age-recipients` file is already in the Git repository and will be automatically retrieved when cloning.
-
-## Key Configuration Options
-
-### `age.ssh-key-path`
-
-```toml
-[age]
-    ssh-key-path = /Users/username/.ssh/main
-```
-
-**Purpose:** Tells gopass where to find the age decryption key.
-
-**Why needed:** The key is named `main` instead of the standard `id_ed25519`. If using standard names, this configuration is optional.
-
-### `mounts.crypto`
-
-```toml
-[mounts]
-    crypto = age
-```
-
-**Purpose:** Forces gopass to use age backend (instead of default GPG).
-
-## Parameterizing Repository URL
-
-### Method 1: Create `.chezmoidata/gopass.yaml`
-
-```yaml
-gopass:
-  repository: https://github.com/YOUR_USERNAME/password-store.git
-```
-
-### Method 2: Use in Scripts
+The Claude/Codex account managers use tool-scoped gopass namespaces. For
+example:
 
 ```bash
-# In setup scripts or manual commands
-GOPASS_REPO=$(yq -r '.gopass.repository' ~/.chezmoidata/gopass.yaml 2>/dev/null || echo "https://github.com/signalridge/password-store.git")
-
-gopass clone "$GOPASS_REPO"
+gopass ls
+claude-token --check kimi@private
+codex-token --check deepseek@private
 ```
+
+Native Anthropic/OpenAI accounts use their native OAuth flows and do not need an
+API-key entry. Other providers need keys in paths such as:
+
+```text
+claude/kimi/private/api_key
+codex/deepseek/private/api_key
+```
+
+Pi and aichat use separate service-scoped paths under `pi/`; do not merge a Kimi
+Code key with the Moonshot platform key. See [the Claude provider guide](claude-provider.md)
+for account operations.
+
+## Important generated files
+
+- `~/.ssh/main` — age/SSH private key restored by keys-manage
+- `~/.ssh/main.pub` — recipient/public key, generated when possible
+- `~/.config/gopass/config` — age-backed gopass configuration
+- `~/.local/share/gopass/stores/root/` — cloned password store
+- `~/.local/share/keys-backup/` — local keys-manage repository
+
+The gopass store contains `.age-recipients`; do not create a second native age
+identity directory unless you intentionally manage it separately. Script `06`
+backs up an existing `~/.config/gopass/age` directory before cloning.
 
 ## Troubleshooting
 
-### Error: "Age encryption key not found"
+### Age key is missing
 
-**Solution:** Re-run `chezmoi apply` and make sure `useEncryption=true`, and that you can access your keys repository.
-
-If you want to avoid prompts:
+Confirm that encryption is enabled and that the keys repository is configured:
 
 ```bash
-export KEYS_REPO=https://github.com/YOUR_USERNAME/keypairs.git
-export KEYS_BACKUP_PASSWORD='...'
-# Headless/unattended: also export a PAT so gh's credential helper can supply
-# the token without an interactive `gh auth login`.
-export GH_TOKEN=<PAT-with-repo-scope>
+chezmoi data --format json | jq '{useEncryption, keysRepository, gopassRepository}'
 chezmoi apply
 ```
 
-### Error: gopass clone fails
-
-**Solution:** HTTPS clone needs `gh` to be authenticated. Check status:
+For a private GitHub repository, authenticate over HTTPS:
 
 ```bash
 gh auth status
-
-# If not logged in (device-code flow, works on headless SSH sessions):
 gh auth login -h github.com -p https
 ```
 
-### Error: Cannot decrypt passwords
+For an unattended host, use a PAT through `GH_TOKEN` rather than putting a token
+in a URL or command line.
 
-**Solution:** Verify `~/.ssh/main` permissions:
+### Gopass cannot decrypt entries
 
 ```bash
 chmod 600 ~/.ssh/main
-chmod 644 ~/.ssh/main.pub
+chmod 644 ~/.ssh/main.pub 2>/dev/null || true
+gopass ls
+gopass show keys-manage/password 2>/dev/null || true
 ```
 
-## Technical Details
+If the encryption password is for the keys backup (not a gopass entry), set it
+only for the current command/session with `KEYS_BACKUP_PASSWORD` or answer the
+TTY prompt. Do not put it in process arguments.
 
-### Encryption Workflow
+## Related files
 
-1. **Encryption:** Uses public key from `.age-recipients`
-2. **Decryption:** Uses private key from `~/.ssh/main`
-
-### File Extensions
-
-- Old GPG backend: `.gpg` files
-- New age backend: `.age` files
-
-### Multi-Device Sync
-
-**Shared across devices:**
-
-- Same SSH key (restored from keys-backup repo)
-- Same Git repository (password store)
-
-**Device-specific:**
-
-- gopass configuration (synced via chezmoi, but paths may differ)
-
-## Security Recommendations
-
-1. **Backup SSH key:**
-   - Primary: keys-backup Git repository (`keys-manage`)
-   - Physical: Encrypted USB (optional)
-
-2. **Key permissions:**
-
-   ```bash
-   chmod 600 ~/.ssh/main       # Private key: owner read/write only
-   chmod 644 ~/.ssh/main.pub   # Public key: world readable
-   ```
-
-3. **Backup password security:**
-   - Use a strong keys-backup encryption password
-   - Store it in a secure password manager
-
-## Related Files
-
-- `migrate-gopass-to-age.sh` - Initial migration script (current device)
-- `.chezmoiscripts/run_before_01_setup-encryption-key.sh.tmpl` - Restore/ensure encryption key
-- `.chezmoiscripts/run_onchange_after_06_setup-gopass.sh.tmpl` - Clone password store
-- `private_dot_config/gopass/config.tmpl` - gopass configuration template
-- `.chezmoidata/gopass.yaml` - Repository URL configuration (optional)
+- `.chezmoi.toml.tmpl` — prompts and data keys
+- `.chezmoiscripts/run_before_01_setup-encryption-key.sh.tmpl` — restore keys
+- `.chezmoiscripts/run_onchange_after_06_setup-gopass.sh.tmpl` — clone/verify gopass
+- `private_dot_config/gopass/config.tmpl` — generated gopass configuration
+- `dot_local/bin/executable_keys-manage.tmpl` — keys backup/restore command
+- `docs/keys-manage-guide.md` — keys-manage operations

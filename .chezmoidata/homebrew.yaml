@@ -2,7 +2,7 @@ homebrew:
   taps:
     shared:
       - nikitabobko/tap
-    work: [] # azure/functions removed — repo GitHub-staff-disabled 2026-06-05 (untappable); func now installed from Azure CDN via run_onchange_after_12_azure-functions-core-tools
+    work: [] # azure/functions removed — repo GitHub-staff-disabled 2026-06-05 (untappable); func now installed from Azure CDN via run_onchange_after_16_azure-functions-core-tools
     private: []
   brews:
     shared:
@@ -14,7 +14,7 @@ homebrew:
       - awscli
       - aws-sam-cli
       - azure-cli
-      # azure-functions-core-tools@4 — installed from Azure CDN by run_onchange_after_12_azure-functions-core-tools (tap is GitHub-staff-disabled)
+      # azure-functions-core-tools@4 — installed from Azure CDN by run_onchange_after_16_azure-functions-core-tools (tap is GitHub-staff-disabled)
     private:
       - mas # Required for masApps installation
   casks:
