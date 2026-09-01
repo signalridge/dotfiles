@@ -29,9 +29,39 @@ if [[ -z "$brew_cmd" ]]; then
     exit 0
 fi
 
+repair_missing_cask_apps() {
+    local missing_casks
+
+    # Homebrew's receipt still counts a cask as installed after its app is
+    # deleted out-of-band. Repair those receipts before the normal upgrade so
+    # only the affected casks need --force.
+    missing_casks=$(
+        "$brew_cmd" info --json=v2 --installed --cask 2>/dev/null |
+            "$brew_cmd" ruby -rjson -e '
+                missing = {}
+                JSON.parse(STDIN.read).fetch("casks", []).each do |cask|
+                  cask.fetch("artifacts", []).each do |artifact|
+                    next unless artifact["app"].is_a?(Array)
+                    target = artifact["target"]
+                    next unless target.is_a?(String)
+                    missing[cask["token"]] = true unless File.exist?(target)
+                  end
+                end
+                missing.each_key { |token| puts token }
+            ' 2>/dev/null || true
+    )
+
+    while IFS= read -r cask; do
+        [[ -n "$cask" ]] || continue
+        echo "    Repairing cask with missing app: $cask"
+        "$brew_cmd" reinstall --cask --force "$cask"
+    done <<<"$missing_casks"
+}
+
 if ((CURRENT_TIME - LAST_UPDATE > UPDATE_INTERVAL)); then
     echo "    Last update: ${DAYS_AGO} days ago, checking for updates..."
     "$brew_cmd" update
+    repair_missing_cask_apps
 
     outdated=$("$brew_cmd" outdated --greedy)
     if [[ -z "$outdated" ]]; then
