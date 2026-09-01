@@ -31,7 +31,7 @@ packages:
   - name: nektos/act@v0.2.89
   - name: FiloSottile/age@v1.3.2
   - name: asciinema/asciinema@v3.2.1
-  - name: atuinsh/atuin@v18.20.1
+  - name: atuinsh/atuin@v18.21.0
   - name: axodotdev/cargo-dist@v0.32.0 # `dist` — was a live-only cargo install
   - name: sigoden/aichat@v0.30.0
   - name: sharkdp/bat@v0.26.1
@@ -40,14 +40,14 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.251
-  - name: openai/codex@rust-v0.151.0
+  - name: anthropics/claude-code@v2.1.252
+  - name: openai/codex@rust-v0.152.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.8.14
+  - name: jdx/mise@v2026.8.16
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -60,7 +60,7 @@ packages:
   - name: fastfetch-cli/fastfetch@2.67.1
   - name: sharkdp/fd@v10.5.0
   - name: junegunn/fzf@v0.74.3
-  - name: gopasspw/gopass@v1.16.1
+  - name: gopasspw/gopass@v1.17.0
   - name: cli/cli@v2.98.0
   - name: dlvhdr/gh-dash@v4.25.2
   - name: x-motemen/ghq@v1.10.1
@@ -71,18 +71,18 @@ packages:
   - name: jqlang/jq@jq-1.8.2
   - name: ynqa/jnv@v0.7.1
   - name: tldr-pages/tlrc@v1.13.1
-  - name: ast-grep/ast-grep@0.45.2
+  - name: ast-grep/ast-grep@0.45.3
   - name: casey/just@1.58.0
   - name: jesseduffield/lazygit@v0.64.1
   - name: jesseduffield/lazydocker@v0.25.2
   - name: neovim/neovim@v0.12.5
   - name: LuaLS/lua-language-server@3.19.1
-  - name: tree-sitter/tree-sitter@v0.26.13
+  - name: tree-sitter/tree-sitter@v0.27.0
   - name: jj-vcs/jj@v0.44.0
   - name: rclone/rclone@v1.75.0
-  - name: o2sh/onefetch@2.27.1
+  - name: o2sh/onefetch@2.28.1
   - name: ip7z/7zip@26.02
-  - name: ouch-org/ouch@0.8.1
+  - name: ouch-org/ouch@0.8.2
   - name: Nukesor/pueue/pueue@v4.0.4
   - name: BurntSushi/ripgrep@15.2.0
   - name: phiresky/ripgrep-all@v0.10.10
@@ -94,19 +94,19 @@ packages:
   - name: JohnnyMorganz/StyLua@v2.5.2
   - name: Kampfkarren/selene@0.31.0
   - name: crate-ci/typos@v1.50.0
-  - name: zizmorcore/zizmor@v1.29.0
+  - name: zizmorcore/zizmor@v1.30.0
   - name: gitleaks/gitleaks@v8.30.1
   - name: koalaman/shellcheck@v0.11.0
   - name: mvdan/sh@v3.14.0
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.16.5
-  - name: astral-sh/ty@0.0.75
+  - name: astral-sh/ty@0.0.77
   - name: j178/prek@v0.5.0
   - name: golang.org/x/tools/gopls@v0.23.0
   - name: golangci/golangci-lint@v2.13.2
   - name: goreleaser/goreleaser@v2.18.0
   - name: orhun/git-cliff@v2.13.1
-  - name: numtide/treefmt@v2.5.0
+  - name: numtide/treefmt@v2.6.0
   - name: XAMPPRocky/tokei@14.0.0
   - name: sharkdp/hyperfine@v1.20.0
   - name: hatoo/oha@v1.16.0
