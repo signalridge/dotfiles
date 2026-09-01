@@ -109,15 +109,46 @@ assert config["default_permission_mode"] == "yolo"
 assert config["default_plan_mode"] is False
 PY
 
-render dot_pi/agent/subagents.json.tmpl | jq -e '
-  .maxConcurrent == 40 and
-  .defaultMaxTurns == 640 and
-  .defaultMaxToolCalls == 1024 and
-  .defaultMaxTokens == 3000000 and
-  .graceTurns == 8 and
-  .fallbackSubagent == "none" and
-  .disableDefaultAgents == true
-' >/dev/null
+# subagents.json is the one template asserted here that branches on chezmoi
+# data: the work and private machines get different model and thinking rungs
+# under the same three tier names. `render` cannot reach it, because a test run
+# has no chezmoi config to read `.work` from -- CI has none at all, and a
+# developer's own would decide which machine the suite checked. Supply the value
+# instead, and check both machines: the split is the whole reason for the branch.
+render_subagents() {
+    chezmoi execute-template --source "$ROOT" --override-data "{\"work\":$1}" \
+        --file "$ROOT/dot_pi/agent/subagents.json.tmpl"
+}
+render_subagents true >"$tmp_root/subagents-work.json"
+render_subagents false >"$tmp_root/subagents-private.json"
+
+for machine in work private; do
+    jq -e '
+      .maxConcurrent == 40 and
+      .defaultMaxTurns == 640 and
+      .defaultMaxToolCalls == 1024 and
+      .defaultMaxTokens == 3000000 and
+      .graceTurns == 8 and
+      .fallbackSubagent == "none" and
+      .disableDefaultAgents == true and
+      .agentTiers.defaultTier == "medium" and
+      (.agentTiers.profiles | keys) == ["high", "low", "medium"]
+    ' "$tmp_root/subagents-$machine.json" >/dev/null
+done
+
+# The per-machine rungs the header comment documents. Both machines keep the
+# same tier names, which is what lets one strengths table below serve both.
+jq -e '.agentTiers.profiles |
+       .low.thinking == "high" and
+       .medium.thinking == "xhigh" and
+       .high.model == "openai-codex/gpt-5.6-luna" and .high.thinking == "max"' \
+    "$tmp_root/subagents-work.json" >/dev/null
+jq -e '.agentTiers.profiles |
+       .low.thinking == "xhigh" and
+       .medium.thinking == "max" and
+       .high.model == "openai-codex/gpt-5.6-sol" and .high.thinking == "xhigh"' \
+    "$tmp_root/subagents-private.json" >/dev/null
+
 # pi-workflows routing. A workflow script names a strength, and this table is the
 # only thing binding one to a key in the Agent tier catalogue above. Assert the
 # closed vocabulary on the key side, and on the value side that every tier named
@@ -126,14 +157,15 @@ render dot_pi/agent/subagents.json.tmpl | jq -e '
 # strength unmapped, so a profile rename would otherwise drop every workflow call
 # onto the managed `medium` fallback with nothing in this repository to show it.
 render dot_pi/agent/workflows/settings.json.tmpl >"$tmp_root/workflows.json"
-render dot_pi/agent/subagents.json.tmpl >"$tmp_root/subagents.json"
-jq -e --slurpfile subagents "$tmp_root/subagents.json" '
-  ($subagents[0].agentTiers.profiles | keys) as $tiers
-  | (.strengths | keys) as $strengths
-  | ($strengths | length) > 0
-    and ($strengths - ["low", "medium", "high"] | length) == 0
-    and ([.strengths[]] - $tiers | length) == 0
-' "$tmp_root/workflows.json" >/dev/null
+for machine in work private; do
+    jq -e --slurpfile subagents "$tmp_root/subagents-$machine.json" '
+      ($subagents[0].agentTiers.profiles | keys) as $tiers
+      | (.strengths | keys) as $strengths
+      | ($strengths | length) > 0
+        and ($strengths - ["low", "medium", "high"] | length) == 0
+        and ([.strengths[]] - $tiers | length) == 0
+    ' "$tmp_root/workflows.json" >/dev/null
+done
 
 # A strengths entry is a catalogue key and never its own model policy: that is
 # the line between this table and the retired `workflow.tiers` key.

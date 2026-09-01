@@ -62,7 +62,10 @@
   maxConcurrent is 40 for direct Agent fan-out. pi-workflows may enforce its own
   lower package-level cap independently of this setting.
 
-  Nothing in this file branches on chezmoi data.
+  This file branches on chezmoi data in exactly one place: the four `.work`
+  ternaries below, which pick the per-machine rungs listed at the top. The tier
+  NAMES never branch, which is what lets pi-workflows' strengths table in
+  workflows/settings.json.tmpl map onto both machines unchanged.
 */ -}}
 {{- $highModel := ternary "gpt-5.6-luna" "gpt-5.6-sol" .work -}}
 {{- $highThink := ternary "max" "xhigh" .work -}}
