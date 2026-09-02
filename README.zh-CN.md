@@ -72,6 +72,9 @@ README 按当前实际源文件组织：
 
 ```text
 .
+├── .chezmoi.toml.tmpl         # 首次运行的 prompt 与全部派生数据
+├── .chezmoiignore             # OS / headless / 加密相关的排除规则
+├── .chezmoitemplates/shell/   # 共享片段（age wrapper、nix 环境加载）
 ├── .chezmoidata/
 │   ├── nix.yaml              # Nix 用户/系统包数据
 │   ├── homebrew.yaml         # taps、formulae、cask、MAS 条目
@@ -84,20 +87,25 @@ README 按当前实际源文件组织：
 │   └── versions.yaml         # installer、package 和 skill revisions
 ├── .chezmoiexternal.toml.tmpl # TPM 与共享 skills archive
 ├── .chezmoiscripts/           # 编号式 bootstrap/维护脚本
+├── init.sh                    # 仅 HTTPS 的 bootstrap 入口
+├── Justfile.tmpl              # 渲染为 ~/Justfile（见"日常操作"）
 ├── nix-config/                # flake、nix-darwin/profile 模块
-├── dot_claude/                # Claude 设置、hooks、指令
+├── dot_zshenv、dot_zshrc 等   # zsh 入口（dot_gitconfig 只是占位）
+├── dot_custom/                # exports、alias、函数、fzf-tab（~/.custom）
+├── dot_claude/                # Claude 设置、hooks、context、CI 模板
 ├── dot_codex/                 # Codex 配置、prompts、指令
-├── dot_pi/                    # Pi 设置、models、agents、MCP、themes
+├── dot_pi/                    # Pi 设置、models、agents、MCP、themes、搜索
 ├── dot_cursor/                # Cursor CLI 设置与 MCP
-├── dot_kimi-code/             # Kimi safety 设置与 MCP
+├── dot_kimi-code/             # Kimi safety 设置、MCP 与指令
 ├── dot_gemini/                # Antigravity CLI 合并配置
-├── dot_harnesses/             # 本地 harness commands 与 skills
+├── dot_harnesses/             # 仓库自带 skills 与共享 /commit command
 ├── dot_local/bin/             # account、key、MCP、skill、status helpers
-├── private_dot_config/        # shell、tmux、工具和服务配置
+├── private_dot_config/        # 编辑器、终端、桌面、工具与服务配置
+├── private_dot_ssh/           # age 加密的 SSH client 配置
 ├── private_Library/           # macOS LaunchAgents
 ├── docs/                      # 专项运维指南
 ├── tests/                     # bootstrap 与集成回归测试
-└── tools/                     # 独立工具（包括 WezTerm 图标）
+└── tools/wezterm-icon/        # 脚本 `22` 使用的 Swift 工具
 ```
 
 ## Bootstrap 流程：实际执行内容
@@ -131,7 +139,7 @@ README 按当前实际源文件组织：
 | `19b` | `run_onchange_after_19_load-systemd-user-units.sh.tmpl`    | 仅 Linux；启用 linger 和 `mcp-reaper.timer` systemd user unit，并禁用旧的本地 Context7 unit。                                                                |
 | `20`  | `run_after_20_update-pi-extensions.sh.tmpl`                | Pi 已安装时，每个 ISO 周/package 集合运行一次 `pi update --extensions`；失败不阻断 apply，并在下次 apply 重试。                                              |
 | `21`  | `run_onchange_after_21_terminal-profile.sh.tmpl`           | 仅非 headless macOS；安装托管的 Dracula Terminal.app profile 并设为默认。                                                                                    |
-| `22`  | `run_after_22_wezterm-icon.sh`                             | 仅 macOS；需要时在 cask 替换 WezTerm 后重新应用自定义图标。                                                                                                  |
+| `22`  | `run_after_22_wezterm-icon.sh`                             | 仅非 headless macOS；需要时在 cask 替换 WezTerm 后，通过 `tools/wezterm-icon` 重新应用自定义图标。                                                           |
 | `23`  | `run_after_23_mise-up.sh`                                  | 每 7 天运行 `mise up`；失败不致命，也不会推进成功时间戳。                                                                                                    |
 
 ## 快速开始
@@ -208,9 +216,13 @@ chezmoi init --apply \
 
 ## 日常操作
 
-交互式 shell 会导出
-`JUSTFILE=${XDG_CONFIG_HOME:-$HOME/.config}/just/.justfile`（通常为
-`~/.config/just/.justfile`）。这个全局 justfile 包含：
+同一个 `Justfile.tmpl` 会渲染出两个 justfile：
+
+- `~/.config/just/.justfile` —— 全局文件。交互式 shell 导出
+  `JUSTFILE=${XDG_CONFIG_HOME:-$HOME/.config}/just/.justfile`，因此在任意目录
+  下 `just` 都使用它。
+- `~/Justfile` —— 同样的 recipe，**外加** `test`。但由于 `JUSTFILE` 已导出，
+  `just test` 并不会解析到它；请直接运行下面的测试命令。
 
 ```bash
 # Chezmoi
@@ -218,44 +230,49 @@ just apply
 just diff
 just update
 just re-add
+just edit <file>
 
 # Nix
 just up                 # 更新全部 flake inputs
 just upp nixpkgs        # 更新单个 input
-just gc
+just gc                 # 默认 7 天
 just verify
 just optimize
+just repl
+just repair <paths>
+just gcroot
 
 # 仅 macOS
 just darwin
+just darwin-debug
 just darwin-check
 just darwin-build
+just history
+just clean              # 默认 7 天
 ```
 
-全局 justfile **不包含**回归测试 recipe。实际测试请运行：
+回归测试与 lint 请直接运行：
 
 ```bash
 bash "$(chezmoi source-path)/tests/run.sh"
 pre-commit run --all-files
 ```
 
-其他生成的 recipe 还有 `edit`、`history`、`repl`、`clean`、`repair`、`gcroot`
-以及 Git 简写（`st`、`gd`、`gl`、`cm`、`push`、`pull`）；其中部分仅 macOS
-可用。`clean` 和 `gc` 默认保留 7 天，也可以传参覆盖。
+此外还有 Git 简写 recipe（`st`、`gd`、`gl`、`cm`、`push`、`pull`）。
 
 ## 包与工具管理
 
 包源是有意分层的，并不是所有清单都位于 `.chezmoidata/`。
 
-| 层               | 源文件                                                            | 管理内容                                                                                                                                                              |
-| ---------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Nix 用户 profile | `.chezmoidata/nix.yaml` + `nix-config/modules/profile.nix.tmpl`   | 通过 `flakey-profile` 管理 shared 包和 work 包；当前 `sysPkgs` 清单为空，macOS 系统设置/字体/服务仍由 `nix-darwin` 管理。                                             |
-| nix-darwin       | `nix-config/modules/*.tmpl`                                       | macOS defaults、字体、shell/PAM 设置、Nix index、Homebrew 集成和系统 launchd jobs。                                                                                   |
-| Homebrew         | `.chezmoidata/homebrew.yaml` + `nix-config/modules/apps.nix.tmpl` | taps、formulae、cask 和条件式 MAS 条目；不是锁定且可复现的 Nix 层。                                                                                                   |
-| aqua             | `private_dot_config/aquaproj-aqua/aqua.yaml` 与 `registry.yaml`   | 固定版本 CLI，包括 Claude/Codex、shell 工具、Kubernetes/security 工具、Kimi Code、Herdr、Slipway 和 qmk-hid-host。                                                    |
-| mise             | `private_dot_config/mise/config.toml.tmpl`                        | Node、Bun、Python、Go、Rust、Lua、Terraform、uv、pipx 工具、Pi、用量分析器、浏览器/媒体 CLI、`xurl` 和 `crosspost`。`npm:` 条目使用 Bun，但 Node 仍保留用于 runtime。 |
-| 直接 installer   | `.chezmoiscripts/00`、`09`、`15`、`16`                            | Determinate Nix、Paperlib、Cursor Agent 和 work-only Azure Functions Core Tools，版本/checksum 均来自仓库数据。                                                       |
-| Pi extensions    | `.chezmoidata/pi.yaml` + Pi settings                              | 五个外部 package 和二十个 `@signalridge` package；有意不 pin，由 Pi 每周的 `update --extensions` 刷新。                                                               |
+| 层               | 源文件                                                              | 管理内容                                                                                                                                                                                                               |
+| ---------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nix 用户 profile | `.chezmoidata/nix.yaml` + `nix-config/modules/profile.nix.tmpl`     | 通过 `flakey-profile` 管理 shared 包和 work 包；当前 `sysPkgs` 清单为空，macOS 系统设置/字体/服务仍由 `nix-darwin` 管理。                                                                                              |
+| nix-darwin       | `nix-config/modules/*.tmpl`                                         | macOS defaults、字体、shell/PAM 设置、Nix index、Homebrew 集成和系统 launchd jobs。                                                                                                                                    |
+| Homebrew         | `.chezmoidata/homebrew.yaml` + `nix-config/modules/apps.nix.tmpl`   | taps、formulae、cask 和条件式 MAS 条目；不是锁定且可复现的 Nix 层。                                                                                                                                                    |
+| aqua             | `private_dot_config/aquaproj-aqua/{aqua,registry,aqua-policy}.yaml` | 固定版本 CLI：Claude Code、Codex、Antigravity CLI（`agy`）、shell/Kubernetes/security 工具，以及来自本地 `registry.yaml` 的 Kimi Code、Herdr、Slipway、qmk-hid-host 和 doggo。`aqua-policy.yaml` 授权该本地 registry。 |
+| mise             | `private_dot_config/mise/config.toml.tmpl`                          | Node、Bun、Python、Go、Rust、Lua、Terraform、uv、pipx 工具、Pi、用量分析器、浏览器/媒体 CLI、`xurl` 和 `crosspost`。`npm:` 条目使用 Bun，但 Node 仍保留用于 runtime。                                                  |
+| 直接 installer   | `.chezmoiscripts/00`、`09`、`15`、`16`                              | Determinate Nix、Paperlib、Cursor Agent 和 work-only Azure Functions Core Tools，版本/checksum 均来自仓库数据。                                                                                                        |
+| Pi extensions    | `.chezmoidata/pi.yaml` + Pi settings                                | 五个外部 package 和二十个 `@signalridge` package；有意不 pin，由 Pi 每周的 `update --extensions` 刷新。                                                                                                                |
 
 代表性工具包括 `eza`、`bat`、`fd`、`ripgrep`、`fzf`、`gh`、`ghq`、`just`、
 `lazygit`、`neovim`、`yazi`、`jj`、`xh`、`slumber`、`k9s`、`kubectl`、`helm`、
@@ -263,9 +280,30 @@ pre-commit run --all-files
 `aichat`、`agent-browser`、`hyperframes` 和 `impeccable`。完整清单以实际源文件
 为准。
 
+## 编辑器、终端与桌面
+
+`private_dot_config/` 承载的内容远多于上面的包管理表，它是工作站的其余部分：
+
+| 领域       | 托管的配置                                                                                                                                                                  |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 编辑器     | `nvim/` —— LazyVim，配套提交进仓库的 `lazy-lock.json`、`neoconf.json`，以及本地 `lua/config`、`lua/plugins` 覆盖（配色、AI、dotfiles）。                                    |
+| Shell 外观 | `sheldon/plugins.toml`（zsh 插件管理：ohmyzsh lib、`zsh-defer`、autosuggestions、syntax highlighting、`fzf-tab`、`enhancd`、`you-should-use`）、`starship.toml`、`atuin/`。 |
+| 终端       | `wezterm/wezterm.lua` 与随附的 `WezTerm.icns`；`terminal/Dracula.terminal` 供 Terminal.app 使用（由脚本 `21` 安装）。                                                       |
+| 多路复用   | `tmux/tmux.conf.tmpl`：TPM 加另外 17 个固定插件（tmux2k 状态栏含自定义 AI agent 段、sessionx、floax、extrakto、resurrect/continuum）；以及 Herdr 的 `herdr/config.toml`。   |
+| macOS 桌面 | `aerospace/`（平铺窗口管理）、`hammerspoon/`（输入法自动切换、麦克风/音量 watcher、Spoons）、`private_karabiner/`、`sofle/`（QMK/Vial 键盘布局）。                          |
+| Git 与评审 | `git/`、`jj/`、`delta/`、`lazygit/`、`git-cliff/`、`gh/`、`gh-dash/`。GitHub 走 HTTPS + `gh` credential helper，**刻意不使用** `insteadOf` 改写。                           |
+| 文件与观测 | `yazi/`、`bat/`、`bottom/`、`procs/`、`slumber/`、`watchexec/`、`tlrc/`、`lazydocker/`，以及 `stern/`、`grype/`、`syft/` 策略文件。                                         |
+| 服务与存储 | `systemd/user/`（Linux 上的 `mcp-reaper.service` 与 `.timer`）、`nix/nix.conf`、`gopass/config.tmpl`、`mise/`、`aquaproj-aqua/`、`just/`、`aichat/`、`letsencrypt/`。       |
+
+`tools/wezterm-icon/` 是脚本 `22` 调用的独立 Swift 工具，用于在 Homebrew 替换
+cask 之后重新应用 WezTerm 自定义图标。
+
 ## Shell Alias 与函数
 
-Shell 配置只在交互式 zsh 中加载。下列 alias 只有在目标命令存在时才会创建：
+Shell 文件位于 `dot_custom/`，应用到 `~/.custom/`（`exports.sh`、`alias.sh`、
+`functions.sh`、`utils.sh`、`eval.sh`、`fzf-tab.zsh`）；`~/.zshrc` 负责加载它们，
+并在非交互式 shell 中提前返回。未纳管的 `~/.custom/local.sh` 会最后加载，用于
+本机覆盖。下列 alias 只有在目标命令存在时才会创建：
 
 | Alias                                                 | 目标                                                                             |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -277,9 +315,15 @@ Shell 配置只在交互式 zsh 中加载。下列 alias 只有在目标命令�
 | `cxm`、`cxw`                                          | `codex-manage`、`codex-with`                                                     |
 | `k` / `kubectl`                                       | 安装了 `kubecolor` 时使用它；否则 `k` 指向 `kubectl`                             |
 
-`la`、`ll`、`lla`、`lt` 是 eza/listing helpers；`cp`、`mv`、`mkdir` 是带
-交互/安全选项的 alias（`-i`/`-v`，以及 `mkdir -p`）。`ripgrep`、`fd`、
-`zoxide` 会安装并集成，但 **`grep`、`find`、`cd` 并没有被 alias 替换**。
+`la` 和 `ll` 始终存在；`lla`、`lt` 仅在装有 eza 时才定义（使用 eza 的
+`--git`/`--tree`）。`cp`、`mv`、`mkdir` 是带交互/安全选项的 alias
+（`-i`/`-v`，以及 `mkdir -p`）。`ripgrep`、`fd`、`zoxide` 会安装并集成，但
+**`grep`、`find`、`cd` 并没有被 alias 替换**。
+
+zsh 下还有一组可在命令行任意位置展开的 global alias —— `L`（`| less`）、
+`G`（`| grep`）、`H`、`T`、`W`、`S`、`U`、`J`（`| jq`）、`CP`（`| pbcopy`）、
+`F`（`$(fzf)`），以及用于重定向的 `N`/`N1`/`N2`；另有 `galias` 列出它们、`yy`
+复制上一条命令到剪贴板。`take` 是 `mkcd` 的别名。
 
 常用函数：
 
@@ -305,15 +349,19 @@ worktree 和 branch switching。`AICOMMIT_PROVIDER` 可取 `claude`、`codex`、
 
 ### 托管的 harness
 
-| Harness          | 托管文件与行为                                                                                                                                                                       |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Claude Code      | `~/.claude/settings.json`、全局指令、hooks、statusline 和官方 integration plugins。                                                                                                  |
-| Codex CLI        | `~/.codex/config.toml`、project-document fallback 列表、lifecycle hooks、MCP 和 Slack plugin 配置。                                                                                  |
-| Pi               | `~/.pi/agent/settings.json`、`models.json`、`subagents.json`、workflow settings、themes、keybindings 和 MCP。Pi 使用原生 `/model`、`/login`；没有 Pi account wrapper 或 `pi-token`。 |
-| Cursor Agent CLI | 固定版本的 `agent`/`cursor-agent` binary，以及 `~/.cursor/cli-config.json`、`~/.cursor/mcp.json`。                                                                                   |
-| Kimi Code        | `~/.kimi-code/config.toml` safety defaults 和 `~/.kimi-code/mcp.json`；没有 account wrapper。                                                                                        |
-| Antigravity CLI  | 合并到 `~/.gemini/antigravity-cli/settings.json`；保留 runtime 管理的 model/trust 设置。                                                                                             |
-| aichat           | `~/.config/aichat/config.yaml`；当对应 `pi/...` gopass key 存在时写入 Kimi Moonshot 和 Doubao。                                                                                      |
+| Harness          | 托管文件与行为                                                                                                                                                                                                                                                                                                  |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code      | `~/.claude/settings.json`、`CLAUDE.md`、四个 `context/*.md`、`hooks/`、`statusline-command.sh`、`templates/*.yml`（CI 起步模板）和官方 integration plugins。                                                                                                                                                    |
+| Codex CLI        | `~/.codex/config.toml`、`AGENTS.md`、project-document fallback 列表、lifecycle hooks、MCP 和 Slack plugin 配置。                                                                                                                                                                                                |
+| Pi               | `~/.pi/agent/settings.json`、`models.json`、`subagents.json`、`workflows/settings.json`、`mcp.json`、`keybindings.json`、`APPEND_SYSTEM.md`、六个 `agents/*.md`、四套 theme、`pi-permission-system` 配置，以及 `~/.pi/web-search.json`。Pi 使用原生 `/model`、`/login`；没有 Pi account wrapper 或 `pi-token`。 |
+| Cursor Agent CLI | 固定版本的 `agent`/`cursor-agent` binary，以及 `~/.cursor/cli-config.json`、`~/.cursor/mcp.json`。                                                                                                                                                                                                              |
+| Kimi Code        | `~/.kimi-code/config.toml` safety defaults、`~/.kimi-code/mcp.json` 和 `~/.kimi-code/AGENTS.md`；没有 account wrapper。                                                                                                                                                                                         |
+| Antigravity CLI  | 合并到 `~/.gemini/antigravity-cli/settings.json`；保留 runtime 管理的 `model`、`permissions`、`trustedWorkspaces`。                                                                                                                                                                                             |
+| aichat           | `~/.config/aichat/config.yaml`；当对应 `pi/...` gopass key 存在时写入 Kimi Moonshot 和 Doubao。                                                                                                                                                                                                                 |
+
+`~/.claude/skills`、`~/.codex/skills`、`~/.pi/agent/skills`、`~/.cursor/skills`
+和 `~/.kimi-code/skills` 由 `dot_claude/run_after_ensure-skill-dirs.sh` 保证为
+真实目录；默认不在其中激活任何 skill。
 
 ### Claude 与 Codex accounts
 
@@ -383,6 +431,12 @@ phuryn/pm-skills、Reddit/daily.dev/X publishing skills、UI/UX/diagram skills�
 marketplace。全局 `ai-research-skills` CLI 由 mise 的 pipx/uvx backend 单独管理；
 不会安装 host skills 或 commands。
 
+有三个 skill 由本仓库自己编写（而非下载），并落在同一个库中：`dev/toolbelt`
+（全局 agent 指令引用的本地 CLI 清单）、`media/remotion`，以及 `social/oss-x-post`
+（内含带确认门的 `social-post` 与 `reddit-submit` 发布助手）。共享的 `/commit`
+command 位于 `~/.harnesses/commands/core/commit.md`，并被 symlink 到
+`~/.claude/commands/core` 和 `~/.codex/prompts/core-commit.md`。
+
 在项目目录运行 `skill-activate`，会将同一批选中的 skills 以 flat symlink 写入：
 
 ```text
@@ -412,6 +466,10 @@ marketplace。全局 `ai-research-skills` CLI 由 mise 的 pipx/uvx backend 单�
 | Codex          | Notion 加上上面的六个条目。                                                                                           |
 | Pi             | `context7`、`deepwiki`、`gitmcp` 是 lazy direct tools；`markitdown`、`arxiv` 是 lazy proxy tools。这里不声明 Tavily。 |
 | Cursor 与 Kimi | `context7`、`tavily`、`deepwiki`、`gitmcp`、`markitdown`、`arxiv`。                                                   |
+
+Pi 走的是另一条路径：托管的 `~/.pi/web-search.json` 为 `pi-web-access` 扩展配置
+Exa/Tavily 的路由组合，在调用时才从 gopass 读取 Tavily key，并禁用浏览器 cookie
+复用。
 
 `~/.local/bin/mcp-tavily` 运行时从 gopass 读取 `tavily/api_key`，再通过
 `bunx` 启动固定版本的 `tavily-mcp@0.2.16`。当对应的非 headless macOS 或

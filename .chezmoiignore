@@ -9,6 +9,14 @@ SECURITY.md
 CLAUDE.md
 AGENTS.md
 
+# Local build artifacts and stray logs. These are in .gitignore, but .gitignore
+# does not stop chezmoi: anything left in the source tree becomes a managed
+# target, so a `nix build` here would apply `~/result` and a proxy/tool log
+# dropped in this directory would be copied into $HOME.
+result
+result-*
+*.log
+
 # Python bytecode (defensive -- bundled skill scripts are currently bash, but
 # leave the ignore in place for future Python-backed helpers)
 **/__pycache__/

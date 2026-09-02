@@ -74,6 +74,9 @@ The README is deliberately organized around the actual source files:
 
 ```text
 .
+├── .chezmoi.toml.tmpl         # first-run prompts and every derived data value
+├── .chezmoiignore             # OS / headless / encryption exclusions
+├── .chezmoitemplates/shell/   # shared snippets (age wrapper, nix env sourcing)
 ├── .chezmoidata/
 │   ├── nix.yaml              # Nix user/system package data
 │   ├── homebrew.yaml         # taps, formulae, casks, and MAS entries
@@ -86,20 +89,25 @@ The README is deliberately organized around the actual source files:
 │   └── versions.yaml         # pinned installers, packages, and skill revisions
 ├── .chezmoiexternal.toml.tmpl # TPM and shared skill archives
 ├── .chezmoiscripts/           # numbered bootstrap and maintenance scripts
+├── init.sh                    # HTTPS-only bootstrap entry point
+├── Justfile.tmpl              # rendered to ~/Justfile (see Daily Operations)
 ├── nix-config/                # flake and nix-darwin/profile modules
-├── dot_claude/                # Claude settings, hooks, and instructions
+├── dot_zshenv, dot_zshrc, …   # zsh entry points (dot_gitconfig is a stub)
+├── dot_custom/                # exports, aliases, functions, fzf-tab (~/.custom)
+├── dot_claude/                # Claude settings, hooks, context, CI templates
 ├── dot_codex/                 # Codex config, prompts, and instructions
-├── dot_pi/                    # Pi settings, models, agents, MCP, and themes
+├── dot_pi/                    # Pi settings, models, agents, MCP, themes, search
 ├── dot_cursor/                # Cursor CLI settings and MCP
-├── dot_kimi-code/             # Kimi safety settings and MCP
+├── dot_kimi-code/             # Kimi safety settings, MCP, and instructions
 ├── dot_gemini/                # Antigravity CLI settings merge
-├── dot_harnesses/             # local harness commands and skills
+├── dot_harnesses/             # repo-authored skills and the shared /commit command
 ├── dot_local/bin/             # account, key, MCP, skill, and status helpers
-├── private_dot_config/        # shell, tmux, tool, and service configuration
+├── private_dot_config/        # editor, terminal, desktop, tool, service config
+├── private_dot_ssh/           # age-encrypted SSH client config
 ├── private_Library/           # macOS LaunchAgents
 ├── docs/                      # focused operational guides
 ├── tests/                     # bootstrap and integration regression tests
-└── tools/                     # standalone utilities (including WezTerm icon)
+└── tools/wezterm-icon/        # Swift helper used by script `22`
 ```
 
 ## Bootstrap Flow: What Actually Runs
@@ -134,7 +142,7 @@ after apply and perform their own guards or cadence checks.
 | `19b` | `run_onchange_after_19_load-systemd-user-units.sh.tmpl`    | Linux only; enables lingering and the `mcp-reaper.timer` systemd user unit, and disables the old local Context7 unit.                                                                                                        |
 | `20`  | `run_after_20_update-pi-extensions.sh.tmpl`                | When Pi is installed, runs `pi update --extensions` once per ISO week/package set. Failures are non-fatal and retried on the next apply.                                                                                     |
 | `21`  | `run_onchange_after_21_terminal-profile.sh.tmpl`           | Non-headless macOS only; installs the managed Dracula Terminal.app profile as the default.                                                                                                                                   |
-| `22`  | `run_after_22_wezterm-icon.sh`                             | macOS only; reapplies the custom WezTerm icon after cask replacement when needed.                                                                                                                                            |
+| `22`  | `run_after_22_wezterm-icon.sh`                             | Non-headless macOS only; reapplies the custom WezTerm icon (via `tools/wezterm-icon`) after cask replacement when needed.                                                                                                    |
 | `23`  | `run_after_23_mise-up.sh`                                  | Runs `mise up` on a seven-day cadence. A failed upgrade is non-fatal and does not advance the success timestamp.                                                                                                             |
 
 ## Quick Start
@@ -215,9 +223,14 @@ or interactive device-code OAuth.
 
 ## Daily Operations
 
-The interactive shell exports
-`JUSTFILE=${XDG_CONFIG_HOME:-$HOME/.config}/just/.justfile` (normally
-`~/.config/just/.justfile`). That global file contains the following groups:
+Two justfiles are rendered from the same `Justfile.tmpl` source:
+
+- `~/.config/just/.justfile` — the global file. The interactive shell exports
+  `JUSTFILE=${XDG_CONFIG_HOME:-$HOME/.config}/just/.justfile`, so `just` uses
+  this file from any directory.
+- `~/Justfile` — the same recipes **plus** a `test` recipe. Because `JUSTFILE`
+  is exported, `just test` does not resolve to it; run the suite directly
+  instead (below).
 
 ```bash
 # Chezmoi
@@ -225,46 +238,50 @@ just apply
 just diff
 just update
 just re-add
+just edit <file>
 
 # Nix
 just up                 # update all flake inputs
 just upp nixpkgs        # update one input
-just gc
+just gc                 # defaults to 7 days
 just verify
 just optimize
+just repl
+just repair <paths>
+just gcroot
 
 # macOS-only recipes
 just darwin
+just darwin-debug
 just darwin-check
 just darwin-build
+just history
+just clean              # defaults to 7 days
 ```
 
-The global justfile does **not** contain the regression-test recipe. Run the
-actual test suite with:
+Run the regression suite and the lint hooks directly:
 
 ```bash
 bash "$(chezmoi source-path)/tests/run.sh"
 pre-commit run --all-files
 ```
 
-Other generated recipes include `edit`, `history`, `repl`, `clean`, `repair`,
-`gcroot`, and the short Git commands (`st`, `gd`, `gl`, `cm`, `push`, `pull`);
-some are macOS-only. `clean` and `gc` default to seven days unless overridden.
+There are also short Git recipes (`st`, `gd`, `gl`, `cm`, `push`, `pull`).
 
 ## Package and Tool Management
 
 Package sources are intentionally split; not every list lives in
 `.chezmoidata/`.
 
-| Layer             | Source                                                            | What it manages                                                                                                                                                                                          |
-| ----------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Nix user profile  | `.chezmoidata/nix.yaml` + `nix-config/modules/profile.nix.tmpl`   | Shared packages plus work packages through `flakey-profile`. The current `sysPkgs` list is empty; macOS system settings/fonts/services still live in `nix-darwin`.                                       |
-| nix-darwin        | `nix-config/modules/*.tmpl`                                       | macOS defaults, fonts, shell/PAM settings, Nix index, Homebrew integration, and system launchd jobs.                                                                                                     |
-| Homebrew          | `.chezmoidata/homebrew.yaml` + `nix-config/modules/apps.nix.tmpl` | Taps, formulae, casks, and conditional MAS entries. Homebrew is not a locked/reproducible Nix layer.                                                                                                     |
-| aqua              | `private_dot_config/aquaproj-aqua/aqua.yaml` and `registry.yaml`  | Pinned CLI releases, including Claude/Codex, shell tools, Kubernetes/security tools, Kimi Code, Herdr, Slipway, and qmk-hid-host.                                                                        |
-| mise              | `private_dot_config/mise/config.toml.tmpl`                        | Node, Bun, Python, Go, Rust, Lua, Terraform, uv, pipx tools, Pi, usage analyzers, browser/media CLIs, `xurl`, and `crosspost`. `npm:` entries use Bun; Node remains installed for runtime compatibility. |
-| Direct installers | `.chezmoiscripts/00`, `09`, `15`, and `16`                        | Determinate Nix, Paperlib, Cursor Agent, and work-only Azure Functions Core Tools with repository-pinned versions/checksums.                                                                             |
-| Pi extensions     | `.chezmoidata/pi.yaml` + Pi settings                              | Five external packages and twenty `@signalridge` packages, deliberately unpinned and refreshed by Pi's weekly `update --extensions` step.                                                                |
+| Layer             | Source                                                              | What it manages                                                                                                                                                                                                                                 |
+| ----------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nix user profile  | `.chezmoidata/nix.yaml` + `nix-config/modules/profile.nix.tmpl`     | Shared packages plus work packages through `flakey-profile`. The current `sysPkgs` list is empty; macOS system settings/fonts/services still live in `nix-darwin`.                                                                              |
+| nix-darwin        | `nix-config/modules/*.tmpl`                                         | macOS defaults, fonts, shell/PAM settings, Nix index, Homebrew integration, and system launchd jobs.                                                                                                                                            |
+| Homebrew          | `.chezmoidata/homebrew.yaml` + `nix-config/modules/apps.nix.tmpl`   | Taps, formulae, casks, and conditional MAS entries. Homebrew is not a locked/reproducible Nix layer.                                                                                                                                            |
+| aqua              | `private_dot_config/aquaproj-aqua/{aqua,registry,aqua-policy}.yaml` | Pinned CLI releases: Claude Code, Codex, Antigravity CLI (`agy`), shell/Kubernetes/security tools, and — from the local `registry.yaml` — Kimi Code, Herdr, Slipway, qmk-hid-host, and doggo. `aqua-policy.yaml` authorizes the local registry. |
+| mise              | `private_dot_config/mise/config.toml.tmpl`                          | Node, Bun, Python, Go, Rust, Lua, Terraform, uv, pipx tools, Pi, usage analyzers, browser/media CLIs, `xurl`, and `crosspost`. `npm:` entries use Bun; Node remains installed for runtime compatibility.                                        |
+| Direct installers | `.chezmoiscripts/00`, `09`, `15`, and `16`                          | Determinate Nix, Paperlib, Cursor Agent, and work-only Azure Functions Core Tools with repository-pinned versions/checksums.                                                                                                                    |
+| Pi extensions     | `.chezmoidata/pi.yaml` + Pi settings                                | Five external packages and twenty `@signalridge` packages, deliberately unpinned and refreshed by Pi's weekly `update --extensions` step.                                                                                                       |
 
 Representative configured tools include `eza`, `bat`, `fd`, `ripgrep`, `fzf`,
 `gh`, `ghq`, `just`, `lazygit`, `neovim`, `yazi`, `jj`, `xh`, `slumber`,
@@ -272,10 +289,33 @@ Representative configured tools include `eza`, `bat`, `fd`, `ripgrep`, `fzf`,
 `quarto`, `typst`, `aichat`, `agent-browser`, `hyperframes`, and
 `impeccable`. The full lists are in the source files above.
 
+## Editor, Terminal, and Desktop
+
+`private_dot_config/` is a larger layer than the package tables suggest; it
+holds the rest of the workstation:
+
+| Area                 | Managed configuration                                                                                                                                                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Editor               | `nvim/` — a LazyVim setup with a committed `lazy-lock.json`, `neoconf.json`, and local `lua/config` + `lua/plugins` overrides (colorscheme, AI, dotfiles).                                                                 |
+| Shell chrome         | `sheldon/plugins.toml` (zsh plugin manager: ohmyzsh libs, `zsh-defer`, autosuggestions, syntax highlighting, `fzf-tab`, `enhancd`, `you-should-use`), `starship.toml`, and `atuin/`.                                       |
+| Terminals            | `wezterm/wezterm.lua` plus the bundled `WezTerm.icns`, and `terminal/Dracula.terminal` for Terminal.app (installed by script `21`).                                                                                        |
+| Multiplexers         | `tmux/tmux.conf.tmpl` with TPM and seventeen further plugins (tmux2k statusline with a custom AI-agent segment, sessionx, floax, extrakto, resurrect/continuum), plus `herdr/config.toml` for the Herdr workspace manager. |
+| macOS desktop        | `aerospace/` (tiling window manager), `hammerspoon/` (IME auto-switch, mic/volume watchers, Spoons), `private_karabiner/`, and `sofle/` (QMK/Vial keyboard layout).                                                        |
+| Git and review       | `git/`, `jj/`, `delta/`, `lazygit/`, `git-cliff/`, `gh/`, `gh-dash/`. GitHub access is HTTPS through the `gh` credential helper; there are deliberately **no** `insteadOf` rewrites.                                       |
+| Files and inspection | `yazi/`, `bat/`, `bottom/`, `procs/`, `slumber/`, `watchexec/`, `tlrc/`, `lazydocker/`, and the `stern/`, `grype/`, `syft/` policy files.                                                                                  |
+| Services and stores  | `systemd/user/` (`mcp-reaper.service` + `.timer` on Linux), `nix/nix.conf`, `gopass/config.tmpl`, `mise/`, `aquaproj-aqua/`, `just/`, `aichat/`, and `letsencrypt/`.                                                       |
+
+`tools/wezterm-icon/` is the standalone Swift helper that script `22` calls to
+reapply the custom WezTerm icon after Homebrew replaces the cask.
+
 ## Shell Aliases and Functions
 
-Shell setup is loaded for interactive zsh sessions only. The aliases below are
-conditional on the target command being installed:
+Shell files live in `dot_custom/` and are applied to `~/.custom/`
+(`exports.sh`, `alias.sh`, `functions.sh`, `utils.sh`, `eval.sh`,
+`fzf-tab.zsh`); `~/.zshrc` sources them and returns early for non-interactive
+shells. An unmanaged `~/.custom/local.sh` is sourced last for machine-local
+overrides. The aliases below are conditional on the target command being
+installed:
 
 | Alias                                                 | Target                                                                           |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -287,10 +327,17 @@ conditional on the target command being installed:
 | `cxm`, `cxw`                                          | `codex-manage`, `codex-with`                                                     |
 | `k` / `kubectl`                                       | `kubecolor` when installed; otherwise `k` points to `kubectl`                    |
 
-`la`, `ll`, `lla`, `lt` are eza/listing helpers. `cp`, `mv`, and `mkdir` are
+`la` and `ll` always exist; `lla` and `lt` are defined only when eza is
+installed (they use eza's `--git`/`--tree` flags). `cp`, `mv`, and `mkdir` are
 interactive/safe aliases (`-i`/`-v`, plus `mkdir -p`). `ripgrep`, `fd`, and
 `zoxide` are installed/integrated, but **`grep`, `find`, and `cd` are not
 aliased** to them.
+
+Under zsh there is also a set of global aliases that expand anywhere on the
+command line — `L` (`| less`), `G` (`| grep`), `H`, `T`, `W`, `S`, `U`,
+`J` (`| jq`), `CP` (`| pbcopy`), `F` (`$(fzf)`), and `N`/`N1`/`N2` for output
+redirection — plus `galias` to list them and `yy` to copy the previous command
+to the clipboard. `take` is a second name for `mkcd`.
 
 Common functions:
 
@@ -317,15 +364,20 @@ and defaults to `claude` in the managed shell exports.
 
 ### Managed harnesses
 
-| Harness          | Managed files and behavior                                                                                                                                                                             |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Claude Code      | `~/.claude/settings.json`, global instructions, hooks, statusline, and official integration plugins.                                                                                                   |
-| Codex CLI        | `~/.codex/config.toml`, project-document fallback list, lifecycle hooks, MCP, and the Slack plugin configuration.                                                                                      |
-| Pi               | `~/.pi/agent/settings.json`, `models.json`, `subagents.json`, workflow settings, themes, keybindings, and MCP. Pi uses its native `/model` and `/login`; there is no Pi account wrapper or `pi-token`. |
-| Cursor Agent CLI | Pinned `agent`/`cursor-agent` binary plus `~/.cursor/cli-config.json` and `~/.cursor/mcp.json`.                                                                                                        |
-| Kimi Code        | `~/.kimi-code/config.toml` safety defaults and `~/.kimi-code/mcp.json`; no account wrapper is provided.                                                                                                |
-| Antigravity CLI  | A deep merge into `~/.gemini/antigravity-cli/settings.json`; runtime-owned model/trust settings are preserved.                                                                                         |
-| aichat           | `~/.config/aichat/config.yaml`, with Kimi Moonshot and Doubao entries when their `pi/...` gopass keys exist.                                                                                           |
+| Harness          | Managed files and behavior                                                                                                                                                                                                                                                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Claude Code      | `~/.claude/settings.json`, `CLAUDE.md`, the four `context/*.md` files, `hooks/`, `statusline-command.sh`, the `templates/*.yml` CI starters, and the official integration plugins.                                                                                                                                                               |
+| Codex CLI        | `~/.codex/config.toml`, `AGENTS.md`, the project-document fallback list, lifecycle hooks, MCP, and the Slack plugin configuration.                                                                                                                                                                                                               |
+| Pi               | `~/.pi/agent/settings.json`, `models.json`, `subagents.json`, `workflows/settings.json`, `mcp.json`, `keybindings.json`, `APPEND_SYSTEM.md`, six `agents/*.md` definitions, four themes, the `pi-permission-system` config, and `~/.pi/web-search.json`. Pi uses its native `/model` and `/login`; there is no Pi account wrapper or `pi-token`. |
+| Cursor Agent CLI | Pinned `agent`/`cursor-agent` binary plus `~/.cursor/cli-config.json` and `~/.cursor/mcp.json`.                                                                                                                                                                                                                                                  |
+| Kimi Code        | `~/.kimi-code/config.toml` safety defaults, `~/.kimi-code/mcp.json`, and `~/.kimi-code/AGENTS.md`; no account wrapper is provided.                                                                                                                                                                                                               |
+| Antigravity CLI  | A deep merge into `~/.gemini/antigravity-cli/settings.json`; runtime-owned `model`, `permissions`, and `trustedWorkspaces` are preserved.                                                                                                                                                                                                        |
+| aichat           | `~/.config/aichat/config.yaml`, with Kimi Moonshot and Doubao entries when their `pi/...` gopass keys exist.                                                                                                                                                                                                                                     |
+
+Claude's `~/.claude/skills`, `~/.codex/skills`, `~/.pi/agent/skills`,
+`~/.cursor/skills`, and `~/.kimi-code/skills` are kept as real directories by
+`dot_claude/run_after_ensure-skill-dirs.sh`; nothing is activated there by
+default.
 
 ### Claude and Codex accounts
 
@@ -400,6 +452,13 @@ not a blanket Claude marketplace installation. The global `ai-research-skills`
 CLI is managed separately by mise's pipx/uvx backend; it does not install host
 skills or commands.
 
+Three skills are authored in this repository rather than downloaded, and land
+in the same library: `dev/toolbelt` (the local CLI inventory referenced from the
+global agent instructions), `media/remotion`, and `social/oss-x-post` (which
+bundles the gated `social-post` and `reddit-submit` publish helpers). The shared
+`/commit` command lives at `~/.harnesses/commands/core/commit.md` and is
+symlinked into `~/.claude/commands/core` and `~/.codex/prompts/core-commit.md`.
+
 Run `skill-activate` from a project directory to create flat symlinks for the
 same selected skills in all five directories:
 
@@ -431,6 +490,10 @@ MCP declarations are intentionally not identical in every harness:
 | Codex           | Notion plus the same six entries above.                                                                                               |
 | Pi              | `context7`, `deepwiki`, `gitmcp` as lazy direct tools; `markitdown` and `arxiv` as lazy proxy tools. Pi does not declare Tavily here. |
 | Cursor and Kimi | `context7`, `tavily`, `deepwiki`, `gitmcp`, `markitdown`, and `arxiv`.                                                                |
+
+Pi reaches Tavily through a different path: the managed `~/.pi/web-search.json`
+configures the `pi-web-access` extension with an Exa/Tavily routing pair, reads
+the Tavily key from gopass at call time, and disables browser-cookie reuse.
 
 `~/.local/bin/mcp-tavily` reads `tavily/api_key` from gopass at runtime and
 launches the pinned `tavily-mcp@0.2.16` through `bunx`. When the corresponding

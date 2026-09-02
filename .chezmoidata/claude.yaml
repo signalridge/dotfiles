@@ -7,7 +7,9 @@ claude:
   #   - providers: Provider definitions (base_url + available models)
   #   - accounts: Account configurations (model selection + settings)
   #
-  # API keys stored in gopass: claude/providers/{provider}/accounts/{base64url(account)}/api_key
+  # API keys stored in gopass: claude/<provider>/<account-label>/api_key
+  # (`<account-label>` is the part after `@`, or `default` when the account name
+  # carries no `@`). See dot_local/bin/lib/ai/core.tmpl:api_key_path.
 
   # ===== Global Defaults =====
   # Fallback when neither account nor provider specifies a value.
