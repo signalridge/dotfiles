@@ -72,6 +72,9 @@ README は現在のソースファイルに対応しています。
 
 ```text
 .
+├── .chezmoi.toml.tmpl         # 初回 prompt と派生データの定義
+├── .chezmoiignore             # OS / headless / 暗号化による除外
+├── .chezmoitemplates/shell/   # 共有スニペット（age wrapper、nix env 読み込み）
 ├── .chezmoidata/
 │   ├── nix.yaml              # Nix ユーザー/システムパッケージデータ
 │   ├── homebrew.yaml         # taps、formulae、cask、MAS
@@ -84,20 +87,25 @@ README は現在のソースファイルに対応しています。
 │   └── versions.yaml         # installer、package、skill revisions
 ├── .chezmoiexternal.toml.tmpl # TPM と共有 skill archive
 ├── .chezmoiscripts/           # 番号付き bootstrap/保守スクリプト
+├── init.sh                    # HTTPS 専用の bootstrap 入口
+├── Justfile.tmpl              # ~/Justfile として展開（「日常運用」参照）
 ├── nix-config/                # flake、nix-darwin/profile モジュール
-├── dot_claude/                # Claude 設定、hooks、指示
+├── dot_zshenv、dot_zshrc ほか # zsh の入口（dot_gitconfig は空のスタブ）
+├── dot_custom/                # exports、alias、関数、fzf-tab（~/.custom）
+├── dot_claude/                # Claude 設定、hooks、context、CI テンプレート
 ├── dot_codex/                 # Codex 設定、prompts、指示
-├── dot_pi/                    # Pi 設定、models、agents、MCP、themes
+├── dot_pi/                    # Pi 設定、models、agents、MCP、themes、検索
 ├── dot_cursor/                # Cursor CLI 設定と MCP
-├── dot_kimi-code/             # Kimi の safety 設定と MCP
+├── dot_kimi-code/             # Kimi の safety 設定、MCP、指示
 ├── dot_gemini/                # Antigravity CLI のマージ設定
-├── dot_harnesses/             # ローカル harness commands と skills
+├── dot_harnesses/             # 自作 skills と共有 /commit command
 ├── dot_local/bin/             # account、key、MCP、skill、status helper
-├── private_dot_config/         # shell、tmux、ツール、サービス設定
+├── private_dot_config/        # エディタ、端末、デスクトップ、ツール、サービス設定
+├── private_dot_ssh/           # age 暗号化された SSH client 設定
 ├── private_Library/           # macOS LaunchAgents
 ├── docs/                      # 個別の運用ガイド
 ├── tests/                     # bootstrap/統合回帰テスト
-└── tools/                     # 単体ユーティリティ（WezTerm アイコンなど）
+└── tools/wezterm-icon/        # スクリプト `22` が使う Swift ユーティリティ
 ```
 
 ## Bootstrap フロー: 実際に実行されるもの
@@ -132,7 +140,7 @@ README は現在のソースファイルに対応しています。
 | `19b`  | `run_onchange_after_19_load-systemd-user-units.sh.tmpl`    | Linux のみ。linger と `mcp-reaper.timer` を有効にし、古いローカル Context7 unit を無効にします。                                                                           |
 | `20`   | `run_after_20_update-pi-extensions.sh.tmpl`                | Pi があれば ISO 週/package 集合ごとに `pi update --extensions` を一度実行します。失敗は非致命で次回 apply に再試行します。                                                 |
 | `21`   | `run_onchange_after_21_terminal-profile.sh.tmpl`           | 非 headless macOS のみ。管理対象 Dracula Terminal.app profile を既定にします。                                                                                             |
-| `22`   | `run_after_22_wezterm-icon.sh`                             | macOS のみ。必要な場合、cask 交換後に WezTerm のカスタムアイコンを再適用します。                                                                                           |
+| `22`   | `run_after_22_wezterm-icon.sh`                             | 非 headless macOS のみ。必要な場合、cask 交換後に `tools/wezterm-icon` で WezTerm のカスタムアイコンを再適用します。                                                       |
 | `23`   | `run_after_23_mise-up.sh`                                  | 7 日ごとに `mise up` を実行します。失敗は非致命で、成功時刻は進めません。                                                                                                  |
 
 ## クイックスタート
@@ -212,9 +220,14 @@ HTTPS credential が必要になる場合があります（既存の `gh` login�
 
 ## 日常運用
 
-対話的 shell は
-`JUSTFILE=${XDG_CONFIG_HOME:-$HOME/.config}/just/.justfile`（通常は
-`~/.config/just/.justfile`）を export します。この global justfile には次が含まれます。
+同じ `Justfile.tmpl` から二つの justfile が生成されます。
+
+- `~/.config/just/.justfile` —— global ファイル。対話的 shell が
+  `JUSTFILE=${XDG_CONFIG_HOME:-$HOME/.config}/just/.justfile` を export するため、
+  どのディレクトリでも `just` はこれを使います。
+- `~/Justfile` —— 同じ recipe に `test` を **追加** したもの。ただし `JUSTFILE`
+  が export されているので `just test` はこちらに解決されません。テストは下の
+  コマンドを直接実行してください。
 
 ```bash
 # Chezmoi
@@ -222,46 +235,50 @@ just apply
 just diff
 just update
 just re-add
+just edit <file>
 
 # Nix
 just up                 # 全 flake input を更新
 just upp nixpkgs        # 一つの input を更新
-just gc
+just gc                 # 既定 7 日
 just verify
 just optimize
+just repl
+just repair <paths>
+just gcroot
 
 # macOS only
 just darwin
+just darwin-debug
 just darwin-check
 just darwin-build
+just history
+just clean              # 既定 7 日
 ```
 
-global justfile には回帰テスト recipe は **ありません**。実際のテストは次で実行
-します。
+回帰テストと lint は直接実行します。
 
 ```bash
 bash "$(chezmoi source-path)/tests/run.sh"
 pre-commit run --all-files
 ```
 
-その他の生成 recipe には `edit`、`history`、`repl`、`clean`、`repair`、`gcroot`、
-Git の短縮コマンド（`st`、`gd`、`gl`、`cm`、`push`、`pull`）があります。一部は
-macOS 専用です。`clean` と `gc` の既定期間は 7 日で、引数で変更できます。
+ほかに Git の短縮 recipe（`st`、`gd`、`gl`、`cm`、`push`、`pull`）があります。
 
 ## パッケージとツールの管理
 
 パッケージの source は意図的に分かれており、すべての一覧が `.chezmoidata/`
 にあるわけではありません。
 
-| レイヤー                 | Source                                                            | 管理内容                                                                                                                                                                   |
-| ------------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Nix ユーザープロファイル | `.chezmoidata/nix.yaml` + `nix-config/modules/profile.nix.tmpl`   | `flakey-profile` で shared と work のパッケージを管理します。現在の `sysPkgs` は空ですが、macOS のシステム設定/フォント/サービスは `nix-darwin` にあります。               |
-| nix-darwin               | `nix-config/modules/*.tmpl`                                       | macOS defaults、フォント、shell/PAM、Nix index、Homebrew、system launchd jobs。                                                                                            |
-| Homebrew                 | `.chezmoidata/homebrew.yaml` + `nix-config/modules/apps.nix.tmpl` | tap、formula、cask、条件付き MAS。ロックされた再現可能な Nix レイヤーではありません。                                                                                      |
-| aqua                     | `private_dot_config/aquaproj-aqua/aqua.yaml` と `registry.yaml`   | Claude/Codex、shell、Kubernetes/security、Kimi Code、Herdr、Slipway、qmk-hid-host など固定版 CLI。                                                                         |
-| mise                     | `private_dot_config/mise/config.toml.tmpl`                        | Node、Bun、Python、Go、Rust、Lua、Terraform、uv、pipx、Pi、使用量分析、browser/media CLI、`xurl`、`crosspost`。`npm:` は Bun を使いますが Node は runtime のため残します。 |
-| 直接 installer           | `.chezmoiscripts/00`、`09`、`15`、`16`                            | Determinate Nix、Paperlib、Cursor Agent、work-only Azure Functions Core Tools。版と checksum は repository のデータで固定します。                                          |
-| Pi extensions            | `.chezmoidata/pi.yaml` + Pi settings                              | 外部 package 5 個と `@signalridge` package 20 個。意図的に pin せず、Pi の週次 `update --extensions` で更新します。                                                        |
+| レイヤー                 | Source                                                              | 管理内容                                                                                                                                                                                                                                |
+| ------------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nix ユーザープロファイル | `.chezmoidata/nix.yaml` + `nix-config/modules/profile.nix.tmpl`     | `flakey-profile` で shared と work のパッケージを管理します。現在の `sysPkgs` は空ですが、macOS のシステム設定/フォント/サービスは `nix-darwin` にあります。                                                                            |
+| nix-darwin               | `nix-config/modules/*.tmpl`                                         | macOS defaults、フォント、shell/PAM、Nix index、Homebrew、system launchd jobs。                                                                                                                                                         |
+| Homebrew                 | `.chezmoidata/homebrew.yaml` + `nix-config/modules/apps.nix.tmpl`   | tap、formula、cask、条件付き MAS。ロックされた再現可能な Nix レイヤーではありません。                                                                                                                                                   |
+| aqua                     | `private_dot_config/aquaproj-aqua/{aqua,registry,aqua-policy}.yaml` | 固定版 CLI: Claude Code、Codex、Antigravity CLI（`agy`）、shell/Kubernetes/security ツール、およびローカル `registry.yaml` の Kimi Code、Herdr、Slipway、qmk-hid-host、doggo。`aqua-policy.yaml` がそのローカル registry を許可します。 |
+| mise                     | `private_dot_config/mise/config.toml.tmpl`                          | Node、Bun、Python、Go、Rust、Lua、Terraform、uv、pipx、Pi、使用量分析、browser/media CLI、`xurl`、`crosspost`。`npm:` は Bun を使いますが Node は runtime のため残します。                                                              |
+| 直接 installer           | `.chezmoiscripts/00`、`09`、`15`、`16`                              | Determinate Nix、Paperlib、Cursor Agent、work-only Azure Functions Core Tools。版と checksum は repository のデータで固定します。                                                                                                       |
+| Pi extensions            | `.chezmoidata/pi.yaml` + Pi settings                                | 外部 package 5 個と `@signalridge` package 20 個。意図的に pin せず、Pi の週次 `update --extensions` で更新します。                                                                                                                     |
 
 代表的なツールは `eza`、`bat`、`fd`、`ripgrep`、`fzf`、`gh`、`ghq`、`just`、
 `lazygit`、`neovim`、`yazi`、`jj`、`xh`、`slumber`、`k9s`、`kubectl`、`helm`、
@@ -269,10 +286,33 @@ macOS 専用です。`clean` と `gc` の既定期間は 7 日で、引数で変
 `aichat`、`agent-browser`、`hyperframes`、`impeccable` です。完全な一覧は上記の
 実際の source file を参照してください。
 
+## エディタ・端末・デスクトップ
+
+`private_dot_config/` はパッケージ表よりも大きなレイヤーで、ワークステーション
+の残り全部を保持しています。
+
+| 領域               | 管理対象の設定                                                                                                                                                                                     |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| エディタ           | `nvim/` —— LazyVim 構成。コミット済みの `lazy-lock.json`、`neoconf.json`、ローカルの `lua/config`・`lua/plugins`（配色、AI、dotfiles）を含みます。                                                 |
+| Shell の外観       | `sheldon/plugins.toml`（zsh プラグイン管理: ohmyzsh lib、`zsh-defer`、autosuggestions、syntax highlighting、`fzf-tab`、`enhancd`、`you-should-use`）、`starship.toml`、`atuin/`。                  |
+| 端末               | `wezterm/wezterm.lua` と同梱の `WezTerm.icns`、Terminal.app 用の `terminal/Dracula.terminal`（スクリプト `21` が導入）。                                                                           |
+| 多重化             | `tmux/tmux.conf.tmpl`（TPM と、さらに 17 個の固定プラグイン: tmux2k ステータスライン + 独自 AI agent セグメント、sessionx、floax、extrakto、resurrect/continuum）と Herdr の `herdr/config.toml`。 |
+| macOS デスクトップ | `aerospace/`（タイル型ウィンドウ管理）、`hammerspoon/`（入力ソース自動切替、マイク/音量 watcher、Spoons）、`private_karabiner/`、`sofle/`（QMK/Vial レイアウト）。                                 |
+| Git とレビュー     | `git/`、`jj/`、`delta/`、`lazygit/`、`git-cliff/`、`gh/`、`gh-dash/`。GitHub は HTTPS + `gh` credential helper で、`insteadOf` の書き換えは **意図的に使いません**。                               |
+| ファイルと観測     | `yazi/`、`bat/`、`bottom/`、`procs/`、`slumber/`、`watchexec/`、`tlrc/`、`lazydocker/`、および `stern/`、`grype/`、`syft/` のポリシー。                                                            |
+| サービスとストア   | `systemd/user/`（Linux の `mcp-reaper.service` と `.timer`）、`nix/nix.conf`、`gopass/config.tmpl`、`mise/`、`aquaproj-aqua/`、`just/`、`aichat/`、`letsencrypt/`。                                |
+
+`tools/wezterm-icon/` は、Homebrew が cask を入れ替えた後にカスタムアイコンを
+再適用するためスクリプト `22` が呼び出す単体の Swift ユーティリティです。
+
 ## Shell alias と関数
 
-Shell 設定は対話的な zsh セッションでのみ読み込まれます。以下の alias は対象
-コマンドが存在する場合だけ作成されます。
+Shell ファイルは `dot_custom/` にあり `~/.custom/` へ展開されます
+（`exports.sh`、`alias.sh`、`functions.sh`、`utils.sh`、`eval.sh`、
+`fzf-tab.zsh`）。`~/.zshrc` がそれらを読み込み、非対話的 shell では早期に
+return します。管理対象外の `~/.custom/local.sh` は最後に読み込まれ、マシン
+固有の上書きに使えます。以下の alias は対象コマンドが存在する場合だけ作成され
+ます。
 
 | Alias                                                 | 対象                                                                             |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -284,10 +324,16 @@ Shell 設定は対話的な zsh セッションでのみ読み込まれます。
 | `cxm`、`cxw`                                          | `codex-manage`、`codex-with`                                                     |
 | `k` / `kubectl`                                       | `kubecolor` があればそれ、なければ `k` は `kubectl`                              |
 
-`la`、`ll`、`lla`、`lt` は eza/listing helper です。`cp`、`mv`、`mkdir` は
+`la` と `ll` は常に定義されます。`lla` と `lt` は eza がある場合のみ定義され、
+eza の `--git`/`--tree` を使います。`cp`、`mv`、`mkdir` は
 interactive/safe alias（`-i`/`-v` と `mkdir -p`）です。`ripgrep`、`fd`、`zoxide`
 は導入・統合されますが、**`grep`、`find`、`cd` がそれらへ alias されるわけでは
 ありません**。
+
+zsh ではコマンドラインのどこでも展開される global alias もあります ——
+`L`（`| less`）、`G`（`| grep`）、`H`、`T`、`W`、`S`、`U`、`J`（`| jq`）、
+`CP`（`| pbcopy`）、`F`（`$(fzf)`）、リダイレクト用の `N`/`N1`/`N2`。一覧は
+`galias`、直前のコマンドのコピーは `yy` です。`take` は `mkcd` の別名です。
 
 代表的な関数：
 
@@ -313,15 +359,19 @@ repository では Git worktree を使いますが、この chezmoi source 内で
 
 ### 管理対象 harness
 
-| Harness          | 管理ファイルと挙動                                                                                                                                                                            |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Claude Code      | `~/.claude/settings.json`、global instructions、hooks、statusline、official integration plugins。                                                                                             |
-| Codex CLI        | `~/.codex/config.toml`、project-document fallback、lifecycle hooks、MCP、Slack plugin 設定。                                                                                                  |
-| Pi               | `~/.pi/agent/settings.json`、`models.json`、`subagents.json`、workflow settings、themes、keybindings、MCP。Pi は `/model` と `/login` を使い、Pi account wrapper や `pi-token` はありません。 |
-| Cursor Agent CLI | 固定版 `agent`/`cursor-agent` binary と `~/.cursor/cli-config.json`、`~/.cursor/mcp.json`。                                                                                                   |
-| Kimi Code        | `~/.kimi-code/config.toml` の safety defaults と `~/.kimi-code/mcp.json`。account wrapper はありません。                                                                                      |
-| Antigravity CLI  | `~/.gemini/antigravity-cli/settings.json` への deep merge。runtime が管理する model/trust 設定は保持します。                                                                                  |
-| aichat           | `~/.config/aichat/config.yaml`。対応する `pi/...` gopass key があれば Kimi Moonshot と Doubao を書き出します。                                                                                |
+| Harness          | 管理ファイルと挙動                                                                                                                                                                                                                                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code      | `~/.claude/settings.json`、`CLAUDE.md`、四つの `context/*.md`、`hooks/`、`statusline-command.sh`、`templates/*.yml`（CI 雛形）、official integration plugins。                                                                                                                                                            |
+| Codex CLI        | `~/.codex/config.toml`、`AGENTS.md`、project-document fallback、lifecycle hooks、MCP、Slack plugin 設定。                                                                                                                                                                                                                 |
+| Pi               | `~/.pi/agent/settings.json`、`models.json`、`subagents.json`、`workflows/settings.json`、`mcp.json`、`keybindings.json`、`APPEND_SYSTEM.md`、六つの `agents/*.md`、四つの theme、`pi-permission-system` 設定、`~/.pi/web-search.json`。Pi は `/model` と `/login` を使い、Pi account wrapper や `pi-token` はありません。 |
+| Cursor Agent CLI | 固定版 `agent`/`cursor-agent` binary と `~/.cursor/cli-config.json`、`~/.cursor/mcp.json`。                                                                                                                                                                                                                               |
+| Kimi Code        | `~/.kimi-code/config.toml` の safety defaults、`~/.kimi-code/mcp.json`、`~/.kimi-code/AGENTS.md`。account wrapper はありません。                                                                                                                                                                                          |
+| Antigravity CLI  | `~/.gemini/antigravity-cli/settings.json` への deep merge。runtime が管理する `model`、`permissions`、`trustedWorkspaces` は保持します。                                                                                                                                                                                  |
+| aichat           | `~/.config/aichat/config.yaml`。対応する `pi/...` gopass key があれば Kimi Moonshot と Doubao を書き出します。                                                                                                                                                                                                            |
+
+`~/.claude/skills`、`~/.codex/skills`、`~/.pi/agent/skills`、`~/.cursor/skills`、
+`~/.kimi-code/skills` は `dot_claude/run_after_ensure-skill-dirs.sh` が実ディレ
+クトリとして維持します。既定ではそこに何も有効化されません。
 
 ### Claude/Codex account
 
@@ -393,6 +443,13 @@ Reddit/daily.dev/X publishing、UI/UX/diagram skill、Go/Rust/Swift/TypeScript s
 する仕組みではありません。global `ai-research-skills` CLI は mise の pipx/uvx
 backend で別に管理され、host skills/commands はインストールしません。
 
+三つの skill はダウンロードではなくこのリポジトリで書かれ、同じ library に
+置かれます: `dev/toolbelt`（global agent instructions が参照するローカル CLI
+一覧）、`media/remotion`、`social/oss-x-post`（確認ゲート付きの `social-post` と
+`reddit-submit` 発行ヘルパーを同梱）。共有の `/commit` command は
+`~/.harnesses/commands/core/commit.md` にあり、`~/.claude/commands/core` と
+`~/.codex/prompts/core-commit.md` へ symlink されます。
+
 プロジェクトディレクトリで `skill-activate` を実行すると、選択した skill を次の
 五つのディレクトリへ flat symlink として作成します。
 
@@ -424,6 +481,10 @@ MCP 宣言は harness ごとに同じではありません。
 | Codex       | Notion と上記六つ。                                                                                                                  |
 | Pi          | `context7`、`deepwiki`、`gitmcp` は lazy direct tools、`markitdown` と `arxiv` は lazy proxy tools。ここでは Tavily を宣言しません。 |
 | Cursor/Kimi | `context7`、`tavily`、`deepwiki`、`gitmcp`、`markitdown`、`arxiv`。                                                                  |
+
+Pi の経路は別です。管理対象の `~/.pi/web-search.json` が `pi-web-access` 拡張に
+Exa/Tavily のルーティングを設定し、呼び出し時に gopass から Tavily key を読み、
+ブラウザ cookie の再利用を無効化します。
 
 `~/.local/bin/mcp-tavily` は実行時に gopass の `tavily/api_key` を読み、`bunx` で
 固定版 `tavily-mcp@0.2.16` を起動します。対応する non-headless macOS または
