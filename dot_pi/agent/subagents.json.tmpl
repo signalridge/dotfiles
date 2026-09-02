@@ -59,8 +59,24 @@
   rung on gpt-5.6-luna; `xhigh` is the requested top rung for gpt-5.6-sol.
   Verify model availability with Pi's model registry before changing these pins.
 
-  maxConcurrent is 40 for direct Agent fan-out. pi-workflows may enforce its own
-  lower package-level cap independently of this setting.
+  maxConcurrent is 40, and what that number governs is about to widen. Through
+  pi-subagents 1.9.x it bounds direct Agent fan-out only: pi-workflows has no way
+  to read it, so a workflow run applies a package-level cap of its own — the core
+  count minus two, at most 16 — and a fan-out there stays narrow no matter what
+  this says, leaving the rest of the pool idle.
+
+  From pi-subagents 1.10.0 with pi-workflows 1.7.0 the two stop being separate
+  numbers. A workflow requests this value by name over the ping handshake and
+  uses it as both its default width and its ceiling, so this key becomes the one
+  place that sizes every background agent on the machine — direct Agent fan-out
+  and workflow fan-out alike — and 40 is what a workflow run will actually
+  dispatch at. Raising it raises both; there is no longer a separate workflow cap
+  to raise instead, which is the point: one setting, one fleet.
+
+  Keep it at or below 64. pi-workflows clamps to 64 of its own as a runaway-script
+  guard, so a larger value here would widen direct Agent fan-out while workflows
+  silently stopped at 64 — two numbers diverging with nothing to say so. At 40 the
+  clamp does not bite and this file is exact.
 
   This file branches on chezmoi data in exactly one place: the four `.work`
   ternaries below, which pick the per-machine rungs listed at the top. The tier
