@@ -23,19 +23,60 @@ config.color_scheme = "Dracula (Official)"
 -- Body weight is DemiBold rather than Regular: FreeType (what wezterm uses)
 -- renders lighter than the CoreText rasteriser Terminal.app uses, so at the same
 -- nominal weight wezterm looks noticeably thinner. Stepping the body face up one
--- notch closes that gap far better than any hinting knob. Bold stays distinct
--- because font_rules below pin it to the real Bold face, and italics inherit the
--- body weight (verified: they resolve to SemiBoldItalic, not RegularItalic).
-config.font = wezterm.font_with_fallback({
+-- notch closes that gap far better than any hinting knob.
+--
+-- CaskaydiaCove, Menlo and Apple Color Emoji all lack CJK, so without an
+-- explicit entry every Chinese character came from whatever wezterm picked on
+-- its own. PingFang SC is the macOS system Chinese face and is what Terminal.app
+-- falls back to, so this keeps the two looking the same.
+--
+-- These lists are named rather than inlined because font_rules needs them too: a
+-- font_rules entry does NOT inherit config.font's fallback list, so the
+-- `wezterm.font(...)` form that used to be down there silently dropped PingFang
+-- SC and left bold/italic CJK to whatever wezterm turned up on its own.
+local body_faces = {
   { family = "CaskaydiaCove NFM", weight = "DemiBold" },
-  -- CaskaydiaCove, Menlo and Apple Color Emoji all lack CJK, so without an
-  -- explicit entry here every Chinese character came from whatever wezterm
-  -- picked on its own. PingFang SC is the macOS system Chinese face and is what
-  -- Terminal.app falls back to, so this keeps the two looking the same.
   { family = "PingFang SC", weight = "Medium" },
   "Apple Color Emoji",
   "Menlo",
-})
+}
+local body_italic_faces = {
+  { family = "CaskaydiaCove NFM", weight = "DemiBold", italic = true },
+  { family = "PingFang SC", weight = "Medium" },
+  "Apple Color Emoji",
+  "Menlo",
+}
+-- SemiBold 600 and Bold 700 are separate static files, so ask for Bold
+-- explicitly rather than letting a weight search land back on SemiBold.
+local bold_faces = {
+  { family = "CaskaydiaCove NFM", weight = "Bold" },
+  { family = "PingFang SC", weight = "DemiBold" },
+  "Apple Color Emoji",
+  "Menlo",
+}
+local bold_italic_faces = {
+  { family = "CaskaydiaCove NFM", weight = "Bold", italic = true },
+  { family = "PingFang SC", weight = "DemiBold" },
+  "Apple Color Emoji",
+  "Menlo",
+}
+-- Dim (SGR 2) is expressed by weight here, not by colour, so it needs its own
+-- faces -- see the font_rules comment for why they are pinned instead of left
+-- to wezterm.
+local dim_faces = {
+  { family = "CaskaydiaCove NFM", weight = "Regular" },
+  { family = "PingFang SC", weight = "Light" },
+  "Apple Color Emoji",
+  "Menlo",
+}
+local dim_italic_faces = {
+  { family = "CaskaydiaCove NFM", weight = "Regular", italic = true },
+  { family = "PingFang SC", weight = "Light" },
+  "Apple Color Emoji",
+  "Menlo",
+}
+
+config.font = wezterm.font_with_fallback(body_faces)
 config.font_size = 14
 
 -- "Normal", not "Light": Light uses a lighter hinting algorithm and made the
@@ -44,16 +85,27 @@ config.font_size = 14
 -- (freetype_load_flags already defaults to NO_HINTING at this DPI.)
 config.freetype_load_target = "Normal"
 
--- These faces are separate static files (SemiBold 600 and Bold 700 are distinct),
--- so ask for Bold explicitly rather than letting a weight search land on SemiBold.
+-- wezterm appends its own generated rules after these, and those generated rules
+-- derive dim and bold by stepping the body weight. Upstream #8097 (in the
+-- 20260901 nightly) widened that step from 200 to 400 units, so against a
+-- DemiBold 600 body dim stopped landing on Regular 400 and started landing on
+-- CaskaydiaCove Light 300 / PingFang ExtraLight 200 -- hair-thin anywhere
+-- anything emits SGR 2, which is most TUI secondary text. Pinning every
+-- combination below takes that derivation out of the picture; dim_faces restores
+-- the pre-#8097 one-notch step.
+--
+-- Order matters: wezterm takes the first rule whose stated attributes all match
+-- and an omitted attribute is a wildcard, so `italic` is stated explicitly
+-- rather than relying on a bare `intensity` rule not swallowing the italic case.
+-- Italic also needs an explicit weight -- without one it resolves to Regular
+-- Italic 400, not SemiBoldItalic. Verify any change here with `wezterm ls-fonts`,
+-- which prints the resolved file for every rule.
 config.font_rules = {
-  { intensity = "Bold", font = wezterm.font("CaskaydiaCove NFM", { weight = "Bold" }) },
-  {
-    intensity = "Bold",
-    italic = true,
-    font = wezterm.font("CaskaydiaCove NFM", { weight = "Bold", italic = true }),
-  },
-  { italic = true, font = wezterm.font("CaskaydiaCove NFM", { italic = true }) },
+  { intensity = "Half", italic = true, font = wezterm.font_with_fallback(dim_italic_faces) },
+  { intensity = "Half", italic = false, font = wezterm.font_with_fallback(dim_faces) },
+  { intensity = "Bold", italic = true, font = wezterm.font_with_fallback(bold_italic_faces) },
+  { intensity = "Bold", italic = false, font = wezterm.font_with_fallback(bold_faces) },
+  { italic = true, font = wezterm.font_with_fallback(body_italic_faces) },
 }
 
 -- Ghostty: window-padding-x = 12,8 / window-padding-y = 0,2
