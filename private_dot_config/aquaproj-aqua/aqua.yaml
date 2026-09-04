@@ -27,7 +27,7 @@ packages:
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
-  - name: google-antigravity/antigravity-cli@1.1.24
+  - name: google-antigravity/antigravity-cli@1.1.25
   - name: nektos/act@v0.2.89
   - name: FiloSottile/age@v1.3.2
   - name: asciinema/asciinema@v3.2.1
@@ -40,8 +40,8 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.259
-  - name: openai/codex@rust-v0.153.0
+  - name: anthropics/claude-code@v2.1.260
+  - name: openai/codex@rust-v0.153.2
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
@@ -61,7 +61,7 @@ packages:
   - name: sharkdp/fd@v10.5.0
   - name: junegunn/fzf@v0.74.3
   - name: gopasspw/gopass@v1.17.0
-  - name: cli/cli@v2.99.0
+  - name: cli/cli@v2.100.0
   - name: dlvhdr/gh-dash@v4.25.2
   - name: x-motemen/ghq@v1.10.1
   - name: gitlab.com/gitlab-org/cli@v1.99.0 # glab
@@ -78,7 +78,7 @@ packages:
   - name: neovim/neovim@v0.12.5
   - name: LuaLS/lua-language-server@3.19.1
   - name: tree-sitter/tree-sitter@v0.27.0
-  - name: jj-vcs/jj@v0.44.0
+  - name: jj-vcs/jj@v0.45.1
   - name: rclone/rclone@v1.75.0
   - name: o2sh/onefetch@2.28.1
   - name: ip7z/7zip@26.02
@@ -88,7 +88,7 @@ packages:
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.1.0
   - name: ducaale/xh@v0.26.2
-  - name: watchexec/watchexec@v2.7.0
+  - name: watchexec/watchexec@v2.7.1
   - name: joshmedeski/sesh@v2.29.0
   - name: starship/starship@v1.26.0
   - name: JohnnyMorganz/StyLua@v2.5.2
@@ -99,7 +99,7 @@ packages:
   - name: koalaman/shellcheck@v0.11.0
   - name: mvdan/sh@v3.14.0
   - name: rhysd/actionlint@v1.7.12
-  - name: astral-sh/ruff@0.16.5
+  - name: astral-sh/ruff@0.16.6
   - name: astral-sh/ty@0.0.78
   - name: j178/prek@v0.5.2
   - name: golang.org/x/tools/gopls@v0.23.0
