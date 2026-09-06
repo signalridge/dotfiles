@@ -6,7 +6,15 @@
 # installed JS CLIs keep their `#!/usr/bin/env node` shebangs, so `node` must
 # stay on PATH. bun replaces npx (MCP wrappers) and the npm install backend,
 # not the Node runtime itself.
-node = "lts"
+#
+# Moved off `lts` to `latest` on 2026-09-06 by explicit request ("update
+# everything to latest"). This is a real change of posture, not a version bump:
+# `lts` tracked 24.x, `latest` tracks Node Current, which is 26.x and receives
+# no long-term support. Everything here needs >= 22.19 (pi's floor), so the
+# floor is not the risk — the risk is a native module without a prebuild for a
+# brand-new major, and bun skips postinstall by default so a rebuild will not
+# save it. Roll back with `node = "lts"` and `mise install`.
+node = "latest"
 
 # Bun — runs MCP servers via `bunx` (see ~/.local/bin/mcp-*) and, via
 # settings.npm.package_manager below, becomes the installer for all `npm:` CLIs.
@@ -15,8 +23,13 @@ bun = "latest"
 # Terraform (replaces tenv)
 terraform = "latest"
 
-# Python (for tools that need it)
-python = "3.12"
+# Python (for tools that need it). 3.12 -> 3.14 on 2026-09-06. The major.minor
+# pin is deliberate — a Python major moves faster than the pipx tools below —
+# and 3.14 is the newest release line, so this IS latest. Bumping the line
+# rebuilds every `pipx:` entry's venv (poetry, pre-commit, posting,
+# ai-research-skills, and mac-cleanup on darwin); re-run `mise install` and
+# check those binaries after any change here.
+python = "3.14"
 
 # uv (Python package manager)
 uv = "latest"
@@ -40,7 +53,7 @@ go = "latest"
 # GitHub releases, and xurl is not in the aqua standard registry yet.
 # Kept for X *reads* (search/whoami/timeline); publishing goes through the
 # gated `social-post` wrapper, never `xurl post`.
-"go:github.com/xdevplatform/xurl" = "1.1.1"
+"go:github.com/xdevplatform/xurl" = "1.3.1"
 
 # Multi-platform publish engine (X / Bluesky / Mastodon / LinkedIn / dev.to).
 # Driven only by the `social-post` wrapper, which adds the dry-run/confirm gate
