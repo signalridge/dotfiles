@@ -9,7 +9,7 @@
   The ordinary Agent catalogue is the single model-policy source. It keeps its
   user-facing `low | medium | high` keys and is machine-scoped:
     work machine:    low = luna/high, medium = luna/xhigh, high = luna/max
-    private machine: low = luna/xhigh, medium = luna/max, high = sol/xhigh
+    private machine: low = luna/xhigh, medium = luna/max, high = astra/xhigh
 
   The parent session is the medium/default baseline and is emitted separately by
   modify_settings.json.tmpl: work -> luna/xhigh, private -> luna/max. Keep the
@@ -56,7 +56,21 @@
 
   The concrete provider/model references are intentionally in the user-owned
   chezmoi policy rather than in the public extension package. `max` is a real
-  rung on gpt-5.6-luna; `xhigh` is the requested top rung for gpt-5.6-sol.
+  rung on gpt-5.6-luna. The private `high` tier moved gpt-5.6-sol -> gpt-6-astra
+  on 2026-09-06 and keeps `xhigh`, but the meaning of that rung changed: on sol,
+  whose ladder was {minimal: low, xhigh: xhigh, max: max}, xhigh was one step
+  below the ceiling; gpt-6-astra ships the full low|medium|high|xhigh|max map, so
+  `max` is genuinely reachable here if this tier ever needs it. Left at xhigh
+  because that is the rung the tier has been running, not because it is capped.
+
+  COST, because this rung is where the money goes -- and the unit price is the
+  wrong number to read it off. gpt-6-astra is dearer per token than gpt-5.6-sol
+  ($10/$50/$1 per M input/output/cacheRead against $5/$30/$0.5, and $20/$75/$2
+  against $10/$45/$1 above Codex's 272K premium line), but it spends far fewer
+  tokens reaching the same place, and the token count moves more than the price
+  does. Measured per task at this rung (codexradar intelligence-efficiency,
+  2026-09-06): astra $4.12 over 1.93M tokens at IQ 112.5, sol $5.25 over 7.58M
+  tokens at IQ 100.0 -- cheaper, smarter and faster. Only `low` reverses it.
   Verify model availability with Pi's model registry before changing these pins.
 
   maxConcurrent is 40, and what that number governs is about to widen. Through
@@ -83,7 +97,7 @@
   NAMES never branch, which is what lets pi-workflows' strengths table in
   workflows/settings.json.tmpl map onto both machines unchanged.
 */ -}}
-{{- $highModel := ternary "gpt-5.6-luna" "gpt-5.6-sol" .work -}}
+{{- $highModel := ternary "gpt-5.6-luna" "gpt-6-astra" .work -}}
 {{- $highThink := ternary "max" "xhigh" .work -}}
 {{- $mediumThink := ternary "xhigh" "max" .work -}}
 {{- $lowThink := ternary "high" "xhigh" .work -}}

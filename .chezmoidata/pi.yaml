@@ -35,16 +35,18 @@ pi:
     # names an Agent tier key directly.
     #
     #   work machine:    low = luna/high,  medium = luna/xhigh, high = luna/max
-    #   private machine: low = luna/xhigh, medium = luna/max,   high = sol/xhigh
+    #   private machine: low = luna/xhigh, medium = luna/max,   high = astra/xhigh
     #
     # The parent startup setting is the medium/default baseline: work -> luna/xhigh,
     # private -> luna/max. The machine-scoped values are emitted by the two Pi
     # templates because the static .chezmoidata pass cannot branch on `.work`.
     #
     # The route is the native Codex OAuth already in ~/.pi/agent/auth.json; the
-    # openai-codex block below emits no apiKey for it. gpt-5.6-sol's measured
-    # context window is retained for the private high tier; see the
-    # modelOverrides comment in the openai-codex block.
+    # openai-codex block below emits no apiKey for it. The private high tier runs
+    # gpt-6-astra as of 2026-09-06 (gpt-5.6-sol before that) and carries the same
+    # 921,000 contextWindow pin as the gpt-5.6 family; see the modelOverrides
+    # comment in the openai-codex block for why that number is a measured input
+    # ceiling rather than a spec value, and for what astra costs.
     #
     # opencode-go, Kimi Code and the DIRECT DeepSeek platform all stay configured
     # and are one `/model` switch away. They differ in billing (flat allowance vs
@@ -382,6 +384,11 @@ pi:
       # (luna was bracketed tightest because it became the default; the other two
       # were left at the coarser 898K/950K bracket they share.)
       #
+      # gpt-6-astra was NOT probed — it did not exist in the Codex catalog then.
+      # Its pin below is derived, not measured; the derivation is spelled out
+      # there. Re-running this descending probe against it is the way to replace
+      # the derivation with a number.
+      #
       # So the family is uniform, and all three clear both the 272,000 catalog
       # value and the 372,000 this block used to pin — the cut PR #33972 made has
       # been reversed server-side, whatever the catalog still says. The wall sits
@@ -412,15 +419,55 @@ pi:
       # this comment.
       auth: builtin
       modelOverrides:
-        # THE STARTUP DEFAULT (defaults.defaultProvider above), and the model all
-        # three pi-subagents tiers run. Bracketed tightest of the three.
+        # THE STARTUP DEFAULT (defaults.defaultProvider above), the parent model
+        # on both machines, and the model behind every pi-subagents tier except
+        # the private machine's `high` — see gpt-6-astra directly below.
+        # Bracketed tightest of the three gpt-5.6 probes.
         gpt-5.6-luna: { contextWindow: 921000 }
+        # THE PRIVATE `high` TIER as of 2026-09-06 (the `$highModel` ternary in
+        # dot_pi/agent/subagents.json.tmpl), replacing gpt-5.6-sol, and also the
+        # Codex CLI's primary model in dot_codex/modify_config.toml.tmpl.
+        #
+        # DERIVED, NOT MEASURED — the only pin in this block that was never
+        # probed on the live route. models.dev reports gpt-6-astra with exactly
+        # the gpt-5.6 family's shape (context 1,050,000, output 128,000) and the
+        # Codex catalog reports the same maxTokens 128,000 and the same 272,000
+        # billing-line contextWindow, so the 1,050,000 - 128,000 = 922,000
+        # arithmetic that luna's measured 921,030 acceptance confirmed carries
+        # over unchanged. Probe it (the recipe is above) before treating 921,000
+        # as proven for astra.
+        #
+        # Dropping this entry is not neutral: astra would fall back to the
+        # catalog's 272,000 and the private high tier would begin compacting at
+        # 272,000 - 130,000 = 142,000 instead of 791,000.
+        #
+        # COST — the UNIT PRICE is higher, the MEASURED BILL is lower. Do not
+        # confuse the two: catalog price is $10/$50/$1 per M input/output/
+        # cacheRead against sol's $5/$30/$0.5, and $20/$75/$2 against sol's
+        # $10/$45/$1 above the 272,000 premium line, but astra spends far fewer
+        # tokens on the same task and that dominates the product. Measured per
+        # task at api.codexradar.com/api/v1/intelligence-efficiency (2026-09-06),
+        # at the `xhigh` rung this tier actually runs:
+        #                  $/task   tokens   IQ      pass      minutes
+        #   gpt-6-astra     4.12     1.93M   112.5    54/72      18.8
+        #   gpt-5.6-sol     5.25     7.58M   100.0   224/336     24.5
+        # ~4x fewer tokens, ~21% less money, a higher score and a shorter wall
+        # clock. The gap widens at `max` (4.73 vs 7.97) and reverses only at
+        # `low` (1.89 vs 1.60). That comparison also UNDERSTATES astra: the
+        # source prices sol flat at $4/$20/$0.4 with no long-context band, while
+        # the 09-01..09-02 audit of this machine put 84% of sol's spend in the
+        # >272,000 premium tier this repo's own catalog does bill for.
+        # Sample sizes are lopsided (astra is new: 72 runs vs 336), so treat the
+        # direction as solid and the magnitude as provisional.
+        gpt-6-astra: { contextWindow: 921000 }
         # sol and terra are pinned too so a runtime /model switch does not
-        # silently drop back to 272K. Not an assumption carried over from luna:
-        # both were bracketed independently. Their brackets are coarser (accepted
-        # 898,071, rejected 950,000), so 921,000 is the shared family value
-        # rather than a separately proven per-model one; it is within their
-        # bracket and consistent with the same 1,050,000 - 128,000 arithmetic.
+        # silently drop back to 272K. Nothing selects sol any more, but both stay
+        # one `/model` switch away, so both keep their pins. Not an assumption
+        # carried over from luna: both were bracketed independently. Their
+        # brackets are coarser (accepted 898,071, rejected 950,000), so 921,000 is
+        # the shared family value rather than a separately proven per-model one;
+        # it is within their bracket and consistent with the same
+        # 1,050,000 - 128,000 arithmetic.
         gpt-5.6-sol: { contextWindow: 921000 }
         # THINKING LADDER — exactly ONE repair is needed here, and only here.
         # Audited 2026-08-19 across every model in ~/.pi/agent/models-store.json.

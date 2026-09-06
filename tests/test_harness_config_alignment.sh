@@ -146,7 +146,7 @@ jq -e '.agentTiers.profiles |
 jq -e '.agentTiers.profiles |
        .low.thinking == "xhigh" and
        .medium.thinking == "max" and
-       .high.model == "openai-codex/gpt-5.6-sol" and .high.thinking == "xhigh"' \
+       .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "xhigh"' \
     "$tmp_root/subagents-private.json" >/dev/null
 
 # pi-workflows routing. A workflow script names a strength, and this table is the

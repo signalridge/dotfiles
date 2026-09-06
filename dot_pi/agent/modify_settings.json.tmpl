@@ -20,9 +20,10 @@ EXISTING="$(cat)"
      data pass.
 
      On the private machine the default medium tier is luna/max; on the work
-     machine it is luna/xhigh. The private high tier may use sol/xhigh, while the
-     work high tier stays on luna/max. A managed workflow call that names no tier
-     falls back to the shipped `medium`, which is this same profile. Pi is
+     machine it is luna/xhigh. The private high tier uses gpt-6-astra/xhigh
+     (gpt-5.6-sol until 2026-09-06), while the work high tier stays on
+     luna/max. A managed workflow call that names no tier falls back to the
+     shipped `medium`, which is this same profile. Pi is
      intentionally configured independently from Codex. */ -}}
 {{- $model := "gpt-5.6-luna" -}}
 {{- $effort := ternary "xhigh" "max" .work -}}

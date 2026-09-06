@@ -457,7 +457,7 @@ gopass_prefix_candidates() {
     printf '%s\n' "$primary"
 }
 
-{{ $codexFallbackModel := "gpt-5.6-sol" }}
+{{ $codexFallbackModel := "gpt-6-astra" }}
 codex_default_model_for_provider() {
     local provider="$1"
     case "$provider" in
