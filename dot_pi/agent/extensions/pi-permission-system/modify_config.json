@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# chezmoi modify_ script: merge the managed permission posture into
+# ~/.pi/agent/extensions/pi-permission-system/config.json, preserving the
+# runtime knobs the extension writes there itself (debugLog, and anything a
+# future version adds). The `permission` tree is taken wholesale from the
+# managed block, so a rule deleted here is deleted on the next apply.
+#
+# WHY modify_ AND NOT A PLAIN FILE. Until 2026-09-06 this was a static managed
+# file, so every apply replaced the live one -- including `yoloMode`, which the
+# extension writes at runtime and which the user turns on deliberately. The
+# target had already drifted (`chezmoi status` read MM) and the next apply would
+# have silently switched YOLO back off. Same trap as ~/.claude/settings.json;
+# see dot_claude/modify_settings.json.tmpl.
+#
+# WHY `permission` IS REPLACED RATHER THAN MERGED. jq's `*` unions objects, so
+# omitting a rule would not remove it -- the six git deny rules dropped below
+# would have survived in the live file forever. Assigning `.permission` from the
+# managed document is what makes this file authoritative over the policy.
+set -euo pipefail
+
+EXISTING="$(cat)"
+MANAGED="$(cat <<'PI_PERMISSION_EOF'
+{
+  "$schema": "https://raw.githubusercontent.com/gotgenes/pi-packages/main/packages/pi-permission-system/schemas/permissions.schema.json",
+  "doublePressToConfirm": true,
+  "permissionReviewLog": true,
+  "yoloMode": true,
+  "permission": {
+    "*": "allow",
+    "path": {
+      "*": "allow"
+    },
+    "bash": {
+      "*": "allow"
+    },
+    "mcp": {
+      "*": "allow"
+    },
+    "external_directory": {
+      "*": "allow"
+    }
+  }
+}
+PI_PERMISSION_EOF
+)"
+
+# THE SIX GIT DENY RULES THAT USED TO LIVE IN `bash` ARE GONE FROM THIS GLOBAL
+# FILE, and are now at .pi/extensions/pi-permission-system/config.json inside the
+# chezmoi source repository instead.
+#
+# They were `git worktree`, `git worktree *`, `git switch`, `git switch *`,
+# `git checkout -b *` and `git checkout --orphan *`. The rule they were trying to
+# express is Article 1/2 of the chezmoi constitution, which is scoped to ONE
+# directory: the chezmoi source tree is the live `main` checkout, so moving HEAD
+# or adding a worktree there breaks the user's `dot apply`. Everywhere else those
+# commands are ordinary.
+#
+# A `bash` rule cannot say "only in that directory". Its own schema calls it a
+# command pattern "matched per top-level command in a chain, most restrictive
+# wins" -- there is no cwd dimension anywhere in the schema, and
+# `external_directory*` scopes file paths, not a command's working directory. So
+# the global file could only approximate "only in chezmoi" as "everywhere", and
+# that is what it did: branch creation was blocked in every unrelated repository,
+# while chezmoi gained nothing it did not already have from the agent
+# instructions in dot_pi/agent/APPEND_SYSTEM.md.
+#
+# `yoloMode` does not rescue it. The schema defines it as "Auto-approve
+# ask-state permission checks" -- it upgrades `ask`, and a `deny` still denies.
+# That is why the block looked like YOLO failing when it was policy working.
+#
+# This is the same defect commit 3671a66 fixed on the Claude side, with the same
+# reasoning ("a static deny list cannot express 'only in chezmoi', so it
+# approximated that as 'everywhere'") and the same remedy: delete the global
+# copy, keep one definition at the scope the rule actually has. pi-permission-
+# system reads `<cwd>/.pi/extensions/pi-permission-system/config.json` and
+# project overrides global, so the definition now lives in the repository it
+# governs. Note that project config is loaded ONLY for a project Pi reports as
+# trusted; `~/.pi/agent/trust.json` has the chezmoi source tree as trusted.
+if command -v jq >/dev/null 2>&1 && printf '%s' "$EXISTING" | jq -e . >/dev/null 2>&1; then
+    jq -n \
+        --argjson existing "$EXISTING" \
+        --argjson managed "$MANAGED" \
+        '$existing * $managed | .permission = $managed.permission'
+else
+    printf '%s\n' "$MANAGED"
+fi

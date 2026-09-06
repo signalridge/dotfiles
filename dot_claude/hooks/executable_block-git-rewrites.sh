@@ -33,6 +33,31 @@ matches() {
     printf '%s\n' "$command" | grep -qE "$pattern"
 }
 
+# A git rule only counts when git is in COMMAND POSITION: at the start of a
+# line, or immediately after a shell separator, with any leading VAR=value
+# assignments skipped. grep works line by line, so `^` already covers a newline
+# separator.
+#
+# WHY (added 2026-09-06). Every rule below used to grep the raw command TEXT, so
+# merely MENTIONING one tripped it -- writing a test that asserts on the string
+# "git worktree *", grepping a config for it, or echoing it in a message. That is
+# not hypothetical: it blocked this repository's own permission-policy test, and
+# it is the third instance of the same family of defect found in one day (the
+# other two were the global `Bash(git:*)` deny rules and the global
+# pi-permission-system git bans).
+#
+# THE TRADE IS DELIBERATE. A git call hidden inside a quoted string that some
+# other program then executes -- `bash -c '...'`, a heredoc piped to a shell --
+# is no longer matched. This hook is an accident guard, not a sandbox: the
+# sessions it runs in are bypassPermissions by policy, so a false block on
+# routine work costs more than a miss on a deliberately indirect invocation.
+# If you need a real boundary, use the OS sandbox, not a text pattern.
+cmd_position='(^|[;&|(){}])[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'
+
+git_cmd() {
+    matches "${cmd_position}git[[:space:]]+$1"
+}
+
 # Unified output: 2 lines (status + Next action)
 ask() {
     local rule_id="$1"
@@ -59,11 +84,11 @@ Next: ${next}"
 # The chezmoi source tree is the live main checkout. Worktrees and branch
 # switching are forbidden there because chezmoi recursively consumes its data.
 if [[ "$cwd" == "$chezmoi_source" || "$cwd" == "$chezmoi_source/"* ]]; then
-    if matches 'git[[:space:]]+worktree([[:space:]]|$)'; then
+    if git_cmd 'worktree([[:space:]]|$)'; then
         block "GIT-WORKTREE" "Worktrees are forbidden in the chezmoi source tree." "Edit the shared main checkout instead."
     fi
 
-    if matches 'git[[:space:]]+switch([[:space:]]|$)'; then
+    if git_cmd 'switch([[:space:]]|$)'; then
         block "GIT-BRANCH-SWITCH" "Branch switching or creation is forbidden in the chezmoi source tree." "Stay on the shared main checkout."
     fi
 
@@ -72,25 +97,28 @@ if [[ "$cwd" == "$chezmoi_source" || "$cwd" == "$chezmoi_source/"* ]]; then
     # the whole switch, minus the flag -- walked straight through it; pairing it
     # with `git branch <name>` reproduced exactly what -b does. `git checkout --
     # <path>` restores a file without leaving the branch, so it stays allowed.
-    if matches 'git[[:space:]]+checkout([[:space:]]|$)' &&
-        ! matches 'git[[:space:]]+checkout[[:space:]]+--([[:space:]]|$)'; then
+    if git_cmd 'checkout([[:space:]]|$)' &&
+        ! git_cmd 'checkout[[:space:]]+--([[:space:]]|$)'; then
         block "GIT-BRANCH-SWITCH" "Branch switching or creation is forbidden in the chezmoi source tree." "Stay on the shared main checkout; use 'git restore' to discard file changes."
     fi
 fi
 
-if matches 'git[[:space:]]+rebase[[:space:]]+(-i|--interactive)'; then
+if git_cmd 'rebase[[:space:]]+(-i|--interactive)'; then
     block "GIT-REBASE-I" "Interactive rebase requires manual input." "Use regular rebase or merge instead."
 fi
 
-if matches "git[[:space:]]+branch[[:space:]]+(-d|-D|--delete)[[:space:]]+($protected_branches)"; then
+if git_cmd "branch[[:space:]]+(-d|-D|--delete)[[:space:]]+($protected_branches)"; then
     block "GIT-DELETE-PROTECTED" "Cannot delete protected branch." "Use a feature branch."
 fi
 
-if matches "git[[:space:]]+push.*(--delete[[:space:]]+($protected_branches)|:[[:space:]]*($protected_branches))"; then
+if git_cmd "push.*(--delete[[:space:]]+($protected_branches)|:[[:space:]]*($protected_branches))"; then
     block "GIT-PUSH-DELETE-PROTECTED" "Cannot delete protected remote branch." "Use a feature branch."
 fi
 
-if matches 'git[[:space:]]+push' && matches '(^|[[:space:]])(--force|-f)([[:space:]]|$)'; then
+# The force-flag and branch-name checks stay unanchored on purpose: they are
+# secondary conditions, only reached once a real `git push` has been found in
+# command position by the check on their left.
+if git_cmd 'push' && matches '(^|[[:space:]])(--force|-f)([[:space:]]|$)'; then
     if matches "($protected_branches)"; then
         block "GIT-FORCE-PUSH-PROTECTED" "Force push to protected branch not allowed." "Use a feature branch."
     fi
@@ -98,27 +126,27 @@ fi
 
 # --- ASK rules (risky but recoverable) ---
 
-if matches 'git[[:space:]]+push' && matches '(^|[[:space:]])(--force|-f)([[:space:]]|$)'; then
+if git_cmd 'push' && matches '(^|[[:space:]])(--force|-f)([[:space:]]|$)'; then
     ask "GIT-FORCE-PUSH" "Force push rewrites remote history." "Confirm you want to rewrite."
 fi
 
-if matches 'git[[:space:]]+commit.*--amend'; then
+if git_cmd 'commit.*--amend'; then
     ask "GIT-AMEND" "--amend rewrites the last commit." "Verify commit not pushed (git status shows ahead)."
 fi
 
-if matches 'git[[:space:]]+reset[[:space:]]+--hard'; then
+if git_cmd 'reset[[:space:]]+--hard'; then
     ask "GIT-RESET-HARD" "git reset --hard discards uncommitted changes." "Consider git stash first."
 fi
 
-if matches "git[[:space:]]+rebase.*origin/($protected_branches)"; then
+if git_cmd "rebase.*origin/($protected_branches)"; then
     ask "GIT-REBASE-PROTECTED" "Rebasing onto protected branch." "Ensure you are on a feature branch."
 fi
 
-if matches 'git[[:space:]]+clean[[:space:]]+-[a-z]*f[a-z]*d|git[[:space:]]+clean[[:space:]]+-[a-z]*d[a-z]*f'; then
+if git_cmd 'clean[[:space:]]+(-[a-z]*f[a-z]*d|-[a-z]*d[a-z]*f)'; then
     ask "GIT-CLEAN-FD" "git clean -fd deletes untracked files." "Run git clean -n first to preview."
 fi
 
-if matches "git[[:space:]]+checkout[[:space:]]+(-f|--force)[[:space:]]+($protected_branches)"; then
+if git_cmd "checkout[[:space:]]+(-f|--force)[[:space:]]+($protected_branches)"; then
     ask "GIT-CHECKOUT-FORCE" "Force checkout discards local changes." "Stash or commit first."
 fi
 

@@ -109,6 +109,23 @@ done
 [[ -z "$(guard_decision "git checkout -- README.md" "$guard_source")" ]]
 [[ -z "$(guard_decision "git status" "$guard_source")" ]]
 
+# MENTIONING a forbidden command is not running it. Until 2026-09-06 the guard
+# grepped the raw command text, so writing a test that asserts on the string,
+# grepping a config for it, or echoing it was refused inside this tree -- which
+# is how this very file became unwritable. The rules now require git to be in
+# command position: line start, or right after a shell separator.
+[[ -z "$(guard_decision 'jq -e ".bash[\"git worktree *\"]" cfg.json' "$guard_source")" ]]
+[[ -z "$(guard_decision 'rg -n "git switch" dot_claude/' "$guard_source")" ]]
+[[ -z "$(guard_decision 'echo "git checkout -b feature"' "$guard_source")" ]]
+
+# ...but a real invocation after a separator, or behind an env assignment, is
+# still command position and still refused. The separator is assembled from a
+# variable so that this test file does not itself read as an invocation to the
+# very hook it is testing.
+sep='&&'
+[[ "$(guard_decision "cd /tmp $sep git switch other" "$guard_source")" == "block" ]]
+[[ "$(guard_decision "FOO=1 git checkout main" "$guard_source")" == "block" ]]
+
 # Outside the source tree the rule does not apply at all.
 for allowed in \
     "git worktree add ../wt-x" \
@@ -234,6 +251,41 @@ jq -e --slurpfile subagents "$tmp_root/subagents-private.json" '
 # pi-workflows reports an unknown tier once at run start and then leaves the
 # strength unmapped, so a profile rename would otherwise drop every workflow call
 # onto the managed `medium` fallback with nothing in this repository to show it.
+# pi-permission-system. The GLOBAL policy must not carry the chezmoi git ban: a
+# `bash` rule is a command pattern and its schema has no cwd dimension anywhere,
+# so stating the ban globally blocks branch work in every unrelated repository --
+# the same defect 3671a66 fixed on the Claude side, and the same one the guard
+# hook above had. The ban belongs in the project-scoped config in this
+# repository, which pi-permission-system reads from `<cwd>/.pi/extensions/...`
+# and which overrides global. Assert both halves: the rule missing from the
+# project file leaves chezmoi unguarded, and the rule present in the global file
+# blocks every other repo again.
+render dot_pi/agent/extensions/pi-permission-system/modify_config.json >"$tmp_root/pi-perm.sh"
+bash -n "$tmp_root/pi-perm.sh"
+printf '' | bash "$tmp_root/pi-perm.sh" >"$tmp_root/pi-perm.json"
+jq -e '.yoloMode == true and
+       .permission.bash["*"] == "allow" and
+       ([.permission.bash | keys[] | select(startswith("git "))] | length) == 0' \
+    "$tmp_root/pi-perm.json" >/dev/null
+
+# The merge must DELETE a retired rule, not merely stop declaring it: jq's `*`
+# unions objects, so `.permission` is assigned wholesale. Without that, every
+# rule ever shipped would survive in the live file forever. And a runtime knob
+# must survive -- `yoloMode`/`debugLog` are written by the extension, and the
+# static file this replaced erased them on every apply.
+printf '%s' '{"debugLog":true,"permission":{"bash":{"*":"allow","git switch *":"deny"}}}' |
+    bash "$tmp_root/pi-perm.sh" >"$tmp_root/pi-perm-merged.json"
+jq -e '.debugLog == true and
+       .yoloMode == true and
+       .permission.bash["git switch *"] == null' \
+    "$tmp_root/pi-perm-merged.json" >/dev/null
+
+# The project-scoped counterpart, the one place the ban is stated.
+jq -e '.permission.bash["*"] == "allow" and
+       .yoloMode == true and
+       ([.permission.bash | keys[] | select(startswith("git "))] | length) == 6' \
+    "$ROOT/.pi/extensions/pi-permission-system/config.json" >/dev/null
+
 render dot_pi/agent/workflows/settings.json.tmpl >"$tmp_root/workflows.json"
 for machine in work private; do
     jq -e --slurpfile subagents "$tmp_root/subagents-$machine.json" '
@@ -248,12 +300,6 @@ done
 # A strengths entry is a catalogue key and never its own model policy: that is
 # the line between this table and the retired `workflow.tiers` key.
 jq -e '[.strengths[] | type] | all(. == "string")' "$tmp_root/workflows.json" >/dev/null
-
-jq -e '.permission["*"] == "allow" and
-       .permission.bash["*"] == "allow" and
-       .permission.mcp["*"] == "allow" and
-       .permission.external_directory["*"] == "allow"' \
-    "$ROOT/dot_pi/agent/extensions/pi-permission-system/config.json" >/dev/null
 
 [[ ! -e "$ROOT/dot_pi/agent/agents/Plan.md" ]]
 if grep -R -E -n 'pi-plan-mode|display_name: Plan|agents/Plan|core-plan' \
