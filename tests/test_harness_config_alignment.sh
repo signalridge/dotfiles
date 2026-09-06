@@ -16,9 +16,64 @@ render() {
     chezmoi execute-template --source "$ROOT" --file "$ROOT/$1"
 }
 
-render dot_claude/settings.json.tmpl >"$tmp_root/claude.json"
+# Claude Code settings are a modify_ script, not a full-file template: the CLI
+# rewrites ~/.claude/settings.json at runtime (`/model`, `/effort`, `/config`,
+# `claude plugin install`) and so do run_after_11 and run_after_14. Exercise
+# both branches -- fresh machine, and merge over an existing document.
+render dot_claude/modify_settings.json.tmpl >"$tmp_root/claude.sh"
+bash -n "$tmp_root/claude.sh"
+printf '' | bash "$tmp_root/claude.sh" >"$tmp_root/claude.json"
 jq -e '.["skipDangerousModePermissionPrompt"] == true and
-       .permissions.defaultMode == "bypassPermissions"' \
+       .permissions.defaultMode == "bypassPermissions" and
+       .alwaysThinkingEnabled == true and
+       (.env.ENABLE_TOOL_SEARCH == "auto:15") and
+       (.effortLevel | type) == "string"' \
+    "$tmp_root/claude.json" >/dev/null
+
+# The whole point of the conversion. A key the CLI owns must survive the merge,
+# a seeded default must yield to the value already on disk, and a managed key
+# must still win. Nothing about the previous full-file template could pass this.
+printf '%s' '{"model":"claude-opus-5[1m]","effortLevel":"max","outputStyle":"x",
+              "enabledPlugins":{"user-added@somewhere":true},
+              "permissions":{"defaultMode":"default","deny":["Bash(stale *)"]}}' |
+    bash "$tmp_root/claude.sh" >"$tmp_root/claude-merged.json"
+jq -e '.model == "claude-opus-5[1m]" and
+       .outputStyle == "x" and
+       .effortLevel == "max" and
+       .enabledPlugins["user-added@somewhere"] == true and
+       .enabledPlugins["slack@claude-plugins-official"] == true and
+       .permissions.defaultMode == "bypassPermissions" and
+       (.permissions.deny | index("Bash(stale *)")) == null' \
+    "$tmp_root/claude-merged.json" >/dev/null
+
+# Permission rule grammar. Claude Code matches a Bash rule as a command pattern:
+# everything before the first `*` is compared literally, so `Bash(git:*)` needs a
+# command whose text starts with "git:" and never fires. Every rule in this file
+# used that dead colon form until 2026-09-06 -- the allowlist had never worked
+# and the sudo / rm -rf / pip guardrails did not exist. Only `Bash(rm -rf /*)`,
+# which carries no colon, is legitimate. Claude Code's own serializer writes the
+# space form, so that is the shape to hold this file to.
+jq -e '[.permissions.allow[], .permissions.deny[]]
+       | map(select(startswith("Bash(")))
+       | map(select(test("^Bash\\([^)]*:") and (. != "Bash(rm -rf /*)")))
+       | length == 0' \
+    "$tmp_root/claude.json" >/dev/null
+
+# Read()/Edit() deny rules are enforced against file-reading Bash commands, and
+# when a compound command's target cannot be resolved statically Claude Code can
+# prove neither that a rule applies nor that it does not. That is on the short
+# list of things NO permission mode auto-approves, so on a bypassPermissions
+# machine they buy nothing and cost a prompt on every unresolvable read. They
+# were removed deliberately; keep them out.
+jq -e '[.permissions.deny[] | select(test("^(Read|Edit)\\("))] | length == 0' \
+    "$tmp_root/claude.json" >/dev/null
+
+# `Write(path)` rules are accepted and then never consulted -- Claude Code checks
+# file permissions against Edit() and Read() only, and warns at startup about the
+# rest. Commit f92adec fixed eight such no-op rules; this stops them returning.
+jq -e '[.permissions.allow[], .permissions.deny[]]
+       | map(select(test("^(Write|NotebookEdit|MultiEdit|Glob)\\(")))
+       | length == 0' \
     "$tmp_root/claude.json" >/dev/null
 
 # The chezmoi git worktree/branch guard is cwd-scoped, so it lives in the PreToolUse hook
@@ -139,15 +194,38 @@ done
 # The per-machine rungs the header comment documents. Both machines keep the
 # same tier names, which is what lets one strengths table below serve both.
 jq -e '.agentTiers.profiles |
-       .low.thinking == "high" and
-       .medium.thinking == "xhigh" and
-       .high.model == "openai-codex/gpt-5.6-luna" and .high.thinking == "max"' \
+       .low.model == "openai-codex/gpt-5.6-luna" and .low.thinking == "xhigh" and
+       .medium.model == "openai-codex/gpt-5.6-luna" and .medium.thinking == "max" and
+       .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "high"' \
     "$tmp_root/subagents-work.json" >/dev/null
 jq -e '.agentTiers.profiles |
-       .low.thinking == "xhigh" and
-       .medium.thinking == "max" and
+       .low.model == "openai-codex/gpt-5.6-luna" and .low.thinking == "max" and
+       .medium.model == "openai-codex/gpt-6-astra" and .medium.thinking == "high" and
        .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "xhigh"' \
     "$tmp_root/subagents-private.json" >/dev/null
+
+# No rung may be a duplicate of another on the same machine. The catalogue is one
+# ladder with work entering a notch below private, so two tiers resolving to the
+# same model+thinking means a caller asking for more gets exactly what it asked
+# to move away from -- and nothing else in this repository would say so.
+for machine in work private; do
+    jq -e '[.agentTiers.profiles[] | .model + "/" + .thinking] | (unique | length) == length' \
+        "$tmp_root/subagents-$machine.json" >/dev/null
+done
+
+# The parent session is the `medium` row verbatim. It is emitted by a different
+# template from a different file, so nothing but this assertion keeps the two
+# from drifting: an interactive turn and a spawn that names no tier must cost
+# the same.
+render dot_pi/agent/modify_settings.json.tmpl >"$tmp_root/pi-settings.sh"
+bash -n "$tmp_root/pi-settings.sh"
+printf '{}' | bash "$tmp_root/pi-settings.sh" >"$tmp_root/pi-settings.json"
+jq -e --slurpfile subagents "$tmp_root/subagents-private.json" '
+  ($subagents[0].agentTiers.profiles.medium) as $medium
+  | .defaultProvider == "openai-codex"
+    and (.defaultProvider + "/" + .defaultModel) == $medium.model
+    and .defaultThinkingLevel == $medium.thinking
+' "$tmp_root/pi-settings.json" >/dev/null
 
 # pi-workflows routing. A workflow script names a strength, and this table is the
 # only thing binding one to a key in the Agent tier catalogue above. Assert the

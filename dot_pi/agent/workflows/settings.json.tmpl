@@ -41,9 +41,11 @@
   became a second model policy behind a second resolver.
 
   HOW TO RE-PRICE WORKFLOW WORK
-  Not by editing a rung below — `low` is shared with the Explore agent, which
-  ships `tier: low` so read-only search stays cheap, and with every ordinary
-  spawn that names it. Re-pricing a rung drags all of them. Add a new profile to
+  Not by editing a rung below — `low` is shared with the Explore agent, whose
+  frontmatter in dot_pi/agent/agents/Explore.md sets `tier: low` so read-only
+  search stays cheap, and with every ordinary spawn that names it. (That key was
+  missing until 2026-09-06, so Explore had been silently taking `defaultTier`;
+  the other five agents in that directory still do, deliberately.) Re-pricing a rung drags all of them. Add a new profile to
   agentTiers.profiles in subagents.json.tmpl and point a strength at it here.
   Any key the catalogue defines is legal; it is checked against the live
   catalogue at run start, one hop, never chained.
@@ -53,6 +55,14 @@
   `completenessCheck` requests `medium`. A tier a call requests outranks
   defaultTier, so those do not follow it. A call naming no strength sends no
   tier at all and takes the agent's ordinary default.
+
+  Both of those rungs were repriced on 2026-09-06 and this table is what carries
+  the new price into every workflow run, so re-read them rather than trusting a
+  remembered number. On the private machine `low` went luna/xhigh -> luna/max
+  ($0.33 -> $0.53 per task) and `medium` went luna/max -> gpt-6-astra/high
+  ($0.53 -> $2.84). A `completenessCheck`-heavy workflow therefore costs several
+  times what it did, while `verify` and `judgePanel` moved little. On work the
+  same two rungs are luna/xhigh and luna/max, i.e. one notch cheaper each.
 
   Deliberately not set here: progressMode, maxAgentsShown, effort, and the
   keyword-trigger keys. Those are presentation and session preferences the app

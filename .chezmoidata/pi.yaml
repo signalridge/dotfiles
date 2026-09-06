@@ -34,19 +34,25 @@ pi:
     # labels and the layer that mapped them are gone; a managed workflow spawn
     # names an Agent tier key directly.
     #
-    #   work machine:    low = luna/high,  medium = luna/xhigh, high = luna/max
-    #   private machine: low = luna/xhigh, medium = luna/max,   high = astra/xhigh
+    #   work machine:    low = luna/xhigh, medium = luna/max,   high = astra/high
+    #   private machine: low = luna/max,   medium = astra/high, high = astra/xhigh
     #
-    # The parent startup setting is the medium/default baseline: work -> luna/xhigh,
-    # private -> luna/max. The machine-scoped values are emitted by the two Pi
+    # One ladder — luna/xhigh, luna/max, astra/high, astra/xhigh — with work
+    # entering it one rung below private. A rung costs the same on both machines.
+    #
+    # The parent startup setting is the medium/default baseline and equals that
+    # row exactly: work -> luna/max, private -> astra/high. Keep the two in step
+    # whenever either moves, so an interactive turn and a spawn that names no
+    # tier cost the same. The machine-scoped values are emitted by the two Pi
     # templates because the static .chezmoidata pass cannot branch on `.work`.
     #
     # The route is the native Codex OAuth already in ~/.pi/agent/auth.json; the
-    # openai-codex block below emits no apiKey for it. The private high tier runs
-    # gpt-6-astra as of 2026-09-06 (gpt-5.6-sol before that) and carries the same
-    # 921,000 contextWindow pin as the gpt-5.6 family; see the modelOverrides
-    # comment in the openai-codex block for why that number is a measured input
-    # ceiling rather than a spec value, and for what astra costs.
+    # openai-codex block below emits no apiKey for it. gpt-6-astra took over the
+    # top of the ladder on 2026-09-06 — private medium, private high and the
+    # private parent, plus work high — and it carries the same 921,000
+    # contextWindow pin as the gpt-5.6 family; see the modelOverrides comment in
+    # the openai-codex block for why that number is a measured input ceiling
+    # rather than a spec value, and for the per-rung cost table.
     #
     # opencode-go, Kimi Code and the DIRECT DeepSeek platform all stay configured
     # and are one `/model` switch away. They differ in billing (flat allowance vs
@@ -56,15 +62,18 @@ pi:
     # The parent model + effort are still emitted from
     # dot_pi/agent/modify_settings.json.tmpl rather than from here, because that is
     # where settings.json is assembled. They remain machine-scoped: work resolves
-    # to gpt-5.6-luna at xhigh, private resolves to gpt-5.6-luna at max. This is
-    # the medium/default baseline shared by the Agent tier catalogue and by every
-    # managed workflow spawn that names no tier of its own.
+    # to gpt-5.6-luna at max, private resolves to gpt-6-astra at high. Both are
+    # the `medium` tier verbatim, which is also where a managed workflow spawn
+    # that names no tier lands.
     # Pi remains configured independently from Codex.
     # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
     # the ACTIVE provider/model's. reserveTokens is a single global number, so it
     # has to satisfy every candidate:
-    #   openai-codex  gpt-5.6-luna       921K   (the startup default -> what applies)
+    #   openai-codex  gpt-6-astra        921K   (private startup default -> applies)
+    #   openai-codex  gpt-5.6-luna       921K   (work startup default)
     #   opencode-go   deepseek-v4-flash  1M     (the /model fallback)
+    # Both codex models carry the same 921,000 pin and the same 128,000 output
+    # cap, so the arithmetic below is machine-independent.
     # 921K is NOT the codex models' advertised window — it is their measured
     # INPUT ceiling, and pinning that number rather than the spec is the whole
     # point. See the openai-codex modelOverrides block for the measurement and
@@ -104,6 +113,7 @@ pi:
     # headroom instead of 40K. This lowers the probability of hitting the wall;
     # it cannot eliminate it, because no threshold can bound growth that is never
     # measured. Where 130K lands, per active model:
+    #   openai-codex/gpt-6-astra       921K -> trigger 791K
     #   openai-codex/gpt-5.6-luna      921K -> trigger 791K
     #   opencode-go/deepseek-v4-flash  1M   -> trigger 870K
     # THE COMPARISON IS AGAINST INPUT, WHICH IS WHY THE 921K PIN MATTERS.
@@ -424,9 +434,14 @@ pi:
         # the private machine's `high` — see gpt-6-astra directly below.
         # Bracketed tightest of the three gpt-5.6 probes.
         gpt-5.6-luna: { contextWindow: 921000 }
-        # THE PRIVATE `high` TIER as of 2026-09-06 (the `$highModel` ternary in
-        # dot_pi/agent/subagents.json.tmpl), replacing gpt-5.6-sol, and also the
-        # Codex CLI's primary model in dot_codex/modify_config.toml.tmpl.
+        # THE TOP OF THE LADDER as of 2026-09-06: private `medium` and `high`,
+        # the private parent's startup default, and work's `high` — the
+        # `$mediumModel`/`$highModel` values in dot_pi/agent/subagents.json.tmpl
+        # and `$model` in dot_pi/agent/modify_settings.json.tmpl — replacing
+        # gpt-5.6-luna and gpt-5.6-sol. Also the Codex CLI's primary model in
+        # dot_codex/modify_config.toml.tmpl. `medium` is `defaultTier`, so on the
+        # private machine astra is what an unqualified subagent call runs AND
+        # what every interactive turn runs.
         #
         # DERIVED, NOT MEASURED — the only pin in this block that was never
         # probed on the live route. models.dev reports gpt-6-astra with exactly
@@ -446,19 +461,26 @@ pi:
         # cacheRead against sol's $5/$30/$0.5, and $20/$75/$2 against sol's
         # $10/$45/$1 above the 272,000 premium line, but astra spends far fewer
         # tokens on the same task and that dominates the product. Measured per
-        # task at api.codexradar.com/api/v1/intelligence-efficiency (2026-09-06),
-        # at the `xhigh` rung this tier actually runs:
-        #                  $/task   tokens   IQ      pass      minutes
-        #   gpt-6-astra     4.12     1.93M   112.5    54/72      18.8
-        #   gpt-5.6-sol     5.25     7.58M   100.0   224/336     24.5
-        # ~4x fewer tokens, ~21% less money, a higher score and a shorter wall
-        # clock. The gap widens at `max` (4.73 vs 7.97) and reverses only at
-        # `low` (1.89 vs 1.60). That comparison also UNDERSTATES astra: the
-        # source prices sol flat at $4/$20/$0.4 with no long-context band, while
-        # the 09-01..09-02 audit of this machine put 84% of sol's spend in the
-        # >272,000 premium tier this repo's own catalog does bill for.
-        # Sample sizes are lopsided (astra is new: 72 runs vs 336), so treat the
-        # direction as solid and the magnitude as provisional.
+        # task at api.codexradar.com/api/v1/intelligence-efficiency (2026-09-06):
+        #   rung          $/task  tokens     IQ     where it runs
+        #   astra/xhigh    4.12     1.93M  112.5    private high
+        #   astra/high     2.84     1.32M  104.1    private medium + parent; work high
+        #   luna/max       0.53    17.86M  100.9    private low; work medium + parent
+        #   luna/xhigh     0.33    10.92M   87.5    work low
+        #   sol/xhigh      5.25     7.58M  100.0    what private high used to be
+        # So `high` got both cheaper and better (~4x fewer tokens, ~21% less
+        # money, +12.5 IQ, 5.7 min faster), while `medium` got ~5.4x dearer for
+        # +3.2 IQ — and `medium` is now both `defaultTier` AND the parent's own
+        # rung, so that multiple lands on interactive turns too. On this machine
+        # the DEFAULT rung drives the bill, not the top one; that is the reverse
+        # of the 2026-09-02 audit, where `high` was 93.5% of spend. Re-measure
+        # after a few days of real use.
+        # The astra-vs-sol half of that also UNDERSTATES astra: the source prices
+        # sol flat at $4/$20/$0.4 with no long-context band, while the
+        # 09-01..09-02 audit put 84% of sol's spend in the >272,000 premium tier
+        # this repo's own catalog does bill for. Sample sizes are lopsided (astra
+        # is new: 72 runs vs 336), so treat the direction as solid and the
+        # magnitude as provisional.
         gpt-6-astra: { contextWindow: 921000 }
         # sol and terra are pinned too so a runtime /model switch does not
         # silently drop back to 272K. Nothing selects sol any more, but both stay

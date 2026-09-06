@@ -8,6 +8,12 @@ skills: false
 disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
 prompt_mode: replace
 inherit_context: false
+# Read-only search must not run on the default rung. Without this key every
+# spawn falls through to agentTiers.defaultTier, which on the private machine
+# has been gpt-6-astra/high ($2.84/task) since 2026-09-06 -- for grepping. `low`
+# is luna/max there and luna/xhigh on work. workflows/settings.json.tmpl has
+# assumed this key exists for a while; until 2026-09-06 it did not.
+tier: low
 ---
 
 # CRITICAL: READ-ONLY MODE — NO FILE MODIFICATIONS

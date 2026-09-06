@@ -400,15 +400,17 @@ codex-token --check deepseek@private
 
 ### Pi 策略
 
-Pi 托管的启动默认值是 `openai-codex/gpt-5.6-luna`、
+Pi 托管的启动默认值按机器区分：private 启动在 `openai-codex/gpt-6-astra`
+的 `high`，work 启动在 `openai-codex/gpt-5.6-luna` 的 `max`。两者同样使用
 `signalridge-ridgeline` theme、quiet startup、Bun-backed package 安装，以及
-原生 compaction/retry 设置。父 session 的 effort 按机器区分：private 使用
-`max`，work 使用 `xhigh`。
+原生 compaction/retry 设置。
 
-`subagents.json` 只定义三个命名 tier：`low`、`medium`、`high`。它们的
-model/effort 也按机器区分；workflow settings 将 workflow strength
-`low`/`medium`/`high` 直接映射到同名 tier。旧的独立 workflow model vocabulary
-不属于当前配置。
+`subagents.json` 只定义三个命名 tier：`low`、`medium`、`high`。它们构成同一条
+阶梯——`luna/xhigh`、`luna/max`、`astra/high`、`astra/xhigh`——work 机器比
+private 低一档进入，因此同一档在两台机器上成本相同。上面的启动默认值刻意等于
+当前机器的 `medium` 档，回归测试会断言这一点。workflow settings 将 workflow
+strength `low`/`medium`/`high` 直接映射到同名 tier；旧的独立 workflow model
+vocabulary 不属于当前配置。
 
 Pi 所需的 custom provider key 按 service 放在 `pi/` 下（例如
 `pi/opencode/api_key`、`pi/deepseek/api_key`、`pi/kimi/api_key`）。使用缺失 gopass

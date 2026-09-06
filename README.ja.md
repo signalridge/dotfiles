@@ -410,15 +410,18 @@ codex-token --check deepseek@private
 
 ### Pi のポリシー
 
-管理対象 Pi の起動既定値は `openai-codex/gpt-5.6-luna`、
-`signalridge-ridgeline` theme、quiet startup、Bun ベースの package install、
-native compaction/retry 設定です。親セッションの effort は machine-scoped で、
-private は `max`、work は `xhigh` です。
+管理対象 Pi の起動既定値は machine-scoped です。private は
+`openai-codex/gpt-6-astra` の `high`、work は `openai-codex/gpt-5.6-luna` の
+`max` で起動します。どちらも `signalridge-ridgeline` theme、quiet startup、
+Bun ベースの package install、native compaction/retry 設定を使います。
 
 `subagents.json` は `low`、`medium`、`high` の三つの tier だけを定義します。
-model/effort も machine-scoped で、workflow settings は workflow strength
-`low`/`medium`/`high` を同名 tier へ直接対応付けます。旧来の別 workflow model
-vocabulary は現在の設定にはありません。
+これらは `luna/xhigh`、`luna/max`、`astra/high`、`astra/xhigh` という一本の
+はしごで、work 機は private 機より一段下から入ります。したがって同じ段の
+コストはどちらの機械でも同じです。上記の起動既定値は各機械の `medium` 段と
+一致させてあり、回帰テストがそれを検証します。workflow settings は workflow
+strength `low`/`medium`/`high` を同名 tier へ直接対応付けます。旧来の別
+workflow model vocabulary は現在の設定にはありません。
 
 Pi の custom provider key は必要に応じて service 単位で `pi/` 以下に置きます
 （例：`pi/opencode/api_key`、`pi/deepseek/api_key`、`pi/kimi/api_key`）。gopass key が

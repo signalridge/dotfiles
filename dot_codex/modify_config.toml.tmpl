@@ -10,7 +10,8 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 # Codex CLI Configuration
 # Managed by chezmoi - do not edit directly (except [projects.*] sections, which are preserved)
 # Run: chezmoi edit ~/.codex/config.toml
-
+{{/* No left trim marker: with `{{-` the blank line above was swallowed and the
+     next banner rendered onto the end of the "# Run:" comment. */ -}}
 {{- /* codexProviderAccount can be openai or provider@label */ -}}
 {{- $accountKey := "openai" -}}
 {{- if hasKey . "codexProviderAccount" -}}
@@ -21,10 +22,19 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
        private/high-effort profile by default, matching Claude's template. */ -}}
 {{- $work := false -}}
 {{- if hasKey . "work" -}}{{- $work = .work -}}{{- end -}}
-{{- /* Keep the default model valid when a third-party provider is selected.
+{{- /* Default model + effort TRACK PI'S PARENT SESSION, machine for machine:
+       private -> gpt-6-astra at `high`, work -> gpt-5.6-luna at `max`. That is
+       the `medium` row of the Agent tier catalogue in
+       dot_pi/agent/subagents.json.tmpl and the value
+       dot_pi/agent/modify_settings.json.tmpl emits, so the two harnesses cost
+       the same per turn and a rung means one thing across both. Aligned
+       2026-09-06; before that Codex sat on astra/xhigh (private) and
+       astra/max (work) regardless of what Pi did.
+
+       Keep the default model valid when a third-party provider is selected.
        Each provider block below is an endpoint, not a shared model registry. */ -}}
-{{- $model := "gpt-6-astra" -}}
-{{- $subagentModel := "gpt-6-astra" -}}
+{{- $model := ternary "gpt-5.6-luna" "gpt-6-astra" $work -}}
+{{- $subagentModel := $model -}}
 {{- if eq $providerName "deepseek" -}}
 {{-   $model = "deepseek-v4-flash" -}}
 {{-   $subagentModel = "deepseek-v4-flash" -}}
@@ -44,8 +54,12 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 {{-   $model = "qwen3-coder-plus" -}}
 {{-   $subagentModel = "qwen3-coder-plus" -}}
 {{- end -}}
-{{- $effort := ternary "max" "xhigh" $work -}}
-{{- $subagentEffort := "max" -}}
+{{- $effort := ternary "max" "high" $work -}}
+{{- /* Subagents run the parent's rung, mirroring Pi where the parent IS the
+       `medium` tier every unqualified spawn lands on. It used to be pinned to
+       `max` unconditionally, which made a Codex subagent dearer than the
+       session that spawned it. */ -}}
+{{- $subagentEffort := $effort -}}
 
 # =============================================================================
 # Core Settings
@@ -66,11 +80,13 @@ approval_policy = "never"
 # config.toml equivalent of --dangerously-bypass-approvals-and-sandbox.
 sandbox_mode = "danger-full-access"
 
-# Disable response storage
-disable_response_storage = true
-
-# Windows WSL setup acknowledgement
-windows_wsl_setup_acknowledged = true
+# Removed 2026-09-06: `disable_response_storage` and
+# `windows_wsl_setup_acknowledged` are no longer in the schema this file's
+# `#:schema` line points at, whose root is `additionalProperties: false`, so
+# both were emitting fields the published contract rejects. Codex itself
+# tolerated them; an editor validating against the schema does not. Neither has
+# a replacement key -- response storage is now governed by the account, and the
+# WSL acknowledgement is meaningless on this Darwin-only machine anyway.
 
 # Suppress unstable feature warnings
 suppress_unstable_features_warning = true

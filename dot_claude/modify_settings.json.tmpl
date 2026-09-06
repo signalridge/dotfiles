@@ -1,0 +1,374 @@
+#!/usr/bin/env bash
+# chezmoi modify_ script: merge managed Claude Code settings into
+# ~/.claude/settings.json, preserving everything Claude Code and the post-apply
+# scripts write there themselves. Managed keys always win on re-apply.
+#
+# WHY modify_ AND NOT A FULL-FILE TEMPLATE. Claude Code rewrites this file at
+# runtime and so do two of this repository's own run_after_ scripts, so a
+# full-file template loses their writes on every apply. Until 2026-09-06 that is
+# exactly what happened, and the workarounds are still visible in the history:
+#   - `/model` writes a top-level `model` key. It was destroyed by every apply,
+#     which is why .chezmoidata/claude.yaml carries the note that the default
+#     "must be set HERE to stick" (as ANTHROPIC_MODEL) instead.
+#   - `/effort` writes `effortLevel`. The old template hardcoded whatever value
+#     the user had last chosen so the apply would be a no-op — a value copied by
+#     hand rather than preserved.
+#   - `claude plugin install` writes enabledPlugins / extraKnownMarketplaces, and
+#     run_after_11 drives exactly those CLI commands. The template mirrored the
+#     two plugins it installs so the sequence cancelled out.
+#   - Commit a222d9f reordered the template's top-level keys to match the order
+#     Claude Code itself writes, purely so apply would stop producing a diff.
+# .chezmoidata/antigravity.yaml already cites this file by name as "the exact
+# trap" its own modify_ script was written to avoid. This is that fix.
+#
+# THREE LAYERS, following dot_cursor/modify_cli-config.json:
+#   FALLBACK < EXISTING < MANAGED
+#   FALLBACK  seeds a fresh machine and then never wins again, so a value the
+#             user changes at runtime sticks. effortLevel, enabledPlugins and
+#             extraKnownMarketplaces live here: we want a sane starting point,
+#             not ownership.
+#   EXISTING  everything Claude Code writes that we do not name: `model`,
+#             `modelSettings`, `outputStyle`, /config keys, future keys.
+#   MANAGED   the posture this repository owns.
+# jq's `*` merges objects recursively but REPLACES arrays wholesale, which is
+# what we want for permissions.allow/deny and for hooks: the managed policy is
+# the policy, not a union with whatever accumulated.
+#
+# The target is 0644, so no `private_` prefix. If that ever changes, the name is
+# `modify_private_settings.json.tmpl` — chezmoi parses the prefixes in order and
+# `private_modify_` silently manages a file literally named "modify_settings.json".
+set -euo pipefail
+
+EXISTING="$(cat)"
+{{/* No left trim marker on this first action: every action below trims both
+     sides and emits nothing, so a `{{-` here would pull the whole chain onto
+     the EXISTING line and glue FALLBACK= to the end of it. A comment must also
+     begin immediately after the delimiter, so `{{ /*` is a parse error. */ -}}
+{{- $accountKey := "anthropic" -}}
+{{- if hasKey . "claudeProviderAccount" -}}
+{{-   $accountKey = .claudeProviderAccount -}}
+{{- else if hasKey . "claudeProvider" -}}
+{{-   $accountKey = .claudeProvider -}}
+{{- end -}}
+{{- $account := index .claude.accounts $accountKey -}}
+{{- $providerName := (split "@" $accountKey)._0 -}}
+{{- if and $account (hasKey $account "provider") -}}
+{{-   $providerName = $account.provider -}}
+{{- end -}}
+{{- $provider := index .claude.providers $providerName -}}
+{{- $defaults := .claude.defaults -}}
+{{- /* work may be absent when rendered without chezmoi config data (tests);
+       default to the personal profile in that case. */ -}}
+{{- $work := false -}}
+{{- if hasKey . "work" -}}{{- $work = .work -}}{{- end -}}
+{{- $home := .chezmoi.homeDir -}}
+
+{{- /* ---------------------------------------------------------------- env --
+     Built as a dict rather than hand-written JSON. The old template emitted
+     this block as comma-delimited text with fourteen conditional lines and
+     exactly one comma-less line at the end, so an unset timeout_ms would have
+     produced a trailing comma and an unparsable settings file. A dict cannot
+     have that bug.
+
+     MCP Tool Search: the default defers ALL mcp__* tool schemas — the model must
+     call ToolSearch to load a schema before invoking, so MCP is never the
+     default reach (measured: 695 ToolSearch = 675 MCP calls, ~1:1). auto:15
+     loads MCP tool schemas upfront when they fit within 15% of the context
+     window (our ~47 tools = 9-14K tokens fit easily), removing that friction,
+     and only defers if the tool surface later overflows. High-value servers
+     (context7/tavily/deepwiki) are ALSO pinned alwaysLoad in
+     .chezmoiscripts/run_after_12_sync-claude-mcp.sh so they never defer
+     regardless of this budget. Requires a model with tool_reference support
+     (Opus/Sonnet; Haiku ignores it and loads all upfront anyway). */ -}}
+{{- $env := dict "ENABLE_TOOL_SEARCH" "auto:15" -}}
+{{- if and $provider (hasKey $provider "base_url") -}}
+{{-   $_ := set $env "ANTHROPIC_BASE_URL" $provider.base_url -}}
+{{- end -}}
+{{- /* ANTHROPIC_MODEL: account -> provider. This, not the top-level `model`
+       key, is the durable startup default — `model` is now PRESERVED rather
+       than managed, and inside a session it wins over this variable, so the
+       two can legitimately disagree until the next /model. */ -}}
+{{- $model := "" -}}
+{{- if and $account (hasKey $account "model") -}}
+{{-   $model = $account.model -}}
+{{- else if and $provider (hasKey $provider "default_model") -}}
+{{-   $model = $provider.default_model -}}
+{{- end -}}
+{{- if $model -}}{{- $_ := set $env "ANTHROPIC_MODEL" $model -}}{{- end -}}
+{{- if and $account (hasKey $account "small_model") -}}
+{{-   $_ := set $env "ANTHROPIC_SMALL_FAST_MODEL" $account.small_model -}}
+{{- end -}}
+{{- if and $account (hasKey $account "haiku_model") -}}
+{{-   $_ := set $env "ANTHROPIC_DEFAULT_HAIKU_MODEL" $account.haiku_model -}}
+{{- end -}}
+{{- if and $account (hasKey $account "sonnet_model") -}}
+{{-   $_ := set $env "ANTHROPIC_DEFAULT_SONNET_MODEL" $account.sonnet_model -}}
+{{- end -}}
+{{- if and $account (hasKey $account "opus_model") -}}
+{{-   $_ := set $env "ANTHROPIC_DEFAULT_OPUS_MODEL" $account.opus_model -}}
+{{- end -}}
+{{- /* subagent_model: account -> provider */ -}}
+{{- $subagentModel := "" -}}
+{{- if and $account (hasKey $account "subagent_model") -}}
+{{-   $subagentModel = $account.subagent_model -}}
+{{- else if and $provider (hasKey $provider "subagent_model") -}}
+{{-   $subagentModel = $provider.subagent_model -}}
+{{- end -}}
+{{- if $subagentModel -}}
+{{-   $_ := set $env "CLAUDE_CODE_SUBAGENT_MODEL" $subagentModel -}}
+{{- end -}}
+{{- /* attribution_header: account -> provider (proxies that reject the header set "0") */ -}}
+{{- $attributionHeader := "" -}}
+{{- if and $account (hasKey $account "attribution_header") -}}
+{{-   $attributionHeader = $account.attribution_header -}}
+{{- else if and $provider (hasKey $provider "attribution_header") -}}
+{{-   $attributionHeader = $provider.attribution_header -}}
+{{- end -}}
+{{- if ne (toString $attributionHeader) "" -}}
+{{-   $_ := set $env "CLAUDE_CODE_ATTRIBUTION_HEADER" (toString $attributionHeader) -}}
+{{- end -}}
+{{- /* disable_experimental_betas: account -> provider */ -}}
+{{- $disableBetas := false -}}
+{{- if and $account (hasKey $account "disable_experimental_betas") -}}
+{{-   $disableBetas = $account.disable_experimental_betas -}}
+{{- else if and $provider (hasKey $provider "disable_experimental_betas") -}}
+{{-   $disableBetas = $provider.disable_experimental_betas -}}
+{{- end -}}
+{{- if $disableBetas -}}
+{{-   $_ := set $env "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS" "1" -}}
+{{- end -}}
+{{- /* supported_capabilities: account -> provider; applied to opus/sonnet/haiku */ -}}
+{{- $supportedCaps := "" -}}
+{{- if and $account (hasKey $account "supported_capabilities") -}}
+{{-   $supportedCaps = $account.supported_capabilities -}}
+{{- else if and $provider (hasKey $provider "supported_capabilities") -}}
+{{-   $supportedCaps = $provider.supported_capabilities -}}
+{{- end -}}
+{{- if $supportedCaps -}}
+{{-   $_ := set $env "ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES" $supportedCaps -}}
+{{-   $_ := set $env "ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES" $supportedCaps -}}
+{{-   $_ := set $env "ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES" $supportedCaps -}}
+{{- end -}}
+{{- /* auto_compact_window: account -> provider */ -}}
+{{- $autoCompactWindow := "" -}}
+{{- if and $account (hasKey $account "auto_compact_window") -}}
+{{-   $autoCompactWindow = $account.auto_compact_window -}}
+{{- else if and $provider (hasKey $provider "auto_compact_window") -}}
+{{-   $autoCompactWindow = $provider.auto_compact_window -}}
+{{- end -}}
+{{- if $autoCompactWindow -}}
+{{-   $_ := set $env "CLAUDE_CODE_AUTO_COMPACT_WINDOW" (toString $autoCompactWindow) -}}
+{{- end -}}
+{{- /* disable_nonessential_traffic: account -> provider -> defaults */ -}}
+{{- $disableTraffic := false -}}
+{{- if and $account (hasKey $account "disable_nonessential_traffic") -}}
+{{-   $disableTraffic = $account.disable_nonessential_traffic -}}
+{{- else if and $provider (hasKey $provider "disable_nonessential_traffic") -}}
+{{-   $disableTraffic = $provider.disable_nonessential_traffic -}}
+{{- else if hasKey $defaults "disable_nonessential_traffic" -}}
+{{-   $disableTraffic = $defaults.disable_nonessential_traffic -}}
+{{- end -}}
+{{- if $disableTraffic -}}
+{{-   $_ := set $env "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC" "1" -}}
+{{- end -}}
+{{- /* timeout_ms: account -> provider -> defaults */ -}}
+{{- $timeout := "" -}}
+{{- if and $account (hasKey $account "timeout_ms") -}}
+{{-   $timeout = $account.timeout_ms -}}
+{{- else if and $provider (hasKey $provider "timeout_ms") -}}
+{{-   $timeout = $provider.timeout_ms -}}
+{{- else if hasKey $defaults "timeout_ms" -}}
+{{-   $timeout = $defaults.timeout_ms -}}
+{{- end -}}
+{{- if $timeout -}}{{- $_ := set $env "API_TIMEOUT_MS" (toString $timeout) -}}{{- end -}}
+
+{{- /* -------------------------------------------------------- permissions --
+     REWRITTEN 2026-09-06. Two independent defects were fixed at once.
+
+  (1) EVERY Bash RULE USED A SYNTAX THAT MATCHES NOTHING. The rules were written
+      `Bash(git:*)`, `Bash(sudo:*)`, `Bash(rm -rf:*)`. Claude Code has two rule
+      grammars and neither reads that the way it looks:
+        - `Tool(param:value)` matches a named INPUT PARAMETER, is accepted only
+          on deny/ask rules, and the name must be a real field of the tool's
+          input (`run_in_background`, not `git`).
+        - Otherwise the specifier is the tool's own, and for Bash that is a
+          command pattern where "everything before the first `*` is matched as
+          written".
+      So `Bash(git:*)` required a command whose literal text began `git:` — no
+      real command does. All 12 allow rules and 12 of the 13 Bash deny rules
+      were inert; only `Bash(rm -rf /*)`, which has no colon, ever fired. The
+      allowlist had never worked, and the sudo / rm -rf / pip guardrails did not
+      exist. The correct separator is a space: `Bash(git *)`.
+      Claude Code's own serializer never emits the colon form — every rule it
+      wrote into .claude/settings.local.json reads `Bash(mktemp -d)` or
+      `Bash(yazi --version)`. That is the shape to copy.
+
+  (2) THE Read()/Edit() DENY RULES WERE THE ONLY REMAINING SOURCE OF PERMISSION
+      PROMPTS, INCLUDING UNDER bypassPermissions, AND ARE GONE. Read and Edit
+      deny rules are enforced against Bash commands that read files, not just
+      against the file tools. When a command's target cannot be resolved
+      statically — `cd somewhere && grep x y`, which is most compound commands —
+      Claude Code can prove neither that a deny rule applies nor that it does
+      not, and an unresolvable deny check is on the short list of things NO mode
+      auto-approves. `bypassPermissions` skips the question "may I?"; it cannot
+      skip "I am unable to tell". The accumulated allow entries in this repo's
+      own .claude/settings.local.json are the fossil record of that prompt being
+      answered by hand, over and over.
+      Removing them is a deliberate posture decision, not an oversight: this
+      machine runs bypassPermissions on purpose, and a guardrail that only
+      manifests as a prompt is not a guardrail on a machine where the answer is
+      always yes. What remains is Bash-level: command-text rules resolve
+      statically, so they block without ever prompting.
+      The rules were also not doing what they appeared to. A recursive glob such
+      as the one they used for .pem files was UNANCHORED, which in this grammar
+      means "at or under the working directory" — not the whole filesystem.
+      Protecting ~/.ssh from any directory would have needed a leading `//` to
+      anchor the pattern at the filesystem root. As written they cost prompts
+      everywhere and protected only the tree already being worked in.
+
+  (3) GIT IS THE HOOK'S JOB. `Bash(git reset --hard:*)`, `Bash(git clean -fd:*)`
+      and `Bash(git checkout --orphan:*)` are dropped rather than repaired.
+      Commit 3671a66 already removed three sibling entries for the stated reason
+      that "a static deny list cannot express 'only in chezmoi'" and made
+      hooks/block-git-rewrites.sh the single definition; that hook covers all
+      three of these. Note it answers `ask` for reset --hard and clean -fd, so
+      those still prompt — deliberately, and rarely.
+
+  additionalDirectories is new. Reads outside the working directory are a
+  distinct prompt class from the one above, and this is the setting that makes
+  them in-scope once instead of one accumulated allow rule at a time. The list
+  is the harness config tree plus the read-only system paths that
+  .claude/settings.local.json had already collected by hand. */ -}}
+{{- $permissions := dict
+      "defaultMode" "bypassPermissions"
+      "additionalDirectories" (list
+        (printf "%s/.claude" $home)
+        (printf "%s/.codex" $home)
+        (printf "%s/.pi" $home)
+        (printf "%s/.cursor" $home)
+        (printf "%s/.gemini" $home)
+        (printf "%s/.kimi-code" $home)
+        (printf "%s/.harnesses" $home)
+        (printf "%s/.config" $home)
+        (printf "%s/.local/share" $home)
+        "/nix/store")
+      "allow" (list
+        "Bash(uv *)"
+        "Bash(uvx *)"
+        "Bash(ruff *)"
+        "Bash(git *)"
+        "Bash(just *)"
+        "Bash(mise *)"
+        "Bash(npm *)"
+        "Bash(npx *)"
+        "Bash(bun *)"
+        "Bash(bunx *)"
+        "Bash(nix *)"
+        "Bash(chezmoi *)")
+      "deny" (list
+        "Bash(sudo *)"
+        "Bash(shutdown *)"
+        "Bash(reboot *)"
+        "Bash(rm -rf /*)"
+        "Bash(pip install *)"
+        "Bash(pip3 install *)"
+        "Bash(python -m pip *)"
+        "Bash(python3 -m pip *)")
+-}}
+
+{{- /* ------------------------------------------------------------- hooks --
+     Arrays are replaced wholesale by the merge, so this is the complete hook
+     set. SessionStart[1] is NOT ours: `herdr integration install claude`
+     (driven by .chezmoiscripts/run_after_14_sync-herdr-integrations.sh) writes
+     it, and herdr-agent-state.sh is not a chezmoi-managed file. It is declared
+     here, byte-identical to what Herdr writes — absolute homedir rather than
+     $HOME, because that is Herdr's literal output — so that apply and
+     run_after_14 do not flap against each other every time. */ -}}
+{{- $tmuxIdle := dict "type" "command" "command" "$HOME/.local/bin/tmux-ai-agent-state claude idle" "timeout" 1 -}}
+{{- $idleGroup := list (dict "hooks" (list $tmuxIdle)) -}}
+{{- $hooks := dict
+      "UserPromptSubmit" (list (dict "hooks" (list
+        (dict "type" "command" "command" "$HOME/.claude/hooks/navigation-hint.sh" "timeout" 3)
+        (dict "type" "command" "command" "$HOME/.local/bin/tmux-ai-agent-state claude busy" "timeout" 1))))
+      "SessionStart" (list
+        (dict "hooks" (list $tmuxIdle))
+        (dict "matcher" "*" "hooks" (list
+          (dict "type" "command" "command" (printf "bash '%s/.claude/hooks/herdr-agent-state.sh' session" $home) "timeout" 10))))
+      "SessionEnd" $idleGroup
+      "Stop" $idleGroup
+      "PreToolUse" (list (dict "matcher" "Bash" "hooks" (list
+        (dict "type" "command" "command" "$HOME/.claude/hooks/block-git-rewrites.sh" "timeout" 5))))
+      "PostToolUse" (list (dict "matcher" "Write|Edit|MultiEdit" "hooks" (list
+        (dict "type" "command" "command" "$HOME/.claude/hooks/format-python.sh" "timeout" 10)
+        (dict "type" "command" "command" "$HOME/.claude/hooks/format-code.sh" "timeout" 10))))
+-}}
+
+{{- /* ---------------------------------------------------------- fallback --
+     Seeded on a fresh machine, then never again: EXISTING outranks it, so a
+     value changed at runtime sticks.
+
+     effortLevel is here rather than in MANAGED because `/effort` writes this
+     exact key. The old template pinned it to a literal copied from whatever the
+     user had chosen (xhigh, personal) so that apply would not revert them — a
+     hand-maintained mirror of runtime state, which is the thing this file
+     exists to stop doing. Seeding it keeps the fresh-machine default without
+     owning the key. See commit 05b5a4b, which removed CLAUDE_CODE_EFFORT_LEVEL
+     for the same reason: an env var pin blocked /effort outright.
+
+     enabledPlugins and extraKnownMarketplaces are here because
+     run_after_11_sync-claude-integration-plugins.sh installs exactly these two
+     via `claude plugin install`, and the CLI writes these keys itself. Seeding
+     rather than managing means a plugin the user adds later is no longer
+     reverted on the next apply. Objects merge recursively, so the seed and the
+     user's own entries coexist. */ -}}
+{{- $fallback := dict
+      "effortLevel" (ternary "medium" "xhigh" $work)
+      "enabledPlugins" (dict
+        "notion-workspace-plugin@notion-plugin-marketplace" true
+        "slack@claude-plugins-official" true)
+      "extraKnownMarketplaces" (dict
+        "claude-plugins-official" (dict "source" (dict "source" "github" "repo" "anthropics/claude-plugins-official"))
+        "notion-plugin-marketplace" (dict "source" (dict "source" "github" "repo" "makenotion/claude-code-notion-plugin")))
+-}}
+
+{{- /* apiKeyHelper is the gopass-backed token script, and only third-party
+       providers need it; native Anthropic OAuth renders the empty string, as
+       the full-file template did. Written as an if/else rather than a ternary
+       because `$provider` is nil for an unknown provider name and `and`
+       short-circuits to nil there, which ternary will not take. */ -}}
+{{- $apiKeyHelper := "" -}}
+{{- if and $provider (hasKey $provider "base_url") -}}
+{{-   $apiKeyHelper = "~/.local/bin/claude-token" -}}
+{{- end -}}
+{{- $managed := dict
+      "apiKeyHelper" $apiKeyHelper
+      "env" $env
+      "permissions" $permissions
+      "hooks" $hooks
+      "statusLine" (dict "type" "command" "command" "bash $HOME/.claude/statusline-command.sh")
+      "skipDangerousModePermissionPrompt" true
+      "alwaysThinkingEnabled" true
+}}
+FALLBACK="$(cat <<'CLAUDE_FALLBACK_EOF'
+{{ $fallback | toPrettyJson }}
+CLAUDE_FALLBACK_EOF
+)"
+
+MANAGED="$(cat <<'CLAUDE_MANAGED_EOF'
+{{ $managed | toPrettyJson }}
+CLAUDE_MANAGED_EOF
+)"
+
+# Same guard as the other four modify_ scripts: on a fresh machine the file does
+# not exist yet (empty stdin), and a half-written one must not take the managed
+# keys down with it.
+if command -v jq >/dev/null 2>&1 && printf '%s' "$EXISTING" | jq -e . >/dev/null 2>&1; then
+    jq -s '.[0] * .[1] * .[2]' \
+        <(printf '%s' "$FALLBACK") \
+        <(printf '%s' "$EXISTING") \
+        <(printf '%s' "$MANAGED")
+else
+    jq -s '.[0] * .[1]' \
+        <(printf '%s' "$FALLBACK") \
+        <(printf '%s' "$MANAGED")
+fi
