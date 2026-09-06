@@ -7,14 +7,15 @@
 # stay on PATH. bun replaces npx (MCP wrappers) and the npm install backend,
 # not the Node runtime itself.
 #
-# Moved off `lts` to `latest` on 2026-09-06 by explicit request ("update
-# everything to latest"). This is a real change of posture, not a version bump:
-# `lts` tracked 24.x, `latest` tracks Node Current, which is 26.x and receives
-# no long-term support. Everything here needs >= 22.19 (pi's floor), so the
-# floor is not the risk — the risk is a native module without a prebuild for a
-# brand-new major, and bun skips postinstall by default so a rebuild will not
-# save it. Roll back with `node = "lts"` and `mise install`.
-node = "latest"
+# `lts`, NOT `latest`, and that is not a stale pin: `lts` already tracks the
+# newest LTS release and moves on its own (24.20.0 today), so "keep node at the
+# latest version" and "stay on LTS" are the same instruction. `latest` would
+# mean something different — Node Current, 26.x, which gets no long-term
+# support. Briefly set to `latest` on 2026-09-06 and reverted the same day.
+# The version floor was never the question (pi needs >= 22.19 and every major
+# here clears it); the exposure on a brand-new major is a native module with no
+# prebuild, which bun will not rebuild because it skips postinstall by default.
+node = "lts"
 
 # Bun — runs MCP servers via `bunx` (see ~/.local/bin/mcp-*) and, via
 # settings.npm.package_manager below, becomes the installer for all `npm:` CLIs.
