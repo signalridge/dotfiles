@@ -181,12 +181,13 @@ assert config["default_permission_mode"] == "yolo"
 assert config["default_plan_mode"] is False
 PY
 
-# subagents.json is the one template asserted here that branches on chezmoi
-# data: the work and private machines get different model and thinking rungs
-# under the same three tier names. `render` cannot reach it, because a test run
-# has no chezmoi config to read `.work` from -- CI has none at all, and a
-# developer's own would decide which machine the suite checked. Supply the value
-# instead, and check both machines: the split is the whole reason for the branch.
+# Two templates asserted here branch on chezmoi data -- subagents.json and the
+# Pi settings script below: the work and private machines get different model
+# and thinking rungs under the same three tier names. `render` cannot reach
+# either, because a test run has no chezmoi config to read `.work` from -- the
+# Tests workflow has none at all, and a developer's own would decide which
+# machine the suite checked. Supply the value instead, and check both machines:
+# the split is the whole reason for the branch.
 render_subagents() {
     chezmoi execute-template --source "$ROOT" --override-data "{\"work\":$1}" \
         --file "$ROOT/dot_pi/agent/subagents.json.tmpl"
@@ -233,16 +234,27 @@ done
 # The parent session is the `medium` row verbatim. It is emitted by a different
 # template from a different file, so nothing but this assertion keeps the two
 # from drifting: an interactive turn and a spawn that names no tier must cost
-# the same.
-render dot_pi/agent/modify_settings.json.tmpl >"$tmp_root/pi-settings.sh"
-bash -n "$tmp_root/pi-settings.sh"
-printf '{}' | bash "$tmp_root/pi-settings.sh" >"$tmp_root/pi-settings.json"
-jq -e --slurpfile subagents "$tmp_root/subagents-private.json" '
-  ($subagents[0].agentTiers.profiles.medium) as $medium
-  | .defaultProvider == "openai-codex"
-    and (.defaultProvider + "/" + .defaultModel) == $medium.model
-    and .defaultThinkingLevel == $medium.thinking
-' "$tmp_root/pi-settings.json" >/dev/null
+# the same. Both sides branch on `.work`, so both are rendered per machine and
+# compared machine for machine -- rendering the parent with no machine at all is
+# what broke this suite when its model became a ternary and this call site did
+# not follow.
+render_pi_settings() {
+    chezmoi execute-template --source "$ROOT" --override-data "{\"work\":$2}" \
+        --file "$ROOT/dot_pi/agent/modify_settings.json.tmpl" >"$tmp_root/pi-settings-$1.sh"
+    bash -n "$tmp_root/pi-settings-$1.sh"
+    printf '{}' | bash "$tmp_root/pi-settings-$1.sh" >"$tmp_root/pi-settings-$1.json"
+}
+render_pi_settings work true
+render_pi_settings private false
+
+for machine in work private; do
+    jq -e --slurpfile subagents "$tmp_root/subagents-$machine.json" '
+      ($subagents[0].agentTiers.profiles.medium) as $medium
+      | .defaultProvider == "openai-codex"
+        and (.defaultProvider + "/" + .defaultModel) == $medium.model
+        and .defaultThinkingLevel == $medium.thinking
+    ' "$tmp_root/pi-settings-$machine.json" >/dev/null
+done
 
 # pi-workflows routing. A workflow script names a strength, and this table is the
 # only thing binding one to a key in the Agent tier catalogue above. Assert the
