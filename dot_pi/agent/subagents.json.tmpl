@@ -8,17 +8,23 @@
 
   The ordinary Agent catalogue is the single model-policy source. It keeps its
   user-facing `low | medium | high` keys and is machine-scoped:
-    work machine:    low = luna/xhigh, medium = luna/max,   high = astra/high
-    private machine: low = luna/max,   medium = astra/high, high = astra/xhigh
+    work machine:    low = luna/xhigh, medium = luna/max,     high = astra/medium
+    private machine: low = luna/max,   medium = astra/medium, high = astra/high
 
   work is private shifted down exactly one rung. That is the design: the two
-  machines share one ladder — luna/xhigh, luna/max, astra/high, astra/xhigh —
+  machines share one ladder — luna/xhigh, luna/max, astra/medium, astra/high —
   and differ only in where they enter it. Read a rung's cost once and it means
   the same thing on both. astra appearing on work at all is new as of
   2026-09-06; work was luna-only through the whole sol era.
 
+  The ladder slid down one astra rung on 2026-09-07: astra/xhigh left the top
+  and astra/medium joined below astra/high, so every tier that named an astra
+  rung now names the next one down. The shape above is untouched — same four
+  rungs, same one-notch offset — which is why nothing in this file's structure
+  had to move with it.
+
   The parent session is the medium/default baseline and is emitted separately by
-  modify_settings.json.tmpl: work -> luna/max, private -> astra/high. That is
+  modify_settings.json.tmpl: work -> luna/max, private -> astra/medium. That is
   this catalogue's `medium` row verbatim, and it is meant to stay that way, so
   that an interactive turn and a spawn that names no tier cost the same. Keep
   the two in lockstep whenever either moves, and do not collapse the rungs back
@@ -66,11 +72,16 @@
   chezmoi policy rather than in the public extension package. `max` is a real
   rung on gpt-5.6-luna. gpt-6-astra replaced gpt-5.6-sol at the top on
   2026-09-06 and then spread downward: private runs it at `medium` and `high`,
-  work at `high`. That intermediate rung only exists because astra ships the
+  work at `medium`. Those intermediate rungs only exist because astra ships the
   full low|medium|high|xhigh|max map where sol had {minimal: low, xhigh: xhigh,
-  max: max}. private `high` stays at `xhigh` because that is astra's own IQ
-  peak, not because it is capped -- `max` scores lower (111.9) and `ultra` lower
-  still (104.2), both slower and dearer. There is nothing above xhigh to buy.
+  max: max} -- check a pin against Pi's model registry rather than memory, since
+  a rung missing from a model's thinkingLevelMap is not offered and
+  clampThinkingLevel silently walks the pin to the nearest one that is.
+
+  astra/xhigh is astra's own IQ peak -- `max` scores lower (111.9) and `ultra`
+  lower still (104.2), both slower and dearer, so there was never anything above
+  it to buy. Nothing runs there as of 2026-09-07. Giving up the peak was the
+  deliberate content of that change, not a cap anyone ran into.
 
   COST -- and the unit price is the wrong number to read it off. gpt-6-astra is
   dearer per token than gpt-5.6-sol ($10/$50/$1 per M input/output/cacheRead
@@ -80,17 +91,28 @@
   intelligence-efficiency, 2026-09-06):
 
     rung          $/task  tokens     IQ     where it runs
-    astra/xhigh    4.12     1.93M  112.5    private high   (was sol/xhigh: 5.25)
-    astra/high     2.84     1.32M  104.1    private medium + parent; work high
+    astra/xhigh    4.12     1.93M  112.5    nothing, since 2026-09-07
+    astra/high     2.84     1.32M  104.1    private high
+    astra/medium      ?         ?      ?    private medium + parent; work high
     luna/max       0.53    17.86M  100.9    private low; work medium + parent
     luna/xhigh     0.33    10.92M   87.5    work low
 
-  So the same 2026-09-06 change made `high` both cheaper and better, while
-  `medium` got ~5.4x dearer for +3.2 IQ. On the private machine it is now the
-  DEFAULT rung -- shared by the parent session and by every spawn that names no
-  tier -- that drives the bill, not the top one. That is the reverse of the
-  2026-09-02 audit, where `high` was 93.5% of spend, and it is worth
-  re-measuring after a couple of days of real use.
+  astra/medium has no measured row on purpose: it arrived here on 2026-09-07 and
+  codexradar has not been re-read since. Do not interpolate one from astra/high.
+  The lesson of the four rows that ARE measured is that the token count moves far
+  more than the unit price does, so between two rungs of one model the $/task is
+  not a ratio anyone can guess -- all that can honestly be said before measuring
+  is that it lands under astra/high's $2.84.
+
+  Every cell 2026-09-07 moves gets cheaper, because a tier naming an astra rung
+  now names the one below it. private `high` drops $4.12 -> $2.84; work `high`
+  drops from $2.84 to whatever astra/medium is; private `medium` drops below the
+  $2.84 it had paid since 2026-09-06, which is the one that counts, since on that
+  machine it is the DEFAULT rung -- shared by the parent session and by every
+  spawn that names no tier -- that drives the bill, not the top one. That was
+  already the reverse of the 2026-09-02 audit, where `high` was 93.5% of spend.
+  Both `low` rungs and work `medium` do not move at all. Re-measure after a
+  couple of days of real use rather than quoting any of this forward.
   Verify model availability with Pi's model registry before changing these pins.
 
   maxConcurrent is 40, and what that number governs is about to widen. Through
@@ -119,9 +141,9 @@
   workflows/settings.json.tmpl map onto both machines unchanged.
 */ -}}
 {{- $highModel := "gpt-6-astra" -}}
-{{- $highThink := ternary "high" "xhigh" .work -}}
+{{- $highThink := ternary "medium" "high" .work -}}
 {{- $mediumModel := ternary "gpt-5.6-luna" "gpt-6-astra" .work -}}
-{{- $mediumThink := ternary "max" "high" .work -}}
+{{- $mediumThink := ternary "max" "medium" .work -}}
 {{- $lowThink := ternary "xhigh" "max" .work -}}
 {{- $model := "openai-codex/gpt-5.6-luna" -}}
 {

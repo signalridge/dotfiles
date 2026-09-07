@@ -23,13 +23,15 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 {{- $work := false -}}
 {{- if hasKey . "work" -}}{{- $work = .work -}}{{- end -}}
 {{- /* Default model + effort TRACK PI'S PARENT SESSION, machine for machine:
-       private -> gpt-6-astra at `high`, work -> gpt-5.6-luna at `max`. That is
+       private -> gpt-6-astra at `medium`, work -> gpt-5.6-luna at `max`. That is
        the `medium` row of the Agent tier catalogue in
        dot_pi/agent/subagents.json.tmpl and the value
        dot_pi/agent/modify_settings.json.tmpl emits, so the two harnesses cost
        the same per turn and a rung means one thing across both. Aligned
-       2026-09-06; before that Codex sat on astra/xhigh (private) and
-       astra/max (work) regardless of what Pi did.
+       2026-09-06 and moved down with Pi's ladder on 2026-09-07; before the
+       alignment Codex sat on astra/xhigh (private) and astra/max (work)
+       regardless of what Pi did. Nothing but this comment asserts the pairing,
+       so move it whenever Pi's `medium` row moves.
 
        Keep the default model valid when a third-party provider is selected.
        Each provider block below is an endpoint, not a shared model registry. */ -}}
@@ -54,7 +56,7 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 {{-   $model = "qwen3-coder-plus" -}}
 {{-   $subagentModel = "qwen3-coder-plus" -}}
 {{- end -}}
-{{- $effort := ternary "max" "high" $work -}}
+{{- $effort := ternary "max" "medium" $work -}}
 {{- /* Subagents run the parent's rung, mirroring Pi where the parent IS the
        `medium` tier every unqualified spawn lands on. It used to be pinned to
        `max` unconditionally, which made a Codex subagent dearer than the
@@ -96,7 +98,7 @@ suppress_unstable_features_warning = true
 # =============================================================================
 
 # Reasoning effort: none | minimal | low | medium | high | xhigh | max
-# Primary effort: work -> max, private -> xhigh.
+# Primary effort: work -> max, private -> medium (Pi's parent rung).
 model_reasoning_effort = "{{ $effort }}"
 
 

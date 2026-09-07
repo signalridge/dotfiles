@@ -214,13 +214,40 @@ done
 jq -e '.agentTiers.profiles |
        .low.model == "openai-codex/gpt-5.6-luna" and .low.thinking == "xhigh" and
        .medium.model == "openai-codex/gpt-5.6-luna" and .medium.thinking == "max" and
-       .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "high"' \
+       .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "medium"' \
     "$tmp_root/subagents-work.json" >/dev/null
 jq -e '.agentTiers.profiles |
        .low.model == "openai-codex/gpt-5.6-luna" and .low.thinking == "max" and
-       .medium.model == "openai-codex/gpt-6-astra" and .medium.thinking == "high" and
-       .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "xhigh"' \
+       .medium.model == "openai-codex/gpt-6-astra" and .medium.thinking == "medium" and
+       .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "high"' \
     "$tmp_root/subagents-private.json" >/dev/null
+
+# work is private shifted down exactly one rung -- the design the header states,
+# and the reason one strengths table and one cost figure can serve both machines.
+# Assert it directly: the two ladders, read as (model, thinking) pairs, must
+# overlap in exactly the two rungs where work's top meets private's middle.
+jq -e -n --slurpfile w "$tmp_root/subagents-work.json" \
+    --slurpfile p "$tmp_root/subagents-private.json" '
+  def rungs: .[0].agentTiers.profiles | [.low, .medium, .high]
+             | map(.model + "/" + .thinking);
+  ($w | rungs) as $work | ($p | rungs) as $private
+  | $work[1:] == $private[:2]' >/dev/null
+
+# A tier must never resolve below the one beneath it. The uniqueness check that
+# follows catches two rungs that collide; it says nothing about two that are
+# ordered backwards, which is what an edit that moves one tier and not its
+# neighbour produces. astra outranks luna, and within one model the thinking
+# rungs are ordered, so both ladders must come out already sorted.
+for machine in work private; do
+    jq -e '["gpt-5.6-luna", "gpt-6-astra"] as $models
+           | ["low", "medium", "high", "xhigh", "max"] as $rungs
+           | [.agentTiers.profiles | .low, .medium, .high]
+           | map(. as $p
+                 | ($models | index($p.model | sub("^[^/]*/"; ""))) * 100
+                   + ($rungs | index($p.thinking)))
+           | . == (. | sort)' \
+        "$tmp_root/subagents-$machine.json" >/dev/null
+done
 
 # No rung may be a duplicate of another on the same machine. The catalogue is one
 # ladder with work entering a notch below private, so two tiers resolving to the
