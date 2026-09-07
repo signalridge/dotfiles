@@ -11,7 +11,7 @@ versions:
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
   aquaVersion: v2.62.3
-  nixIndexDb: 2026-08-30-083329
+  nixIndexDb: 2026-09-06-071918
   paperlib: 3.1.12
   paperlibAmd64Sha256: 993d05c9bb9c8163f2d308736d2316ebf6db8a23b75133a170e22ea6e125746c
   paperlibArm64Sha256: a49ab642331632719079399c15551a6d0c9b16ca2f50a2ef35c297c3a9835459
@@ -34,8 +34,8 @@ versions:
   claudeAnthropicsSkillsSha256: e68ecd9c73f159c8e239e9f57bb2eb26945e0654363526ca8bfdd033271677dd
   claudeBaoyuSkillsRev: 6b7a2e417500561a5ecdd0b168332f4142584617
   phurynPmSkillsRev: 18468a95b427e70e258b51389796367c6f684e7d
-  uiUxProMaxSkillRev: f3ac195224eac1eb0dfe1a3059c2a6add78ffbe3
-  uiUxProMaxSkillSha256: 2d5913e8f1ed1a1a6d23404bc7e08ec6027873a1d2020182169bcb8fe714b3a8
+  uiUxProMaxSkillRev: 4aad0584d92131626b16d4ff4d77f0455385013c
+  uiUxProMaxSkillSha256: f761b133997d843dbb4641ea7680eaa8e4bf48a145972695dd431e39e128f9e9
   openaiSkillsRev: 49f948faa9258a0c61caceaf225e179651397431
   huggingfaceSkillsRev: 97862b0fcc89c850fdd00c82ede1e62d3c930a6d
   getsentrySkillsRev: c2f99a5b04b4cd992ec3022d7c2c3e23e938d241
@@ -43,23 +43,23 @@ versions:
   cloudflareSkillsRev: d924cd8f59e75e08fd3dd52843bb2776de35c77e
   vercelLabsAgentSkillsRev: 063bee94c3f4df8453406c830b0a7df0f2860278
   vercelLabsNextSkillsRev: b76d687cf3e026eac3b1032f610f06b47a56377c
-  vercelLabsAgentBrowserRev: 4a98df79bd232fcde5ca3a4a48e1337b8108b160
+  vercelLabsAgentBrowserRev: 4726eceeb3274eef34ab082ee04d7288c54dec70
   supabaseAgentSkillsRev: 8331f910845103c08d51f6ca1d86ebb7d1f745e3
   expoSkillsRev: d0075ffa09928f1edb3e7ac4f5af07586d4b344d
   microsoftSkillsRev: 02e0b2f852b39ea00c43283f999b83fc12079273
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 41259e8aef85f847145c383d02be6a40a2435466
   dailyDevSkillsRev: 6d6f5d50c01ebc8b94ee65831cb14ac7455695c0
-  opcSkillsRev: 0e5012f905bf6883572bb76ac787c5a37a539d7d
+  opcSkillsRev: 3a450a93b7d1a5dbc84e16b15e8d8436f3962163
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
-  samberCcSkillsGolangRev: 22c58a55a0a799b901aa251172923180bad9e010
+  samberCcSkillsGolangRev: 19a0626ae8565d27a7b7bdf59d8d99d94d7e284c
   affaanEccRev: e04ea0b9cc8248686edf5ac751cadff550e162b8
   actionbookRustSkillsRev: 5c40d3ad785193231b7d0dbfb8e1eb447e5edd94
   dpearsonSwiftSkillsRev: 8d90fd121a263355a4fb44fd082af1416a5c1c2a
   effectiveTypescriptRev: d754db2077d71ae1e2b57bf50ae7bc565067a2e0
   bobmatnycMpmSkillsRev: 718070a7d622921b01687799a1f9613f36c6f615
-  humanizerEnRev: e2e92e7b4b8229253ed5c8e81dc65463fdeddda5
+  humanizerEnRev: 9862685f575c65a8247f90369951df1b3416e3d6
   humanizerJaRev: 1b850cfe8529f7836025b2edd15b3d64447f8fb6
   quAiWeiRev: 39da1cfac4f0e3e4d2b46bc7188a0edc762b8d17
   drawioSkillRev: 89ff88cb27cd876d9085071d4f73c2502d0492e4
