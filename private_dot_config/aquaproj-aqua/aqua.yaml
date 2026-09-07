@@ -40,7 +40,7 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.261
+  - name: anthropics/claude-code@v2.1.263
   - name: openai/codex@rust-v0.153.4
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
@@ -88,7 +88,7 @@ packages:
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.1.0
   - name: ducaale/xh@v0.26.2
-  - name: watchexec/watchexec@v2.7.1
+  - name: watchexec/watchexec@v2.7.2
   - name: joshmedeski/sesh@v2.29.0
   - name: starship/starship@v1.26.0
   - name: JohnnyMorganz/StyLua@v2.5.2
@@ -97,7 +97,7 @@ packages:
   - name: zizmorcore/zizmor@v1.30.0
   - name: gitleaks/gitleaks@v8.30.1
   - name: koalaman/shellcheck@v0.11.0
-  - name: mvdan/sh@v3.14.0
+  - name: mvdan/sh@v3.14.1
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.16.6
   - name: astral-sh/ty@0.0.78
@@ -107,7 +107,7 @@ packages:
   - name: goreleaser/goreleaser@v2.18.1
   - name: orhun/git-cliff@v2.14.1
   - name: numtide/treefmt@v2.6.0
-  - name: XAMPPRocky/tokei@14.0.0
+  - name: XAMPPRocky/tokei@15.0.0
   - name: sharkdp/hyperfine@v1.20.0
   - name: hatoo/oha@v1.16.0
   - name: ClementTsang/bottom@0.14.9
