@@ -181,13 +181,8 @@ assert config["default_permission_mode"] == "yolo"
 assert config["default_plan_mode"] is False
 PY
 
-# Two templates asserted here branch on chezmoi data -- subagents.json and the
-# Pi settings script below: the work and private machines get different model
-# and thinking rungs under the same three tier names. `render` cannot reach
-# either, because a test run has no chezmoi config to read `.work` from -- the
-# Tests workflow has none at all, and a developer's own would decide which
-# machine the suite checked. Supply the value instead, and check both machines:
-# the split is the whole reason for the branch.
+# Render both machine flags explicitly: private now matches work exactly.
+# Keep both cases covered so a machine-specific offset cannot return unnoticed.
 render_subagents() {
     chezmoi execute-template --source "$ROOT" --override-data "{\"work\":$1}" \
         --file "$ROOT/dot_pi/agent/subagents.json.tmpl"
@@ -209,29 +204,22 @@ for machine in work private; do
     ' "$tmp_root/subagents-$machine.json" >/dev/null
 done
 
-# The per-machine rungs the header comment documents. Both machines keep the
-# same tier names, which is what lets one strengths table below serve both.
+# The shared rungs the header comment documents.
 jq -e '.agentTiers.profiles |
        .low.model == "openai-codex/gpt-5.6-luna" and .low.thinking == "xhigh" and
        .medium.model == "openai-codex/gpt-5.6-luna" and .medium.thinking == "max" and
        .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "medium"' \
     "$tmp_root/subagents-work.json" >/dev/null
 jq -e '.agentTiers.profiles |
-       .low.model == "openai-codex/gpt-5.6-luna" and .low.thinking == "max" and
-       .medium.model == "openai-codex/gpt-6-astra" and .medium.thinking == "medium" and
-       .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "high"' \
+       .low.model == "openai-codex/gpt-5.6-luna" and .low.thinking == "xhigh" and
+       .medium.model == "openai-codex/gpt-5.6-luna" and .medium.thinking == "max" and
+       .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "medium"' \
     "$tmp_root/subagents-private.json" >/dev/null
 
-# work is private shifted down exactly one rung -- the design the header states,
-# and the reason one strengths table and one cost figure can serve both machines.
-# Assert it directly: the two ladders, read as (model, thinking) pairs, must
-# overlap in exactly the two rungs where work's top meets private's middle.
+# Private matches the entire work policy, not just the model names.
 jq -e -n --slurpfile w "$tmp_root/subagents-work.json" \
     --slurpfile p "$tmp_root/subagents-private.json" '
-  def rungs: .[0].agentTiers.profiles | [.low, .medium, .high]
-             | map(.model + "/" + .thinking);
-  ($w | rungs) as $work | ($p | rungs) as $private
-  | $work[1:] == $private[:2]' >/dev/null
+  $w == $p' >/dev/null
 
 # A tier must never resolve below the one beneath it. The uniqueness check that
 # follows catches two rungs that collide; it says nothing about two that are
@@ -250,7 +238,7 @@ for machine in work private; do
 done
 
 # No rung may be a duplicate of another on the same machine. The catalogue is one
-# ladder with work entering a notch below private, so two tiers resolving to the
+# shared ladder on work and private, so two tiers resolving to the
 # same model+thinking means a caller asking for more gets exactly what it asked
 # to move away from -- and nothing else in this repository would say so.
 for machine in work private; do
@@ -261,10 +249,7 @@ done
 # The parent session is the `medium` row verbatim. It is emitted by a different
 # template from a different file, so nothing but this assertion keeps the two
 # from drifting: an interactive turn and a spawn that names no tier must cost
-# the same. Both sides branch on `.work`, so both are rendered per machine and
-# compared machine for machine -- rendering the parent with no machine at all is
-# what broke this suite when its model became a ternary and this call site did
-# not follow.
+# the same. Render both machine flags even though the policy no longer branches.
 render_pi_settings() {
     chezmoi execute-template --source "$ROOT" --override-data "{\"work\":$2}" \
         --file "$ROOT/dot_pi/agent/modify_settings.json.tmpl" >"$tmp_root/pi-settings-$1.sh"
@@ -281,7 +266,18 @@ for machine in work private; do
         and (.defaultProvider + "/" + .defaultModel) == $medium.model
         and .defaultThinkingLevel == $medium.thinking
     ' "$tmp_root/pi-settings-$machine.json" >/dev/null
+
+    # Managed defaults win while unrelated user settings survive the deep merge.
+    printf '%s' '{"defaultModel":"old","defaultThinkingLevel":"high",
+                  "customSetting":{"keep":true},"compaction":{"custom":42}}' |
+        bash "$tmp_root/pi-settings-$machine.sh" >"$tmp_root/pi-merged-$machine.json"
+    jq -e --slurpfile fresh "$tmp_root/pi-settings-$machine.json" '
+      .customSetting.keep == true and .compaction.custom == 42 and
+      (del(.customSetting, .compaction.custom) == $fresh[0])
+    ' "$tmp_root/pi-merged-$machine.json" >/dev/null
 done
+jq -e -n --slurpfile w "$tmp_root/pi-settings-work.json" \
+    --slurpfile p "$tmp_root/pi-settings-private.json" '$w == $p' >/dev/null
 
 # pi-workflows routing. A workflow script names a strength, and this table is the
 # only thing binding one to a key in the Agent tier catalogue above. Assert the

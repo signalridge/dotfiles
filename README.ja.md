@@ -410,17 +410,16 @@ codex-token --check deepseek@private
 
 ### Pi のポリシー
 
-管理対象 Pi の起動既定値は machine-scoped です。private は
-`openai-codex/gpt-6-astra` の `medium`、work は `openai-codex/gpt-5.6-luna` の
-`max` で起動します。どちらも `signalridge-ridgeline` theme、quiet startup、
+管理対象 Pi の起動既定値は private と work で共通です。
+`openai-codex/gpt-5.6-luna` の `max` で起動します。
+どちらも `signalridge-ridgeline` theme、quiet startup、
 Bun ベースの package install、native compaction/retry 設定を使います。
 
 `subagents.json` は `low`、`medium`、`high` の三つの tier だけを定義します。
-これらは `luna/xhigh`、`luna/max`、`astra/medium`、`astra/high` という一本の
-はしごで、work 機は private 機より一段下から入ります。したがって同じ段の
-コストはどちらの機械でも同じです。上記の起動既定値は各機械の `medium` 段と
-一致させてあり、回帰テストがそれと、一段ずれの関係、および段が厳密に順序
-付いていることを検証します。workflow settings は workflow
+それぞれ `luna/xhigh`、`luna/max`、`astra/medium` に対応します。
+private を一段下げて work に合わせ、work は変更していません。
+起動既定値は両方の `medium` 段と一致し、回帰テストがこの一致、
+両機械の同一ポリシー、および段の厳密な順序を検証します。workflow settings は workflow
 strength `low`/`medium`/`high` を同名 tier へ直接対応付けます。旧来の別
 workflow model vocabulary は現在の設定にはありません。
 

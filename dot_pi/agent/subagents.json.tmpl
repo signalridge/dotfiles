@@ -7,24 +7,14 @@
   or thinking directly.
 
   The ordinary Agent catalogue is the single model-policy source. It keeps its
-  user-facing `low | medium | high` keys and is machine-scoped:
-    work machine:    low = luna/xhigh, medium = luna/max,     high = astra/medium
-    private machine: low = luna/max,   medium = astra/medium, high = astra/high
+  user-facing `low | medium | high` keys with identical rungs on both machines:
+    low = luna/xhigh, medium = luna/max, high = astra/medium
 
-  work is private shifted down exactly one rung. That is the design: the two
-  machines share one ladder — luna/xhigh, luna/max, astra/medium, astra/high —
-  and differ only in where they enter it. Read a rung's cost once and it means
-  the same thing on both. astra appearing on work at all is new as of
-  2026-09-06; work was luna-only through the whole sol era.
-
-  The ladder slid down one astra rung on 2026-09-07: astra/xhigh left the top
-  and astra/medium joined below astra/high, so every tier that named an astra
-  rung now names the next one down. The shape above is untouched — same four
-  rungs, same one-notch offset — which is why nothing in this file's structure
-  had to move with it.
+  Private moved down one rung to match work; work is unchanged. There is no
+  longer a machine offset or a `.work` branch in this policy.
 
   The parent session is the medium/default baseline and is emitted separately by
-  modify_settings.json.tmpl: work -> luna/max, private -> astra/medium. That is
+  modify_settings.json.tmpl: luna/max on both work and private. That is
   this catalogue's `medium` row verbatim, and it is meant to stay that way, so
   that an interactive turn and a spawn that names no tier cost the same. Keep
   the two in lockstep whenever either moves, and do not collapse the rungs back
@@ -71,8 +61,7 @@
   The concrete provider/model references are intentionally in the user-owned
   chezmoi policy rather than in the public extension package. `max` is a real
   rung on gpt-5.6-luna. gpt-6-astra replaced gpt-5.6-sol at the top on
-  2026-09-06 and then spread downward: private runs it at `medium` and `high`,
-  work at `medium`. Those intermediate rungs only exist because astra ships the
+  2026-09-06; both machines now run it at `medium`. That rung exists because astra ships the
   full low|medium|high|xhigh|max map where sol had {minimal: low, xhigh: xhigh,
   max: max} -- check a pin against Pi's model registry rather than memory, since
   a rung missing from a model's thinkingLevelMap is not offered and
@@ -92,10 +81,10 @@
 
     rung          $/task  tokens     IQ     where it runs
     astra/xhigh    4.12     1.93M  112.5    nothing, since 2026-09-07
-    astra/high     2.84     1.32M  104.1    private high
-    astra/medium      ?         ?      ?    private medium + parent; work high
-    luna/max       0.53    17.86M  100.9    private low; work medium + parent
-    luna/xhigh     0.33    10.92M   87.5    work low
+    astra/high     2.84     1.32M  104.1    nothing
+    astra/medium      ?         ?      ?    both high
+    luna/max       0.53    17.86M  100.9    both medium + parent
+    luna/xhigh     0.33    10.92M   87.5    both low
 
   astra/medium has no measured row on purpose: it arrived here on 2026-09-07 and
   codexradar has not been re-read since. Do not interpolate one from astra/high.
@@ -104,15 +93,9 @@
   not a ratio anyone can guess -- all that can honestly be said before measuring
   is that it lands under astra/high's $2.84.
 
-  Every cell 2026-09-07 moves gets cheaper, because a tier naming an astra rung
-  now names the one below it. private `high` drops $4.12 -> $2.84; work `high`
-  drops from $2.84 to whatever astra/medium is; private `medium` drops below the
-  $2.84 it had paid since 2026-09-06, which is the one that counts, since on that
-  machine it is the DEFAULT rung -- shared by the parent session and by every
-  spawn that names no tier -- that drives the bill, not the top one. That was
-  already the reverse of the 2026-09-02 audit, where `high` was 93.5% of spend.
-  Both `low` rungs and work `medium` do not move at all. Re-measure after a
-  couple of days of real use rather than quoting any of this forward.
+  The private default now returns to luna/max, shared by the parent session
+  and every spawn that names no tier. Re-measure after a couple of days of
+  real use rather than quoting historical costs forward.
   Verify model availability with Pi's model registry before changing these pins.
 
   maxConcurrent is 40, and what that number governs is about to widen. Through
@@ -134,17 +117,14 @@
   silently stopped at 64 — two numbers diverging with nothing to say so. At 40 the
   clamp does not bite and this file is exact.
 
-  This file branches on chezmoi data in exactly one place: the four `.work`
-  ternaries below, which pick the per-machine rungs listed at the top. `high`'s
-  MODEL is unconditional — astra on both machines — and only its effort branches.
-  The tier NAMES never branch, which is what lets pi-workflows' strengths table in
-  workflows/settings.json.tmpl map onto both machines unchanged.
+  Neither tier names nor model/effort values branch on machine data, so
+  workflows/settings.json.tmpl maps onto both machines unchanged.
 */ -}}
 {{- $highModel := "gpt-6-astra" -}}
-{{- $highThink := ternary "medium" "high" .work -}}
-{{- $mediumModel := ternary "gpt-5.6-luna" "gpt-6-astra" .work -}}
-{{- $mediumThink := ternary "max" "medium" .work -}}
-{{- $lowThink := ternary "xhigh" "max" .work -}}
+{{- $highThink := "medium" -}}
+{{- $mediumModel := "gpt-5.6-luna" -}}
+{{- $mediumThink := "max" -}}
+{{- $lowThink := "xhigh" -}}
 {{- $model := "openai-codex/gpt-5.6-luna" -}}
 {
   "maxConcurrent": 40,

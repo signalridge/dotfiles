@@ -417,18 +417,17 @@ codex-token --check deepseek@private
 
 ### Pi policy
 
-The managed Pi startup default is machine-scoped: private machines start on
-`openai-codex/gpt-6-astra` at `medium`, work machines on
+The managed Pi startup default on both private and work machines is
 `openai-codex/gpt-5.6-luna` at `max`. Both also get the
 `signalridge-ridgeline` theme, quiet startup, Bun-backed package installation,
 and native compaction/retry settings.
 
 `subagents.json` defines exactly three named tiers: `low`, `medium`, and
-`high`. They are one ladder — `luna/xhigh`, `luna/max`, `astra/medium`,
-`astra/high` — which work machines enter one rung below private ones, so a
-rung costs the same on either. The startup default above is deliberately the
-`medium` rung of whichever machine it is, and the regression suite asserts
-that, along with the one-rung offset and the ladder being strictly ordered. Workflow settings map workflow strengths `low`/`medium`/`high` directly
+`high`: `luna/xhigh`, `luna/max`, and `astra/medium`, respectively. Private
+has moved down one rung to match work; work is unchanged. The startup default
+is deliberately the `medium` rung on both machines. Regression tests assert
+that alignment, identical machine policies, and strictly ordered tiers.
+Workflow settings map workflow strengths `low`/`medium`/`high` directly
 to those same tier names; the old separate workflow model vocabulary is not
 part of this configuration.
 

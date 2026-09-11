@@ -27,32 +27,27 @@ pi:
     # block back above the card.
     quietStartup: true
     # The parent and subagent policies use the native openai-codex route, but
-    # preserve the three semantic tiers and their work/private split. Since
+    # share the same three semantic tiers on work and private machines. Since
     # pi-subagents 1.9.0 / pi-workflows 1.5.0 (protocol v4) there is ONE tier
     # vocabulary: `low | medium | high`, the keys of agentTiers.profiles in
     # dot_pi/agent/subagents.json.tmpl. The workflow-only `small | medium | large`
     # labels and the layer that mapped them are gone; a managed workflow spawn
     # names an Agent tier key directly.
     #
-    #   work machine:    low = luna/xhigh, medium = luna/max,     high = astra/medium
-    #   private machine: low = luna/max,   medium = astra/medium, high = astra/high
+    #   both machines: low = luna/xhigh, medium = luna/max, high = astra/medium
     #
-    # One ladder — luna/xhigh, luna/max, astra/medium, astra/high — with work
-    # entering it one rung below private. A rung costs the same on both machines.
-    # The ladder slid down one astra rung on 2026-09-07: astra/xhigh left the top
-    # and astra/medium joined below astra/high, so every tier naming an astra rung
-    # names the next one down. The offset and the tier names did not change.
+    # Private moved down one rung to match work. Work is unchanged; the old
+    # work/private offset is gone, while the three tier names remain.
     #
     # The parent startup setting is the medium/default baseline and equals that
-    # row exactly: work -> luna/max, private -> astra/medium. Keep the two in step
-    # whenever either moves, so an interactive turn and a spawn that names no
-    # tier cost the same. The machine-scoped values are emitted by the two Pi
-    # templates because the static .chezmoidata pass cannot branch on `.work`.
+    # row exactly: luna/max on both machines. Keep the two in step whenever
+    # either moves, so an interactive turn and a spawn that names no tier cost
+    # the same. The values are emitted by the two Pi templates.
     #
     # The route is the native Codex OAuth already in ~/.pi/agent/auth.json; the
     # openai-codex block below emits no apiKey for it. gpt-6-astra took over the
-    # top of the ladder on 2026-09-06 — private medium, private high and the
-    # private parent, plus work high — and it carries the same 921,000
+    # top of the ladder on 2026-09-06 and now serves only high on both
+    # machines. It carries the same 921,000
     # contextWindow pin as the gpt-5.6 family; see the modelOverrides comment in
     # the openai-codex block for why that number is a measured input ceiling
     # rather than a spec value, and for the per-rung cost table.
@@ -64,16 +59,16 @@ pi:
     defaultProvider: openai-codex
     # The parent model + effort are still emitted from
     # dot_pi/agent/modify_settings.json.tmpl rather than from here, because that is
-    # where settings.json is assembled. They remain machine-scoped: work resolves
-    # to gpt-5.6-luna at max, private resolves to gpt-6-astra at medium. Both are
+    # where settings.json is assembled. Both machines resolve to gpt-5.6-luna
+    # at max. This is
     # the `medium` tier verbatim, which is also where a managed workflow spawn
     # that names no tier lands.
     # Pi remains configured independently from Codex.
     # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
     # the ACTIVE provider/model's. reserveTokens is a single global number, so it
     # has to satisfy every candidate:
-    #   openai-codex  gpt-6-astra        921K   (private startup default -> applies)
-    #   openai-codex  gpt-5.6-luna       921K   (work startup default)
+    #   openai-codex  gpt-6-astra        921K   (high tier)
+    #   openai-codex  gpt-5.6-luna       921K   (startup default on both machines)
     #   opencode-go   deepseek-v4-flash  1M     (the /model fallback)
     # Both codex models carry the same 921,000 pin and the same 128,000 output
     # cap, so the arithmetic below is machine-independent.
@@ -433,18 +428,14 @@ pi:
       auth: builtin
       modelOverrides:
         # THE STARTUP DEFAULT (defaults.defaultProvider above), the parent model
-        # on both machines, and the model behind every pi-subagents tier except
-        # the private machine's `high` — see gpt-6-astra directly below.
+        # on both machines, and the model behind the low and medium tiers.
+        # The high tier uses gpt-6-astra directly below.
         # Bracketed tightest of the three gpt-5.6 probes.
         gpt-5.6-luna: { contextWindow: 921000 }
-        # THE TOP OF THE LADDER as of 2026-09-06: private `medium` and `high`,
-        # the private parent's startup default, and work's `high` — the
-        # `$mediumModel`/`$highModel` values in dot_pi/agent/subagents.json.tmpl
-        # and `$model` in dot_pi/agent/modify_settings.json.tmpl — replacing
-        # gpt-5.6-luna and gpt-5.6-sol. Also the Codex CLI's primary model in
-        # dot_codex/modify_config.toml.tmpl. `medium` is `defaultTier`, so on the
-        # private machine astra is what an unqualified subagent call runs AND
-        # what every interactive turn runs.
+        # THE TOP OF THE LADDER: `high` on both machines, via `$highModel` in
+        # dot_pi/agent/subagents.json.tmpl. The parent and default/medium tier
+        # use luna/max instead. Also the Codex CLI's primary model in
+        # dot_codex/modify_config.toml.tmpl; that independent policy is unchanged.
         #
         # DERIVED, NOT MEASURED — the only pin in this block that was never
         # probed on the live route. models.dev reports gpt-6-astra with exactly
@@ -456,7 +447,7 @@ pi:
         # as proven for astra.
         #
         # Dropping this entry is not neutral: astra would fall back to the
-        # catalog's 272,000 and the private high tier would begin compacting at
+        # catalog's 272,000 and the high tier would begin compacting at
         # 272,000 - 130,000 = 142,000 instead of 791,000.
         #
         # COST — the UNIT PRICE is higher, the MEASURED BILL is lower. Do not
@@ -467,10 +458,10 @@ pi:
         # task at api.codexradar.com/api/v1/intelligence-efficiency (2026-09-06):
         #   rung          $/task  tokens     IQ     where it runs
         #   astra/xhigh    4.12     1.93M  112.5    nothing, since 2026-09-07
-        #   astra/high     2.84     1.32M  104.1    private high
-        #   astra/medium      ?         ?      ?    private medium + parent; work high
-        #   luna/max       0.53    17.86M  100.9    private low; work medium + parent
-        #   luna/xhigh     0.33    10.92M   87.5    work low
+        #   astra/high     2.84     1.32M  104.1    nothing
+        #   astra/medium      ?         ?      ?    both high
+        #   luna/max       0.53    17.86M  100.9    both medium + parent
+        #   luna/xhigh     0.33    10.92M   87.5    both low
         #   sol/xhigh      5.25     7.58M  100.0    what private high used to be
         # astra/medium is deliberately blank: it arrived on 2026-09-07 and has not
         # been measured. Do not interpolate it from astra/high — the whole point
@@ -483,7 +474,9 @@ pi:
         # the DEFAULT rung drives the bill, not the top one; that is the reverse
         # of the 2026-09-02 audit, where `high` was 93.5% of spend. 2026-09-07
         # then slid every astra tier down one rung, which walks part of that back:
-        # private `high` returns to $2.84 and private `medium` drops below it.
+        # private `high` returned to $2.84 and private `medium` dropped below it.
+        # Private has since moved down again to match work: medium and parent
+        # return to luna/max, high uses astra/medium, and low uses luna/xhigh.
         # Re-measure after a few days of real use.
         # The astra-vs-sol half of that also UNDERSTATES astra: the source prices
         # sol flat at $4/$20/$0.4 with no long-context band, while the

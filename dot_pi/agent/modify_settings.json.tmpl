@@ -9,33 +9,14 @@ set -euo pipefail
 
 EXISTING="$(cat)"
 {{ $d := .pi.defaults -}}
-{{/* Parent model + effort are the medium/default baseline and remain
-     machine-scoped to match the Agent tier catalogue in subagents.json.tmpl —
-     since protocol v4 the single tier vocabulary, which managed workflow spawns
-     name directly: work -> gpt-5.6-luna at max, private -> gpt-6-astra at
-     medium.
-     `defaultProvider` — openai-codex, the native Codex OAuth route — still
-     comes from .chezmoidata/pi.yaml, so the model id here is intentionally bare
-     and resolved against that provider. These values stay in a template because
-     the machine-scoped `work` flag is not available in the static .chezmoidata
-     data pass.
-
-     These two values ARE that catalogue's `medium` row, character for
-     character, and the pair is meant to move together: an interactive turn and
-     a managed spawn that names no tier should cost the same. The full catalogue
-     as of 2026-09-07 is private low = luna/max, medium = astra/medium, high =
-     astra/high; work low = luna/xhigh, medium = luna/max, high = astra/medium —
-     work being private shifted down one rung. If you reprice `medium` there,
-     reprice this; the alignment test asserts both sides, on both machines.
-
-     Cost, per task at codexradar: the private parent sat at astra/high ($2.84)
-     from 2026-09-06 and moves down to astra/medium on 2026-09-07, so it gets
-     cheaper by an amount nobody has measured yet — astra/medium has no row in
-     that table on purpose, so read it before interpolating one. The work parent
-     does not move: luna/max, $0.53, as it has been.
+{{/* Parent model + effort match the Agent catalogue's medium/default baseline
+     on both work and private machines: gpt-5.6-luna at max. Keep this pair in
+     lockstep with subagents.json.tmpl so interactive turns and unqualified
+     spawns use the same rung. The alignment test checks both machines.
+     defaultProvider comes from .chezmoidata/pi.yaml (native Codex OAuth).
      Pi is intentionally configured independently from Codex. */ -}}
-{{- $model := ternary "gpt-5.6-luna" "gpt-6-astra" .work -}}
-{{- $effort := ternary "max" "medium" .work -}}
+{{- $model := "gpt-5.6-luna" -}}
+{{- $effort := "max" -}}
 {{/* Keep external npm dependencies first, then the exact pi.signalridgePackages
      order rendered as unpinned npm specs. No version suffix is emitted on
      purpose: Pi resolves the latest release at install time and
