@@ -7,7 +7,7 @@ versions:
   nixInstallerAarch64LinuxSha256: 0eef278a274e2d85ba3c6ec0a19c56771fafc9fe48c7aa6071b5c85373daa161
   nixInstallerX8664LinuxSha256: e3ce703e84661870da820bbcd3889b71df13c98c70386f6948fa2e2ae7bb8e64
   nixVersion: v3.22.3
-  nixpkgsBootstrapRev: d5dfd8e6716dde34398bc14bc87c10dece9c8c68
+  nixpkgsBootstrapRev: aff8a0b28396750446e5537a96461bc4facdb287
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
   aquaVersion: v2.62.3
@@ -45,16 +45,16 @@ versions:
   vercelLabsNextSkillsRev: b76d687cf3e026eac3b1032f610f06b47a56377c
   vercelLabsAgentBrowserRev: 8c15ff9f71ae60c7e99e66afe1e2d4b9bf414fe2
   supabaseAgentSkillsRev: 8331f910845103c08d51f6ca1d86ebb7d1f745e3
-  expoSkillsRev: ea892a7d1421fea5ecdf8c00a4550867fdf8c423
-  microsoftSkillsRev: cf77b1efbf3117501f4727c476894751311ee885
+  expoSkillsRev: be95528712e3709b786d573edae90d14c67949a8
+  microsoftSkillsRev: 903dc62b1e4c833235b54db918a9a51cb6d3cc8f
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 41259e8aef85f847145c383d02be6a40a2435466
   dailyDevSkillsRev: 6d6f5d50c01ebc8b94ee65831cb14ac7455695c0
-  opcSkillsRev: ce465030928e6ea88b0a47e0a8bbaa169bb0ffea
+  opcSkillsRev: 08f023dd8ef4047ccc5be2d14dcbe06de90f6c8e
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 19a0626ae8565d27a7b7bdf59d8d99d94d7e284c
-  affaanEccRev: c9148d0bb239ed01a95724a5928b98cdf9c30658
+  affaanEccRev: 4f373874209b4b63fdec0469b76992923ea0a9d0
   actionbookRustSkillsRev: 5c40d3ad785193231b7d0dbfb8e1eb447e5edd94
   dpearsonSwiftSkillsRev: 8d90fd121a263355a4fb44fd082af1416a5c1c2a
   effectiveTypescriptRev: d754db2077d71ae1e2b57bf50ae7bc565067a2e0
