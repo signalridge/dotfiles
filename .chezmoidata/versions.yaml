@@ -7,11 +7,11 @@ versions:
   nixInstallerAarch64LinuxSha256: 0eef278a274e2d85ba3c6ec0a19c56771fafc9fe48c7aa6071b5c85373daa161
   nixInstallerX8664LinuxSha256: e3ce703e84661870da820bbcd3889b71df13c98c70386f6948fa2e2ae7bb8e64
   nixVersion: v3.22.3
-  nixpkgsBootstrapRev: aff8a0b28396750446e5537a96461bc4facdb287
+  nixpkgsBootstrapRev: 02f5696b0e6097e589076d886b317b83ff0437d7
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
   aquaVersion: v2.62.3
-  nixIndexDb: 2026-09-06-071918
+  nixIndexDb: 2026-09-13-074012
   paperlib: 3.1.12
   paperlibAmd64Sha256: 993d05c9bb9c8163f2d308736d2316ebf6db8a23b75133a170e22ea6e125746c
   paperlibArm64Sha256: a49ab642331632719079399c15551a6d0c9b16ca2f50a2ef35c297c3a9835459
@@ -28,8 +28,8 @@ versions:
   cursorAgentLinuxX64Sha256: 27997c8391ad853a5a732b1845db8ef82a8ba6afb0f7829cc739464f8966e96e
   tpmRev: e261deb1b47614eed3400089ce7197dc68acc4eb
   tpmSha256: 72d92c512270d4857e27519ac97b92a52cf149afe4d92f26860c710f60bbbe37
-  claudeWshobsonAgentsRev: a30778f8c4e6b0a87567941b7cca4f534bf642b6
-  claudeWshobsonAgentsSha256: 9d356ec39914ae0064776909768e1dee604bf5cc3b0d694996513c2181b5f63c
+  claudeWshobsonAgentsRev: 4236bb91f8395b0435f1d8b8baf9e8e4c69a8620
+  claudeWshobsonAgentsSha256: 254ffad3e004ec1c08399d9dbacd1ec6b40e92668440552c2540bf39773a5140
   claudeAnthropicsSkillsRev: 34040c9c568585f6929bedeaad110ad08f079624
   claudeAnthropicsSkillsSha256: 94527d9bf3b49a8951aba1ce9420a37079f1a6677accca4b04435c79aabbe5bb
   claudeBaoyuSkillsRev: 1567581c26ec29f4216c6e6835415bf30343b0e3
@@ -50,7 +50,7 @@ versions:
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 41259e8aef85f847145c383d02be6a40a2435466
   dailyDevSkillsRev: 6d6f5d50c01ebc8b94ee65831cb14ac7455695c0
-  opcSkillsRev: d02580901702fac990c25f748cbac398539c2bf3
+  opcSkillsRev: b458bf7c23682424206cd1e30f1665c1017583b5
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 19a0626ae8565d27a7b7bdf59d8d99d94d7e284c
