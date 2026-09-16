@@ -1,5 +1,5 @@
 ---
-# Local registry file for third-party aqua packages not yet in the standard registry.
+# Local registry file for third-party aqua packages and targeted overrides.
 # Referenced from aqua.yaml as `name: third-party, type: local, path: registry.yaml`.
 # Each addition must also be allow-listed in aqua-policy.yaml.
 
@@ -76,6 +76,38 @@ packages:
     supported_envs:
       - darwin
       - linux
+  # ouch's releases carry Cosign bundles, but its standard-registry entry still
+  # expects GitHub Artifact Attestations after the release workflow switched to
+  # cosign. Keep verification enabled through the published bundle instead.
+  - type: github_release
+    repo_owner: ouch-org
+    repo_name: ouch
+    description: Painless compression and decompression in the terminal
+    asset: "ouch-{{.Arch}}-{{.OS}}.{{.Format}}"
+    format: tar.gz
+    rosetta2: false
+    windows_arm_emulation: true
+    files:
+      - name: ouch
+        src: "{{.AssetWithoutExt}}/ouch"
+    replacements:
+      amd64: x86_64
+      arm64: aarch64
+      darwin: apple-darwin
+      linux: unknown-linux-musl
+      windows: pc-windows-msvc
+    overrides:
+      - goos: windows
+        format: zip
+    cosign:
+      bundle:
+        type: github_release
+        asset: "{{.Asset}}.sigstore.json"
+      opts:
+        - --certificate-identity-regexp
+        - '^https://github\.com/ouch-org/ouch/\.github/workflows/draft-release-automatic-trigger\.yml@refs/tags/{{.Version}}-rc[0-9]+$'
+        - --certificate-oidc-issuer
+        - https://token.actions.githubusercontent.com
   - type: github_release
     repo_owner: mr-karan
     repo_name: doggo
