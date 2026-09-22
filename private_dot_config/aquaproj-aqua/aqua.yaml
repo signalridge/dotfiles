@@ -31,7 +31,7 @@ packages:
   - name: nektos/act@v0.2.89
   - name: FiloSottile/age@v1.3.2
   - name: asciinema/asciinema@v3.2.1
-  - name: atuinsh/atuin@v18.22.0
+  - name: atuinsh/atuin@v18.23.0
   - name: axodotdev/cargo-dist@v0.33.0 # `dist` — was a live-only cargo install
   - name: sigoden/aichat@v0.30.0
   - name: sharkdp/bat@v0.26.1
@@ -62,7 +62,7 @@ packages:
   - name: junegunn/fzf@v0.74.4
   - name: gopasspw/gopass@v1.17.2
   - name: cli/cli@v2.101.0
-  - name: dlvhdr/gh-dash@v4.25.2
+  - name: dlvhdr/gh-dash@v4.26.0
   - name: x-motemen/ghq@v1.10.1
   - name: gitlab.com/gitlab-org/cli@v1.99.0 # glab
   - name: git-lfs/git-lfs@v3.8.0
@@ -90,7 +90,7 @@ packages:
   - name: chmln/sd@v1.1.0
   - name: ducaale/xh@v0.26.2
   - name: watchexec/watchexec@v2.7.3
-  - name: joshmedeski/sesh@v2.30.1
+  - name: joshmedeski/sesh@v2.31.0
   - name: starship/starship@v1.26.0
   - name: JohnnyMorganz/StyLua@v2.5.2
   - name: Kampfkarren/selene@0.31.0
@@ -101,7 +101,7 @@ packages:
   - name: mvdan/sh@v3.14.1
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.16.8
-  - name: astral-sh/ty@0.0.82
+  - name: astral-sh/ty@0.0.83
   - name: j178/prek@v0.5.3
   - name: golang.org/x/tools/gopls@v0.23.0
   - name: golangci/golangci-lint@v2.13.2
