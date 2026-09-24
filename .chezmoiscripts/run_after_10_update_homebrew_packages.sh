@@ -6,9 +6,16 @@ set -euo pipefail
 # New packages are installed by nix-darwin (script 02)
 
 LAST_UPDATE_FILE="$HOME/.cache/brew-last-update"
+# Existence means the previous run left something un-upgraded. It shortens the
+# interval so the leftovers are retried the next day instead of the next week,
+# without paying for a full greedy pass on every single apply.
+DEGRADED_FILE="$HOME/.cache/brew-update-degraded"
 CURRENT_TIME=$(date +%s)
 LAST_UPDATE=0
 UPDATE_INTERVAL=$((7 * 86400)) # 7 days
+if [[ -f "$DEGRADED_FILE" ]]; then
+    UPDATE_INTERVAL=86400 # 1 day
+fi
 
 mkdir -p "$(dirname "$LAST_UPDATE_FILE")"
 if [[ -f "$LAST_UPDATE_FILE" ]]; then
@@ -54,9 +61,14 @@ repair_missing_cask_apps() {
     while IFS= read -r cask; do
         [[ -n "$cask" ]] || continue
         echo "    Repairing cask with missing app: $cask"
-        "$brew_cmd" reinstall --cask --force "$cask"
+        if ! "$brew_cmd" reinstall --cask --force "$cask"; then
+            echo "    Warning: could not repair $cask" >&2
+            brew_step_failed=1
+        fi
     done <<<"$missing_casks"
 }
+
+brew_step_failed=0
 
 if ((CURRENT_TIME - LAST_UPDATE > UPDATE_INTERVAL)); then
     echo "    Last update: ${DAYS_AGO} days ago, checking for updates..."
@@ -68,12 +80,28 @@ if ((CURRENT_TIME - LAST_UPDATE > UPDATE_INTERVAL)); then
         echo "    All packages up to date"
     else
         echo "    Upgrading outdated packages..."
-        "$brew_cmd" upgrade --greedy
-        "$brew_cmd" cleanup
+        # Deliberately non-fatal. A cask whose artifact is a .pkg is installed
+        # by `sudo /usr/sbin/installer`, and that prompt cannot be answered in
+        # a non-interactive apply (displaylink 16.2 -> 17.0 hit exactly this).
+        # Aborting here would gate every later script on one such cask forever,
+        # so record the failure, warn, and let the apply finish.
+        "$brew_cmd" upgrade --greedy || brew_step_failed=1
+        "$brew_cmd" cleanup || brew_step_failed=1
     fi
 
-    # Advance the interval only after the complete update succeeds. Otherwise a
-    # failed upgrade/cleanup would suppress retries for another seven days.
+    if ((brew_step_failed)); then
+        echo "    Warning: some packages could not be upgraded; still outdated:" >&2
+        "$brew_cmd" outdated --greedy 2>/dev/null | sed 's/^/          /' >&2 || true
+        echo "    Upgrade these by hand - a pkg cask needs an interactive sudo:" >&2
+        echo "          brew upgrade --cask <token>" >&2
+        : >"$DEGRADED_FILE"
+    else
+        rm -f "$DEGRADED_FILE"
+    fi
+
+    # Always advance the timestamp: the retry cadence is carried by
+    # DEGRADED_FILE above, so a stuck package shortens the interval instead of
+    # re-running a full greedy upgrade on every apply.
     tmp_update_file="$(mktemp "${LAST_UPDATE_FILE}.XXXXXX")"
     printf '%s\n' "$CURRENT_TIME" >"$tmp_update_file"
     mv "$tmp_update_file" "$LAST_UPDATE_FILE"
