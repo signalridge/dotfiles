@@ -1,10 +1,15 @@
 ---
 registries:
   - type: standard
-    # v4.532+ switches openai/codex to codex-package-*.tar.gz (ships
-    # codex-code-mode-host beside the CLI). Older refs only fetched the bare
-    # codex-*.zst, so Code Mode failed closed after host became default.
-    ref: v4.550.0
+    # Keep this tracking upstream: `aqua up` bumps package versions, and a new
+    # version often needs the registry entry that describes its new asset
+    # naming. Known floors (never go below):
+    #   v4.532.0 - openai/codex switched to codex-package-*.tar.gz (ships
+    #     codex-code-mode-host beside the CLI). Older refs only fetched the bare
+    #     codex-*.zst, so Code Mode failed closed after host became default.
+    #   v4.566.0 - Wilfred/difftastic 0.71.0 renamed its assets to
+    #     difft-<version>-<arch>-<os>.tar.gz; older refs 404 on install.
+    ref: v4.566.0
   - name: third-party
     type: local
     path: registry.yaml

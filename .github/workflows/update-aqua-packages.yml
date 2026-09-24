@@ -44,7 +44,11 @@ jobs:
           AQUA_GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           aqua --version
-          AQUA_CONFIG=private_dot_config/aquaproj-aqua/aqua.yaml aqua update -p
+          # No `-p`: the standard registry ref must move with the package pins.
+          # `-p` updates packages only, so a package whose upstream renames its
+          # release assets (difftastic 0.71.0) resolves against a stale registry
+          # entry and 404s at install time on every machine.
+          AQUA_CONFIG=private_dot_config/aquaproj-aqua/aqua.yaml aqua update
 
       - name: Check for changes
         id: changes
