@@ -283,7 +283,10 @@ EXISTING="$(cat)"
      it, and herdr-agent-state.sh is not a chezmoi-managed file. It is declared
      here, byte-identical to what Herdr writes — absolute homedir rather than
      $HOME, because that is Herdr's literal output — so that apply and
-     run_after_14 do not flap against each other every time. */ -}}
+     run_after_14 do not flap against each other every time. The matcher has to
+     be re-synced whenever Herdr changes its own: 0.9.1 writes the explicit
+     session-source alternation, not the catch-all this held until 2026-09-26,
+     and the live settings.json had already drifted to it. */ -}}
 {{- $tmuxIdle := dict "type" "command" "command" "$HOME/.local/bin/tmux-ai-agent-state claude idle" "timeout" 1 -}}
 {{- $idleGroup := list (dict "hooks" (list $tmuxIdle)) -}}
 {{- $hooks := dict
@@ -292,7 +295,7 @@ EXISTING="$(cat)"
         (dict "type" "command" "command" "$HOME/.local/bin/tmux-ai-agent-state claude busy" "timeout" 1))))
       "SessionStart" (list
         (dict "hooks" (list $tmuxIdle))
-        (dict "matcher" "*" "hooks" (list
+        (dict "matcher" "^(startup|resume|clear|compact|fork)$" "hooks" (list
           (dict "type" "command" "command" (printf "bash '%s/.claude/hooks/herdr-agent-state.sh' session" $home) "timeout" 10))))
       "SessionEnd" $idleGroup
       "Stop" $idleGroup
