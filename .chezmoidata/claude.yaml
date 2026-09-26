@@ -22,12 +22,16 @@ claude:
     # Native Anthropic (OAuth, no API key needed)
     anthropic:
       models:
+        - claude-opus-5-5
+        - claude-opus-5-5[1m]
         - claude-opus-5
         - claude-opus-5[1m]
         - claude-opus-4-8
         - claude-opus-4-7
         - claude-opus-4-7[1m]
         - claude-opus-4-6
+        - claude-sonnet-5
+        - claude-sonnet-5[1m]
         - claude-sonnet-4-6
         - claude-sonnet-4-5-20250929
         - claude-haiku-4-5-20251001
@@ -96,16 +100,30 @@ claude:
   # Fields: model, small_model, haiku_model, sonnet_model, opus_model, timeout_ms
   accounts:
     # Native Anthropic accounts (use OAuth)
-    # Opus 5 on the 1M-context beta (`[1m]` suffix, same convention as
-    # claude-opus-4-7[1m] / deepseek-v4-pro[1m]) per user request 2026-07-29.
-    # This renders ANTHROPIC_MODEL in dot_claude/settings.json.tmpl, which is the
-    # chezmoi-managed default; `/model` writes a top-level `model` key that a
-    # later `chezmoi apply` drops, so the default must be set HERE to stick.
+    # Opus 5.5 on the 1M-context beta (`[1m]` suffix, same convention as
+    # claude-opus-5[1m] / deepseek-v4-pro[1m]). Bumped 5 -> 5.5 on 2026-09-26,
+    # verified against the live account first: `claude -p --model
+    # 'claude-opus-5-5[1m]'` returns provider firstParty, canonicalModel
+    # claude-opus-5-5, contextWindow 1000000, maxOutputTokens 128000.
+    # This renders env.ANTHROPIC_MODEL in dot_claude/modify_settings.json.tmpl.
+    #
+    # PRECEDENCE (measured, not assumed): a top-level `model` key in the live
+    # ~/.claude/settings.json outranks ANTHROPIC_MODEL, and the modify_ script
+    # PRESERVES that key rather than dropping it, so this file alone no longer
+    # decides the running model. A stored alias is not self-updating either --
+    # `model: "opus"` still resolved to claude-opus-5[1m] with
+    # ANTHROPIC_MODEL=claude-opus-5-5[1m] exported, because 5.5 is not yet the
+    # tier default for the alias. Bumping here means bumping that key too
+    # (`/model`, or edit settings.json) until the alias catches up.
+    #
+    # Opus 5.5's own effort default is `medium`, one rung below Opus 5's `high`,
+    # so the effortLevel seed in modify_settings.json.tmpl carries more weight
+    # now -- do not drop it assuming the model defaults high.
     anthropic:
-      model: claude-opus-5[1m]
+      model: claude-opus-5-5[1m]
     opus:
       provider: anthropic
-      model: claude-opus-5[1m]
+      model: claude-opus-5-5[1m]
       small_model: claude-haiku-4-5-20251001
     haiku:
       provider: anthropic
