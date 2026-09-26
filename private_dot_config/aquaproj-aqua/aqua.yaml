@@ -32,7 +32,7 @@ packages:
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
-  - name: google-antigravity/antigravity-cli@1.2.10
+  - name: google-antigravity/antigravity-cli@1.2.11
   - name: nektos/act@v0.2.89
   - name: FiloSottile/age@v1.3.2
   - name: asciinema/asciinema@v3.2.1
@@ -45,14 +45,14 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.282
-  - name: openai/codex@rust-v0.157.0
+  - name: anthropics/claude-code@v2.1.283
+  - name: openai/codex@rust-v0.157.1
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.9.13
+  - name: jdx/mise@v2026.9.14
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -62,7 +62,7 @@ packages:
   # Darwin uses Cargo for eza. Track crates.io releases directly: GitHub tag
   # v0.23.5 existed before its crate, which made aqua's Cargo install impossible.
   - name: crates.io/eza@0.23.5
-  - name: fastfetch-cli/fastfetch@2.68.1
+  - name: fastfetch-cli/fastfetch@2.69.0
   - name: sharkdp/fd@v10.5.0
   - name: junegunn/fzf@v0.74.4
   - name: gopasspw/gopass@v1.17.3
@@ -72,7 +72,7 @@ packages:
   - name: gitlab.com/gitlab-org/cli@v1.99.0 # glab
   - name: git-lfs/git-lfs@v3.8.0
   - name: charmbracelet/glow@v3.0.0
-  - name: carapace-sh/carapace-bin@v1.7.3
+  - name: carapace-sh/carapace-bin@v1.8.0
   - name: jqlang/jq@jq-1.8.2
   - name: ynqa/jnv@v0.7.1
   - name: tldr-pages/tlrc@v1.13.1
@@ -99,7 +99,7 @@ packages:
   - name: starship/starship@v1.26.0
   - name: JohnnyMorganz/StyLua@v2.5.2
   - name: Kampfkarren/selene@0.31.0
-  - name: crate-ci/typos@v1.50.2
+  - name: crate-ci/typos@v1.50.3
   - name: zizmorcore/zizmor@v1.30.1
   - name: gitleaks/gitleaks@v8.30.1
   - name: koalaman/shellcheck@v0.11.0
