@@ -64,7 +64,10 @@ assert '          from-protocol: "claude"' in config
 assert '            - "reasoning.effort": "xhigh"' in config
 assert '        "reasoning.effort": "high"' in config
 PY
-render private_dot_config/gopass/config.tmpl | grep -q 'sshkeys = true'
+# CI has no private gopassRepository; supply a harmless synthetic URL.
+chezmoi execute-template --source "$ROOT" \
+    --override-data '{"gopassRepository":"https://github.com/example/gopass.git"}' \
+    --file "$ROOT/private_dot_config/gopass/config.tmpl" | grep -q 'sshkeys = true'
 chezmoi data --source "$ROOT" --format json | jq -e '
     .claude.providers.cliproxy.models | index("gpt-6-luna") != null' >/dev/null
 chezmoi data --source "$ROOT" --format json | jq -e '
