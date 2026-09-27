@@ -91,16 +91,26 @@ jq -e '.["skipDangerousModePermissionPrompt"] == true and
 
 # The proxy account seeds high effort on a fresh settings file, while a
 # user-selected effort still wins on subsequent applies.
-chezmoi execute-template --override-data '{"claudeProviderAccount":"cliproxy@private"}' \
-    --file dot_claude/modify_settings.json.tmpl >"$tmp_root/claude-proxy.sh"
+# --override-data replaces source data on CI; include the Claude provider data
+# explicitly instead of relying on a personal chezmoi config to supply it.
+chezmoi data --source "$ROOT" --format json |
+    jq --arg account 'cliproxy@private' '{claude: .claude, claudeProviderAccount: $account}' \
+        >"$tmp_root/claude-proxy-data.json"
+chezmoi execute-template --source "$ROOT" \
+    --override-data-file "$tmp_root/claude-proxy-data.json" \
+    --file "$ROOT/dot_claude/modify_settings.json.tmpl" >"$tmp_root/claude-proxy.sh"
 printf '' | bash "$tmp_root/claude-proxy.sh" | jq -e \
     '.env.ANTHROPIC_MODEL == "gpt-6-sol" and .effortLevel == "high" and
      .env.CLAUDE_CODE_MAX_CONTEXT_TOKENS == "1000000" and
      .env.CLAUDE_CODE_AUTO_COMPACT_WINDOW == "870000"' >/dev/null
 printf '{"effortLevel":"low"}' | bash "$tmp_root/claude-proxy.sh" | jq -e \
     '.effortLevel == "low"' >/dev/null
-chezmoi execute-template --override-data '{"claudeProviderAccount":"anthropic"}' \
-    --file dot_claude/modify_settings.json.tmpl >"$tmp_root/claude-native.sh"
+chezmoi data --source "$ROOT" --format json |
+    jq --arg account anthropic '{claude: .claude, claudeProviderAccount: $account}' \
+        >"$tmp_root/claude-native-data.json"
+chezmoi execute-template --source "$ROOT" \
+    --override-data-file "$tmp_root/claude-native-data.json" \
+    --file "$ROOT/dot_claude/modify_settings.json.tmpl" >"$tmp_root/claude-native.sh"
 printf '' | bash "$tmp_root/claude-native.sh" | jq -e \
     '.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS == null and
      .env.CLAUDE_CODE_AUTO_COMPACT_WINDOW == null' >/dev/null
