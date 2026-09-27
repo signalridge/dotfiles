@@ -16,6 +16,62 @@ render() {
     chezmoi execute-template --source "$ROOT" --file "$ROOT/$1"
 }
 
+# Machines without the encrypted gopass key skip the proxy config, without
+# requiring a per-machine flag. A machine with the key renders it automatically.
+mkdir -p "$tmp_root/home"
+printf '[data]\nuseEncryption = true\nheadless = false\n' >"$tmp_root/chezmoi.toml"
+render_ignore() {
+    HOME="$tmp_root/home" chezmoi --config "$tmp_root/chezmoi.toml" \
+        --source "$ROOT" execute-template --file "$ROOT/.chezmoiignore" "$@"
+}
+render_ignore | grep -Fq '.cli-proxy-api/config.yaml'
+key_dir="$tmp_root/home/.local/share/gopass/stores/root/claude/cliproxy/private"
+mkdir -p "$key_dir"
+: >"$key_dir/api_key.age"
+if render_ignore | grep -Fq '.cli-proxy-api/config.yaml'; then
+    echo 'FAIL: proxy config with a key was ignored' >&2
+    exit 1
+fi
+render_ignore --override-data '{"useEncryption":false}' | grep -Fq '.cli-proxy-api/config.yaml'
+
+# CLIProxyAPI shares its inbound key with claude-with. Stub gopass so this
+# check is hermetic and never prints a real client key.
+mkdir -p "$tmp_root/bin"
+cat >"$tmp_root/bin/gopass" <<'STUB'
+#!/usr/bin/env bash
+[[ "$*" == "show --password claude/cliproxy/private/api_key" ]] || exit 1
+[[ "${TEST_GOPASS_FAIL:-0}" != 1 ]] || exit 1
+printf 'test-client-key\n'
+STUB
+chmod +x "$tmp_root/bin/gopass"
+PATH="$tmp_root/bin:$PATH" render private_dot_cli-proxy-api/private_config.yaml.tmpl >"$tmp_root/cliproxy.yaml"
+if TEST_GOPASS_FAIL=1 PATH="$tmp_root/bin:$PATH" \
+    render private_dot_cli-proxy-api/private_config.yaml.tmpl >/dev/null 2>&1; then
+    echo 'FAIL: missing proxy client key must not render an open proxy' >&2
+    exit 1
+fi
+python3 - "$tmp_root/cliproxy.yaml" <<'PY'
+from pathlib import Path
+import sys
+
+config = Path(sys.argv[1]).read_text()
+assert 'host: "127.0.0.1"' in config
+assert 'port: 8317' in config
+assert '  secret-key: ""' in config
+assert '  - "test-client-key"' in config
+assert '          protocol: "codex"' in config
+assert '          from-protocol: "claude"' in config
+assert '            - "reasoning.effort": "xhigh"' in config
+assert '        "reasoning.effort": "high"' in config
+PY
+render private_dot_config/gopass/config.tmpl | grep -q 'sshkeys = true'
+chezmoi data --source "$ROOT" --format json | jq -e '
+    .claude.providers.cliproxy.models | index("gpt-6-luna") != null' >/dev/null
+chezmoi data --source "$ROOT" --format json | jq -e '
+    .claude.accounts["cliproxy@private"] |
+    .small_model == "gpt-6-luna" and .haiku_model == "gpt-6-luna" and
+    .sonnet_model == "gpt-6-sol" and .opus_model == "gpt-6-astra"' >/dev/null
+
 # Claude Code settings are a modify_ script, not a full-file template: the CLI
 # rewrites ~/.claude/settings.json at runtime (`/model`, `/effort`, `/config`,
 # `claude plugin install`) and so do run_after_11 and run_after_14. Exercise
@@ -29,6 +85,31 @@ jq -e '.["skipDangerousModePermissionPrompt"] == true and
        (.env.ENABLE_TOOL_SEARCH == "auto:15") and
        (.effortLevel | type) == "string"' \
     "$tmp_root/claude.json" >/dev/null
+
+# The proxy account seeds high effort on a fresh settings file, while a
+# user-selected effort still wins on subsequent applies.
+chezmoi execute-template --override-data '{"claudeProviderAccount":"cliproxy@private"}' \
+    --file dot_claude/modify_settings.json.tmpl >"$tmp_root/claude-proxy.sh"
+printf '' | bash "$tmp_root/claude-proxy.sh" | jq -e \
+    '.env.ANTHROPIC_MODEL == "gpt-6-sol" and .effortLevel == "high" and
+     .env.CLAUDE_CODE_MAX_CONTEXT_TOKENS == "1000000" and
+     .env.CLAUDE_CODE_AUTO_COMPACT_WINDOW == "870000"' >/dev/null
+printf '{"effortLevel":"low"}' | bash "$tmp_root/claude-proxy.sh" | jq -e \
+    '.effortLevel == "low"' >/dev/null
+chezmoi execute-template --override-data '{"claudeProviderAccount":"anthropic"}' \
+    --file dot_claude/modify_settings.json.tmpl >"$tmp_root/claude-native.sh"
+printf '' | bash "$tmp_root/claude-native.sh" | jq -e \
+    '.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS == null and
+     .env.CLAUDE_CODE_AUTO_COMPACT_WINDOW == null' >/dev/null
+printf '{"env":{"ANTHROPIC_BASE_URL":"http://127.0.0.1:8317",
+                "CLAUDE_CODE_MAX_CONTEXT_TOKENS":"1000000",
+                "CLAUDE_CODE_AUTO_COMPACT_WINDOW":"870000",
+                "USER_SETTING":"preserved"}}' |
+    bash "$tmp_root/claude-native.sh" | jq -e \
+    '.env.ANTHROPIC_BASE_URL == null and
+     .env.CLAUDE_CODE_MAX_CONTEXT_TOKENS == null and
+     .env.CLAUDE_CODE_AUTO_COMPACT_WINDOW == null and
+     .env.USER_SETTING == "preserved"' >/dev/null
 
 # The whole point of the conversion. A key the CLI owns must survive the merge,
 # a seeded default must yield to the value already on disk, and a managed key

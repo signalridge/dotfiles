@@ -102,6 +102,7 @@ launch_claude() {
     unset API_TIMEOUT_MS
     unset CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
     unset CLAUDE_CODE_SUBAGENT_MODEL
+    unset CLAUDE_CODE_MAX_CONTEXT_TOKENS
     unset CLAUDE_CODE_AUTO_COMPACT_WINDOW
     unset CLAUDE_CODE_ATTRIBUTION_HEADER
     unset CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS
@@ -133,13 +134,14 @@ launch_claude() {
     [[ -n "$small_model" ]] && export ANTHROPIC_SMALL_FAST_MODEL="$small_model"
 
     # Optional settings
-    local timeout haiku sonnet opus subagent auto_compact disable_traffic
+    local timeout haiku sonnet opus subagent max_context auto_compact disable_traffic
     local attribution disable_betas supported_caps
     timeout=$(echo "$config" | jq -r '.timeout_ms // empty')
     haiku=$(echo "$config" | jq -r '.haiku_model // empty')
     sonnet=$(echo "$config" | jq -r '.sonnet_model // empty')
     opus=$(echo "$config" | jq -r '.opus_model // empty')
     subagent=$(echo "$config" | jq -r '.subagent_model // empty')
+    max_context=$(echo "$config" | jq -r '.max_context_tokens // empty')
     auto_compact=$(echo "$config" | jq -r '.auto_compact_window // empty')
     disable_traffic=$(echo "$config" | jq -r '.disable_nonessential_traffic // empty')
     attribution=$(echo "$config" | jq -r '.attribution_header // empty')
@@ -152,6 +154,7 @@ launch_claude() {
     [[ -n "$sonnet" ]] && export ANTHROPIC_DEFAULT_SONNET_MODEL="$sonnet"
     [[ -n "$opus" ]] && export ANTHROPIC_DEFAULT_OPUS_MODEL="$opus"
     [[ -n "$subagent" ]] && export CLAUDE_CODE_SUBAGENT_MODEL="$subagent"
+    [[ -n "$max_context" ]] && export CLAUDE_CODE_MAX_CONTEXT_TOKENS="$max_context"
     [[ -n "$auto_compact" ]] && export CLAUDE_CODE_AUTO_COMPACT_WINDOW="$auto_compact"
     [[ -n "$attribution" ]] && export CLAUDE_CODE_ATTRIBUTION_HEADER="$attribution"
     [[ "$disable_betas" == "true" ]] && export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS="1"
@@ -203,6 +206,7 @@ launch_claude() {
                 .ANTHROPIC_DEFAULT_SONNET_MODEL,
                 .ANTHROPIC_DEFAULT_OPUS_MODEL,
                 .CLAUDE_CODE_SUBAGENT_MODEL,
+                .CLAUDE_CODE_MAX_CONTEXT_TOKENS,
                 .CLAUDE_CODE_AUTO_COMPACT_WINDOW,
                 .CLAUDE_CODE_ATTRIBUTION_HEADER,
                 .CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS,
@@ -226,6 +230,7 @@ launch_claude() {
         --arg sonnet "${sonnet:-}" \
         --arg opus "${opus:-}" \
         --arg subagent "${subagent:-}" \
+        --arg max_context "${max_context:-}" \
         --arg auto_compact "${auto_compact:-}" \
         --arg disable_traffic "${disable_traffic:-}" \
         --arg attribution "${attribution:-}" \
@@ -246,6 +251,7 @@ launch_claude() {
                         ANTHROPIC_DEFAULT_SONNET_MODEL: $sonnet,
                         ANTHROPIC_DEFAULT_OPUS_MODEL: $opus,
                         CLAUDE_CODE_SUBAGENT_MODEL: $subagent,
+                        CLAUDE_CODE_MAX_CONTEXT_TOKENS: $max_context,
                         CLAUDE_CODE_AUTO_COMPACT_WINDOW: $auto_compact,
                         CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: (if $disable_traffic == "true" then "1" else "" end),
                         CLAUDE_CODE_ATTRIBUTION_HEADER: $attribution,
@@ -257,6 +263,7 @@ launch_claude() {
                 )
             }
             | .env |= with_entries(select(.value | length > 0))
+            | if $model == "" then del(.model) else .model = $model end
         )' "$sanitized_settings_file" >"$settings_file"; then
         log_error "Failed to build isolated Claude settings"
         return 1

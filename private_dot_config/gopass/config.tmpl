@@ -16,6 +16,7 @@
 
 [age]
 	ssh-key-path = {{ .chezmoi.homeDir }}/.ssh/main
+	sshkeys = true # gopass 1.17.x must explicitly load SSH keys for decryption
 
 [core]
 	autopush = true

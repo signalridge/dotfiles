@@ -200,6 +200,26 @@ cmd_switch() {
     if [[ $switch_rc -eq 0 ]]; then
         chezmoi apply --verbose --exclude scripts "$SETTINGS_FILE" "$core_file" || switch_rc=$?
     fi
+    # Claude Code's persisted top-level model outranks ANTHROPIC_MODEL. Align it
+    # with the newly selected account; leave subsequent /model choices alone.
+    if [[ $switch_rc -eq 0 ]]; then
+        local selected_model settings_tmp
+        selected_model=$(claude-token --config "$input" | jq -r '.model // ""') || switch_rc=$?
+        if [[ $switch_rc -eq 0 ]]; then
+            settings_tmp=$(mktemp "${SETTINGS_FILE}.XXXXXX") || switch_rc=$?
+            if [[ $switch_rc -eq 0 ]]; then
+                if jq --arg model "$selected_model" \
+                    'if $model == "" then del(.model) else .model = $model end' \
+                    "$SETTINGS_FILE" >"$settings_tmp" &&
+                    mv "$settings_tmp" "$SETTINGS_FILE"; then
+                    :
+                else
+                    switch_rc=$?
+                    rm -f "$settings_tmp"
+                fi
+            fi
+        fi
+    fi
     if [[ $switch_rc -ne 0 ]]; then
         local rollback_failed=false
         cp -p "$tx_dir/chezmoi.toml" "$CHEZMOI_CONFIG" || rollback_failed=true

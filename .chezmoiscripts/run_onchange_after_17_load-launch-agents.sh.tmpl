@@ -5,6 +5,7 @@ set -euo pipefail
 # (Re)load macOS LaunchAgents. Re-runs whenever any managed plist changes.
 # qmk-hid-host plist sha256: {{ includeTemplate "private_Library/LaunchAgents/com.signalridge.qmk-hid-host.plist.tmpl" . | sha256sum }}
 # mcp-reaper plist sha256: {{ includeTemplate "private_Library/LaunchAgents/com.signalridge.mcp-reaper.plist.tmpl" . | sha256sum }}
+# cliproxyapi plist sha256: {{ includeTemplate "private_Library/LaunchAgents/com.signalridge.cliproxyapi.plist.tmpl" . | sha256sum }}
 {{ if and (eq .chezmoi.os "darwin") (not .headless) -}}
 domain="gui/$(id -u)"
 
@@ -19,6 +20,13 @@ reload_launch_agent() {
     if [[ ! -f "$plist" ]]; then
         echo "      plist not found at $plist, skipping"
         return 0
+    fi
+
+    if [[ "$label" == "com.signalridge.cliproxyapi" ]]; then
+        # launchd opens StandardOutPath itself, before applying the job Umask.
+        # Pre-create the log privately so startup output is not world-readable.
+        (umask 077; mkdir -p "$HOME/Library/Logs"; touch "$HOME/Library/Logs/cliproxyapi.launchd.log")
+        chmod 600 "$HOME/Library/Logs/cliproxyapi.launchd.log"
     fi
 
     if launchctl print "${domain}/${label}" >/dev/null 2>&1; then
@@ -72,4 +80,5 @@ mkdir -p "${HOME}/Library/Logs"
 remove_launch_agent "com.signalridge.mcp-context7"
 reload_launch_agent "com.signalridge.qmk-hid-host"
 reload_launch_agent "com.signalridge.mcp-reaper"
+reload_launch_agent "com.signalridge.cliproxyapi"
 {{ end -}}

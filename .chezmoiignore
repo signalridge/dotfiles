@@ -99,6 +99,17 @@ Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 .ssh/*
 {{- end }}
 
+# The gopass store and .age suffix match private_dot_config/gopass/config.tmpl.
+# Skip the proxy on machines without its key; an unreadable key still fails
+# closed when the proxy config template is rendered.
+{{- $cliproxyKey := and .useEncryption (stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/claude/cliproxy/private/api_key.age")) }}
+{{- if not $cliproxyKey }}
+.cli-proxy-api/config.yaml
+{{- end }}
+{{- if or (not $cliproxyKey) .headless }}
+Library/LaunchAgents/com.signalridge.cliproxyapi.plist
+{{- end }}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Pi coding agent runtime/secret state — Pi writes these into ~/.pi/agent at
 # runtime; never version-control them (settings.json/models.json/extensions are

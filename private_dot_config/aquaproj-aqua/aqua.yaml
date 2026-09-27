@@ -21,6 +21,9 @@ packages:
     registry: third-party
   - name: ogulcancelik/herdr@v0.9.1
     registry: third-party
+  # CLIProxyAPI for Claude Code; official release with checksums.txt verification.
+  - name: router-for-me/CLIProxyAPI@v7.3.19
+    registry: third-party
   # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
   # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
   # Moonshot's CDN (self-contained Node-SEA, no Node runtime). NOTE: the CDN's

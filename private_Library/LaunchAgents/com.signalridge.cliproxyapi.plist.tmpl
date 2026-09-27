@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.signalridge.cliproxyapi</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{ .chezmoi.homeDir }}/.local/share/aquaproj-aqua/bin/cliproxyapi</string>
+        <string>--config</string>
+        <string>{{ .chezmoi.homeDir }}/.cli-proxy-api/config.yaml</string>
+    </array>
+
+    <!-- The aqua binary is a shim; launchd does not source ~/.zshenv. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>{{ .chezmoi.homeDir }}</string>
+        <key>PATH</key>
+        <string>{{ .chezmoi.homeDir }}/.local/share/aquaproj-aqua/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>AQUA_GLOBAL_CONFIG</key>
+        <string>{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml</string>
+        <key>AQUA_POLICY_CONFIG</key>
+        <string>{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua-policy.yaml</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    <key>ProcessType</key>
+    <string>Background</string>
+    <!-- Restrict files created by the process; the reload script also pre-creates its log at 0600. -->
+    <key>Umask</key>
+    <integer>63</integer>
+    <key>StandardOutPath</key>
+    <string>{{ .chezmoi.homeDir }}/Library/Logs/cliproxyapi.launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{ .chezmoi.homeDir }}/Library/Logs/cliproxyapi.launchd.log</string>
+</dict>
+</plist>

@@ -75,9 +75,8 @@ cat >"$STUB/chezmoi" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 if [[ "${1:-}" == "data" ]]; then
-    cat <<'JSON'
-{"claudeProviderAccount":"qwen@beta","codexProviderAccount":"deepseek@private"}
-JSON
+    claude_account=$(awk -F'"' '/^claudeProviderAccount = / { print $2; exit }' "$HOME/.config/chezmoi/chezmoi.toml")
+    printf '{"claudeProviderAccount":"%s","codexProviderAccount":"deepseek@private"}\n' "$claude_account"
     exit 0
 fi
 if [[ "${1:-}" == "apply" ]]; then
@@ -113,12 +112,14 @@ case "$cmd" in
             claude)
                 echo "claude/deepseek/private/api_key"
                 echo "claude/qwen/beta/api_key"
+                echo "claude/cliproxy/private/api_key"
                 exit 0
                 ;;
             codex/deepseek/private/api_key|\
             codex/kimi/private/api_key|\
             claude/deepseek/private/api_key|\
-            claude/qwen/beta/api_key)
+            claude/qwen/beta/api_key|\
+            claude/cliproxy/private/api_key)
                 exit 0
                 ;;
             *)
@@ -145,7 +146,8 @@ case "$cmd" in
         case "$target" in
             codex/deepseek/private/api_key|\
             claude/deepseek/private/api_key|\
-            claude/qwen/beta/api_key)
+            claude/qwen/beta/api_key|\
+            claude/cliproxy/private/api_key)
                 echo "test-key"
                 exit 0
                 ;;
@@ -220,13 +222,17 @@ set -euo pipefail
 case "${1:-}" in
     --check)
         case "${2:-}" in
-            deepseek@private|qwen@beta) exit 0 ;;
+            deepseek@private|qwen@beta|cliproxy@private) exit 0 ;;
             *) exit 1 ;;
         esac
         ;;
     --config)
         if [[ "${2:-}" == "anthropic" ]]; then
             echo '{"provider":"anthropic","model":"","base_url":""}'
+        elif [[ "${2:-}" == "cliproxy@private" ]]; then
+            echo '{"provider":"cliproxy","model":"gpt-6-sol","small_model":"gpt-6-luna","haiku_model":"gpt-6-luna","max_context_tokens":1000000,"auto_compact_window":870000,"base_url":"http://127.0.0.1:8317"}'
+        elif [[ "${TEST_CLAUDE_NO_MODEL:-0}" == 1 ]]; then
+            echo '{"provider":"qwen","base_url":"https://dashscope.aliyuncs.com/apps/anthropic"}'
         else
             echo '{"provider":"qwen","model":"qwen3-coder-plus","base_url":"https://dashscope.aliyuncs.com/apps/anthropic"}'
         fi
@@ -484,7 +490,17 @@ grep -Fq 'claudeProviderAccount = "qwen@beta"' "$HOME/.config/chezmoi/chezmoi.to
 jq -e '.marker == "old-settings"' "$HOME/.claude/settings.json" >/dev/null
 cmp -s "$TMP_ROOT/claude-core.before-switch" "$BIN/lib/ai/core"
 PATH="$BASE_PATH" "$BIN/claude-manage" switch deepseek@private >/dev/null
+PATH="$BASE_PATH" "$BIN/claude-manage" switch cliproxy@private >/dev/null
+jq -e '.model == "gpt-6-sol"' "$HOME/.claude/settings.json" >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-manage" switch qwen@beta >/dev/null
+jq -e '.model == "qwen3-coder-plus"' "$HOME/.claude/settings.json" >/dev/null
+PATH="$BASE_PATH" "$BIN/claude-manage" switch anthropic >/dev/null
+jq -e 'has("model") | not' "$HOME/.claude/settings.json" >/dev/null
+TEST_CLAUDE_NO_MODEL=1 PATH="$BASE_PATH" "$BIN/claude-manage" switch qwen@beta >/dev/null
+jq -e 'has("model") | not' "$HOME/.claude/settings.json" >/dev/null
+PATH="$BASE_PATH" "$BIN/claude-manage" switch anthropic >/dev/null
+PATH="$BASE_PATH" "$BIN/claude-manage" switch qwen@beta >/dev/null
+jq -e '.model == "qwen3-coder-plus"' "$HOME/.claude/settings.json" >/dev/null
 
 # Configured accounts without keys should be recognized, then fail with the
 # key-specific remediation instead of "Unknown account".
@@ -515,9 +531,12 @@ cat >"$HOME/.claude/settings.json" <<'JSON'
 {
   "env": {
     "ANTHROPIC_API_KEY": "default-api-secret",
-    "ANTHROPIC_AUTH_TOKEN": "default-auth-secret"
+    "ANTHROPIC_AUTH_TOKEN": "default-auth-secret",
+    "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "200000",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "150000"
   },
-  "customSecret": "unrelated-user-secret"
+  "customSecret": "unrelated-user-secret",
+  "model": "stale-anthropic-model"
 }
 JSON
 claude_args_log="$TMP_ROOT/claude-args.log"
@@ -526,20 +545,30 @@ claude_settings_path_log="$TMP_ROOT/claude-settings-path.log"
 CLAUDE_ARGS_LOG="$claude_args_log" \
     CLAUDE_SETTINGS_COPY="$claude_settings_copy" \
     CLAUDE_SETTINGS_PATH_LOG="$claude_settings_path_log" \
-    PATH="$BASE_PATH" "$BIN/claude-with" qwen@beta --version >/dev/null
+    PATH="$BASE_PATH" "$BIN/claude-with" cliproxy@private --version >/dev/null
 ! grep -Fq 'default-api-secret' "$claude_args_log"
 ! grep -Fq 'default-auth-secret' "$claude_args_log"
 ! grep -Fq 'unrelated-user-secret' "$claude_args_log"
 jq -e '.env | has("ANTHROPIC_API_KEY") | not' "$claude_settings_copy" >/dev/null
 jq -e '.env | has("ANTHROPIC_AUTH_TOKEN") | not' "$claude_settings_copy" >/dev/null
-jq -e '.customSecret == "unrelated-user-secret"' "$claude_settings_copy" >/dev/null
+jq -e '.customSecret == "unrelated-user-secret" and
+       .model == "gpt-6-sol" and
+       .env.ANTHROPIC_SMALL_FAST_MODEL == "gpt-6-luna" and
+       .env.ANTHROPIC_DEFAULT_HAIKU_MODEL == "gpt-6-luna" and
+       .env.ANTHROPIC_BASE_URL == "http://127.0.0.1:8317" and
+       .env.CLAUDE_CODE_MAX_CONTEXT_TOKENS == "1000000" and
+       .env.CLAUDE_CODE_AUTO_COMPACT_WINDOW == "870000"' "$claude_settings_copy" >/dev/null
 [[ ! -e "$(cat "$claude_settings_path_log")" ]]
 
 # Native/empty profiles must not inherit routing/model values from the parent
 # shell. Otherwise switching accounts can silently use the previous provider.
 CLAUDE_ENV_LOG="$TMP_ROOT/claude-env.log" \
+    CLAUDE_SETTINGS_COPY="$claude_settings_copy" \
     ANTHROPIC_BASE_URL=leaked ANTHROPIC_MODEL=leaked \
     PATH="$BASE_PATH" "$BIN/claude-with" anthropic --version >/dev/null
+jq -e 'has("model") | not' "$claude_settings_copy" >/dev/null
+jq -e '.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS == null and
+       .env.CLAUDE_CODE_AUTO_COMPACT_WINDOW == null' "$claude_settings_copy" >/dev/null
 for leaked_var in ANTHROPIC_BASE_URL ANTHROPIC_MODEL; do
     assert_not_contains "$(cat "$TMP_ROOT/claude-env.log")" "${leaked_var}=leaked"
 done
