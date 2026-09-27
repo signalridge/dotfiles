@@ -8,12 +8,10 @@ skills: false
 disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
 prompt_mode: replace
 inherit_context: false
-# Read-only search must not run on the default rung. Without this key every
-# spawn falls through to agentTiers.defaultTier, which on the private machine
-# has been a gpt-6-astra rung since 2026-09-06 -- astra/high ($2.84/task) until
-# 2026-09-07 and astra/medium after it -- for grepping. `low` is luna/max there
-# and luna/xhigh on work. workflows/settings.json.tmpl has assumed this key
-# exists for a while; until 2026-09-06 it did not.
+# Read-only search must not run on the default rung. Without this key a spawn
+# falls through to agentTiers.defaultTier (gpt-6-sol/high) for grepping.
+# `low` is gpt-6-sol/low on both machines; workflows/settings.json.tmpl maps
+# its low strength to this tier too.
 tier: low
 ---
 

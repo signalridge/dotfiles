@@ -8,13 +8,12 @@
 
   The ordinary Agent catalogue is the single model-policy source. It keeps its
   user-facing `low | medium | high` keys with identical rungs on both machines:
-    low = luna/xhigh, medium = luna/max, high = astra/medium
+    low = gpt-6-sol/low, medium = gpt-6-sol/high, high = gpt-6-astra/medium
 
-  Private moved down one rung to match work; work is unchanged. There is no
-  longer a machine offset or a `.work` branch in this policy.
+  There is no machine offset or `.work` branch in this policy.
 
   The parent session is the medium/default baseline and is emitted separately by
-  modify_settings.json.tmpl: luna/max on both work and private. That is
+  modify_settings.json.tmpl: gpt-6-sol/high on both machines. That is
   this catalogue's `medium` row verbatim, and it is meant to stay that way, so
   that an interactive turn and a spawn that names no tier cost the same. Keep
   the two in lockstep whenever either moves, and do not collapse the rungs back
@@ -58,45 +57,15 @@
   which is separate from `defaultTier` though both resolve here to the same
   profile, which is also the rung the parent runs.
 
-  The concrete provider/model references are intentionally in the user-owned
-  chezmoi policy rather than in the public extension package. `max` is a real
-  rung on gpt-5.6-luna. gpt-6-astra replaced gpt-5.6-sol at the top on
-  2026-09-06; both machines now run it at `medium`. That rung exists because astra ships the
-  full low|medium|high|xhigh|max map where sol had {minimal: low, xhigh: xhigh,
-  max: max} -- check a pin against Pi's model registry rather than memory, since
-  a rung missing from a model's thinkingLevelMap is not offered and
-  clampThinkingLevel silently walks the pin to the nearest one that is.
+  The concrete provider/model references belong to this user-owned chezmoi
+  policy, not the public extension package. Pi's Codex registry currently offers
+  low and high on gpt-6-sol and medium on gpt-6-astra; verify availability and
+  thinkingLevelMap with `pi --list-models` / the registry before changing pins.
+  The parent and every unqualified spawn use sol/high. Workflow strengths map
+  to these same profiles; no separate workflow model policy is needed.
 
-  astra/xhigh is astra's own IQ peak -- `max` scores lower (111.9) and `ultra`
-  lower still (104.2), both slower and dearer, so there was never anything above
-  it to buy. Nothing runs there as of 2026-09-07. Giving up the peak was the
-  deliberate content of that change, not a cap anyone ran into.
-
-  COST -- and the unit price is the wrong number to read it off. gpt-6-astra is
-  dearer per token than gpt-5.6-sol ($10/$50/$1 per M input/output/cacheRead
-  against $5/$30/$0.5, and $20/$75/$2 against $10/$45/$1 above Codex's 272K
-  premium line), but it spends far fewer tokens reaching the same place, and the
-  token count moves more than the price does. Measured per task (codexradar
-  intelligence-efficiency, 2026-09-06):
-
-    rung          $/task  tokens     IQ     where it runs
-    astra/xhigh    4.12     1.93M  112.5    nothing, since 2026-09-07
-    astra/high     2.84     1.32M  104.1    nothing
-    astra/medium      ?         ?      ?    both high
-    luna/max       0.53    17.86M  100.9    both medium + parent
-    luna/xhigh     0.33    10.92M   87.5    both low
-
-  astra/medium has no measured row on purpose: it arrived here on 2026-09-07 and
-  codexradar has not been re-read since. Do not interpolate one from astra/high.
-  The lesson of the four rows that ARE measured is that the token count moves far
-  more than the unit price does, so between two rungs of one model the $/task is
-  not a ratio anyone can guess -- all that can honestly be said before measuring
-  is that it lands under astra/high's $2.84.
-
-  The private default now returns to luna/max, shared by the parent session
-  and every spawn that names no tier. Re-measure after a couple of days of
-  real use rather than quoting historical costs forward.
-  Verify model availability with Pi's model registry before changing these pins.
+  Do not infer per-task cost from historical luna or astra measurements: the
+  gpt-6-sol low/high rungs have not been measured here.
 
   maxConcurrent is 40, and what that number governs is about to widen. Through
   pi-subagents 1.9.x it bounds direct Agent fan-out only: pi-workflows has no way
@@ -122,10 +91,10 @@
 */ -}}
 {{- $highModel := "gpt-6-astra" -}}
 {{- $highThink := "medium" -}}
-{{- $mediumModel := "gpt-5.6-luna" -}}
-{{- $mediumThink := "max" -}}
-{{- $lowThink := "xhigh" -}}
-{{- $model := "openai-codex/gpt-5.6-luna" -}}
+{{- $mediumModel := "gpt-6-sol" -}}
+{{- $mediumThink := "high" -}}
+{{- $lowModel := "gpt-6-sol" -}}
+{{- $lowThink := "low" -}}
 {
   "maxConcurrent": 40,
   "defaultMaxTurns": 640,
@@ -145,7 +114,7 @@
     "profiles": {
       "low": {
         "description": "Search, navigation, and read-heavy work where breadth beats depth",
-        "model": "{{ $model }}",
+        "model": "openai-codex/{{ $lowModel }}",
         "thinking": "{{ $lowThink }}"
       },
       "medium": {

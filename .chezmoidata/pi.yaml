@@ -34,23 +34,17 @@ pi:
     # labels and the layer that mapped them are gone; a managed workflow spawn
     # names an Agent tier key directly.
     #
-    #   both machines: low = luna/xhigh, medium = luna/max, high = astra/medium
+    #   both machines: low = gpt-6-sol/low, medium = gpt-6-sol/high,
+    #                  high = gpt-6-astra/medium
     #
-    # Private moved down one rung to match work. Work is unchanged; the old
-    # work/private offset is gone, while the three tier names remain.
+    # The parent startup setting matches the medium/default tier exactly:
+    # gpt-6-sol/high on both machines. Keep both Pi templates in step so an
+    # interactive turn and an unqualified spawn use the same rung.
     #
-    # The parent startup setting is the medium/default baseline and equals that
-    # row exactly: luna/max on both machines. Keep the two in step whenever
-    # either moves, so an interactive turn and a spawn that names no tier cost
-    # the same. The values are emitted by the two Pi templates.
-    #
-    # The route is the native Codex OAuth already in ~/.pi/agent/auth.json; the
-    # openai-codex block below emits no apiKey for it. gpt-6-astra took over the
-    # top of the ladder on 2026-09-06 and now serves only high on both
-    # machines. It carries the same 921,000
-    # contextWindow pin as the gpt-5.6 family; see the modelOverrides comment in
-    # the openai-codex block for why that number is a measured input ceiling
-    # rather than a spec value, and for the per-rung cost table.
+    # The route is native Codex OAuth in ~/.pi/agent/auth.json; the openai-codex
+    # block emits no apiKey. Astra retains its derived 921,000 contextWindow
+    # override; Sol uses the built-in 272,000 catalog window until its actual
+    # input ceiling is independently verified.
     #
     # opencode-go, Kimi Code and the DIRECT DeepSeek platform all stay configured
     # and are one `/model` switch away. They differ in billing (flat allowance vs
@@ -59,26 +53,24 @@ pi:
     defaultProvider: openai-codex
     # The parent model + effort are still emitted from
     # dot_pi/agent/modify_settings.json.tmpl rather than from here, because that is
-    # where settings.json is assembled. Both machines resolve to gpt-5.6-luna
-    # at max. This is
-    # the `medium` tier verbatim, which is also where a managed workflow spawn
-    # that names no tier lands.
+    # where settings.json is assembled. Both machines resolve to gpt-6-sol
+    # at high. This is the `medium` tier verbatim, where an unqualified
+    # spawn lands.
     # Pi remains configured independently from Codex.
     # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
     # the ACTIVE provider/model's. reserveTokens is a single global number, so it
     # has to satisfy every candidate:
-    #   openai-codex  gpt-6-astra        921K   (high tier)
-    #   openai-codex  gpt-5.6-luna       921K   (startup default on both machines)
+    #   openai-codex  gpt-6-astra        921K   (high tier, derived pin)
+    #   openai-codex  gpt-6-sol          272K   (low + medium + startup)
     #   opencode-go   deepseek-v4-flash  1M     (the /model fallback)
-    # Both codex models carry the same 921,000 pin and the same 128,000 output
-    # cap, so the arithmetic below is machine-independent.
-    # 921K is NOT the codex models' advertised window — it is their measured
-    # INPUT ceiling, and pinning that number rather than the spec is the whole
-    # point. See the openai-codex modelOverrides block for the measurement and
-    # for why the 1,050,000 spec value is actively dangerous here.
-    # The startup default moved muse-spark-1.2 -> gpt-5.6-sol -> gpt-5.6-luna on
-    # 2026-08-20. Both current candidates are capped at maxTokens 128000 —
-    # natively on codex, by the modelOverrides pin on flash — so the reserve
+    # Sol's unprobed input ceiling is NOT assumed to match Astra's 921K pin;
+    # all three candidates have a 128K output cap.
+    # 921K is a measured INPUT ceiling for the former gpt-5.6-luna default;
+    # Astra inherits it by derivation, not a direct probe. Sol retains its
+    # published catalog value. See modelOverrides below for the distinction.
+    # The startup default is now gpt-6-sol. Both Sol and the fallback are
+    # capped at maxTokens 128000 — natively on Codex, by the modelOverrides pin
+    # on flash — so the reserve
     # floor is the same for both. The old hazard this paragraph used to warn
     # about (a 372K fallback window that a large reserve would push permanently
     # over the threshold) died with the 372K pin itself.
@@ -104,27 +96,26 @@ pi:
     #     climbing 360731 -> 370478, then "Your input exceeds the context window
     #     of this model" (>=0.84.0 then compact-and-retries, at the cost of a
     #     wasted request); one truncated at `length` with tot=371566.
-    # maxTokens is 128K for BOTH candidates — natively on codex, and by the
-    # deliberate modelOverrides pin in the opencode-go block below — so 128K is the
+    # maxTokens is 128K for all three candidates — natively on codex, and by
+    # the modelOverrides pin in the opencode-go block below — so 128K is the
     # correctness floor: a single maximal response must not be able to cross the
     # wall on its own. 130K clears that floor and leaves 130K of unchecked
     # headroom instead of 40K. This lowers the probability of hitting the wall;
     # it cannot eliminate it, because no threshold can bound growth that is never
     # measured. Where 130K lands, per active model:
-    #   openai-codex/gpt-6-astra       921K -> trigger 791K
-    #   openai-codex/gpt-5.6-luna      921K -> trigger 791K
+    #   openai-codex/gpt-6-astra       921K -> trigger 791K (derived pin)
+    #   openai-codex/gpt-6-sol         272K -> trigger 142K (catalog value)
     #   opencode-go/deepseek-v4-flash  1M   -> trigger 870K
-    # THE COMPARISON IS AGAINST INPUT, WHICH IS WHY THE 921K PIN MATTERS.
+    # THE COMPARISON IS AGAINST INPUT. Do not pin Sol to 921K without a probe.
     # `shouldCompact(contextTokens, contextWindow, settings)` is exactly
     # `contextTokens > contextWindow - settings.reserveTokens`
     # (pi-agent-core/dist/harness/compaction/compaction.js:125). contextTokens is
     # conversation input, so `contextWindow` has to be the number the request
     # will actually be REJECTED at, not the number on the spec sheet. Pinning the
     # advertised 1,050,000 instead — as this file briefly did on 2026-08-20 —
-    # puts the trigger at 920,000 against a real 922,000 wall, i.e. it reduces
-    # the unchecked headroom this whole section exists to size from 130,000 to
-    # about 2,000, while LOOKING correct. With 921,000 pinned, the 130,000 is
-    # real again.
+    # put the trigger at 920,000 against luna's ~922,000 wall, reducing unchecked
+    # headroom from 130,000 to about 2,000. Luna's 921,000 pin restored the
+    # measured headroom; Astra's matching pin remains an unverified derivation.
     # Note reserveTokens is double-duty — the summary's own output budget is
     # min(0.8*reserveTokens, maxTokens) = 104K here (core/compaction/
     # compaction.js), a cap rather than a target.
@@ -134,10 +125,9 @@ pi:
     # optimistic in the same way. Probe it before relying on that route for a
     # very long session.
     # Pricing, codex only: everything above 272K input bills at 2x input / 1.5x
-    # output for the FULL request, so a session that runs out toward this trigger
-    # spends most of its life on the premium tier. That is the accepted cost of
-    # using the real window rather than the catalog's 272K, and it is the reverse
-    # of the trade the previous 372K/242K pin made. DeepSeek has no equivalent
+    # output for the FULL request. The Astra 791K trigger can enter this premium
+    # tier; the Sol 142K trigger stays below it. This is the accepted tradeoff of
+    # the derived Astra pin versus Sol's unprobed catalog window. DeepSeek has no equivalent
     # cliff — one flat per-token rate (discounted off-peak), no context-length
     # tier — so the 870K trigger on the fallback is a context-safety number only.
     #
@@ -427,14 +417,13 @@ pi:
       # this comment.
       auth: builtin
       modelOverrides:
-        # THE STARTUP DEFAULT (defaults.defaultProvider above), the parent model
-        # on both machines, and the model behind the low and medium tiers.
-        # The high tier uses gpt-6-astra directly below.
-        # Bracketed tightest of the three gpt-5.6 probes.
+        # Legacy /model option; bracketed tightest of the three gpt-5.6 probes.
+        # The current startup default and low/medium tiers use gpt-6-sol (no
+        # contextWindow override until its input ceiling is probed).
         gpt-5.6-luna: { contextWindow: 921000 }
         # THE TOP OF THE LADDER: `high` on both machines, via `$highModel` in
-        # dot_pi/agent/subagents.json.tmpl. The parent and default/medium tier
-        # use luna/max instead. Also the Codex CLI's primary model in
+        # dot_pi/agent/subagents.json.tmpl. The Pi parent and default/medium
+        # tier use sol/high. Also the Codex CLI's primary model in
         # dot_codex/modify_config.toml.tmpl; that independent policy is unchanged.
         #
         # DERIVED, NOT MEASURED — the only pin in this block that was never
@@ -459,9 +448,9 @@ pi:
         #   rung          $/task  tokens     IQ     where it runs
         #   astra/xhigh    4.12     1.93M  112.5    nothing, since 2026-09-07
         #   astra/high     2.84     1.32M  104.1    nothing
-        #   astra/medium      ?         ?      ?    both high
-        #   luna/max       0.53    17.86M  100.9    both medium + parent
-        #   luna/xhigh     0.33    10.92M   87.5    both low
+        #   astra/medium      ?         ?      ?    both high (current)
+        #   luna/max       0.53    17.86M  100.9    historical
+        #   luna/xhigh     0.33    10.92M   87.5    historical
         #   sol/xhigh      5.25     7.58M  100.0    what private high used to be
         # astra/medium is deliberately blank: it arrived on 2026-09-07 and has not
         # been measured. Do not interpolate it from astra/high — the whole point
@@ -475,9 +464,9 @@ pi:
         # of the 2026-09-02 audit, where `high` was 93.5% of spend. 2026-09-07
         # then slid every astra tier down one rung, which walks part of that back:
         # private `high` returned to $2.84 and private `medium` dropped below it.
-        # Private has since moved down again to match work: medium and parent
-        # return to luna/max, high uses astra/medium, and low uses luna/xhigh.
-        # Re-measure after a few days of real use.
+        # Later both machines used luna/max for medium and luna/xhigh for low;
+        # they now use sol/high and sol/low, respectively. Re-measure the current
+        # rungs rather than extrapolating from historical results.
         # The astra-vs-sol half of that also UNDERSTATES astra: the source prices
         # sol flat at $4/$20/$0.4 with no long-context band, while the
         # 09-01..09-02 audit put 84% of sol's spend in the >272,000 premium tier

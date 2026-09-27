@@ -10,13 +10,13 @@ set -euo pipefail
 EXISTING="$(cat)"
 {{ $d := .pi.defaults -}}
 {{/* Parent model + effort match the Agent catalogue's medium/default baseline
-     on both work and private machines: gpt-5.6-luna at max. Keep this pair in
+     on both work and private machines: gpt-6-sol at high. Keep this pair in
      lockstep with subagents.json.tmpl so interactive turns and unqualified
      spawns use the same rung. The alignment test checks both machines.
      defaultProvider comes from .chezmoidata/pi.yaml (native Codex OAuth).
      Pi is intentionally configured independently from Codex. */ -}}
-{{- $model := "gpt-5.6-luna" -}}
-{{- $effort := "max" -}}
+{{- $model := "gpt-6-sol" -}}
+{{- $effort := "high" -}}
 {{/* Keep external npm dependencies first, then the exact pi.signalridgePackages
      order rendered as unpinned npm specs. No version suffix is emitted on
      purpose: Pi resolves the latest release at install time and

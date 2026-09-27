@@ -401,13 +401,13 @@ codex-token --check deepseek@private
 ### Pi 策略
 
 Pi 托管的启动默认值在 private 和 work 上相同：
-`openai-codex/gpt-5.6-luna` 的 `max`。两者同样使用
+`openai-codex/gpt-6-sol` 的 `high`。两者同样使用
 `signalridge-ridgeline` theme、quiet startup、Bun-backed package 安装，以及
 原生 compaction/retry 设置。
 
 `subagents.json` 只定义三个命名 tier：`low`、`medium`、`high`。它们构成同一条
-阶梯——`luna/xhigh`、`luna/max`、`astra/medium`。private 下调一档以匹配 work，
-work 保持不变。上面的启动默认值刻意等于两台机器的 `medium` 档，回归测试会
+阶梯——`gpt-6-sol/low`、`gpt-6-sol/high`、`gpt-6-astra/medium`。
+private 和 work 使用相同策略。上面的启动默认值刻意等于两台机器的 `medium` 档，回归测试会
 断言这一点、两台机器策略完全相同，以及阶梯严格递增。workflow settings 将 workflow
 strength `low`/`medium`/`high` 直接映射到同名 tier；旧的独立 workflow model
 vocabulary 不属于当前配置。

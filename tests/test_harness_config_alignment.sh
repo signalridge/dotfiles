@@ -205,16 +205,13 @@ for machine in work private; do
 done
 
 # The shared rungs the header comment documents.
-jq -e '.agentTiers.profiles |
-       .low.model == "openai-codex/gpt-5.6-luna" and .low.thinking == "xhigh" and
-       .medium.model == "openai-codex/gpt-5.6-luna" and .medium.thinking == "max" and
-       .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "medium"' \
-    "$tmp_root/subagents-work.json" >/dev/null
-jq -e '.agentTiers.profiles |
-       .low.model == "openai-codex/gpt-5.6-luna" and .low.thinking == "xhigh" and
-       .medium.model == "openai-codex/gpt-5.6-luna" and .medium.thinking == "max" and
-       .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "medium"' \
-    "$tmp_root/subagents-private.json" >/dev/null
+for machine in work private; do
+    jq -e '.agentTiers.profiles |
+           .low.model == "openai-codex/gpt-6-sol" and .low.thinking == "low" and
+           .medium.model == "openai-codex/gpt-6-sol" and .medium.thinking == "high" and
+           .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "medium"' \
+        "$tmp_root/subagents-$machine.json" >/dev/null
+done
 
 # Private matches the entire work policy, not just the model names.
 jq -e -n --slurpfile w "$tmp_root/subagents-work.json" \
@@ -224,10 +221,10 @@ jq -e -n --slurpfile w "$tmp_root/subagents-work.json" \
 # A tier must never resolve below the one beneath it. The uniqueness check that
 # follows catches two rungs that collide; it says nothing about two that are
 # ordered backwards, which is what an edit that moves one tier and not its
-# neighbour produces. astra outranks luna, and within one model the thinking
-# rungs are ordered, so both ladders must come out already sorted.
+# neighbour produces. Astra outranks Sol, and within Sol the thinking rungs
+# are ordered, so both ladders must come out already sorted.
 for machine in work private; do
-    jq -e '["gpt-5.6-luna", "gpt-6-astra"] as $models
+    jq -e '["gpt-6-sol", "gpt-6-astra"] as $models
            | ["low", "medium", "high", "xhigh", "max"] as $rungs
            | [.agentTiers.profiles | .low, .medium, .high]
            | map(. as $p
