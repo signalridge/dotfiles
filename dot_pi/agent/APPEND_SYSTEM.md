@@ -25,13 +25,11 @@ Code-nav layering: readseek for "who calls / where defined", safe hash-anchored 
 local structural maps; hypa when context is large. They complement — don't invoke both
 for one lookup.
 
-User preference overrides; fall back when unavailable; no sensitive data in queries.
+User preference overrides; fall back when unavailable.
 
-## Authentication safety
+## AI provider choice
 
-- Built-in OpenAI Codex OAuth is allowed.
-- Never read or reuse browser cookies, browser profiles, password stores, or signed-in web sessions for model or search authentication. Never use reverse-engineered/private AI web endpoints.
-- Do not install or configure Pi extensions that provide those capabilities. Web research must use API/MCP providers; ordinary browser/E2E work does not authorize access to signed-in AI websites.
+Third-party AI APIs and compatible endpoints are allowed when requested or configured by the user.
 
 ## Local CLI toolbelt
 
