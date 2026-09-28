@@ -27,9 +27,9 @@ terraform = "latest"
 # Python (for tools that need it). 3.12 -> 3.14 on 2026-09-06. The major.minor
 # pin is deliberate — a Python major moves faster than the pipx tools below —
 # and 3.14 is the newest release line, so this IS latest. Bumping the line
-# rebuilds every `pipx:` entry's venv (poetry, pre-commit, posting,
-# ai-research-skills, and mac-cleanup on darwin); re-run `mise install` and
-# check those binaries after any change here.
+# rebuilds the other `pipx:` entry venvs (poetry, pre-commit, posting,
+# ai-research-skills); mac-cleanup uses its own supported Python below.
+# Re-run `mise install` and check those binaries after any change here.
 python = "3.14"
 
 # uv (Python package manager)
@@ -68,8 +68,8 @@ rust = "latest"
 lua = "5.4"
 
 {{ if eq .chezmoi.os "darwin" -}}
-# Python CLI tools (via pipx) - macOS only
-"pipx:mac-cleanup" = "latest"
+# mac-cleanup 3.3.0 requires Python <3.14; keep its venv on a supported line.
+"pipx:mac-cleanup" = { version = "latest", uvx_args = "--python 3.13" }
 {{ end -}}
 
 # Pi coding agent (earendil-works). Binary is `pi`. Requires node >=22.19,
