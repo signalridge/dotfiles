@@ -7,11 +7,11 @@ versions:
   nixInstallerAarch64LinuxSha256: 71cabad624d6cace0beecc44961494c0821bc8b874d63f3c27d816778df83e5c
   nixInstallerX8664LinuxSha256: 9432d40ec1d0d4ebb6284848cc389bdb1bbf7aeb5c1cea11e7efc9daf0a1ec82
   nixVersion: v3.22.5
-  nixpkgsBootstrapRev: f9bce96a417afbb9c64725f8727e42efafeafc21
+  nixpkgsBootstrapRev: 3181085bfd08663b6b9e60bc7a8395c2aaa741bd
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
   aquaVersion: v2.63.0
-  nixIndexDb: 2026-09-20-075601
+  nixIndexDb: 2026-09-27-083517
   paperlib: 3.1.12
   paperlibAmd64Sha256: 993d05c9bb9c8163f2d308736d2316ebf6db8a23b75133a170e22ea6e125746c
   paperlibArm64Sha256: a49ab642331632719079399c15551a6d0c9b16ca2f50a2ef35c297c3a9835459
@@ -34,8 +34,8 @@ versions:
   claudeAnthropicsSkillsSha256: 55029ee9b468aac1179f3c0246c82ae73880fe0ca897db5a82f3b0ee71d35ca6
   claudeBaoyuSkillsRev: 1567581c26ec29f4216c6e6835415bf30343b0e3
   phurynPmSkillsRev: 8607e3b077817f89bf4a9b623246219734ac3be0
-  uiUxProMaxSkillRev: 823b0a14d3539b5d78c0efb614426a4fab5983ec
-  uiUxProMaxSkillSha256: 6476c7a03e9363eecdf65b28a9d807172e5d3bd84e842e7e8c6351b982bb0a8b
+  uiUxProMaxSkillRev: 09170eec67eefd46a7ae85de61b40c194020f997
+  uiUxProMaxSkillSha256: 93f4e8cbcd060533e5d368c3183b764adcbcc82c04a2cdc933bf97024bed67c9
   openaiSkillsRev: 49f948faa9258a0c61caceaf225e179651397431
   huggingfaceSkillsRev: 80f9fa530e46f4ae642fcb9e1725bad0e1979395
   getsentrySkillsRev: c2f99a5b04b4cd992ec3022d7c2c3e23e938d241
@@ -50,11 +50,11 @@ versions:
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: f70cf7d3233b2b1dd46941f58c87e4b5cc3b725c
   dailyDevSkillsRev: 6550382385959558cfbacdd9f169199832915407
-  opcSkillsRev: 746e247ecb13e2fb7909a248806e35bcfa6042ce
+  opcSkillsRev: af31273aa82606e42cf5b265c9033eb15e48b9e7
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 19a0626ae8565d27a7b7bdf59d8d99d94d7e284c
-  affaanEccRev: e482e579415fde18357cafce70f177ae19fd7f03
+  affaanEccRev: d3b8a3e908904e242ed2dbe66af62cca71131419
   actionbookRustSkillsRev: 5c40d3ad785193231b7d0dbfb8e1eb447e5edd94
   dpearsonSwiftSkillsRev: 8d90fd121a263355a4fb44fd082af1416a5c1c2a
   effectiveTypescriptRev: d754db2077d71ae1e2b57bf50ae7bc565067a2e0
