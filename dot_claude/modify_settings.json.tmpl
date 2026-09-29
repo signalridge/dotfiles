@@ -354,6 +354,13 @@ EXISTING="$(cat)"
 {{- if and $provider (hasKey $provider "base_url") -}}
 {{-   $apiKeyHelper = "~/.local/bin/claude-token" -}}
 {{- end -}}
+{{- /* Local sessions stay local. remoteControlAtStartup can default ON through
+       an org/GrowthBook default even when never set, registering every CLI
+       session as a claude.ai cloud session (the cse_* ids that pile up in
+       ~/.claude.json replBridgePlaceholders); autoUploadSessions mirrors
+       sessions to claude.ai view-only. Both must be false at USER scope:
+       repo-scoped settings can only turn Remote Control off, never on.
+       `/remote-control` inside a session still connects on demand. */ -}}
 {{- $managed := dict
       "apiKeyHelper" $apiKeyHelper
       "env" $env
@@ -362,6 +369,8 @@ EXISTING="$(cat)"
       "statusLine" (dict "type" "command" "command" "bash $HOME/.claude/statusline-command.sh")
       "skipDangerousModePermissionPrompt" true
       "alwaysThinkingEnabled" true
+      "remoteControlAtStartup" false
+      "autoUploadSessions" false
 }}
 FALLBACK="$(cat <<'CLAUDE_FALLBACK_EOF'
 {{ $fallback | toPrettyJson }}
