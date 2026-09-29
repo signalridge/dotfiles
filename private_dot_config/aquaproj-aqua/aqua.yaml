@@ -22,7 +22,7 @@ packages:
   - name: ogulcancelik/herdr@v0.9.1
     registry: third-party
   # CLIProxyAPI for Claude Code; official release with checksums.txt verification.
-  - name: router-for-me/CLIProxyAPI@v8.0.3
+  - name: router-for-me/CLIProxyAPI@v8.0.4
     registry: third-party
   # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
   # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
@@ -48,14 +48,14 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.283
-  - name: openai/codex@rust-v0.157.1
+  - name: anthropics/claude-code@v2.1.284
+  - name: openai/codex@rust-v0.158.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.9.15
+  - name: jdx/mise@v2026.9.16
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -110,7 +110,7 @@ packages:
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.16.9
   - name: astral-sh/ty@0.0.84
-  - name: j178/prek@v0.5.3
+  - name: j178/prek@v0.5.4
   - name: golang.org/x/tools/gopls@v0.23.0
   - name: golangci/golangci-lint@v2.14.0
   - name: goreleaser/goreleaser@v2.18.2
