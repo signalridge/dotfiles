@@ -2,12 +2,12 @@
 # Pinned versions (auto-updated by GitHub Actions)
 # ─────────────────────────────────────────────────────────────────────────────
 versions:
-  nixInstaller: v3.22.5
-  nixInstallerAarch64DarwinSha256: dcb012a7978902fd8d875bec72053f34b7c733ae317b26b27777b241d43c441e
-  nixInstallerAarch64LinuxSha256: 71cabad624d6cace0beecc44961494c0821bc8b874d63f3c27d816778df83e5c
-  nixInstallerX8664LinuxSha256: 9432d40ec1d0d4ebb6284848cc389bdb1bbf7aeb5c1cea11e7efc9daf0a1ec82
-  nixVersion: v3.22.5
-  nixpkgsBootstrapRev: b6c8664de9b6cc07fe5666a29f91884ba81197c4
+  nixInstaller: v3.23.0
+  nixInstallerAarch64DarwinSha256: 3190fd5eb19ed809d3338dbcf1715cbd1ad645b2095204a1111979720ce5a5c7
+  nixInstallerAarch64LinuxSha256: af6526ae8c81654f895b3a2862f664847f0d3c3fb7bfec3e6ff2959d53738fcd
+  nixInstallerX8664LinuxSha256: 9cb91b20e5c71579ee41a8d00e29b679c5fe60e334b61fa8d7d3daac1964b367
+  nixVersion: v3.23.0
+  nixpkgsBootstrapRev: c9fe7d12cd78d1adcd12dd15e24432dde5b155a0
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
   aquaVersion: v2.63.0
@@ -44,13 +44,13 @@ versions:
   vercelLabsAgentSkillsRev: 063bee94c3f4df8453406c830b0a7df0f2860278
   vercelLabsNextSkillsRev: c522619e45aa3492fd2bfc916b308b275eff7798
   vercelLabsAgentBrowserRev: 39a74c70d7759d5a6de7a22c04570bb626bbd081
-  supabaseAgentSkillsRev: 544bfc56c89afe2b87b20017a59b2c6e9502a1fb
-  expoSkillsRev: c0dadf355d4caa4e1720de372f0f8766df1a8978
-  microsoftSkillsRev: 84d8eaa8ae95930f55cdceb3e27196c795dab038
+  supabaseAgentSkillsRev: c9be0e931b7930f7d02126d04774d904c381e7d7
+  expoSkillsRev: 13ad8e05874195633b5c185f6947bb6400e228fc
+  microsoftSkillsRev: ce7edea90860e0c69fa36db164584c87908e09f5
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 18dcb447f090667171ff23666a05d6d387e2aa73
   dailyDevSkillsRev: 6550382385959558cfbacdd9f169199832915407
-  opcSkillsRev: 4c3c04f2004955a228d347522e05bd277309b610
+  opcSkillsRev: 0aeae67e19953fac76c32d7a0f8e1293d40f8c25
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 8e899e20ff0cd4dc524af3993e4c62d8ee8c5717
