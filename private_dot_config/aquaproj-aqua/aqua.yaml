@@ -22,7 +22,7 @@ packages:
   - name: ogulcancelik/herdr@v0.9.3
     registry: third-party
   # CLIProxyAPI for Claude Code; official release with checksums.txt verification.
-  - name: router-for-me/CLIProxyAPI@v8.0.10
+  - name: router-for-me/CLIProxyAPI@v8.0.12
     registry: third-party
   # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
   # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
@@ -35,7 +35,7 @@ packages:
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
-  - name: google-antigravity/antigravity-cli@1.2.14
+  - name: google-antigravity/antigravity-cli@1.2.15
   - name: nektos/act@v0.2.89
   - name: FiloSottile/age@v1.3.2
   - name: asciinema/asciinema@v3.2.1
@@ -48,7 +48,7 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.287
+  - name: anthropics/claude-code@v2.1.288
   - name: openai/codex@rust-v0.160.0
   - name: direnv/direnv@v2.37.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
@@ -97,7 +97,7 @@ packages:
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.1.0
   - name: ducaale/xh@v0.26.2
-  - name: watchexec/watchexec@v2.7.3
+  - name: watchexec/watchexec@v2.7.4
   - name: joshmedeski/sesh@v2.31.0
   - name: starship/starship@v1.26.0
   - name: JohnnyMorganz/StyLua@v2.5.2
@@ -138,7 +138,7 @@ packages:
   - name: kubernetes-sigs/krew@v0.5.0
   - name: aquasecurity/trivy@v0.75.0
   - name: anchore/syft@v1.54.0
-  - name: anchore/grype@v0.119.0
+  - name: anchore/grype@v0.120.0
   - name: LucasPickering/slumber@v5.3.0
   - name: charmbracelet/gum@v2.0.2
   - name: charmbracelet/vhs@v0.12.1
