@@ -8,12 +8,12 @@
 
   The ordinary Agent catalogue is the single model-policy source. It keeps its
   user-facing `low | medium | high` keys with identical rungs on both machines:
-    low = gpt-6-sol/low, medium = gpt-6-sol/high, high = gpt-6-astra/medium
+    low = gpt-6.1-sol/low, medium = gpt-6.1-sol/high, high = gpt-6-astra/medium
 
   There is no machine offset or `.work` branch in this policy.
 
   The parent session is the medium/default baseline and is emitted separately by
-  modify_settings.json.tmpl: gpt-6-sol/high on both machines. That is
+  modify_settings.json.tmpl: gpt-6.1-sol/high on both machines. That is
   this catalogue's `medium` row verbatim, and it is meant to stay that way, so
   that an interactive turn and a spawn that names no tier cost the same. Keep
   the two in lockstep whenever either moves, and do not collapse the rungs back
@@ -59,13 +59,13 @@
 
   The concrete provider/model references belong to this user-owned chezmoi
   policy, not the public extension package. Pi's Codex registry currently offers
-  low and high on gpt-6-sol and medium on gpt-6-astra; verify availability and
+  low and high on gpt-6.1-sol and medium on gpt-6-astra; verify availability and
   thinkingLevelMap with `pi --list-models` / the registry before changing pins.
   The parent and every unqualified spawn use sol/high. Workflow strengths map
   to these same profiles; no separate workflow model policy is needed.
 
   Do not infer per-task cost from historical luna or astra measurements: the
-  gpt-6-sol low/high rungs have not been measured here.
+  gpt-6.1-sol low/high rungs have not been measured here.
 
   maxConcurrent is 40, and what that number governs is about to widen. Through
   pi-subagents 1.9.x it bounds direct Agent fan-out only: pi-workflows has no way
@@ -91,9 +91,9 @@
 */ -}}
 {{- $highModel := "gpt-6-astra" -}}
 {{- $highThink := "medium" -}}
-{{- $mediumModel := "gpt-6-sol" -}}
+{{- $mediumModel := "gpt-6.1-sol" -}}
 {{- $mediumThink := "high" -}}
-{{- $lowModel := "gpt-6-sol" -}}
+{{- $lowModel := "gpt-6.1-sol" -}}
 {{- $lowThink := "low" -}}
 {
   "maxConcurrent": 40,

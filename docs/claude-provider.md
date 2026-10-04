@@ -72,9 +72,11 @@ this document; the YAML file is the source of truth.
 `cliproxy@private` sends Claude Code's Anthropic-compatible requests to the
 localhost-only CLIProxyAPI server, which authenticates upstream with its own
 OpenAI Codex OAuth login. Pi and the native Anthropic account are unchanged.
-The account uses `gpt-6-sol` by default and for Sonnet, `gpt-6-luna` for
-small/Haiku, and `gpt-6-astra` for Opus; confirm all three appear in the
-authenticated proxy's `/v1/models` before use.
+The account uses `gpt-6.1-sol` by default and for Sonnet, `gpt-6-luna` for
+small/Haiku, and `gpt-6-astra` for Opus. The older `gpt-6-sol` remains a manual
+rollback option. Confirm the selected models appear in the authenticated
+proxy's `/v1/models` before use; a public API listing does not establish Codex
+OAuth entitlement.
 
 1. The proxy's inbound key lives in gopass at
    `claude/cliproxy/private/api_key` (shared by the proxy config and
@@ -106,22 +108,25 @@ authenticated proxy's `/v1/models` before use.
    `claude-manage test cliproxy@private` before switching accounts.
 6. Use `claude-with cliproxy@private` for one session, or
    `claude-manage switch cliproxy@private` to persist the default (restart
-   Claude Code afterward). The default model is `gpt-6-sol`; Claude Code's
+   Claude Code afterward). The default model is `gpt-6.1-sol`; Claude Code's
    `effortLevel` is user-owned, so set it to `high` with `/effort high` once
    and subsequent chezmoi applies preserve that choice. A fresh settings
    file on this account also seeds `high`. Switch back with
    `claude-manage switch anthropic`.
 
-Claude Code does not recognize `gpt-6-sol` in its model catalog. The
+Claude Code may not know this non-Anthropic model ID in its own catalog. The
 `cliproxy@private` account explicitly assumes a 1,000,000-token context via
 `CLAUDE_CODE_MAX_CONTEXT_TOKENS` (without changing the model ID sent to the
-proxy) and auto-compacts at 870,000 tokens: the same 130,000-token reserve as
-Pi's compaction settings. This is an assumption, not proof of the effective
-Codex OAuth limit; if requests fail before 870k, lower the account's window
-and compact threshold together. For Sol only, CLIProxyAPI's conditional Codex
-payload override clamps a Claude Code request for `xhigh` to upstream `high`;
-requests for `low`, `medium`, or `high` remain unchanged. This is independent
-of the client-side `effortLevel: high` default.
+proxy) and auto-compacts at 870,000 tokens. The intended 130,000-token
+reserve is **unverified** on the Codex OAuth route: OpenAI's public API lists
+922,000 maximum input tokens for 6.1 Sol, which would leave only 52,000
+between this trigger and that limit if the routes behave alike. If requests
+fail before compaction, lower the account's window and compact threshold
+together. For both the new default and the older manual rollback Sol,
+CLIProxyAPI's conditional Codex payload override clamps a Claude Code request
+for `xhigh` to upstream `high`; requests for `low`, `medium`, or `high` remain
+unchanged. This is a local policy (6.1 supports xhigh), independent of the
+client-side `effortLevel: high` default.
 
 > **Risk:** CLIProxyAPI routes Codex OAuth traffic through the ChatGPT Codex
 > backend rather than the public Platform API. Check the provider's terms and

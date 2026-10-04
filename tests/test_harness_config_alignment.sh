@@ -59,9 +59,11 @@ assert 'host: "127.0.0.1"' in config
 assert 'port: 8317' in config
 assert '  secret-key: ""' in config
 assert '  - "test-client-key"' in config
-assert '          protocol: "codex"' in config
-assert '          from-protocol: "claude"' in config
-assert '            - "reasoning.effort": "xhigh"' in config
+assert '        - name: "gpt-6.1-sol"' in config
+assert '        - name: "gpt-6-sol"' in config
+assert config.count('          protocol: "codex"') == 2
+assert config.count('          from-protocol: "claude"') == 2
+assert config.count('            - "reasoning.effort": "xhigh"') == 2
 assert '        "reasoning.effort": "high"' in config
 PY
 # CI has no private gopassRepository; supply a harmless synthetic URL.
@@ -69,11 +71,16 @@ chezmoi execute-template --source "$ROOT" \
     --override-data '{"gopassRepository":"https://github.com/example/gopass.git"}' \
     --file "$ROOT/private_dot_config/gopass/config.tmpl" | grep -q 'sshkeys = true'
 chezmoi data --source "$ROOT" --format json | jq -e '
-    .claude.providers.cliproxy.models | index("gpt-6-luna") != null' >/dev/null
+    .claude.providers.cliproxy |
+    .default_model == "gpt-6.1-sol" and
+    (.models as $models |
+     ["gpt-6-luna", "gpt-6.1-sol", "gpt-6-sol", "gpt-6-astra"] |
+     all(. as $model | $models | index($model) != null))' >/dev/null
 chezmoi data --source "$ROOT" --format json | jq -e '
     .claude.accounts["cliproxy@private"] |
+    .model == "gpt-6.1-sol" and .subagent_model == "gpt-6.1-sol" and
     .small_model == "gpt-6-luna" and .haiku_model == "gpt-6-luna" and
-    .sonnet_model == "gpt-6-sol" and .opus_model == "gpt-6-astra"' >/dev/null
+    .sonnet_model == "gpt-6.1-sol" and .opus_model == "gpt-6-astra"' >/dev/null
 
 # Claude Code settings are a modify_ script, not a full-file template: the CLI
 # rewrites ~/.claude/settings.json at runtime (`/model`, `/effort`, `/config`,
@@ -100,7 +107,9 @@ chezmoi execute-template --source "$ROOT" \
     --override-data-file "$tmp_root/claude-proxy-data.json" \
     --file "$ROOT/dot_claude/modify_settings.json.tmpl" >"$tmp_root/claude-proxy.sh"
 printf '' | bash "$tmp_root/claude-proxy.sh" | jq -e \
-    '.env.ANTHROPIC_MODEL == "gpt-6-sol" and .effortLevel == "high" and
+    '.env.ANTHROPIC_MODEL == "gpt-6.1-sol" and .effortLevel == "high" and
+     .env.ANTHROPIC_DEFAULT_SONNET_MODEL == "gpt-6.1-sol" and
+     .env.CLAUDE_CODE_SUBAGENT_MODEL == "gpt-6.1-sol" and
      .env.CLAUDE_CODE_MAX_CONTEXT_TOKENS == "1000000" and
      .env.CLAUDE_CODE_AUTO_COMPACT_WINDOW == "870000"' >/dev/null
 printf '{"effortLevel":"low"}' | bash "$tmp_root/claude-proxy.sh" | jq -e \
@@ -301,8 +310,8 @@ done
 # The shared rungs the header comment documents.
 for machine in work private; do
     jq -e '.agentTiers.profiles |
-           .low.model == "openai-codex/gpt-6-sol" and .low.thinking == "low" and
-           .medium.model == "openai-codex/gpt-6-sol" and .medium.thinking == "high" and
+           .low.model == "openai-codex/gpt-6.1-sol" and .low.thinking == "low" and
+           .medium.model == "openai-codex/gpt-6.1-sol" and .medium.thinking == "high" and
            .high.model == "openai-codex/gpt-6-astra" and .high.thinking == "medium"' \
         "$tmp_root/subagents-$machine.json" >/dev/null
 done
@@ -318,7 +327,7 @@ jq -e -n --slurpfile w "$tmp_root/subagents-work.json" \
 # neighbour produces. Astra outranks Sol, and within Sol the thinking rungs
 # are ordered, so both ladders must come out already sorted.
 for machine in work private; do
-    jq -e '["gpt-6-sol", "gpt-6-astra"] as $models
+    jq -e '["gpt-6.1-sol", "gpt-6-astra"] as $models
            | ["low", "medium", "high", "xhigh", "max"] as $rungs
            | [.agentTiers.profiles | .low, .medium, .high]
            | map(. as $p

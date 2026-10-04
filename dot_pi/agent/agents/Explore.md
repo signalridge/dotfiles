@@ -9,8 +9,8 @@ disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
 prompt_mode: replace
 inherit_context: false
 # Read-only search must not run on the default rung. Without this key a spawn
-# falls through to agentTiers.defaultTier (gpt-6-sol/high) for grepping.
-# `low` is gpt-6-sol/low on both machines; workflows/settings.json.tmpl maps
+# falls through to agentTiers.defaultTier (gpt-6.1-sol/high) for grepping.
+# `low` is gpt-6.1-sol/low on both machines; workflows/settings.json.tmpl maps
 # its low strength to this tier too.
 tier: low
 ---

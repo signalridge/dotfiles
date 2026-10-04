@@ -12,10 +12,16 @@ remote-management:
 api-keys:
   - {{ $apiKey | quote }}
 # Only when a Claude Code request for Sol asks for xhigh: clamp the translated
-# Codex payload to high. Preserve low/medium/high and other request protocols.
+# Codex payload to high, including the older manual rollback model.
+# Preserve low/medium/high and other request protocols.
 payload:
   override:
     - models:
+        - name: "gpt-6.1-sol"
+          protocol: "codex"
+          from-protocol: "claude"
+          match:
+            - "reasoning.effort": "xhigh"
         - name: "gpt-6-sol"
           protocol: "codex"
           from-protocol: "claude"

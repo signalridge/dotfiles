@@ -34,11 +34,11 @@ pi:
     # labels and the layer that mapped them are gone; a managed workflow spawn
     # names an Agent tier key directly.
     #
-    #   both machines: low = gpt-6-sol/low, medium = gpt-6-sol/high,
+    #   both machines: low = gpt-6.1-sol/low, medium = gpt-6.1-sol/high,
     #                  high = gpt-6-astra/medium
     #
     # The parent startup setting matches the medium/default tier exactly:
-    # gpt-6-sol/high on both machines. Keep both Pi templates in step so an
+    # gpt-6.1-sol/high on both machines. Keep both Pi templates in step so an
     # interactive turn and an unqualified spawn use the same rung.
     #
     # The route is native Codex OAuth in ~/.pi/agent/auth.json; the openai-codex
@@ -53,7 +53,7 @@ pi:
     defaultProvider: openai-codex
     # The parent model + effort are still emitted from
     # dot_pi/agent/modify_settings.json.tmpl rather than from here, because that is
-    # where settings.json is assembled. Both machines resolve to gpt-6-sol
+    # where settings.json is assembled. Both machines resolve to gpt-6.1-sol
     # at high. This is the `medium` tier verbatim, where an unqualified
     # spawn lands.
     # Pi remains configured independently from Codex.
@@ -61,14 +61,14 @@ pi:
     # the ACTIVE provider/model's. reserveTokens is a single global number, so it
     # has to satisfy every candidate:
     #   openai-codex  gpt-6-astra        921K   (high tier, derived pin)
-    #   openai-codex  gpt-6-sol          272K   (low + medium + startup)
+    #   openai-codex  gpt-6.1-sol        272K   (low + medium + startup)
     #   opencode-go   deepseek-v4-flash  1M     (the /model fallback)
     # Sol's unprobed input ceiling is NOT assumed to match Astra's 921K pin;
     # all three candidates have a 128K output cap.
     # 921K is a measured INPUT ceiling for the former gpt-5.6-luna default;
     # Astra inherits it by derivation, not a direct probe. Sol retains its
     # published catalog value. See modelOverrides below for the distinction.
-    # The startup default is now gpt-6-sol. Both Sol and the fallback are
+    # The startup default is now gpt-6.1-sol. Both Sol and the fallback are
     # capped at maxTokens 128000 — natively on Codex, by the modelOverrides pin
     # on flash — so the reserve
     # floor is the same for both. The old hazard this paragraph used to warn
@@ -104,7 +104,7 @@ pi:
     # it cannot eliminate it, because no threshold can bound growth that is never
     # measured. Where 130K lands, per active model:
     #   openai-codex/gpt-6-astra       921K -> trigger 791K (derived pin)
-    #   openai-codex/gpt-6-sol         272K -> trigger 142K (catalog value)
+    #   openai-codex/gpt-6.1-sol       272K -> trigger 142K (catalog value)
     #   opencode-go/deepseek-v4-flash  1M   -> trigger 870K
     # THE COMPARISON IS AGAINST INPUT. Do not pin Sol to 921K without a probe.
     # `shouldCompact(contextTokens, contextWindow, settings)` is exactly
@@ -418,7 +418,7 @@ pi:
       auth: builtin
       modelOverrides:
         # Legacy /model option; bracketed tightest of the three gpt-5.6 probes.
-        # The current startup default and low/medium tiers use gpt-6-sol (no
+        # The current startup default and low/medium tiers use gpt-6.1-sol (no
         # contextWindow override until its input ceiling is probed).
         gpt-5.6-luna: { contextWindow: 921000 }
         # THE TOP OF THE LADDER: `high` on both machines, via `$highModel` in

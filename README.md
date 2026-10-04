@@ -418,12 +418,12 @@ codex-token --check deepseek@private
 ### Pi policy
 
 The managed Pi startup default on both private and work machines is
-`openai-codex/gpt-6-sol` at `high`. Both also get the
+`openai-codex/gpt-6.1-sol` at `high`. Both also get the
 `signalridge-ridgeline` theme, quiet startup, Bun-backed package installation,
 and native compaction/retry settings.
 
 `subagents.json` defines exactly three named tiers: `low`, `medium`, and
-`high`: `gpt-6-sol/low`, `gpt-6-sol/high`, and `gpt-6-astra/medium`, respectively.
+`high`: `gpt-6.1-sol/low`, `gpt-6.1-sol/high`, and `gpt-6-astra/medium`, respectively.
 The same policy applies to private and work machines. The startup default
 is deliberately the `medium` rung on both machines. Regression tests assert
 that alignment, identical machine policies, and strictly ordered tiers.

@@ -230,7 +230,7 @@ case "${1:-}" in
         if [[ "${2:-}" == "anthropic" ]]; then
             echo '{"provider":"anthropic","model":"","base_url":""}'
         elif [[ "${2:-}" == "cliproxy@private" ]]; then
-            echo '{"provider":"cliproxy","model":"gpt-6-sol","small_model":"gpt-6-luna","haiku_model":"gpt-6-luna","max_context_tokens":1000000,"auto_compact_window":870000,"base_url":"http://127.0.0.1:8317"}'
+            echo '{"provider":"cliproxy","model":"gpt-6.1-sol","small_model":"gpt-6-luna","haiku_model":"gpt-6-luna","max_context_tokens":1000000,"auto_compact_window":870000,"base_url":"http://127.0.0.1:8317"}'
         elif [[ "${TEST_CLAUDE_NO_MODEL:-0}" == 1 ]]; then
             echo '{"provider":"qwen","base_url":"https://dashscope.aliyuncs.com/apps/anthropic"}'
         else
@@ -491,7 +491,7 @@ jq -e '.marker == "old-settings"' "$HOME/.claude/settings.json" >/dev/null
 cmp -s "$TMP_ROOT/claude-core.before-switch" "$BIN/lib/ai/core"
 PATH="$BASE_PATH" "$BIN/claude-manage" switch deepseek@private >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-manage" switch cliproxy@private >/dev/null
-jq -e '.model == "gpt-6-sol"' "$HOME/.claude/settings.json" >/dev/null
+jq -e '.model == "gpt-6.1-sol"' "$HOME/.claude/settings.json" >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-manage" switch qwen@beta >/dev/null
 jq -e '.model == "qwen3-coder-plus"' "$HOME/.claude/settings.json" >/dev/null
 PATH="$BASE_PATH" "$BIN/claude-manage" switch anthropic >/dev/null
@@ -552,7 +552,7 @@ CLAUDE_ARGS_LOG="$claude_args_log" \
 jq -e '.env | has("ANTHROPIC_API_KEY") | not' "$claude_settings_copy" >/dev/null
 jq -e '.env | has("ANTHROPIC_AUTH_TOKEN") | not' "$claude_settings_copy" >/dev/null
 jq -e '.customSecret == "unrelated-user-secret" and
-       .model == "gpt-6-sol" and
+       .model == "gpt-6.1-sol" and
        .env.ANTHROPIC_SMALL_FAST_MODEL == "gpt-6-luna" and
        .env.ANTHROPIC_DEFAULT_HAIKU_MODEL == "gpt-6-luna" and
        .env.ANTHROPIC_BASE_URL == "http://127.0.0.1:8317" and
