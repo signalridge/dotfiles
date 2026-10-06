@@ -7,11 +7,11 @@ versions:
   nixInstallerAarch64LinuxSha256: af6526ae8c81654f895b3a2862f664847f0d3c3fb7bfec3e6ff2959d53738fcd
   nixInstallerX8664LinuxSha256: 9cb91b20e5c71579ee41a8d00e29b679c5fe60e334b61fa8d7d3daac1964b367
   nixVersion: v3.23.0
-  nixpkgsBootstrapRev: c9fe7d12cd78d1adcd12dd15e24432dde5b155a0
+  nixpkgsBootstrapRev: aa48d347080940b8a2b8d2f48228674e280a3514
   aquaInstaller: v4.0.5
   aquaInstallerSha256: 451028d56959cc738564885b1dbebc2691ea038ffde04e2472e4d486a3591146
   aquaVersion: v2.63.0
-  nixIndexDb: 2026-09-27-083517
+  nixIndexDb: 2026-10-04-085218
   paperlib: 3.1.12
   paperlibAmd64Sha256: 993d05c9bb9c8163f2d308736d2316ebf6db8a23b75133a170e22ea6e125746c
   paperlibArm64Sha256: a49ab642331632719079399c15551a6d0c9b16ca2f50a2ef35c297c3a9835459
@@ -28,10 +28,10 @@ versions:
   cursorAgentLinuxX64Sha256: a79726c6e644520e993970be4c45775a6889802b67abe461a677a53219ae28e8
   tpmRev: e261deb1b47614eed3400089ce7197dc68acc4eb
   tpmSha256: 72d92c512270d4857e27519ac97b92a52cf149afe4d92f26860c710f60bbbe37
-  claudeWshobsonAgentsRev: 156b7a5e7a8b93642628a339ee4039c925b34c7f
-  claudeWshobsonAgentsSha256: d1336442351601255c3e15dc8cb0802016163ead9129f967c72a890f4090cd23
-  claudeAnthropicsSkillsRev: 8a1541c4a3ffa5a20a5a91de0dcf3f0bab1d1ef4
-  claudeAnthropicsSkillsSha256: 89c38d91a2d22495d075d3fdd37e674179da044491eee1f1eb678caa986a9db5
+  claudeWshobsonAgentsRev: 46891e7e60da0e52baf1050b7b6391b64e84c6d9
+  claudeWshobsonAgentsSha256: 34fe203b3105dde9e7ce286c3910b50346c57cf23416144485e66980dc592f51
+  claudeAnthropicsSkillsRev: 683bc88e56f3e09ba94f7055977f3d3aa499f202
+  claudeAnthropicsSkillsSha256: 30a1152c163d87852587347c242261d7dd85f2208f25bd9c4b6bf47266a5f4bf
   claudeBaoyuSkillsRev: 1567581c26ec29f4216c6e6835415bf30343b0e3
   phurynPmSkillsRev: 8607e3b077817f89bf4a9b623246219734ac3be0
   uiUxProMaxSkillRev: 477bcb28c9812b385cb51a4605ddf30d7b2266e2
@@ -43,14 +43,14 @@ versions:
   cloudflareSkillsRev: 41e0d19858946d18af9ee2c2feebbe2e11d829ff
   vercelLabsAgentSkillsRev: 063bee94c3f4df8453406c830b0a7df0f2860278
   vercelLabsNextSkillsRev: c522619e45aa3492fd2bfc916b308b275eff7798
-  vercelLabsAgentBrowserRev: 526157cfd4ec64f45939f9ba0f10d5936aa7ac33
+  vercelLabsAgentBrowserRev: 6d3e22c673a44271d0c213c2fef722e0aeba627d
   supabaseAgentSkillsRev: c9be0e931b7930f7d02126d04774d904c381e7d7
-  expoSkillsRev: 13ad8e05874195633b5c185f6947bb6400e228fc
-  microsoftSkillsRev: ce7edea90860e0c69fa36db164584c87908e09f5
+  expoSkillsRev: d4f484024fec15196bfd3c272e953e3f983972cf
+  microsoftSkillsRev: 18eb319b121b92ea19ca911fc3bd4cc53769bb1c
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 18dcb447f090667171ff23666a05d6d387e2aa73
   dailyDevSkillsRev: 6550382385959558cfbacdd9f169199832915407
-  opcSkillsRev: 819ff4dd4764021b5487e3722d32c9b28a81c684
+  opcSkillsRev: 39d5acefc168e2a91d4122d1e362e5d2e5db9268
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 8e899e20ff0cd4dc524af3993e4c62d8ee8c5717
@@ -63,4 +63,4 @@ versions:
   humanizerJaRev: 1b850cfe8529f7836025b2edd15b3d64447f8fb6
   quAiWeiRev: 1d32e803f091ec90808a69683ebf49e8a970a5e7
   drawioSkillRev: 89ff88cb27cd876d9085071d4f73c2502d0492e4
-  beautifyGithubReadmeSkillRev: d48dd84c98fb078cc97a06fbfa113870f433a451
+  beautifyGithubReadmeSkillRev: d6562a5f5c484d069f8560b39c215c9cda4b5a55
