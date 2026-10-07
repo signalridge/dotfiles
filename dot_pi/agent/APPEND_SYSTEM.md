@@ -42,7 +42,7 @@ All installed (aqua/mise/nix). Prefer these over POSIX defaults — don't fall b
 - diff -> `difft` (syntax-aware), `delta` (git pager)
 - code stats -> `tokei`
 - HTTP -> `xh`; load test -> `oha`; DNS -> `doggo`
-- disk / process -> `dust`, `duf`, `procs`, `btm`
+- disk / process -> `dust`, `duf`, `procs`, `btop`
 - benchmark -> `hyperfine`; watch & rerun -> `watchexec`; job queue -> `pueue`
 - task runner -> `just`
 

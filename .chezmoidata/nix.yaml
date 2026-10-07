@@ -34,6 +34,7 @@ nix:
       # drops every flakey-installed package (tmux, wget, ...). See age_command_wrapper.sh.
       - age
       - aria2
+      - btop # Native Darwin build; upstream releases only ship Linux binaries.
       - git
       - certbot
       - dasel

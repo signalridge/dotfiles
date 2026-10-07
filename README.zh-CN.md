@@ -292,7 +292,7 @@ pre-commit run --all-files
 | 多路复用   | `tmux/tmux.conf.tmpl`：TPM 加另外 17 个固定插件（tmux2k 状态栏含自定义 AI agent 段、sessionx、floax、extrakto、resurrect/continuum）；以及 Herdr 的 `herdr/config.toml`。   |
 | macOS 桌面 | `aerospace/`（平铺窗口管理）、`hammerspoon/`（输入法自动切换、麦克风/音量 watcher、Spoons）、`private_karabiner/`、`sofle/`（QMK/Vial 键盘布局）。                          |
 | Git 与评审 | `git/`、`jj/`、`delta/`、`lazygit/`、`git-cliff/`、`gh/`、`gh-dash/`。GitHub 走 HTTPS + `gh` credential helper，**刻意不使用** `insteadOf` 改写。                           |
-| 文件与观测 | `yazi/`、`bat/`、`bottom/`、`procs/`、`slumber/`、`watchexec/`、`tlrc/`、`lazydocker/`，以及 `stern/`、`grype/`、`syft/` 策略文件。                                         |
+| 文件与观测 | `yazi/`、`bat/`、`btop/`、`procs/`、`slumber/`、`watchexec/`、`tlrc/`、`lazydocker/`，以及 `stern/`、`grype/`、`syft/` 策略文件。                                           |
 | 服务与存储 | `systemd/user/`（Linux 上的 `mcp-reaper.service` 与 `.timer`）、`nix/nix.conf`、`gopass/config.tmpl`、`mise/`、`aquaproj-aqua/`、`just/`、`aichat/`、`letsencrypt/`。       |
 
 `tools/wezterm-icon/` 是脚本 `22` 调用的独立 Swift 工具，用于在 Homebrew 替换
@@ -305,15 +305,15 @@ Shell 文件位于 `dot_custom/`，应用到 `~/.custom/`（`exports.sh`、`alia
 并在非交互式 shell 中提前返回。未纳管的 `~/.custom/local.sh` 会最后加载，用于
 本机覆盖。下列 alias 只有在目标命令存在时才会创建：
 
-| Alias                                                 | 目标                                                                             |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `dot`                                                 | `chezmoi`                                                                        |
-| `vi`、`vim`、`view`                                   | `nvim`                                                                           |
-| `ls`、`cat`、`du`、`df`、`man`                        | `eza`、`bat`、`dust`、`duf`、`tldr`                                              |
-| `hf`、`lg`、`lzd`、`top`、`pc`、`dog`、`logv`、`post` | `hyperfine`、`lazygit`、`lazydocker`、`btm`、`procs`、`doggo`、`lnav`、`posting` |
-| `ccm`、`ccw`                                          | `claude-manage`、`claude-with`                                                   |
-| `cxm`、`cxw`                                          | `codex-manage`、`codex-with`                                                     |
-| `k` / `kubectl`                                       | 安装了 `kubecolor` 时使用它；否则 `k` 指向 `kubectl`                             |
+| Alias                                                 | 目标                                                                              |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `dot`                                                 | `chezmoi`                                                                         |
+| `vi`、`vim`、`view`                                   | `nvim`                                                                            |
+| `ls`、`cat`、`du`、`df`、`man`                        | `eza`、`bat`、`dust`、`duf`、`tldr`                                               |
+| `hf`、`lg`、`lzd`、`top`、`pc`、`dog`、`logv`、`post` | `hyperfine`、`lazygit`、`lazydocker`、`btop`、`procs`、`doggo`、`lnav`、`posting` |
+| `ccm`、`ccw`                                          | `claude-manage`、`claude-with`                                                    |
+| `cxm`、`cxw`                                          | `codex-manage`、`codex-with`                                                      |
+| `k` / `kubectl`                                       | 安装了 `kubecolor` 时使用它；否则 `k` 指向 `kubectl`                              |
 
 `la` 和 `ll` 始终存在；`lla`、`lt` 仅在装有 eza 时才定义（使用 eza 的
 `--git`/`--tree`）。`cp`、`mv`、`mkdir` 是带交互/安全选项的 alias

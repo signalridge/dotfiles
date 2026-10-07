@@ -299,7 +299,7 @@ pre-commit run --all-files
 | 多重化             | `tmux/tmux.conf.tmpl`（TPM と、さらに 17 個の固定プラグイン: tmux2k ステータスライン + 独自 AI agent セグメント、sessionx、floax、extrakto、resurrect/continuum）と Herdr の `herdr/config.toml`。 |
 | macOS デスクトップ | `aerospace/`（タイル型ウィンドウ管理）、`hammerspoon/`（入力ソース自動切替、マイク/音量 watcher、Spoons）、`private_karabiner/`、`sofle/`（QMK/Vial レイアウト）。                                 |
 | Git とレビュー     | `git/`、`jj/`、`delta/`、`lazygit/`、`git-cliff/`、`gh/`、`gh-dash/`。GitHub は HTTPS + `gh` credential helper で、`insteadOf` の書き換えは **意図的に使いません**。                               |
-| ファイルと観測     | `yazi/`、`bat/`、`bottom/`、`procs/`、`slumber/`、`watchexec/`、`tlrc/`、`lazydocker/`、および `stern/`、`grype/`、`syft/` のポリシー。                                                            |
+| ファイルと観測     | `yazi/`、`bat/`、`btop/`、`procs/`、`slumber/`、`watchexec/`、`tlrc/`、`lazydocker/`、および `stern/`、`grype/`、`syft/` のポリシー。                                                              |
 | サービスとストア   | `systemd/user/`（Linux の `mcp-reaper.service` と `.timer`）、`nix/nix.conf`、`gopass/config.tmpl`、`mise/`、`aquaproj-aqua/`、`just/`、`aichat/`、`letsencrypt/`。                                |
 
 `tools/wezterm-icon/` は、Homebrew が cask を入れ替えた後にカスタムアイコンを
@@ -314,15 +314,15 @@ return します。管理対象外の `~/.custom/local.sh` は最後に読み込
 固有の上書きに使えます。以下の alias は対象コマンドが存在する場合だけ作成され
 ます。
 
-| Alias                                                 | 対象                                                                             |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `dot`                                                 | `chezmoi`                                                                        |
-| `vi`、`vim`、`view`                                   | `nvim`                                                                           |
-| `ls`、`cat`、`du`、`df`、`man`                        | `eza`、`bat`、`dust`、`duf`、`tldr`                                              |
-| `hf`、`lg`、`lzd`、`top`、`pc`、`dog`、`logv`、`post` | `hyperfine`、`lazygit`、`lazydocker`、`btm`、`procs`、`doggo`、`lnav`、`posting` |
-| `ccm`、`ccw`                                          | `claude-manage`、`claude-with`                                                   |
-| `cxm`、`cxw`                                          | `codex-manage`、`codex-with`                                                     |
-| `k` / `kubectl`                                       | `kubecolor` があればそれ、なければ `k` は `kubectl`                              |
+| Alias                                                 | 対象                                                                              |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `dot`                                                 | `chezmoi`                                                                         |
+| `vi`、`vim`、`view`                                   | `nvim`                                                                            |
+| `ls`、`cat`、`du`、`df`、`man`                        | `eza`、`bat`、`dust`、`duf`、`tldr`                                               |
+| `hf`、`lg`、`lzd`、`top`、`pc`、`dog`、`logv`、`post` | `hyperfine`、`lazygit`、`lazydocker`、`btop`、`procs`、`doggo`、`lnav`、`posting` |
+| `ccm`、`ccw`                                          | `claude-manage`、`claude-with`                                                    |
+| `cxm`、`cxw`                                          | `codex-manage`、`codex-with`                                                      |
+| `k` / `kubectl`                                       | `kubecolor` があればそれ、なければ `k` は `kubectl`                               |
 
 `la` と `ll` は常に定義されます。`lla` と `lt` は eza がある場合のみ定義され、
 eza の `--git`/`--tree` を使います。`cp`、`mv`、`mkdir` は

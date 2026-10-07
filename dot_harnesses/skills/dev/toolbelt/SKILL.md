@@ -110,14 +110,14 @@ are slower, harder to script correctly, and their output is worse to parse.
 
 ## Observability
 
-`btm` (bottom, TUI), `procs`, `dust`, `duf`, `lnav` (log navigator), `sniffnet` (network, TUI),
+`btop` (TUI), `procs`, `dust`, `duf`, `lnav` (log navigator), `sniffnet` (network, TUI),
 `fastfetch`.
 
 ## Interactive TUIs — do NOT invoke from an agent shell
 
 These take over the terminal and will hang a non-interactive call:
 
-`yazi`, `k9s`, `lazygit`, `lazydocker`, `btm`, `jnv`, `nvim`, `atuin`, `sesh`, `slumber`,
+`yazi`, `k9s`, `lazygit`, `lazydocker`, `btop`, `jnv`, `nvim`, `atuin`, `sesh`, `slumber`,
 `posting`, `gum` (without a piped subcommand), `sniffnet`.
 
 `bat` and `glow` page by default — pass `--paging=never` (bat) or redirect, or just use

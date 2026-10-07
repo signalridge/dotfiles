@@ -302,7 +302,7 @@ holds the rest of the workstation:
 | Multiplexers         | `tmux/tmux.conf.tmpl` with TPM and seventeen further plugins (tmux2k statusline with a custom AI-agent segment, sessionx, floax, extrakto, resurrect/continuum), plus `herdr/config.toml` for the Herdr workspace manager. |
 | macOS desktop        | `aerospace/` (tiling window manager), `hammerspoon/` (IME auto-switch, mic/volume watchers, Spoons), `private_karabiner/`, and `sofle/` (QMK/Vial keyboard layout).                                                        |
 | Git and review       | `git/`, `jj/`, `delta/`, `lazygit/`, `git-cliff/`, `gh/`, `gh-dash/`. GitHub access is HTTPS through the `gh` credential helper; there are deliberately **no** `insteadOf` rewrites.                                       |
-| Files and inspection | `yazi/`, `bat/`, `bottom/`, `procs/`, `slumber/`, `watchexec/`, `tlrc/`, `lazydocker/`, and the `stern/`, `grype/`, `syft/` policy files.                                                                                  |
+| Files and inspection | `yazi/`, `bat/`, `btop/`, `procs/`, `slumber/`, `watchexec/`, `tlrc/`, `lazydocker/`, and the `stern/`, `grype/`, `syft/` policy files.                                                                                    |
 | Services and stores  | `systemd/user/` (`mcp-reaper.service` + `.timer` on Linux), `nix/nix.conf`, `gopass/config.tmpl`, `mise/`, `aquaproj-aqua/`, `just/`, `aichat/`, and `letsencrypt/`.                                                       |
 
 `tools/wezterm-icon/` is the standalone Swift helper that script `22` calls to
@@ -317,15 +317,15 @@ shells. An unmanaged `~/.custom/local.sh` is sourced last for machine-local
 overrides. The aliases below are conditional on the target command being
 installed:
 
-| Alias                                                 | Target                                                                           |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `dot`                                                 | `chezmoi`                                                                        |
-| `vi`, `vim`, `view`                                   | `nvim`                                                                           |
-| `ls`, `cat`, `du`, `df`, `man`                        | `eza`, `bat`, `dust`, `duf`, `tldr`                                              |
-| `hf`, `lg`, `lzd`, `top`, `pc`, `dog`, `logv`, `post` | `hyperfine`, `lazygit`, `lazydocker`, `btm`, `procs`, `doggo`, `lnav`, `posting` |
-| `ccm`, `ccw`                                          | `claude-manage`, `claude-with`                                                   |
-| `cxm`, `cxw`                                          | `codex-manage`, `codex-with`                                                     |
-| `k` / `kubectl`                                       | `kubecolor` when installed; otherwise `k` points to `kubectl`                    |
+| Alias                                                 | Target                                                                            |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `dot`                                                 | `chezmoi`                                                                         |
+| `vi`, `vim`, `view`                                   | `nvim`                                                                            |
+| `ls`, `cat`, `du`, `df`, `man`                        | `eza`, `bat`, `dust`, `duf`, `tldr`                                               |
+| `hf`, `lg`, `lzd`, `top`, `pc`, `dog`, `logv`, `post` | `hyperfine`, `lazygit`, `lazydocker`, `btop`, `procs`, `doggo`, `lnav`, `posting` |
+| `ccm`, `ccw`                                          | `claude-manage`, `claude-with`                                                    |
+| `cxm`, `cxw`                                          | `codex-manage`, `codex-with`                                                      |
+| `k` / `kubectl`                                       | `kubecolor` when installed; otherwise `k` points to `kubectl`                     |
 
 `la` and `ll` always exist; `lla` and `lt` are defined only when eza is
 installed (they use eza's `--git`/`--tree` flags). `cp`, `mv`, and `mkdir` are
