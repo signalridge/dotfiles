@@ -9,7 +9,7 @@ registries:
     #     codex-*.zst, so Code Mode failed closed after host became default.
     #   v4.566.0 - Wilfred/difftastic 0.71.0 renamed its assets to
     #     difft-<version>-<arch>-<os>.tar.gz; older refs 404 on install.
-    ref: v4.572.0
+    ref: v4.573.0
   - name: third-party
     type: local
     path: registry.yaml
@@ -22,7 +22,7 @@ packages:
   - name: ogulcancelik/herdr@v0.9.3
     registry: third-party
   # CLIProxyAPI for Claude Code; official release with checksums.txt verification.
-  - name: router-for-me/CLIProxyAPI@v8.0.17
+  - name: router-for-me/CLIProxyAPI@v8.0.20
     registry: third-party
   # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
   # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
@@ -48,14 +48,14 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.292
-  - name: openai/codex@rust-v0.160.1
+  - name: anthropics/claude-code@v2.1.293
+  - name: openai/codex@rust-v0.161.0
   - name: direnv/direnv@v2.38.1
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.10.3
+  - name: jdx/mise@v2026.10.4
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -86,7 +86,7 @@ packages:
   - name: neovim/neovim@v0.12.5
   - name: LuaLS/lua-language-server@3.19.1
   - name: tree-sitter/tree-sitter@v0.27.0
-  - name: jj-vcs/jj@v0.45.1
+  - name: jj-vcs/jj@v0.46.0
   - name: rclone/rclone@v1.75.1
   - name: o2sh/onefetch@3.0.0
   - name: ip7z/7zip@26.04
@@ -117,7 +117,7 @@ packages:
   - name: orhun/git-cliff@v2.14.2
   - name: numtide/treefmt@v2.6.0
   - name: XAMPPRocky/tokei@15.0.0
-  - name: sharkdp/hyperfine@v1.21.0
+  - name: sharkdp/hyperfine@v2.0.0
   - name: hatoo/oha@v1.16.0
   - name: dalance/procs@v0.14.12
   - name: sharkdp/hexyl@v0.17.0
