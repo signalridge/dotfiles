@@ -95,16 +95,6 @@ claude:
       disable_nonessential_traffic: true
       models:
         - ark-code-latest
-    # CLIProxyAPI local gateway (Codex OAuth is handled by the proxy, not Claude Code).
-    cliproxy:
-      base_url: http://127.0.0.1:8317
-      default_model: gpt-6.1-sol
-      timeout_ms: 600000
-      models:
-        - gpt-6-luna
-        - gpt-6.1-sol
-        - gpt-6-sol # Manual rollback option
-        - gpt-6-astra
   # ===== Account Configurations =====
   # Format: provider or provider@account
   # Fields: model, small_model, haiku_model, sonnet_model, opus_model, timeout_ms
@@ -141,17 +131,6 @@ claude:
       small_model: claude-haiku-4-5-20251001
     # Third-party accounts (format: provider@label)
     # Add your own: deepseek@work, kimi@personal, etc.
-    cliproxy@private:
-      provider: cliproxy
-      model: gpt-6.1-sol
-      # Assumed 1M context / 130K reserve; not verified on the Codex OAuth route.
-      max_context_tokens: 1000000
-      auto_compact_window: 870000
-      small_model: gpt-6-luna
-      haiku_model: gpt-6-luna
-      sonnet_model: gpt-6.1-sol
-      opus_model: gpt-6-astra
-      subagent_model: gpt-6.1-sol
     deepseek@private:
       provider: deepseek
       model: deepseek-v4-pro[1m]

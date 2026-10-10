@@ -21,7 +21,7 @@ packages:
     registry: third-party
   - name: ogulcancelik/herdr@v0.9.3
     registry: third-party
-  # CLIProxyAPI for Claude Code; official release with checksums.txt verification.
+  # CLIProxyAPI for OpenAI-compatible clients; official release with checksums.txt verification.
   - name: router-for-me/CLIProxyAPI@v8.0.23
     registry: third-party
   # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the

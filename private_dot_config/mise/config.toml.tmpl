@@ -76,6 +76,11 @@ lua = "5.4"
 # satisfied by `node = "lts"` above. Auth/config under ~/.pi/agent (chezmoi-managed).
 "npm:@earendil-works/pi-coding-agent" = "latest"
 
+# DeepSeek Harness (developer preview). Pin the tested release: upstream warns
+# of breaking changes, so upgrade explicitly rather than through `mise up`.
+# `dsh-with web` reuses OpenAI OAuth via the existing local CLIProxyAPI.
+"npm:@deepseek-ai/dsh" = "0.2.0-rc.2"
+
 # AI coding usage analyzers
 "npm:ccusage" = "latest"
 "npm:@ccusage/codex" = "latest"

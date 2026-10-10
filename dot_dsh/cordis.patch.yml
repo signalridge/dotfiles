@@ -1,0 +1,38 @@
+# Home-level defaults apply to every profile, after Web UI settings.
+# OAuth remains owned/refreshed by CLIProxyAPI; only its local client key is
+# supplied by dsh-with. No credentials or OAuth grants live in this file.
+- id: llm-pi-ai
+  config:
+    providers:
+      cliproxy:
+        displayName: OpenAI (OAuth via CLIProxyAPI)
+        apiKeyEnv: CLIPROXY_API_KEY
+        api: openai-responses
+        baseURL: http://127.0.0.1:8317/v1
+        reasoning: high
+        compat:
+          supportsMaxOutputTokens: false
+        models:
+          - id: gpt-6.1-sol
+            name: GPT-6.1 Sol
+            contextWindow: 1000000
+            maxTokens: 32768
+            input: [text, image]
+            reasoningEfforts:
+              low: low
+              medium: medium
+              high: high
+# Shared default for NEW Web and headless sessions. Old sessions keep their
+# logged model; create a new session after switching this default.
+- id: agent-default-model
+  config:
+    provider: cliproxy
+    model: gpt-6.1-sol
+    reasoningEffort: high
+# These controls stop additional log/feedback uploads, not model API requests.
+- id: session-log-deepseek
+  config:
+    enabled: false
+- id: session-telemetry-otel
+  config:
+    mode: DISABLED

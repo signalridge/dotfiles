@@ -325,8 +325,7 @@ EXISTING="$(cat)"
      user had chosen (xhigh, personal) so that apply would not revert them — a
      hand-maintained mirror of runtime state, which is the thing this file
      exists to stop doing. Seeding it keeps the fresh-machine default without
-     owning the key. The cliproxy account starts at high (Sol); other accounts
-     retain their existing fresh-machine defaults. See commit 05b5a4b, which removed CLAUDE_CODE_EFFORT_LEVEL
+     owning the key. See commit 05b5a4b, which removed CLAUDE_CODE_EFFORT_LEVEL
      for the same reason: an env var pin blocked /effort outright.
 
      enabledPlugins and extraKnownMarketplaces are here because
@@ -336,7 +335,7 @@ EXISTING="$(cat)"
      reverted on the next apply. Objects merge recursively, so the seed and the
      user's own entries coexist. */ -}}
 {{- $fallback := dict
-      "effortLevel" (ternary "high" (ternary "medium" "xhigh" $work) (eq $accountKey "cliproxy@private"))
+      "effortLevel" (ternary "medium" "xhigh" $work)
       "enabledPlugins" (dict
         "notion-workspace-plugin@notion-plugin-marketplace" true
         "slack@claude-plugins-official" true)

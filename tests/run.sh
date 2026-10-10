@@ -11,6 +11,7 @@ echo "== Running bootstrap tests =="
 
 bash "$ROOT/tests/test_template_suffixes.sh"
 bash "$ROOT/tests/test_harness_config_alignment.sh"
+bash "$ROOT/tests/test_deepseek_harness.sh"
 python3 "$ROOT/tests/test_setup_encryption_key.py"
 bash "$ROOT/tests/test_init_args.sh"
 bash "$ROOT/tests/test_github_https_normalization.sh"

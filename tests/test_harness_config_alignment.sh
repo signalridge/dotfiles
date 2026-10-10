@@ -34,7 +34,7 @@ if render_ignore | grep -Fq '.cli-proxy-api/config.yaml'; then
 fi
 render_ignore --override-data '{"useEncryption":false}' | grep -Fq '.cli-proxy-api/config.yaml'
 
-# CLIProxyAPI shares its inbound key with claude-with. Stub gopass so this
+# CLIProxyAPI shares its inbound key with dsh-with. Stub gopass so this
 # check is hermetic and never prints a real client key.
 mkdir -p "$tmp_root/bin"
 cat >"$tmp_root/bin/gopass" <<'STUB'
@@ -59,28 +59,18 @@ assert 'host: "127.0.0.1"' in config
 assert 'port: 8317' in config
 assert '  secret-key: ""' in config
 assert '  - "test-client-key"' in config
-assert '        - name: "gpt-6.1-sol"' in config
-assert '        - name: "gpt-6-sol"' in config
-assert config.count('          protocol: "codex"') == 2
-assert config.count('          from-protocol: "claude"') == 2
-assert config.count('            - "reasoning.effort": "xhigh"') == 2
-assert '        "reasoning.effort": "high"' in config
+# DeepSeek Harness uses OpenAI Responses directly; no Claude payload rewrites.
+assert not any(line.strip().startswith('payload:') for line in config.splitlines())
+assert 'from-protocol:' not in config
+assert 'reasoning.effort' not in config
 PY
 # CI has no private gopassRepository; supply a harmless synthetic URL.
 chezmoi execute-template --source "$ROOT" \
     --override-data '{"gopassRepository":"https://github.com/example/gopass.git"}' \
     --file "$ROOT/private_dot_config/gopass/config.tmpl" | grep -q 'sshkeys = true'
 chezmoi data --source "$ROOT" --format json | jq -e '
-    .claude.providers.cliproxy |
-    .default_model == "gpt-6.1-sol" and
-    (.models as $models |
-     ["gpt-6-luna", "gpt-6.1-sol", "gpt-6-sol", "gpt-6-astra"] |
-     all(. as $model | $models | index($model) != null))' >/dev/null
-chezmoi data --source "$ROOT" --format json | jq -e '
-    .claude.accounts["cliproxy@private"] |
-    .model == "gpt-6.1-sol" and .subagent_model == "gpt-6.1-sol" and
-    .small_model == "gpt-6-luna" and .haiku_model == "gpt-6-luna" and
-    .sonnet_model == "gpt-6.1-sol" and .opus_model == "gpt-6-astra"' >/dev/null
+    (.claude.providers | has("cliproxy") | not) and
+    (.claude.accounts | has("cliproxy@private") | not)' >/dev/null
 
 # Claude Code settings are a modify_ script, not a full-file template: the CLI
 # rewrites ~/.claude/settings.json at runtime (`/model`, `/effort`, `/config`,
@@ -96,24 +86,33 @@ jq -e '.["skipDangerousModePermissionPrompt"] == true and
        (.effortLevel | type) == "string"' \
     "$tmp_root/claude.json" >/dev/null
 
-# The proxy account seeds high effort on a fresh settings file, while a
-# user-selected effort still wins on subsequent applies.
+# Fresh settings seed personal xhigh / work medium without remapping, while
+# user-selected effort still wins on subsequent applies for both profiles.
 # --override-data replaces source data on CI; include the Claude provider data
 # explicitly instead of relying on a personal chezmoi config to supply it.
-chezmoi data --source "$ROOT" --format json |
-    jq --arg account 'cliproxy@private' '{claude: .claude, claudeProviderAccount: $account}' \
-        >"$tmp_root/claude-proxy-data.json"
-chezmoi execute-template --source "$ROOT" \
-    --override-data-file "$tmp_root/claude-proxy-data.json" \
-    --file "$ROOT/dot_claude/modify_settings.json.tmpl" >"$tmp_root/claude-proxy.sh"
-printf '' | bash "$tmp_root/claude-proxy.sh" | jq -e \
-    '.env.ANTHROPIC_MODEL == "gpt-6.1-sol" and .effortLevel == "high" and
-     .env.ANTHROPIC_DEFAULT_SONNET_MODEL == "gpt-6.1-sol" and
-     .env.CLAUDE_CODE_SUBAGENT_MODEL == "gpt-6.1-sol" and
-     .env.CLAUDE_CODE_MAX_CONTEXT_TOKENS == "1000000" and
-     .env.CLAUDE_CODE_AUTO_COMPACT_WINDOW == "870000"' >/dev/null
-printf '{"effortLevel":"low"}' | bash "$tmp_root/claude-proxy.sh" | jq -e \
-    '.effortLevel == "low"' >/dev/null
+for machine in personal work; do
+    work=false
+    effort=xhigh
+    if [[ "$machine" == work ]]; then
+        work=true
+        effort=medium
+    fi
+    chezmoi data --source "$ROOT" --format json |
+        jq --argjson work "$work" \
+            '{claude: .claude, claudeProviderAccount: "anthropic", work: $work}' \
+            >"$tmp_root/claude-$machine-data.json"
+    chezmoi execute-template --source "$ROOT" \
+        --override-data-file "$tmp_root/claude-$machine-data.json" \
+        --file "$ROOT/dot_claude/modify_settings.json.tmpl" >"$tmp_root/claude-$machine.sh"
+    bash -n "$tmp_root/claude-$machine.sh"
+    printf '' | bash "$tmp_root/claude-$machine.sh" | jq -e --arg effort "$effort" \
+        '.effortLevel == $effort' >/dev/null
+    for user_effort in low high xhigh max; do
+        printf '{"effortLevel":"%s"}' "$user_effort" |
+            bash "$tmp_root/claude-$machine.sh" | jq -e --arg effort "$user_effort" \
+            '.effortLevel == $effort' >/dev/null
+    done
+done
 chezmoi data --source "$ROOT" --format json |
     jq --arg account anthropic '{claude: .claude, claudeProviderAccount: $account}' \
         >"$tmp_root/claude-native-data.json"

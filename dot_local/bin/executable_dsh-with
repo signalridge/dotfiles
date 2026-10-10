@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# DeepSeek Harness using the existing OpenAI OAuth login via CLIProxyAPI.
+# The local proxy key is runtime-only; OAuth tokens stay owned by CLIProxyAPI.
+# Usage: dsh-with [web | headless "prompt" | other dsh arguments]
+# Overrides: CLIPROXY_API_KEY, DSH_GOPASS_PATH.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/common"
+require_cmd mise
+
+# Help/version/config inspection must not require an unlocked secret store.
+needs_key=true
+for arg in "$@"; do
+    case "$arg" in
+        -h|--help|-V|--version|--dump-config|--dump-default-config|--dump-config-schema)
+            needs_key=false
+            ;;
+    esac
+done
+
+if [[ "$needs_key" == true && -z "${CLIPROXY_API_KEY:-}" ]]; then
+    secret_path="${DSH_GOPASS_PATH:-claude/cliproxy/private/api_key}"
+    if ! CLIPROXY_API_KEY=$(gopass_show_secret "$secret_path" 5) || [[ -z "$CLIPROXY_API_KEY" ]]; then
+        log_error "Cannot read CLIProxyAPI key from gopass: $secret_path"
+        printf '%s\n' 'Unlock gopass, set DSH_GOPASS_PATH, or supply CLIPROXY_API_KEY.' >&2
+        exit 1
+    fi
+    export CLIPROXY_API_KEY
+fi
+
+# No arguments opens the Web UI. mise resolves the binary even in shells whose
+# PATH was initialized before the new tool was installed. Preserve the cwd.
+if [[ $# -eq 0 ]]; then
+    set -- web
+fi
+exec mise exec -- dsh "$@"

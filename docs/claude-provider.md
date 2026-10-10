@@ -53,7 +53,6 @@ The current provider definitions are:
 - `qwen`
 - `minimax`
 - `doubao`
-- `cliproxy` (local CLIProxyAPI gateway)
 
 The configured accounts are:
 
@@ -61,76 +60,14 @@ The configured accounts are:
 - `deepseek@private`
 - `doubao@private`
 - `kimi@private`
-- `cliproxy@private`
 
 Provider URLs, model lists, defaults, and account model routing are maintained
 in `.chezmoidata/claude.yaml`. Do not copy model names from an old example in
 this document; the YAML file is the source of truth.
 
-## CLIProxyAPI (OpenAI OAuth → Claude Code)
-
-`cliproxy@private` sends Claude Code's Anthropic-compatible requests to the
-localhost-only CLIProxyAPI server, which authenticates upstream with its own
-OpenAI Codex OAuth login. Pi and the native Anthropic account are unchanged.
-The account uses `gpt-6.1-sol` by default and for Sonnet, `gpt-6-luna` for
-small/Haiku, and `gpt-6-astra` for Opus. The older `gpt-6-sol` remains a manual
-rollback option. Confirm the selected models appear in the authenticated
-proxy's `/v1/models` before use; a public API listing does not establish Codex
-OAuth entitlement.
-
-1. The proxy's inbound key lives in gopass at
-   `claude/cliproxy/private/api_key` (shared by the proxy config and
-   `claude-token`); never commit it or an OAuth token. On a new machine, create
-   it with `openssl rand -hex 32 | gopass insert -f -m claude/cliproxy/private/api_key`.
-2. Apply chezmoi after the key is present. Machines without the key skip the
-   proxy config and its LaunchAgent; if the key exists but cannot be decrypted,
-   rendering fails rather than starting an unauthenticated server. If the key
-   was restored by the same apply, apply again to render the config and agent.
-3. CLIProxyAPI is managed by the existing **aqua** toolchain, not Homebrew or
-   an ad hoc binary download. `private_dot_config/aquaproj-aqua/aqua.yaml` pins
-   the official `router-for-me/CLIProxyAPI` release; the local registry maps
-   its binary to `cliproxyapi` and verifies `checksums.txt`. A full
-   `chezmoi apply` runs the aqua install step automatically. Check with
-   `command -v cliproxyapi` afterward.
-
-4. Complete the interactive OpenAI login with
-   `cliproxyapi --config "$HOME/.cli-proxy-api/config.yaml" --codex-login`
-   (callback port 1455). CLIProxyAPI stores its rotating OAuth credentials
-   under `~/.cli-proxy-api/`, outside the repository and gopass.
-5. On macOS, `chezmoi apply` installs and loads the per-user LaunchAgent
-   `com.signalridge.cliproxyapi`. It starts at login and restarts on exit;
-   it is **not** a system-wide service while logged out. If the proxy was
-   started manually, stop it with Ctrl-C **before** applying to avoid a port
-   conflict. Check `launchctl print gui/$(id -u)/com.signalridge.cliproxyapi`
-   and `~/Library/Logs/cliproxyapi.launchd.log` if it does not start.
-   It binds only `127.0.0.1:8317`, with management API disabled. Confirm the
-   three models via authenticated `/v1/models`, then run
-   `claude-manage test cliproxy@private` before switching accounts.
-6. Use `claude-with cliproxy@private` for one session, or
-   `claude-manage switch cliproxy@private` to persist the default (restart
-   Claude Code afterward). The default model is `gpt-6.1-sol`; Claude Code's
-   `effortLevel` is user-owned, so set it to `high` with `/effort high` once
-   and subsequent chezmoi applies preserve that choice. A fresh settings
-   file on this account also seeds `high`. Switch back with
-   `claude-manage switch anthropic`.
-
-Claude Code may not know this non-Anthropic model ID in its own catalog. The
-`cliproxy@private` account explicitly assumes a 1,000,000-token context via
-`CLAUDE_CODE_MAX_CONTEXT_TOKENS` (without changing the model ID sent to the
-proxy) and auto-compacts at 870,000 tokens. The intended 130,000-token
-reserve is **unverified** on the Codex OAuth route: OpenAI's public API lists
-922,000 maximum input tokens for 6.1 Sol, which would leave only 52,000
-between this trigger and that limit if the routes behave alike. If requests
-fail before compaction, lower the account's window and compact threshold
-together. For both the new default and the older manual rollback Sol,
-CLIProxyAPI's conditional Codex payload override clamps a Claude Code request
-for `xhigh` to upstream `high`; requests for `low`, `medium`, or `high` remain
-unchanged. This is a local policy (6.1 supports xhigh), independent of the
-client-side `effortLevel: high` default.
-
-> **Risk:** CLIProxyAPI routes Codex OAuth traffic through the ChatGPT Codex
-> backend rather than the public Platform API. Check the provider's terms and
-> account eligibility before use; a proxy does not grant extra entitlement.
+Claude Code has no CLIProxyAPI provider or account. The local proxy remains
+available to [DeepSeek Harness](deepseek-harness.md) over OpenAI Responses;
+its legacy `claude/` secret path does not enable Claude Code routing.
 
 ## API-key paths
 

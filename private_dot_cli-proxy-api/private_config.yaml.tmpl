@@ -1,4 +1,5 @@
-{{- /* The inbound client key is shared with claude-with's gopass-backed apiKeyHelper.
+{{- /* The inbound client key is shared with dsh-with; its legacy claude/ prefix
+       is only a storage path, not a Claude Code integration.
        Fail rendering if it is missing; do not start an unauthenticated proxy. */ -}}
 {{- $apiKey := output "gopass" "show" "--password" "claude/cliproxy/private/api_key" | trim -}}
 {{- if not $apiKey -}}{{ fail "missing gopass key: claude/cliproxy/private/api_key" }}{{- end -}}
@@ -11,23 +12,5 @@ remote-management:
   disable-control-panel: true
 api-keys:
   - {{ $apiKey | quote }}
-# Only when a Claude Code request for Sol asks for xhigh: clamp the translated
-# Codex payload to high, including the older manual rollback model.
-# Preserve low/medium/high and other request protocols.
-payload:
-  override:
-    - models:
-        - name: "gpt-6.1-sol"
-          protocol: "codex"
-          from-protocol: "claude"
-          match:
-            - "reasoning.effort": "xhigh"
-        - name: "gpt-6-sol"
-          protocol: "codex"
-          from-protocol: "claude"
-          match:
-            - "reasoning.effort": "xhigh"
-      params:
-        "reasoning.effort": "high"
 debug: false
 logging-to-file: false
