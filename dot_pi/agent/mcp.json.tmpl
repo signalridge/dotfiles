@@ -1,60 +1,28 @@
 {{- /*
-  ~/.pi/agent/mcp.json — MCP servers for the pi-mcp-adapter extension.
-  Same shape as codex/claude MCP config. stdio servers reuse the shared
-  ~/.local/bin/mcp-* wrappers; remote servers use "url". Managed by chezmoi
-  (dot_pi/agent/mcp.json.tmpl). The adapter package is declared in
-  .chezmoidata/pi.yaml and merged into ~/.pi/agent/settings.json.
-
-  directTools: the adapter defaults to PROXY-ONLY — every MCP server hides
-  behind a single `mcp` dispatcher tool, so the model must do a discover→invoke
-  dance to reach any tool. In practice the GLM-5.2 main loop never does it:
-  across all session history only 5 `mcp` calls fired (all bare connect/list,
-  ZERO real tool invocations) vs. 4000+ native bash/read/grep/edit calls. So we
-  register the frequently-relevant servers as FIRST-CLASS tools (directTools:
-  true) — they show up in the tool list alongside read/bash/edit and get called
-  like any native tool. The `mcp` proxy is KEPT (no disableProxyTool) as the
-  fallback for the niche servers left on proxy (arxiv: many tools; markitdown:
-  rare). Cost ~150-300 tokens/tool in the system prompt. Direct tools register
-  from mcp-cache.json, so no startup connection is needed; on first add a server
-  falls back to proxy until its cache populates (force with /mcp reconnect).
-*/ -}}
-{{- /*
-  showStatusIcon false: the footer is text-first. pi-statusline applies its own
-  semantic colors and its own icon map (empty by default), so a badge is the
-  user's choice, never an extension's. The adapter otherwise prefixes its status
-  with a plug emoji, and it arrives wrapped in the adapter's own ANSI color,
-  which is what let it slip past the footer's icon strip. Turning it off here
-  also fixes the currently published pi-statusline, which predates that strip.
+  ~/.pi/agent/mcp.json — standard MCP server definitions, read by Pi and
+  pi-mcp-adapter. Keep only transport/client fields here. Adapter-only settings
+  and per-server overrides live in dot_pi/agent/mcp-adapter.json.tmpl; putting
+  lifecycle, directTools, or settings here is ignored and warns at startup.
+  The adapter package is declared in .chezmoidata/pi.yaml.
 */ -}}
 {
-  "settings": {
-    "showStatusIcon": false
-  },
   "mcpServers": {
     "context7": {
-      "url": "https://mcp.context7.com/mcp",
-      "lifecycle": "lazy",
-      "directTools": true
+      "url": "https://mcp.context7.com/mcp"
     },
     "deepwiki": {
-      "url": "https://mcp.deepwiki.com/mcp",
-      "lifecycle": "lazy",
-      "directTools": true
+      "url": "https://mcp.deepwiki.com/mcp"
     },
     "gitmcp": {
-      "url": "https://gitmcp.io/docs",
-      "lifecycle": "lazy",
-      "directTools": true
+      "url": "https://gitmcp.io/docs"
     },
     "markitdown": {
       "command": "uvx",
-      "args": ["markitdown-mcp"],
-      "lifecycle": "lazy"
+      "args": ["markitdown-mcp"]
     },
     "arxiv": {
       "command": "uv",
-      "args": ["tool", "run", "arxiv-mcp-server"],
-      "lifecycle": "lazy"
+      "args": ["tool", "run", "arxiv-mcp-server"]
     }
   }
 }

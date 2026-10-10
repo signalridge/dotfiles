@@ -1,0 +1,38 @@
+{{- /*
+  ~/.pi/agent/mcp-adapter.json — pi-mcp-adapter settings and partial per-server
+  overrides. The adapter merges these over the standard mcp.json definitions;
+  do not duplicate URLs/commands here, so there is one transport source of truth.
+
+  Keep every server lazy. Expose the frequently used documentation/repository
+  servers as first-class tools, while keeping the mcp proxy for arxiv and
+  markitdown. Direct tools use cached metadata and need no startup connection
+  when the cache is valid; populate a new server with /mcp reconnect.
+
+  The footer is text-first: pi-statusline owns semantic colors and icons, so
+  disable the adapter's plug badge rather than embedding an extra icon in it.
+*/ -}}
+{
+  "settings": {
+    "showStatusIcon": false
+  },
+  "mcpServers": {
+    "context7": {
+      "lifecycle": "lazy",
+      "directTools": true
+    },
+    "deepwiki": {
+      "lifecycle": "lazy",
+      "directTools": true
+    },
+    "gitmcp": {
+      "lifecycle": "lazy",
+      "directTools": true
+    },
+    "markitdown": {
+      "lifecycle": "lazy"
+    },
+    "arxiv": {
+      "lifecycle": "lazy"
+    }
+  }
+}
