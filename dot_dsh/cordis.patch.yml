@@ -15,8 +15,12 @@
         models:
           - id: gpt-6.1-sol
             name: GPT-6.1 Sol
-            contextWindow: 1000000
-            maxTokens: 32768
+            # CPA Responses accepted 921,361 input tokens; ~922K was rejected
+            # (2026-10-11). The public API's total window is not input capacity.
+            contextWindow: 921000
+            # max_output_tokens is not sent on this OAuth-backed route. Match
+            # native output metadata so dsh reserves 128K, not a fictional 32K.
+            maxTokens: 128000
             input: [text, image]
             reasoningEfforts:
               low: low

@@ -42,117 +42,52 @@ pi:
     # interactive turn and an unqualified spawn use the same rung.
     #
     # The route is native Codex OAuth in ~/.pi/agent/auth.json; the openai-codex
-    # block emits no apiKey. Astra retains its derived 921,000 contextWindow
-    # override; Sol uses the built-in 272,000 catalog window until its actual
-    # input ceiling is independently verified.
+    # block emits no apiKey. Sol and Astra's 921,000 contextWindow overrides
+    # are directly verified on Codex OAuth (2026-10-11). See modelOverrides
+    # below; request acceptance is not a recall-quality benchmark.
     #
     # opencode-go, Kimi Code and the DIRECT DeepSeek platform all stay configured
     # and are one `/model` switch away. They differ in billing (flat allowance vs
     # per-token) and in key (`pi/opencode/api_key` vs `pi/deepseek/api_key`);
-    # `deepseek/deepseek-v4-flash` remains the verified per-token fallback.
+    # `deepseek/deepseek-flash` is the native direct-route fallback ID.
     defaultProvider: openai-codex
     # The parent model + effort are still emitted from
     # dot_pi/agent/modify_settings.json.tmpl rather than from here, because that is
     # where settings.json is assembled. Both machines resolve to gpt-6.1-sol
     # at high. This is the `medium` tier verbatim, where an unqualified
     # spawn lands.
-    # Pi remains configured independently from Codex.
-    # Trigger threshold = contextWindow - reserveTokens, where contextWindow is
-    # the ACTIVE provider/model's. reserveTokens is a single global number, so it
-    # has to satisfy every candidate:
-    #   openai-codex  gpt-6-astra        921K   (high tier, derived pin)
-    #   openai-codex  gpt-6.1-sol        272K   (low + medium + startup)
-    #   opencode-go   deepseek-v4-flash  1M     (the /model fallback)
-    # Sol's unprobed input ceiling is NOT assumed to match Astra's 921K pin;
-    # all three candidates have a 128K output cap.
-    # 921K is a measured INPUT ceiling for the former gpt-5.6-luna default;
-    # Astra inherits it by derivation, not a direct probe. Sol retains its
-    # published catalog value. See modelOverrides below for the distinction.
-    # The startup default is now gpt-6.1-sol. Both Sol and the fallback are
-    # capped at maxTokens 128000 — natively on Codex, by the modelOverrides pin
-    # on flash — so the reserve
-    # floor is the same for both. The old hazard this paragraph used to warn
-    # about (a 372K fallback window that a large reserve would push permanently
-    # over the threshold) died with the 372K pin itself.
-    # A reserve sized for flash's real 384K output cap (>= 384000) would still be
-    # wrong for the same reason it always was. That is why BOTH deepseek-v4-flash
-    # entries below (the opencode-go one and the direct one) carry a
-    # `modelOverrides` pin of maxTokens 128000 over the built-in registry's true
-    # 384000 — see the comments there. Every other model keeps its real output
-    # cap, so a /model switch to e.g. grok-4.5 (500K out) or kimi-k2.7-code
-    # (262K) re-enters this landmine.
-    #
-    # SIZING (measured 2026-08-09, not theoretical). Pi evaluates the threshold
-    # at only two points — after an agent run ends and before the next prompt
-    # (the two `_checkCompaction` call sites in core/agent-session.js) — and
-    # NEVER between tool calls. reserveTokens is therefore not just a trigger
-    # offset: it is the UNCHECKED HEADROOM that one entire tool loop plus its
-    # final response has to fit inside. Size it against a loop, not a turn.
-    # Evidence under the previous 40K reserve (trigger 332K):
-    #   - session 2026-08-08T15-57 (~/.pi/agent/sessions): 76 of 88 assistant
-    #     messages stopped on `toolUse`, i.e. unchecked; compaction actually
-    #     fired at tokensBefore=360452 — 28K past the trigger, 11K from the wall.
-    #   - other sessions lost the race outright: consecutive toolUse messages
-    #     climbing 360731 -> 370478, then "Your input exceeds the context window
-    #     of this model" (>=0.84.0 then compact-and-retries, at the cost of a
-    #     wasted request); one truncated at `length` with tot=371566.
-    # maxTokens is 128K for all three candidates — natively on codex, and by
-    # the modelOverrides pin in the opencode-go block below — so 128K is the
-    # correctness floor: a single maximal response must not be able to cross the
-    # wall on its own. 130K clears that floor and leaves 130K of unchecked
-    # headroom instead of 40K. This lowers the probability of hitting the wall;
-    # it cannot eliminate it, because no threshold can bound growth that is never
-    # measured. Where 130K lands, per active model:
-    #   openai-codex/gpt-6-astra       921K -> trigger 791K (derived pin)
-    #   openai-codex/gpt-6.1-sol       272K -> trigger 142K (catalog value)
-    #   opencode-go/deepseek-v4-flash  1M   -> trigger 870K
-    # THE COMPARISON IS AGAINST INPUT. Do not pin Sol to 921K without a probe.
-    # `shouldCompact(contextTokens, contextWindow, settings)` is exactly
-    # `contextTokens > contextWindow - settings.reserveTokens`
-    # (pi-agent-core/dist/harness/compaction/compaction.js:125). contextTokens is
-    # conversation input, so `contextWindow` has to be the number the request
-    # will actually be REJECTED at, not the number on the spec sheet. Pinning the
-    # advertised 1,050,000 instead — as this file briefly did on 2026-08-20 —
-    # put the trigger at 920,000 against luna's ~922,000 wall, reducing unchecked
-    # headroom from 130,000 to about 2,000. Luna's 921,000 pin restored the
-    # measured headroom; Astra's matching pin remains an unverified derivation.
-    # Note reserveTokens is double-duty — the summary's own output budget is
-    # min(0.8*reserveTokens, maxTokens) = 104K here (core/compaction/
-    # compaction.js), a cap rather than a target.
-    # OPEN QUESTION, deliberately not guessed at: the deepseek fallback's
-    # 1,000,000 is a built-in advertised window and has NOT been probed for the
-    # same input/output-reserve gap. If it has one, its 870K trigger is
-    # optimistic in the same way. Probe it before relying on that route for a
-    # very long session.
-    # Pricing, codex only: everything above 272K input bills at 2x input / 1.5x
-    # output for the FULL request. The Astra 791K trigger can enter this premium
-    # tier; the Sol 142K trigger stays below it. This is the accepted tradeoff of
-    # the derived Astra pin versus Sol's unprobed catalog window. DeepSeek has no equivalent
-    # cliff — one flat per-token rate (discounted off-peak), no context-length
-    # tier — so the 870K trigger on the fallback is a context-safety number only.
-    #
-    # This is now the ONLY compaction trigger. The locally authored
-    # pi-early-compaction extension was deleted on 2026-08-08: it re-checked the
-    # same `contextWindow - reserveTokens` inequality at every tool-use turn_end
-    # with a hardcoded reserve of 96000 — identical to the native value — and
-    # drove it through `ctx.compact()`, whose first act is `await this.abort()`.
-    # That abort ends the agent run, so pi's own post-run `_checkCompaction`
-    # fired on the same crossing and raced the extension's still-in-flight
-    # manual compaction. Both prepared from the same state (identical
-    # `Compacted from N tokens` lines); the loser threw `Already compacted`.
-    # Same trap that removed pi-continue. Do NOT reintroduce a second trigger
-    # sharing this threshold. A LOWER threshold would dodge that particular race
-    # (the native check would see a sub-threshold context and return false), but
-    # it is still not a fix: `ctx.compact()` opens with `await this.abort()`,
-    # which ends the agent run — so any extension-driven mid-loop compaction
-    # severs the tool loop it was meant to protect. Sizing reserveTokens is the
-    # only clean lever pi exposes; there is no interval/percentage knob
-    # (getCompactionSettings reads exactly enabled/reserveTokens/
-    # keepRecentTokens).
+    # Native compaction: contextTokens > contextWindow - reserveTokens.
+    # Reserves are MODEL-SPECIFIC, not a global 130K floor. The 16K baseline
+    # keeps a 128K model such as Codex Spark usable (trigger 111,616 instead of
+    # -2,000). Known larger windows get explicit budgets below.
+    # Sol/Astra: measured 921K input window, 130K reserve -> trigger 791K.
+    # Flash/Qwen Coder/Kimi K3: catalog 1M window, 130K reserve -> trigger 870K;
+    # these 1M backend input walls have not been directly probed here.
+    # Smaller custom models reserve their output budget plus about 16K for
+    # new input/tool data, rather than inheriting 130K from a different model.
+    # Pi 1.1.0 also checks projected context between tool batches and clamps
+    # ordinary output budgets to remaining context; a large catalog output cap
+    # alone does not establish an overflow. Codex requests omit max_output_tokens.
+    # Probe evidence and reload instructions: docs/pi-context-windows.md.
     compaction:
       enabled: true
-      reserveTokens: 130000
+      reserveTokens: 16384
       keepRecentTokens: 16000
+      modelOverrides:
+        openai-codex/gpt-6.1-sol: { reserveTokens: 130000 }
+        openai-codex/gpt-6-astra: { reserveTokens: 130000 }
+        openai-codex/gpt-5.6-luna: { reserveTokens: 130000 }
+        openai-codex/gpt-5.6-sol: { reserveTokens: 130000 }
+        openai-codex/gpt-5.6-terra: { reserveTokens: 130000 }
+        opencode-go/deepseek-v4-flash: { reserveTokens: 130000 }
+        deepseek/deepseek-flash: { reserveTokens: 130000 }
+        kimi/k3: { reserveTokens: 130000 }
+        kimi/k3-256k: { reserveTokens: 49152 }
+        kimi/kimi-for-coding: { reserveTokens: 49152 }
+        kimi/kimi-for-coding-highspeed: { reserveTokens: 49152 }
+        qwen/qwen3-coder-plus: { reserveTokens: 130000 }
+        qwen/qwen3-max: { reserveTokens: 81920 }
+        doubao/doubao-seed-1-6-thinking-250715: { reserveTokens: 32768 }
     # Keep /tree branch summarization behavior explicit across Pi upgrades.
     # Reserve 16K tokens for the summary and continue prompting before summarizing.
     branchSummary:
@@ -343,12 +278,10 @@ pi:
       # baseUrl from `defaults`, resetting everything else to hardcoded values
       # (contextWindow 128000, maxTokens 16384, reasoning false, zero cost).
       modelOverrides:
-        # Built-in says 384000. reserveTokens is one global number with a
-        # `reserveTokens >= maxTokens` floor (see the SIZING block above), so the
-        # startup default has to fit under 130000 or the openai-codex fallback
-        # (372K window) compacts every turn. 128K is ~4x a normal agentic response.
-        # Every other opencode-go model keeps its real cap, so a /model switch to
-        # grok-4.5 (500K out) or kimi-k2.7-code (262K) re-enters that landmine.
+        # Intentional output policy: keep Flash at 128K rather than its native
+        # 384K. This is not required by a global compaction reserve floor:
+        # compaction budgets are per model, and Pi clamps ordinary output to
+        # estimated remaining context. Other Go models retain their catalog caps.
         deepseek-v4-flash: { maxTokens: 128000 }
     openai-codex: # BUILT-IN provider — this entry only PATCHES model metadata.
       # `auth: builtin` emits no apiKey, so the existing Codex OAuth in
@@ -357,83 +290,43 @@ pi:
       # with a matching id would replace the built-in model wholesale — not
       # what we want here).
       #
-      # Why: the gpt-5.6 family's published spec is a 1,050,000 context window,
-      # but Codex's server-delivered catalog reports 272,000 — see
-      # ~/.pi/agent/models-store.json, which pi refreshes over HTTP and which
-      # still said 272,000 after a refresh on 2026-08-20. That 272K is a BILLING
-      # boundary, not a capability limit: OpenAI prices prompts over 272K input
-      # at 2x input / 1.5x output for the FULL request, and Codex pinned its
-      # catalog to the line so default sessions cannot silently cross it (codex
-      # PR #33972, merged 2026-07-18, cut the catalog from 372,000 to 272,000;
-      # issue #32486 is the complaint it answered). Before that PR, 372,000 was
-      # Codex's real value, and this block used to pin exactly that.
+      # Pi's catalog default is not this OAuth endpoint's measured input wall.
+      # Sol and Astra were tested directly on 2026-10-11; details and limitations
+      # are in docs/pi-context-windows.md. 921K is a conservative accepted-input
+      # pin, not an exact server maximum or a copied public API total window.
+      # With reserveTokens 130K, it gives a 791K compaction trigger and preserves
+      # headroom instead of placing the trigger almost at the ~922K input wall.
+      # Larger contexts can use more subscription quota; do not treat API price
+      # multipliers or Pi's cost estimates as this OAuth account's billing.
       #
-      # 921,000 is a MEASURED INPUT CEILING, and it is deliberately NOT either
-      # number you would copy off a page — not the catalog's 272,000 and not the
-      # spec's 1,050,000. Probed 2026-08-20 against the route pi actually uses
-      # (POST chatgpt.com/backend-api/codex/responses with the OAuth token from
-      # ~/.pi/agent/auth.json), walking DOWN from an oversized prompt so that
-      # every rejection costs nothing — only the final accepted probe is billed.
-      # All THREE models were bracketed, and all three came back identical:
-      #                  ACCEPTED (completed)   REJECTED (context_length_exceeded)
-      #   gpt-5.6-sol      898,071 input tokens   950,000 and up
-      #   gpt-5.6-luna     921,030                930,000 and up
-      #   gpt-5.6-terra    898,071                950,000 and up
-      # (luna was bracketed tightest because it became the default; the other two
-      # were left at the coarser 898K/950K bracket they share.)
-      #
-      # gpt-6-astra was NOT probed — it did not exist in the Codex catalog then.
-      # Its pin below is derived, not measured; the derivation is spelled out
-      # there. Re-running this descending probe against it is the way to replace
-      # the derivation with a number.
-      #
-      # So the family is uniform, and all three clear both the 272,000 catalog
-      # value and the 372,000 this block used to pin — the cut PR #33972 made has
-      # been reversed server-side, whatever the catalog still says. The wall sits
-      # just above 921,030 and below 930,000, exactly where a 1,050,000 window
-      # lands once Codex reserves the model's full 128,000 output:
-      # 1,050,000 - 128,000 = 922,000. That reserve is not negotiable — the
-      # backend rejects an explicit max_output_tokens with "Unsupported
-      # parameter" — so 1,050,000 tokens of INPUT are never available and the
-      # spec number would be a lie in the one place pi consumes it.
-      #
-      # WHY THE PIN IS THE INPUT CEILING AND NOT THE SPEC. pi's only use of
-      # contextWindow is `contextTokens > contextWindow - reserveTokens`
-      # (compaction.js:125), compared against conversation INPUT. Pinning
-      # 1,050,000 with reserveTokens 130,000 puts the trigger at 920,000 against
-      # a ~922,000 wall — it silently collapses the unchecked-tool-loop headroom
-      # from 130,000 to ~2,000 while every number still reads plausibly. 921,000
-      # (the largest input actually observed to complete, rounded down) restores
-      # it: trigger 791,000, a real 130,000 to the wall. If a future probe moves
-      # the wall, move this number, not reserveTokens — the reserve is global and
-      # shared with the deepseek fallback, this is per-model.
-      #
-      # Cost of using the full window: every request above 272K input bills at
-      # the premium tier (2x input / 1.5x output on the FULL request), the
-      # reverse of the trade the 372K pin made. Delete this block to fall back to
-      # the catalog's 272,000 (and drop reserveTokens back to ~40K).
-      #
-      # Verify any change with `pi --list-models gpt-5.6-luna`, never by reading
-      # this comment.
+      # Historical 2026-08-20 input probes, kept distinct from today's models:
+      #   gpt-5.6-luna: accepted 921,030; rejected 930,000 and up.
+      #   gpt-5.6-sol/terra: accepted 898,071; rejected 950,000 and up.
+      # On 2026-10-11, Sol and Terra independently accepted 921,065, so their
+      # matching pins no longer rely on Luna's limit or family arithmetic.
+      # Verify runtime metadata with `pi --list-models`, not comments alone.
       auth: builtin
       modelOverrides:
+        # Current startup default and low/medium tiers. Directly tested on
+        # 2026-10-11 through Pi 1.1.0's native Codex OAuth Responses adapter,
+        # high reasoning, SSE, no input truncation or max_output_tokens field.
+        # Accepted: 921,065 input tokens, output OK (5 tokens).
+        # Rejected: 922,000 single-token padding repetitions plus the same
+        # 65-token framing (approximately 922,065 input); also 930,000 repeats.
+        # Synthetic request acceptance, not a long-context recall benchmark.
+        # Retain catalog output/thinking/pricing metadata and builtin auth.
+        gpt-6.1-sol: { contextWindow: 921000 }
         # Legacy /model option; bracketed tightest of the three gpt-5.6 probes.
-        # The current startup default and low/medium tiers use gpt-6.1-sol (no
-        # contextWindow override until its input ceiling is probed).
         gpt-5.6-luna: { contextWindow: 921000 }
         # THE TOP OF THE LADDER: `high` on both machines, via `$highModel` in
         # dot_pi/agent/subagents.json.tmpl. The Pi parent and default/medium
         # tier use sol/high. Also the Codex CLI's primary model in
         # dot_codex/modify_config.toml.tmpl; that independent policy is unchanged.
         #
-        # DERIVED, NOT MEASURED — the only pin in this block that was never
-        # probed on the live route. models.dev reports gpt-6-astra with exactly
-        # the gpt-5.6 family's shape (context 1,050,000, output 128,000) and the
-        # Codex catalog reports the same maxTokens 128,000 and the same 272,000
-        # billing-line contextWindow, so the 1,050,000 - 128,000 = 922,000
-        # arithmetic that luna's measured 921,030 acceptance confirmed carries
-        # over unchanged. Probe it (the recipe is above) before treating 921,000
-        # as proven for astra.
+        # DIRECTLY TESTED 2026-10-11 at medium reasoning through the same Pi
+        # Codex OAuth adapter and padding as Sol: 921,065 input accepted (OK,
+        # 5 output tokens), approximately 922,065 rejected. Keep the 921K pin;
+        # it no longer depends on another model's limits or API arithmetic.
         #
         # Dropping this entry is not neutral: astra would fall back to the
         # catalog's 272,000 and the high tier would begin compacting at
@@ -474,14 +367,10 @@ pi:
         # is new: 72 runs vs 336), so treat the direction as solid and the
         # magnitude as provisional.
         gpt-6-astra: { contextWindow: 921000 }
-        # sol and terra are pinned too so a runtime /model switch does not
-        # silently drop back to 272K. Nothing selects sol any more, but both stay
-        # one `/model` switch away, so both keep their pins. Not an assumption
-        # carried over from luna: both were bracketed independently. Their
-        # brackets are coarser (accepted 898,071, rejected 950,000), so 921,000 is
-        # the shared family value rather than a separately proven per-model one;
-        # it is within their bracket and consistent with the same
-        # 1,050,000 - 128,000 arithmetic.
+        # Legacy /model options. Both gpt-5.6-sol and gpt-5.6-terra directly
+        # accepted 921,065 input tokens on 2026-10-11 at high reasoning (OK).
+        # Their 921K pins no longer depend on a different model's input wall.
+        # Exact upper limits were not retested; retain this accepted lower bound.
         gpt-5.6-sol: { contextWindow: 921000 }
         # THINKING LADDER — exactly ONE repair is needed here, and only here.
         # Audited 2026-08-19 across every model in ~/.pi/agent/models-store.json.
@@ -510,12 +399,12 @@ pi:
     deepseek: # BUILT-IN provider — this entry ONLY supplies the API key + 1 patch.
       # DeepSeek's own platform (api.deepseek.com), the per-token FALLBACK to the
       # same models the opencode Go subscription above resells. Reach it as
-      # `deepseek/deepseek-v4-flash`. VERIFIED WORKING with this key: a live
+      # `deepseek/deepseek-flash` in Pi 1.1.0's catalog. Historically a live
       # request returned `content` + `reasoning_content` and accepted
       # `reasoning_effort=max`.
       #
       # Pi's built-in registry NOW CARRIES V4 (pi-ai
-      # dist/providers/data/deepseek.json: deepseek-v4-flash and deepseek-v4-pro,
+      # dist/providers/data/deepseek.json: deepseek-flash and deepseek-v4-pro,
       # both 1M/384K, both with thinkingLevelMap `max: max`), so the hand-pinned
       # model list this block used to carry is gone. That list was written when
       # the registry lacked V4 and it had drifted into a defect: its
@@ -530,9 +419,10 @@ pi:
       # entries upsert over the built-ins (provider-composer.js:101).
       gopass: pi/deepseek/api_key
       modelOverrides:
-        # Same reserveTokens floor as the opencode-go copy above; kept aligned so
-        # switching routes does not change the compaction maths.
-        deepseek-v4-flash: { maxTokens: 128000 }
+        # Same intentional output policy as the opencode-go copy. The native
+        # direct-route ID is deepseek-flash; the old deepseek-v4-flash key matched
+        # no model in Pi 1.1.0 and silently left its 384K output cap unchanged.
+        deepseek-flash: { maxTokens: 128000 }
     kimi: # Kimi Code (Moonshot subscription) — OpenAI-compatible route
       # Pi DOES ship a built-in `kimi-coding` provider, but it is STALE and this
       # entry deliberately does not touch it: the built-in carries only k2p7 /
