@@ -12,7 +12,7 @@ EXISTING="$(cat)"
 {{/* Parent model + effort match the Agent catalogue's medium/default baseline
      on both work and private machines: gpt-6.1-sol at high. Keep this pair in
      lockstep with subagents.json.tmpl so interactive turns and unqualified
-     spawns use the same rung. The alignment test checks both machines.
+     spawns use the same rung.
      defaultProvider comes from .chezmoidata/pi.yaml (native Codex OAuth).
      Pi is intentionally configured independently from Codex. */ -}}
 {{- $model := "gpt-6.1-sol" -}}

@@ -64,7 +64,7 @@ checkout に存在するファイルと挙動だけを説明します。
   非 headless macOS の固定 Paperlib installer
 - 固定 revision の Herdr plugins、Claude/Codex lifecycle integration、
   macOS/Linux の孤立 MCP プロセス掃除
-- CI、セキュリティスキャン、回帰テスト、定期的な依存更新 PR
+- CI lint、セキュリティスキャン、定期的な依存更新 PR
 
 ## Source of Truth とリポジトリ構成
 
@@ -104,7 +104,6 @@ README は現在のソースファイルに対応しています。
 ├── private_dot_ssh/           # age 暗号化された SSH client 設定
 ├── private_Library/           # macOS LaunchAgents
 ├── docs/                      # 個別の運用ガイド
-├── tests/                     # bootstrap/統合回帰テスト
 └── tools/wezterm-icon/        # スクリプト `22` が使う Swift ユーティリティ
 ```
 
@@ -225,9 +224,7 @@ HTTPS credential が必要になる場合があります（既存の `gh` login�
 - `~/.config/just/.justfile` —— global ファイル。対話的 shell が
   `JUSTFILE=${XDG_CONFIG_HOME:-$HOME/.config}/just/.justfile` を export するため、
   どのディレクトリでも `just` はこれを使います。
-- `~/Justfile` —— 同じ recipe に `test` を **追加** したもの。ただし `JUSTFILE`
-  が export されているので `just test` はこちらに解決されません。テストは下の
-  コマンドを直接実行してください。
+- `~/Justfile` —— 同じ recipe。`JUSTFILE` が未設定の場合も利用できます。
 
 ```bash
 # Chezmoi
@@ -256,10 +253,9 @@ just history
 just clean              # 既定 7 日
 ```
 
-回帰テストと lint は直接実行します。
+フォーマット・構文・セキュリティチェックは直接実行します。
 
 ```bash
-bash "$(chezmoi source-path)/tests/run.sh"
 pre-commit run --all-files
 ```
 
@@ -418,8 +414,7 @@ Bun ベースの package install、native compaction/retry 設定を使います
 `subagents.json` は `low`、`medium`、`high` の三つの tier だけを定義します。
 それぞれ `gpt-6.1-sol/low`、`gpt-6.1-sol/high`、`gpt-6-astra/medium` に対応します。
 private と work は同じポリシーを使用します。
-起動既定値は両方の `medium` 段と一致し、回帰テストがこの一致、
-両機械の同一ポリシー、および段の厳密な順序を検証します。workflow settings は workflow
+起動既定値は両方の `medium` 段と一致します。workflow settings は workflow
 strength `low`/`medium`/`high` を同名 tier へ直接対応付けます。旧来の別
 workflow model vocabulary は現在の設定にはありません。
 
@@ -540,7 +535,6 @@ secret の種類ごとに別の仕組みを使います。
 
 - `.github/workflows/ci.yml`: `main` への push/PR と手動実行で pre-commit lint を行い、
   macOS/Linux matrix で Nix flake をレンダー・チェックします。
-- `.github/workflows/tests.yml`: push、PR、手動実行で `bash tests/run.sh` を実行します。
 - `.github/workflows/security.yml`: push、PR、手動実行で Zizmor、Trivy filesystem、
   Gitleaks scan を実行します。
 - `.github/workflows/pr-title.yml`: semantic PR title を検証し、`wip` PR を許可します。
