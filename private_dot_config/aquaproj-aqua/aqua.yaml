@@ -9,7 +9,7 @@ registries:
     #     codex-*.zst, so Code Mode failed closed after host became default.
     #   v4.566.0 - Wilfred/difftastic 0.71.0 renamed its assets to
     #     difft-<version>-<arch>-<os>.tar.gz; older refs 404 on install.
-    ref: v4.573.1
+    ref: v4.574.0
   - name: third-party
     type: local
     path: registry.yaml
@@ -50,7 +50,7 @@ packages:
       enabled: false
   - name: anthropics/claude-code@v2.1.296
   - name: openai/codex@rust-v0.162.1
-  - name: direnv/direnv@v2.38.1
+  - name: direnv/direnv@v2.38.2
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
@@ -67,8 +67,8 @@ packages:
   - name: crates.io/eza@0.23.5
   - name: fastfetch-cli/fastfetch@2.69.0
   - name: sharkdp/fd@v10.5.0
-  - name: junegunn/fzf@v0.74.4
-  - name: gopasspw/gopass@v1.17.3
+  - name: junegunn/fzf@v0.74.5
+  - name: gopasspw/gopass@v1.17.4
   - name: cli/cli@v2.102.0
   - name: dlvhdr/gh-dash@v4.26.1
   - name: x-motemen/ghq@v1.11.2
@@ -100,7 +100,7 @@ packages:
   - name: watchexec/watchexec@v2.8.0
   - name: joshmedeski/sesh@v2.32.0
   - name: starship/starship@v1.26.0
-  - name: JohnnyMorganz/StyLua@v2.5.2
+  - name: JohnnyMorganz/StyLua@v2.6.0
   - name: Kampfkarren/selene@0.32.0
   - name: crate-ci/typos@v1.51.1
   - name: zizmorcore/zizmor@v1.30.1
