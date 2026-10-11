@@ -66,7 +66,7 @@ The main layers are:
   installer on non-headless macOS
 - Pinned Herdr plugins, Claude/Codex lifecycle integration, and orphan-MCP
   cleanup on macOS/Linux
-- CI, security scans, regression tests, and scheduled dependency-update PRs
+- CI linting, security scans, and scheduled dependency-update PRs
 
 ## Source of Truth and Repository Map
 
@@ -106,7 +106,6 @@ The README is deliberately organized around the actual source files:
 ├── private_dot_ssh/           # age-encrypted SSH client config
 ├── private_Library/           # macOS LaunchAgents
 ├── docs/                      # focused operational guides
-├── tests/                     # bootstrap and integration regression tests
 └── tools/wezterm-icon/        # Swift helper used by script `22`
 ```
 
@@ -228,9 +227,7 @@ Two justfiles are rendered from the same `Justfile.tmpl` source:
 - `~/.config/just/.justfile` — the global file. The interactive shell exports
   `JUSTFILE=${XDG_CONFIG_HOME:-$HOME/.config}/just/.justfile`, so `just` uses
   this file from any directory.
-- `~/Justfile` — the same recipes **plus** a `test` recipe. Because `JUSTFILE`
-  is exported, `just test` does not resolve to it; run the suite directly
-  instead (below).
+- `~/Justfile` — the same recipes, also available when `JUSTFILE` is not set.
 
 ```bash
 # Chezmoi
@@ -259,10 +256,9 @@ just history
 just clean              # defaults to 7 days
 ```
 
-Run the regression suite and the lint hooks directly:
+Run formatting, syntax, and security checks directly:
 
 ```bash
-bash "$(chezmoi source-path)/tests/run.sh"
 pre-commit run --all-files
 ```
 
@@ -425,8 +421,7 @@ and native compaction/retry settings.
 `subagents.json` defines exactly three named tiers: `low`, `medium`, and
 `high`: `gpt-6.1-sol/low`, `gpt-6.1-sol/high`, and `gpt-6-astra/medium`, respectively.
 The same policy applies to private and work machines. The startup default
-is deliberately the `medium` rung on both machines. Regression tests assert
-that alignment, identical machine policies, and strictly ordered tiers.
+is deliberately the `medium` rung on both machines.
 Workflow settings map workflow strengths `low`/`medium`/`high` directly
 to those same tier names; the old separate workflow model vocabulary is not
 part of this configuration.
@@ -553,8 +548,6 @@ Related security material:
 
 - `.github/workflows/ci.yml`: on pushes/PRs to `main` and manual runs; runs
   pre-commit linting and renders/checks the Nix flake on a macOS/Linux matrix.
-- `.github/workflows/tests.yml`: runs `bash tests/run.sh` on pushes, PRs, and
-  manual runs.
 - `.github/workflows/security.yml`: runs Zizmor, Trivy filesystem, and Gitleaks
   scans on pushes, PRs, and manual runs.
 - `.github/workflows/pr-title.yml`: validates semantic PR titles and allows

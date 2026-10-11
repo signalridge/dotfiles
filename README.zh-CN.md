@@ -64,7 +64,7 @@
   以及非 headless macOS 上的 Paperlib installer
 - 固定 revision 的 Herdr plugins、Claude/Codex lifecycle integration，以及
   macOS/Linux 的孤儿 MCP 清理
-- CI、安全扫描、回归测试和定期依赖更新 PR
+- CI lint、安全扫描和定期依赖更新 PR
 
 ## Source of Truth 与仓库结构
 
@@ -104,7 +104,6 @@ README 按当前实际源文件组织：
 ├── private_dot_ssh/           # age 加密的 SSH client 配置
 ├── private_Library/           # macOS LaunchAgents
 ├── docs/                      # 专项运维指南
-├── tests/                     # bootstrap 与集成回归测试
 └── tools/wezterm-icon/        # 脚本 `22` 使用的 Swift 工具
 ```
 
@@ -221,8 +220,7 @@ chezmoi init --apply \
 - `~/.config/just/.justfile` —— 全局文件。交互式 shell 导出
   `JUSTFILE=${XDG_CONFIG_HOME:-$HOME/.config}/just/.justfile`，因此在任意目录
   下 `just` 都使用它。
-- `~/Justfile` —— 同样的 recipe，**外加** `test`。但由于 `JUSTFILE` 已导出，
-  `just test` 并不会解析到它；请直接运行下面的测试命令。
+- `~/Justfile` —— 同样的 recipe，也可在未设置 `JUSTFILE` 时使用。
 
 ```bash
 # Chezmoi
@@ -251,10 +249,9 @@ just history
 just clean              # 默认 7 天
 ```
 
-回归测试与 lint 请直接运行：
+格式、语法及安全检查请直接运行：
 
 ```bash
-bash "$(chezmoi source-path)/tests/run.sh"
 pre-commit run --all-files
 ```
 
@@ -407,8 +404,8 @@ Pi 托管的启动默认值在 private 和 work 上相同：
 
 `subagents.json` 只定义三个命名 tier：`low`、`medium`、`high`。它们构成同一条
 阶梯——`gpt-6.1-sol/low`、`gpt-6.1-sol/high`、`gpt-6-astra/medium`。
-private 和 work 使用相同策略。上面的启动默认值刻意等于两台机器的 `medium` 档，回归测试会
-断言这一点、两台机器策略完全相同，以及阶梯严格递增。workflow settings 将 workflow
+private 和 work 使用相同策略。上面的启动默认值刻意等于两台机器的 `medium` 档。
+workflow settings 将 workflow
 strength `low`/`medium`/`high` 直接映射到同名 tier；旧的独立 workflow model
 vocabulary 不属于当前配置。
 
@@ -522,8 +519,6 @@ Claude hooks 还负责格式化变更文件以及维护 tmux/Herdr 状态。Git 
 
 - `.github/workflows/ci.yml`：在 `main` 的 push/PR 和手动运行时执行 pre-commit
   lint，并在 macOS/Linux 矩阵渲染和检查 Nix flake。
-- `.github/workflows/tests.yml`：在 push、PR 和手动运行时执行
-  `bash tests/run.sh`。
 - `.github/workflows/security.yml`：在 push、PR 和手动运行时运行 Zizmor、Trivy
   filesystem 和 Gitleaks 扫描。
 - `.github/workflows/pr-title.yml`：校验 semantic PR title，并允许 `wip` PR。
