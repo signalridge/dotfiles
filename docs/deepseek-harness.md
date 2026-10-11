@@ -8,7 +8,7 @@ workspace for the first trial.
 ## Installation and launch
 
 `private_dot_config/mise/config.toml.tmpl` installs `@deepseek-ai/dsh` at the
-explicitly tested version `0.2.0-rc.2`, through the existing mise/Bun backend.
+pinned version `0.2.0-rc.2`, through the existing mise/Bun backend.
 Upgrade that pin deliberately, then retest Web startup and native subprocesses.
 
 ```sh
@@ -40,6 +40,12 @@ through a gateway, not a separate OAuth login inside Harness.
 The proxy must be running and its OAuth account must be valid. No DeepSeek API
 key or paid OpenAI API key is needed for this default route. Subscription limits
 and upstream model availability still apply.
+
+The CPA Responses route accepts about 922K input tokens, so the managed input
+window is **921,000**. `maxTokens: 128000` matches native output metadata for
+dsh's completion reservation. Since `supportsMaxOutputTokens: false` omits the
+request parameter, this is **not** an enforced 128K output cap, nor proof that
+the account can produce that many output tokens.
 
 `dsh-with` reads `claude/cliproxy/private/api_key` from gopass on launch and
 passes it only in the child process environment as `CLIPROXY_API_KEY`. The
@@ -74,7 +80,7 @@ proxy files. Stop a manually started proxy before loading the LaunchAgent to
 avoid a port conflict. The service runs as the logged-in user, binds only
 `127.0.0.1:8317`, and disables the management API.
 
-Claude Code no longer has a CPA account or provider. The proxy does **not**
+Claude Code has no CPA account or provider. The proxy does **not**
 rewrite `xhigh` to `high`; Harness's `high` reasoning is its own default, not a
 proxy conversion rule.
 

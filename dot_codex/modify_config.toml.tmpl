@@ -22,16 +22,9 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
        private/high-effort profile by default, matching Claude's template. */ -}}
 {{- $work := false -}}
 {{- if hasKey . "work" -}}{{- $work = .work -}}{{- end -}}
-{{- /* Default model + effort TRACK PI'S PARENT SESSION, machine for machine:
-       private -> gpt-6-astra at `medium`, work -> gpt-5.6-luna at `max`. That is
-       the `medium` row of the Agent tier catalogue in
-       dot_pi/agent/subagents.json.tmpl and the value
-       dot_pi/agent/modify_settings.json.tmpl emits, so the two harnesses cost
-       the same per turn and a rung means one thing across both. Aligned
-       2026-09-06 and moved down with Pi's ladder on 2026-09-07; before the
-       alignment Codex sat on astra/xhigh (private) and astra/max (work)
-       regardless of what Pi did. Nothing but this comment asserts the pairing,
-       so move it whenever Pi's `medium` row moves.
+{{- /* Codex has independent defaults: private -> gpt-6-astra/medium,
+       work -> gpt-5.6-luna/max. Pi now defaults to gpt-6.1-sol/high on both
+       machines; changing Pi's context metadata does not change Codex's model.
 
        Keep the default model valid when a third-party provider is selected.
        Each provider block below is an endpoint, not a shared model registry. */ -}}
@@ -67,7 +60,7 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 # Core Settings
 # =============================================================================
 
-# Primary model: work/private -> gpt-6-astra (gpt-5.6-sol until 2026-09-06)
+# Native primary model: work -> gpt-5.6-luna, private -> gpt-6-astra
 model = "{{ $model }}"
 
 # Model provider (only for third-party providers)
@@ -98,7 +91,7 @@ suppress_unstable_features_warning = true
 # =============================================================================
 
 # Reasoning effort: none | minimal | low | medium | high | xhigh | max
-# Primary effort: work -> max, private -> medium (Pi's parent rung).
+# Primary effort: work -> max, private -> medium (independent of Pi).
 model_reasoning_effort = "{{ $effort }}"
 
 
