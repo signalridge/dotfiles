@@ -120,6 +120,10 @@ pi:
     - npm:@gotgenes/pi-permission-system
     - npm:pi-readseek
     - npm:@hypabolic/pi-hypa
+  # Explicit release refresh: change this after a release to reconcile even if
+  # this week's package list already succeeded. This is an updater cache key,
+  # not a package-version pin or a setting emitted into Pi's settings.json.
+  extensionUpdateRevision: "2026-10-12-signalridge-release"
   # ===== Signalridge Pi packages -> ~/.pi/agent/settings.json =====
   # Published packages from github.com/signalridge/pi-extensions, installed from
   # npm by Pi itself. Bare names only: modify_settings.json.tmpl renders each as
@@ -133,9 +137,9 @@ pi:
   #
   # Excluded on purpose:
   #   pi-worktree   — repository constitution forbids worktrees (CLAUDE.md Art. 1)
-  #   pi-worktime   — publishable but opt-in; not yet released to npm
-  #   pi-recall, pi-codex-compact, pi-analytics — experimental, opt-in
-  #   pi-subagents-protocol — pure library, a dependency and never a Pi resource
+  #   pi-worktime   — published but opt-in
+  #   pi-background, pi-recall, pi-codex-compact, pi-analytics — experimental, opt-in
+  #   pi-subagents-protocol, pi-ui — libraries, dependencies and never Pi resources
   signalridgePackages:
     # Orchestration
     - pi-subagents

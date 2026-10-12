@@ -5,12 +5,15 @@ set -euo pipefail
 # Reconcile every Pi package from npm. All of them — external infrastructure and
 # the signalridge packages alike — are declared unpinned in settings.json, so
 # `pi update --extensions` is what actually moves them to the latest release.
-# Re-run weekly, or immediately whenever the declared package set changes.
+# Re-run weekly, or immediately whenever the declared package set or explicit
+# release refresh revision changes.
 {{- $week := output "date" "+%G-%V" | trim }}
 {{- $externalPackages := .pi.packages | toJson }}
 {{- $signalridgePackages := .pi.signalridgePackages | toJson }}
+{{- $revision := .pi.extensionUpdateRevision | default "" }}
 external_packages='{{ $externalPackages }}'
 signalridge_packages='{{ $signalridgePackages }}'
+release_revision='{{ $revision }}'
 
 sha256_stdin() {
     if command -v sha256sum >/dev/null 2>&1; then
@@ -28,7 +31,7 @@ sha256_stdin() {
     return 1
 }
 
-if ! update_key="$(printf '%s\0%s\0%s' '{{ $week }}' "$external_packages" "$signalridge_packages" | sha256_stdin)"; then
+if ! update_key="$(printf '%s\0%s\0%s\0%s' '{{ $week }}' "$external_packages" "$signalridge_packages" "$release_revision" | sha256_stdin)"; then
     echo "    Skipped (no SHA-256 tool available; need sha256sum, shasum, or openssl)"
     exit 0
 fi
@@ -39,7 +42,7 @@ state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/chezmoi"
 state_file="$state_dir/pi-extensions-last-success"
 last_success="$(cat "$state_file" 2>/dev/null || true)"
 if [[ "$last_success" == "$update_key" ]]; then
-    echo "    Skipped (extensions already reconciled for this week/package set)"
+    echo "    Skipped (extensions already reconciled for this week/package set/release revision)"
     exit 0
 fi
 
