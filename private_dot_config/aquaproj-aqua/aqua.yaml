@@ -9,7 +9,7 @@ registries:
     #     codex-*.zst, so Code Mode failed closed after host became default.
     #   v4.566.0 - Wilfred/difftastic 0.71.0 renamed its assets to
     #     difft-<version>-<arch>-<os>.tar.gz; older refs 404 on install.
-    ref: v4.574.0
+    ref: v4.574.1
   - name: third-party
     type: local
     path: registry.yaml
@@ -22,7 +22,7 @@ packages:
   - name: ogulcancelik/herdr@v0.9.3
     registry: third-party
   # CLIProxyAPI for OpenAI-compatible clients; official release with checksums.txt verification.
-  - name: router-for-me/CLIProxyAPI@v8.0.23
+  - name: router-for-me/CLIProxyAPI@v8.0.24
     registry: third-party
   # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
   # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
@@ -55,7 +55,7 @@ packages:
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.10.7
+  - name: jdx/mise@v2026.10.8
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -81,7 +81,7 @@ packages:
   - name: tldr-pages/tlrc@v1.13.1
   - name: ast-grep/ast-grep@0.50.0
   - name: casey/just@1.58.0
-  - name: jesseduffield/lazygit@v0.66.0
+  - name: jesseduffield/lazygit@v0.66.1
   - name: jesseduffield/lazydocker@v0.25.2
   - name: neovim/neovim@v0.12.6
   - name: LuaLS/lua-language-server@3.19.1
