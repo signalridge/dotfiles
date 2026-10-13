@@ -11,7 +11,7 @@ versions:
   aquaInstaller: v4.1.0
   aquaInstallerSha256: 4d3e513d42f425609c1ead6ecd40b9c62492011979dfe23d7012428a59efbe82
   aquaVersion: v2.64.0
-  nixIndexDb: 2026-10-04-085218
+  nixIndexDb: 2026-10-11-092020
   paperlib: 3.1.12
   paperlibAmd64Sha256: 993d05c9bb9c8163f2d308736d2316ebf6db8a23b75133a170e22ea6e125746c
   paperlibArm64Sha256: a49ab642331632719079399c15551a6d0c9b16ca2f50a2ef35c297c3a9835459
@@ -50,11 +50,11 @@ versions:
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 18dcb447f090667171ff23666a05d6d387e2aa73
   dailyDevSkillsRev: 452b2fd534522142273f7fe959afa0cd9b5f4895
-  opcSkillsRev: 421ffb588a91b12d06b15d133f0842e61083ef75
+  opcSkillsRev: 83eed27e7693e3cea54ae44f3440dd1c40dd5b72
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 8e899e20ff0cd4dc524af3993e4c62d8ee8c5717
-  affaanEccRev: 2d515e4fc2ddef97354769812cf3f7b9ec4e5124
+  affaanEccRev: b92f181b3b748d1abbc2afd94af6aa7d8c8fca29
   actionbookRustSkillsRev: 5c40d3ad785193231b7d0dbfb8e1eb447e5edd94
   dpearsonSwiftSkillsRev: 8d90fd121a263355a4fb44fd082af1416a5c1c2a
   effectiveTypescriptRev: d754db2077d71ae1e2b57bf50ae7bc565067a2e0
