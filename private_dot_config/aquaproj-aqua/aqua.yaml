@@ -22,7 +22,7 @@ packages:
   - name: ogulcancelik/herdr@v0.9.3
     registry: third-party
   # CLIProxyAPI for OpenAI-compatible clients; official release with checksums.txt verification.
-  - name: router-for-me/CLIProxyAPI@v8.0.24
+  - name: router-for-me/CLIProxyAPI@v8.0.27
     registry: third-party
   # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
   # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
@@ -84,7 +84,7 @@ packages:
   - name: jesseduffield/lazygit@v0.66.1
   - name: jesseduffield/lazydocker@v0.25.2
   - name: neovim/neovim@v0.12.6
-  - name: LuaLS/lua-language-server@3.19.1
+  - name: LuaLS/lua-language-server@3.19.2
   - name: tree-sitter/tree-sitter@v0.27.1
   - name: jj-vcs/jj@v0.46.0
   - name: rclone/rclone@v1.75.2
@@ -98,7 +98,7 @@ packages:
   - name: chmln/sd@v1.1.0
   - name: ducaale/xh@v0.26.2
   - name: watchexec/watchexec@v2.8.0
-  - name: joshmedeski/sesh@v2.32.0
+  - name: joshmedeski/sesh@v2.33.0
   - name: starship/starship@v1.26.0
   - name: JohnnyMorganz/StyLua@v2.6.0
   - name: Kampfkarren/selene@0.32.0
@@ -121,7 +121,7 @@ packages:
   - name: hatoo/oha@v1.16.0
   - name: dalance/procs@v0.14.12
   - name: sharkdp/hexyl@v0.17.0
-  - name: mr-karan/doggo@v1.4.0
+  - name: mr-karan/doggo@v1.4.1
     registry: third-party
   - name: sharkdp/vivid@v0.11.1
   - name: dduan/tre@v0.4.0
