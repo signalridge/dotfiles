@@ -44,19 +44,7 @@ EXISTING="$(cat)"
      sides and emits nothing, so a `{{-` here would pull the whole chain onto
      the EXISTING line and glue FALLBACK= to the end of it. A comment must also
      begin immediately after the delimiter, so `{{ /*` is a parse error. */ -}}
-{{- $accountKey := "anthropic" -}}
-{{- if hasKey . "claudeProviderAccount" -}}
-{{-   $accountKey = .claudeProviderAccount -}}
-{{- else if hasKey . "claudeProvider" -}}
-{{-   $accountKey = .claudeProvider -}}
-{{- end -}}
-{{- $account := index .claude.accounts $accountKey -}}
-{{- $providerName := (split "@" $accountKey)._0 -}}
-{{- if and $account (hasKey $account "provider") -}}
-{{-   $providerName = $account.provider -}}
-{{- end -}}
-{{- $provider := index .claude.providers $providerName -}}
-{{- $defaults := .claude.defaults -}}
+{{- $claude := .claude -}}
 {{- /* work may be absent when rendered without chezmoi config data (tests);
        default to the personal profile in that case. */ -}}
 {{- $work := false -}}
@@ -81,116 +69,12 @@ EXISTING="$(cat)"
      regardless of this budget. Requires a model with tool_reference support
      (Opus/Sonnet; Haiku ignores it and loads all upfront anyway). */ -}}
 {{- $env := dict "ENABLE_TOOL_SEARCH" "auto:15" -}}
-{{- if and $provider (hasKey $provider "base_url") -}}
-{{-   $_ := set $env "ANTHROPIC_BASE_URL" $provider.base_url -}}
-{{- end -}}
-{{- /* ANTHROPIC_MODEL: account -> provider. This, not the top-level `model`
-       key, is the durable startup default — `model` is now PRESERVED rather
-       than managed, and inside a session it wins over this variable, so the
-       two can legitimately disagree until the next /model. */ -}}
-{{- $model := "" -}}
-{{- if and $account (hasKey $account "model") -}}
-{{-   $model = $account.model -}}
-{{- else if and $provider (hasKey $provider "default_model") -}}
-{{-   $model = $provider.default_model -}}
-{{- end -}}
-{{- if $model -}}{{- $_ := set $env "ANTHROPIC_MODEL" $model -}}{{- end -}}
-{{- if and $account (hasKey $account "small_model") -}}
-{{-   $_ := set $env "ANTHROPIC_SMALL_FAST_MODEL" $account.small_model -}}
-{{- end -}}
-{{- if and $account (hasKey $account "haiku_model") -}}
-{{-   $_ := set $env "ANTHROPIC_DEFAULT_HAIKU_MODEL" $account.haiku_model -}}
-{{- end -}}
-{{- if and $account (hasKey $account "sonnet_model") -}}
-{{-   $_ := set $env "ANTHROPIC_DEFAULT_SONNET_MODEL" $account.sonnet_model -}}
-{{- end -}}
-{{- if and $account (hasKey $account "opus_model") -}}
-{{-   $_ := set $env "ANTHROPIC_DEFAULT_OPUS_MODEL" $account.opus_model -}}
-{{- end -}}
-{{- /* subagent_model: account -> provider */ -}}
-{{- $subagentModel := "" -}}
-{{- if and $account (hasKey $account "subagent_model") -}}
-{{-   $subagentModel = $account.subagent_model -}}
-{{- else if and $provider (hasKey $provider "subagent_model") -}}
-{{-   $subagentModel = $provider.subagent_model -}}
-{{- end -}}
-{{- if $subagentModel -}}
-{{-   $_ := set $env "CLAUDE_CODE_SUBAGENT_MODEL" $subagentModel -}}
-{{- end -}}
-{{- /* attribution_header: account -> provider (proxies that reject the header set "0") */ -}}
-{{- $attributionHeader := "" -}}
-{{- if and $account (hasKey $account "attribution_header") -}}
-{{-   $attributionHeader = $account.attribution_header -}}
-{{- else if and $provider (hasKey $provider "attribution_header") -}}
-{{-   $attributionHeader = $provider.attribution_header -}}
-{{- end -}}
-{{- if ne (toString $attributionHeader) "" -}}
-{{-   $_ := set $env "CLAUDE_CODE_ATTRIBUTION_HEADER" (toString $attributionHeader) -}}
-{{- end -}}
-{{- /* disable_experimental_betas: account -> provider */ -}}
-{{- $disableBetas := false -}}
-{{- if and $account (hasKey $account "disable_experimental_betas") -}}
-{{-   $disableBetas = $account.disable_experimental_betas -}}
-{{- else if and $provider (hasKey $provider "disable_experimental_betas") -}}
-{{-   $disableBetas = $provider.disable_experimental_betas -}}
-{{- end -}}
-{{- if $disableBetas -}}
-{{-   $_ := set $env "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS" "1" -}}
-{{- end -}}
-{{- /* supported_capabilities: account -> provider; applied to opus/sonnet/haiku */ -}}
-{{- $supportedCaps := "" -}}
-{{- if and $account (hasKey $account "supported_capabilities") -}}
-{{-   $supportedCaps = $account.supported_capabilities -}}
-{{- else if and $provider (hasKey $provider "supported_capabilities") -}}
-{{-   $supportedCaps = $provider.supported_capabilities -}}
-{{- end -}}
-{{- if $supportedCaps -}}
-{{-   $_ := set $env "ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES" $supportedCaps -}}
-{{-   $_ := set $env "ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES" $supportedCaps -}}
-{{-   $_ := set $env "ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES" $supportedCaps -}}
-{{- end -}}
-{{- /* max_context_tokens: account -> provider (unknown gateway model ID) */ -}}
-{{- $maxContextTokens := "" -}}
-{{- if and $account (hasKey $account "max_context_tokens") -}}
-{{-   $maxContextTokens = $account.max_context_tokens -}}
-{{- else if and $provider (hasKey $provider "max_context_tokens") -}}
-{{-   $maxContextTokens = $provider.max_context_tokens -}}
-{{- end -}}
-{{- if $maxContextTokens -}}
-{{-   $_ := set $env "CLAUDE_CODE_MAX_CONTEXT_TOKENS" (toString $maxContextTokens) -}}
-{{- end -}}
-{{- /* auto_compact_window: account -> provider */ -}}
-{{- $autoCompactWindow := "" -}}
-{{- if and $account (hasKey $account "auto_compact_window") -}}
-{{-   $autoCompactWindow = $account.auto_compact_window -}}
-{{- else if and $provider (hasKey $provider "auto_compact_window") -}}
-{{-   $autoCompactWindow = $provider.auto_compact_window -}}
-{{- end -}}
-{{- if $autoCompactWindow -}}
-{{-   $_ := set $env "CLAUDE_CODE_AUTO_COMPACT_WINDOW" (toString $autoCompactWindow) -}}
-{{- end -}}
-{{- /* disable_nonessential_traffic: account -> provider -> defaults */ -}}
-{{- $disableTraffic := false -}}
-{{- if and $account (hasKey $account "disable_nonessential_traffic") -}}
-{{-   $disableTraffic = $account.disable_nonessential_traffic -}}
-{{- else if and $provider (hasKey $provider "disable_nonessential_traffic") -}}
-{{-   $disableTraffic = $provider.disable_nonessential_traffic -}}
-{{- else if hasKey $defaults "disable_nonessential_traffic" -}}
-{{-   $disableTraffic = $defaults.disable_nonessential_traffic -}}
-{{- end -}}
-{{- if $disableTraffic -}}
-{{-   $_ := set $env "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC" "1" -}}
-{{- end -}}
-{{- /* timeout_ms: account -> provider -> defaults */ -}}
-{{- $timeout := "" -}}
-{{- if and $account (hasKey $account "timeout_ms") -}}
-{{-   $timeout = $account.timeout_ms -}}
-{{- else if and $provider (hasKey $provider "timeout_ms") -}}
-{{-   $timeout = $provider.timeout_ms -}}
-{{- else if hasKey $defaults "timeout_ms" -}}
-{{-   $timeout = $defaults.timeout_ms -}}
-{{- end -}}
-{{- if $timeout -}}{{- $_ := set $env "API_TIMEOUT_MS" (toString $timeout) -}}{{- end -}}
+{{- /* ANTHROPIC_MODEL, not the top-level `model` key, is the durable startup
+       default: `model` is PRESERVED rather than managed, and inside a session
+       it wins over this variable, so the two can legitimately disagree until
+       the next /model. */ -}}
+{{- if $claude.model -}}{{- $_ := set $env "ANTHROPIC_MODEL" $claude.model -}}{{- end -}}
+{{- if $claude.timeout_ms -}}{{- $_ := set $env "API_TIMEOUT_MS" (toString $claude.timeout_ms) -}}{{- end -}}
 
 {{- /* -------------------------------------------------------- permissions --
      REWRITTEN 2026-09-06. Two independent defects were fixed at once.
@@ -344,15 +228,9 @@ EXISTING="$(cat)"
         "notion-plugin-marketplace" (dict "source" (dict "source" "github" "repo" "makenotion/claude-code-notion-plugin")))
 -}}
 
-{{- /* apiKeyHelper is the gopass-backed token script, and only third-party
-       providers need it; native Anthropic OAuth renders the empty string, as
-       the full-file template did. Written as an if/else rather than a ternary
-       because `$provider` is nil for an unknown provider name and `and`
-       short-circuits to nil there, which ternary will not take. */ -}}
-{{- $apiKeyHelper := "" -}}
-{{- if and $provider (hasKey $provider "base_url") -}}
-{{-   $apiKeyHelper = "~/.local/bin/claude-token" -}}
-{{- end -}}
+{{- /* apiKeyHelper stays pinned to the empty string: native OAuth needs no
+       helper, and pinning it clears any helper left behind by the removed
+       third-party provider tooling (claude-token). */ -}}
 {{- /* Local sessions stay local. remoteControlAtStartup can default ON through
        an org/GrowthBook default even when never set, registering every CLI
        session as a claude.ai cloud session (the cse_* ids that pile up in
@@ -361,7 +239,7 @@ EXISTING="$(cat)"
        repo-scoped settings can only turn Remote Control off, never on.
        `/remote-control` inside a session still connects on demand. */ -}}
 {{- $managed := dict
-      "apiKeyHelper" $apiKeyHelper
+      "apiKeyHelper" ""
       "env" $env
       "permissions" $permissions
       "hooks" $hooks
@@ -385,9 +263,10 @@ CLAUDE_MANAGED_EOF
 # not exist yet (empty stdin), and a half-written one must not take the managed
 # keys down with it.
 if command -v jq >/dev/null 2>&1 && printf '%s' "$EXISTING" | jq -e . >/dev/null 2>&1; then
-    # Remove account-scoped values from the prior provider before merging. jq's
-    # recursive object merge otherwise retains keys omitted by the new account
-    # (notably a stale proxy URL or 1M window after switching to native OAuth).
+    # Strip provider-routing env before merging. This template only renders
+    # native Anthropic OAuth, and jq's recursive object merge would otherwise
+    # keep a stale proxy URL, model override or context window left in the file
+    # by earlier third-party provider tooling or by hand.
     jq -s '.[0] * (.[1] | .env |= del(
         .ANTHROPIC_BASE_URL, .ANTHROPIC_MODEL, .ANTHROPIC_SMALL_FAST_MODEL,
         .ANTHROPIC_DEFAULT_HAIKU_MODEL, .ANTHROPIC_DEFAULT_SONNET_MODEL,

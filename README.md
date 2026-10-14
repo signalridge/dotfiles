@@ -201,19 +201,18 @@ chezmoi init --apply \
 
 These are the actual data paths used by `.chezmoi.toml.tmpl`:
 
-| Data                                            | When it is requested or used                                                                                                            |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `work`                                          | Required unless already in chezmoi data. On a TTY it is prompted; it controls the derived `private` flag.                               |
-| `useEncryption`                                 | Required unless already in data or overridden by `DOTFILES_USE_ENCRYPTION`. It controls encrypted key restore and gopass configuration. |
-| `hostname`                                      | Prompted only for a non-work machine when no value is stored. Work machines use `.chezmoi.hostname`.                                    |
-| `gitUsername`, `gitEmail`                       | Prompted when absent; there is no safe identity default.                                                                                |
-| `headless`                                      | Prompted on a TTY; otherwise stored data is used, with an OS-based fallback.                                                            |
-| `installMasApps`                                | macOS TTY prompt; defaults to no MAS installation unless enabled.                                                                       |
-| `homeWifiSSIDs`                                 | Optional macOS TTY prompt; comma-separated home SSIDs used by the Hammerspoon volume watcher.                                           |
-| `timezone`                                      | Auto-detected from the host where possible; otherwise prompted on a TTY or falls back to `Etc/UTC`.                                     |
-| `keysRepository`                                | Requested only when encryption is enabled and no value is stored. Required for the keys-manage restore step.                            |
-| `gopassRepository`                              | Requested only when encryption is enabled and no value is stored. Required for the gopass setup step.                                   |
-| `claudeProviderAccount`, `codexProviderAccount` | **Not prompts.** Defaults are `anthropic` and `openai`; they can be stored in chezmoi data or changed by the account managers.          |
+| Data                      | When it is requested or used                                                                                                            |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `work`                    | Required unless already in chezmoi data. On a TTY it is prompted; it controls the derived `private` flag.                               |
+| `useEncryption`           | Required unless already in data or overridden by `DOTFILES_USE_ENCRYPTION`. It controls encrypted key restore and gopass configuration. |
+| `hostname`                | Prompted only for a non-work machine when no value is stored. Work machines use `.chezmoi.hostname`.                                    |
+| `gitUsername`, `gitEmail` | Prompted when absent; there is no safe identity default.                                                                                |
+| `headless`                | Prompted on a TTY; otherwise stored data is used, with an OS-based fallback.                                                            |
+| `installMasApps`          | macOS TTY prompt; defaults to no MAS installation unless enabled.                                                                       |
+| `homeWifiSSIDs`           | Optional macOS TTY prompt; comma-separated home SSIDs used by the Hammerspoon volume watcher.                                           |
+| `timezone`                | Auto-detected from the host where possible; otherwise prompted on a TTY or falls back to `Etc/UTC`.                                     |
+| `keysRepository`          | Requested only when encryption is enabled and no value is stored. Required for the keys-manage restore step.                            |
+| `gopassRepository`        | Requested only when encryption is enabled and no value is stored. Required for the gopass setup step.                                   |
 
 With `useEncryption = false`, the encryption restore/gopass scripts and the
 managed `~/.ssh/*` targets are ignored. With encryption enabled, bootstrap may
@@ -319,8 +318,6 @@ installed:
 | `vi`, `vim`, `view`                                   | `nvim`                                                                            |
 | `ls`, `cat`, `du`, `df`, `man`                        | `eza`, `bat`, `dust`, `duf`, `tldr`                                               |
 | `hf`, `lg`, `lzd`, `top`, `pc`, `dog`, `logv`, `post` | `hyperfine`, `lazygit`, `lazydocker`, `btop`, `procs`, `doggo`, `lnav`, `posting` |
-| `ccm`, `ccw`                                          | `claude-manage`, `claude-with`                                                    |
-| `cxm`, `cxw`                                          | `codex-manage`, `codex-with`                                                      |
 | `k` / `kubectl`                                       | `kubecolor` when installed; otherwise `k` points to `kubectl`                     |
 
 `la` and `ll` always exist; `lla` and `lt` are defined only when eza is
@@ -362,7 +359,7 @@ and defaults to `claude` in the managed shell exports.
 
 | Harness          | Managed files and behavior                                                                                                                                                                                                                                                                                                                       |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Claude Code      | `~/.claude/settings.json`, `CLAUDE.md`, the four `context/*.md` files, `hooks/`, `statusline-command.sh`, the `templates/*.yml` CI starters, and the official integration plugins.                                                                                                                                                               |
+| Claude Code      | `~/.claude/settings.json`, `CLAUDE.md`, `hooks/`, `statusline-command.sh`, and the official integration plugins.                                                                                                                                                                                                                                 |
 | Codex CLI        | `~/.codex/config.toml`, `AGENTS.md`, the project-document fallback list, lifecycle hooks, MCP, and the Slack plugin configuration.                                                                                                                                                                                                               |
 | Pi               | `~/.pi/agent/settings.json`, `models.json`, `subagents.json`, `workflows/settings.json`, `mcp.json`, `keybindings.json`, `APPEND_SYSTEM.md`, six `agents/*.md` definitions, four themes, the `pi-permission-system` config, and `~/.pi/web-search.json`. Pi uses its native `/model` and `/login`; there is no Pi account wrapper or `pi-token`. |
 | Cursor Agent CLI | Pinned `agent`/`cursor-agent` binary plus `~/.cursor/cli-config.json` and `~/.cursor/mcp.json`.                                                                                                                                                                                                                                                  |
@@ -375,41 +372,14 @@ Claude's `~/.claude/skills`, `~/.codex/skills`, `~/.pi/agent/skills`,
 `dot_claude/run_after_ensure-skill-dirs.sh`; nothing is activated there by
 default.
 
-### Claude and Codex accounts
+### Claude and Codex models
 
-Claude providers in `.chezmoidata/claude.yaml` are currently `anthropic`,
-`deepseek`, `kimi`, `glm`, `qwen`, `minimax`, and `doubao`. Configured accounts
-are `anthropic`, `opus`, `haiku`, `deepseek@private`, `doubao@private`, and
-`kimi@private`. Native Anthropic accounts use OAuth; third-party Claude keys
-are read from gopass paths of the form:
-
-```text
-claude/<provider>/<account-label>/api_key
-```
-
-Codex keeps native OpenAI OAuth as `openai` and renders third-party provider
-blocks for DeepSeek, Doubao, GLM, Kimi, MiniMax, and Qwen. Codex API keys use:
-
-```text
-codex/<provider>/<account-label>/api_key
-```
-
-Use `claude-manage`/`codex-manage` for persistent account changes and
-`claude-with`/`codex-with` for a one-session launch. The token helpers only
-read/check keys or print merged account configuration; they do not switch the
-account.
-
-```bash
-claude-manage list
-claude-manage switch kimi@private
-claude-with kimi@private -- --resume
-claude-token --check kimi@private
-
-codex-manage list
-codex-manage switch openai
-codex-with deepseek@private "explain this file"
-codex-token --check deepseek@private
-```
+Claude Code and Codex run on native OAuth only (Anthropic and OpenAI). The
+startup defaults live in `.chezmoidata/claude.yaml` and
+`dot_codex/modify_config.toml.tmpl`; switch models at runtime with `/model`.
+The third-party provider layer (`claude-manage`/`claude-with`/`claude-token`
+and the Codex equivalents) was removed on 2026-10-14; Pi keeps its own
+third-party providers below.
 
 ### Pi policy
 
@@ -542,7 +512,6 @@ Related security material:
 - [SECURITY.md](SECURITY.md)
 - [keys-manage guide](docs/keys-manage-guide.md)
 - [gopass new-device guide](docs/gopass-new-device-setup.md)
-- [Claude provider guide](docs/claude-provider.md)
 
 ## CI and Automation
 
@@ -562,7 +531,6 @@ Related security material:
 
 ## Additional Documentation
 
-- [Claude provider tools](docs/claude-provider.md)
 - [Keys manager](docs/keys-manage-guide.md)
 - [Gopass new-device setup](docs/gopass-new-device-setup.md)
 - [Tmux keybindings](docs/tmux.md)

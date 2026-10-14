@@ -114,20 +114,6 @@ encryption = "age"
 {{-   $homeWifiSSIDs = promptStringOnce . "homeWifiSSIDs" "Home WiFi SSIDs for auto-volume (comma-separated, e.g. Home-5G,Home-2.4G)" -}}
 {{- end -}}
 
-{{/* Claude Code provider@account selection (e.g. "deepseek" or "deepseek@work") */}}
-{{- $claudeProviderAccount := "anthropic" -}}{{/* default provider, no account means "default" */}}
-{{- if hasKey . "claudeProviderAccount" -}}
-{{-   $claudeProviderAccount = .claudeProviderAccount -}}
-{{- else if hasKey . "claudeProvider" -}}
-{{-   $claudeProviderAccount = .claudeProvider -}}{{/* backward compatibility */}}
-{{- end -}}
-
-{{/* Codex provider@account selection (e.g. "openai" or "deepseek@work") */}}
-{{- $codexProviderAccount := "openai" -}}
-{{- if hasKey . "codexProviderAccount" -}}
-{{-   $codexProviderAccount = .codexProviderAccount -}}
-{{- end -}}
-
 {{/* gopass password store repository (HTTPS; auth via gh credential helper).
      Required when encryption is enabled — no guessed default, so a wrong repo
      name (e.g. an assumed "passwords.git") can never be written silently in a
@@ -216,8 +202,6 @@ installMasApps = {{ $installMasApps }}
 homeWifiSSIDs = {{ $homeWifiSSIDs | quote }}
 osid = {{ $osID | quote }}
 timezone = {{ $timezone | quote }}
-claudeProviderAccount = {{ $claudeProviderAccount | quote }}
-codexProviderAccount = {{ $codexProviderAccount | quote }}
 gopassRepository = {{ $gopassRepository | quote }}
 keysRepository = {{ $keysRepository | quote }}
 jjSigningKey = {{ $jjSigningKey | quote }}

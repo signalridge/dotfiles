@@ -195,19 +195,18 @@ chezmoi init --apply \
 
 `.chezmoi.toml.tmpl` 实际使用以下数据：
 
-| 数据                                            | 请求或使用时机                                                                                        |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `work`                                          | 没有存储值时必需；TTY 下会询问，并据此推导 `private`。                                                |
-| `useEncryption`                                 | 没有 data 或 `DOTFILES_USE_ENCRYPTION` 覆盖时必需；控制加密 key 恢复和 gopass 配置。                  |
-| `hostname`                                      | 仅非 work 且没有存储值时询问；work 机器使用 `.chezmoi.hostname`。                                     |
-| `gitUsername`、`gitEmail`                       | 缺失时询问，没有安全的身份默认值。                                                                    |
-| `headless`                                      | TTY 下询问；非 TTY 使用存储值，否则使用基于 OS 的 fallback。                                          |
-| `installMasApps`                                | macOS TTY prompt；未启用时默认不安装 MAS。                                                            |
-| `homeWifiSSIDs`                                 | 可选的 macOS TTY prompt；逗号分隔的家庭 SSID，供 Hammerspoon 音量 watcher 使用。                      |
-| `timezone`                                      | 尽可能从主机自动检测；否则 TTY 下询问，最终 fallback 到 `Etc/UTC`。                                   |
-| `keysRepository`                                | 仅启用加密且没有存储值时询问；供 keys-manage restore 使用。                                           |
-| `gopassRepository`                              | 仅启用加密且没有存储值时询问；供 gopass setup 使用。                                                  |
-| `claudeProviderAccount`、`codexProviderAccount` | **不是 prompt**；默认分别为 `anthropic` 和 `openai`，可写入 chezmoi data，或由 account manager 修改。 |
+| 数据                      | 请求或使用时机                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------ |
+| `work`                    | 没有存储值时必需；TTY 下会询问，并据此推导 `private`。                               |
+| `useEncryption`           | 没有 data 或 `DOTFILES_USE_ENCRYPTION` 覆盖时必需；控制加密 key 恢复和 gopass 配置。 |
+| `hostname`                | 仅非 work 且没有存储值时询问；work 机器使用 `.chezmoi.hostname`。                    |
+| `gitUsername`、`gitEmail` | 缺失时询问，没有安全的身份默认值。                                                   |
+| `headless`                | TTY 下询问；非 TTY 使用存储值，否则使用基于 OS 的 fallback。                         |
+| `installMasApps`          | macOS TTY prompt；未启用时默认不安装 MAS。                                           |
+| `homeWifiSSIDs`           | 可选的 macOS TTY prompt；逗号分隔的家庭 SSID，供 Hammerspoon 音量 watcher 使用。     |
+| `timezone`                | 尽可能从主机自动检测；否则 TTY 下询问，最终 fallback 到 `Etc/UTC`。                  |
+| `keysRepository`          | 仅启用加密且没有存储值时询问；供 keys-manage restore 使用。                          |
+| `gopassRepository`        | 仅启用加密且没有存储值时询问；供 gopass setup 使用。                                 |
 
 当 `useEncryption = false` 时，加密恢复/gopass 脚本和托管的 `~/.ssh/*` 目标会被
 忽略。启用加密后，bootstrap 可能需要 GitHub HTTPS 凭据：已有的 `gh` 登录、
@@ -308,8 +307,6 @@ Shell 文件位于 `dot_custom/`，应用到 `~/.custom/`（`exports.sh`、`alia
 | `vi`、`vim`、`view`                                   | `nvim`                                                                            |
 | `ls`、`cat`、`du`、`df`、`man`                        | `eza`、`bat`、`dust`、`duf`、`tldr`                                               |
 | `hf`、`lg`、`lzd`、`top`、`pc`、`dog`、`logv`、`post` | `hyperfine`、`lazygit`、`lazydocker`、`btop`、`procs`、`doggo`、`lnav`、`posting` |
-| `ccm`、`ccw`                                          | `claude-manage`、`claude-with`                                                    |
-| `cxm`、`cxw`                                          | `codex-manage`、`codex-with`                                                      |
 | `k` / `kubectl`                                       | 安装了 `kubecolor` 时使用它；否则 `k` 指向 `kubectl`                              |
 
 `la` 和 `ll` 始终存在；`lla`、`lt` 仅在装有 eza 时才定义（使用 eza 的
@@ -348,7 +345,7 @@ worktree 和 branch switching。`AICOMMIT_PROVIDER` 可取 `claude`、`codex`、
 
 | Harness          | 托管文件与行为                                                                                                                                                                                                                                                                                                  |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Claude Code      | `~/.claude/settings.json`、`CLAUDE.md`、四个 `context/*.md`、`hooks/`、`statusline-command.sh`、`templates/*.yml`（CI 起步模板）和官方 integration plugins。                                                                                                                                                    |
+| Claude Code      | `~/.claude/settings.json`、`CLAUDE.md`、`hooks/`、`statusline-command.sh` 和官方 integration plugins。                                                                                                                                                                                                          |
 | Codex CLI        | `~/.codex/config.toml`、`AGENTS.md`、project-document fallback 列表、lifecycle hooks、MCP 和 Slack plugin 配置。                                                                                                                                                                                                |
 | Pi               | `~/.pi/agent/settings.json`、`models.json`、`subagents.json`、`workflows/settings.json`、`mcp.json`、`keybindings.json`、`APPEND_SYSTEM.md`、六个 `agents/*.md`、四套 theme、`pi-permission-system` 配置，以及 `~/.pi/web-search.json`。Pi 使用原生 `/model`、`/login`；没有 Pi account wrapper 或 `pi-token`。 |
 | Cursor Agent CLI | 固定版本的 `agent`/`cursor-agent` binary，以及 `~/.cursor/cli-config.json`、`~/.cursor/mcp.json`。                                                                                                                                                                                                              |
@@ -360,40 +357,12 @@ worktree 和 branch switching。`AICOMMIT_PROVIDER` 可取 `claude`、`codex`、
 和 `~/.kimi-code/skills` 由 `dot_claude/run_after_ensure-skill-dirs.sh` 保证为
 真实目录；默认不在其中激活任何 skill。
 
-### Claude 与 Codex accounts
+### Claude 与 Codex 模型
 
-`.chezmoidata/claude.yaml` 当前的 Claude providers 是 `anthropic`、`deepseek`、
-`kimi`、`glm`、`qwen`、`minimax`、`doubao`。已配置 accounts 是 `anthropic`、
-`opus`、`haiku`、`deepseek@private`、`doubao@private`、`kimi@private`。
-原生 Anthropic account 使用 OAuth；第三方 Claude key 使用以下形式的 gopass
-路径：
-
-```text
-claude/<provider>/<account-label>/api_key
-```
-
-Codex 保留 `openai` 原生 OAuth，并渲染 DeepSeek、Doubao、GLM、Kimi、MiniMax、
-Qwen 的第三方 provider block。Codex API key 使用：
-
-```text
-codex/<provider>/<account-label>/api_key
-```
-
-持久切换使用 `claude-manage`/`codex-manage`；单次启动路由使用
-`claude-with`/`codex-with`。token helper 只读取/检查 key 或输出合并后的 account
-配置，不负责切换 account。
-
-```bash
-claude-manage list
-claude-manage switch kimi@private
-claude-with kimi@private -- --resume
-claude-token --check kimi@private
-
-codex-manage list
-codex-manage switch openai
-codex-with deepseek@private "explain this file"
-codex-token --check deepseek@private
-```
+Claude Code 与 Codex 只使用原生 OAuth（Anthropic、OpenAI）。启动默认值在
+`.chezmoidata/claude.yaml` 与 `dot_codex/modify_config.toml.tmpl`；运行时用
+`/model` 切换。第三方 provider 层（`claude-manage`/`claude-with`/`claude-token`
+及 Codex 对应工具）已于 2026-10-14 移除；Pi 仍保留下文的第三方 provider。
 
 ### Pi 策略
 
@@ -513,7 +482,6 @@ Claude hooks 还负责格式化变更文件以及维护 tmux/Herdr 状态。Git 
 - [SECURITY.md](SECURITY.md)
 - [keys-manage 指南](docs/keys-manage-guide.md)
 - [gopass 新设备指南](docs/gopass-new-device-setup.md)
-- [Claude provider 指南](docs/claude-provider.md)
 
 ## CI 与自动化
 
@@ -530,7 +498,6 @@ Claude hooks 还负责格式化变更文件以及维护 tmux/Herdr 状态。Git 
 
 ## 更多文档
 
-- [Claude provider tools](docs/claude-provider.md)
 - [Keys manager](docs/keys-manage-guide.md)
 - [Gopass 新设备设置](docs/gopass-new-device-setup.md)
 - [Tmux keybindings](docs/tmux.md)

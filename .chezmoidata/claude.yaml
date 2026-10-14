@@ -1,157 +1,31 @@
 claude:
-  # Claude Code Provider Configuration
+  # Claude Code startup defaults -> env in dot_claude/modify_settings.json.tmpl
   # Docs: https://docs.anthropic.com/zh-CN/docs/claude-code/settings
   #
-  # Structure:
-  #   - defaults: Global default settings (accounts can override)
-  #   - providers: Provider definitions (base_url + available models)
-  #   - accounts: Account configurations (model selection + settings)
-  #
-  # API keys stored in gopass: claude/<provider>/<account-label>/api_key
-  # (`<account-label>` is the part after `@`, or `default` when the account name
-  # carries no `@`). See dot_local/bin/lib/ai/core.tmpl:api_key_path.
+  # Native Anthropic OAuth only. The third-party provider/account layer
+  # (deepseek/kimi/glm/qwen/minimax/doubao, claude-manage/claude-with/
+  # claude-token) was removed on 2026-10-14: its gopass keys were already gone,
+  # so none of those accounts could authenticate. Recover it from git history if
+  # needed; switch Anthropic models at runtime with `/model`.
 
-  # ===== Global Defaults =====
-  # Fallback when neither account nor provider specifies a value.
-  defaults:
-    timeout_ms: 600000
-    disable_nonessential_traffic: false
-  # ===== Provider Definitions =====
-  # Only base_url and available models list
-  providers:
-    # Native Anthropic (OAuth, no API key needed)
-    anthropic:
-      models:
-        - claude-opus-5-5
-        - claude-opus-5-5[1m]
-        - claude-opus-5
-        - claude-opus-5[1m]
-        - claude-opus-4-8
-        - claude-opus-4-7
-        - claude-opus-4-7[1m]
-        - claude-opus-4-6
-        - claude-sonnet-5
-        - claude-sonnet-5[1m]
-        - claude-sonnet-4-6
-        - claude-sonnet-4-5-20250929
-        - claude-haiku-4-5-20251001
-    # DeepSeek Claude Code: https://api-docs.deepseek.com/zh-cn/quick_start/agent_integrations/claude_code
-    deepseek:
-      base_url: https://api.deepseek.com/anthropic
-      timeout_ms: 300000
-      disable_nonessential_traffic: true
-      default_model: deepseek-v4-pro[1m]
-      # User preference: run Claude Code subagents on pro instead of the documented flash default.
-      subagent_model: deepseek-v4-pro[1m]
-      models:
-        - deepseek-v4-pro[1m]
-        - deepseek-v4-flash
-    # Kimi Code (Moonshot subscription, Kimi K3): https://www.kimi.com/code/docs
-    # Anthropic-compatible coding endpoint; API keys from www.kimi.com/code/console.
-    # NOTE: distinct from Moonshot's pay-per-token open platform (api.moonshot.ai),
-    # which aichat still uses — as of 2026-08-17 via gopass pi/moonshot/api_key
-    # (the claude/ tree was deleted and keys were renamespaced one-per-service
-    # under pi/).
-    kimi:
-      base_url: https://api.kimi.com/coding
-      timeout_ms: 300000
-      disable_nonessential_traffic: true
-      default_model: k3
-      models:
-        - k3 # Kimi K3 (Moderato+ members)
-        - kimi-for-coding # Kimi K2.7 Code (all members)
-        - kimi-for-coding-highspeed # K2.7 Code high-speed (Allegretto+ members)
-    # GLM Coding Plan: https://docs.bigmodel.cn/cn/coding-plan/latest-model
-    glm:
-      base_url: https://api.z.ai/api/anthropic
-      timeout_ms: 300000
-      disable_nonessential_traffic: true
-      default_model: glm-5.2
-      subagent_model: glm-5.2
-      models:
-        - glm-5.2
-        - glm-4.7
-        - glm-4.5-air
-    # Qwen (Alibaba): https://help.aliyun.com/zh/model-studio/claude-code
-    qwen:
-      base_url: https://dashscope.aliyuncs.com/apps/anthropic
-      timeout_ms: 300000
-      disable_nonessential_traffic: true
-      models:
-        - qwen3-coder-plus
-        - qwen3-max
-        - qwen-flash
-    # MiniMax: https://platform.minimax.io/docs/coding-plan/claude-code
-    minimax:
-      base_url: https://api.minimax.io/anthropic
-      timeout_ms: 300000
-      disable_nonessential_traffic: true
-      models:
-        - MiniMax-M2.1
-    # Doubao (ByteDance): https://www.volcengine.com/docs/82379/1928261
-    doubao:
-      base_url: https://ark.cn-beijing.volces.com/api/coding
-      timeout_ms: 300000
-      disable_nonessential_traffic: true
-      models:
-        - ark-code-latest
-  # ===== Account Configurations =====
-  # Format: provider or provider@account
-  # Fields: model, small_model, haiku_model, sonnet_model, opus_model, timeout_ms
-  accounts:
-    # Native Anthropic accounts (use OAuth)
-    # Opus 5.5 on the 1M-context beta (`[1m]` suffix, same convention as
-    # claude-opus-5[1m] / deepseek-v4-pro[1m]). Bumped 5 -> 5.5 on 2026-09-26,
-    # verified against the live account first: `claude -p --model
-    # 'claude-opus-5-5[1m]'` returns provider firstParty, canonicalModel
-    # claude-opus-5-5, contextWindow 1000000, maxOutputTokens 128000.
-    # This renders env.ANTHROPIC_MODEL in dot_claude/modify_settings.json.tmpl.
-    #
-    # PRECEDENCE (measured, not assumed): a top-level `model` key in the live
-    # ~/.claude/settings.json outranks ANTHROPIC_MODEL, and the modify_ script
-    # PRESERVES that key rather than dropping it, so this file alone no longer
-    # decides the running model. A stored alias is not self-updating either --
-    # `model: "opus"` still resolved to claude-opus-5[1m] with
-    # ANTHROPIC_MODEL=claude-opus-5-5[1m] exported, because 5.5 is not yet the
-    # tier default for the alias. Bumping here means bumping that key too
-    # (`/model`, or edit settings.json) until the alias catches up.
-    #
-    # Opus 5.5's own effort default is `medium`, one rung below Opus 5's `high`,
-    # so the effortLevel seed in modify_settings.json.tmpl carries more weight
-    # now -- do not drop it assuming the model defaults high.
-    anthropic:
-      model: claude-opus-5-5[1m]
-    opus:
-      provider: anthropic
-      model: claude-opus-5-5[1m]
-      small_model: claude-haiku-4-5-20251001
-    haiku:
-      provider: anthropic
-      model: claude-haiku-4-5-20251001
-      small_model: claude-haiku-4-5-20251001
-    # Third-party accounts (format: provider@label)
-    # Add your own: deepseek@work, kimi@personal, etc.
-    deepseek@private:
-      provider: deepseek
-      model: deepseek-v4-pro[1m]
-      small_model: deepseek-v4-flash
-      haiku_model: deepseek-v4-flash
-      sonnet_model: deepseek-v4-pro[1m]
-      opus_model: deepseek-v4-pro[1m]
-      subagent_model: deepseek-v4-pro[1m]
-    doubao@private:
-      model: ark-code-latest
-      small_model: ark-code-latest
-      haiku_model: ark-code-latest
-      sonnet_model: ark-code-latest
-      opus_model: ark-code-latest
-    kimi@private:
-      model: k3
-      small_model: kimi-for-coding-highspeed
-      haiku_model: kimi-for-coding-highspeed
-      sonnet_model: kimi-for-coding
-      opus_model: k3
-  # ==========================================================================
-  # Claude Code Plugins (downloaded via .chezmoiexternal.toml.tmpl)
-  # All skills are hardcoded in .chezmoiexternal.toml.tmpl
-  # ==========================================================================
+  # Opus 5.5 on the 1M-context beta (`[1m]` suffix). Bumped 5 -> 5.5 on
+  # 2026-09-26, verified against the live account first: `claude -p --model
+  # 'claude-opus-5-5[1m]'` returns provider firstParty, canonicalModel
+  # claude-opus-5-5, contextWindow 1000000, maxOutputTokens 128000.
+  # This renders env.ANTHROPIC_MODEL.
+  #
+  # PRECEDENCE (measured, not assumed): a top-level `model` key in the live
+  # ~/.claude/settings.json outranks ANTHROPIC_MODEL, and the modify_ script
+  # PRESERVES that key rather than dropping it, so this file alone no longer
+  # decides the running model. A stored alias is not self-updating either --
+  # `model: "opus"` still resolved to claude-opus-5[1m] with
+  # ANTHROPIC_MODEL=claude-opus-5-5[1m] exported, because 5.5 is not yet the
+  # tier default for the alias. Bumping here means bumping that key too
+  # (`/model`, or edit settings.json) until the alias catches up.
+  #
+  # Opus 5.5's own effort default is `medium`, one rung below Opus 5's `high`,
+  # so the effortLevel seed in modify_settings.json.tmpl carries more weight
+  # now -- do not drop it assuming the model defaults high.
+  model: claude-opus-5-5[1m]
+  # API_TIMEOUT_MS for every request.
+  timeout_ms: 600000
