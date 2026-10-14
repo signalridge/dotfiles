@@ -74,26 +74,23 @@ age key: ~/.ssh/main
 
 ## 3. Verify AI credentials
 
-The Claude/Codex account managers use tool-scoped gopass namespaces. For
-example:
-
-```bash
-gopass ls
-claude-token --check kimi@private
-codex-token --check deepseek@private
-```
-
-Native Anthropic/OpenAI accounts use their native OAuth flows and do not need an
-API-key entry. Other providers need keys in paths such as:
+Claude Code and Codex use their native OAuth flows (`claude /login`,
+`codex login`) and need no gopass entry. The remaining AI secrets are
+service-scoped:
 
 ```text
-claude/kimi/private/api_key
-codex/deepseek/private/api_key
+pi/<service>/api_key                 # Pi custom providers and aichat
+tavily/api_key                       # Tavily MCP wrapper (~/.local/bin/mcp-tavily)
+claude/cliproxy/private/api_key      # CLIProxyAPI inbound client key (dsh-with)
 ```
 
-Pi and aichat use separate service-scoped paths under `pi/`; do not merge a Kimi
-Code key with the Moonshot platform key. See [the Claude provider guide](claude-provider.md)
-for account operations.
+```bash
+gopass ls pi tavily claude
+```
+
+Do not merge the Kimi Code key (`pi/kimi`) with the Moonshot platform key
+(`pi/moonshot`). The `claude/cliproxy` path is a storage location, not a Claude
+Code provider; see [DeepSeek Harness](deepseek-harness.md).
 
 ## Important generated files
 

@@ -198,19 +198,18 @@ chezmoi init --apply \
 
 `.chezmoi.toml.tmpl` が実際に使うデータは次のとおりです。
 
-| データ                                          | 要求/利用されるタイミング                                                                                                      |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `work`                                          | 保存値がなければ必須。TTY で prompt され、派生する `private` を決めます。                                                      |
-| `useEncryption`                                 | data にも `DOTFILES_USE_ENCRYPTION` にもなければ必須。暗号化 key 復元と gopass 設定を制御します。                              |
-| `hostname`                                      | non-work かつ保存値がない場合だけ prompt。work は `.chezmoi.hostname` を使います。                                             |
-| `gitUsername`、`gitEmail`                       | 値がない場合に prompt。安全な identity の既定値はありません。                                                                  |
-| `headless`                                      | TTY では prompt、非 TTY では保存値、それもなければ OS ベースの fallback を使います。                                           |
-| `installMasApps`                                | macOS の TTY prompt。無効時は MAS をインストールしません。                                                                     |
-| `homeWifiSSIDs`                                 | 任意の macOS TTY prompt。Hammerspoon の音量 watcher 用のカンマ区切り SSID です。                                               |
-| `timezone`                                      | 可能ならホストから自動検出し、できなければ TTY で prompt、最終的に `Etc/UTC` になります。                                      |
-| `keysRepository`                                | 暗号化有効かつ保存値がない場合だけ prompt。keys-manage restore に必要です。                                                    |
-| `gopassRepository`                              | 暗号化有効かつ保存値がない場合だけ prompt。gopass setup に必要です。                                                           |
-| `claudeProviderAccount`、`codexProviderAccount` | **prompt ではありません**。既定値はそれぞれ `anthropic` と `openai` で、chezmoi data または account manager から変更できます。 |
+| データ                    | 要求/利用されるタイミング                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------- |
+| `work`                    | 保存値がなければ必須。TTY で prompt され、派生する `private` を決めます。                         |
+| `useEncryption`           | data にも `DOTFILES_USE_ENCRYPTION` にもなければ必須。暗号化 key 復元と gopass 設定を制御します。 |
+| `hostname`                | non-work かつ保存値がない場合だけ prompt。work は `.chezmoi.hostname` を使います。                |
+| `gitUsername`、`gitEmail` | 値がない場合に prompt。安全な identity の既定値はありません。                                     |
+| `headless`                | TTY では prompt、非 TTY では保存値、それもなければ OS ベースの fallback を使います。              |
+| `installMasApps`          | macOS の TTY prompt。無効時は MAS をインストールしません。                                        |
+| `homeWifiSSIDs`           | 任意の macOS TTY prompt。Hammerspoon の音量 watcher 用のカンマ区切り SSID です。                  |
+| `timezone`                | 可能ならホストから自動検出し、できなければ TTY で prompt、最終的に `Etc/UTC` になります。         |
+| `keysRepository`          | 暗号化有効かつ保存値がない場合だけ prompt。keys-manage restore に必要です。                       |
+| `gopassRepository`        | 暗号化有効かつ保存値がない場合だけ prompt。gopass setup に必要です。                              |
 
 `useEncryption = false` の場合、暗号化復元/gopass スクリプトと管理対象の
 `~/.ssh/*` は ignore されます。暗号化を有効にすると、bootstrap には GitHub
@@ -316,8 +315,6 @@ return します。管理対象外の `~/.custom/local.sh` は最後に読み込
 | `vi`、`vim`、`view`                                   | `nvim`                                                                            |
 | `ls`、`cat`、`du`、`df`、`man`                        | `eza`、`bat`、`dust`、`duf`、`tldr`                                               |
 | `hf`、`lg`、`lzd`、`top`、`pc`、`dog`、`logv`、`post` | `hyperfine`、`lazygit`、`lazydocker`、`btop`、`procs`、`doggo`、`lnav`、`posting` |
-| `ccm`、`ccw`                                          | `claude-manage`、`claude-with`                                                    |
-| `cxm`、`cxw`                                          | `codex-manage`、`codex-with`                                                      |
 | `k` / `kubectl`                                       | `kubecolor` があればそれ、なければ `k` は `kubectl`                               |
 
 `la` と `ll` は常に定義されます。`lla` と `lt` は eza がある場合のみ定義され、
@@ -357,7 +354,7 @@ repository では Git worktree を使いますが、この chezmoi source 内で
 
 | Harness          | 管理ファイルと挙動                                                                                                                                                                                                                                                                                                        |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Claude Code      | `~/.claude/settings.json`、`CLAUDE.md`、四つの `context/*.md`、`hooks/`、`statusline-command.sh`、`templates/*.yml`（CI 雛形）、official integration plugins。                                                                                                                                                            |
+| Claude Code      | `~/.claude/settings.json`、`CLAUDE.md`、`hooks/`、`statusline-command.sh`、official integration plugins。                                                                                                                                                                                                                 |
 | Codex CLI        | `~/.codex/config.toml`、`AGENTS.md`、project-document fallback、lifecycle hooks、MCP、Slack plugin 設定。                                                                                                                                                                                                                 |
 | Pi               | `~/.pi/agent/settings.json`、`models.json`、`subagents.json`、`workflows/settings.json`、`mcp.json`、`keybindings.json`、`APPEND_SYSTEM.md`、六つの `agents/*.md`、四つの theme、`pi-permission-system` 設定、`~/.pi/web-search.json`。Pi は `/model` と `/login` を使い、Pi account wrapper や `pi-token` はありません。 |
 | Cursor Agent CLI | 固定版 `agent`/`cursor-agent` binary と `~/.cursor/cli-config.json`、`~/.cursor/mcp.json`。                                                                                                                                                                                                                               |
@@ -369,40 +366,13 @@ repository では Git worktree を使いますが、この chezmoi source 内で
 `~/.kimi-code/skills` は `dot_claude/run_after_ensure-skill-dirs.sh` が実ディレ
 クトリとして維持します。既定ではそこに何も有効化されません。
 
-### Claude/Codex account
+### Claude/Codex のモデル
 
-`.chezmoidata/claude.yaml` の Claude provider は現在 `anthropic`、`deepseek`、
-`kimi`、`glm`、`qwen`、`minimax`、`doubao` です。設定済み account は
-`anthropic`、`opus`、`haiku`、`deepseek@private`、`doubao@private`、
-`kimi@private` です。Native Anthropic は OAuth、サードパーティ Claude key は
-次の形式の gopass path から読みます。
-
-```text
-claude/<provider>/<account-label>/api_key
-```
-
-Codex は `openai` の native OAuth を残し、DeepSeek、Doubao、GLM、Kimi、MiniMax、
-Qwen の third-party provider block をレンダーします。Codex API key は次です。
-
-```text
-codex/<provider>/<account-label>/api_key
-```
-
-永続的な切替は `claude-manage`/`codex-manage`、一回だけの起動は
-`claude-with`/`codex-with` を使います。token helper は key の取得/確認や account
-設定の出力だけを行い、account の切替はしません。
-
-```bash
-claude-manage list
-claude-manage switch kimi@private
-claude-with kimi@private -- --resume
-claude-token --check kimi@private
-
-codex-manage list
-codex-manage switch openai
-codex-with deepseek@private "explain this file"
-codex-token --check deepseek@private
-```
+Claude Code と Codex は native OAuth（Anthropic、OpenAI）のみを使います。起動時の
+既定値は `.chezmoidata/claude.yaml` と `dot_codex/modify_config.toml.tmpl` にあり、
+実行中は `/model` で切り替えます。サードパーティ provider 層
+（`claude-manage`/`claude-with`/`claude-token` と Codex 側の同等ツール）は
+2026-10-14 に削除しました。Pi は下記のサードパーティ provider を引き続き持ちます。
 
 ### Pi のポリシー
 
@@ -529,7 +499,6 @@ secret の種類ごとに別の仕組みを使います。
 - [SECURITY.md](SECURITY.md)
 - [keys-manage guide](docs/keys-manage-guide.md)
 - [gopass new-device guide](docs/gopass-new-device-setup.md)
-- [Claude provider guide](docs/claude-provider.md)
 
 ## CI と自動化
 
@@ -547,7 +516,6 @@ secret の種類ごとに別の仕組みを使います。
 
 ## 関連ドキュメント
 
-- [Claude provider tools](docs/claude-provider.md)
 - [Keys manager](docs/keys-manage-guide.md)
 - [Gopass new-device setup](docs/gopass-new-device-setup.md)
 - [Tmux keybindings](docs/tmux.md)

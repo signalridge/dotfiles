@@ -12,12 +12,6 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 # Run: chezmoi edit ~/.codex/config.toml
 {{/* No left trim marker: with `{{-` the blank line above was swallowed and the
      next banner rendered onto the end of the "# Run:" comment. */ -}}
-{{- /* codexProviderAccount can be openai or provider@label */ -}}
-{{- $accountKey := "openai" -}}
-{{- if hasKey . "codexProviderAccount" -}}
-{{-   $accountKey = .codexProviderAccount -}}
-{{- end -}}
-{{- $providerName := (split "@" $accountKey)._0 -}}
 {{- /* work may be absent when rendered in tests or headless mode; use the
        private/high-effort profile by default, matching Claude's template. */ -}}
 {{- $work := false -}}
@@ -25,30 +19,11 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 {{- /* Codex has independent defaults: private -> gpt-6-astra/medium,
        work -> gpt-5.6-luna/max. Pi now defaults to gpt-6.1-sol/high on both
        machines; changing Pi's context metadata does not change Codex's model.
-
-       Keep the default model valid when a third-party provider is selected.
-       Each provider block below is an endpoint, not a shared model registry. */ -}}
+       Native OpenAI OAuth only: the third-party provider blocks and the
+       codex-manage/codex-with/codex-token tooling were removed on 2026-10-14
+       (their gopass keys were already gone). */ -}}
 {{- $model := ternary "gpt-5.6-luna" "gpt-6-astra" $work -}}
 {{- $subagentModel := $model -}}
-{{- if eq $providerName "deepseek" -}}
-{{-   $model = "deepseek-v4-flash" -}}
-{{-   $subagentModel = "deepseek-v4-flash" -}}
-{{- else if eq $providerName "doubao" -}}
-{{-   $model = "ark-code-latest" -}}
-{{-   $subagentModel = "ark-code-latest" -}}
-{{- else if eq $providerName "glm" -}}
-{{-   $model = "glm-5.2" -}}
-{{-   $subagentModel = "glm-5.2" -}}
-{{- else if eq $providerName "kimi" -}}
-{{-   $model = "kimi-for-coding" -}}
-{{-   $subagentModel = "kimi-for-coding" -}}
-{{- else if eq $providerName "minimax" -}}
-{{-   $model = "MiniMax-M2.1" -}}
-{{-   $subagentModel = "MiniMax-M2.1" -}}
-{{- else if eq $providerName "qwen" -}}
-{{-   $model = "qwen3-coder-plus" -}}
-{{-   $subagentModel = "qwen3-coder-plus" -}}
-{{- end -}}
 {{- $effort := ternary "max" "medium" $work -}}
 {{- /* Subagents run the parent's rung, mirroring Pi where the parent IS the
        `medium` tier every unqualified spawn lands on. It used to be pinned to
@@ -62,11 +37,6 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 
 # Native primary model: work -> gpt-5.6-luna, private -> gpt-6-astra
 model = "{{ $model }}"
-
-# Model provider (only for third-party providers)
-{{- if ne $providerName "openai" }}
-model_provider = "{{ $providerName }}"
-{{- end }}
 
 # Approval policy: untrusted | on-failure | on-request | never
 approval_policy = "never"
@@ -118,10 +88,9 @@ project_doc_max_bytes = 65536
 [agents]
 enabled = true
 max_concurrent_threads_per_session = 8
-{{ if eq $providerName "openai" -}}
 default_subagent_model = "{{ $subagentModel }}"
 default_subagent_reasoning_effort = "{{ $subagentEffort }}"
-{{ end }}
+
 
 # =============================================================================
 # Feature Flags
@@ -194,34 +163,6 @@ hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-a
 
 [[hooks.Stop]]
 hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1 }]
-
-# =============================================================================
-# Model Providers (Third-Party)
-# =============================================================================
-
-[model_providers.deepseek]
-name = "Deepseek"
-base_url = "https://api.deepseek.com/v1"
-
-[model_providers.doubao]
-name = "Doubao"
-base_url = "https://ark.cn-beijing.volces.com/api/v3"
-
-[model_providers.glm]
-name = "Glm"
-base_url = "https://open.bigmodel.cn/api/paas/v4"
-
-[model_providers.kimi]
-name = "Kimi Code"
-base_url = "https://api.kimi.com/coding/v1"
-
-[model_providers.minimax]
-name = "Minimax"
-base_url = "https://api.minimax.io/v1"
-
-[model_providers.qwen]
-name = "Qwen"
-base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 # =============================================================================
 # MCP Servers

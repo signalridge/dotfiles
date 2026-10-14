@@ -1,0 +1,18 @@
+# Targets whose source was deleted from this repository. chezmoi removes them
+# on apply, so every machine drops the stale copies, not just the one where the
+# source was deleted. Preview with: chezmoi apply --dry-run --verbose
+
+# 2026-10-14: Claude/Codex third-party provider tooling. Both harnesses now run
+# on native OAuth only; their claude/<provider> and codex/ gopass keys were gone.
+.local/bin/claude-manage
+.local/bin/claude-token
+.local/bin/claude-with
+.local/bin/codex-manage
+.local/bin/codex-token
+.local/bin/codex-with
+.local/bin/lib/ai
+
+# 2026-10-14: unreferenced Claude extras. Claude Code auto-loads neither folder
+# and nothing imported them; the CI starters were copy-by-hand samples.
+.claude/context
+.claude/templates
