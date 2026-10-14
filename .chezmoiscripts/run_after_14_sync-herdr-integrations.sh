@@ -37,8 +37,9 @@ if [[ -f "$codex_hooks" ]]; then
         echo "    Error: jq is required to verify $codex_hooks before removal" >&2
         exit 1
     fi
-    expected_command="bash '$HOME/.codex/herdr-agent-state.sh' session"
-    if ! jq -e --arg expected "$expected_command" '
+    # Herdr emits session, working, and idle lifecycle commands here.
+    herdr_command_prefix="bash '$HOME/.codex/herdr-agent-state.sh'"
+    if ! jq -e --arg prefix "$herdr_command_prefix" '
         (keys == ["hooks"])
         and (.hooks | type == "object" and length > 0)
         and all(.hooks | to_entries[];
@@ -50,7 +51,9 @@ if [[ -f "$codex_hooks" ]]; then
                     type == "object"
                     and .type == "command"
                     and .timeout == 10
-                    and .command == $expected
+                    and (.command == ($prefix + " session")
+                      or .command == ($prefix + " working")
+                      or .command == ($prefix + " idle"))
                 )
             )
         )
