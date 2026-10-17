@@ -151,3 +151,25 @@ packages:
       - darwin
       - linux
       - windows/amd64
+  # Fastfetch 2.70.0 switched macOS back to a universal archive. The standard
+  # registry still requests fastfetch-macos-aarch64.tar.gz on Apple Silicon.
+  - type: github_release
+    repo_owner: fastfetch-cli
+    repo_name: fastfetch
+    description: An actively maintained, feature-rich and performance oriented, neofetch like system information tool
+    version_constraint: semver(">= 2.70.0")
+    asset: "fastfetch-{{.OS}}-{{.Arch}}.{{.Format}}"
+    format: tar.gz
+    files:
+      - name: fastfetch
+        src: "{{.AssetWithoutExt}}/usr/bin/fastfetch"
+    replacements:
+      arm64: aarch64
+      darwin: macos
+    overrides:
+      - goos: darwin
+        asset: "fastfetch-macos-universal.{{.Format}}"
+      - goos: windows
+        format: zip
+        files:
+          - name: fastfetch
