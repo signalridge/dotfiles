@@ -13,7 +13,8 @@ MCP tools are provided by the `pi-mcp-adapter` extension; servers are configured
 - Docs/API -> Context7
 - Web/news -> pi-web-access `web_search`; Research for multi-step sourced work, including when sources conflict
 - Web content extraction -> pi-web-access `fetch_content`/`get_search_content`; repository content -> DeepWiki/gitmcp
-- Code navigation -> readseek (hash-anchored read/edit/grep + structural maps; no MCP round-trip)
+- File operations -> Pi native `read` / `edit` / `write`; read before editing and use unique exact-text replacements
+- Code navigation -> native `grep` / `find` / `ls` or `rg` / `fd`; `ast-grep` for structural/AST searches
 - Long-context / evidence compression -> hypa (rewrites shell/read/grep/find/ls, proxies MCP)
 - Browser/E2E -> agent-browser (CLI)
 - Repo Q&A -> DeepWiki (public) / gitmcp (private)
@@ -21,9 +22,10 @@ MCP tools are provided by the `pi-mcp-adapter` extension; servers are configured
 - Doc→Markdown -> markitdown
 - Notes/knowledge base -> Notion official MCP/plugin when available
 
-Code-nav layering: readseek for "who calls / where defined", safe hash-anchored edits and
-local structural maps; hypa when context is large. They complement — don't invoke both
-for one lookup.
+Code-nav layering: start with bounded text/path searches, then inspect the relevant files
+and use `ast-grep` for syntax-aware matching. Text/AST matches are not binding-aware
+references: check scope and shadowing, or use language tooling when available.
+Use hypa when context is large; don't repeat the same lookup through multiple tools.
 
 User preference overrides; fall back when unavailable.
 

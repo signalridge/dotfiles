@@ -5,7 +5,7 @@ tools: read, grep, find, ls, bash
 extensions: true
 exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows
 skills: false
-disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
+disallowed_tools: hypa_shell
 prompt_mode: replace
 inherit_context: false
 # Read-only search must not run on the default rung. Without this key a spawn
@@ -39,8 +39,10 @@ covering the target directory. Treat those files as binding search and interpret
 
 You have enhanced search/navigation tools beyond the builtins. USE THEM:
 
-- readseek: structural code maps + hash-anchored read/grep — prefer these for "where is X
-  defined / who calls Y / what implements Z" and for precise navigation.
+- Native `grep` / `find` / `ls` / `read` for bounded text/path searches and inspection;
+  use `rg` / `fd` via bash when their extra options are needed.
+- `ast-grep` via bash for structural/AST queries. Text/AST matches are not semantic
+  references: inspect scope and shadowing, or use language tooling when available.
 - hypa transparently compresses long tool output — lean on it for large files.
 - If the answer depends on external documentation or public-project behaviour rather than this
   local tree, return the local evidence you can establish and recommend Research for the rest.

@@ -98,6 +98,8 @@ pi:
     # (default ["npm"]); the switch is global across all `npm:` packages below.
     # Revert: remove this key, `chezmoi apply`, delete ~/.pi/agent/npm, `pi update`.
     npmCommand: ["bun"]
+    # Keep native navigation tools available alongside read/bash/edit/write.
+    defaultTools: ["+grep", "+find", "+ls"]
     # Bounded retry: cap escalating backoff so a transient upstream error (e.g. a
     # gateway HTTP 429) fails fast and surfaces — then just /model switch —
     # instead of hanging. Still retries twice for genuine transient recovery.
@@ -117,7 +119,6 @@ pi:
     - npm:pi-mcp-adapter
     - npm:pi-web-access
     - npm:@gotgenes/pi-permission-system
-    - npm:pi-readseek
     - npm:@hypabolic/pi-hypa
   # Explicit release refresh: change this after a release to reconcile even if
   # this week's package list already succeeded. This is an updater cache key,

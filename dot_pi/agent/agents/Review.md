@@ -4,7 +4,7 @@ description: "Read-only review of code that ALREADY EXISTS — a diff, a branch,
 tools: read, grep, find, ls, bash
 extensions: true
 exclude_extensions: pi-statusline, pi-input-history, pi-input-prefix, pi-tab-status, pi-herdr-state, pi-goal, pi-welcome, pi-workflows
-disallowed_tools: readSeek_edit, readSeek_write, readSeek_rename, hypa_shell
+disallowed_tools: hypa_shell
 skills: false
 prompt_mode: replace
 ---

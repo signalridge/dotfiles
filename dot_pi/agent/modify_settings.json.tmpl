@@ -25,7 +25,7 @@ EXISTING="$(cat)"
 {{- range .pi.signalridgePackages -}}
 {{- $packageSources = append $packageSources (printf "npm:@signalridge/%s" .) -}}
 {{- end -}}
-{{- $managed := dict "defaultProvider" $d.defaultProvider "defaultModel" $model "theme" $d.theme "quietStartup" $d.quietStartup "defaultThinkingLevel" $effort "enableSkillCommands" true "npmCommand" $d.npmCommand "compaction" $d.compaction "branchSummary" $d.branchSummary "retry" $d.retry "packages" $packageSources -}}
+{{- $managed := dict "defaultProvider" $d.defaultProvider "defaultModel" $model "theme" $d.theme "quietStartup" $d.quietStartup "defaultThinkingLevel" $effort "enableSkillCommands" true "npmCommand" $d.npmCommand "defaultTools" $d.defaultTools "compaction" $d.compaction "branchSummary" $d.branchSummary "retry" $d.retry "packages" $packageSources -}}
 MANAGED="$(cat <<'PI_SETTINGS_EOF'
 {{ $managed | toPrettyJson }}
 PI_SETTINGS_EOF
