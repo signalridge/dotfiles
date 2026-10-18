@@ -3,15 +3,17 @@
 .codex
 .serena/
 
-# Same for .pi, with ONE exception whitelisted below. The chezmoi source tree is
+# Same for .pi, except the repository-scoped safety policies below. The source tree is
 # the live `main` checkout, so Article 1/2's ban on worktrees and branch
 # switching applies HERE and nowhere else. pi-permission-system reads
 # `<cwd>/.pi/extensions/pi-permission-system/config.json` and project overrides
-# global, so that file is the only place the ban can be stated at the scope it
-# actually has -- the global config could only approximate it as "every
+# global, so that file states the shell restriction at its actual scope;
+# subagents.json separately disables internal Git isolation. A global ban meant "every
 # repository", which is what it used to do. Git cannot re-include a file whose
 # parent directory is excluded, hence the dir-by-dir dance.
 .pi/*
+# Agent isolation invokes Git internally, outside shell-tool permission hooks.
+!.pi/subagents.json
 !.pi/extensions/
 .pi/extensions/*
 !.pi/extensions/pi-permission-system/

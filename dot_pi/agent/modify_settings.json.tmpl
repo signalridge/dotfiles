@@ -31,10 +31,22 @@ MANAGED="$(cat <<'PI_SETTINGS_EOF'
 PI_SETTINGS_EOF
 )"
 
-if command -v jq >/dev/null 2>&1 && printf '%s' "$EXISTING" | jq -e . >/dev/null 2>&1; then
-    # Deep-merge managed values, then remove the legacy pi-subagents settings
-    # block; the repository-owned package reads ~/.pi/agent/subagents.json.
-    jq -s '.[0] * .[1] | del(.subagents)' <(printf '%s' "$EXISTING") <(printf '%s' "$MANAGED")
-else
+if [[ -z "${EXISTING//[[:space:]]/}" ]]; then
     printf '%s\n' "$MANAGED"
+    exit 0
 fi
+
+if ! command -v jq >/dev/null 2>&1; then
+    printf '%s\n' 'Cannot merge existing Pi settings without jq; leaving settings unchanged.' >&2
+    exit 1
+fi
+if ! printf '%s' "$EXISTING" | jq -se 'length == 1 and (.[0] | type == "object")' >/dev/null 2>&1; then
+    printf '%s\n' 'Existing Pi settings must be a single valid JSON object; leaving settings unchanged.' >&2
+    exit 1
+fi
+
+# Deep-merge managed values, then remove legacy settings. Pi 1.3 reads the
+# agent delay cap and provider retry limit separately; retry.maxRetryDelayMs
+# at the retry root is ignored. The subagent package reads subagents.json.
+jq -s '.[0] * .[1] | del(.subagents, .retry.maxRetryDelayMs)' \
+    <(printf '%s' "$EXISTING") <(printf '%s' "$MANAGED")

@@ -98,15 +98,29 @@ pi:
     # (default ["npm"]); the switch is global across all `npm:` packages below.
     # Revert: remove this key, `chezmoi apply`, delete ~/.pi/agent/npm, `pi update`.
     npmCommand: ["bun"]
-    # Keep native navigation tools available alongside read/bash/edit/write.
-    defaultTools: ["+grep", "+find", "+ls"]
+    # Add navigation and extension tools without replacing the native defaults.
+    # Plan owns activation of plan_mode_question / plan_mode_complete itself.
+    defaultTools:
+      - "+grep"
+      - "+find"
+      - "+ls"
+      - "+ask_user_question"
+      - "+todo"
+      - "+bash_background"
+      - "+monitor"
+      - "+background_list"
+      - "+background_logs"
+      - "+background_stop"
+      - "+background_clear"
     # Bounded retry: cap escalating backoff so a transient upstream error (e.g. a
     # gateway HTTP 429) fails fast and surfaces — then just /model switch —
     # instead of hanging. Still retries twice for genuine transient recovery.
     retry:
       enabled: true
       maxRetries: 2
-      maxRetryDelayMs: 4000
+      maxAgentDelayMs: 4000
+      provider:
+        maxRetryDelayMs: 4000
   # ===== Pi packages -> ~/.pi/agent/settings.json packages =====
   # Pi installs missing packages from this settings field when it resolves
   # resources. Keep third-party packages explicit here instead of using a
@@ -135,17 +149,28 @@ pi:
   # source only; Pi must not load it, or any legacy ~/.pi/agent/extensions copy,
   # as a second implementation of the same extension.
   #
-  # Excluded on purpose:
-  #   pi-worktree   — repository constitution forbids worktrees (CLAUDE.md Art. 1)
-  #   pi-worktime   — published but opt-in
-  #   pi-background, pi-recall, pi-codex-compact, pi-analytics — experimental, opt-in
-  #   pi-subagents-protocol, pi-ui — libraries, dependencies and never Pi resources
+  # Explicitly opt into stable and experimental extensions below. Loading does
+  # not start Goal/Ralph/Plan or grant canonical-history sharing consent.
+  # pi-approvals remains excluded: its fail-closed gate blocks hypa_shell and
+  # uncertified native mutations. Enable it only as an explicit approval-backend
+  # migration with cooperative tool adapters, not a transparent package addition.
+  # pi-lsp is optional and omitted; use each project's lint/typecheck commands.
+  # Worktree commands remain subject to each repository's own worktree policy;
+  # never create or switch worktrees in this dotfiles source checkout.
+  # pi-subagents-protocol, pi-ui and pi-approval-core are libraries: install them
+  # only as dependencies, never as Pi resources.
   signalridgePackages:
-    # Orchestration
+    # Orchestration and human controls
     - pi-subagents
     - pi-workflows
     - pi-goal
     - pi-ralph-wiggum
+    - pi-plan-mode
+    - pi-ask-user-question
+    - pi-todo
+    # Processes and workspaces (commands do not run on package load)
+    - pi-background
+    - pi-worktree
     # Environment bridges
     - pi-herdr-state
     - pi-gpt-fast
@@ -157,14 +182,19 @@ pi:
     - pi-tab-status
     - pi-welcome
     - pi-session-recap
+    - pi-sessions
+    - pi-recall
     - pi-usage-extension
+    - pi-analytics
     - pi-stamp
+    - pi-worktime
     # Developer tools
-    - pi-lsp
     - pi-github-pr
     - pi-files-widget
     - pi-code-actions
     - pi-btw
+    # Compaction remains gated by its own explicit history-sharing consent.
+    - pi-codex-compact
   # ===== Custom providers -> ~/.pi/agent/models.json =====
   # Only providers/models Pi does not ship natively belong here. Built-in model
   # IDs must not be repeated because a custom entry with the same ID replaces
