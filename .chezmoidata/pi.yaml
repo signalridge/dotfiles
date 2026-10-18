@@ -138,7 +138,7 @@ pi:
   # Explicit release refresh: change this after a release to reconcile even if
   # this week's package list already succeeded. This is an updater cache key,
   # not a package-version pin or a setting emitted into Pi's settings.json.
-  extensionUpdateRevision: "2026-10-12-signalridge-release"
+  extensionUpdateRevision: "2026-10-18-plan-1.4.5-statusline-1.4.5-tab-1.2.7"
   # ===== Signalridge Pi packages -> ~/.pi/agent/settings.json =====
   # Published packages from github.com/signalridge/pi-extensions, installed from
   # npm by Pi itself. Bare names only: modify_settings.json.tmpl renders each as
