@@ -25,6 +25,11 @@ MANAGED="$(cat <<'PI_PERMISSION_EOF'
   "doublePressToConfirm": true,
   "permissionReviewLog": true,
   "yoloMode": true,
+  "shellTools": {
+    "hypa_shell": { "commandArgument": "command" },
+    "bash_background": { "commandArgument": "command", "workdirArgument": "cwd" },
+    "monitor": { "commandArgument": "command", "workdirArgument": "cwd" }
+  },
   "permission": {
     "*": "allow",
     "path": {
@@ -76,11 +81,21 @@ PI_PERMISSION_EOF
 # project overrides global, so the definition now lives in the repository it
 # governs. Note that project config is loaded ONLY for a project Pi reports as
 # trusted; `~/.pi/agent/trust.json` has the chezmoi source tree as trusted.
-if command -v jq >/dev/null 2>&1 && printf '%s' "$EXISTING" | jq -e . >/dev/null 2>&1; then
-    jq -n \
-        --argjson existing "$EXISTING" \
-        --argjson managed "$MANAGED" \
-        '$existing * $managed | .permission = $managed.permission'
-else
+if [[ -z "${EXISTING//[[:space:]]/}" ]]; then
     printf '%s\n' "$MANAGED"
+    exit 0
 fi
+if ! command -v jq >/dev/null 2>&1; then
+    printf '%s\n' 'Cannot merge existing Pi permissions without jq; leaving configuration unchanged.' >&2
+    exit 1
+fi
+if ! printf '%s' "$EXISTING" | jq -se 'length == 1 and (.[0] | type == "object")' >/dev/null 2>&1; then
+    printf '%s\n' 'Existing Pi permissions must be a single valid JSON object; leaving configuration unchanged.' >&2
+    exit 1
+fi
+
+jq -n \
+    --argjson existing "$EXISTING" \
+    --argjson managed "$MANAGED" \
+    '$existing * $managed | .permission = $managed.permission |
+     .yoloMode = (if ($existing.yoloMode | type) == "boolean" then $existing.yoloMode else $managed.yoloMode end)'
