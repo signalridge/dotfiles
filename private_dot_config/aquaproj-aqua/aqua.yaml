@@ -35,7 +35,7 @@ packages:
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
-  - name: google-antigravity/antigravity-cli@1.4.0
+  - name: google-antigravity/antigravity-cli@1.4.2
   - name: nektos/act@v0.2.89
   - name: FiloSottile/age@v1.3.2
   - name: asciinema/asciinema@v3.2.1
@@ -55,7 +55,7 @@ packages:
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.10.12
+  - name: jdx/mise@v2026.10.13
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -78,7 +78,7 @@ packages:
   - name: gitlab.com/gitlab-org/cli@v1.99.0 # glab
   - name: git-lfs/git-lfs@v3.8.0
   - name: charmbracelet/glow@v3.0.0
-  - name: carapace-sh/carapace-bin@v1.8.0
+  - name: carapace-sh/carapace-bin@v1.8.1
   - name: jqlang/jq@jq-1.8.2
   - name: ynqa/jnv@v0.7.1
   - name: tldr-pages/tlrc@v1.13.1
@@ -102,7 +102,7 @@ packages:
   - name: ducaale/xh@v0.26.2
   - name: watchexec/watchexec@v2.8.0
   - name: joshmedeski/sesh@v2.33.0
-  - name: starship/starship@v1.26.0
+  - name: starship/starship@v1.27.0
   - name: JohnnyMorganz/StyLua@v2.6.0
   - name: Kampfkarren/selene@0.32.0
   - name: crate-ci/typos@v1.51.1
