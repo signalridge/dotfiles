@@ -11,7 +11,7 @@ versions:
   aquaInstaller: v4.1.0
   aquaInstallerSha256: 4d3e513d42f425609c1ead6ecd40b9c62492011979dfe23d7012428a59efbe82
   aquaVersion: v2.64.0
-  nixIndexDb: 2026-10-11-092020
+  nixIndexDb: 2026-10-18-072618
   paperlib: 3.1.12
   paperlibAmd64Sha256: 993d05c9bb9c8163f2d308736d2316ebf6db8a23b75133a170e22ea6e125746c
   paperlibArm64Sha256: a49ab642331632719079399c15551a6d0c9b16ca2f50a2ef35c297c3a9835459
@@ -50,7 +50,7 @@ versions:
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 18dcb447f090667171ff23666a05d6d387e2aa73
   dailyDevSkillsRev: d8fc89d978eb4a454992349adafa283700c52e31
-  opcSkillsRev: 6302d6d5a0485978df4b708a2f106f85e12cebc8
+  opcSkillsRev: 84c205f1c61167fd7cb32e41b87d40e2429b6bf2
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 8e899e20ff0cd4dc524af3993e4c62d8ee8c5717
