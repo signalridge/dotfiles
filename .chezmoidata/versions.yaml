@@ -2,12 +2,12 @@
 # Pinned versions (auto-updated by GitHub Actions)
 # ─────────────────────────────────────────────────────────────────────────────
 versions:
-  nixInstaller: v3.23.2
-  nixInstallerAarch64DarwinSha256: 136f40a09ac56e3638530d57099d748c1023677911eb5afd45a4ba438986b648
-  nixInstallerAarch64LinuxSha256: 6b05c29b805e45e761ccf3fc8ca9ff7f03472f0ae2c98ce38ebb1bdb3b568694
-  nixInstallerX8664LinuxSha256: d3c174b95b948ab1744a9a3507599d030bf31a39033305e8769b51c3134daeff
+  nixInstaller: v3.23.3
+  nixInstallerAarch64DarwinSha256: c26bcb997a04264d62464afce9f765b8d758abd1eca7fe0646b62a3144fe3cc6
+  nixInstallerAarch64LinuxSha256: dd4a471ca5bcb8d82e9d4185c5874904266efce9b6586e108413b47caa783931
+  nixInstallerX8664LinuxSha256: c41a1e6a9fbb557f16b0de5faf7f361f0351b2d0726e7d56c2e2ed7f4f7d075e
   nixVersion: v3.23.3
-  nixpkgsBootstrapRev: f20cd90e28fe0403873f473b29e42662cd86e8c4
+  nixpkgsBootstrapRev: 7a6522c868711d06e3a520bbcdfafe9806f4337f
   aquaInstaller: v4.1.0
   aquaInstallerSha256: 4d3e513d42f425609c1ead6ecd40b9c62492011979dfe23d7012428a59efbe82
   aquaVersion: v2.64.0
@@ -21,11 +21,11 @@ versions:
   azureFunctionsOsxX64Sha256: abca2f642f0da3c64ea39152e4670d6398ee0673955c92b2600eea6c4574b4de
   azureFunctionsLinuxArm64Sha256: cadf1e1c252ba7cc43a7266aef364da615911b63422dfa2173f81db6d81246ef
   azureFunctionsLinuxX64Sha256: 6e7286080c898d1f15a62c6dd7fcc06b8b6aa4a0347c4634d207e7b5adb92acb
-  cursorAgentVersion: 2026.10.16-e3cb207
-  cursorAgentDarwinArm64Sha256: 5f04d196a84ddb5c20a4a466bdd74e3695bfb447e3c4a1e6071364b2b9497dd0
-  cursorAgentDarwinX64Sha256: 93372e384e9397b54b1e4fdb1812662f68e7b61c0c60cb3f2f4b788c9e0779c4
-  cursorAgentLinuxArm64Sha256: 4cf077f150eb8d1e270bf1dea69700184c39a4847fe192d523f5bb34d4b62597
-  cursorAgentLinuxX64Sha256: 3aa3f48cd7a3909a98c9b3f2a4085f0c021088bf826690b22c61f424c843e552
+  cursorAgentVersion: 2026.10.19-6bbf2c4
+  cursorAgentDarwinArm64Sha256: 095dccb923488d280aae697ba68c13a92bbd9ce1dc6105401e147e25869f2b13
+  cursorAgentDarwinX64Sha256: b9fc62adba5a06069b1c231fa463d3cc0d5182357b957094f19483455d6f4ce0
+  cursorAgentLinuxArm64Sha256: 71a90f12a8b8183a71442b7ed4037bddc1a0f88114ec4fb9ec92782acb8e7d84
+  cursorAgentLinuxX64Sha256: cf80cc18d8b33bf33e762353977ca1868cfc45290c92c0ffdcef83bb8b37b44f
   tpmRev: e261deb1b47614eed3400089ce7197dc68acc4eb
   tpmSha256: 72d92c512270d4857e27519ac97b92a52cf149afe4d92f26860c710f60bbbe37
   claudeWshobsonAgentsRev: 0874a27b17a22e2b7c2e2bcd725768e0803cad06
@@ -43,18 +43,18 @@ versions:
   cloudflareSkillsRev: 86505e44f87d801aa1864a3c4109e9a8ae5c409f
   vercelLabsAgentSkillsRev: 063bee94c3f4df8453406c830b0a7df0f2860278
   vercelLabsNextSkillsRev: c522619e45aa3492fd2bfc916b308b275eff7798
-  vercelLabsAgentBrowserRev: dac13bb87468fe9d74a040d862720f6cc17a9565
+  vercelLabsAgentBrowserRev: 5ee8691339a5a002e4d7454eec95250253bc7419
   supabaseAgentSkillsRev: c9be0e931b7930f7d02126d04774d904c381e7d7
   expoSkillsRev: 7ddc1f5796996e5c7efe2fc3fa9168eb24e8dac1
   microsoftSkillsRev: 8850874f66fb4d905bfcfcb923a18883bb70d1cd
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 18dcb447f090667171ff23666a05d6d387e2aa73
-  dailyDevSkillsRev: d8fc89d978eb4a454992349adafa283700c52e31
-  opcSkillsRev: 84c205f1c61167fd7cb32e41b87d40e2429b6bf2
+  dailyDevSkillsRev: 5ec8dbe53359f5e322006d251a0cef280ccd3017
+  opcSkillsRev: 8a74e5f39f6d89250f77069ca3e0a6239741d09f
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 8e899e20ff0cd4dc524af3993e4c62d8ee8c5717
-  affaanEccRev: 76aaa77df6adc5b889e689007bf99b9a4f74af34
+  affaanEccRev: 35f57c80e6b7573755fd63136338ca0dc7a0bdb7
   actionbookRustSkillsRev: 5c40d3ad785193231b7d0dbfb8e1eb447e5edd94
   dpearsonSwiftSkillsRev: 8d90fd121a263355a4fb44fd082af1416a5c1c2a
   effectiveTypescriptRev: d754db2077d71ae1e2b57bf50ae7bc565067a2e0
