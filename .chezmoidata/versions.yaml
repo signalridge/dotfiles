@@ -7,7 +7,7 @@ versions:
   nixInstallerAarch64LinuxSha256: dd4a471ca5bcb8d82e9d4185c5874904266efce9b6586e108413b47caa783931
   nixInstallerX8664LinuxSha256: c41a1e6a9fbb557f16b0de5faf7f361f0351b2d0726e7d56c2e2ed7f4f7d075e
   nixVersion: v3.23.3
-  nixpkgsBootstrapRev: 7a6522c868711d06e3a520bbcdfafe9806f4337f
+  nixpkgsBootstrapRev: e513db7b0a65def6f6e17bb55195dfe510871944
   aquaInstaller: v4.1.0
   aquaInstallerSha256: 4d3e513d42f425609c1ead6ecd40b9c62492011979dfe23d7012428a59efbe82
   aquaVersion: v2.64.0
@@ -39,22 +39,22 @@ versions:
   openaiSkillsRev: 49f948faa9258a0c61caceaf225e179651397431
   huggingfaceSkillsRev: c3ff942be3e07116b475253f0a8fc4f54682c1a8
   getsentrySkillsRev: f57ada2d0b640406ea7e25b11d636c530e77c58b
-  trailofbitsSkillsRev: 5c99c03fb8a9ea568432ecbcba5d86e9f4ac2bf0
+  trailofbitsSkillsRev: a3131740a39291e42fd15b9eac07e0b393ad71b1
   cloudflareSkillsRev: 86505e44f87d801aa1864a3c4109e9a8ae5c409f
   vercelLabsAgentSkillsRev: 063bee94c3f4df8453406c830b0a7df0f2860278
   vercelLabsNextSkillsRev: c522619e45aa3492fd2bfc916b308b275eff7798
-  vercelLabsAgentBrowserRev: 5ee8691339a5a002e4d7454eec95250253bc7419
+  vercelLabsAgentBrowserRev: fd93075e55a21a47fcb36d7433361daa867a0580
   supabaseAgentSkillsRev: c9be0e931b7930f7d02126d04774d904c381e7d7
-  expoSkillsRev: 7ddc1f5796996e5c7efe2fc3fa9168eb24e8dac1
-  microsoftSkillsRev: 8850874f66fb4d905bfcfcb923a18883bb70d1cd
+  expoSkillsRev: 55ec65cd16499f20f14fb10fe99a2e62901b00a1
+  microsoftSkillsRev: 28bd7424998a963f07122c5dea91fc02ca443831
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 18dcb447f090667171ff23666a05d6d387e2aa73
   dailyDevSkillsRev: 5ec8dbe53359f5e322006d251a0cef280ccd3017
-  opcSkillsRev: 8a74e5f39f6d89250f77069ca3e0a6239741d09f
+  opcSkillsRev: 92b31f711b16ea814158eda9a4aee69c48e34577
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: 8e899e20ff0cd4dc524af3993e4c62d8ee8c5717
-  affaanEccRev: 35f57c80e6b7573755fd63136338ca0dc7a0bdb7
+  affaanEccRev: 90606c8315ee09cafc303515c5f33024db6b9882
   actionbookRustSkillsRev: 5c40d3ad785193231b7d0dbfb8e1eb447e5edd94
   dpearsonSwiftSkillsRev: 8d90fd121a263355a4fb44fd082af1416a5c1c2a
   effectiveTypescriptRev: d754db2077d71ae1e2b57bf50ae7bc565067a2e0
