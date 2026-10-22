@@ -77,7 +77,16 @@ jobs:
           nixpkgs_bootstrap_rev=$(gh api repos/NixOS/nixpkgs/commits/nixpkgs-unstable -q '.sha')
           aqua_installer=$(gh release view --repo aquaproj/aqua-installer --json tagName -q '.tagName')
           aqua_installer_sha256=$(curl_sha256 "https://raw.githubusercontent.com/aquaproj/aqua-installer/${aqua_installer}/aqua-installer")
-          aqua_version=$(gh release view --repo aquaproj/aqua --json tagName -q '.tagName')
+          # Pin only aqua releases that ship SLSA provenance: `aqua update-aqua`
+          # (also run by aqua-installer after bootstrapping) verifies the new
+          # release with slsa-verifier and fails hard without multiple.intoto.jsonl
+          # (e.g. v2.65.0, aquaproj/aqua#5492).
+          aqua_version=$(gh api 'repos/aquaproj/aqua/releases?per_page=20' \
+            -q '[.[] | select(.draft == false and .prerelease == false and any(.assets[]; .name == "multiple.intoto.jsonl"))] | max_by(.published_at) | .tag_name // empty')
+          if [[ -z "$aqua_version" ]]; then
+            aqua_version=$(awk '/^[[:space:]]*aquaVersion:/ {print $2; exit}' .chezmoidata/versions.yaml)
+            echo "::warning::no recent aqua release ships multiple.intoto.jsonl; keeping $aqua_version"
+          fi
           nix_index_db=$(gh release view --repo nix-community/nix-index-database --json tagName -q '.tagName')
           # paperlib tag format: release-electron-X.Y.Z -> extract X.Y.Z
           paperlib_tag=$(gh release view --repo Future-Scholars/paperlib --json tagName -q '.tagName')
