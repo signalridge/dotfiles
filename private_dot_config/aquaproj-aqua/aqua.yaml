@@ -22,25 +22,25 @@ packages:
   - name: ogulcancelik/herdr@v0.9.5
     registry: third-party
   # CLIProxyAPI for OpenAI-compatible clients; official release with checksums.txt verification.
-  - name: router-for-me/CLIProxyAPI@v8.0.36
+  - name: router-for-me/CLIProxyAPI@v8.0.38
     registry: third-party
   # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
   # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
   # Moonshot's CDN (self-contained Node-SEA, no Node runtime). NOTE: the CDN's
   # `latest` can lag GitHub tags, so `aqua up` may propose a version not yet on the
   # CDN — keep this at a CDN-present version (binaries/<ver>/manifest.json resolves).
-  - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@2.2.0
+  - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@2.3.0
     registry: third-party
   # ----- standard registry -----
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
-  - name: google-antigravity/antigravity-cli@1.4.3
+  - name: google-antigravity/antigravity-cli@1.4.4
   - name: nektos/act@v0.2.89
   - name: FiloSottile/age@v1.3.2
   - name: asciinema/asciinema@v3.2.1
   - name: atuinsh/atuin@v18.24.1
-  - name: axodotdev/cargo-dist@v0.33.0 # `dist` — was a live-only cargo install
+  - name: axodotdev/cargo-dist@v0.33.1 # `dist` — was a live-only cargo install
   - name: sigoden/aichat@v0.30.0
   - name: sharkdp/bat@v0.26.1
   - name: eth-p/bat-extras@v2024.08.24
@@ -48,7 +48,7 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.305
+  - name: anthropics/claude-code@v2.1.307
   - name: openai/codex@rust-v0.163.0
   - name: direnv/direnv@v2.38.2
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
@@ -72,7 +72,7 @@ packages:
   - name: sharkdp/fd@v10.5.0
   - name: junegunn/fzf@v0.74.5
   - name: gopasspw/gopass@v1.17.4
-  - name: cli/cli@v2.102.1
+  - name: cli/cli@v2.103.0
   - name: dlvhdr/gh-dash@v4.26.2
   - name: x-motemen/ghq@v1.11.2
   - name: gitlab.com/gitlab-org/cli@v1.99.0 # glab
@@ -92,14 +92,14 @@ packages:
   - name: jj-vcs/jj@v0.46.0
   - name: rclone/rclone@v1.75.2
   - name: o2sh/onefetch@3.1.0
-  - name: ip7z/7zip@26.04
+  - name: ip7z/7zip@26.05
   - name: ouch-org/ouch@0.8.3
     registry: third-party
   - name: Nukesor/pueue/pueue@v4.0.4
   - name: BurntSushi/ripgrep@15.2.0
   - name: phiresky/ripgrep-all@v0.10.10
   - name: chmln/sd@v1.1.0
-  - name: ducaale/xh@v0.26.2
+  - name: ducaale/xh@v0.26.3
   - name: watchexec/watchexec@v2.8.0
   - name: joshmedeski/sesh@v2.33.0
   - name: starship/starship@v1.27.0
@@ -138,7 +138,7 @@ packages:
   - name: kubecolor/kubecolor@v0.8.0
   - name: ahmetb/kubectx@v0.11.0
   - name: kubernetes-sigs/krew@v0.5.0
-  - name: aquasecurity/trivy@v0.76.0
+  - name: aquasecurity/trivy@v0.76.1
   - name: anchore/syft@v1.55.0
   - name: anchore/grype@v0.121.0
   - name: LucasPickering/slumber@v5.4.2
