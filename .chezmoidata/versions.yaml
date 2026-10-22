@@ -10,7 +10,7 @@ versions:
   nixpkgsBootstrapRev: 5adc50831c259f87faeb09ddf930d43597197473
   aquaInstaller: v4.1.0
   aquaInstallerSha256: 4d3e513d42f425609c1ead6ecd40b9c62492011979dfe23d7012428a59efbe82
-  aquaVersion: v2.65.0
+  aquaVersion: v2.64.0
   nixIndexDb: 2026-10-18-072618
   paperlib: 3.1.12
   paperlibAmd64Sha256: 993d05c9bb9c8163f2d308736d2316ebf6db8a23b75133a170e22ea6e125746c
