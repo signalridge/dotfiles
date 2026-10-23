@@ -30,6 +30,13 @@ config.color_scheme = "Dracula (Official)"
 -- its own. PingFang SC is the macOS system Chinese face and is what Terminal.app
 -- falls back to, so this keeps the two looking the same.
 --
+-- Hiragino Sans GB follows it because PingFang is no longer reachable: macOS 27
+-- ships it only as the private FontServices `Reserved/PingFangUI.ttc`, which
+-- wezterm neither enumerates nor loads via font_dirs. With PingFang SC missing,
+-- wezterm's own fallback landed on Apple SD Gothic Neo (Korean), which covers
+-- some hanzi but not simplified-only ones (汉/测/试), so those rendered as tofu.
+-- Hiragino ships only W3 (Light) and W6 (DemiBold), hence the weights below.
+--
 -- These lists are named rather than inlined because font_rules needs them too: a
 -- font_rules entry does NOT inherit config.font's fallback list, so the
 -- `wezterm.font(...)` form that used to be down there silently dropped PingFang
@@ -37,12 +44,14 @@ config.color_scheme = "Dracula (Official)"
 local body_faces = {
   { family = "CaskaydiaCove NFM", weight = "DemiBold" },
   { family = "PingFang SC", weight = "Medium" },
+  { family = "Hiragino Sans GB", weight = "Light" },
   "Apple Color Emoji",
   "Menlo",
 }
 local body_italic_faces = {
   { family = "CaskaydiaCove NFM", weight = "DemiBold", italic = true },
   { family = "PingFang SC", weight = "Medium" },
+  { family = "Hiragino Sans GB", weight = "Light" },
   "Apple Color Emoji",
   "Menlo",
 }
@@ -51,12 +60,14 @@ local body_italic_faces = {
 local bold_faces = {
   { family = "CaskaydiaCove NFM", weight = "Bold" },
   { family = "PingFang SC", weight = "DemiBold" },
+  { family = "Hiragino Sans GB", weight = "DemiBold" },
   "Apple Color Emoji",
   "Menlo",
 }
 local bold_italic_faces = {
   { family = "CaskaydiaCove NFM", weight = "Bold", italic = true },
   { family = "PingFang SC", weight = "DemiBold" },
+  { family = "Hiragino Sans GB", weight = "DemiBold" },
   "Apple Color Emoji",
   "Menlo",
 }
@@ -66,12 +77,14 @@ local bold_italic_faces = {
 local dim_faces = {
   { family = "CaskaydiaCove NFM", weight = "Regular" },
   { family = "PingFang SC", weight = "Light" },
+  { family = "Hiragino Sans GB", weight = "Light" },
   "Apple Color Emoji",
   "Menlo",
 }
 local dim_italic_faces = {
   { family = "CaskaydiaCove NFM", weight = "Regular", italic = true },
   { family = "PingFang SC", weight = "Light" },
+  { family = "Hiragino Sans GB", weight = "Light" },
   "Apple Color Emoji",
   "Menlo",
 }
