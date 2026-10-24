@@ -24,7 +24,10 @@ Members (Mac, NAS, Linux nodes) listen on **UDP only** (`udp://0.0.0.0:11010`,
 `easytier.listeners`): with a TCP listener a peer that can reach it (e.g. over
 public IPv6) links over TCP first and EasyTier never upgrades an existing direct
 link, so path loss throttled tunnelled TCP to ~20 Mbit/s instead of the 100
-Mbit/s test cap. The bastion keeps TCP + UDP for discovery and fallback relay.
+Mbit/s test cap; TCP hole punching is disabled for the same reason. Only IPv4
+can be hole-punched (both ends drop unsolicited inbound IPv6 UDP), so with
+Surge Enhanced Mode every member's public IPv4 must be in `tun-excluded-routes`.
+The bastion keeps TCP + UDP for discovery and fallback relay.
 
 ## Credentials
 
@@ -210,6 +213,7 @@ services:
       - --rpc-portal=127.0.0.1:15888
       - --rpc-portal-whitelist=127.0.0.1/32
       - --default-protocol=udp
+      - --disable-tcp-hole-punching=true
       - --private-mode=true
       - --console-log-level=info
     logging:
