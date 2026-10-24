@@ -1,15 +1,15 @@
 {{- $node := dig "nodes" .hostname "" .easytier -}}
-{{- $keyFile := joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/easytier/exit-ss2022-key.age" -}}
+{{- $keyFile := joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/easytier/exit-ss-password.age" -}}
 {{- if and (eq .chezmoi.os "linux") $node (dig "exitNode" false $node) (stat $keyFile) -}}
 {{- $ip := index (splitList "/" $node.ipv4) 0 -}}
-{{- $key := output "gopass" "show" "-o" "easytier/exit-ss2022-key" | trim -}}
-{{- if not $key }}{{ fail "missing gopass key: easytier/exit-ss2022-key" }}{{ end -}}
+{{- $key := output "gopass" "show" "-o" "easytier/exit-ss-password" | trim -}}
+{{- if not $key }}{{ fail "missing gopass key: easytier/exit-ss-password" }}{{ end -}}
 # gost config for the EasyTier exit on {{ .hostname }} (easytier-exit-proxy.service).
-# Shadowsocks 2022 (TCP + UDP) bound ONLY to this node's virtual IP, and the
+# Shadowsocks (TCP + UDP) bound ONLY to this node's virtual IP, and the
 # admission whitelist drops any source outside the mesh: Linux accepts packets
 # for a local address on every interface, so a same-LAN host could otherwise
 # route 10.144.144.0/24 here via the physical NIC. The key comes from gopass
-# (easytier/exit-ss2022-key); this file is rendered 0600 and never committed.
+# (easytier/exit-ss-password); this file is rendered 0600 and never committed.
 services:
   - name: exit-tcp
     addr: {{ $ip }}:{{ .easytier.exitProxy.port }}
