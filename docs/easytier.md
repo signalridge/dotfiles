@@ -31,30 +31,51 @@ The bastion keeps TCP + UDP for discovery and fallback relay.
 
 ## Exit nodes
 
-Members pick an internet egress **locally**; nothing restarts and no root is
-needed to switch. Exits run gost serving Shadowsocks (`chacha20-ietf-poly1305`,
-TCP + UDP) on their **virtual IP only**, with a gost admission whitelist that
-drops sources outside `10.144.144.0/24` (Linux accepts packets for a local
-address on any interface, so a same-LAN host could otherwise reach the port via
-the physical NIC). The password is gopass `easytier/exit-ss-password`.
+Members pick an internet egress **locally** (Surge policy group, sing-box
+selector); nothing restarts and no root is needed to switch. Exits run
+**shadowsocks-rust** (`ssserver`, Shadowsocks 2022 `2022-blake3-aes-256-gcm`,
+TCP + UDP) on their **virtual IP only**. Its ACL accepts only clients in
+`10.144.144.0/24` — Linux accepts packets for a local address on any
+interface, so a same-LAN host could otherwise reach the port via the physical
+NIC — and refuses loopback, private and overlay destinations. `config.json`
+holds `${SS_PASSWORD}`; the key (gopass `easytier/exit-ss-password`) lives in a
+separate 0600 env file.
 
-| Exit       | Address             | Deployed by                                                                                                                                           |
-| ---------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| gpuserver1 | `10.144.144.3:1080` | this repo: `exitNode: true` → systemd --user `easytier-exit-proxy.service`, config `~/.config/easytier-exit/config.yaml` (0600, rendered from gopass) |
-| nas        | `10.144.144.2:1080` | container `easytier-exit` in the NAS compose below; `gost-exit.yaml` (0600) written from gopass                                                       |
+| Exit       | Address             | Deployed by                                                                                                    |
+| ---------- | ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| gpuserver1 | `10.144.144.3:1080` | this repo: `exitNode: true` → systemd --user `ss-exit.service`, `~/.config/ss-exit/{config.json,acl.list,env}` |
+| nas        | `10.144.144.2:1080` | container `ss-exit` in the NAS compose below; `ss-exit.{json,acl,env}` (0600, env written from gopass)         |
 
-- Classic AEAD rather than `2022-blake3-*`: gost's UDP (`ssu`) handler rejects
+- Clients: Surge on the home Mac (`ss` proxies `gpuserver-exit`, `nas-exit`,
+  `encrypt-method=2022-blake3-aes-256-gcm`, `udp-relay=true`; group
+  `Exit = select, DIRECT, …`; mesh/LAN/peer CIDRs `DIRECT`, then `FINAL,Exit`);
+  sing-box `selector` elsewhere.
+- Not used, and why: EasyTier's `--socks5` takes only a port and listens on all
+  interfaces without authentication; gost's Shadowsocks UDP (`ssu`) rejects
   Shadowsocks 2022 UDP from Surge (`cipher: message authentication failed`).
-  The 2022 replay protection adds nothing here because the ciphertext only
-  travels inside the encrypted mesh.
 - Exit roles are declared per node (`exitNode: true`, `externalExitNodes`),
   never inferred from `headless`: an exit relays other machines' traffic from
   its own IP.
-- Clients: Surge on the home Mac (`ss` proxies `gpuserver-exit`, `nas-exit` +
-  `Exit = select, DIRECT, …` group, `FINAL,Exit`, mesh/LAN/peer CIDRs `DIRECT`);
-  sing-box `selector` on other machines.
-- EasyTier's own `--socks5` is unsuitable as an exit: it takes only a port and
-  listens on every interface without authentication.
+
+### gost features and their replacements
+
+gost was removed from aqua. Its features map to these tools when needed:
+
+| gost feature                         | Use instead                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------ |
+| Shadowsocks / proxy server           | shadowsocks-rust `ssserver`; sing-box `socks`/`http`/`mixed` inbounds                |
+| Local protocol conversion            | Surge, sing-box, `sslocal`                                                           |
+| Multi-hop chains with node selection | sing-box `detour` + `selector`/`urltest`; Surge `underlying-proxy`                   |
+| Reverse tunnels / NAT traversal      | EasyTier, Tailscale; frp or rathole for hostname-based ingress                       |
+| L3 tunnel (TUN)                      | EasyTier, Tailscale                                                                  |
+| TCP/UDP port forwarding (any target) | sing-box `direct` inbound with an override target; `socat` (`nix run nixpkgs#socat`) |
+| KCP / fake-TCP / ICMP transports     | kcptun / udp2raw or phantun / ptunnel-ng                                             |
+| WebSocket / TLS / QUIC camouflage    | sing-box, Xray, bastion v2ray + Caddy                                                |
+| Rate limiting                        | `tc` (Linux), `pf` (macOS)                                                           |
+| Per-connection logs                  | sing-box connections API, Surge Dashboard, `ssserver -v`                             |
+| Prometheus metrics                   | node_exporter (host level)                                                           |
+
+Ad hoc, gost itself is still one command away: `nix run nixpkgs#gost`.
 
 ## Credentials
 
@@ -249,11 +270,13 @@ services:
       options:
         max-size: 10m
         max-file: "3"
-  # Shadowsocks 2022 exit on the virtual IP only (see gost-exit.yaml); retried
-  # until easytier has brought up 10.144.144.2.
-  exit-proxy:
-    image: gogost/gost:3.3.1@sha256:c3f849542469bc6027cd38d9a7ef86e8efbcc1176551a3ace8df85ef90a9c5b9
-    container_name: easytier-exit
+  # Shadowsocks 2022 exit (shadowsocks-rust) on the virtual IP only; ss-exit.acl
+  # accepts only mesh clients and refuses private/overlay destinations. The key
+  # comes from ss-exit.env (gopass easytier/exit-ss-password), not the config.
+  # Retried until easytier has brought up 10.144.144.2.
+  ss-exit:
+    image: ghcr.io/shadowsocks/ssserver-rust:v1.25.0@sha256:22240c07d8ce3a36421ede770bd775dcc5fc56d5d829943196957b05452dc36f
+    container_name: ss-exit
     user: "1026:100"
     restart: unless-stopped
     network_mode: host
@@ -262,9 +285,16 @@ services:
     security_opt:
       - no-new-privileges:true
     read_only: true
+    env_file: ./ss-exit.env
     volumes:
-      - ./gost-exit.yaml:/etc/gost/gost.yaml:ro
-    command: ["-C", "/etc/gost/gost.yaml"]
+      - ./ss-exit.json:/etc/shadowsocks-rust/config.json:ro
+      - ./ss-exit.acl:/etc/shadowsocks-rust/acl.list:ro
+    # The image default adds `-a nobody`, which needs root; this runs as 1026.
+    command:
+      - ssserver
+      - --log-without-time
+      - -c
+      - /etc/shadowsocks-rust/config.json
     logging:
       driver: json-file
       options:
@@ -286,8 +316,9 @@ Status: `sudo docker exec easytier easytier-cli peer`.
   `cp -p /usr/local/sbin/vps-firewall.bak-20261024160103-pre-easytier /usr/local/sbin/vps-firewall`
   then `vps-firewall --check && vps-firewall`.
 - NAS: `cd /volume1/docker/easytier && sudo docker compose down`,
-  `sudo docker image rm easytier/easytier:v2.6.4 gogost/gost:3.3.1`, delete the directory.
-- Exits: drop `exitNode: true` (gpuserver1 then renders no unit/config; run
-  `systemctl --user disable --now easytier-exit-proxy` there first); remove the
-  `gpuserver-exit`/`nas-exit` proxies and the `Exit` group from Surge.
+  `sudo docker image rm easytier/easytier:v2.6.4 ghcr.io/shadowsocks/ssserver-rust:v1.25.0`, delete the directory.
+- Exits: on gpuserver1 run `systemctl --user disable --now ss-exit` and drop
+  `exitNode: true` (the unit and `~/.config/ss-exit` then stop rendering; delete
+  them); remove the `gpuserver-exit`/`nas-exit` proxies and the `Exit` group
+  from Surge; `gopass rm easytier/exit-ss-password`.
 - gopass: `gopass rm -r easytier`.
