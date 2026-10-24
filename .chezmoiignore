@@ -104,10 +104,11 @@ Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 # Skip the proxy on machines without its key; an unreadable key still fails
 # closed when the proxy config template is rendered.
 {{- $cliproxyKey := and .useEncryption (stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/claude/cliproxy/private/api_key.age")) }}
-{{- if not $cliproxyKey }}
+# CLIProxyAPI does not run on work machines (17 also unloads a leftover agent).
+{{- if or (not $cliproxyKey) .work }}
 .cli-proxy-api/config.yaml
 {{- end }}
-{{- if or (not $cliproxyKey) .headless }}
+{{- if or (not $cliproxyKey) .headless .work }}
 Library/LaunchAgents/com.signalridge.cliproxyapi.plist
 {{- end }}
 
