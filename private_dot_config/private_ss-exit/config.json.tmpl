@@ -1,0 +1,12 @@
+{{- $node := dig "nodes" .hostname "" .easytier -}}
+{{- if and (eq .chezmoi.os "linux") $node (dig "exitNode" false $node) -}}
+{{- $ip := index (splitList "/" $node.ipv4) 0 -}}
+{
+  "server": "{{ $ip }}",
+  "server_port": {{ .easytier.exitProxy.port }},
+  "method": "{{ .easytier.exitProxy.method }}",
+  "password": "${SS_PASSWORD}",
+  "mode": "tcp_and_udp",
+  "acl": "{{ .chezmoi.homeDir }}/.config/ss-exit/acl.list"
+}
+{{- end }}

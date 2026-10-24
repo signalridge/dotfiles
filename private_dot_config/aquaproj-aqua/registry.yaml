@@ -185,6 +185,33 @@ packages:
         format: zip
         files:
           - name: fastfetch
+  # Not in the standard registry. Every release asset ships a sibling
+  # `<asset>.sha256`; Linux uses the static musl build (no glibc coupling).
+  - type: github_release
+    repo_owner: shadowsocks
+    repo_name: shadowsocks-rust
+    description: Shadowsocks reference implementation in Rust (ssserver, sslocal, ssurl, ssmanager, ssservice)
+    asset: "shadowsocks-{{.Version}}.{{.Arch}}-{{.OS}}.tar.xz"
+    format: tar.xz
+    files:
+      - name: ssserver
+      - name: sslocal
+      - name: ssurl
+      - name: ssmanager
+      - name: ssservice
+    replacements:
+      amd64: x86_64
+      arm64: aarch64
+      darwin: apple-darwin
+      linux: unknown-linux-musl
+    checksum:
+      type: github_release
+      asset: "{{.Asset}}.sha256"
+      algorithm: sha256
+    supported_envs:
+      - darwin
+      - linux/amd64
+      - linux/arm64
   - type: github_release
     repo_owner: apernet
     repo_name: hysteria

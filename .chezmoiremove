@@ -16,3 +16,8 @@
 # and nothing imported them; the CI starters were copy-by-hand samples.
 .claude/context
 .claude/templates
+
+# 2026-10-25: the gost-based EasyTier exit (its config held the Shadowsocks key)
+# was replaced by ss-exit (shadowsocks-rust); 19 stops the old unit first.
+.config/easytier-exit
+.config/systemd/user/easytier-exit-proxy.service

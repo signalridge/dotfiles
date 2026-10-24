@@ -89,14 +89,14 @@ Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 {{- end }}
 
 # ─────────────────────────────────────────────────────────────────────────────
-# EasyTier exit (gost) only on Linux nodes flagged `exitNode: true` in
-# .chezmoidata/easytier.yaml that also hold the gopass key it is rendered from.
+# EasyTier exit (shadowsocks-rust) only on Linux nodes flagged `exitNode: true`
+# in .chezmoidata/easytier.yaml that also hold the gopass key for its env file.
 # ─────────────────────────────────────────────────────────────────────────────
 {{- $etNode := dig "nodes" .hostname "" .easytier }}
 {{- $etExitKey := stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/easytier/exit-ss-password.age") }}
 {{- if not (and (eq .chezmoi.os "linux") $etNode (dig "exitNode" false $etNode) $etExitKey) }}
-.config/easytier-exit/
-.config/systemd/user/easytier-exit-proxy.service
+.config/ss-exit/
+.config/systemd/user/ss-exit.service
 {{- end }}
 
 # ─────────────────────────────────────────────────────────────────────────────
