@@ -61,7 +61,7 @@ case "${1:-status}" in
         cur="$(current_ip)"
         peers | jq -r --arg cur "$cur" --arg capable " $EXIT_CAPABLE" '
             .[] | select(.ipv4 != "" and .cost != "Local")
-            | select($capable | contains(" " + .hostname + " "))
+            | .hostname as $h | select($capable | contains(" " + $h + " "))
             | "\(if .ipv4 == $cur then "*" else " " end) \(.hostname)\t\(.ipv4)\t\(.cost)\t\(.lat_ms) ms"'
         ;;
     off)
