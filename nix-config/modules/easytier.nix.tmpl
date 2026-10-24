@@ -19,6 +19,8 @@ _: { }
 let
   easytier = import ./easytier-package.nix { inherit pkgs; };
   envFile = "/etc/easytier/easytier.env";
+  # Optional ET_EXIT_NODES=<ip>, managed by `easytier-exit` (~/.local/bin).
+  exitFile = "/etc/easytier-exit.env";
   logFile = "/var/log/easytier.log";
 in
 {
@@ -33,6 +35,10 @@ in
       fi
       set -a
       . "${envFile}"
+      if [ -f "${exitFile}" ]; then
+        [ "$(/usr/bin/stat -f '%u' "${exitFile}")" = 0 ] || { echo "easytier: ${exitFile} must be owned by root" >&2; exit 1; }
+        . "${exitFile}"
+      fi
       set +a
 
       exec ${easytier}/bin/easytier-core \
@@ -43,6 +49,9 @@ in
         --stun-servers{{ range .easytier.stunServers }} {{ . }}{{ end }} \
         --default-protocol udp \
         --disable-tcp-hole-punching true \
+{{- if dig "exitNode" false $node }}
+        --enable-exit-node true \
+{{- end }}
         --private-mode true \
         --enable-quic-proxy true \
         --enable-kcp-proxy true \

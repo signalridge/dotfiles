@@ -1,0 +1,84 @@
+{{- if hasKey .easytier.nodes .hostname -}}
+#!/usr/bin/env bash
+# easytier-exit — choose the EasyTier exit node that carries this machine's
+# internet traffic (like `tailscale set --exit-node`).
+#
+#   easytier-exit list               peers that advertise exit-node service
+#   easytier-exit status             current exit node (or off)
+#   easytier-exit <hostname|ip>      route all traffic via that peer (sudo)
+#   easytier-exit off                back to the local uplink (sudo)
+#
+# easytier-cli has no runtime switch, so the choice lives in the root-owned
+# /etc/easytier-exit.env (ET_EXIT_NODES=<virtual ip>, world-readable; not a
+# secret, unlike /etc/easytier/) that the node service reads at start; switching restarts the service (a few seconds of downtime).
+# Exit-capable peers are declared with `exitNode: true` in
+# .chezmoidata/easytier.yaml (the NAS is configured by hand; docs/easytier.md).
+
+set -euo pipefail
+
+EXIT_FILE="/etc/easytier-exit.env"
+NETWORK_PREFIX="{{ regexReplaceAll "\\.[0-9]+/[0-9]+$" (dig "nodes" .hostname "ipv4" "" .easytier) "." }}"
+SELF_IP="{{ index (splitList "/" (dig "nodes" .hostname "ipv4" "" .easytier)) 0 }}"
+{{ if eq .chezmoi.os "darwin" -}}
+CLI="easytier-cli"
+restart() { sudo launchctl kickstart -k system/org.nixos.easytier; }
+{{- else -}}
+CLI="${XDG_STATE_HOME:-$HOME/.local/state}/easytier/easytier/bin/easytier-cli"
+restart() { sudo systemctl restart easytier.service; }
+{{- end }}
+# Peers known to offer exit service: repo nodes flagged exitNode, plus the NAS.
+EXIT_CAPABLE="{{ range $name, $n := .easytier.nodes }}{{ if dig "exitNode" false $n }}{{ $name }} {{ end }}{{ end }}{{ range .easytier.externalExitNodes }}{{ . }} {{ end }}"
+
+die() { echo "easytier-exit: $*" >&2; exit 1; }
+peers() { "$CLI" -o json peer; }
+current_ip() { sed -n 's/^ET_EXIT_NODES=//p' "$EXIT_FILE" 2>/dev/null || true; }
+name_of() { peers | jq -r --arg ip "$1" 'map(select(.ipv4 == $ip))[0].hostname // empty'; }
+
+resolve() {
+    local want="$1" ip
+    if [[ "$want" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        ip="$want"
+    else
+        ip="$(peers | jq -r --arg h "$want" 'map(select(.hostname == $h and .ipv4 != ""))[0].ipv4 // empty')"
+        [[ -n "$ip" ]] || die "no reachable peer named '$want' (see: easytier-exit list)"
+    fi
+    [[ "$ip" == "$NETWORK_PREFIX"* ]] || die "$ip is not in the EasyTier network"
+    [[ "$ip" != "$SELF_IP" ]] || die "cannot use this node as its own exit"
+    printf '%s\n' "$ip"
+}
+
+write_exit() {
+    # shellcheck disable=SC2016 # expanded by the root shell, not here
+    printf 'ET_EXIT_NODES=%s\n' "$1" | sudo /bin/sh -c 'umask 022; cat >"$1.tmp" && mv -f "$1.tmp" "$1"' sh "$EXIT_FILE"
+}
+
+case "${1:-status}" in
+    status)
+        ip="$(current_ip)"
+        if [[ -z "$ip" ]]; then echo "exit node: off"; else echo "exit node: $(name_of "$ip") ($ip)"; fi
+        ;;
+    list)
+        cur="$(current_ip)"
+        peers | jq -r --arg cur "$cur" --arg capable " $EXIT_CAPABLE" '
+            .[] | select(.ipv4 != "" and .cost != "Local")
+            | select($capable | contains(" " + .hostname + " "))
+            | "\(if .ipv4 == $cur then "*" else " " end) \(.hostname)\t\(.ipv4)\t\(.cost)\t\(.lat_ms) ms"'
+        ;;
+    off)
+        [[ -n "$(current_ip)" ]] || { echo "exit node: already off"; exit 0; }
+        sudo rm -f "$EXIT_FILE"
+        restart
+        echo "exit node: off"
+        ;;
+    -h | --help | help)
+        sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
+        ;;
+    *)
+        ip="$(resolve "$1")"
+        [[ "$ip" != "$(current_ip)" ]] || { echo "exit node: already $1 ($ip)"; exit 0; }
+        write_exit "$ip"
+        restart
+        echo "exit node: $1 ($ip)"
+        ;;
+esac
+{{- end }}
