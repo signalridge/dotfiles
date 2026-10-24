@@ -28,6 +28,7 @@ ENV_BY_KEY = {
     "easytier": "U_EASYTIER",
     "easytierDarwinAmd64Sha256": "U_EASYTIER_DARWIN_AMD64_SHA256",
     "easytierDarwinArm64Sha256": "U_EASYTIER_DARWIN_ARM64_SHA256",
+    "easytierImageSha256": "U_EASYTIER_IMAGE_SHA256",
     "cursorAgentVersion": "U_CURSOR_AGENT_VERSION",
     "cursorAgentDarwinArm64Sha256": "U_CURSOR_AGENT_DARWIN_ARM64_SHA256",
     "cursorAgentDarwinX64Sha256": "U_CURSOR_AGENT_DARWIN_X64_SHA256",

@@ -98,6 +98,10 @@ jobs:
           easytier=${easytier_tag#v}
           easytier_darwin_amd64_sha256=$(release_asset_digest_sha256 EasyTier/EasyTier "$easytier_tag" "easytier-macos-x86_64-${easytier_tag}.zip")
           easytier_darwin_arm64_sha256=$(release_asset_digest_sha256 EasyTier/EasyTier "$easytier_tag" "easytier-macos-aarch64-${easytier_tag}.zip")
+          # Linux nodes run the official image; pin the same tag by its index digest.
+          easytier_image_sha256=$(curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors \
+            "https://hub.docker.com/v2/repositories/easytier/easytier/tags/${easytier_tag}" | jq -r '.digest // empty')
+          easytier_image_sha256=${easytier_image_sha256#sha256:}
 
           cursor_installer=$(curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors https://cursor.com/install)
           cursor_agent_version=$(
@@ -180,6 +184,7 @@ jobs:
             echo "easytier=$easytier"
             echo "easytier_darwin_amd64_sha256=$easytier_darwin_amd64_sha256"
             echo "easytier_darwin_arm64_sha256=$easytier_darwin_arm64_sha256"
+            echo "easytier_image_sha256=$easytier_image_sha256"
             echo "cursor_agent_version=$cursor_agent_version"
             echo "cursor_agent_darwin_arm64_sha256=$cursor_agent_darwin_arm64_sha256"
             echo "cursor_agent_darwin_x64_sha256=$cursor_agent_darwin_x64_sha256"
@@ -242,6 +247,7 @@ jobs:
           U_EASYTIER: ${{ steps.versions.outputs.easytier }}
           U_EASYTIER_DARWIN_AMD64_SHA256: ${{ steps.versions.outputs.easytier_darwin_amd64_sha256 }}
           U_EASYTIER_DARWIN_ARM64_SHA256: ${{ steps.versions.outputs.easytier_darwin_arm64_sha256 }}
+          U_EASYTIER_IMAGE_SHA256: ${{ steps.versions.outputs.easytier_image_sha256 }}
           U_CURSOR_AGENT_VERSION: ${{ steps.versions.outputs.cursor_agent_version }}
           U_CURSOR_AGENT_DARWIN_ARM64_SHA256: ${{ steps.versions.outputs.cursor_agent_darwin_arm64_sha256 }}
           U_CURSOR_AGENT_DARWIN_X64_SHA256: ${{ steps.versions.outputs.cursor_agent_darwin_x64_sha256 }}
@@ -327,6 +333,7 @@ jobs:
             | easytier | `${{ steps.versions.outputs.easytier }}` |
             | easytier darwin-amd64 sha256 | `${{ steps.versions.outputs.easytier_darwin_amd64_sha256 }}` |
             | easytier darwin-arm64 sha256 | `${{ steps.versions.outputs.easytier_darwin_arm64_sha256 }}` |
+            | easytier image sha256 | `${{ steps.versions.outputs.easytier_image_sha256 }}` |
             | Cursor Agent | `${{ steps.versions.outputs.cursor_agent_version }}` |
             | Cursor Agent darwin-arm64 sha256 | `${{ steps.versions.outputs.cursor_agent_darwin_arm64_sha256 }}` |
             | Cursor Agent darwin-x64 sha256 | `${{ steps.versions.outputs.cursor_agent_darwin_x64_sha256 }}` |
