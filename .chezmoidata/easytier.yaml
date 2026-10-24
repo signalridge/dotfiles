@@ -13,6 +13,13 @@
 easytier:
   peers:
     - tcp://23.106.129.252:11010 # bastion: private-mode relay/discovery node
+  # Members listen on UDP only. With a TCP listener, a peer that can reach it
+  # (e.g. over public IPv6) connects over TCP first, and EasyTier never upgrades
+  # an existing direct link, so path loss then throttles tunnelled TCP
+  # (~20 vs 100 Mbit/s). UDP-only also keeps IPv6 links clear of Surge's IPv4
+  # TUN. TCP fallback remains through the bastion.
+  listeners:
+    - udp://0.0.0.0:11010
   stunServers:
     - 23.106.129.252:38478
     - 23.106.129.252:38479
