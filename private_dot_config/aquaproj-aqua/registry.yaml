@@ -173,3 +173,30 @@ packages:
         format: zip
         files:
           - name: fastfetch
+  - type: github_release
+    repo_owner: apernet
+    repo_name: hysteria
+    description: Censorship-resistant QUIC proxy (client and server in one binary)
+    # Tags are monorepo-style `app/vX.Y.Z`; version_prefix strips `app/` so the
+    # aqua.yaml pin reads app/vX.Y.Z while {{.SemVer}} stays X.Y.Z.
+    version_prefix: app/
+    # Release assets are raw, per-platform binaries: hysteria-darwin-arm64,
+    # hysteria-linux-amd64, ... (no version in the name).
+    asset: "hysteria-{{.OS}}-{{.Arch}}"
+    format: raw
+    files:
+      - name: hysteria
+    # hashes.txt lists every asset as `<sha256>  build/<asset>`, so the default
+    # parser cannot match the bare asset name.
+    checksum:
+      type: github_release
+      asset: hashes.txt
+      algorithm: sha256
+      file_format: regexp
+      pattern:
+        checksum: '^([a-f0-9]{64})\s'
+        file: '^[a-f0-9]{64}\s+build/(\S+)$'
+    supported_envs:
+      - darwin
+      - linux/amd64
+      - linux/arm64
