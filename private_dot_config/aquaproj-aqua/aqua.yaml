@@ -31,6 +31,10 @@ packages:
   # CDN — keep this at a CDN-present version (binaries/<ver>/manifest.json resolves).
   - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@2.3.0
     registry: third-party
+  # EasyTier mesh VPN CLI. Assets are split per OS in registry.yaml; on macOS
+  # nix-config's LaunchDaemon runs a verified root-owned copy, not this binary.
+  - name: EasyTier/EasyTier@v2.6.4
+    registry: third-party
   # ----- standard registry -----
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell

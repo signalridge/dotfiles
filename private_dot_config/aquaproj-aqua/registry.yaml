@@ -173,6 +173,44 @@ packages:
         format: zip
         files:
           - name: fastfetch
+  # EasyTier publishes one zip per OS/arch with no checksum file or artifact
+  # attestations. On macOS the root LaunchDaemon (nix-config) re-verifies
+  # easytier-core against a pinned SHA-256 before installing a root-owned copy.
+  # macOS and Linux assets differ in OS label and arch set, so each OS gets a
+  # complete override instead of shared replacements.
+  - type: github_release
+    repo_owner: EasyTier
+    repo_name: EasyTier
+    description: Decentralized mesh VPN with P2P hole punching and relay (easytier-core, easytier-cli)
+    format: zip
+    overrides:
+      # easytier-macos-{aarch64,x86_64}-vX.Y.Z.zip -> easytier-macos-<arch>/
+      - goos: darwin
+        asset: "easytier-macos-{{.Arch}}-{{.Version}}.zip"
+        replacements:
+          amd64: x86_64
+          arm64: aarch64
+        files:
+          - name: easytier-core
+            src: "easytier-macos-{{.Arch}}/easytier-core"
+          - name: easytier-cli
+            src: "easytier-macos-{{.Arch}}/easytier-cli"
+      # easytier-linux-{x86_64,aarch64}-vX.Y.Z.zip -> easytier-linux-<arch>/
+      - goos: linux
+        asset: "easytier-linux-{{.Arch}}-{{.Version}}.zip"
+        replacements:
+          amd64: x86_64
+          arm64: aarch64
+        files:
+          - name: easytier-core
+            src: "easytier-linux-{{.Arch}}/easytier-core"
+          - name: easytier-cli
+            src: "easytier-linux-{{.Arch}}/easytier-cli"
+    supported_envs:
+      - darwin/arm64
+      - darwin/amd64
+      - linux/amd64
+      - linux/arm64
   - type: github_release
     repo_owner: apernet
     repo_name: hysteria
