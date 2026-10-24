@@ -80,5 +80,11 @@ mkdir -p "${HOME}/Library/Logs"
 remove_launch_agent "com.signalridge.mcp-context7"
 reload_launch_agent "com.signalridge.qmk-hid-host"
 reload_launch_agent "com.signalridge.mcp-reaper"
+{{ if .work -}}
+# CLIProxyAPI never runs on work machines (.chezmoiignore skips its files);
+# unload and delete any copy left from before.
+remove_launch_agent "com.signalridge.cliproxyapi"
+{{ else -}}
 reload_launch_agent "com.signalridge.cliproxyapi"
+{{ end -}}
 {{ end -}}
