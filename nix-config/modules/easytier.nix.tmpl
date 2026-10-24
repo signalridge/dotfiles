@@ -39,7 +39,7 @@ in
         --hostname {{ .hostname }} \
         --ipv4 {{ $node.ipv4 }} \
         --peers{{ range .easytier.peers }} {{ . }}{{ end }} \
-        --listeners tcp://0.0.0.0:11010 udp://0.0.0.0:11010 \
+        --listeners{{ range .easytier.listeners }} {{ . }}{{ end }} \
         --stun-servers{{ range .easytier.stunServers }} {{ . }}{{ end }} \
         --default-protocol udp \
         --private-mode true \
