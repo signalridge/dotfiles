@@ -71,6 +71,8 @@ in
         --peers{{ range .easytier.peers }} {{ . }}{{ end }} \
         --listeners tcp://0.0.0.0:11010 udp://0.0.0.0:11010 \
         --stun-servers{{ range .easytier.stunServers }} {{ . }}{{ end }} \
+        --default-protocol udp \
+        --private-mode true \
         --enable-quic-proxy true \
         --enable-kcp-proxy true \
         --rpc-portal 127.0.0.1:15888 \
