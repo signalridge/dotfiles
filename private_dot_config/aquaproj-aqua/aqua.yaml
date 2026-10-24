@@ -31,13 +31,15 @@ packages:
   # CDN — keep this at a CDN-present version (binaries/<ver>/manifest.json resolves).
   - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@2.3.0
     registry: third-party
+  # Shadowsocks for the EasyTier exits (ssserver) and ad-hoc clients (sslocal, ssurl).
+  - name: shadowsocks/shadowsocks-rust@v1.25.0
+    registry: third-party
   # ----- standard registry -----
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
   - name: google-antigravity/antigravity-cli@1.4.5
   - name: nektos/act@v0.2.89
-  - name: go-gost/gost@v3.3.1 # UDP relay to a tailnet host
   - name: apernet/hysteria@app/v2.13.0
     registry: third-party
   - name: FiloSottile/age@v1.3.2

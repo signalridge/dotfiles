@@ -26,20 +26,20 @@ easytier:
     - <bastion-ip>:38478
     - <bastion-ip>:38479
     - <bastion-ip>:38480
-  # Exit nodes give other members internet egress through Shadowsocks
-  # (gost; key in gopass easytier/exit-ss-password) bound ONLY to the node's
-  # virtual IP with a mesh-only source whitelist; clients pick one in Surge /
-  # sing-box. Encrypted and authenticated even though the mesh already is,
-  # since the exit hosts sit on shared campus LANs. Declared explicitly per
+  # Exit nodes give other members internet egress through Shadowsocks 2022
+  # (shadowsocks-rust ssserver; key in gopass easytier/exit-ss-password),
+  # bound ONLY to the node's virtual IP, with an ACL that accepts only mesh
+  # clients and refuses private/overlay destinations; clients pick one in
+  # Surge / sing-box. Encrypted and authenticated even though the mesh already
+  # is, since the exit hosts sit on shared campus LANs. Declared explicitly per
   # node with `exitNode: true`, never inferred (e.g. from headless): an exit
   # relays other machines' traffic from its own IP. Linux nodes run it as the
-  # systemd --user unit easytier-exit-proxy.service.
+  # systemd --user unit ss-exit.service.
   exitProxy:
     port: 1080
-    # Classic AEAD, not 2022-blake3-*: gost's UDP (ssu) handler fails SS2022 UDP
-    # from Surge ("message authentication failed") while classic AEAD passes
-    # TCP and UDP. Replay protection is moot inside the encrypted mesh.
-    method: chacha20-ietf-poly1305
+    # shadowsocks-rust is the SS2022 reference implementation (TCP + UDP
+    # interoperate with Surge and sing-box; gost's UDP did not).
+    method: 2022-blake3-aes-256-gcm
   # Exits deployed outside this repo (same port, see docs/easytier.md):
   externalExitNodes:
     nas: 10.144.144.2

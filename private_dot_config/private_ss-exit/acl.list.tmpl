@@ -1,0 +1,24 @@
+{{- $node := dig "nodes" .hostname "" .easytier -}}
+{{- if and (eq .chezmoi.os "linux") $node (dig "exitNode" false $node) -}}
+# shadowsocks-rust server ACL for the EasyTier exit on {{ .hostname }}.
+# Clients: reject everyone except the mesh. Linux accepts packets for a local
+# address on any interface, so without this a same-LAN host could route the
+# mesh range here via the physical NIC.
+[reject_all]
+
+[white_list]
+{{ .easytier.network }}
+
+# Destinations: the exit is for the internet only; never let it reach loopback,
+# private/link-local ranges or the Tailscale/EasyTier overlays.
+[outbound_block_list]
+127.0.0.0/8
+::1/128
+10.0.0.0/8
+172.16.0.0/12
+192.168.0.0/16
+100.64.0.0/10
+169.254.0.0/16
+fc00::/7
+fe80::/10
+{{- end }}
