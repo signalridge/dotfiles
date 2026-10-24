@@ -1,0 +1,90 @@
+{{- $arch := "aarch64" -}}
+{{- $coreSha256 := "6478a522b8637e2bd2ad3adad66ed04a71b35f832bd9889bffaf1863262f6ddf" -}}
+{{- if eq .chezmoi.arch "amd64" -}}
+{{-   $arch = "x86_64" -}}
+{{-   $coreSha256 = "ddf95a012599e424a632105fc3dc87d15c0a2daaf30a20b71aa95c8f896f9a2f" -}}
+{{- end -}}
+# ─────────────────────────────────────────────────────────────────────────────
+# EasyTier node (root LaunchDaemon; TUN needs root on macOS)
+# ─────────────────────────────────────────────────────────────────────────────
+# easytier-core comes from aqua (private_dot_config/aquaproj-aqua), whose
+# package dir is user-writable. Running it as root in place would let any
+# process of the user swap the binary, so each start copies it into a
+# root-owned dir, verifies the COPY against the pinned SHA-256 (taken from the
+# official easytier-macos-<arch>-<version>.zip, whose GitHub digest matched),
+# and only then executes it.
+#
+# Bump `version` together with the aqua.yaml EasyTier pin and the SHA-256s;
+# a mismatch refuses to start rather than running an unverified binary.
+#
+# Credentials (ET_NETWORK_NAME / ET_NETWORK_SECRET) are NOT in this repo: they
+# live in gopass (easytier/network-name, easytier/network-secret) and are
+# written to /etc/easytier/easytier.env (root:wheel 0600) out of band.
+_:
+let
+  version = "v2.6.4";
+  coreSha256 = "{{ $coreSha256 }}";
+  aquaCore = "{{ .chezmoi.homeDir }}/.local/share/aquaproj-aqua/pkgs/github_release/github.com/EasyTier/EasyTier/${version}/easytier-macos-{{ $arch }}-${version}.zip/easytier-macos-{{ $arch }}/easytier-core";
+  stateDir = "/var/db/easytier";
+  envFile = "/etc/easytier/easytier.env";
+  logFile = "/var/log/easytier.log";
+in
+{
+  launchd.daemons.easytier = {
+    script = ''
+      set -eu
+      umask 022
+      dst="${stateDir}/easytier-core-${version}"
+      sha() { /usr/bin/shasum -a 256 "$1" | /usr/bin/cut -d' ' -f1; }
+
+      if [ ! -x "$dst" ] || [ "$(sha "$dst")" != "${coreSha256}" ]; then
+        /usr/bin/install -d -o root -g wheel -m 755 "${stateDir}"
+        tmp="$(/usr/bin/mktemp "${stateDir}/.easytier-core.XXXXXX")"
+        /bin/cat "${aquaCore}" >"$tmp"
+        if [ "$(sha "$tmp")" != "${coreSha256}" ]; then
+          /bin/rm -f "$tmp"
+          echo "easytier: easytier-core SHA-256 mismatch (aqua pin vs nix-config); refusing to start" >&2
+          exit 1
+        fi
+        /bin/chmod 755 "$tmp"
+        /bin/mv -f "$tmp" "$dst"
+      fi
+      for old in "${stateDir}"/easytier-core-*; do
+        [ "$old" = "$dst" ] || /bin/rm -f "$old"
+      done
+
+      if [ "$(/usr/bin/stat -f '%u %Lp' "${envFile}" 2>/dev/null)" != "0 600" ]; then
+        echo "easytier: ${envFile} must exist, be owned by root and mode 0600; refusing to start" >&2
+        exit 1
+      fi
+      set -a
+      . "${envFile}"
+      set +a
+
+      exec "$dst" \
+        --hostname {{ .hostname }} \
+        --ipv4 10.144.144.1/24 \
+        --peers tcp://<bastion-ip>:11010 \
+        --listeners tcp://0.0.0.0:11010 udp://0.0.0.0:11010 \
+        --stun-servers <bastion-ip>:38478 <bastion-ip>:38479 <bastion-ip>:38480 \
+        --enable-quic-proxy true \
+        --enable-kcp-proxy true \
+        --rpc-portal 127.0.0.1:15888 \
+        --rpc-portal-whitelist 127.0.0.1/32 \
+        --console-log-level info
+    '';
+    serviceConfig = {
+      RunAtLoad = true;
+      KeepAlive = true;
+      ThrottleInterval = 30;
+      StandardOutPath = logFile;
+      StandardErrorPath = logFile;
+    };
+  };
+
+  # Rotate the daemon log at 10 MiB, keeping 5 compressed generations.
+  environment.etc."newsyslog.d/easytier.conf".text = ''
+    # logfilename        [owner:group]  mode count size(KB) when flags
+    ${logFile}  root:wheel     640  5     10240    *    JN
+  '';
+}
