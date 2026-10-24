@@ -1,24 +1,40 @@
 {{- if hasKey .easytier.nodes .hostname -}}
+{{- $node := index .easytier.nodes .hostname -}}
 #!/bin/bash
 
 set -euo pipefail
 
-# EasyTier node on a host listed in .chezmoidata/easytier.yaml. Source of truth
-# for the credentials is gopass (easytier/network-name, easytier/network-secret).
-#   macOS: the nix-darwin LaunchDaemon (nix-config/modules/easytier.nix) can only
-#          read a root-owned file, so this writes /etc/easytier/easytier.env
-#          (root:wheel 0600) with sudo and restarts the daemon.
-#   Linux: writes ~/.config/easytier/easytier.env (0600) next to the
-#          chezmoi-managed compose.yaml, then `docker compose up -d` (needs the
-#          docker group, no sudo); compose recreates the container only when the
-#          image, the command or the env file changed.
+# EasyTier node on a host listed in .chezmoidata/easytier.yaml. Both platforms
+# run the official release binaries from the root-owned, immutable /nix/store
+# (nix-config/modules/easytier-package.nix) as a root-managed service that reads
+# /etc/easytier/easytier.env (root-only 0600); the credentials' source of truth
+# is gopass (easytier/network-name, easytier/network-secret).
+#   macOS: nix-darwin installs the LaunchDaemon (nix-config/modules/easytier.nix);
+#          this script only writes the env file and restarts the daemon.
+#   Linux: this script builds the flake output `easytier` (out-link = GC root),
+#          renders /etc/systemd/system/easytier.service pointing at that store
+#          path, and (re)starts it.
 #
-# Runs on every apply. The credentials are rewritten only when the gopass values
-# differ from what was last written, so a rotation in gopass rolls out on the
-# next apply. On a fresh machine where gopass is not ready yet it skips; the
-# node stays down until a later apply finds the credentials.
+# Runs on every apply but only invokes sudo when something changed: the gopass
+# values (tracked by hash, since the env file is root-only), the unit file
+# (Linux), or the service is not running. A rotation in gopass therefore rolls
+# out on the next apply. On a fresh machine where gopass or nix is not ready
+# yet it skips, and a later apply finishes the job.
 
 echo ":: [24] EasyTier node"
+
+ENV_DIR="/etc/easytier"
+ENV_FILE="${ENV_DIR}/easytier.env"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/chezmoi"
+STATE="${STATE_DIR}/easytier-env.sha256"
+{{- if eq .chezmoi.os "darwin" }}
+ROOT_GROUP="wheel"
+LABEL="org.nixos.easytier"
+{{- else }}
+ROOT_GROUP="root"
+UNIT="/etc/systemd/system/easytier.service"
+GCROOT="${XDG_STATE_HOME:-$HOME/.local/state}/easytier/easytier"
+{{- end }}
 
 if ! command -v gopass >/dev/null 2>&1; then
     echo "    Skipped (gopass not installed)"
@@ -29,89 +45,157 @@ if ! name="$(gopass show -o easytier/network-name 2>/dev/null)" ||
     echo "    Skipped (gopass easytier/network-name or network-secret unavailable)"
     exit 0
 fi
-# Consumers parse this as an env file (sh `.` on macOS, compose env_file on
-# Linux), so only accept plain alphanumerics.
+# The env file is parsed by sh `.` (macOS) and systemd EnvironmentFile (Linux),
+# so only accept plain alphanumerics.
 for value in "$name" "$secret"; do
     if [[ ! "$value" =~ ^[A-Za-z0-9]{32,}$ ]]; then
         echo "    EasyTier credentials in gopass must be >=32 alphanumeric characters" >&2
         exit 1
     fi
 done
-
-render() { printf 'ET_NETWORK_NAME=%s\nET_NETWORK_SECRET=%s\n' "$name" "$secret"; }
+render_env() { printf 'ET_NETWORK_NAME=%s\nET_NETWORK_SECRET=%s\n' "$name" "$secret"; }
+{{- if eq .chezmoi.os "darwin" }}
+want_env="$(render_env | shasum -a 256 | cut -d' ' -f1)"
+{{- else }}
+want_env="$(render_env | sha256sum | cut -d' ' -f1)"
+{{- end }}
+env_changed=true
+[[ -f "$STATE" && "$(cat "$STATE")" == "$want_env" ]] && env_changed=false
 {{- if eq .chezmoi.os "darwin" }}
 
-ENV_DIR="/etc/easytier"
-ENV_FILE="${ENV_DIR}/easytier.env"
-LABEL="org.nixos.easytier"
-# The env file is root-only, so remember what was last written instead of
-# reading it back (which would need sudo on every apply). Delete to force.
-STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/chezmoi"
-STATE="${STATE_DIR}/easytier-env.sha256"
+needs_sudo=$env_changed
+{{- else }}
 
-want="$(render | shasum -a 256 | cut -d' ' -f1)"
-if [[ -f "$STATE" && "$(cat "$STATE")" == "$want" ]]; then
-    echo "    Credentials unchanged"
+{{ include ".chezmoitemplates/shell/source_nix_env.sh" }}
+if ! command -v nix >/dev/null 2>&1; then
+    echo "    Skipped (nix not available)"
     exit 0
 fi
+if [[ ! -c /dev/net/tun ]]; then
+    echo "    Skipped (/dev/net/tun missing; load the tun module)" >&2
+    exit 0
+fi
+mkdir -p "$(dirname "$GCROOT")"
+out="$(nix build "$HOME/nix-config#easytier" --out-link "$GCROOT" --print-out-paths)"
+core="${out}/bin/easytier-core"
+if [[ "$core" != /nix/store/* || ! -x "$core" ]]; then
+    echo "    Unexpected easytier build output: ${out}" >&2
+    exit 1
+fi
 
+render_unit() {
+    cat <<EOF
+# Managed by chezmoi (.chezmoiscripts/run_after_24_easytier-node.sh); edits are overwritten.
+[Unit]
+Description=EasyTier node {{ .hostname }} ({{ $node.ipv4 }})
+Documentation=https://easytier.cn/en/guide/network/configurations.html
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# ET_NETWORK_NAME / ET_NETWORK_SECRET live only here (root:root 0600).
+EnvironmentFile=${ENV_FILE}
+ExecStart=${core} \\
+  --hostname {{ .hostname }} \\
+  --ipv4 {{ $node.ipv4 }} \\
+  --peers{{ range .easytier.peers }} {{ . }}{{ end }} \\
+  --listeners tcp://0.0.0.0:11010 udp://0.0.0.0:11010 \\
+  --stun-servers{{ range .easytier.stunServers }} {{ . }}{{ end }} \\
+  --default-protocol udp \\
+  --private-mode true \\
+  --enable-quic-proxy true \\
+  --enable-kcp-proxy true \\
+  --rpc-portal 127.0.0.1:15888 \\
+  --rpc-portal-whitelist 127.0.0.1/32 \\
+  --console-log-level info
+Restart=on-failure
+RestartSec=5s
+
+# Unprivileged transient user with just what a TUN node needs.
+DynamicUser=yes
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
+DevicePolicy=closed
+DeviceAllow=/dev/net/tun rw
+StateDirectory=easytier
+WorkingDirectory=/var/lib/easytier
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+# MemoryDenyWriteExecute=yes  -> easytier-core 2.6.4 SEGVs at startup with it
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+UMask=0077
+MemoryMax=256M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target
+EOF
+}
+unit_changed=true
+cmp -s <(render_unit) "$UNIT" 2>/dev/null && unit_changed=false
+running=true
+systemctl is-active --quiet easytier.service || running=false
+needs_sudo=false
+if [[ "$env_changed" == true || "$unit_changed" == true || "$running" == false ]]; then
+    needs_sudo=true
+fi
+{{- end }}
+
+if [[ "$needs_sudo" != true ]]; then
+    echo "    Unchanged"
+    exit 0
+fi
 if ! sudo -v; then
     echo "    Skipped (sudo unavailable; rerun chezmoi apply interactively)" >&2
     exit 0
 fi
-sudo install -d -o root -g wheel -m 700 "$ENV_DIR"
-# shellcheck disable=SC2016 # expanded by the root shell, not here
-render | sudo /bin/sh -c 'umask 077
-tmp="$(/usr/bin/mktemp "$1/.easytier.env.XXXXXX")"
-/bin/cat >"$tmp"
-/usr/sbin/chown root:wheel "$tmp"
-/bin/chmod 600 "$tmp"
-/bin/mv -f "$tmp" "$2"' sh "$ENV_DIR" "$ENV_FILE"
 
-mkdir -p "$STATE_DIR"
-printf '%s\n' "$want" >"$STATE"
+if [[ "$env_changed" == true ]]; then
+    sudo install -d -o root -g "$ROOT_GROUP" -m 700 "$ENV_DIR"
+    # shellcheck disable=SC2016 # expanded by the root shell, not here
+    render_env | sudo /bin/sh -c 'umask 077
+tmp="$(mktemp "$1/.easytier.env.XXXXXX")"
+cat >"$tmp"
+chown "root:$3" "$tmp"
+chmod 600 "$tmp"
+mv -f "$tmp" "$2"' sh "$ENV_DIR" "$ENV_FILE" "$ROOT_GROUP"
+    mkdir -p "$STATE_DIR"
+    printf '%s\n' "$want_env" >"$STATE"
+    echo "    Wrote ${ENV_FILE}"
+fi
+{{- if eq .chezmoi.os "darwin" }}
 
 if sudo launchctl print "system/${LABEL}" >/dev/null 2>&1; then
     sudo launchctl kickstart -k "system/${LABEL}"
-    echo "    Wrote ${ENV_FILE}; restarted ${LABEL}"
+    echo "    Restarted ${LABEL}"
 else
-    echo "    Wrote ${ENV_FILE} (${LABEL} not loaded yet; darwin-rebuild switch installs it)"
+    echo "    ${LABEL} not loaded yet; darwin-rebuild switch installs it"
 fi
 {{- else }}
 
-NODE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/easytier"
-ENV_FILE="${NODE_DIR}/easytier.env"
-COMPOSE_FILE="${NODE_DIR}/compose.yaml"
-
-# Don't rely on chezmoi having written compose.yaml first (a path-scoped apply
-# may run this script before the file).
-install -d -m 700 "$NODE_DIR"
-if [[ ! -f "$ENV_FILE" ]] || ! cmp -s <(render) "$ENV_FILE"; then
-    (
-        umask 077
-        tmp="$(mktemp "${NODE_DIR}/.easytier.env.XXXXXX")"
-        render >"$tmp"
-        mv -f "$tmp" "$ENV_FILE"
-    )
-    echo "    Wrote ${ENV_FILE}"
+if [[ "$unit_changed" == true ]]; then
+    # shellcheck disable=SC2016 # expanded by the root shell, not here
+    render_unit | sudo /bin/sh -c 'cat >"$1.tmp" && chmod 644 "$1.tmp" && mv -f "$1.tmp" "$1"' sh "$UNIT"
+    sudo systemctl daemon-reload
+    sudo systemctl enable --quiet easytier.service
+    echo "    Installed ${UNIT} -> ${core}"
 fi
-
-if [[ ! -f "$COMPOSE_FILE" ]]; then
-    echo "    Skipped container (${COMPOSE_FILE} not applied yet; rerun chezmoi apply)"
-    exit 0
-fi
-if ! command -v docker >/dev/null 2>&1; then
-    echo "    Skipped container (docker not installed)"
-    exit 0
-fi
-if ! docker info >/dev/null 2>&1; then
-    echo "    Skipped container (no access to the docker daemon; is ${USER} in the docker group?)"
-    exit 0
-fi
-if [[ ! -c /dev/net/tun ]]; then
-    echo "    Skipped container (/dev/net/tun missing; load the tun module)" >&2
-    exit 0
-fi
-docker compose -f "$COMPOSE_FILE" up -d --quiet-pull 2>&1 | sed 's/^/    /'
+sudo systemctl restart easytier.service
+echo "    $(systemctl is-active easytier.service): easytier.service"
 {{- end }}
 {{- end }}

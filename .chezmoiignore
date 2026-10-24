@@ -89,14 +89,6 @@ Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 {{- end }}
 
 # ─────────────────────────────────────────────────────────────────────────────
-# EasyTier: the Linux node files exist only on Linux hosts listed in
-# .chezmoidata/easytier.yaml (macOS nodes use nix-config/modules/easytier.nix)
-# ─────────────────────────────────────────────────────────────────────────────
-{{- if not (and (eq .chezmoi.os "linux") (hasKey .easytier.nodes .hostname)) }}
-.config/easytier/
-{{- end }}
-
-# ─────────────────────────────────────────────────────────────────────────────
 # Encryption-related exclusions (skip when useEncryption is false)
 # ─────────────────────────────────────────────────────────────────────────────
 {{- if not .useEncryption }}
