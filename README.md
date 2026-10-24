@@ -62,8 +62,8 @@ The main layers are:
   Claude, Codex, Pi, Cursor, and Kimi Code
 - Native provider/model switching for Pi, plus account wrappers for Claude Code
   and Codex CLI
-- Pinned Cursor Agent and Azure Functions installers, and a pinned Paperlib
-  installer on non-headless macOS
+- Pinned Cursor Agent and Azure Functions installers, and pinned Paperlib and
+  EasyTier GUI installers on non-headless macOS
 - Pinned Herdr plugins, Claude/Codex lifecycle integration, and orphan-MCP
   cleanup on macOS/Linux
 - CI linting, security scans, and scheduled dependency-update PRs
@@ -275,7 +275,7 @@ Package sources are intentionally split; not every list lives in
 | Homebrew          | `.chezmoidata/homebrew.yaml` + `nix-config/modules/apps.nix.tmpl`   | Taps, formulae, casks, and conditional MAS entries. Homebrew is not a locked/reproducible Nix layer.                                                                                                                                            |
 | aqua              | `private_dot_config/aquaproj-aqua/{aqua,registry,aqua-policy}.yaml` | Pinned CLI releases: Claude Code, Codex, Antigravity CLI (`agy`), shell/Kubernetes/security tools, and — from the local `registry.yaml` — Kimi Code, Herdr, Slipway, qmk-hid-host, and doggo. `aqua-policy.yaml` authorizes the local registry. |
 | mise              | `private_dot_config/mise/config.toml.tmpl`                          | Node, Bun, Python, Go, Rust, Lua, Terraform, uv, pipx tools, Pi, usage analyzers, browser/media CLIs, `xurl`, and `crosspost`. `npm:` entries use Bun; Node remains installed for runtime compatibility.                                        |
-| Direct installers | `.chezmoiscripts/00`, `09`, `15`, and `16`                          | Determinate Nix, Paperlib, Cursor Agent, and work-only Azure Functions Core Tools with repository-pinned versions/checksums.                                                                                                                    |
+| Direct installers | `.chezmoiscripts/00`, `09`, `15`, `16`, and `24`                    | Determinate Nix, Paperlib, Cursor Agent, work-only Azure Functions Core Tools, and EasyTier GUI with repository-pinned versions/checksums.                                                                                                      |
 | Pi extensions     | `.chezmoidata/pi.yaml` + Pi settings                                | Five external packages and twenty `@signalridge` packages, deliberately unpinned and refreshed by Pi's weekly `update --extensions` step.                                                                                                       |
 
 Representative configured tools include `eza`, `bat`, `fd`, `ripgrep`, `fzf`,
