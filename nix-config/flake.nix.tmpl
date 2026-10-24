@@ -113,6 +113,9 @@
       # ─────────────────────────────────────────────────────────────────────────
       packages.${system} = {
         ${hostname} = myProfile;
+        # Official EasyTier release binaries; Linux EasyTier nodes run this store
+        # path from a systemd unit (.chezmoiscripts/run_after_24_easytier-node.sh).
+        easytier = import ./modules/easytier-package.nix { inherit pkgs; };
 {{- if eq .platform "darwin" }}
         # First bootstrap uses the locked nix-darwin input, never a floating
         # remote branch executed as root.

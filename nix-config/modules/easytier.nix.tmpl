@@ -3,22 +3,13 @@
 # EasyTier: {{ .hostname }} is not listed in .chezmoidata/easytier.yaml nodes.
 _: { }
 {{- else -}}
-{{- $arch := "aarch64" -}}
-{{- $sha256 := .versions.easytierDarwinArm64Sha256 -}}
-{{- if eq .chezmoi.arch "amd64" -}}
-{{-   $arch = "x86_64" -}}
-{{-   $sha256 = .versions.easytierDarwinAmd64Sha256 -}}
-{{- end -}}
 # ─────────────────────────────────────────────────────────────────────────────
 # EasyTier node (root LaunchDaemon; TUN needs root on macOS)
 # ─────────────────────────────────────────────────────────────────────────────
-# Node/network parameters come from .chezmoidata/easytier.yaml; the version and
-# release-asset digests from .chezmoidata/versions.yaml (bumped by the
-# update-versions workflow from GitHub's asset digests, stable releases only).
-#
-# This packages the official release zip, NOT the nixpkgs easytier package. The
-# store path is immutable and root-owned, so the root daemon executes it in
-# place and easytier-cli on PATH is always the same build as the daemon.
+# Node/network parameters come from .chezmoidata/easytier.yaml; the package
+# (official release zip, NOT nixpkgs) from ./easytier-package.nix. The store
+# path is immutable and root-owned, so the root daemon executes it in place and
+# easytier-cli on PATH is always the same build as the daemon.
 #
 # Credentials (ET_NETWORK_NAME / ET_NETWORK_SECRET) are NOT in this repo:
 # .chezmoiscripts/run_after_24_easytier-node.sh writes them from gopass
@@ -26,28 +17,7 @@ _: { }
 # daemon refuses to start and launchd retries every ThrottleInterval.
 { pkgs, ... }:
 let
-  version = "{{ .versions.easytier }}";
-  easytier = pkgs.stdenvNoCC.mkDerivation {
-    pname = "easytier";
-    inherit version;
-    src = pkgs.fetchurl {
-      url = "https://github.com/EasyTier/EasyTier/releases/download/v${version}/easytier-macos-{{ $arch }}-v${version}.zip";
-      sha256 = "{{ $sha256 }}";
-    };
-    nativeBuildInputs = [ pkgs.unzip ];
-    sourceRoot = "easytier-macos-{{ $arch }}";
-    # Upstream binaries are ad-hoc linker-signed; stripping or patching them
-    # would invalidate the signature and arm64 macOS would refuse to run them.
-    dontConfigure = true;
-    dontBuild = true;
-    dontFixup = true;
-    installPhase = ''
-      runHook preInstall
-      install -Dm755 easytier-core "$out/bin/easytier-core"
-      install -Dm755 easytier-cli "$out/bin/easytier-cli"
-      runHook postInstall
-    '';
-  };
+  easytier = import ./easytier-package.nix { inherit pkgs; };
   envFile = "/etc/easytier/easytier.env";
   logFile = "/var/log/easytier.log";
 in

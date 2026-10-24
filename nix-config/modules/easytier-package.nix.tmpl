@@ -1,0 +1,46 @@
+{{- $os := "linux" -}}
+{{- $arch := "x86_64" -}}
+{{- $sha256 := .versions.easytierLinuxAmd64Sha256 -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{-   $os = "macos" -}}
+{{-   if eq .chezmoi.arch "arm64" -}}
+{{-     $arch = "aarch64" -}}
+{{-     $sha256 = .versions.easytierDarwinArm64Sha256 -}}
+{{-   else -}}
+{{-     $sha256 = .versions.easytierDarwinAmd64Sha256 -}}
+{{-   end -}}
+{{- else if eq .chezmoi.arch "arm64" -}}
+{{-   $arch = "aarch64" -}}
+{{-   $sha256 = .versions.easytierLinuxArm64Sha256 -}}
+{{- end -}}
+# EasyTier from the official release zip (NOT the nixpkgs package), shared by
+# the macOS daemon (easytier.nix) and Linux nodes (flake output `easytier`, run
+# by a systemd unit from .chezmoiscripts/run_after_24_easytier-node.sh).
+# Version and per-asset digests: .chezmoidata/versions.yaml, bumped by the
+# update-versions workflow from GitHub's release-asset digests.
+{ pkgs }:
+let
+  version = "{{ .versions.easytier }}";
+in
+pkgs.stdenvNoCC.mkDerivation {
+  pname = "easytier";
+  inherit version;
+  src = pkgs.fetchurl {
+    url = "https://github.com/EasyTier/EasyTier/releases/download/v${version}/easytier-{{ $os }}-{{ $arch }}-v${version}.zip";
+    sha256 = "{{ $sha256 }}";
+  };
+  nativeBuildInputs = [ pkgs.unzip ];
+  sourceRoot = "easytier-{{ $os }}-{{ $arch }}";
+  # Ship the upstream binaries untouched: the macOS ones are ad-hoc
+  # linker-signed (stripping would invalidate the signature) and the Linux ones
+  # are static, so there is nothing to patch.
+  dontConfigure = true;
+  dontBuild = true;
+  dontFixup = true;
+  installPhase = ''
+    runHook preInstall
+    install -Dm755 easytier-core "$out/bin/easytier-core"
+    install -Dm755 easytier-cli "$out/bin/easytier-cli"
+    runHook postInstall
+  '';
+}
