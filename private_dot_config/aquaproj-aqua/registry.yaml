@@ -151,6 +151,18 @@ packages:
       - darwin
       - linux
       - windows/amd64
+  # Same as the standard crates.io/eza entry, plus --locked: without the crate's
+  # Cargo.lock, cargo pairs eza 0.23.5's palette 0.7.5 with palette_derive
+  # 0.7.7, whose derives reference modules palette 0.7.5 lacks, so fresh builds
+  # fail ("could not find `lms` in the crate root").
+  - name: crates.io/eza
+    type: cargo
+    repo_owner: eza-community
+    repo_name: eza
+    description: A modern replacement for ls
+    crate: eza
+    cargo:
+      locked: true
   # Fastfetch 2.70.0 switched macOS back to a universal archive. The standard
   # registry still requests fastfetch-macos-aarch64.tar.gz on Apple Silicon.
   - type: github_release

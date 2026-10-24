@@ -67,7 +67,9 @@ packages:
   - name: Wilfred/difftastic@0.71.0
   # Darwin uses Cargo for eza. Track crates.io releases directly: GitHub tag
   # v0.23.5 existed before its crate, which made aqua's Cargo install impossible.
+  # registry.yaml adds --locked (see the comment there).
   - name: crates.io/eza@0.23.5
+    registry: third-party
   # 2.70.0 ships macOS universal archives; the standard registry still requests
   # per-architecture assets. Use the local override until upstream catches up.
   - name: fastfetch-cli/fastfetch@2.70.0
