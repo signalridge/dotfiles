@@ -61,7 +61,7 @@
   Codex、Pi、Cursor 和 Kimi Code
 - Pi 原生 provider/model 切换，以及 Claude Code/Codex CLI account wrapper
 - 固定版本、带 checksum 校验的 Cursor Agent 与 Azure Functions installer，
-  以及非 headless macOS 上的 Paperlib 与 EasyTier GUI installer
+  以及非 headless macOS 上的 Paperlib installer
 - 固定 revision 的 Herdr plugins、Claude/Codex lifecycle integration，以及
   macOS/Linux 的孤儿 MCP 清理
 - CI lint、安全扫描和定期依赖更新 PR
@@ -267,7 +267,7 @@ pre-commit run --all-files
 | Homebrew         | `.chezmoidata/homebrew.yaml` + `nix-config/modules/apps.nix.tmpl`   | taps、formulae、cask 和条件式 MAS 条目；不是锁定且可复现的 Nix 层。                                                                                                                                                    |
 | aqua             | `private_dot_config/aquaproj-aqua/{aqua,registry,aqua-policy}.yaml` | 固定版本 CLI：Claude Code、Codex、Antigravity CLI（`agy`）、shell/Kubernetes/security 工具，以及来自本地 `registry.yaml` 的 Kimi Code、Herdr、Slipway、qmk-hid-host 和 doggo。`aqua-policy.yaml` 授权该本地 registry。 |
 | mise             | `private_dot_config/mise/config.toml.tmpl`                          | Node、Bun、Python、Go、Rust、Lua、Terraform、uv、pipx 工具、Pi、用量分析器、浏览器/媒体 CLI、`xurl` 和 `crosspost`。`npm:` 条目使用 Bun，但 Node 仍保留用于 runtime。                                                  |
-| 直接 installer   | `.chezmoiscripts/00`、`09`、`15`、`16`、`24`                        | Determinate Nix、Paperlib、Cursor Agent、work-only Azure Functions Core Tools 和 EasyTier GUI，版本/checksum 均来自仓库数据。                                                                                          |
+| 直接 installer   | `.chezmoiscripts/00`、`09`、`15`、`16`                              | Determinate Nix、Paperlib、Cursor Agent 和 work-only Azure Functions Core Tools，版本/checksum 均来自仓库数据。                                                                                                        |
 | Pi extensions    | `.chezmoidata/pi.yaml` + Pi settings                                | 五个外部 package 和二十个 `@signalridge` package；有意不 pin，由 Pi 每周的 `update --extensions` 刷新。                                                                                                                |
 
 代表性工具包括 `eza`、`bat`、`fd`、`ripgrep`、`fzf`、`gh`、`ghq`、`just`、

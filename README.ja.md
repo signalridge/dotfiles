@@ -61,7 +61,7 @@ checkout に存在するファイルと挙動だけを説明します。
   Claude、Codex、Pi、Cursor、Kimi Code へ有効化
 - Pi のネイティブな provider/model 切替と、Claude Code/Codex CLI の account wrapper
 - checksum 検証付きの固定 Cursor Agent/Azure Functions installer、および
-  非 headless macOS の固定 Paperlib/EasyTier GUI installer
+  非 headless macOS の固定 Paperlib installer
 - 固定 revision の Herdr plugins、Claude/Codex lifecycle integration、
   macOS/Linux の孤立 MCP プロセス掃除
 - CI lint、セキュリティスキャン、定期的な依存更新 PR
@@ -272,7 +272,7 @@ pre-commit run --all-files
 | Homebrew                 | `.chezmoidata/homebrew.yaml` + `nix-config/modules/apps.nix.tmpl`   | tap、formula、cask、条件付き MAS。ロックされた再現可能な Nix レイヤーではありません。                                                                                                                                                   |
 | aqua                     | `private_dot_config/aquaproj-aqua/{aqua,registry,aqua-policy}.yaml` | 固定版 CLI: Claude Code、Codex、Antigravity CLI（`agy`）、shell/Kubernetes/security ツール、およびローカル `registry.yaml` の Kimi Code、Herdr、Slipway、qmk-hid-host、doggo。`aqua-policy.yaml` がそのローカル registry を許可します。 |
 | mise                     | `private_dot_config/mise/config.toml.tmpl`                          | Node、Bun、Python、Go、Rust、Lua、Terraform、uv、pipx、Pi、使用量分析、browser/media CLI、`xurl`、`crosspost`。`npm:` は Bun を使いますが Node は runtime のため残します。                                                              |
-| 直接 installer           | `.chezmoiscripts/00`、`09`、`15`、`16`、`24`                        | Determinate Nix、Paperlib、Cursor Agent、work-only Azure Functions Core Tools、EasyTier GUI。版と checksum は repository のデータで固定します。                                                                                         |
+| 直接 installer           | `.chezmoiscripts/00`、`09`、`15`、`16`                              | Determinate Nix、Paperlib、Cursor Agent、work-only Azure Functions Core Tools。版と checksum は repository のデータで固定します。                                                                                                       |
 | Pi extensions            | `.chezmoidata/pi.yaml` + Pi settings                                | 外部 package 5 個と `@signalridge` package 20 個。意図的に pin せず、Pi の週次 `update --extensions` で更新します。                                                                                                                     |
 
 代表的なツールは `eza`、`bat`、`fd`、`ripgrep`、`fzf`、`gh`、`ghq`、`just`、
