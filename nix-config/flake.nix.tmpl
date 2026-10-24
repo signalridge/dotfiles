@@ -98,7 +98,9 @@
           {
             nix-homebrew = {
               enable = true;
-              enableRosetta = system == "aarch64-darwin";
+              # No Intel (/usr/local) prefix: nothing here needs x86_64 brews and
+              # Rosetta is not installed, so enabling it only produced a warning.
+              enableRosetta = false;
               user = username;
             };
           }
