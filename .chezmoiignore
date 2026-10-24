@@ -47,6 +47,7 @@ typos.toml
 nix-config/modules/system.nix
 nix-config/modules/apps.nix
 nix-config/modules/host-users.nix
+nix-config/modules/easytier.nix
 
 # macOS-specific scripts (target paths)
 .chezmoiscripts/02_init.sh
