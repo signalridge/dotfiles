@@ -1,0 +1,110 @@
+{{- if hasKey .easytier.nodes .hostname -}}
+#!/bin/bash
+
+set -euo pipefail
+
+# EasyTier node on a host listed in .chezmoidata/easytier.yaml. Source of truth
+# for the credentials is gopass (easytier/network-name, easytier/network-secret).
+#   macOS: the nix-darwin LaunchDaemon (nix-config/modules/easytier.nix) can only
+#          read a root-owned file, so this writes /etc/easytier/easytier.env
+#          (root:wheel 0600) with sudo and restarts the daemon.
+#   Linux: writes ~/.config/easytier/easytier.env (0600) next to the
+#          chezmoi-managed compose.yaml, then `docker compose up -d` (needs the
+#          docker group, no sudo); compose recreates the container only when the
+#          image, the command or the env file changed.
+#
+# Runs on every apply. The credentials are rewritten only when the gopass values
+# differ from what was last written, so a rotation in gopass rolls out on the
+# next apply. On a fresh machine where gopass is not ready yet it skips; the
+# node stays down until a later apply finds the credentials.
+
+echo ":: [24] EasyTier node"
+
+if ! command -v gopass >/dev/null 2>&1; then
+    echo "    Skipped (gopass not installed)"
+    exit 0
+fi
+if ! name="$(gopass show -o easytier/network-name 2>/dev/null)" ||
+    ! secret="$(gopass show -o easytier/network-secret 2>/dev/null)"; then
+    echo "    Skipped (gopass easytier/network-name or network-secret unavailable)"
+    exit 0
+fi
+# Consumers parse this as an env file (sh `.` on macOS, compose env_file on
+# Linux), so only accept plain alphanumerics.
+for value in "$name" "$secret"; do
+    if [[ ! "$value" =~ ^[A-Za-z0-9]{32,}$ ]]; then
+        echo "    EasyTier credentials in gopass must be >=32 alphanumeric characters" >&2
+        exit 1
+    fi
+done
+
+render() { printf 'ET_NETWORK_NAME=%s\nET_NETWORK_SECRET=%s\n' "$name" "$secret"; }
+{{- if eq .chezmoi.os "darwin" }}
+
+ENV_DIR="/etc/easytier"
+ENV_FILE="${ENV_DIR}/easytier.env"
+LABEL="org.nixos.easytier"
+# The env file is root-only, so remember what was last written instead of
+# reading it back (which would need sudo on every apply). Delete to force.
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/chezmoi"
+STATE="${STATE_DIR}/easytier-env.sha256"
+
+want="$(render | shasum -a 256 | cut -d' ' -f1)"
+if [[ -f "$STATE" && "$(cat "$STATE")" == "$want" ]]; then
+    echo "    Credentials unchanged"
+    exit 0
+fi
+
+if ! sudo -v; then
+    echo "    Skipped (sudo unavailable; rerun chezmoi apply interactively)" >&2
+    exit 0
+fi
+sudo install -d -o root -g wheel -m 700 "$ENV_DIR"
+# shellcheck disable=SC2016 # expanded by the root shell, not here
+render | sudo /bin/sh -c 'umask 077
+tmp="$(/usr/bin/mktemp "$1/.easytier.env.XXXXXX")"
+/bin/cat >"$tmp"
+/usr/sbin/chown root:wheel "$tmp"
+/bin/chmod 600 "$tmp"
+/bin/mv -f "$tmp" "$2"' sh "$ENV_DIR" "$ENV_FILE"
+
+mkdir -p "$STATE_DIR"
+printf '%s\n' "$want" >"$STATE"
+
+if sudo launchctl print "system/${LABEL}" >/dev/null 2>&1; then
+    sudo launchctl kickstart -k "system/${LABEL}"
+    echo "    Wrote ${ENV_FILE}; restarted ${LABEL}"
+else
+    echo "    Wrote ${ENV_FILE} (${LABEL} not loaded yet; darwin-rebuild switch installs it)"
+fi
+{{- else }}
+
+NODE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/easytier"
+ENV_FILE="${NODE_DIR}/easytier.env"
+COMPOSE_FILE="${NODE_DIR}/compose.yaml"
+
+if [[ ! -f "$ENV_FILE" ]] || ! cmp -s <(render) "$ENV_FILE"; then
+    (
+        umask 077
+        tmp="$(mktemp "${NODE_DIR}/.easytier.env.XXXXXX")"
+        render >"$tmp"
+        mv -f "$tmp" "$ENV_FILE"
+    )
+    echo "    Wrote ${ENV_FILE}"
+fi
+
+if ! command -v docker >/dev/null 2>&1; then
+    echo "    Skipped container (docker not installed)"
+    exit 0
+fi
+if ! docker info >/dev/null 2>&1; then
+    echo "    Skipped container (no access to the docker daemon; is ${USER} in the docker group?)"
+    exit 0
+fi
+if [[ ! -c /dev/net/tun ]]; then
+    echo "    Skipped container (/dev/net/tun missing; load the tun module)" >&2
+    exit 0
+fi
+docker compose -f "$COMPOSE_FILE" up -d --quiet-pull 2>&1 | sed 's/^/    /'
+{{- end }}
+{{- end }}

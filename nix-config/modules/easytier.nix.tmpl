@@ -21,7 +21,7 @@ _: { }
 # place and easytier-cli on PATH is always the same build as the daemon.
 #
 # Credentials (ET_NETWORK_NAME / ET_NETWORK_SECRET) are NOT in this repo:
-# .chezmoiscripts/run_after_24_easytier-credentials.sh writes them from gopass
+# .chezmoiscripts/run_after_24_easytier-node.sh writes them from gopass
 # to /etc/easytier/easytier.env (root:wheel 0600). Until that file exists the
 # daemon refuses to start and launchd retries every ThrottleInterval.
 { pkgs, ... }:
