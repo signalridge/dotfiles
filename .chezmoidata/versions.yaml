@@ -18,6 +18,7 @@ versions:
   easytier: 2.6.4
   easytierDarwinAmd64Sha256: 89fc28a6e6995259d76ce3f11775220e8a21c760e94df91a6a9db30a69b6982e
   easytierDarwinArm64Sha256: 4be1882d1aa36d31c1d6ba0596f2cf8a097e371f8da124212324b2e0f8df7e4b
+  easytierImageSha256: 91d6732ea5ff71542fdb99333d2ee7b168e973443114db84db061e452427d91e
   azureFunctionsVersion: 4.12.0
   azureFunctionsBuildId: "281211"
   azureFunctionsOsxArm64Sha256: 85786c1ffc3a60073a5379f3a18986dbf9397830e0af8fbc59f73cdb7b20473e
