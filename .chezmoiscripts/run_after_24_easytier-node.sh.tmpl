@@ -103,6 +103,7 @@ ExecStart=${core} \\
   --listeners{{ range .easytier.listeners }} {{ . }}{{ end }} \\
   --stun-servers{{ range .easytier.stunServers }} {{ . }}{{ end }} \\
   --default-protocol udp \\
+  --disable-tcp-hole-punching true \\
   --private-mode true \\
   --enable-quic-proxy true \\
   --enable-kcp-proxy true \\
