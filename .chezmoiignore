@@ -53,6 +53,7 @@ nix-config/modules/easytier.nix
 .chezmoiscripts/02_init.sh
 .chezmoiscripts/09_install-paperlib.sh
 .chezmoiscripts/10_update_homebrew_packages.sh
+.chezmoiscripts/24_easytier-credentials.sh
 .chezmoiscripts/17_load-launch-agents.sh
 .chezmoiscripts/21_terminal-profile.sh
 .chezmoiscripts/22_wezterm-icon.sh
