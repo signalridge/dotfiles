@@ -20,6 +20,11 @@ byte-identical to the official GitHub release assets (bastion zip, NAS image
 shared nodes (`-e`) are never used; STUN uses the bastion's own endpoints
 `<bastion-ip>:38478-38480`.
 
+Members (Mac, NAS, Linux nodes) listen on **UDP only** (`udp://0.0.0.0:11010`,
+`easytier.listeners`): with a TCP listener a peer that can reach it (e.g. over
+public IPv6) links over TCP first and EasyTier never upgrades an existing direct
+link, and path loss then throttles tunnelled TCP. The bastion keeps TCP + UDP for discovery and fallback relay.
+
 ## Credentials
 
 Generated with gopass and never stored in this repository:
@@ -195,7 +200,6 @@ services:
       - --hostname=nas
       - --ipv4=10.144.144.2/24
       - --peers=tcp://<bastion-ip>:11010
-      - --listeners=tcp://0.0.0.0:11010
       - --listeners=udp://0.0.0.0:11010
       - --stun-servers=<bastion-ip>:38478
       - --stun-servers=<bastion-ip>:38479
