@@ -1,3 +1,8 @@
+{{- $node := dig "nodes" .hostname "" .easytier -}}
+{{- if not $node -}}
+# EasyTier: {{ .hostname }} is not listed in .chezmoidata/easytier.yaml nodes.
+_: { }
+{{- else -}}
 {{- $arch := "aarch64" -}}
 {{- $coreSha256 := "6478a522b8637e2bd2ad3adad66ed04a71b35f832bd9889bffaf1863262f6ddf" -}}
 {{- if eq .chezmoi.arch "amd64" -}}
@@ -7,6 +12,8 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # EasyTier node (root LaunchDaemon; TUN needs root on macOS)
 # ─────────────────────────────────────────────────────────────────────────────
+# Node/network parameters come from .chezmoidata/easytier.yaml.
+#
 # easytier-core comes from aqua (private_dot_config/aquaproj-aqua), whose
 # package dir is user-writable. Running it as root in place would let any
 # process of the user swap the binary, so each start copies it into a
@@ -17,9 +24,10 @@
 # Bump `version` together with the aqua.yaml EasyTier pin and the SHA-256s;
 # a mismatch refuses to start rather than running an unverified binary.
 #
-# Credentials (ET_NETWORK_NAME / ET_NETWORK_SECRET) are NOT in this repo: they
-# live in gopass (easytier/network-name, easytier/network-secret) and are
-# written to /etc/easytier/easytier.env (root:wheel 0600) out of band.
+# Credentials (ET_NETWORK_NAME / ET_NETWORK_SECRET) are NOT in this repo:
+# .chezmoiscripts/run_after_24_easytier-credentials.sh writes them from gopass
+# to /etc/easytier/easytier.env (root:wheel 0600). Until that file exists the
+# daemon refuses to start and launchd retries every ThrottleInterval.
 _:
 let
   version = "v2.6.4";
@@ -63,10 +71,10 @@ in
 
       exec "$dst" \
         --hostname {{ .hostname }} \
-        --ipv4 10.144.144.1/24 \
-        --peers tcp://<bastion-ip>:11010 \
+        --ipv4 {{ $node.ipv4 }} \
+        --peers{{ range .easytier.peers }} {{ . }}{{ end }} \
         --listeners tcp://0.0.0.0:11010 udp://0.0.0.0:11010 \
-        --stun-servers <bastion-ip>:38478 <bastion-ip>:38479 <bastion-ip>:38480 \
+        --stun-servers{{ range .easytier.stunServers }} {{ . }}{{ end }} \
         --enable-quic-proxy true \
         --enable-kcp-proxy true \
         --rpc-portal 127.0.0.1:15888 \
@@ -88,3 +96,4 @@ in
     ${logFile}  root:wheel     640  5     10240    *    JN
   '';
 }
+{{- end }}
