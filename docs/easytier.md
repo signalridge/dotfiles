@@ -2,8 +2,9 @@
 
 A private EasyTier network evaluated alongside Tailscale. All nodes share one
 network name/secret. Hosts listed under `easytier.nodes` in
-`.chezmoidata/easytier.yaml` are managed by this repository (macOS via
-nix-darwin, Linux via Docker Compose); the bastion relay and the NAS are
+`.chezmoidata/easytier.yaml` are managed by this repository (macOS via a
+nix-darwin LaunchDaemon, Linux via a systemd unit; both run the official
+release binaries from `/nix/store`); the bastion relay and the NAS are
 deployed by hand and recorded here so the whole mesh can be rebuilt.
 
 | Node       | Role                               | Virtual IP      | Deployed by                                    |
@@ -11,7 +12,7 @@ deployed by hand and recorded here so the whole mesh can be rebuilt.
 | bastion    | discovery + fallback relay, no TUN | —               | systemd unit (below), `<bastion-ip>:11010`   |
 | nas        | member                             | 10.144.144.2/24 | Docker Compose on DSM (below)                  |
 | summit     | member                             | 10.144.144.1/24 | this repo: nix-darwin LaunchDaemon (see below) |
-| gpuserver1 | member                             | 10.144.144.3/24 | this repo: Docker Compose (see below)          |
+| gpuserver1 | member                             | 10.144.144.3/24 | this repo: systemd unit (see below)            |
 
 All nodes run v2.6.4 (`easytier-core 2.6.4-8428a89d`); the binaries are
 byte-identical to the official GitHub release assets (bastion zip, NAS image
@@ -28,7 +29,7 @@ Generated with gopass and never stored in this repository:
   `ET_NETWORK_NAME` / `ET_NETWORK_SECRET` (never on a command line):
   - Mac: `/etc/easytier/easytier.env` (root:wheel 0600), written by
     `.chezmoiscripts/run_after_24_easytier-node.sh`
-  - Linux nodes: `~/.config/easytier/easytier.env` (0600, dir 0700), same script
+  - Linux nodes: `/etc/easytier/easytier.env` (root:root 0600), same script
   - bastion: `/etc/easytier/easytier.env` (root:root 0600, dir 0700)
   - NAS: `/volume1/docker/easytier/easytier.env` (0600, dir 0700 with the
     inherited Synology ACL removed — `/volume1/docker` grants everyone read)
@@ -70,15 +71,19 @@ chezmoi apply ~/.chezmoiscripts/24_easytier-node.sh   # each repo-managed node (
 
 ## Linux nodes (this repo)
 
-- Requires Docker with the user in the `docker` group (no sudo) and
-  `/dev/net/tun`; otherwise the script skips the container with a message.
-- `private_dot_config/private_easytier/compose.yaml.tmpl` renders
-  `~/.config/easytier/compose.yaml` from the same data (official image pinned by
-  `easytierImageSha256`, host network, only NET_ADMIN/NET_RAW, read-only rootfs).
-- `run_after_24_easytier-node.sh` writes the env file from gopass and runs
-  `docker compose up -d` on every apply (a no-op unless something changed).
-- Apply on such a host: `chezmoi apply ~/.config/easytier ~/.chezmoiscripts/24_easytier-node.sh`.
-- Status: `docker exec easytier easytier-cli peer`.
+- Needs a multi-user nix (root-owned `/nix/store`), `/dev/net/tun`, and sudo
+  for the user running `chezmoi apply`; no Docker.
+- `run_after_24_easytier-node.sh` builds the flake output `easytier`
+  (`nix-config/modules/easytier-package.nix`, out-link
+  `~/.local/state/easytier/easytier` as the GC root), renders
+  `/etc/systemd/system/easytier.service` with `ExecStart` pointing at that
+  store path, writes the env file, and restarts the unit — sudo only when the
+  unit, the credentials or the running state changed. The unit runs as a
+  `DynamicUser` with only `CAP_NET_ADMIN`/`CAP_NET_RAW` and `/dev/net/tun`.
+- Apply on such a host (the script must run after `~/nix-config` is written):
+  `chezmoi apply ~/nix-config && chezmoi apply ~/.chezmoiscripts/24_easytier-node.sh`.
+  A full `chezmoi apply` orders this correctly by itself.
+- Status: `~/.local/state/easytier/easytier/bin/easytier-cli peer`, `systemctl status easytier`.
 
 ## bastion
 
