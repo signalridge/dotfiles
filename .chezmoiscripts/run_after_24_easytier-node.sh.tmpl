@@ -96,8 +96,6 @@ Wants=network-online.target
 Type=simple
 # ET_NETWORK_NAME / ET_NETWORK_SECRET live only here (root:root 0600).
 EnvironmentFile=${ENV_FILE}
-# Optional ET_EXIT_NODES=<ip>, managed by easytier-exit (~/.local/bin).
-EnvironmentFile=-/etc/easytier-exit.env
 ExecStart=${core} \\
   --hostname {{ .hostname }} \\
   --ipv4 {{ $node.ipv4 }} \\
@@ -106,9 +104,6 @@ ExecStart=${core} \\
   --stun-servers{{ range .easytier.stunServers }} {{ . }}{{ end }} \\
   --default-protocol udp \\
   --disable-tcp-hole-punching true \\
-{{- if dig "exitNode" false $node }}
-  --enable-exit-node true \\
-{{- end }}
   --private-mode true \\
   --enable-quic-proxy true \\
   --enable-kcp-proxy true \\

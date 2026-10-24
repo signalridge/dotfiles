@@ -7,6 +7,8 @@ set -euo pipefail
 # Re-runs whenever any unit file changes (hashes below).
 # reaper.service  sha256: {{ include "private_dot_config/systemd/user/mcp-reaper.service" | sha256sum }}
 # reaper.timer    sha256: {{ include "private_dot_config/systemd/user/mcp-reaper.timer" | sha256sum }}
+# exit proxy     sha256: {{ includeTemplate "private_dot_config/systemd/user/easytier-exit-proxy.service.tmpl" . | sha256sum }}
+# exit config    sha256: {{ includeTemplate "private_dot_config/private_easytier-exit/private_config.yaml.tmpl" . | sha256sum }}
 {{ if eq .chezmoi.os "linux" -}}
 echo ":: [19] (re)loading systemd --user MCP units"
 
@@ -37,6 +39,12 @@ systemctl --user disable --now mcp-context7.service >/dev/null 2>&1 || true
 # Orphan reaper: enable the timer (it pulls in the oneshot service on schedule).
 systemctl --user enable --now mcp-reaper.timer
 systemctl --user try-restart mcp-reaper.timer || true
+
+# EasyTier exit proxy: present only on exit nodes (.chezmoidata/easytier.yaml).
+if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/easytier-exit-proxy.service" ]]; then
+    systemctl --user enable --now easytier-exit-proxy.service
+    systemctl --user try-restart easytier-exit-proxy.service || true
+fi
 
 echo "    enabled mcp-reaper.timer"
 {{ end -}}
