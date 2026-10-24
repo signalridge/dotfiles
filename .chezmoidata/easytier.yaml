@@ -25,8 +25,15 @@ easytier:
     - <bastion-ip>:38478
     - <bastion-ip>:38479
     - <bastion-ip>:38480
+  # Exit nodes (internet egress for other members, chosen with `easytier-exit`)
+  # are declared explicitly per node, never inferred (e.g. from headless): an
+  # exit relays other machines' traffic from its own IP. Peers deployed
+  # outside this repo that also enable --enable-exit-node:
+  externalExitNodes:
+    - nas
   nodes:
     summit:
       ipv4: 10.144.144.1/24 # NAS is 10.144.144.2 (deployed outside this repo)
     gpuserver1:
       ipv4: 10.144.144.3/24
+      exitNode: true
