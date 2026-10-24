@@ -29,6 +29,18 @@ can be hole-punched (both ends drop unsolicited inbound IPv6 UDP), so with
 Surge Enhanced Mode every member's public IPv4 must be in `tun-excluded-routes`.
 The bastion keeps TCP + UDP for discovery and fallback relay.
 
+## Exit nodes
+
+`gpuserver1` (`exitNode: true` in `.chezmoidata/easytier.yaml`) and the NAS
+(`--enable-exit-node=true`, listed under `externalExitNodes`) offer internet
+egress to other members. Exit roles are declared per node on purpose — an exit
+relays other machines' traffic from its own IP — never inferred from headless.
+On a member, `easytier-exit` (`~/.local/bin`, rendered only on EasyTier nodes)
+selects one: `easytier-exit list | status | <hostname|ip> | off`. easytier-cli
+has no runtime switch, so the choice is `/etc/easytier-exit.env`
+(`ET_EXIT_NODES=<ip>`, root-owned, world-readable) read by the node service at
+start; switching restarts the service.
+
 ## Credentials
 
 Generated with gopass and never stored in this repository:
@@ -214,6 +226,7 @@ services:
       - --rpc-portal-whitelist=127.0.0.1/32
       - --default-protocol=udp
       - --disable-tcp-hole-punching=true
+      - --enable-exit-node=true
       - --private-mode=true
       - --console-log-level=info
     logging:
