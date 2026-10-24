@@ -12,6 +12,8 @@ After=network-online.target
 [Service]
 Environment=AQUA_GLOBAL_CONFIG=%h/.config/aquaproj-aqua/aqua.yaml
 Environment=AQUA_POLICY_CONFIG=%h/.config/aquaproj-aqua/aqua-policy.yaml
+# gost is an aqua-proxy shim, which needs `aqua` itself on PATH.
+Environment=PATH=%h/.local/share/aquaproj-aqua/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=%h/.local/share/aquaproj-aqua/bin/gost -C %h/.config/easytier-exit/config.yaml
 # The virtual IP exists only while easytier.service is up; keep retrying the bind.
 Restart=always
