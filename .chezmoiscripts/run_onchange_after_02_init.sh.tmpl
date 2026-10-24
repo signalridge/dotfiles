@@ -10,6 +10,7 @@ set -euo pipefail
 # apps.nix: {{ includeTemplate "nix-config/modules/apps.nix.tmpl" . | sha256sum }}
 # system.nix: {{ includeTemplate "nix-config/modules/system.nix.tmpl" . | sha256sum }}
 # host-users.nix: {{ include "nix-config/modules/host-users.nix" | sha256sum }}
+# easytier.nix: {{ includeTemplate "nix-config/modules/easytier.nix.tmpl" . | sha256sum }}
 
 echo ":: [02] Configuring nix-darwin"
 
