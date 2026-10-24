@@ -15,6 +15,9 @@ versions:
   paperlib: 3.1.12
   paperlibAmd64Sha256: 993d05c9bb9c8163f2d308736d2316ebf6db8a23b75133a170e22ea6e125746c
   paperlibArm64Sha256: a49ab642331632719079399c15551a6d0c9b16ca2f50a2ef35c297c3a9835459
+  easytier: 2.6.4
+  easytierDarwinAmd64Sha256: 89fc28a6e6995259d76ce3f11775220e8a21c760e94df91a6a9db30a69b6982e
+  easytierDarwinArm64Sha256: 4be1882d1aa36d31c1d6ba0596f2cf8a097e371f8da124212324b2e0f8df7e4b
   azureFunctionsVersion: 4.12.0
   azureFunctionsBuildId: "281211"
   azureFunctionsOsxArm64Sha256: 85786c1ffc3a60073a5379f3a18986dbf9397830e0af8fbc59f73cdb7b20473e
