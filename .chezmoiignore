@@ -51,7 +51,6 @@ nix-config/modules/host-users.nix
 # macOS-specific scripts (target paths)
 .chezmoiscripts/02_init.sh
 .chezmoiscripts/09_install-paperlib.sh
-.chezmoiscripts/24_install-easytier-gui.sh
 .chezmoiscripts/10_update_homebrew_packages.sh
 .chezmoiscripts/17_load-launch-agents.sh
 .chezmoiscripts/21_terminal-profile.sh
@@ -78,7 +77,6 @@ Library/
 {{- if .headless }}
 # GUI apps (not needed on headless servers)
 .chezmoiscripts/09_install-paperlib.sh
-.chezmoiscripts/24_install-easytier-gui.sh
 .chezmoiscripts/17_load-launch-agents.sh
 .chezmoiscripts/22_wezterm-icon.sh
 Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
