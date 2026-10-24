@@ -1,8 +1,11 @@
-# EasyTier mesh — macOS nodes managed by this repo.
-# Consumed by nix-config/modules/easytier.nix.tmpl (root LaunchDaemon) and
-# .chezmoiscripts/run_after_24_easytier-credentials.sh.tmpl (credentials).
-# A Mac joins only if its chezmoi `hostname` is a key of `nodes`; every other
-# machine renders an empty module and skips the credentials script.
+# EasyTier mesh — nodes managed by this repo.
+# A machine joins only if its chezmoi `hostname` is a key of `nodes`; every
+# other machine renders nothing. Consumers:
+#   macOS: nix-config/modules/easytier.nix.tmpl (root LaunchDaemon; TUN needs root)
+#   Linux: private_dot_config/easytier/compose.yaml.tmpl (Docker, host network;
+#          the user must be in the docker group — no sudo)
+#   both:  .chezmoiscripts/run_after_24_easytier-node.sh.tmpl (credentials,
+#          and `docker compose up -d` on Linux)
 #
 # Credentials are NOT here: gopass easytier/network-name and
 # easytier/network-secret (shared by all nodes, incl. the bastion relay and the
@@ -16,4 +19,6 @@ easytier:
     - <bastion-ip>:38480
   nodes:
     summit:
-      ipv4: 10.144.144.1/24 # NAS is 10.144.144.2
+      ipv4: 10.144.144.1/24 # NAS is 10.144.144.2 (deployed outside this repo)
+    gpuserver1:
+      ipv4: 10.144.144.3/24
