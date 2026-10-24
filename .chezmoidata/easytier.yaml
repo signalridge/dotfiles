@@ -8,6 +8,7 @@
 # easytier/network-secret (shared by all nodes, incl. the bastion relay and the
 # NAS container, which are deployed outside this repo).
 easytier:
+  network: 10.144.144.0/24 # overlay route kept pinned to the EasyTier utun
   peers:
     - tcp://<bastion-ip>:11010 # bastion: private-mode relay/discovery node
   stunServers:
