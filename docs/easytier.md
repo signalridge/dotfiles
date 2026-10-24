@@ -53,6 +53,16 @@ chezmoi apply ~/.chezmoiscripts/24_easytier-credentials.sh   # Mac (sudo)
 - Apply: `chezmoi apply ~/.chezmoiscripts/02_init.sh ~/.chezmoiscripts/24_easytier-credentials.sh`
   (02 runs `darwin-rebuild switch` when the module hash changes).
 - Status: `easytier-cli peer`, `easytier-cli route`, `easytier-cli node`.
+- easytier-core adds the `10.144.144.0/24 → utunN` route once and never
+  restores it. If another tool deletes it, `10.144.144.x` silently falls into
+  the default route; recover with `sudo launchctl kickstart -k system/org.nixos.easytier`.
+- Surge Enhanced Mode: exclude only the underlay peers, e.g.
+  `tun-excluded-routes = <bastion-ip>/32, <nas-public-ip>/32`, so hole-punched
+  UDP is not relayed in user space. Never list `10.144.144.0/24` or
+  `100.64.0.0/10` there: Surge implements exclusions as `en0` routes, which
+  hijack the EasyTier/Tailscale routes (and removing them later deletes
+  EasyTier's route). Enabling Enhanced Mode also stops Tailscale once; reconnect
+  it and both run side by side.
 
 ## bastion
 
