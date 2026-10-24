@@ -13,3 +13,5 @@ enhancd = "enhancd"
 noice = "noice"
 # `tre` is a real binary (dduan/tre, gitignore-aware tree), not a typo for "tree".
 tre = "tre"
+# `gost` is a real binary (go-gost/gost, GO Simple Tunnel), not a typo for "ghost".
+gost = "gost"
