@@ -37,6 +37,7 @@ packages:
   # profiles (PATH + alias purging) outside chezmoi's control.
   - name: google-antigravity/antigravity-cli@1.4.5
   - name: nektos/act@v0.2.89
+  - name: go-gost/gost@v3.3.1 # UDP relay to a tailnet host
   - name: FiloSottile/age@v1.3.2
   - name: asciinema/asciinema@v3.2.1
   - name: atuinsh/atuin@v18.24.2
