@@ -25,9 +25,6 @@ ENV_BY_KEY = {
     "paperlib": "U_PAPERLIB",
     "paperlibAmd64Sha256": "U_PAPERLIB_AMD64_SHA256",
     "paperlibArm64Sha256": "U_PAPERLIB_ARM64_SHA256",
-    "easytierGui": "U_EASYTIER_GUI",
-    "easytierGuiAmd64Sha256": "U_EASYTIER_GUI_AMD64_SHA256",
-    "easytierGuiArm64Sha256": "U_EASYTIER_GUI_ARM64_SHA256",
     "cursorAgentVersion": "U_CURSOR_AGENT_VERSION",
     "cursorAgentDarwinArm64Sha256": "U_CURSOR_AGENT_DARWIN_ARM64_SHA256",
     "cursorAgentDarwinX64Sha256": "U_CURSOR_AGENT_DARWIN_X64_SHA256",
@@ -88,7 +85,7 @@ def validate_value(key: str, value: str) -> None:
         pattern, kind = HEX_64_RE, "SHA-256"
     elif key.endswith("Rev"):
         pattern, kind = HEX_40_RE, "commit SHA"
-    elif key in ("paperlib", "easytierGui"):
+    elif key == "paperlib":
         pattern, kind = SEMVER_RE, "semantic version"
     elif key == "cursorAgentVersion":
         pattern, kind = CURSOR_VERSION_RE, "Cursor Agent version"

@@ -93,11 +93,6 @@ jobs:
           paperlib=${paperlib_tag#release-electron-}
           paperlib_amd64_sha256=$(release_asset_digest_sha256 Future-Scholars/paperlib "$paperlib_tag" "Paperlib_${paperlib}.dmg")
           paperlib_arm64_sha256=$(release_asset_digest_sha256 Future-Scholars/paperlib "$paperlib_tag" "Paperlib_${paperlib}_arm.dmg")
-          # easytier tag format: vX.Y.Z (latest non-prerelease) -> extract X.Y.Z
-          easytier_gui_tag=$(gh release view --repo EasyTier/EasyTier --json tagName -q '.tagName')
-          easytier_gui=${easytier_gui_tag#v}
-          easytier_gui_amd64_sha256=$(release_asset_digest_sha256 EasyTier/EasyTier "$easytier_gui_tag" "easytier-gui_${easytier_gui}_x64.dmg")
-          easytier_gui_arm64_sha256=$(release_asset_digest_sha256 EasyTier/EasyTier "$easytier_gui_tag" "easytier-gui_${easytier_gui}_aarch64.dmg")
 
           cursor_installer=$(curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors https://cursor.com/install)
           cursor_agent_version=$(
@@ -177,9 +172,6 @@ jobs:
             echo "paperlib=$paperlib"
             echo "paperlib_amd64_sha256=$paperlib_amd64_sha256"
             echo "paperlib_arm64_sha256=$paperlib_arm64_sha256"
-            echo "easytier_gui=$easytier_gui"
-            echo "easytier_gui_amd64_sha256=$easytier_gui_amd64_sha256"
-            echo "easytier_gui_arm64_sha256=$easytier_gui_arm64_sha256"
             echo "cursor_agent_version=$cursor_agent_version"
             echo "cursor_agent_darwin_arm64_sha256=$cursor_agent_darwin_arm64_sha256"
             echo "cursor_agent_darwin_x64_sha256=$cursor_agent_darwin_x64_sha256"
@@ -239,9 +231,6 @@ jobs:
           U_PAPERLIB: ${{ steps.versions.outputs.paperlib }}
           U_PAPERLIB_AMD64_SHA256: ${{ steps.versions.outputs.paperlib_amd64_sha256 }}
           U_PAPERLIB_ARM64_SHA256: ${{ steps.versions.outputs.paperlib_arm64_sha256 }}
-          U_EASYTIER_GUI: ${{ steps.versions.outputs.easytier_gui }}
-          U_EASYTIER_GUI_AMD64_SHA256: ${{ steps.versions.outputs.easytier_gui_amd64_sha256 }}
-          U_EASYTIER_GUI_ARM64_SHA256: ${{ steps.versions.outputs.easytier_gui_arm64_sha256 }}
           U_CURSOR_AGENT_VERSION: ${{ steps.versions.outputs.cursor_agent_version }}
           U_CURSOR_AGENT_DARWIN_ARM64_SHA256: ${{ steps.versions.outputs.cursor_agent_darwin_arm64_sha256 }}
           U_CURSOR_AGENT_DARWIN_X64_SHA256: ${{ steps.versions.outputs.cursor_agent_darwin_x64_sha256 }}
@@ -324,9 +313,6 @@ jobs:
             | paperlib | `${{ steps.versions.outputs.paperlib }}` |
             | paperlib amd64 sha256 | `${{ steps.versions.outputs.paperlib_amd64_sha256 }}` |
             | paperlib arm64 sha256 | `${{ steps.versions.outputs.paperlib_arm64_sha256 }}` |
-            | easytier-gui | `${{ steps.versions.outputs.easytier_gui }}` |
-            | easytier-gui amd64 sha256 | `${{ steps.versions.outputs.easytier_gui_amd64_sha256 }}` |
-            | easytier-gui arm64 sha256 | `${{ steps.versions.outputs.easytier_gui_arm64_sha256 }}` |
             | Cursor Agent | `${{ steps.versions.outputs.cursor_agent_version }}` |
             | Cursor Agent darwin-arm64 sha256 | `${{ steps.versions.outputs.cursor_agent_darwin_arm64_sha256 }}` |
             | Cursor Agent darwin-x64 sha256 | `${{ steps.versions.outputs.cursor_agent_darwin_x64_sha256 }}` |
