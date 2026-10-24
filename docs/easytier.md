@@ -1,14 +1,17 @@
 # EasyTier mesh
 
-A private EasyTier network evaluated alongside Tailscale. Three nodes share one
-network name/secret; only the Mac is managed by this repository. This file
-records how the other two are deployed so the whole mesh can be rebuilt.
+A private EasyTier network evaluated alongside Tailscale. All nodes share one
+network name/secret. Hosts listed under `easytier.nodes` in
+`.chezmoidata/easytier.yaml` are managed by this repository (macOS via
+nix-darwin, Linux via Docker Compose); the bastion relay and the NAS are
+deployed by hand and recorded here so the whole mesh can be rebuilt.
 
-| Node    | Role                               | Virtual IP      | Deployed by                                    |
-| ------- | ---------------------------------- | --------------- | ---------------------------------------------- |
-| bastion | discovery + fallback relay, no TUN | —               | systemd unit (below), `23.106.129.252:11010`   |
-| nas     | member                             | 10.144.144.2/24 | Docker Compose on DSM (below)                  |
-| summit  | member                             | 10.144.144.1/24 | this repo: nix-darwin LaunchDaemon (see below) |
+| Node       | Role                               | Virtual IP      | Deployed by                                    |
+| ---------- | ---------------------------------- | --------------- | ---------------------------------------------- |
+| bastion    | discovery + fallback relay, no TUN | —               | systemd unit (below), `23.106.129.252:11010`   |
+| nas        | member                             | 10.144.144.2/24 | Docker Compose on DSM (below)                  |
+| summit     | member                             | 10.144.144.1/24 | this repo: nix-darwin LaunchDaemon (see below) |
+| gpuserver1 | member                             | 10.144.144.3/24 | this repo: Docker Compose (see below)          |
 
 All nodes run v2.6.4 (`easytier-core 2.6.4-8428a89d`); the binaries are
 byte-identical to the official GitHub release assets (bastion zip, NAS image
@@ -24,7 +27,8 @@ Generated with gopass and never stored in this repository:
 - Every node reads them from a root-only env file as
   `ET_NETWORK_NAME` / `ET_NETWORK_SECRET` (never on a command line):
   - Mac: `/etc/easytier/easytier.env` (root:wheel 0600), written by
-    `.chezmoiscripts/run_after_24_easytier-credentials.sh`
+    `.chezmoiscripts/run_after_24_easytier-node.sh`
+  - Linux nodes: `~/.config/easytier/easytier.env` (0600, dir 0700), same script
   - bastion: `/etc/easytier/easytier.env` (root:root 0600, dir 0700)
   - NAS: `/volume1/docker/easytier/easytier.env` (0600, dir 0700 with the
     inherited Synology ACL removed — `/volume1/docker` grants everyone read)
@@ -37,7 +41,7 @@ render() { printf 'ET_NETWORK_NAME=%s\nET_NETWORK_SECRET=%s\n' \
 render | ssh bastion 'umask 077; cat >/etc/easytier/easytier.env && systemctl restart easytier'
 render | ssh nas 'umask 077; cat >/volume1/docker/easytier/easytier.env \
   && cd /volume1/docker/easytier && sudo docker compose up -d --force-recreate'
-chezmoi apply ~/.chezmoiscripts/24_easytier-credentials.sh   # Mac (sudo)
+chezmoi apply ~/.chezmoiscripts/24_easytier-node.sh   # each repo-managed node (sudo on Mac)
 ```
 
 ## Mac (this repo)
@@ -50,7 +54,7 @@ chezmoi apply ~/.chezmoiscripts/24_easytier-credentials.sh   # Mac (sudo)
   nixpkgs package) and runs `org.nixos.easytier` as root (TUN needs root).
   `easytier-cli` is on PATH from the same build. Logs: `/var/log/easytier.log`
   (rotated by newsyslog).
-- Apply: `chezmoi apply ~/.chezmoiscripts/02_init.sh ~/.chezmoiscripts/24_easytier-credentials.sh`
+- Apply: `chezmoi apply ~/.chezmoiscripts/02_init.sh ~/.chezmoiscripts/24_easytier-node.sh`
   (02 runs `darwin-rebuild switch` when the module hash changes).
 - Status: `easytier-cli peer`, `easytier-cli route`, `easytier-cli node`.
 - easytier-core adds the `10.144.144.0/24 → utunN` route once and never
@@ -63,6 +67,18 @@ chezmoi apply ~/.chezmoiscripts/24_easytier-credentials.sh   # Mac (sudo)
   hijack the EasyTier/Tailscale routes (and removing them later deletes
   EasyTier's route). Enabling Enhanced Mode also stops Tailscale once; reconnect
   it and both run side by side.
+
+## Linux nodes (this repo)
+
+- Requires Docker with the user in the `docker` group (no sudo) and
+  `/dev/net/tun`; otherwise the script skips the container with a message.
+- `private_dot_config/private_easytier/compose.yaml.tmpl` renders
+  `~/.config/easytier/compose.yaml` from the same data (official image pinned by
+  `easytierImageSha256`, host network, only NET_ADMIN/NET_RAW, read-only rootfs).
+- `run_after_24_easytier-node.sh` writes the env file from gopass and runs
+  `docker compose up -d` on every apply (a no-op unless something changed).
+- Apply on such a host: `chezmoi apply ~/.config/easytier ~/.chezmoiscripts/24_easytier-node.sh`.
+- Status: `docker exec easytier easytier-cli peer`.
 
 ## bastion
 
@@ -183,6 +199,8 @@ services:
       - --enable-kcp-proxy=true
       - --rpc-portal=127.0.0.1:15888
       - --rpc-portal-whitelist=127.0.0.1/32
+      - --default-protocol=udp
+      - --private-mode=true
       - --console-log-level=info
     logging:
       driver: json-file
