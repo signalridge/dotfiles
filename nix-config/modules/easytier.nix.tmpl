@@ -86,33 +86,6 @@ in
     };
   };
 
-  # easytier-core installs the overlay route once and never re-adds it. Anything
-  # else that edits the routing table (another TUN/VPN app, a misconfigured
-  # exclusion, a manual `route delete`) can drop or shadow it, which silently
-  # blackholes the mesh until the daemon restarts. Re-pin only the route to the
-  # utun that carries our virtual IP; the tunnel and its connections are left
-  # untouched.
-  launchd.daemons.easytier-route-guard = {
-    script = ''
-      set -eu
-      addr="{{ index (splitList "/" $node.ipv4) 0 }}"
-      net="{{ .easytier.network }}"
-      ifc="$(/sbin/ifconfig | /usr/bin/awk -v a="$addr" '/^[a-z0-9]+:/ { i = $1; sub(":", "", i) } $1 == "inet" && $2 == a { print i; exit }')"
-      [ -n "$ifc" ] || exit 0 # easytier-core not up yet
-      cur="$(/sbin/route -n get -net "$net" 2>/dev/null | /usr/bin/awk '/interface:/ { print $2 }')"
-      [ "$cur" != "$ifc" ] || exit 0
-      /sbin/route -q -n delete -net "$net" >/dev/null 2>&1 || true
-      /sbin/route -q -n add -net "$net" -interface "$ifc" >/dev/null
-      echo "easytier-route-guard: $(/bin/date '+%F %T') re-pinned $net -> $ifc (was ''${cur:-none})"
-    '';
-    serviceConfig = {
-      RunAtLoad = true;
-      StartInterval = 15;
-      StandardOutPath = logFile;
-      StandardErrorPath = logFile;
-    };
-  };
-
   # Rotate the daemon log at 10 MiB, keeping 5 compressed generations.
   environment.etc."newsyslog.d/easytier.conf".text = ''
     # logfilename        [owner:group]  mode count size(KB) when flags
