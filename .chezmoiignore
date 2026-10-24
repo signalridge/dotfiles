@@ -93,7 +93,7 @@ Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 # .chezmoidata/easytier.yaml that also hold the gopass key it is rendered from.
 # ─────────────────────────────────────────────────────────────────────────────
 {{- $etNode := dig "nodes" .hostname "" .easytier }}
-{{- $etExitKey := stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/easytier/exit-ss2022-key.age") }}
+{{- $etExitKey := stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/easytier/exit-ss-password.age") }}
 {{- if not (and (eq .chezmoi.os "linux") $etNode (dig "exitNode" false $etNode) $etExitKey) }}
 .config/easytier-exit/
 .config/systemd/user/easytier-exit-proxy.service
