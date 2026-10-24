@@ -83,6 +83,9 @@ NODE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/easytier"
 ENV_FILE="${NODE_DIR}/easytier.env"
 COMPOSE_FILE="${NODE_DIR}/compose.yaml"
 
+# Don't rely on chezmoi having written compose.yaml first (a path-scoped apply
+# may run this script before the file).
+install -d -m 700 "$NODE_DIR"
 if [[ ! -f "$ENV_FILE" ]] || ! cmp -s <(render) "$ENV_FILE"; then
     (
         umask 077
@@ -93,6 +96,10 @@ if [[ ! -f "$ENV_FILE" ]] || ! cmp -s <(render) "$ENV_FILE"; then
     echo "    Wrote ${ENV_FILE}"
 fi
 
+if [[ ! -f "$COMPOSE_FILE" ]]; then
+    echo "    Skipped container (${COMPOSE_FILE} not applied yet; rerun chezmoi apply)"
+    exit 0
+fi
 if ! command -v docker >/dev/null 2>&1; then
     echo "    Skipped container (docker not installed)"
     exit 0
