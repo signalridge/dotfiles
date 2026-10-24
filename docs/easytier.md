@@ -31,15 +31,30 @@ The bastion keeps TCP + UDP for discovery and fallback relay.
 
 ## Exit nodes
 
-`gpuserver1` (`exitNode: true` in `.chezmoidata/easytier.yaml`) and the NAS
-(`--enable-exit-node=true`, listed under `externalExitNodes`) offer internet
-egress to other members. Exit roles are declared per node on purpose — an exit
-relays other machines' traffic from its own IP — never inferred from headless.
-On a member, `easytier-exit` (`~/.local/bin`, rendered only on EasyTier nodes)
-selects one: `easytier-exit list | status | <hostname|ip> | off`. easytier-cli
-has no runtime switch, so the choice is `/etc/easytier-exit.env`
-(`ET_EXIT_NODES=<ip>`, root-owned, world-readable) read by the node service at
-start; switching restarts the service.
+Members pick an internet egress **locally**; nothing restarts and no root is
+needed to switch. Exits run gost serving Shadowsocks (`chacha20-ietf-poly1305`,
+TCP + UDP) on their **virtual IP only**, with a gost admission whitelist that
+drops sources outside `10.144.144.0/24` (Linux accepts packets for a local
+address on any interface, so a same-LAN host could otherwise reach the port via
+the physical NIC). The password is gopass `easytier/exit-ss-password`.
+
+| Exit       | Address             | Deployed by                                                                                                                                           |
+| ---------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| gpuserver1 | `10.144.144.3:1080` | this repo: `exitNode: true` → systemd --user `easytier-exit-proxy.service`, config `~/.config/easytier-exit/config.yaml` (0600, rendered from gopass) |
+| nas        | `10.144.144.2:1080` | container `easytier-exit` in the NAS compose below; `gost-exit.yaml` (0600) written from gopass                                                       |
+
+- Classic AEAD rather than `2022-blake3-*`: gost's UDP (`ssu`) handler rejects
+  Shadowsocks 2022 UDP from Surge (`cipher: message authentication failed`).
+  The 2022 replay protection adds nothing here because the ciphertext only
+  travels inside the encrypted mesh.
+- Exit roles are declared per node (`exitNode: true`, `externalExitNodes`),
+  never inferred from `headless`: an exit relays other machines' traffic from
+  its own IP.
+- Clients: Surge on the home Mac (`ss` proxies `gpuserver-exit`, `nas-exit` +
+  `Exit = select, DIRECT, …` group, `FINAL,Exit`, mesh/LAN/peer CIDRs `DIRECT`);
+  sing-box `selector` on other machines.
+- EasyTier's own `--socks5` is unsuitable as an exit: it takes only a port and
+  listens on every interface without authentication.
 
 ## Credentials
 
@@ -198,6 +213,7 @@ only `/usr/local/bin/docker` via passwordless sudo. Nothing is shared with the
 name: easytier
 services:
   easytier:
+    # v2.6.4 index digest; easytier-core inside == official linux-x86_64 zip.
     image: easytier/easytier:v2.6.4@sha256:91d6732ea5ff71542fdb99333d2ee7b168e973443114db84db061e452427d91e
     container_name: easytier
     restart: unless-stopped
@@ -226,9 +242,29 @@ services:
       - --rpc-portal-whitelist=127.0.0.1/32
       - --default-protocol=udp
       - --disable-tcp-hole-punching=true
-      - --enable-exit-node=true
       - --private-mode=true
       - --console-log-level=info
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+  # Shadowsocks 2022 exit on the virtual IP only (see gost-exit.yaml); retried
+  # until easytier has brought up 10.144.144.2.
+  exit-proxy:
+    image: gogost/gost:3.3.1@sha256:c3f849542469bc6027cd38d9a7ef86e8efbcc1176551a3ace8df85ef90a9c5b9
+    container_name: easytier-exit
+    user: "1026:100"
+    restart: unless-stopped
+    network_mode: host
+    depends_on: [easytier]
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    volumes:
+      - ./gost-exit.yaml:/etc/gost/gost.yaml:ro
+    command: ["-C", "/etc/gost/gost.yaml"]
     logging:
       driver: json-file
       options:
@@ -250,5 +286,8 @@ Status: `sudo docker exec easytier easytier-cli peer`.
   `cp -p /usr/local/sbin/vps-firewall.bak-20261024160103-pre-easytier /usr/local/sbin/vps-firewall`
   then `vps-firewall --check && vps-firewall`.
 - NAS: `cd /volume1/docker/easytier && sudo docker compose down`,
-  `sudo docker image rm easytier/easytier:v2.6.4`, delete the directory.
+  `sudo docker image rm easytier/easytier:v2.6.4 gogost/gost:3.3.1`, delete the directory.
+- Exits: drop `exitNode: true` (gpuserver1 then renders no unit/config; run
+  `systemctl --user disable --now easytier-exit-proxy` there first); remove the
+  `gpuserver-exit`/`nas-exit` proxies and the `Exit` group from Surge.
 - gopass: `gopass rm -r easytier`.
