@@ -34,7 +34,7 @@ easytier:
   # (shadowsocks-rust ssserver; key in gopass easytier/exit-ss-password),
   # bound ONLY to the node's virtual IP, with an ACL that accepts only mesh
   # clients and refuses private/overlay destinations; clients pick one in
-  # the sing-box `Exit Node` selector. Encrypted and authenticated even though the mesh already
+  # the sing-box `Egress` selector. Encrypted and authenticated even though the mesh already
   # is, since the exit hosts sit on shared campus LANs. Declared explicitly per
   # machine via its local `easytierExit` data, never inferred (e.g. from
   # headless): an exit relays other machines' traffic from its own IP. Linux

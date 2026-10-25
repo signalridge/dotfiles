@@ -23,7 +23,7 @@ singBox:
   # ~/.local/state/sing-box/ui on Linux): delete it and restart sing-box to
   # pick up a new release.
   webUiUrl: https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip
-  # Destinations pinned to mesh exits whatever `Exit Node` says. `exits` is in
+  # Destinations pinned to mesh exits whatever `Egress` says. `exits` is in
   # priority order: the first live one wins and the group only moves on when it
   # fails (an exit that is this machine itself means direct). Match by domain
   # (sniffed SNI/Host) and by address, so rsync/FTP to a mirror match too.
