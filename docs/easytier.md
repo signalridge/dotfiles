@@ -128,9 +128,12 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   `http://127.0.0.1:9090/ui` (secret: `gopass show -o sing-box/clash-api-secret`).
   `singBox.exitRoutes` pins destinations to mesh exits whatever `Egress` says:
   one `urltest` group per entry, matched by sniffed domain or by address (so
-  rsync/FTP match too). Members are in priority order; a huge tolerance keeps the
-  first live one, a failure moves to the next, the machine's own exit means
-  `Direct`, and switches never cut existing connections. The same exits chained
+  rsync/FTP match too). Members are in priority order: the first live one
+  starts, a failure moves to the next, and a 50 ms tolerance ignores jitter
+  between near-equal members yet hands back from a chained fallback once the
+  mesh link is direct again (a huge tolerance left JAIST on the bastion detour
+  after every boot). The machine's own exit means `Direct`, and switches never
+  cut existing connections. The same exits chained
   through the bastion follow as fallbacks, so the route holds where the mesh is
   blocked. Today: `jaist.ac.jp` → `gpuserver`, `nas`, `gpuserver via bastion`,
   `nas via bastion`.

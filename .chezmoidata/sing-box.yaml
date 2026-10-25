@@ -24,9 +24,10 @@ singBox:
   # pick up a new release.
   webUiUrl: https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip
   # Destinations pinned to mesh exits whatever `Egress` says. `exits` is in
-  # priority order: the first live one wins and the group only moves on when it
-  # fails (an exit that is this machine itself means direct). Match by domain
-  # (sniffed SNI/Host) and by address, so rsync/FTP to a mirror match too.
+  # priority order: the first live one starts, a failure moves on, and a member
+  # more than 50 ms faster wins back (an exit that is this machine itself means
+  # direct). Match by domain (sniffed SNI/Host) and by address, so rsync/FTP to
+  # a mirror match too.
   exitRoutes:
     - tag: jaist # JAIST mirror (ftp.jaist.ac.jp)
       exits: [gpuserver, nas]
