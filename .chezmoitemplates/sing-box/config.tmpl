@@ -1,6 +1,5 @@
 {{- /* sing-box client config, shared by every platform (docs/easytier.md).
        Called with (dict "root" $ "password" … "secret" … ["tun" true]
-       ["tunExcludeExtra" (list …), more addresses kept off the TUN]
        ["bastion" <list of outbounds, or the placeholder string
        "__BASTION_OUTBOUNDS__" spliced in later>]).
        Panel groups (names are what the web panel shows):
@@ -113,7 +112,7 @@
         "auto_route" true
         "strict_route" false
         "dns_mode" "native"
-        "route_exclude_address" (concat $r.singBox.tunExcludeAddress (dig "tunExcludeExtra" (list) .))) -}}
+        "route_exclude_address" $r.singBox.tunExcludeAddress) -}}
 {{-   $dns = dict
         "servers" (list
           (dict "type" "https" "tag" "remote" "server" "1.1.1.1" "detour" "Egress")

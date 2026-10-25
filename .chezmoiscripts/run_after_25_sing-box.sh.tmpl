@@ -11,7 +11,7 @@ set -euo pipefail
 #   easytier/exit-ss-password    Shadowsocks 2022 key of the EasyTier exits
 #   sing-box/clash-api-secret    Bearer secret of the web panel / Clash API
 #   sing-box/bastion-outbounds   optional bastion outbounds (bastion-import)
-#   easytier/bastion-host        the bastion's public IPv4, kept off the TUN
+#   easytier/bastion-host        the bastion's public IPv4, dialled by its outbounds
 # Runs on every apply; sudo only when the rendered config changed (tracked by
 # hash, since the file is root-only) or the daemon is not running.
 #
@@ -41,29 +41,28 @@ fi
 bastion_outbounds="$(gopass show -o sing-box/bastion-outbounds 2>/dev/null || echo '[]')"
 jq -e 'type == "array" and (length == 0 or (map(.tag) | sort) == ["AnyTLS", "Hysteria2", "Reality"])' \
     <<<"$bastion_outbounds" >/dev/null || { echo "    gopass sing-box/bastion-outbounds is malformed; re-run bastion-import" >&2; exit 1; }
-# The bastion's public IPv4 stays off the TUN: SSH and EasyTier's TCP link to
-# it are then plain connections that survive sing-box restarts. The bastion
-# outbounds also dial this address instead of its domain (TLS still names the
-# domain), so reaching the bastion needs no DNS at all. Kept in gopass (public repo); dropped when
-# absent or not an IPv4 literal.
+# The bastion outbounds dial its public IPv4 instead of its domain (TLS still
+# names the domain), so reaching the bastion needs no DNS at all. Kept in gopass
+# (public repo); dropped when absent or not an IPv4 literal. The address is NOT
+# kept off the TUN: EasyTier's STUN to the bastion must take the same path as
+# its hole punching (through sing-box, endpoint-independent UDP mapping), or the
+# punched ports never match and nas/gpuserver stay relayed via the bastion.
 bastion_ip="$(gopass show -o easytier/bastion-host 2>/dev/null || true)"
 [[ "$bastion_ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || bastion_ip=""
 
 # Structure from .chezmoitemplates/sing-box/config.tmpl (shared with the
 # LaunchAgent / systemd variants); the secrets, the bastion outbounds and its
-# address are placeholders here and are filled in by jq at run time so they never enter the
-# rendered script.
+# address are placeholders here and are filled in by jq at run time so they
+# never enter the rendered script.
 render_config() {
     jq --arg password "$ss_password" --arg secret "$secret" \
         --argjson bastion_outbounds "$bastion_outbounds" --arg bastion_ip "$bastion_ip" '
       walk(if . == "__EXIT_SS_PASSWORD__" then $password
            elif . == "__CLASH_API_SECRET__" then $secret else . end)
       | .outbounds |= map(if . == "__BASTION_OUTBOUNDS__" then $bastion_outbounds[] else . end)
-      | (.outbounds[] | select($bastion_ip != "" and (.tag | IN("Reality", "Hysteria2", "AnyTLS"))) | .server) = $bastion_ip
-      | (.inbounds[] | select(.type == "tun") | .route_exclude_address) |=
-          (map(select(. != "__BASTION_EXCLUDE__")) + (if $bastion_ip == "" then [] else [$bastion_ip + "/32"] end))' <<'JSON'
+      | (.outbounds[] | select($bastion_ip != "" and (.tag | IN("Reality", "Hysteria2", "AnyTLS"))) | .server) = $bastion_ip' <<'JSON'
 {{- $hasBastion := stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/sing-box/bastion-outbounds.age") }}
-{{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" "__EXIT_SS_PASSWORD__" "secret" "__CLASH_API_SECRET__" "tun" true "tunExcludeExtra" (list "__BASTION_EXCLUDE__") "bastion" (ternary "__BASTION_OUTBOUNDS__" "" (not (not $hasBastion)))) }}
+{{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" "__EXIT_SS_PASSWORD__" "secret" "__CLASH_API_SECRET__" "tun" true "bastion" (ternary "__BASTION_OUTBOUNDS__" "" (not (not $hasBastion)))) }}
 JSON
 }
 
