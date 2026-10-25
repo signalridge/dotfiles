@@ -23,7 +23,10 @@ All nodes run v2.6.4 (`easytier-core 2.6.4-8428a89d`); the binaries are
 byte-identical to the official GitHub release assets (bastion zip, NAS image
 `easytier/easytier:v2.6.4@sha256:91d6732e…`, Mac zip via `fetchurl`). Public
 shared nodes (`-e`) are never used; STUN uses the bastion's own endpoints
-`<bastion-ip>:38478-38480`.
+`<bastion-ip>:38478-38480` (`stun-binding`, a small Python service on the
+bastion). The same STUN endpoints and the bastion's `hysteria-realm`
+rendezvous (TCP 38443) also serve the NAS's Hysteria Realms containers
+(an inbound rsync from outside JAIST), so neither may be retired.
 
 Members (Mac, NAS, Linux nodes) listen on **UDP only** (`udp://0.0.0.0:11010`,
 `easytier.listeners`): with a TCP listener a peer that can reach it (e.g. over
@@ -85,7 +88,7 @@ on work machines, which only consume the exits); the rest is one
 | KCP transport                        | EasyTier `--enable-kcp-proxy` / `--enable-quic-proxy` (on); Hysteria2 for lossy WAN |
 | fake-TCP (UDP disguised as TCP)      | EasyTier `faketcp://` listener (experimental)                                       |
 | ICMP tunnel                          | none installed (`nix run nixpkgs#pingtunnel`)                                       |
-| WebSocket / TLS / QUIC camouflage    | sing-box (VLESS Reality, AnyTLS, WS), Hysteria2, bastion v2ray + Caddy              |
+| WebSocket / TLS / QUIC camouflage    | sing-box (VLESS Reality, AnyTLS, Hysteria2), bastion sing-box + Caddy decoy         |
 | DNS forwarder                        | sing-box `dns`                                                                      |
 | Rate limiting                        | `tc` (Linux), `pf` (macOS)                                                          |
 | Per-connection logs                  | sing-box connections API, `ssserver -v`                                             |
