@@ -9,6 +9,11 @@ flakey-profile.lib.mkProfile {
     {{- range .nix.homepkgs.shared }}
     {{ . }}
     {{- end }}
+    {{- if eq .chezmoi.os "linux" }}
+    {{- range .nix.homepkgs.linux }}
+    {{ . }}
+    {{- end }}
+    {{- end }}
     {{- if .work }}
     {{- range .nix.homepkgs.work }}
     {{ . }}

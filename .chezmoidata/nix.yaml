@@ -70,6 +70,16 @@ nix:
           tmux)
       - wget
       - zstd
+      # gost replacements without an aqua package or upstream checksums
+      # (docs/easytier.md): one-shot TCP/UDP relays, ICMP tunnel, DNS forwarder,
+      # protocol multiplexer on one port.
+      - socat
+      - pingtunnel
+      - dnsproxy
+      - sslh
+    # Linux-only packages (no darwin build).
+    linux:
+      - phantun # fake-TCP UDP tunnel (raw sockets; Linux only)
     work:
       - mariadb
       - postgresql

@@ -47,6 +47,12 @@ packages:
   - name: nektos/act@v0.2.89
   - name: apernet/hysteria@app/v2.13.0
     registry: third-party
+  # gost replacements (docs/easytier.md): Xray (Reality/XHTTP and other
+  # camouflage transports), wstunnel (TCP/UDP over WebSocket/HTTP2), frp
+  # (frpc/frps reverse proxy). The rest come from nix (.chezmoidata/nix.yaml).
+  - name: XTLS/Xray-core@v26.10.21
+  - name: erebe/wstunnel@v11.1.0
+  - name: fatedier/frp@v0.71.1
   - name: FiloSottile/age@v1.3.2
   - name: asciinema/asciinema@v3.2.1
   - name: atuinsh/atuin@v18.24.2
