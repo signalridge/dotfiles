@@ -8,8 +8,8 @@ _: { }
 # ─────────────────────────────────────────────────────────────────────────────
 # --bind-device pins EasyTier's own sockets (peers, STUN, hole punching) to the
 # physical NIC (IP_BOUND_IF), so they bypass any TUN that owns the default route
-# (Surge Enhanced Mode, sing-box) the way Tailscale's own traffic does: no
-# per-peer route exclusions needed.
+# (sing-box) the way Tailscale's own traffic does: no per-peer route
+# exclusions needed.
 # Every Mac is a client with a DHCP-assigned virtual IP; network parameters
 # come from .chezmoidata/easytier.yaml; the package
 # (official release zip, NOT nixpkgs) from ./easytier-package.nix. The store

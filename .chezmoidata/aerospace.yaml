@@ -36,10 +36,6 @@ aerospace:
         comment: Adguard
       - id: io.balena.etcher
         comment: balenaEtcher
-      - id: com.nssurge.surge-mac
-        comment: Surge
-      - id: com.nssurge.surge-dashboard
-        comment: Surge Dashboard
       - id: us.zoom.xos
         comment: Zoom
       # Setapp apps (not managed by dotfiles, installed via Setapp)

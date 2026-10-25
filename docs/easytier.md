@@ -32,15 +32,15 @@ link, and path loss then throttles tunnelled TCP; TCP hole punching is disabled
 for the same reason. Only IPv4
 can be hole-punched (both ends drop unsolicited inbound IPv6 UDP). Macs pass
 `--bind-device true`, which pins EasyTier's own sockets (peers, STUN, hole
-punching) to the physical NIC, so a TUN owning the default route (Surge
-Enhanced Mode, sing-box) never carries them — the same way Tailscale's own
+punching) to the physical NIC, so a TUN owning the default route (sing-box) never
+carries them — the same way Tailscale's own
 WireGuard traffic bypasses its exit-node routes.
 The bastion keeps TCP + UDP for discovery and fallback relay.
 
 ## Exit nodes
 
-Members pick an internet egress **locally** (Surge policy group, sing-box
-selector); nothing restarts and no root is needed to switch. Exits run
+Members pick an internet egress **locally** (the sing-box `Exit` selector);
+nothing restarts and no root is needed to switch. Exits run
 **shadowsocks-rust** (`ssserver`, Shadowsocks 2022 `2022-blake3-aes-256-gcm`,
 TCP + UDP) on their **virtual IP only**. Its ACL accepts only clients in
 `10.144.144.0/24` — Linux accepts packets for a local address on any
@@ -54,13 +54,10 @@ separate 0600 env file.
 | gpuserver1 | `10.144.144.3:1080` | this repo: `easytierExit` → systemd --user `ss-exit.service`, `~/.config/ss-exit/{config.json,acl.list,env}` |
 | nas        | `10.144.144.2:1080` | container `ss-exit` in the NAS compose below; `ss-exit.{json,acl,env}` (0600, env written from gopass)       |
 
-- Clients: Surge on the home Mac (`ss` proxies `gpuserver`, `nas`,
-  `encrypt-method=2022-blake3-aes-256-gcm`, `udp-relay=true`; group
-  `Exit = select, DIRECT, …`; mesh/LAN/peer CIDRs `DIRECT`, then `FINAL,Exit`);
-  sing-box everywhere else (see "sing-box" below).
+- Clients: sing-box on every machine (see "sing-box" below).
 - Not used, and why: EasyTier's `--socks5` takes only a port and listens on all
   interfaces without authentication; gost's Shadowsocks UDP (`ssu`) rejects
-  Shadowsocks 2022 UDP from Surge (`cipher: message authentication failed`).
+  Shadowsocks 2022 UDP (`cipher: message authentication failed`).
 - Exit roles are set per machine (`easytierExit` in its local chezmoi data;
   the NAS is listed in `exits` but deployed by hand), never inferred from
   `headless`: an exit relays other machines' traffic from its own IP.
@@ -75,8 +72,8 @@ on work machines, which only consume the exits); the rest is one
 | gost feature                         | Use instead                                                                         |
 | ------------------------------------ | ----------------------------------------------------------------------------------- |
 | Shadowsocks / proxy server           | shadowsocks-rust `ssserver`; sing-box `socks`/`http`/`mixed` inbounds               |
-| Local protocol conversion            | Surge, sing-box, `sslocal`                                                          |
-| Multi-hop chains with node selection | sing-box `detour` + `selector`/`urltest`; Surge `underlying-proxy`                  |
+| Local protocol conversion            | sing-box, `sslocal`                                                                 |
+| Multi-hop chains with node selection | sing-box `detour` + `selector`/`urltest`                                            |
 | Reverse tunnels / NAT traversal      | EasyTier, Tailscale                                                                 |
 | L3 tunnel (TUN)                      | EasyTier, Tailscale                                                                 |
 | TCP/UDP port forwarding (any target) | `realm`; sing-box `direct` inbound with an override target                          |
@@ -86,7 +83,7 @@ on work machines, which only consume the exits); the rest is one
 | WebSocket / TLS / QUIC camouflage    | sing-box (VLESS Reality, AnyTLS, WS), Hysteria2, bastion v2ray + Caddy              |
 | DNS forwarder                        | sing-box `dns`                                                                      |
 | Rate limiting                        | `tc` (Linux), `pf` (macOS)                                                          |
-| Per-connection logs                  | sing-box connections API, Surge Dashboard, `ssserver -v`                            |
+| Per-connection logs                  | sing-box connections API, `ssserver -v`                                             |
 | Prometheus metrics                   | node_exporter (host level)                                                          |
 
 Ad hoc, gost itself is still one command away: `nix run nixpkgs#gost`.
@@ -128,7 +125,7 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   `.chezmoiscripts/run_after_25_sing-box.sh.tmpl` fills the gopass secrets in
   with jq at run time, runs `sing-box check` and writes
   `/etc/sing-box/config.json` (root:wheel 0600). Log `/var/log/sing-box.log`.
-  Only one TUN may own the default route, so Surge Enhanced Mode must be off.
+  Only one TUN may own the default route, so no other TUN proxy runs beside it.
 - Headless Linux (`service`): no TUN; chezmoi renders
   `~/.config/sing-box/config.json` (0600); a shell opts in with `proxy-on` /
   `proxy-off` (`dot_custom/functions.sh`). Logs `journalctl --user -u sing-box`,
@@ -192,12 +189,6 @@ chezmoi apply ~/.chezmoiscripts/24_easytier-node.sh   # each repo-managed node (
 - easytier-core adds the `10.144.144.0/24 → utunN` route once and never
   restores it. If another tool deletes it, `10.144.144.x` silently falls into
   the default route; recover with `sudo launchctl kickstart -k system/org.nixos.easytier`.
-- Surge Enhanced Mode: with `--bind-device` no `tun-excluded-routes` entries are
-  needed for EasyTier peers. Never list `10.144.144.0/24` or
-  `100.64.0.0/10` there: Surge implements exclusions as `en0` routes, which
-  hijack the EasyTier/Tailscale routes (and removing them later deletes
-  EasyTier's route). Enabling Enhanced Mode also stops Tailscale once; reconnect
-  it and both run side by side.
 
 ## Linux nodes (this repo)
 
@@ -394,8 +385,7 @@ Status: `sudo docker exec easytier easytier-cli peer`.
   `sudo docker image rm easytier/easytier:v2.6.4 ghcr.io/shadowsocks/ssserver-rust:v1.25.0`, delete the directory.
 - Exits: on gpuserver1 run `systemctl --user disable --now ss-exit` and drop
   `easytierExit` from its chezmoi.toml (the unit and `~/.config/ss-exit` then stop rendering; delete
-  them); remove the `gpuserver`/`nas` proxies and the `Exit` group
-  from Surge; `gopass rm easytier/exit-ss-password`.
+  them); `gopass rm easytier/exit-ss-password`.
 - gopass: `gopass rm -r easytier`.
 - sing-box: `gopass rm -r sing-box` (every mode then falls back to CLI only).
   Mac: `chezmoi apply ~/.chezmoiscripts/02_init.sh` drops the daemon; then
