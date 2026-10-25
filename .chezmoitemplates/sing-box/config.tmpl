@@ -91,9 +91,12 @@
        (172.16.0.0/12 once held 172.19.0.1/30) routes the stack's own peer
        address to en0 and breaks every IPv4 TCP connection. 198.18.0.0/15 is
        the RFC 2544 benchmark range, unused on real networks.
-       dns_mode native makes the TUN's next address (198.18.0.2) the system's
-       default resolver, answered by sing-box; macOS keeps its per-domain
-       resolvers (Tailscale's ts.net, a company VPN's domains, mDNS .local).
+       dns_mode native has sing-box answer DNS on the TUN's next address
+       (198.18.0.2). It does not make that the system resolver for a plain
+       process (only Network Extension VPNs can), so the LaunchDaemon points the
+       physical network services at it while it answers
+       (nix-config/modules/sing-box.nix); macOS keeps its per-domain resolvers
+       (Tailscale's ts.net, a company VPN's domains, mDNS .local).
        sing-box resolves over DoH through Egress, so lookups leave from the same
        exit as the traffic, encrypted, and get answers for that location. The
        network's own DHCP-provided resolver ("lan"; not "local", which would

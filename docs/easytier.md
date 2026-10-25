@@ -140,9 +140,14 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 - Macs (`system`), like a Tailscale exit node: a TUN with `auto_route` carries
   every app's traffic; `Egress` defaults to `Direct`, so nothing changes until an
   exit is picked. It never sets the system proxy. DNS follows the exit:
-  `dns_mode: native` makes sing-box (198.18.0.2) the default resolver, which
-  answers over DoH (`1.1.1.1`) dialled through `Egress`, so lookups leave from
-  the same exit as the traffic, encrypted. The network's DHCP resolver keeps
+  sing-box answers DNS on 198.18.0.2 (`dns_mode: native`) over DoH (`1.1.1.1`)
+  dialled through `Egress`, so lookups leave from the same exit as the traffic,
+  encrypted. A plain-process TUN can't register itself as the system resolver
+  on macOS (only Network Extension VPNs can), so the LaunchDaemon sets the DNS
+  of the physical network services (Wi-Fi, Ethernet; never VPNs) to it once it
+  answers, re-checks every 30 s, and restores the saved settings
+  (`/var/lib/sing-box/system-dns.tsv`) when sing-box stops or fails two probes
+  in a row, and at the next start after a crash or power loss. The network's DHCP resolver keeps
   `home.arpa`/`lan`/`internal` names, PTR lookups and captive-portal probes;
   macOS keeps its per-domain resolvers (Tailscale `ts.net`, a company VPN,
   mDNS `.local`). The bastion outbounds dial its IP (gopass

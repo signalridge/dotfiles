@@ -28,6 +28,10 @@ let
   runDir = "/var/run/sing-box";
   logFile = "/var/log/sing-box.log";
   meshNet = "{{ index (splitList "/" .easytier.network) 0 }}";
+  # The TUN's resolver: the address after the TUN's own 198.18.0.1/30
+  # (.chezmoitemplates/sing-box/config.tmpl, dns_mode native).
+  tunDns = "198.18.0.2";
+  dnsBackup = "/var/lib/sing-box/system-dns.tsv";
 {{- end }}
 in
 {
@@ -62,18 +66,72 @@ in
       fi
       /bin/mv -f "${runDir}/config.json.tmp" "${runDir}/config.json"
 
+      # System DNS. A TUN from a plain process can't install itself as the
+      # system resolver (only Network Extension VPNs can), so the physical
+      # network services (Wi-Fi, Ethernet; never VPNs) point at sing-box's TUN
+      # resolver while it answers, and get their own settings back when it
+      # stops or stops answering. The originals live on disk, so a crash or
+      # power loss is undone at the next start before anything else.
+      dns_services() {
+        /usr/sbin/networksetup -listnetworkserviceorder 2>/dev/null | /usr/bin/awk '
+          /^\([0-9]+\) / { sub(/^\([0-9]+\) /, ""); name = $0; next }
+          /^\(\*\) / { name = ""; next }
+          /Device: en[0-9]+\)$/ && name != "" { print name; name = "" }'
+      }
+      dns_restore() {
+        [ -f "${dnsBackup}" ] || return 0
+        while IFS='	' read -r svc servers; do
+          # shellcheck disable=SC2086 # servers is a space-separated list
+          /usr/sbin/networksetup -setdnsservers "$svc" $servers 2>/dev/null || true
+        done <"${dnsBackup}"
+        /bin/rm -f "${dnsBackup}"
+        /usr/bin/dscacheutil -flushcache; /usr/bin/killall -HUP mDNSResponder 2>/dev/null || true
+        echo "sing-box: system DNS restored" >&2
+      }
+      dns_apply() {
+        dns_services | while IFS= read -r svc; do
+          current="$(/usr/sbin/networksetup -getdnsservers "$svc" 2>/dev/null | /usr/bin/tr '\n' ' ' | /usr/bin/sed 's/ $//')"
+          [ "$current" = "${tunDns}" ] && continue
+          case "$current" in *"aren't any"*|"") current=Empty ;; esac
+          /usr/bin/grep -q "^$svc	" "${dnsBackup}" 2>/dev/null || printf '%s\t%s\n' "$svc" "$current" >>"${dnsBackup}"
+          /usr/sbin/networksetup -setdnsservers "$svc" "${tunDns}" 2>/dev/null || true
+          echo "sing-box: DNS of '$svc' -> ${tunDns}" >&2
+        done
+        /usr/bin/dscacheutil -flushcache; /usr/bin/killall -HUP mDNSResponder 2>/dev/null || true
+      }
+      # Probe a name sing-box answers from the LAN resolver, so the check tests
+      # sing-box itself, not whichever exit is selected.
+      dns_ok() {
+        /usr/bin/dig +time=2 +tries=1 +short @"${tunDns}" captive.apple.com A 2>/dev/null | /usr/bin/grep -q .
+      }
+      dns_restore
+
       ${sing-box}/bin/sing-box run -c "${runDir}/config.json" -D /var/lib/sing-box &
       pid=$!
-      trap 'kill "$pid" 2>/dev/null; wait "$pid"; exit 0' TERM INT
+      trap 'dns_restore; kill "$pid" 2>/dev/null; wait "$pid"; exit 0' TERM INT
+      for _ in 1 2 3 4 5 6 7 8 9 10; do dns_ok && break; sleep 1; done
+      if dns_ok; then dns_apply; else echo "sing-box: TUN DNS not answering; system DNS left alone" >&2; fi
+      misses=0
       while kill -0 "$pid" 2>/dev/null; do
         sleep 30
         if [ "$(mesh_iface)" != "$iface" ]; then
           echo "sing-box: EasyTier interface changed ('$iface' -> '$(mesh_iface)'); restarting" >&2
+          dns_restore
           kill "$pid" 2>/dev/null || true
           wait "$pid" || true
           exit 0
         fi
+        if dns_ok; then
+          misses=0
+          dns_services | while IFS= read -r svc; do
+            [ "$(/usr/sbin/networksetup -getdnsservers "$svc" 2>/dev/null)" = "${tunDns}" ] || { echo x; break; }
+          done | /usr/bin/grep -q x && dns_apply
+        else
+          misses=$((misses + 1))
+          [ "$misses" -ge 2 ] && [ -f "${dnsBackup}" ] && dns_restore
+        fi
       done
+      dns_restore
       wait "$pid"
     '';
     serviceConfig = {
