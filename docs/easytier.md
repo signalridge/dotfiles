@@ -82,14 +82,14 @@ separate 0600 env file.
   the NAS is listed in `exits` but deployed by hand), never inferred from
   `headless`: an exit relays other machines' traffic from its own IP.
 
-### gost features and their replacements
+### Proxy tools by feature
 
-gost was removed from aqua. Its features map to these tools. Only sing-box,
+Only sing-box,
 shadowsocks-rust, Hysteria2 and realm are installed (none of the last three
 on work machines, which only consume the exits); the rest is one
 `nix run nixpkgs#<name>` away:
 
-| gost feature                         | Use instead                                                                         |
+| Feature                              | Tool                                                                                |
 | ------------------------------------ | ----------------------------------------------------------------------------------- |
 | Shadowsocks / proxy server           | shadowsocks-rust `ssserver`; sing-box `socks`/`http`/`mixed` inbounds               |
 | Local protocol conversion            | sing-box, `sslocal`                                                                 |
