@@ -2,7 +2,9 @@
        every Mac joins as a client with a DHCP-assigned virtual IP; a Linux
        machine joins only as an exit, when its own chezmoi config data sets
        `easytierExit` to a name in .easytier.exits (the exit's fixed IP, which
-       clients point at). Everything else: member=false. */ -}}
+       clients point at). Everything else: member=false. Membership also
+       needs gopass easytier/bastion-host (kept out of this public repo); without
+       it (fresh machine, CI) the machine renders as a non-member. */ -}}
 {{- $role := dict "member" false "exit" "" "ip" "" -}}
 {{- if eq .chezmoi.os "darwin" -}}
 {{-   $role = dict "member" true "exit" "" "ip" "" -}}
@@ -11,5 +13,13 @@
 {{-     fail (printf "easytierExit %q is not in .chezmoidata/easytier.yaml exits" .easytierExit) -}}
 {{-   end -}}
 {{-   $role = dict "member" true "exit" .easytierExit "ip" (index .easytier.exits .easytierExit) -}}
+{{- end -}}
+{{- $_ := set $role "bastion" "" -}}
+{{- if $role.member -}}
+{{-   if stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/easytier/bastion-host.age") -}}
+{{-     $_ := set $role "bastion" (output "gopass" "show" "-o" "easytier/bastion-host" | trim) -}}
+{{-   else -}}
+{{-     $role = dict "member" false "exit" "" "ip" "" "bastion" "" -}}
+{{-   end -}}
 {{- end -}}
 {{- $role | toJson -}}

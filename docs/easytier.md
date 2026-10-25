@@ -9,7 +9,7 @@ deployed by hand and recorded here so the whole mesh can be rebuilt.
 
 | Node       | Role                               | Virtual IP      | Deployed by                                    |
 | ---------- | ---------------------------------- | --------------- | ---------------------------------------------- |
-| bastion    | discovery + fallback relay, no TUN | —               | systemd unit (below), `<bastion-ip>:11010`   |
+| bastion    | discovery + fallback relay, no TUN | —               | systemd unit (below), `<bastion-ip>:11010`     |
 | nas        | member                             | 10.144.144.2/24 | Docker Compose on DSM (below)                  |
 | summit     | member                             | 10.144.144.1/24 | this repo: nix-darwin LaunchDaemon (see below) |
 | gpuserver1 | member                             | 10.144.144.3/24 | this repo: systemd unit (see below)            |

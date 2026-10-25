@@ -100,9 +100,9 @@ EnvironmentFile=${ENV_FILE}
 ExecStart=${core} \\
   --hostname {{ .hostname }} \\
   --ipv4 {{ $et.ip }}/{{ index (splitList "/" .easytier.network) 1 }} \\
-  --peers{{ range .easytier.peers }} {{ . }}{{ end }} \\
+  --peers tcp://{{ $et.bastion }}:{{ .easytier.bastion.peerPort }} \\
   --listeners{{ range .easytier.listeners }} {{ . }}{{ end }} \\
-  --stun-servers{{ range .easytier.stunServers }} {{ . }}{{ end }} \\
+  --stun-servers{{ range .easytier.bastion.stunPorts }} {{ $et.bastion }}:{{ . }}{{ end }} \\
   --default-protocol udp \\
   --disable-tcp-hole-punching true \\
   --private-mode true \\

@@ -11,13 +11,17 @@
 #   both:  .chezmoiscripts/run_after_24_easytier-node.sh.tmpl (credentials from
 #          gopass; sudo only when something changed)
 #
-# Credentials are NOT here: gopass easytier/network-name and
-# easytier/network-secret (shared by all nodes, incl. the bastion relay and the
+# Credentials and the bastion address are NOT here: gopass easytier/network-name,
+# easytier/network-secret and easytier/bastion-host (shared by all nodes, incl. the bastion relay and the
 # NAS container, which are deployed outside this repo).
 easytier:
   network: 10.144.144.0/24
-  peers:
-    - tcp://<bastion-ip>:11010 # bastion: private-mode relay/discovery node
+  # Bastion (private-mode relay/discovery + STUN). This repo is public, so its
+  # address is NOT here: gopass easytier/bastion-host, read at render time by
+  # .chezmoitemplates/easytier/role.tmpl.
+  bastion:
+    peerPort: 11010 # tcp://<bastion-host>:11010
+    stunPorts: [38478, 38479, 38480]
   # Members listen on UDP only. With a TCP listener, a peer that can reach it
   # (e.g. over public IPv6) connects over TCP first, and EasyTier never upgrades
   # an existing direct link, so path loss then throttles tunnelled TCP
@@ -26,10 +30,6 @@ easytier:
   # TCP fallback remains through the bastion.
   listeners:
     - udp://0.0.0.0:11010
-  stunServers:
-    - <bastion-ip>:38478
-    - <bastion-ip>:38479
-    - <bastion-ip>:38480
   # Exit nodes give other members internet egress through Shadowsocks 2022
   # (shadowsocks-rust ssserver; key in gopass easytier/exit-ss-password),
   # bound ONLY to the node's virtual IP, with an ACL that accepts only mesh
