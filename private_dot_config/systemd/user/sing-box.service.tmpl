@@ -1,6 +1,6 @@
 {{- if eq (includeTemplate "sing-box/mode.tmpl" .) "service" -}}
 # sing-box on headless Linux: mixed SOCKS5/HTTP proxy on 127.0.0.1:{{ .singBox.mixedPort }}
-# with the `Exit` selector over the EasyTier exits (default direct) and the
+# with the `出口` selector over the EasyTier exits (default direct) and the
 # Clash API on 127.0.0.1:{{ .singBox.clashApiPort }} (reach the panel via ssh -L).
 # Config: ~/.config/sing-box/config.json (0600, from gopass). Loaded by
 # run_onchange_after_19.

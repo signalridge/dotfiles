@@ -4,7 +4,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Every Mac (mode "system", .chezmoitemplates/sing-box/mode.tmpl) runs it here
 # as a root LaunchDaemon with a TUN, like a Tailscale exit node: every app's
-# traffic, `Exit` defaults to direct, system proxy and DNS untouched. (A root
+# traffic, `出口` defaults to 直连, system proxy and DNS untouched. (A root
 # daemon is also exempt from macOS Local Network privacy, which blocks a
 # user-launched sing-box from reaching the LAN DNS server.)
 #
@@ -17,7 +17,9 @@
 # needed under a TUN), which would send the exit connections (EasyTier virtual
 # IPs) out en0. So at start the daemon looks up EasyTier's utun (its unit number
 # is assigned dynamically), injects it as bind_interface into the exit
-# outbounds, and restarts sing-box whenever that utun changes.
+# outbounds that dial the mesh themselves (not the ones chained through the
+# bastion, which reach it over the internet), and restarts sing-box whenever
+# that utun changes.
 { pkgs, ... }:
 let
   sing-box = import ./sing-box-package.nix { inherit pkgs; };
@@ -52,7 +54,7 @@ in
       umask 077
       if [ -n "$iface" ]; then
         ${pkgs.jq}/bin/jq --arg i "$iface" \
-          '(.outbounds[] | select(.type == "shadowsocks")).bind_interface = $i' \
+          '(.outbounds[] | select(.type == "shadowsocks" and .detour == null)).bind_interface = $i' \
           "${configFile}" >"${runDir}/config.json.tmp"
       else
         echo "sing-box: EasyTier route for ${meshNet} not found; exits unavailable until it appears" >&2

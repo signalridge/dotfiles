@@ -44,7 +44,7 @@ The bastion keeps TCP + UDP for discovery and fallback relay.
 
 ## Exit nodes
 
-Members pick an internet egress **locally** (the sing-box `Exit` selector);
+Members pick an internet egress **locally** (the sing-box `出口` selector);
 nothing restarts and no root is needed to switch. Exits run
 **shadowsocks-rust** (`ssserver`, Shadowsocks 2022 `2022-blake3-aes-256-gcm`,
 TCP + UDP) on their **virtual IP only**. Its ACL accepts only clients in
@@ -110,20 +110,33 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 | other Linux    | —         | CLI only                                          | —         |
 
 - Config: mixed SOCKS5/HTTP inbound `127.0.0.1:7890`; private/overlay
-  destinations direct, everything else via selector `Exit`: `direct` (default),
-  every entry of `easytier.exits` except the machine's own, and `edge` when
-  gopass `sing-box/edge-outbound` exists. Clash API and zashboard panel at
+  destinations `直连`, everything else via the panel groups:
+  - `出口`, like a Tailscale exit node (whose network this machine uses):
+    `直连` (default), every entry of `easytier.exits` except the machine's
+    own, and, when gopass `sing-box/bastion-outbounds` exists, `bastion` plus
+    `<exit>·经bastion` for each mesh exit (Shadowsocks to the exit, tunnelled
+    through the bastion, which relays over its EasyTier address
+    `10.144.144.254`; for networks that only let the bastion through).
+  - `bastion`: how the bastion is reached: `自动` (urltest) or `Reality`
+    (VLESS Reality Vision), `Hysteria2`, `AnyTLS`. The chained exits follow it.
+  - GLOBAL in the panel is a Clash display artefact: sing-box only offers rule
+    mode, so it does nothing.
+
+  Clash API and zashboard panel at
   `http://127.0.0.1:9090/ui` (secret: `gopass show -o sing-box/clash-api-secret`).
-  `singBox.exitRoutes` pins destinations to mesh exits whatever `Exit` says:
+  `singBox.exitRoutes` pins destinations to mesh exits whatever `出口` says:
   one `urltest` group per entry, matched by sniffed domain or by address (so
   rsync/FTP match too). Members are in priority order; a huge tolerance keeps the
   first live one, a failure moves to the next, the machine's own exit means
-  `direct`, and switches never cut existing connections. Today:
-  `jaist.ac.jp` → `gpuserver`, then `nas`.
+  `直连`, and switches never cut existing connections. The same exits chained
+  through the bastion follow as fallbacks, so the route holds where the mesh is
+  blocked. Today: `jaist.ac.jp` → `gpuserver`, `nas`, `gpuserver·经bastion`,
+  `nas·经bastion`.
   Secrets: gopass `easytier/exit-ss-password`, `sing-box/clash-api-secret`;
   without them the mode falls back to CLI only.
+
 - Macs (`system`), like a Tailscale exit node: a TUN with `auto_route` carries
-  every app's traffic; `Exit` defaults to `direct`, so nothing changes until an
+  every app's traffic; `出口` defaults to `直连`, so nothing changes until an
   exit is picked. It never sets the system proxy and leaves system DNS alone
   (`dns_mode: disabled`); LAN/company/VPN ranges, the mesh, Tailscale,
   link-local and multicast stay off the TUN (`singBox.tunExcludeAddress`), and
@@ -144,15 +157,16 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   `~/.config/sing-box/config.json` (0600); a shell opts in with `proxy-on` /
   `proxy-off` (`dot_custom/functions.sh`). Logs `journalctl --user -u sing-box`,
   panel via `ssh -L 9090:127.0.0.1:9090 <host>`.
-- Edge outbound: `ssh <edge-host> cat /etc/vps-proxy/clients/<name>.conf |
-edge-import` converts the device profile the edge host issues (Surge format:
-  vmess + WebSocket + TLS + PKCS#12 client certificate) into one sing-box
-  outbound, tag `edge`, stored as gopass `sing-box/edge-outbound`. Re-run after
-  the device's credentials are rotated. The entry is a complete outbound
-  object, so a different protocol later only means a different gopass value.
-- Switch exits in the panel or by API:
-  `curl -X PUT -H "Authorization: Bearer $secret" -d '{"name":"nas"}' http://127.0.0.1:9090/proxies/Exit`
+- Bastion outbounds: `ssh bastion vps-client export <device> | bastion-import`
+  retags the bastion's export (VLESS Reality Vision, Hysteria2, AnyTLS) to
+  `Reality`, `Hysteria2`, `AnyTLS` and stores it as gopass
+  `sing-box/bastion-outbounds`, then `chezmoi apply`. Re-run after the bastion
+  changes ports or rotates the device's credentials.
+- Switch exits in the panel or by API (the group name is URL-encoded):
+  `curl -X PUT -H "Authorization: Bearer $secret" -d '{"name":"nas"}' "http://127.0.0.1:9090/proxies/$(jq -rn '"出口"|@uri')"`
   (the choice persists in the cache file).
+- On a Mac, AdGuard must run in Automatic proxy mode: its Network Extension
+  mode blocks QUIC (Hysteria2) and takes over SSH.
 
 ## Installed replacement tools
 

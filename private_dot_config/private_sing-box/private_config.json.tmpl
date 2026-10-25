@@ -3,9 +3,9 @@
 {{- $password := output "gopass" "show" "-o" "easytier/exit-ss-password" | trim -}}
 {{- $secret := output "gopass" "show" "-o" "sing-box/clash-api-secret" | trim -}}
 {{- if not (and $password $secret) }}{{ fail "missing gopass easytier/exit-ss-password or sing-box/clash-api-secret" }}{{ end -}}
-{{- $edge := "" -}}
-{{- if stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/sing-box/edge-outbound.age") -}}
-{{-   $edge = output "gopass" "show" "-o" "sing-box/edge-outbound" | trim | fromJson -}}
+{{- $bastion := "" -}}
+{{- if stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/sing-box/bastion-outbounds.age") -}}
+{{-   $bastion = output "gopass" "show" "-o" "sing-box/bastion-outbounds" | trim | fromJson -}}
 {{- end }}
-{{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" $password "secret" $secret "edge" $edge) }}
+{{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" $password "secret" $secret "bastion" $bastion) }}
 {{- end }}

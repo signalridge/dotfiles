@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Import the bastion's sing-box client outbounds into gopass.
+#
+# The bastion's vps-client exports each device's outbounds as a JSON array
+# (VLESS Reality Vision, Hysteria2, AnyTLS). This retags them to the names the
+# web panel shows (Reality, Hysteria2, AnyTLS) and stores them as gopass
+# sing-box/bastion-outbounds, which the sing-box config template
+# (.chezmoitemplates/sing-box/config.tmpl) turns into the `bastion` group and the
+# `出口` options on every machine. Nothing secret is printed.
+#
+# Usage:
+#   ssh bastion vps-client export <device> | bastion-import
+#   bastion-import <export.json>
+# Stored as one line of JSON (`gopass show -o` returns the first line only).
+# Then `chezmoi apply` to roll it out. Re-run after the bastion changes ports
+# or rotates the device's credentials.
+
+set -euo pipefail
+
+die() {
+    echo "bastion-import: $*" >&2
+    exit 1
+}
+
+for cmd in gopass jq; do
+    command -v "$cmd" >/dev/null 2>&1 || die "$cmd not found"
+done
+
+outbounds="$(jq -c '
+  {vless: "Reality", hysteria2: "Hysteria2", anytls: "AnyTLS"} as $names
+  | if type == "array" and length == 3
+       and (map(.type) | sort) == ["anytls", "hysteria2", "vless"]
+    then map(.tag = $names[.type])
+    else error("expected the 3 outbounds from vps-client export") end
+' "${1:-/dev/stdin}" 2>/dev/null)" || die "input is not a vps-client export (vless, hysteria2, anytls)"
+
+printf '%s\n' "$outbounds" | gopass insert -f -m sing-box/bastion-outbounds >/dev/null
+printf 'Stored gopass sing-box/bastion-outbounds (%s); run chezmoi apply to roll it out.\n' \
+    "$(jq -r 'map("\(.tag) :\(.server_port)") | join(", ")' <<<"$outbounds")"

@@ -1,53 +1,83 @@
 {{- /* sing-box client config, shared by every platform (docs/easytier.md).
        Called with (dict "root" $ "password" … "secret" … ["tun" true]
        ["tunExcludeExtra" (list …), more addresses kept off the TUN]
-       ["edge" <outbound object, or a placeholder string replaced later>]).
-       "edge" (gopass sing-box/edge-outbound, from
-       edge-import) joins the Exit selector as tag "edge". Never
-       sets the system proxy. With "tun": a TUN inbound with auto_route (every
-       app, like a Tailscale exit node) that leaves system DNS alone and
-       excludes private/overlay ranges; the exit outbounds then get
-       bind_interface injected at start (nix-config/modules/sing-box.nix).
-       Mixed SOCKS5/HTTP inbound on 127.0.0.1; private/overlay destinations go
-       direct, singBox.exitRoutes destinations through their pinned exits,
-       everything else through the `Exit` selector (default direct)
-       over the EasyTier exits, minus this machine's own exit; Clash API + web
-       panel on 127.0.0.1. Values from .chezmoidata/{sing-box,easytier}.yaml. */ -}}
+       ["bastion" <list of outbounds, or the placeholder string
+       "__BASTION_OUTBOUNDS__" spliced in later>]).
+       Panel groups (names are what the web panel shows):
+         出口     like a Tailscale exit node: whose network this machine uses.
+                  直连 (default), every EasyTier exit except this machine,
+                  bastion, and each exit chained through bastion (for networks
+                  that only let the bastion through).
+         bastion  how to reach the bastion: 自动 (urltest) or one protocol.
+                  "bastion" (gopass sing-box/bastion-outbounds, bastion-import)
+                  holds the outbounds tagged Reality, Hysteria2 and AnyTLS.
+         <exitRoutes tag>  pinned destinations, e.g. jaist; see below.
+       Never sets the system proxy. With "tun": a TUN inbound with auto_route
+       (every app) that leaves system DNS alone and excludes private/overlay
+       ranges; the mesh exit outbounds then get bind_interface injected at start
+       (nix-config/modules/sing-box.nix). Mixed SOCKS5/HTTP inbound on
+       127.0.0.1; private/overlay destinations go 直连, singBox.exitRoutes
+       destinations through their pinned exits, everything else through 出口;
+       Clash API + web panel on 127.0.0.1. Values from
+       .chezmoidata/{sing-box,easytier}.yaml. */ -}}
 {{- $r := .root -}}
 {{- $self := (includeTemplate "easytier/role.tmpl" $r | fromJson).exit -}}
-{{- $tags := list "direct" -}}
-{{- $outbounds := list (dict "type" "direct" "tag" "direct") -}}
+{{- $direct := "直连" -}}
+{{- $outbounds := list (dict "type" "direct" "tag" $direct) -}}
+{{- $mesh := list -}}
 {{- range $name, $ip := $r.easytier.exits -}}
 {{-   if ne $name $self -}}
-{{-     $tags = append $tags $name -}}
+{{-     $mesh = append $mesh $name -}}
 {{-     $outbounds = append $outbounds (dict "type" "shadowsocks" "tag" $name "server" $ip "server_port" $r.easytier.exitProxy.port "method" $r.easytier.exitProxy.method "password" $.password) -}}
 {{-   end -}}
 {{- end -}}
-{{- $edge := dig "edge" "" . -}}
-{{- if $edge -}}
-{{-   $tags = append $tags "edge" -}}
-{{-   $outbounds = append $outbounds $edge -}}
+{{- $exits := prepend $mesh $direct -}}
+{{- $bastion := dig "bastion" "" . -}}
+{{- $chained := dict -}}
+{{- if $bastion -}}
+{{- /* The protocol outbounds keep the tags bastion-import gives them. Each mesh
+       exit gets a twin that reaches it through the bastion (the bastion relays
+       to 10.144.144.x:1080 over its own EasyTier link), following whatever
+       protocol the bastion group has selected. */ -}}
+{{-   $protocols := list "Reality" "Hysteria2" "AnyTLS" -}}
+{{-   $outbounds = append $outbounds (dict "type" "selector" "tag" "bastion" "default" "自动" "outbounds" (prepend $protocols "自动")) -}}
+{{-   $outbounds = append $outbounds (dict "type" "urltest" "tag" "自动" "outbounds" $protocols) -}}
+{{-   if kindIs "string" $bastion -}}
+{{-     $outbounds = append $outbounds $bastion -}}
+{{-   else -}}
+{{-     $outbounds = concat $outbounds $bastion -}}
+{{-   end -}}
+{{-   $exits = append $exits "bastion" -}}
+{{-   range $mesh -}}
+{{-     $tag := printf "%s·经bastion" . -}}
+{{-     $_ := set $chained . $tag -}}
+{{-     $exits = append $exits $tag -}}
+{{-     $outbounds = append $outbounds (dict "type" "shadowsocks" "tag" $tag "server" (index $r.easytier.exits .) "server_port" $r.easytier.exitProxy.port "method" $r.easytier.exitProxy.method "password" $.password "detour" "bastion") -}}
+{{-   end -}}
 {{- end -}}
-{{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Exit" "default" "direct" "outbounds" $tags) -}}
-{{- /* Exit routes (singBox.exitRoutes): one urltest group per entry, members in
-       priority order. A tolerance far above any real latency gap keeps the
-       first live member selected; a failed member loses its history and the
-       next one takes over. Existing connections (long mirror downloads) are
-       never interrupted by a switch. */ -}}
+{{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "出口" "default" $direct "outbounds" $exits) -}}
 {{- /* EasyTier's own packets must never ride an exit: the exits are carried by
        EasyTier, and the peers' public addresses can fall inside an exit route
        (the JAIST range holds gpuserver and nas), which looped hole-punching
        UDP to 11010 back into the mesh. --bind-device misses some of those
        sockets, so match the process, and the peer/STUN ports as a fallback. */ -}}
 {{- $etPorts := prepend $r.easytier.bastion.stunPorts $r.easytier.bastion.peerPort -}}
-{{- $rules := list (dict "action" "sniff") (dict "process_name" (list "easytier-core") "outbound" "direct") (dict "port" $etPorts "outbound" "direct") (dict "ip_is_private" true "outbound" "direct") (dict "ip_cidr" (list $r.easytier.network "100.64.0.0/10") "outbound" "direct") -}}
+{{- $rules := list (dict "action" "sniff") (dict "process_name" (list "easytier-core") "outbound" $direct) (dict "port" $etPorts "outbound" $direct) (dict "ip_is_private" true "outbound" $direct) (dict "ip_cidr" (list $r.easytier.network "100.64.0.0/10") "outbound" $direct) -}}
+{{- /* Exit routes (singBox.exitRoutes): one urltest group per entry, members in
+       priority order, then the same exits through the bastion, so the route
+       holds on networks that block the mesh. A tolerance far above any real
+       latency gap keeps the first live member selected; a failed member loses
+       its history and the next one takes over. Existing connections (long
+       mirror downloads) are never interrupted by a switch. */ -}}
 {{- range $r.singBox.exitRoutes -}}
 {{-   $members := list -}}
+{{-   $twins := list -}}
 {{-   range .exits -}}
 {{-     if not (hasKey $r.easytier.exits .) -}}{{ fail (printf "singBox.exitRoutes: %q is not in easytier.exits" .) }}{{- end -}}
-{{-     $members = append $members (ternary "direct" . (eq . $self)) -}}
+{{-     $members = append $members (ternary $direct . (eq . $self)) -}}
+{{-     if hasKey $chained . -}}{{- $twins = append $twins (index $chained .) -}}{{- end -}}
 {{-   end -}}
-{{-   $outbounds = append $outbounds (dict "type" "urltest" "tag" .tag "outbounds" $members "tolerance" 10000 "interrupt_exist_connections" false) -}}
+{{-   $outbounds = append $outbounds (dict "type" "urltest" "tag" .tag "outbounds" (concat $members $twins) "tolerance" 10000 "interrupt_exist_connections" false) -}}
 {{-   $rules = append $rules (dict "domain_suffix" .domainSuffix "ip_cidr" .ipCidr "outbound" .tag) -}}
 {{- end -}}
 {{- $inbounds := list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" false) -}}
@@ -71,7 +101,7 @@
       "outbounds" $outbounds
       "route" (dict
         "rules" $rules
-        "final" "Exit"
+        "final" "出口"
         "default_domain_resolver" "local"
         "auto_detect_interface" true)
       "experimental" (dict
@@ -80,6 +110,6 @@
           "external_controller" (printf "127.0.0.1:%v" $r.singBox.clashApiPort)
           "external_ui" "ui"
           "external_ui_download_url" $r.singBox.webUiUrl
-          "external_ui_download_detour" "direct"
+          "external_ui_download_detour" $direct
           "secret" .secret)) -}}
 {{- toPrettyJson $config -}}
