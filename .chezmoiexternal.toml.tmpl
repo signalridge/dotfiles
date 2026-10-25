@@ -1221,3 +1221,19 @@
       "humanizer-ja-*/LICENSE"
     ]
     refreshPeriod = "168h"
+
+# ==============================================================================
+# sing-box rule-sets (.chezmoidata/sing-box.yaml exitRoutes[].ruleSets)
+# A local copy of every remote rule-set the sing-box config references, so
+# sing-box can start without network (its `initial_path`); the running sing-box
+# refreshes its own cached copy every 7 days, this one on `chezmoi apply`.
+# No checksum: the lists change weekly by design.
+# ==============================================================================
+{{- $ruleSets := dict }}
+{{- range .singBox.exitRoutes }}{{ range (dig "ruleSets" (list) .) }}{{ $_ := set $ruleSets . true }}{{ end }}{{ end }}
+{{- range $tag, $_ := $ruleSets }}
+[".local/share/sing-box/rule-set/{{ $tag }}.srs"]
+    type = "file"
+    url = "{{ replace "{tag}" $tag $.singBox.ruleSetUrl }}"
+    refreshPeriod = "168h"
+{{- end }}

@@ -28,8 +28,35 @@ singBox:
   # more than 50 ms faster wins back (an exit that is this machine itself means
   # direct). Match by domain (sniffed SNI/Host) and by address, so rsync/FTP to
   # a mirror match too.
+  # Remote rule-sets: SagerNet/sing-geosite builds of v2fly's community domain
+  # lists; {tag} is the rule-set name. sing-box fetches and caches them.
+  ruleSetUrl: https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/{tag}.srs
   exitRoutes:
-    - tag: jaist # JAIST mirror (ftp.jaist.ac.jp)
+    - tag: jaist # reach these from the JAIST network
       exits: [gpuserver, nas]
-      domainSuffix: [jaist.ac.jp]
+      domainSuffix: [jaist.ac.jp] # incl. the ftp.jaist.ac.jp mirror
       ipCidr: [150.65.0.0/16, "2001:df0:2ed::/48"] # JPNIC/APNIC: JAIST FRONTNET
+      # Academic publishers and databases (IEEE, ACM, Springer, Elsevier, Wiley,
+      # Nature, JSTOR, Scopus, J-STAGE, CiNii ... and their CDNs): the campus IP
+      # unlocks the library's IP-authenticated subscriptions. "!cn" = outside
+      # China; geosite-category-scholar-cn is the Chinese counterpart.
+      ruleSets: ["geosite-category-scholar-!cn"]
+      # Bundled in that list but kept off the university network: shadow
+      # libraries (Z-Library, Sci-Hub, LibGen mirrors).
+      exceptKeyword:
+        [
+          1lib,
+          2lib,
+          3lib,
+          b-ok,
+          book4you,
+          bookfi,
+          booksc,
+          bookshome,
+          sci-hub,
+          sci.hubg,
+          z-lib,
+          z-library,
+          zlib,
+          libgen,
+        ]

@@ -135,8 +135,17 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   after every boot). The machine's own exit means `Direct`, and switches never
   cut existing connections. The same exits chained
   through the bastion follow as fallbacks, so the route holds where the mesh is
-  blocked. Today: `jaist.ac.jp` → `gpuserver`, `nas`, `gpuserver via bastion`,
-  `nas via bastion`.
+  blocked. Today the `jaist` route covers `jaist.ac.jp`, the JAIST address
+  ranges and the academic publishers/databases of the community rule-set
+  `geosite-category-scholar-!cn` (IEEE, ACM, Springer, Elsevier, Wiley, Nature,
+  JSTOR, Scopus, J-STAGE, CiNii and their CDNs; `!cn` = outside China), so
+  the campus IP unlocks the library's IP-authenticated subscriptions:
+  `gpuserver`, `nas`, `gpuserver via bastion`, `nas via bastion`. The shadow
+  libraries bundled in that list (Z-Library, Sci-Hub, LibGen mirrors) are
+  excluded by keyword (`exceptKeyword`) and take the normal `Egress`. Remote
+  rule-sets refresh weekly inside sing-box; `.chezmoiexternal.toml` keeps a
+  local copy under `~/.local/share/sing-box/rule-set/` as `initial_path`, so
+  sing-box still starts with no network.
   Secrets: gopass `easytier/exit-ss-password`, `sing-box/clash-api-secret`;
   without them the mode falls back to CLI only.
 

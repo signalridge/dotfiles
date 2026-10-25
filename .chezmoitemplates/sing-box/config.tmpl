@@ -76,6 +76,16 @@
        through. A failed member loses its history and the next one takes over.
        Existing connections (long mirror downloads) are never interrupted by a
        switch. */ -}}
+{{- /* Destinations match by sniffed domain (domainSuffix), by address (ipCidr)
+       and by remote rule-sets (ruleSets: SagerNet/sing-geosite builds of
+       v2fly's community lists; sing-box refreshes them weekly and caches them
+       in cache_file). Without a cache sing-box refuses to start until the
+       download succeeds, so initial_path points at the copy chezmoi keeps
+       under ~/.local/share/sing-box/rule-set (.chezmoiexternal.toml), and a
+       boot without network still comes up. exceptKeyword names domains
+       bundled in those lists that must not take the route; they fall through
+       to Egress like anything else, so a broad keyword costs nothing. */ -}}
+{{- $ruleSets := dict -}}
 {{- range $r.singBox.exitRoutes -}}
 {{-   $members := list -}}
 {{-   $twins := list -}}
@@ -85,7 +95,17 @@
 {{-     if hasKey $chained . -}}{{- $twins = append $twins (index $chained .) -}}{{- end -}}
 {{-   end -}}
 {{-   $outbounds = append $outbounds (dict "type" "urltest" "tag" .tag "outbounds" (concat $members $twins) "tolerance" 50 "interrupt_exist_connections" false) -}}
-{{-   $rules = append $rules (dict "domain_suffix" .domainSuffix "ip_cidr" .ipCidr "outbound" .tag) -}}
+{{-   if hasKey . "exceptKeyword" -}}{{- $rules = append $rules (dict "domain_keyword" .exceptKeyword "outbound" "Egress") -}}{{- end -}}
+{{-   $match := dict "outbound" .tag -}}
+{{-   if hasKey . "domainSuffix" -}}{{- $_ := set $match "domain_suffix" .domainSuffix -}}{{- end -}}
+{{-   if hasKey . "ipCidr" -}}{{- $_ := set $match "ip_cidr" .ipCidr -}}{{- end -}}
+{{-   if hasKey . "ruleSets" -}}
+{{-     $_ := set $match "rule_set" .ruleSets -}}
+{{-     range .ruleSets -}}
+{{-       $_ := set $ruleSets . (dict "type" "remote" "tag" . "format" "binary" "url" (replace "{tag}" . $r.singBox.ruleSetUrl) "initial_path" (printf "%s/.local/share/sing-box/rule-set/%s.srs" $r.chezmoi.homeDir .) "update_interval" "7d") -}}
+{{-     end -}}
+{{-   end -}}
+{{-   $rules = append $rules $match -}}
 {{- end -}}
 {{- $inbounds := list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" false) -}}
 {{- /* DNS. Without a TUN (headless Linux, apps opt in via proxy-on) apps hand
@@ -128,16 +148,17 @@
         "final" "remote" -}}
 {{-   $resolver = "lan" -}}
 {{- end -}}
+{{- $route := dict
+      "rules" $rules
+      "final" "Egress"
+      "default_domain_resolver" $resolver
+      "auto_detect_interface" true -}}
 {{- $config := dict
       "log" (dict "level" "info" "timestamp" true)
       "dns" $dns
       "inbounds" $inbounds
       "outbounds" $outbounds
-      "route" (dict
-        "rules" $rules
-        "final" "Egress"
-        "default_domain_resolver" $resolver
-        "auto_detect_interface" true)
+      "route" $route
       "experimental" (dict
         "cache_file" (dict "enabled" true)
         "clash_api" (dict
@@ -146,4 +167,12 @@
           "external_ui_download_url" $r.singBox.webUiUrl
           "external_ui_download_detour" $direct
           "secret" .secret)) -}}
+{{- if gt (len $ruleSets) 0 -}}
+{{- /* Rule-set downloads dial directly (plain system path, no detour): sing-box
+       1.14 wants the HTTP client named explicitly and refuses a detour to a
+       bare direct outbound. */ -}}
+{{-   $_ := set $route "rule_set" (values $ruleSets) -}}
+{{-   $_ := set $route "default_http_client" "rule-sets" -}}
+{{-   $_ := set $config "http_clients" (list (dict "tag" "rule-sets")) -}}
+{{- end -}}
 {{- toPrettyJson $config -}}
