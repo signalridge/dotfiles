@@ -66,48 +66,64 @@ separate 0600 env file.
 
 gost was removed from aqua. Its features map to these tools when needed:
 
-| gost feature                         | Use instead                                                                            |
-| ------------------------------------ | -------------------------------------------------------------------------------------- |
-| Shadowsocks / proxy server           | shadowsocks-rust `ssserver`; sing-box `socks`/`http`/`mixed` inbounds                  |
-| Local protocol conversion            | Surge, sing-box, `sslocal`                                                             |
-| Multi-hop chains with node selection | sing-box `detour` + `selector`/`urltest`; Surge `underlying-proxy`                     |
-| Reverse tunnels / NAT traversal      | EasyTier, Tailscale; frp or rathole for hostname-based ingress                         |
-| L3 tunnel (TUN)                      | EasyTier, Tailscale                                                                    |
-| TCP/UDP port forwarding (any target) | sing-box `direct` inbound with an override target; `socat` (`nix run nixpkgs#socat`)   |
-| KCP transport                        | EasyTier `--enable-kcp-proxy` / `--enable-quic-proxy` (on); Hysteria2 for lossy WAN    |
-| fake-TCP (UDP disguised as TCP)      | EasyTier `faketcp://` listener (experimental); `nix run nixpkgs#phantun` (Linux)       |
-| ICMP tunnel                          | `nix run nixpkgs#pingtunnel`                                                           |
-| WebSocket / TLS / QUIC camouflage    | sing-box, Xray (Reality), Hysteria2, bastion v2ray + Caddy; `nix run nixpkgs#wstunnel` |
-| DNS forwarder                        | sing-box `dns`; `nix run nixpkgs#dnsproxy`                                             |
-| Rate limiting                        | `tc` (Linux), `pf` (macOS)                                                             |
-| Per-connection logs                  | sing-box connections API, Surge Dashboard, `ssserver -v`                               |
-| Prometheus metrics                   | node_exporter (host level)                                                             |
+| gost feature                         | Use instead                                                                         |
+| ------------------------------------ | ----------------------------------------------------------------------------------- |
+| Shadowsocks / proxy server           | shadowsocks-rust `ssserver`; sing-box `socks`/`http`/`mixed` inbounds               |
+| Local protocol conversion            | Surge, sing-box, `sslocal`                                                          |
+| Multi-hop chains with node selection | sing-box `detour` + `selector`/`urltest`; Surge `underlying-proxy`                  |
+| Reverse tunnels / NAT traversal      | EasyTier, Tailscale; frp or rathole for hostname-based ingress                      |
+| L3 tunnel (TUN)                      | EasyTier, Tailscale                                                                 |
+| TCP/UDP port forwarding (any target) | sing-box `direct` inbound with an override target; `socat`                          |
+| KCP transport                        | EasyTier `--enable-kcp-proxy` / `--enable-quic-proxy` (on); Hysteria2 for lossy WAN |
+| fake-TCP (UDP disguised as TCP)      | EasyTier `faketcp://` listener (experimental); `nix run nixpkgs#phantun` (Linux)    |
+| ICMP tunnel                          | `nix run nixpkgs#pingtunnel`                                                        |
+| WebSocket / TLS / QUIC camouflage    | sing-box, Xray (Reality), Hysteria2, bastion v2ray + Caddy; `wstunnel`              |
+| DNS forwarder                        | sing-box `dns`; `nix run nixpkgs#dnsproxy`                                          |
+| Rate limiting                        | `tc` (Linux), `pf` (macOS)                                                          |
+| Per-connection logs                  | sing-box connections API, Surge Dashboard, `ssserver -v`                            |
+| Prometheus metrics                   | node_exporter (host level)                                                          |
 
 Ad hoc, gost itself is still one command away: `nix run nixpkgs#gost`.
 
 Not used: kcptun (upstream repository gone in 2026), udp2raw and ptunnel-ng
 (unmaintained, no macOS builds), rathole (no release since 2023).
 
-## Work Mac (sing-box)
+## sing-box (every machine)
 
-Work Macs (`work = true`) have no Surge; they get the same EasyTier client plus
-**sing-box** as a root LaunchDaemon (`nix-config/modules/sing-box.nix.tmpl`,
-official release via `sing-box-package.nix.tmpl`; macOS sets the system proxy
-only as root). Every Mac also gets the `sing-box` CLI; Linux gets it via aqua.
+Every machine has sing-box (macOS: nix package from the official release,
+`nix-config/modules/sing-box{,-package}.nix.tmpl`; Linux: aqua). How it runs is
+decided by `.chezmoitemplates/sing-box/mode.tmpl`, and all variants share one
+config template, `.chezmoitemplates/sing-box/config.tmpl`:
 
-- Config: `.chezmoiscripts/run_after_25_sing-box.sh.tmpl` builds it with jq
-  from `.chezmoidata/{sing-box,easytier}.yaml` plus gopass
-  `easytier/exit-ss-password` and `sing-box/clash-api-secret`, runs
-  `sing-box check`, and writes `/etc/sing-box/config.json` (root:wheel 0600).
-- Inbound: mixed SOCKS5/HTTP on `127.0.0.1:7890`, set as the system proxy while
-  the daemon runs. Routing: private/overlay destinations direct, everything else
-  via selector `Exit` (`direct` default, `gpuserver`, `nas`; the choice
-  persists in `/var/lib/sing-box/cache.db`).
-- Switch exits in the web panel `http://127.0.0.1:9090/ui` (metacubexd; secret
-  `gopass show -o sing-box/clash-api-secret`) or by API:
-  `curl -X PUT -H "Authorization: Bearer $secret" -d '{"name":"nas"}' http://127.0.0.1:9090/proxies/Exit`.
-- Apply: `chezmoi apply ~/.chezmoiscripts/02_init.sh ~/.chezmoiscripts/24_easytier-node.sh ~/.chezmoiscripts/25_sing-box.sh`.
-  Logs: `/var/log/sing-box.log`.
+| Machine        | Mode      | Runs as                                                      | Default           |
+| -------------- | --------- | ------------------------------------------------------------ | ----------------- |
+| work Mac       | `system`  | root LaunchDaemon `org.nixos.sing-box`, sets system proxy    | always on         |
+| other Macs     | `agent`   | LaunchAgent `com.signalridge.sing-box` (Surge stays default) | started on demand |
+| headless Linux | `service` | systemd --user `sing-box.service`                            | always on         |
+| other Linux    | —         | CLI only                                                     | —                 |
+
+- Config: mixed SOCKS5/HTTP inbound `127.0.0.1:7890`; private/overlay
+  destinations direct, everything else via selector `Exit` (`direct` default
+  plus every entry of `easytier.exits` except the machine's own); Clash API and
+  metacubexd panel at `http://127.0.0.1:9090/ui` (secret: `gopass show -o
+sing-box/clash-api-secret`). Secrets: gopass `easytier/exit-ss-password`,
+  `sing-box/clash-api-secret`; without them the mode falls back to CLI only.
+- `system`: `.chezmoiscripts/run_after_25_sing-box.sh.tmpl` fills the secrets in
+  with jq at run time, runs `sing-box check` and writes
+  `/etc/sing-box/config.json` (root:wheel 0600). Log `/var/log/sing-box.log`.
+- `agent` / `service`: chezmoi renders `~/.config/sing-box/config.json` (0600).
+  Mac on demand: `launchctl kickstart gui/$(id -u)/com.signalridge.sing-box`,
+  stop with `launchctl kill TERM gui/$(id -u)/com.signalridge.sing-box`;
+  Linux panel via `ssh -L 9090:127.0.0.1:9090 <host>`.
+- Switch exits in the panel or by API:
+  `curl -X PUT -H "Authorization: Bearer $secret" -d '{"name":"nas"}' http://127.0.0.1:9090/proxies/Exit`
+  (the choice persists in the cache file).
+
+## Installed replacement tools
+
+aqua: `sing-box` (Linux), `xray`, `wstunnel`, `frpc`/`frps`, `hysteria`,
+`ssserver`/`sslocal`. nix (`.chezmoidata/nix.yaml`): `socat`, `pingtunnel`,
+`dnsproxy`, `sslh`, and `phantun_client`/`phantun_server` on Linux.
 
 ## Credentials
 
