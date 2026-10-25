@@ -157,8 +157,12 @@
       "final" "Egress"
       "default_domain_resolver" $resolver
       "auto_detect_interface" true -}}
+{{- /* Log level warn: info writes a line per connection (~8 MB/h on a Mac,
+       so the 10 MiB x 5 rotation kept only hours). Live connections are in
+       the panel; the LaunchDaemon's own lines (exit failover, DNS, utun)
+       share the log file and do not depend on this level. */ -}}
 {{- $config := dict
-      "log" (dict "level" "info" "timestamp" true)
+      "log" (dict "level" "warn" "timestamp" true)
       "dns" $dns
       "inbounds" $inbounds
       "outbounds" $outbounds
