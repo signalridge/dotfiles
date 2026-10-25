@@ -34,7 +34,7 @@ packages:
   # sing-box CLI on Linux: the replacement for gost's ad-hoc SOCKS/HTTP servers,
   # TCP/UDP forwards and proxy chains. macOS gets it from nix-config/modules/
   # sing-box.nix instead (its LaunchAgent runs that build).
-  - name: SagerNet/sing-box@v1.14.3
+  - name: SagerNet/sing-box@v1.14.4
     registry: third-party
   # Relay / server side of the EasyTier exits (shadowsocks-rust, Hysteria2,
   # realm). Work machines only consume the exits, so .chezmoiignore skips this
