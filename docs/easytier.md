@@ -30,8 +30,11 @@ Members (Mac, NAS, Linux nodes) listen on **UDP only** (`udp://0.0.0.0:11010`,
 public IPv6) links over TCP first and EasyTier never upgrades an existing direct
 link, and path loss then throttles tunnelled TCP; TCP hole punching is disabled
 for the same reason. Only IPv4
-can be hole-punched (both ends drop unsolicited inbound IPv6 UDP), so with
-Surge Enhanced Mode every member's public IPv4 must be in `tun-excluded-routes`.
+can be hole-punched (both ends drop unsolicited inbound IPv6 UDP). Macs pass
+`--bind-device true`, which pins EasyTier's own sockets (peers, STUN, hole
+punching) to the physical NIC, so a TUN owning the default route (Surge
+Enhanced Mode, sing-box) never carries them — the same way Tailscale's own
+WireGuard traffic bypasses its exit-node routes.
 The bastion keeps TCP + UDP for discovery and fallback relay.
 
 ## Exit nodes
@@ -97,7 +100,7 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 
 | Machine        | Mode      | Runs as                                                      | Default           |
 | -------------- | --------- | ------------------------------------------------------------ | ----------------- |
-| work Mac       | `agent`   | LaunchAgent `com.signalridge.sing-box`                       | started at login  |
+| work Mac       | `system`  | root LaunchDaemon `org.nixos.sing-box` with a TUN            | always on         |
 | other Macs     | `agent`   | LaunchAgent `com.signalridge.sing-box` (Surge stays default) | started on demand |
 | headless Linux | `service` | systemd --user `sing-box.service`                            | always on         |
 | other Linux    | —         | CLI only                                                     | —                 |
@@ -108,15 +111,21 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   metacubexd panel at `http://127.0.0.1:9090/ui` (secret: `gopass show -o
 sing-box/clash-api-secret`). Secrets: gopass `easytier/exit-ss-password`,
   `sing-box/clash-api-secret`; without them the mode falls back to CLI only.
-- No root and **no system proxy** anywhere: a crashed or stopped sing-box must
-  not take the machine offline, and work networks bring their own PAC/MDM/VPN
-  proxy settings. Apps opt in: the browser through a proxy extension (e.g.
-  ZeroOmega → `127.0.0.1:7890`), a shell through `proxy-on` / `proxy-off`
+- Work Mac (`system`), like a Tailscale exit node: a TUN with `auto_route`
+  carries every app's traffic; `Exit` defaults to `direct`, so nothing changes
+  until an exit is picked. It never sets the system proxy and leaves system DNS
+  alone (`dns_mode: disabled`); LAN/company/VPN ranges, the mesh, Tailscale,
+  link-local and multicast stay off the TUN (`singBox.tunExcludeAddress`).
+  EasyTier's own traffic bypasses it via `--bind-device`. Because sing-box binds
+  its outbounds to the default NIC under a TUN, the daemon injects EasyTier's
+  utun (dynamic unit number) as `bind_interface` into the exit outbounds at
+  start and restarts when it changes. Config: `.chezmoiscripts/run_after_25_sing-box.sh.tmpl`
+  fills the gopass secrets in with jq at run time, runs `sing-box check` and
+  writes `/etc/sing-box/config.json` (root:wheel 0600). Log `/var/log/sing-box.log`.
+- Elsewhere no TUN and no system proxy: Surge already plays that role on the
+  home Mac; a shell opts in with `proxy-on` / `proxy-off`
   (`dot_custom/functions.sh`; mesh, Tailscale and local ranges in `no_proxy`).
-  For apps that ignore both, `sysproxy-on` / `sysproxy-off` (macOS, sudo) set
-  and clear the system proxy on every network service — opt-in, never
-  automatic.
-- chezmoi renders `~/.config/sing-box/config.json` (0600). Logs:
+- `agent` / `service`: chezmoi renders `~/.config/sing-box/config.json` (0600). Logs:
   `~/Library/Logs/sing-box.launchd.log` (Mac), `journalctl --user -u sing-box`.
   Mac on demand: `launchctl kickstart gui/$(id -u)/com.signalridge.sing-box`,
   stop with `launchctl kill TERM gui/$(id -u)/com.signalridge.sing-box`;
@@ -173,9 +182,8 @@ chezmoi apply ~/.chezmoiscripts/24_easytier-node.sh   # each repo-managed node (
 - easytier-core adds the `10.144.144.0/24 → utunN` route once and never
   restores it. If another tool deletes it, `10.144.144.x` silently falls into
   the default route; recover with `sudo launchctl kickstart -k system/org.nixos.easytier`.
-- Surge Enhanced Mode: exclude only the underlay peers, e.g.
-  `tun-excluded-routes = <bastion-ip>/32, <nas-public-ip>/32`, so hole-punched
-  UDP is not relayed in user space. Never list `10.144.144.0/24` or
+- Surge Enhanced Mode: with `--bind-device` no `tun-excluded-routes` entries are
+  needed for EasyTier peers. Never list `10.144.144.0/24` or
   `100.64.0.0/10` there: Surge implements exclusions as `en0` routes, which
   hijack the EasyTier/Tailscale routes (and removing them later deletes
   EasyTier's route). Enabling Enhanced Mode also stops Tailscale once; reconnect

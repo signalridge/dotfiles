@@ -5,9 +5,9 @@
     <key>Label</key>
     <string>com.signalridge.sing-box</string>
 
-    <!-- sing-box on every Mac, no system proxy (point the browser's proxy
-         extension or `proxy-on` at it).{{ if .work }} Work Mac: started at login, kept alive.{{ else }} Surge stays the default here, so it is
-         loaded but NOT started at login.{{ end }} Start/stop by hand:
+    <!-- sing-box on Macs that keep Surge as the default (work Macs run the
+         TUN daemon from nix-config/modules/sing-box.nix instead): loaded but
+         NOT started at login, no system proxy. Start/stop by hand:
            launchctl kickstart gui/$(id -u)/com.signalridge.sing-box
            launchctl kill TERM gui/$(id -u)/com.signalridge.sing-box
          Proxy 127.0.0.1:{{ .singBox.mixedPort }}, panel http://127.0.0.1:{{ .singBox.clashApiPort }}/ui.
@@ -22,17 +22,8 @@
         <string>{{ .chezmoi.homeDir }}/.local/state/sing-box</string>
     </array>
 
-{{- if .work }}
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>ThrottleInterval</key>
-    <integer>30</integer>
-{{- else }}
     <key>RunAtLoad</key>
     <false/>
-{{- end }}
     <key>ProcessType</key>
     <string>Background</string>
     <key>Umask</key>

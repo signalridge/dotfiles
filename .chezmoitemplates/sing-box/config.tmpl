@@ -1,6 +1,9 @@
 {{- /* sing-box client config, shared by every platform (docs/easytier.md).
-       Called with (dict "root" $ "password" … "secret" …). Never touches the
-       system proxy: apps opt in (browser extension, `proxy-on`).
+       Called with (dict "root" $ "password" … "secret" … ["tun" true]). Never
+       sets the system proxy. With "tun": a TUN inbound with auto_route (every
+       app, like a Tailscale exit node) that leaves system DNS alone and
+       excludes private/overlay ranges; the exit outbounds then get
+       bind_interface injected at start (nix-config/modules/sing-box.nix).
        Mixed SOCKS5/HTTP inbound on 127.0.0.1; private/overlay destinations go
        direct, everything else through the `Exit` selector (default direct)
        over the EasyTier exits, minus this machine's own exit; Clash API + web
@@ -16,10 +19,20 @@
 {{-   end -}}
 {{- end -}}
 {{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Exit" "default" "direct" "outbounds" $tags) -}}
+{{- $inbounds := list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" false) -}}
+{{- if .tun -}}
+{{-   $inbounds = append $inbounds (dict
+        "type" "tun" "tag" "tun-in"
+        "address" (list "172.19.0.1/30" "fdfe:dcba:9876::1/126")
+        "auto_route" true
+        "strict_route" false
+        "dns_mode" "disabled"
+        "route_exclude_address" $r.singBox.tunExcludeAddress) -}}
+{{- end -}}
 {{- $config := dict
       "log" (dict "level" "info" "timestamp" true)
       "dns" (dict "servers" (list (dict "type" "local" "tag" "local")))
-      "inbounds" (list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" false))
+      "inbounds" $inbounds
       "outbounds" $outbounds
       "route" (dict
         "rules" (list

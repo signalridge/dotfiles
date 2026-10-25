@@ -1,13 +1,92 @@
+{{- $mode := includeTemplate "sing-box/mode.tmpl" . -}}
 # ─────────────────────────────────────────────────────────────────────────────
 # sing-box (official release, ./sing-box-package.nix)
 # ─────────────────────────────────────────────────────────────────────────────
-# The CLI on every Mac; the per-user LaunchAgent com.signalridge.sing-box runs
-# /run/current-system/sw/bin/sing-box (private_Library/LaunchAgents). No root
-# daemon: sing-box never takes over the system proxy here.
+# The CLI on every Mac. Other Macs run it from the per-user LaunchAgent
+# com.signalridge.sing-box (on demand). Work Macs (mode "system",
+# .chezmoitemplates/sing-box/mode.tmpl) run it here as a root LaunchDaemon with
+# a TUN, like a Tailscale exit node: every app's traffic, `Exit` defaults to
+# direct, system proxy and DNS untouched.
+#
+# The config holds the exit key and the panel secret, so it is NOT rendered
+# here (it would land in the world-readable /nix/store):
+# .chezmoiscripts/run_after_25_sing-box.sh writes it from gopass to
+# /etc/sing-box/config.json (root:wheel 0600).
+#
+# sing-box binds its outbound sockets to the default NIC (auto_detect_interface,
+# needed under a TUN), which would send the exit connections (EasyTier virtual
+# IPs) out en0. So at start the daemon looks up EasyTier's utun (its unit number
+# is assigned dynamically), injects it as bind_interface into the exit
+# outbounds, and restarts sing-box whenever that utun changes.
 { pkgs, ... }:
 let
   sing-box = import ./sing-box-package.nix { inherit pkgs; };
+{{- if eq $mode "system" }}
+  configFile = "/etc/sing-box/config.json";
+  runDir = "/var/run/sing-box";
+  logFile = "/var/log/sing-box.log";
+  meshNet = "{{ index (splitList "/" .easytier.network) 0 }}";
+{{- end }}
 in
 {
   environment.systemPackages = [ sing-box ];
+{{- if eq $mode "system" }}
+
+  launchd.daemons.sing-box = {
+    script = ''
+      set -eu
+      if [ "$(/usr/bin/stat -f '%u %Lp' "${configFile}" 2>/dev/null)" != "0 600" ]; then
+        echo "sing-box: ${configFile} must exist, be owned by root and mode 0600; refusing to start" >&2
+        exit 1
+      fi
+      /usr/bin/install -d -m 700 "${runDir}" /var/lib/sing-box
+
+      # EasyTier's utun: the interface of the route for the mesh network itself.
+      mesh_iface() {
+        /sbin/route -n get "${meshNet}" 2>/dev/null | /usr/bin/awk '
+          /destination:/ { d = $2 } /interface:/ { i = $2 }
+          END { if (d == "${meshNet}" && i ~ /^utun/) print i }'
+      }
+
+      iface="$(mesh_iface)"
+      umask 077
+      if [ -n "$iface" ]; then
+        ${pkgs.jq}/bin/jq --arg i "$iface" \
+          '(.outbounds[] | select(.type == "shadowsocks")).bind_interface = $i' \
+          "${configFile}" >"${runDir}/config.json.tmp"
+      else
+        echo "sing-box: EasyTier route for ${meshNet} not found; exits unavailable until it appears" >&2
+        /bin/cat "${configFile}" >"${runDir}/config.json.tmp"
+      fi
+      /bin/mv -f "${runDir}/config.json.tmp" "${runDir}/config.json"
+
+      ${sing-box}/bin/sing-box run -c "${runDir}/config.json" -D /var/lib/sing-box &
+      pid=$!
+      trap 'kill "$pid" 2>/dev/null; wait "$pid"; exit 0' TERM INT
+      while kill -0 "$pid" 2>/dev/null; do
+        sleep 30
+        if [ "$(mesh_iface)" != "$iface" ]; then
+          echo "sing-box: EasyTier interface changed ('$iface' -> '$(mesh_iface)'); restarting" >&2
+          kill "$pid" 2>/dev/null || true
+          wait "$pid" || true
+          exit 0
+        fi
+      done
+      wait "$pid"
+    '';
+    serviceConfig = {
+      RunAtLoad = true;
+      KeepAlive = true;
+      ThrottleInterval = 30;
+      StandardOutPath = logFile;
+      StandardErrorPath = logFile;
+    };
+  };
+
+  # Rotate the daemon log at 10 MiB, keeping 5 compressed generations.
+  environment.etc."newsyslog.d/sing-box.conf".text = ''
+    # logfilename        [owner:group]  mode count size(KB) when flags
+    ${logFile}  root:wheel     640  5     10240    *    JN
+  '';
+{{- end }}
 }

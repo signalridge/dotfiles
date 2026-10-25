@@ -1,0 +1,92 @@
+{{- if eq (includeTemplate "sing-box/mode.tmpl" .) "system" -}}
+#!/bin/bash
+
+set -euo pipefail
+
+# sing-box on work Macs (mode "system", .chezmoitemplates/sing-box/mode.tmpl):
+# writes /etc/sing-box/config.json
+# (root:wheel 0600) for the LaunchDaemon from nix-config/modules/sing-box.nix,
+# then restarts it. The config embeds two gopass values, so it is built here at
+# run time rather than rendered into the store or $HOME:
+#   easytier/exit-ss-password    Shadowsocks 2022 key of the EasyTier exits
+#   sing-box/clash-api-secret    Bearer secret of the web panel / Clash API
+# Runs on every apply; sudo only when the rendered config changed (tracked by
+# hash, since the file is root-only) or the daemon is not running.
+#
+# Like a Tailscale exit node: a TUN with auto_route carries every app's traffic
+# (no system proxy, system DNS untouched); the `Exit` selector defaults to
+# direct. Pick the exit in the panel: http://127.0.0.1:{{ .singBox.clashApiPort }}/ui (secret above).
+
+echo ":: [25] sing-box"
+
+CONFIG_DIR="/etc/sing-box"
+CONFIG="${CONFIG_DIR}/config.json"
+LABEL="org.nixos.sing-box"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/chezmoi"
+STATE="${STATE_DIR}/sing-box-config.sha256"
+
+if ! command -v gopass >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
+    echo "    Skipped (gopass or jq not installed)"
+    exit 0
+fi
+if ! ss_password="$(gopass show -o easytier/exit-ss-password 2>/dev/null)" ||
+    ! secret="$(gopass show -o sing-box/clash-api-secret 2>/dev/null)"; then
+    echo "    Skipped (gopass easytier/exit-ss-password or sing-box/clash-api-secret unavailable)"
+    exit 0
+fi
+
+# Structure from .chezmoitemplates/sing-box/config.tmpl (shared with the
+# LaunchAgent / systemd variants); the two secrets are placeholders here and are
+# filled in by jq at run time so they never enter the rendered script.
+render_config() {
+    jq --arg password "$ss_password" --arg secret "$secret" '
+      walk(if . == "__EXIT_SS_PASSWORD__" then $password
+           elif . == "__CLASH_API_SECRET__" then $secret else . end)' <<'JSON'
+{{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" "__EXIT_SS_PASSWORD__" "secret" "__CLASH_API_SECRET__" "tun" true) }}
+JSON
+}
+
+config="$(render_config)"
+want="$(printf '%s\n' "$config" | shasum -a 256 | cut -d' ' -f1)"
+changed=true
+[[ -f "$STATE" && "$(cat "$STATE")" == "$want" ]] && changed=false
+running=true
+pgrep -qf 'sing-box run -c /var/run/sing-box/config.json' || running=false
+
+if [[ "$changed" == false && "$running" == true ]]; then
+    echo "    Unchanged"
+    exit 0
+fi
+if ! command -v sing-box >/dev/null 2>&1; then
+    echo "    Skipped (sing-box not installed yet; darwin-rebuild switch installs it)"
+    exit 0
+fi
+check_dir="$(mktemp -d)"
+trap 'rm -f "${check_dir}/config.json"; rmdir "$check_dir"' EXIT
+(umask 077 && printf '%s\n' "$config" >"${check_dir}/config.json")
+sing-box check -c "${check_dir}/config.json"
+if ! sudo -v; then
+    echo "    Skipped (sudo unavailable; rerun chezmoi apply interactively)" >&2
+    exit 0
+fi
+
+if [[ "$changed" == true ]]; then
+    sudo install -d -o root -g wheel -m 700 "$CONFIG_DIR"
+    # shellcheck disable=SC2016 # expanded by the root shell, not here
+    printf '%s\n' "$config" | sudo /bin/sh -c 'umask 077
+tmp="$(mktemp "$1/.config.json.XXXXXX")"
+cat >"$tmp"
+chown root:wheel "$tmp"
+chmod 600 "$tmp"
+mv -f "$tmp" "$2"' sh "$CONFIG_DIR" "$CONFIG"
+    mkdir -p "$STATE_DIR"
+    printf '%s\n' "$want" >"$STATE"
+    echo "    Wrote ${CONFIG}"
+fi
+if sudo launchctl print "system/${LABEL}" >/dev/null 2>&1; then
+    sudo launchctl kickstart -k "system/${LABEL}"
+    echo "    Restarted ${LABEL}"
+else
+    echo "    ${LABEL} not loaded yet; darwin-rebuild switch installs it"
+fi
+{{- end }}
