@@ -60,3 +60,9 @@ singBox:
           zlib,
           libgen,
         ]
+      # The JAIST SSL-VPN (F5) gateway and its JAIST-SSO login, straight from
+      # this machine: logging in from the campus exit would bind the VPN
+      # session to an address the tunnel never comes from. The tunnel itself is
+      # dialled by sing-box and never passes these rules.
+      exceptDirect:
+        domain: [vpn.jaist.ac.jp, vpn4.jaist.ac.jp, auth.jaist.ac.jp]

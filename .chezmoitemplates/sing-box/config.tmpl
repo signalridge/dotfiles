@@ -84,7 +84,10 @@
        under ~/.local/share/sing-box/rule-set (.chezmoiexternal.toml), and a
        boot without network still comes up. exceptKeyword names domains
        bundled in those lists that must not take the route; they fall through
-       to Egress like anything else, so a broad keyword costs nothing. */ -}}
+       to Egress like anything else, so a broad keyword costs nothing.
+       exceptDirect (domain, optionally ipCidr) goes Direct instead: the
+       network's own VPN gateway and login pages, which must be reached from
+       this machine's own address, not from the exit. */ -}}
 {{- $ruleSets := dict -}}
 {{- range $r.singBox.exitRoutes -}}
 {{-   $members := list -}}
@@ -95,6 +98,12 @@
 {{-     if hasKey $chained . -}}{{- $twins = append $twins (index $chained .) -}}{{- end -}}
 {{-   end -}}
 {{-   $outbounds = append $outbounds (dict "type" "urltest" "tag" .tag "outbounds" (concat $members $twins) "tolerance" 50 "interrupt_exist_connections" false) -}}
+{{-   if hasKey . "exceptDirect" -}}
+{{-     $except := dict "outbound" $direct -}}
+{{-     if hasKey .exceptDirect "domain" -}}{{- $_ := set $except "domain" .exceptDirect.domain -}}{{- end -}}
+{{-     if hasKey .exceptDirect "ipCidr" -}}{{- $_ := set $except "ip_cidr" .exceptDirect.ipCidr -}}{{- end -}}
+{{-     $rules = append $rules $except -}}
+{{-   end -}}
 {{-   if hasKey . "exceptKeyword" -}}{{- $rules = append $rules (dict "domain_keyword" .exceptKeyword "outbound" "Egress") -}}{{- end -}}
 {{-   $match := dict "outbound" .tag -}}
 {{-   if hasKey . "domainSuffix" -}}{{- $_ := set $match "domain_suffix" .domainSuffix -}}{{- end -}}
