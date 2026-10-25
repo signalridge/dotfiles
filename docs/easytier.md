@@ -28,6 +28,18 @@ bastion). The same STUN endpoints and the bastion's `hysteria-realm`
 rendezvous (TCP 38443) also serve the NAS's Hysteria Realms containers
 (an inbound rsync from outside JAIST), so neither may be retired.
 
+The bastion never carries data between members. EasyTier relays through any
+peer when hole punching fails, and `--relay-network-whitelist` only governs
+other networks (a node's own network is still forwarded when no other path
+exists), so the NAS and the Linux exits pass `--p2p-only true` instead: they
+only talk to peers they have a direct link to. Their link to the bastion is
+direct, so hole-punch coordination still flows through it and "<exit> via
+bastion" still works; a member pair that cannot punch through simply cannot
+reach each other (backups wait, `ssh nas` / `ssh gpuserver` fail, the `jaist`
+failover moves on). It is enough on the receiving end: a relayed sender never
+gets a connection through to a `--p2p-only` receiver. The Macs deliberately do
+not set it.
+
 Members (Mac, NAS, Linux nodes) listen on **UDP only** (`udp://0.0.0.0:11010`,
 `easytier.listeners`): with a TCP listener a peer that can reach it (e.g. over
 public IPv6) links over TCP first and EasyTier never upgrades an existing direct
@@ -391,6 +403,7 @@ services:
       - --default-protocol=udp
       - --disable-tcp-hole-punching=true
       - --private-mode=true
+      - --p2p-only=true
       - --console-log-level=info
     logging:
       driver: json-file
