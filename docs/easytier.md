@@ -126,7 +126,10 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   every app's traffic; `Exit` defaults to `direct`, so nothing changes until an
   exit is picked. It never sets the system proxy and leaves system DNS alone
   (`dns_mode: disabled`); LAN/company/VPN ranges, the mesh, Tailscale,
-  link-local and multicast stay off the TUN (`singBox.tunExcludeAddress`).
+  link-local and multicast stay off the TUN (`singBox.tunExcludeAddress`), and
+  so does the bastion's public IPv4 (gopass `easytier/bastion-host`, added by
+  script 25 at run time), so SSH to it and EasyTier's link to it survive
+  sing-box restarts.
   EasyTier's own traffic bypasses it via `--bind-device`. Because sing-box binds
   its outbounds to the default NIC under a TUN, the daemon injects EasyTier's
   utun (dynamic unit number) as `bind_interface` into the exit outbounds at

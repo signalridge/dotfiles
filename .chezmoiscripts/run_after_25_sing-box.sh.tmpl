@@ -38,17 +38,26 @@ fi
 # Optional edge outbound (edge-import); "null" when absent.
 edge="$(gopass show -o sing-box/edge-outbound 2>/dev/null || echo null)"
 jq -e 'type == "object" or . == null' <<<"$edge" >/dev/null || edge=null
+# The bastion's public IPv4 stays off the TUN: SSH and EasyTier's TCP link to
+# it are then plain connections that survive sing-box restarts, and the edge
+# outbounds dial it directly anyway. Kept in gopass (public repo); dropped when
+# absent or not an IPv4 literal.
+bastion="$(gopass show -o easytier/bastion-host 2>/dev/null || true)"
+[[ "$bastion" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || bastion=""
 
 # Structure from .chezmoitemplates/sing-box/config.tmpl (shared with the
-# LaunchAgent / systemd variants); the two secrets are placeholders here and are
-# filled in by jq at run time so they never enter the rendered script.
+# LaunchAgent / systemd variants); the secrets and the bastion address are
+# placeholders here and are filled in by jq at run time so they never enter the
+# rendered script.
 render_config() {
-    jq --arg password "$ss_password" --arg secret "$secret" --argjson edge "$edge" '
+    jq --arg password "$ss_password" --arg secret "$secret" --argjson edge "$edge" --arg bastion "$bastion" '
       walk(if . == "__EXIT_SS_PASSWORD__" then $password
            elif . == "__CLASH_API_SECRET__" then $secret
-           elif . == "__EDGE_OUTBOUND__" then $edge else . end)' <<'JSON'
+           elif . == "__EDGE_OUTBOUND__" then $edge else . end)
+      | (.inbounds[] | select(.type == "tun") | .route_exclude_address) |=
+          (map(select(. != "__BASTION_EXCLUDE__")) + (if $bastion == "" then [] else [$bastion + "/32"] end))' <<'JSON'
 {{- $hasEdge := stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/sing-box/edge-outbound.age") }}
-{{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" "__EXIT_SS_PASSWORD__" "secret" "__CLASH_API_SECRET__" "tun" true "edge" (ternary "__EDGE_OUTBOUND__" "" (not (not $hasEdge)))) }}
+{{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" "__EXIT_SS_PASSWORD__" "secret" "__CLASH_API_SECRET__" "tun" true "tunExcludeExtra" (list "__BASTION_EXCLUDE__") "edge" (ternary "__EDGE_OUTBOUND__" "" (not (not $hasEdge)))) }}
 JSON
 }
 

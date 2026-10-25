@@ -1,5 +1,6 @@
 {{- /* sing-box client config, shared by every platform (docs/easytier.md).
        Called with (dict "root" $ "password" … "secret" … ["tun" true]
+       ["tunExcludeExtra" (list …), more addresses kept off the TUN]
        ["edge" <outbound object, or a placeholder string replaced later>]).
        "edge" (gopass sing-box/edge-outbound, from
        edge-import) joins the Exit selector as tag "edge". Never
@@ -61,7 +62,7 @@
         "auto_route" true
         "strict_route" false
         "dns_mode" "disabled"
-        "route_exclude_address" $r.singBox.tunExcludeAddress) -}}
+        "route_exclude_address" (concat $r.singBox.tunExcludeAddress (dig "tunExcludeExtra" (list) .))) -}}
 {{- end -}}
 {{- $config := dict
       "log" (dict "level" "info" "timestamp" true)
