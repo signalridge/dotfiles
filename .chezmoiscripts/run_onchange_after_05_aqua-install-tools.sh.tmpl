@@ -84,3 +84,19 @@ eval "$("$mise_bin" env -s bash)"
 
 echo "    Phase 2: installing all aqua packages"
 "$aqua_cmd" install
+
+# aqua never deletes the bin links of packages that left its config, and those
+# leftovers fail with "package isn't found" instead of command-not-found.
+# Retired: Xray, wstunnel, frp (69f4e6a); on work machines also the relay tools
+# of aqua-private.yaml.
+retired=(xray wstunnel frpc frps)
+{{- if .work }}
+retired+=(ssserver sslocal ssurl ssmanager ssservice hysteria realm)
+{{- end }}
+for cmd in "${retired[@]}"; do
+    link="$aqua_bin_dir/$cmd"
+    [[ -L "$link" ]] || continue
+    case "$(readlink "$link")" in
+    *aqua-proxy*) rm -f "$link" && echo "    Removed stale aqua link: $cmd" ;;
+    esac
+done

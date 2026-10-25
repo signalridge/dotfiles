@@ -92,11 +92,12 @@ Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 
 # ─────────────────────────────────────────────────────────────────────────────
 # EasyTier exit (shadowsocks-rust) only on Linux exits (`easytierExit` in the
-# machine's chezmoi data) that also hold the gopass key for its env file.
+# machine's chezmoi data) that also hold the gopass key for its env file, and
+# never on work machines: ssserver comes from aqua-private.yaml, skipped there.
 # ─────────────────────────────────────────────────────────────────────────────
 {{- $et := includeTemplate "easytier/role.tmpl" . | fromJson }}
 {{- $etExitKey := stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/easytier/exit-ss-password.age") }}
-{{- if not (and $et.exit $etExitKey) }}
+{{- if not (and $et.exit $etExitKey (not .work)) }}
 .config/ss-exit/
 .config/systemd/user/ss-exit.service
 {{- end }}
