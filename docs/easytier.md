@@ -139,8 +139,16 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 
 - Macs (`system`), like a Tailscale exit node: a TUN with `auto_route` carries
   every app's traffic; `Egress` defaults to `Direct`, so nothing changes until an
-  exit is picked. It never sets the system proxy and leaves system DNS alone
-  (`dns_mode: disabled`); LAN/company/VPN ranges, the mesh, Tailscale,
+  exit is picked. It never sets the system proxy. DNS follows the exit:
+  `dns_mode: native` makes sing-box (198.18.0.2) the default resolver, which
+  answers over DoH (`1.1.1.1`) dialled through `Egress`, so lookups leave from
+  the same exit as the traffic, encrypted. The network's DHCP resolver keeps
+  `home.arpa`/`lan`/`internal` names, PTR lookups and captive-portal probes;
+  macOS keeps its per-domain resolvers (Tailscale `ts.net`, a company VPN,
+  mDNS `.local`). The bastion outbounds dial its IP (gopass
+  `easytier/bastion-host`), so reaching it needs no DNS. AdGuard's own DNS
+  protection must stay off (it would fight over the default resolver); its
+  page filtering in Automatic proxy mode is unaffected. LAN/company/VPN ranges, the mesh, Tailscale,
   link-local and multicast stay off the TUN (`singBox.tunExcludeAddress`), and
   so does the bastion's public IPv4 (gopass `easytier/bastion-host`, added by
   script 25 at run time), so SSH to it and EasyTier's link to it survive

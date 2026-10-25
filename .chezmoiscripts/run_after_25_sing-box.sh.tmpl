@@ -16,7 +16,7 @@ set -euo pipefail
 # hash, since the file is root-only) or the daemon is not running.
 #
 # Like a Tailscale exit node: a TUN with auto_route carries every app's traffic
-# (no system proxy, system DNS untouched); the `Egress` selector defaults to
+# and DNS (no system proxy; lookups go over DoH through the same exit); the `Egress` selector defaults to
 # direct. Pick the exit in the panel: http://127.0.0.1:{{ .singBox.clashApiPort }}/ui (secret above).
 
 echo ":: [25] sing-box"
@@ -42,8 +42,9 @@ bastion_outbounds="$(gopass show -o sing-box/bastion-outbounds 2>/dev/null || ec
 jq -e 'type == "array" and (length == 0 or (map(.tag) | sort) == ["AnyTLS", "Hysteria2", "Reality"])' \
     <<<"$bastion_outbounds" >/dev/null || { echo "    gopass sing-box/bastion-outbounds is malformed; re-run bastion-import" >&2; exit 1; }
 # The bastion's public IPv4 stays off the TUN: SSH and EasyTier's TCP link to
-# it are then plain connections that survive sing-box restarts, and the bastion
-# outbounds dial it directly anyway. Kept in gopass (public repo); dropped when
+# it are then plain connections that survive sing-box restarts. The bastion
+# outbounds also dial this address instead of its domain (TLS still names the
+# domain), so reaching the bastion needs no DNS at all. Kept in gopass (public repo); dropped when
 # absent or not an IPv4 literal.
 bastion_ip="$(gopass show -o easytier/bastion-host 2>/dev/null || true)"
 [[ "$bastion_ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || bastion_ip=""
@@ -58,6 +59,7 @@ render_config() {
       walk(if . == "__EXIT_SS_PASSWORD__" then $password
            elif . == "__CLASH_API_SECRET__" then $secret else . end)
       | .outbounds |= map(if . == "__BASTION_OUTBOUNDS__" then $bastion_outbounds[] else . end)
+      | (.outbounds[] | select($bastion_ip != "" and (.tag | IN("Reality", "Hysteria2", "AnyTLS"))) | .server) = $bastion_ip
       | (.inbounds[] | select(.type == "tun") | .route_exclude_address) |=
           (map(select(. != "__BASTION_EXCLUDE__")) + (if $bastion_ip == "" then [] else [$bastion_ip + "/32"] end))' <<'JSON'
 {{- $hasBastion := stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/sing-box/bastion-outbounds.age") }}

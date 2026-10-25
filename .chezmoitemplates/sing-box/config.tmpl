@@ -14,8 +14,8 @@
                   holds the outbounds tagged Reality, Hysteria2 and AnyTLS.
          <exitRoutes tag>  pinned destinations, e.g. jaist; see below.
        Never sets the system proxy. With "tun": a TUN inbound with auto_route
-       (every app) that leaves system DNS alone and excludes private/overlay
-       ranges; the mesh exit outbounds then get bind_interface injected at start
+       (every app) that becomes the default resolver (DoH through Egress, see
+       below) and excludes private/overlay ranges; the mesh exit outbounds then get bind_interface injected at start
        (nix-config/modules/sing-box.nix). Mixed SOCKS5/HTTP inbound on
        127.0.0.1; private/overlay destinations go Direct, singBox.exitRoutes
        destinations through their pinned exits, everything else through Egress;
@@ -81,28 +81,52 @@
 {{-   $rules = append $rules (dict "domain_suffix" .domainSuffix "ip_cidr" .ipCidr "outbound" .tag) -}}
 {{- end -}}
 {{- $inbounds := list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" false) -}}
+{{- /* DNS. Without a TUN (headless Linux, apps opt in via proxy-on) apps hand
+       the proxy domain names, so they resolve at the exit already and the
+       local server only serves sing-box itself. */ -}}
+{{- $dns := dict "servers" (list (dict "type" "local" "tag" "local")) -}}
+{{- $resolver := "local" -}}
 {{- if dig "tun" false . -}}
 {{- /* The TUN's IPv4 /30 must stay outside tunExcludeAddress: excluding it
        (172.16.0.0/12 once held 172.19.0.1/30) routes the stack's own peer
        address to en0 and breaks every IPv4 TCP connection. 198.18.0.0/15 is
-       the RFC 2544 benchmark range, unused on real networks. */ -}}
+       the RFC 2544 benchmark range, unused on real networks.
+       dns_mode native makes the TUN's next address (198.18.0.2) the system's
+       default resolver, answered by sing-box; macOS keeps its per-domain
+       resolvers (Tailscale's ts.net, a company VPN's domains, mDNS .local).
+       sing-box resolves over DoH through Egress, so lookups leave from the same
+       exit as the traffic, encrypted, and get answers for that location. The
+       network's own DHCP-provided resolver ("lan"; not "local", which would
+       ask the system, i.e. sing-box itself) keeps local names, reverse lookups
+       and captive-portal probes, which must work before a hotspot login, and
+       resolves the outbounds' own server names. */ -}}
 {{-   $inbounds = append $inbounds (dict
         "type" "tun" "tag" "tun-in"
         "address" (list "198.18.0.1/30" "fdfe:dcba:9876::1/126")
         "auto_route" true
         "strict_route" false
-        "dns_mode" "disabled"
+        "dns_mode" "native"
         "route_exclude_address" (concat $r.singBox.tunExcludeAddress (dig "tunExcludeExtra" (list) .))) -}}
+{{-   $dns = dict
+        "servers" (list
+          (dict "type" "https" "tag" "remote" "server" "1.1.1.1" "detour" "Egress")
+          (dict "type" "dhcp" "tag" "lan"))
+        "rules" (list
+          (dict "domain_suffix" (list "home.arpa" "lan" "localdomain" "internal") "action" "route" "server" "lan")
+          (dict "domain" (list "captive.apple.com" "connectivitycheck.gstatic.com" "www.msftconnecttest.com" "detectportal.firefox.com" "nmcheck.gnome.org") "action" "route" "server" "lan")
+          (dict "query_type" (list "PTR") "action" "route" "server" "lan"))
+        "final" "remote" -}}
+{{-   $resolver = "lan" -}}
 {{- end -}}
 {{- $config := dict
       "log" (dict "level" "info" "timestamp" true)
-      "dns" (dict "servers" (list (dict "type" "local" "tag" "local")))
+      "dns" $dns
       "inbounds" $inbounds
       "outbounds" $outbounds
       "route" (dict
         "rules" $rules
         "final" "Egress"
-        "default_domain_resolver" "local"
+        "default_domain_resolver" $resolver
         "auto_detect_interface" true)
       "experimental" (dict
         "cache_file" (dict "enabled" true)
