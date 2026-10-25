@@ -23,10 +23,10 @@ singBox:
   # ~/.local/state/sing-box/ui on Linux): delete it and restart sing-box to
   # pick up a new release.
   webUiUrl: https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip
-  # Destinations pinned to mesh exits whatever `Egress` says. `exits` is in
-  # priority order: the first live one starts, a failure moves on, and a member
-  # more than 20 ms faster wins back (an exit that is this machine itself means
-  # direct). Match by domain (sniffed SNI/Host) and by address, so rsync/FTP to
+  # Destinations pinned to mesh exits whatever `Egress` says, through a
+  # selector picked by hand in the panel: `exits` in order (the first is the
+  # default; an exit that is this machine itself means direct), then each
+  # through the bastion. Match by domain (sniffed SNI/Host) and by address, so rsync/FTP to
   # a mirror match too.
   # Remote rule-sets: SagerNet/sing-geosite builds of v2fly's community domain
   # lists; {tag} is the rule-set name. sing-box fetches and caches them.

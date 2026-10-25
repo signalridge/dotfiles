@@ -127,15 +127,14 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   Clash API and zashboard panel at
   `http://127.0.0.1:9090/ui` (secret: `gopass show -o sing-box/clash-api-secret`).
   `singBox.exitRoutes` pins destinations to mesh exits whatever `Egress` says:
-  one `urltest` group per entry, matched by sniffed domain or by address (so
-  rsync/FTP match too). Members are in priority order: the first live one
-  starts, a failure moves to the next, and a 20 ms tolerance ignores jitter
-  between near-equal members yet hands back from a chained fallback once the
-  mesh link is direct again (the detour is only ~30-35 ms slower, so a larger
-  tolerance left JAIST on it after every restart). The machine's own exit means `Direct`, and switches never
-  cut existing connections. The same exits chained
-  through the bastion follow as fallbacks, so the route holds where the mesh is
-  blocked. Today the `jaist` route covers `jaist.ac.jp`, the JAIST address
+  one `selector` per entry, picked by hand in the panel (remembered across
+  restarts), matched by sniffed domain or by address (so rsync/FTP match
+  too). The first exit is the default and the machine's own exit means
+  `Direct`; the same exits chained through the bastion follow, for networks
+  that block the mesh. It is not a `urltest`: the bastion detour is only
+  ~30-35 ms slower than the mesh link, so latency kept picking it, and
+  sing-box has no priority fallback group. When p2p fails EasyTier itself
+  relays through the bastion. Switching never cuts existing connections. Today the `jaist` route covers `jaist.ac.jp`, the JAIST address
   ranges and the academic publishers/databases of the community rule-set
   `geosite-category-scholar-!cn` (IEEE, ACM, Springer, Elsevier, Wiley, Nature,
   JSTOR, Scopus, J-STAGE, CiNii and their CDNs; `!cn` = outside China), so
