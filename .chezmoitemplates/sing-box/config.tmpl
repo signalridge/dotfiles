@@ -29,9 +29,13 @@
 {{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Exit" "default" "direct" "outbounds" $tags) -}}
 {{- $inbounds := list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" false) -}}
 {{- if dig "tun" false . -}}
+{{- /* The TUN's IPv4 /30 must stay outside tunExcludeAddress: excluding it
+       (172.16.0.0/12 once held 172.19.0.1/30) routes the stack's own peer
+       address to en0 and breaks every IPv4 TCP connection. 198.18.0.0/15 is
+       the RFC 2544 benchmark range, unused on real networks. */ -}}
 {{-   $inbounds = append $inbounds (dict
         "type" "tun" "tag" "tun-in"
-        "address" (list "172.19.0.1/30" "fdfe:dcba:9876::1/126")
+        "address" (list "198.18.0.1/30" "fdfe:dcba:9876::1/126")
         "auto_route" true
         "strict_route" false
         "dns_mode" "disabled"
