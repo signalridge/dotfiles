@@ -33,6 +33,12 @@
       url = "github:homebrew/homebrew-bundle";
       flake = false;
     };
+    # sing-box with the F5 SAML patches (signalridge/sing-box-patches),
+    # built from source; bump with `nix flake update signalridge-nur`.
+    signalridge-nur = {
+      url = "github:signalridge/nur-packages";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 {{- end }}
   };
 
@@ -49,6 +55,7 @@
       homebrew-core,
       homebrew-cask,
       homebrew-bundle,
+      signalridge-nur,
 {{- end }}
       ...
     }:

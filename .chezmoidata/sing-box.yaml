@@ -23,8 +23,8 @@ singBox:
   # work machines. No credentials here: openconnect-login completes the browser
   # single sign-on through the API at run time. `routes` names the exitRoutes
   # that offer the VPN as a hand-picked option. vpn.jaist.ac.jp is F5 BIG-IP
-  # behind JAIST-SSO (SAML), which needs the signalridge/sing-box-patches build
-  # (nix-config/modules/sing-box-package.nix).
+  # behind JAIST-SSO (SAML), which needs the patched sing-box
+  # (signalridge-nur input, nix-config/flake.nix).
   openconnect:
     - tag: JAIST VPN
       server: vpn.jaist.ac.jp

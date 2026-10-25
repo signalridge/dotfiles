@@ -1,6 +1,6 @@
 {{- $mode := includeTemplate "sing-box/mode.tmpl" . -}}
 # ─────────────────────────────────────────────────────────────────────────────
-# sing-box (patched release, ./sing-box-package.nix)
+# sing-box (signalridge-nur flake input: upstream + F5 SAML patches)
 # ─────────────────────────────────────────────────────────────────────────────
 # Every Mac (mode "system", .chezmoitemplates/sing-box/mode.tmpl) runs it here
 # as a root LaunchDaemon with a TUN, like a Tailscale exit node: every app's
@@ -21,9 +21,9 @@
 # bastion, which reach it over the internet), and restarts sing-box whenever
 # that utun changes. The same loop keeps the exit routes (jaist) on their
 # first live mesh exit, else Egress.
-{ pkgs, ... }:
+{ pkgs, signalridge-nur, ... }:
 let
-  sing-box = import ./sing-box-package.nix { inherit pkgs; };
+  sing-box = signalridge-nur.packages.${pkgs.stdenv.hostPlatform.system}.sing-box;
 {{- if eq $mode "system" }}
   configFile = "/etc/sing-box/config.json";
   runDir = "/var/run/sing-box";

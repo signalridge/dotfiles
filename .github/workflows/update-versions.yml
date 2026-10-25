@@ -100,16 +100,6 @@ jobs:
           easytier_darwin_arm64_sha256=$(release_asset_digest_sha256 EasyTier/EasyTier "$easytier_tag" "easytier-macos-aarch64-${easytier_tag}.zip")
           easytier_linux_amd64_sha256=$(release_asset_digest_sha256 EasyTier/EasyTier "$easytier_tag" "easytier-linux-x86_64-${easytier_tag}.zip")
           easytier_linux_arm64_sha256=$(release_asset_digest_sha256 EasyTier/EasyTier "$easytier_tag" "easytier-linux-aarch64-${easytier_tag}.zip")
-          # sing-box (patched build) tag format: vX.Y.Z-pN -> X.Y.Z and pN
-          sing_box_tag=$(gh release view --repo signalridge/sing-box-patches --json tagName -q '.tagName')
-          if [[ ! "$sing_box_tag" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-(p[0-9]+)$ ]]; then
-            echo "unexpected sing-box-patches tag: $sing_box_tag" >&2
-            exit 1
-          fi
-          sing_box=${BASH_REMATCH[1]}
-          sing_box_patch=${BASH_REMATCH[2]}
-          sing_box_darwin_amd64_sha256=$(release_asset_digest_sha256 signalridge/sing-box-patches "$sing_box_tag" "sing-box-${sing_box}-darwin-amd64.tar.gz")
-          sing_box_darwin_arm64_sha256=$(release_asset_digest_sha256 signalridge/sing-box-patches "$sing_box_tag" "sing-box-${sing_box}-darwin-arm64.tar.gz")
 
           cursor_installer=$(curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors https://cursor.com/install)
           cursor_agent_version=$(
@@ -194,10 +184,6 @@ jobs:
             echo "easytier_darwin_arm64_sha256=$easytier_darwin_arm64_sha256"
             echo "easytier_linux_amd64_sha256=$easytier_linux_amd64_sha256"
             echo "easytier_linux_arm64_sha256=$easytier_linux_arm64_sha256"
-            echo "sing_box=$sing_box"
-            echo "sing_box_patch=$sing_box_patch"
-            echo "sing_box_darwin_amd64_sha256=$sing_box_darwin_amd64_sha256"
-            echo "sing_box_darwin_arm64_sha256=$sing_box_darwin_arm64_sha256"
             echo "cursor_agent_version=$cursor_agent_version"
             echo "cursor_agent_darwin_arm64_sha256=$cursor_agent_darwin_arm64_sha256"
             echo "cursor_agent_darwin_x64_sha256=$cursor_agent_darwin_x64_sha256"
@@ -262,10 +248,6 @@ jobs:
           U_EASYTIER_DARWIN_ARM64_SHA256: ${{ steps.versions.outputs.easytier_darwin_arm64_sha256 }}
           U_EASYTIER_LINUX_AMD64_SHA256: ${{ steps.versions.outputs.easytier_linux_amd64_sha256 }}
           U_EASYTIER_LINUX_ARM64_SHA256: ${{ steps.versions.outputs.easytier_linux_arm64_sha256 }}
-          U_SING_BOX: ${{ steps.versions.outputs.sing_box }}
-          U_SING_BOX_PATCH: ${{ steps.versions.outputs.sing_box_patch }}
-          U_SING_BOX_DARWIN_AMD64_SHA256: ${{ steps.versions.outputs.sing_box_darwin_amd64_sha256 }}
-          U_SING_BOX_DARWIN_ARM64_SHA256: ${{ steps.versions.outputs.sing_box_darwin_arm64_sha256 }}
           U_CURSOR_AGENT_VERSION: ${{ steps.versions.outputs.cursor_agent_version }}
           U_CURSOR_AGENT_DARWIN_ARM64_SHA256: ${{ steps.versions.outputs.cursor_agent_darwin_arm64_sha256 }}
           U_CURSOR_AGENT_DARWIN_X64_SHA256: ${{ steps.versions.outputs.cursor_agent_darwin_x64_sha256 }}

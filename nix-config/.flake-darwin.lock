@@ -326,7 +326,28 @@
         "mac-app-util": "mac-app-util",
         "nix-darwin": "nix-darwin",
         "nix-homebrew": "nix-homebrew",
-        "nixpkgs": "nixpkgs_4"
+        "nixpkgs": "nixpkgs_4",
+        "signalridge-nur": "signalridge-nur"
+      }
+    },
+    "signalridge-nur": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792948674,
+        "narHash": "sha256-NKKCWBhC28O4mDgxa0qAO5qyel3FwaCJKQfp8uCRvLY=",
+        "owner": "signalridge",
+        "repo": "nur-packages",
+        "rev": "58e0a306dfc71870ae6a3e05a9a04922c0b90ce1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "signalridge",
+        "repo": "nur-packages",
+        "type": "github"
       }
     },
     "systems": {

@@ -113,9 +113,9 @@ Not used: kcptun (upstream repository gone in 2026), udp2raw and ptunnel-ng
 
 ## sing-box (every machine)
 
-Every machine has sing-box (macOS: nix package from the
-signalridge/sing-box-patches release, see "OpenConnect VPN" below,
-`nix-config/modules/sing-box{,-package}.nix.tmpl`; Linux: aqua, upstream). How it runs is
+Every machine has sing-box (macOS: the patched nix package from the
+`signalridge-nur` flake input, see "OpenConnect VPN" below,
+`nix-config/modules/sing-box.nix.tmpl`; Linux: aqua, upstream). How it runs is
 decided by `.chezmoitemplates/sing-box/mode.tmpl`, and all variants share one
 config template, `.chezmoitemplates/sing-box/config.tmpl`:
 
@@ -227,9 +227,10 @@ F5 BIG-IP (`vpn.jaist.ac.jp`, `flavor: f5`, JAIST-SSO behind it). Upstream
 `sing-openconnect` only knows F5's native logon form and stops at `unexpected
 first F5 HTML form ID` on the SAML page, so Macs run the
 [signalridge/sing-box-patches](https://github.com/signalridge/sing-box-patches)
-build (`nix-config/modules/sing-box-package.nix`, tag
-`v<singBox>-<singBoxPatch>` in `.chezmoidata/versions.yaml`, bumped by the
-update-versions workflow), which turns that page into a browser challenge.
+build, which turns that page into a browser challenge. It comes from the
+`signalridge-nur` flake input (signalridge/nur-packages, built from source,
+pinned in `nix-config/.flake-darwin.lock`; bump with
+`nix flake update signalridge-nur`).
 
 The config holds no credentials and sing-box never restarts for a login. An
 endpoint sits in `auth-pending` until `openconnect-login [ENDPOINT]`
