@@ -1,0 +1,15 @@
+{{- /* EasyTier role of this machine, as JSON (never keyed by hostname):
+       every Mac joins as a client with a DHCP-assigned virtual IP; a Linux
+       machine joins only as an exit, when its own chezmoi config data sets
+       `easytierExit` to a name in .easytier.exits (the exit's fixed IP, which
+       clients point at). Everything else: member=false. */ -}}
+{{- $role := dict "member" false "exit" "" "ip" "" -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{-   $role = dict "member" true "exit" "" "ip" "" -}}
+{{- else if and (eq .chezmoi.os "linux") (hasKey . "easytierExit") -}}
+{{-   if not (hasKey .easytier.exits .easytierExit) -}}
+{{-     fail (printf "easytierExit %q is not in .chezmoidata/easytier.yaml exits" .easytierExit) -}}
+{{-   end -}}
+{{-   $role = dict "member" true "exit" .easytierExit "ip" (index .easytier.exits .easytierExit) -}}
+{{- end -}}
+{{- $role | toJson -}}

@@ -1,6 +1,6 @@
-{{- $node := dig "nodes" .hostname "" .easytier -}}
-{{- if and (eq .chezmoi.os "linux") $node (dig "exitNode" false $node) -}}
-{{- $ip := index (splitList "/" $node.ipv4) 0 -}}
+{{- $et := includeTemplate "easytier/role.tmpl" . | fromJson -}}
+{{- if and $et.exit -}}
+{{- $ip := $et.ip -}}
 {
   "server": "{{ $ip }}",
   "server_port": {{ .easytier.exitProxy.port }},

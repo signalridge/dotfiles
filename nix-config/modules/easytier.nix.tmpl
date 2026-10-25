@@ -1,12 +1,13 @@
-{{- $node := dig "nodes" .hostname "" .easytier -}}
-{{- if not $node -}}
-# EasyTier: {{ .hostname }} is not listed in .chezmoidata/easytier.yaml nodes.
+{{- $et := includeTemplate "easytier/role.tmpl" . | fromJson -}}
+{{- if not $et.member -}}
+# EasyTier: not a member (see .chezmoitemplates/easytier/role.tmpl).
 _: { }
 {{- else -}}
 # ─────────────────────────────────────────────────────────────────────────────
 # EasyTier node (root LaunchDaemon; TUN needs root on macOS)
 # ─────────────────────────────────────────────────────────────────────────────
-# Node/network parameters come from .chezmoidata/easytier.yaml; the package
+# Every Mac is a client with a DHCP-assigned virtual IP; network parameters
+# come from .chezmoidata/easytier.yaml; the package
 # (official release zip, NOT nixpkgs) from ./easytier-package.nix. The store
 # path is immutable and root-owned, so the root daemon executes it in place and
 # easytier-cli on PATH is always the same build as the daemon.
@@ -37,7 +38,7 @@ in
 
       exec ${easytier}/bin/easytier-core \
         --hostname {{ .hostname }} \
-        --ipv4 {{ $node.ipv4 }} \
+        --dhcp true \
         --peers{{ range .easytier.peers }} {{ . }}{{ end }} \
         --listeners{{ range .easytier.listeners }} {{ . }}{{ end }} \
         --stun-servers{{ range .easytier.stunServers }} {{ . }}{{ end }} \

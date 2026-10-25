@@ -1,5 +1,5 @@
-{{- $node := dig "nodes" .hostname "" .easytier -}}
-{{- if and (eq .chezmoi.os "linux") $node (dig "exitNode" false $node) -}}
+{{- $et := includeTemplate "easytier/role.tmpl" . | fromJson -}}
+{{- if and $et.exit -}}
 # shadowsocks-rust server ACL for the EasyTier exit on {{ .hostname }}.
 # Clients: reject everyone except the mesh. Linux accepts packets for a local
 # address on any interface, so without this a same-LAN host could route the

@@ -1,6 +1,6 @@
-{{- $node := dig "nodes" .hostname "" .easytier -}}
+{{- $et := includeTemplate "easytier/role.tmpl" . | fromJson -}}
 {{- $keyFile := joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/easytier/exit-ss-password.age" -}}
-{{- if and (eq .chezmoi.os "linux") $node (dig "exitNode" false $node) (stat $keyFile) -}}
+{{- if and $et.exit (stat $keyFile) -}}
 {{- $key := output "gopass" "show" "-o" "easytier/exit-ss-password" | trim -}}
 {{- if not $key }}{{ fail "missing gopass key: easytier/exit-ss-password" }}{{ end -}}
 # Shadowsocks 2022 key (base64, 32 bytes) for ss-exit.service, from gopass

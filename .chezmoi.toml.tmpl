@@ -205,6 +205,10 @@ timezone = {{ $timezone | quote }}
 gopassRepository = {{ $gopassRepository | quote }}
 keysRepository = {{ $keysRepository | quote }}
 jjSigningKey = {{ $jjSigningKey | quote }}
+{{- if hasKey . "easytierExit" }}
+# EasyTier exit role (.chezmoidata/easytier.yaml exits); set by hand, never prompted.
+easytierExit = {{ .easytierExit | quote }}
+{{- end }}
 
 [edit]
 command = "code"

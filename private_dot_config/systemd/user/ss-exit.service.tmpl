@@ -1,11 +1,11 @@
-{{- $node := dig "nodes" .hostname "" .easytier -}}
-{{- if and (eq .chezmoi.os "linux") $node (dig "exitNode" false $node) -}}
-{{- $ip := index (splitList "/" $node.ipv4) 0 -}}
+{{- $et := includeTemplate "easytier/role.tmpl" . | fromJson -}}
+{{- if and $et.exit -}}
+{{- $ip := $et.ip -}}
 # EasyTier exit for other mesh members: shadowsocks-rust (Shadowsocks 2022, TCP +
 # UDP) on this node's virtual IP only; client and destination ACL in
 # ~/.config/ss-exit/acl.list, key in ~/.config/ss-exit/env (from gopass).
 # Clients select it in Surge / sing-box. Loaded by run_onchange_after_19.
-# Rendered only for Linux hosts with `exitNode: true` in .chezmoidata/easytier.yaml.
+# Rendered only on Linux exits (`easytierExit` in the chezmoi data).
 [Unit]
 Description=EasyTier exit (Shadowsocks 2022 on {{ $ip }}:{{ .easytier.exitProxy.port }})
 After=network-online.target
