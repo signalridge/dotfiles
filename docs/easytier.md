@@ -75,10 +75,10 @@ gost was removed from aqua. Its features map to these tools when needed:
 | L3 tunnel (TUN)                      | EasyTier, Tailscale                                                                 |
 | TCP/UDP port forwarding (any target) | sing-box `direct` inbound with an override target; `socat`                          |
 | KCP transport                        | EasyTier `--enable-kcp-proxy` / `--enable-quic-proxy` (on); Hysteria2 for lossy WAN |
-| fake-TCP (UDP disguised as TCP)      | EasyTier `faketcp://` listener (experimental); `nix run nixpkgs#phantun` (Linux)    |
-| ICMP tunnel                          | `nix run nixpkgs#pingtunnel`                                                        |
+| fake-TCP (UDP disguised as TCP)      | EasyTier `faketcp://` listener (experimental); `phantun` (Linux)                    |
+| ICMP tunnel                          | `pingtunnel`                                                                        |
 | WebSocket / TLS / QUIC camouflage    | sing-box, Xray (Reality), Hysteria2, bastion v2ray + Caddy; `wstunnel`              |
-| DNS forwarder                        | sing-box `dns`; `nix run nixpkgs#dnsproxy`                                          |
+| DNS forwarder                        | sing-box `dns`; `dnsproxy`                                                          |
 | Rate limiting                        | `tc` (Linux), `pf` (macOS)                                                          |
 | Per-connection logs                  | sing-box connections API, Surge Dashboard, `ssserver -v`                            |
 | Prometheus metrics                   | node_exporter (host level)                                                          |
