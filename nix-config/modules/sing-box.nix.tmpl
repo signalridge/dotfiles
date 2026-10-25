@@ -19,7 +19,8 @@
 # is assigned dynamically), injects it as bind_interface into the exit
 # outbounds that dial the mesh themselves (not the ones chained through the
 # bastion, which reach it over the internet), and restarts sing-box whenever
-# that utun changes.
+# that utun changes. The same loop keeps the exit routes (jaist) on their
+# first live mesh exit, else Egress.
 { pkgs, ... }:
 let
   sing-box = import ./sing-box-package.nix { inherit pkgs; };
@@ -32,6 +33,7 @@ let
   # (.chezmoitemplates/sing-box/config.tmpl, dns_mode native).
   tunDns = "198.18.0.2";
   dnsBackup = "/var/lib/sing-box/system-dns.tsv";
+  jq = "${pkgs.jq}/bin/jq";
 {{- end }}
 in
 {
@@ -104,6 +106,36 @@ in
       dns_ok() {
         /usr/bin/dig +time=2 +tries=1 +short @"${tunDns}" captive.apple.com A 2>/dev/null | /usr/bin/grep -q .
       }
+      # Exit routes (selectors listing Egress, .chezmoitemplates/sing-box/config.tmpl):
+      # the members before Egress are mesh exits in priority order. Keep each
+      # route on the first that answers a delay test through the Clash API,
+      # else Egress; one set by hand to a bastion chain is left alone. The
+      # bearer secret goes to curl from a 0600 file, never on its command line.
+      api="http://$(${jq} -r '.experimental.clash_api.external_controller' "${configFile}")"
+      ${jq} -r '"Authorization: Bearer " + .experimental.clash_api.secret' "${configFile}" >"${runDir}/api-header"
+      routes="$(${jq} -c '.outbounds[] | select(.type == "selector" and .tag != "Egress" and (.outbounds | index("Egress")))
+        | {tag, auto: .outbounds[:(.outbounds | index("Egress"))]}' "${configFile}")"
+      probe="$(${jq} -rn '"https://www.gstatic.com/generate_204" | @uri')"
+      uri() { ${jq} -rn --arg s "$1" '$s | @uri'; }
+      api() { /usr/bin/curl -sf --max-time 5 -H @"${runDir}/api-header" "$@"; }
+      exit_failover() {
+        printf '%s\n' "$routes" | while IFS= read -r route; do
+          [ -n "$route" ] || continue
+          tag="$(printf '%s' "$route" | ${jq} -r .tag)"
+          now="$(api "$api/proxies/$(uri "$tag")" | ${jq} -r .now)" || continue
+          printf '%s' "$route" | ${jq} -e --arg n "$now" '.auto + ["Egress"] | index($n)' >/dev/null || continue
+          want=Egress
+          for member in $(printf '%s' "$route" | ${jq} -r '.auto[]'); do
+            if api "$api/proxies/$(uri "$member")/delay?url=$probe&timeout=3000" >/dev/null; then
+              want="$member"
+              break
+            fi
+          done
+          [ "$want" = "$now" ] && continue
+          api -X PUT -H 'Content-Type: application/json' -d "$(${jq} -cn --arg n "$want" '{name: $n}')" \
+            "$api/proxies/$(uri "$tag")" && echo "sing-box: $tag: $now -> $want" >&2
+        done
+      }
       dns_restore
 
       ${sing-box}/bin/sing-box run -c "${runDir}/config.json" -D /var/lib/sing-box &
@@ -130,6 +162,7 @@ in
           misses=$((misses + 1))
           [ "$misses" -ge 2 ] && [ -f "${dnsBackup}" ] && dns_restore
         fi
+        exit_failover || true
       done
       dns_restore
       wait "$pid"
