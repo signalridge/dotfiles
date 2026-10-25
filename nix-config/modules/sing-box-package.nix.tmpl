@@ -1,0 +1,32 @@
+{{- $arch := "amd64" -}}
+{{- $sha256 := .versions.singBoxDarwinAmd64Sha256 -}}
+{{- if eq .chezmoi.arch "arm64" -}}
+{{-   $arch = "arm64" -}}
+{{-   $sha256 = .versions.singBoxDarwinArm64Sha256 -}}
+{{- end -}}
+# sing-box from the official release tarball (macOS), used by ./sing-box.nix
+# for the CLI on every Mac and the work Mac's root daemon. Version and digests:
+# .chezmoidata/versions.yaml, bumped by the update-versions workflow from
+# GitHub's release-asset digests (upstream ships no checksum file).
+{ pkgs }:
+let
+  version = "{{ .versions.singBox }}";
+in
+pkgs.stdenvNoCC.mkDerivation {
+  pname = "sing-box";
+  inherit version;
+  src = pkgs.fetchurl {
+    url = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-darwin-{{ $arch }}.tar.gz";
+    sha256 = "{{ $sha256 }}";
+  };
+  sourceRoot = "sing-box-${version}-darwin-{{ $arch }}";
+  # Upstream binary untouched (ad-hoc signed; stripping would break it).
+  dontConfigure = true;
+  dontBuild = true;
+  dontFixup = true;
+  installPhase = ''
+    runHook preInstall
+    install -Dm755 sing-box "$out/bin/sing-box"
+    runHook postInstall
+  '';
+}

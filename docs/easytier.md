@@ -1,18 +1,23 @@
 # EasyTier mesh
 
 A private EasyTier network evaluated alongside Tailscale. All nodes share one
-network name/secret. Hosts listed under `easytier.nodes` in
-`.chezmoidata/easytier.yaml` are managed by this repository (macOS via a
-nix-darwin LaunchDaemon, Linux via a systemd unit; both run the official
-release binaries from `/nix/store`); the bastion relay and the NAS are
-deployed by hand and recorded here so the whole mesh can be rebuilt.
+network name/secret. Membership is by role, never by hostname
+(`.chezmoitemplates/easytier/role.tmpl`): **every Mac** joins as a client with a
+DHCP-assigned virtual IP (nix-darwin LaunchDaemon), and a **Linux machine**
+joins only as an exit when its own `~/.config/chezmoi/chezmoi.toml` `[data]`
+sets `easytierExit = "<name>"` (a key of `easytier.exits`, which holds the
+fixed IPs clients point at). Both run the official release binaries from
+`/nix/store`. The bastion relay and the NAS are deployed by hand and recorded
+here so the whole mesh can be rebuilt. This repository is public: the bastion
+address lives in gopass `easytier/bastion-host`, and public IPs appear here only
+as placeholders.
 
 | Node       | Role                               | Virtual IP      | Deployed by                                    |
 | ---------- | ---------------------------------- | --------------- | ---------------------------------------------- |
 | bastion    | discovery + fallback relay, no TUN | —               | systemd unit (below), `<bastion-ip>:11010`     |
 | nas        | member                             | 10.144.144.2/24 | Docker Compose on DSM (below)                  |
-| summit     | member                             | 10.144.144.1/24 | this repo: nix-darwin LaunchDaemon (see below) |
-| gpuserver1 | member                             | 10.144.144.3/24 | this repo: systemd unit (see below)            |
+| every Mac  | client                             | DHCP (in /24)   | this repo: nix-darwin LaunchDaemon (see below) |
+| gpuserver1 | member, exit `gpuserver`           | 10.144.144.3/24 | this repo: systemd unit (see below)            |
 
 All nodes run v2.6.4 (`easytier-core 2.6.4-8428a89d`); the binaries are
 byte-identical to the official GitHub release assets (bastion zip, NAS image
@@ -41,41 +46,68 @@ NIC — and refuses loopback, private and overlay destinations. `config.json`
 holds `${SS_PASSWORD}`; the key (gopass `easytier/exit-ss-password`) lives in a
 separate 0600 env file.
 
-| Exit       | Address             | Deployed by                                                                                                    |
-| ---------- | ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| gpuserver1 | `10.144.144.3:1080` | this repo: `exitNode: true` → systemd --user `ss-exit.service`, `~/.config/ss-exit/{config.json,acl.list,env}` |
-| nas        | `10.144.144.2:1080` | container `ss-exit` in the NAS compose below; `ss-exit.{json,acl,env}` (0600, env written from gopass)         |
+| Exit       | Address             | Deployed by                                                                                                  |
+| ---------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| gpuserver1 | `10.144.144.3:1080` | this repo: `easytierExit` → systemd --user `ss-exit.service`, `~/.config/ss-exit/{config.json,acl.list,env}` |
+| nas        | `10.144.144.2:1080` | container `ss-exit` in the NAS compose below; `ss-exit.{json,acl,env}` (0600, env written from gopass)       |
 
 - Clients: Surge on the home Mac (`ss` proxies `gpuserver`, `nas`,
   `encrypt-method=2022-blake3-aes-256-gcm`, `udp-relay=true`; group
   `Exit = select, DIRECT, …`; mesh/LAN/peer CIDRs `DIRECT`, then `FINAL,Exit`);
-  sing-box `selector` elsewhere.
+  sing-box on work Macs (see "Work Mac" below).
 - Not used, and why: EasyTier's `--socks5` takes only a port and listens on all
   interfaces without authentication; gost's Shadowsocks UDP (`ssu`) rejects
   Shadowsocks 2022 UDP from Surge (`cipher: message authentication failed`).
-- Exit roles are declared per node (`exitNode: true`, `externalExitNodes`),
-  never inferred from `headless`: an exit relays other machines' traffic from
-  its own IP.
+- Exit roles are set per machine (`easytierExit` in its local chezmoi data;
+  the NAS is listed in `exits` but deployed by hand), never inferred from
+  `headless`: an exit relays other machines' traffic from its own IP.
 
 ### gost features and their replacements
 
 gost was removed from aqua. Its features map to these tools when needed:
 
-| gost feature                         | Use instead                                                                          |
-| ------------------------------------ | ------------------------------------------------------------------------------------ |
-| Shadowsocks / proxy server           | shadowsocks-rust `ssserver`; sing-box `socks`/`http`/`mixed` inbounds                |
-| Local protocol conversion            | Surge, sing-box, `sslocal`                                                           |
-| Multi-hop chains with node selection | sing-box `detour` + `selector`/`urltest`; Surge `underlying-proxy`                   |
-| Reverse tunnels / NAT traversal      | EasyTier, Tailscale; frp or rathole for hostname-based ingress                       |
-| L3 tunnel (TUN)                      | EasyTier, Tailscale                                                                  |
-| TCP/UDP port forwarding (any target) | sing-box `direct` inbound with an override target; `socat` (`nix run nixpkgs#socat`) |
-| KCP / fake-TCP / ICMP transports     | kcptun / udp2raw or phantun / ptunnel-ng                                             |
-| WebSocket / TLS / QUIC camouflage    | sing-box, Xray, bastion v2ray + Caddy                                                |
-| Rate limiting                        | `tc` (Linux), `pf` (macOS)                                                           |
-| Per-connection logs                  | sing-box connections API, Surge Dashboard, `ssserver -v`                             |
-| Prometheus metrics                   | node_exporter (host level)                                                           |
+| gost feature                         | Use instead                                                                            |
+| ------------------------------------ | -------------------------------------------------------------------------------------- |
+| Shadowsocks / proxy server           | shadowsocks-rust `ssserver`; sing-box `socks`/`http`/`mixed` inbounds                  |
+| Local protocol conversion            | Surge, sing-box, `sslocal`                                                             |
+| Multi-hop chains with node selection | sing-box `detour` + `selector`/`urltest`; Surge `underlying-proxy`                     |
+| Reverse tunnels / NAT traversal      | EasyTier, Tailscale; frp or rathole for hostname-based ingress                         |
+| L3 tunnel (TUN)                      | EasyTier, Tailscale                                                                    |
+| TCP/UDP port forwarding (any target) | sing-box `direct` inbound with an override target; `socat` (`nix run nixpkgs#socat`)   |
+| KCP transport                        | EasyTier `--enable-kcp-proxy` / `--enable-quic-proxy` (on); Hysteria2 for lossy WAN    |
+| fake-TCP (UDP disguised as TCP)      | EasyTier `faketcp://` listener (experimental); `nix run nixpkgs#phantun` (Linux)       |
+| ICMP tunnel                          | `nix run nixpkgs#pingtunnel`                                                           |
+| WebSocket / TLS / QUIC camouflage    | sing-box, Xray (Reality), Hysteria2, bastion v2ray + Caddy; `nix run nixpkgs#wstunnel` |
+| DNS forwarder                        | sing-box `dns`; `nix run nixpkgs#dnsproxy`                                             |
+| Rate limiting                        | `tc` (Linux), `pf` (macOS)                                                             |
+| Per-connection logs                  | sing-box connections API, Surge Dashboard, `ssserver -v`                               |
+| Prometheus metrics                   | node_exporter (host level)                                                             |
 
 Ad hoc, gost itself is still one command away: `nix run nixpkgs#gost`.
+
+Not used: kcptun (upstream repository gone in 2026), udp2raw and ptunnel-ng
+(unmaintained, no macOS builds), rathole (no release since 2023).
+
+## Work Mac (sing-box)
+
+Work Macs (`work = true`) have no Surge; they get the same EasyTier client plus
+**sing-box** as a root LaunchDaemon (`nix-config/modules/sing-box.nix.tmpl`,
+official release via `sing-box-package.nix.tmpl`; macOS sets the system proxy
+only as root). Every Mac also gets the `sing-box` CLI; Linux gets it via aqua.
+
+- Config: `.chezmoiscripts/run_after_25_sing-box.sh.tmpl` builds it with jq
+  from `.chezmoidata/{sing-box,easytier}.yaml` plus gopass
+  `easytier/exit-ss-password` and `sing-box/clash-api-secret`, runs
+  `sing-box check`, and writes `/etc/sing-box/config.json` (root:wheel 0600).
+- Inbound: mixed SOCKS5/HTTP on `127.0.0.1:7890`, set as the system proxy while
+  the daemon runs. Routing: private/overlay destinations direct, everything else
+  via selector `Exit` (`direct` default, `gpuserver`, `nas`; the choice
+  persists in `/var/lib/sing-box/cache.db`).
+- Switch exits in the web panel `http://127.0.0.1:9090/ui` (metacubexd; secret
+  `gopass show -o sing-box/clash-api-secret`) or by API:
+  `curl -X PUT -H "Authorization: Bearer $secret" -d '{"name":"nas"}' http://127.0.0.1:9090/proxies/Exit`.
+- Apply: `chezmoi apply ~/.chezmoiscripts/02_init.sh ~/.chezmoiscripts/24_easytier-node.sh ~/.chezmoiscripts/25_sing-box.sh`.
+  Logs: `/var/log/sing-box.log`.
 
 ## Credentials
 
@@ -104,8 +136,9 @@ chezmoi apply ~/.chezmoiscripts/24_easytier-node.sh   # each repo-managed node (
 
 ## Mac (this repo)
 
-- `.chezmoidata/easytier.yaml` — peers, STUN servers, and `nodes`: only hosts
-  listed there get the daemon; every other machine renders an empty module.
+- `.chezmoidata/easytier.yaml` — bastion ports, listeners and `exits`; every
+  Mac gets the daemon (`--dhcp true`), no per-host entry needed. Without gopass
+  `easytier/bastion-host` (fresh machine, CI) the module renders empty.
 - `.chezmoidata/versions.yaml` — `easytier` + macOS zip digests, bumped by the
   `update-versions` workflow (stable releases only).
 - `nix-config/modules/easytier.nix.tmpl` — packages the official zip (not the
@@ -306,7 +339,9 @@ Status: `sudo docker exec easytier easytier-cli peer`.
 
 ## Removal
 
-- Mac: delete `summit` from `easytier.nodes` (the module becomes empty), then
+- Macs: all Macs are members, so removal is repo-wide: drop
+  `./modules/easytier.nix` from the flake (or the gopass `easytier/bastion-host`
+  entry on one machine to opt just that Mac out), then
   `chezmoi apply ~/.chezmoiscripts/02_init.sh`; `sudo rm -rf /etc/easytier`;
   `rm ~/.local/state/chezmoi/easytier-env.sha256`. To remove it from the repo
   entirely, revert the EasyTier commits (data, module, versions, script, docs).
@@ -318,7 +353,7 @@ Status: `sudo docker exec easytier easytier-cli peer`.
 - NAS: `cd /volume1/docker/easytier && sudo docker compose down`,
   `sudo docker image rm easytier/easytier:v2.6.4 ghcr.io/shadowsocks/ssserver-rust:v1.25.0`, delete the directory.
 - Exits: on gpuserver1 run `systemctl --user disable --now ss-exit` and drop
-  `exitNode: true` (the unit and `~/.config/ss-exit` then stop rendering; delete
+  `easytierExit` from its chezmoi.toml (the unit and `~/.config/ss-exit` then stop rendering; delete
   them); remove the `gpuserver`/`nas` proxies and the `Exit` group
   from Surge; `gopass rm easytier/exit-ss-password`.
 - gopass: `gopass rm -r easytier`.

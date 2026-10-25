@@ -20,6 +20,9 @@ versions:
   easytierDarwinArm64Sha256: 4be1882d1aa36d31c1d6ba0596f2cf8a097e371f8da124212324b2e0f8df7e4b
   easytierLinuxAmd64Sha256: 61b659eaedba658fa66fe47d17e1426cdd77e5d02fa15fed447bb4357c09dfd6
   easytierLinuxArm64Sha256: f533ec25a7ea714e09f645615012200278058525795cc3bb690ff011aec1a70f
+  singBox: 1.14.3
+  singBoxDarwinAmd64Sha256: 6d002b74d03b478547349cc10af89e007868596e5aa931816d45da9f544715a9
+  singBoxDarwinArm64Sha256: 0360ce634a04c26a6b4fd957517987bb4f6c8950f63435ce3c5af2fcae5860c5
   azureFunctionsVersion: 4.12.0
   azureFunctionsBuildId: "281211"
   azureFunctionsOsxArm64Sha256: 85786c1ffc3a60073a5379f3a18986dbf9397830e0af8fbc59f73cdb7b20473e

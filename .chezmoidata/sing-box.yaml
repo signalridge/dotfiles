@@ -1,0 +1,8 @@
+# sing-box client on work Macs (nix-config/modules/sing-box.nix,
+# .chezmoiscripts/run_after_25_sing-box.sh.tmpl). Exits come from
+# .chezmoidata/easytier.yaml; secrets from gopass.
+singBox:
+  mixedPort: 7890 # SOCKS5 + HTTP on 127.0.0.1, set as the system proxy
+  clashApiPort: 9090 # web panel at http://127.0.0.1:9090/ui
+  # metacubexd (Clash API web UI), fetched by sing-box on first start.
+  webUiUrl: https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip

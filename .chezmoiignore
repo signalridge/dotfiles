@@ -48,6 +48,8 @@ nix-config/modules/system.nix
 nix-config/modules/apps.nix
 nix-config/modules/host-users.nix
 nix-config/modules/easytier.nix
+nix-config/modules/sing-box.nix
+nix-config/modules/sing-box-package.nix
 
 # macOS-specific scripts (target paths)
 .chezmoiscripts/02_init.sh

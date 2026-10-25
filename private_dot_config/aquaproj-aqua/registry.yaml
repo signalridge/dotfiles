@@ -212,6 +212,21 @@ packages:
       - darwin
       - linux/amd64
       - linux/arm64
+  # Not in the standard registry. Releases ship no checksum file (only the
+  # GitHub asset digests, which aqua cannot consume), so there is no checksum
+  # block; the pin in aqua.yaml is the only control.
+  - type: github_release
+    repo_owner: SagerNet
+    repo_name: sing-box
+    description: Universal proxy platform (SOCKS/HTTP/mixed inbounds, TCP/UDP forwarding, chains, Clash API)
+    asset: "sing-box-{{trimV .Version}}-{{.OS}}-{{.Arch}}.tar.gz"
+    format: tar.gz
+    files:
+      - name: sing-box
+        src: "sing-box-{{trimV .Version}}-{{.OS}}-{{.Arch}}/sing-box"
+    supported_envs:
+      - linux/amd64
+      - linux/arm64
   - type: github_release
     repo_owner: apernet
     repo_name: hysteria

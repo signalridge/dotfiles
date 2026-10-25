@@ -1,0 +1,51 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# sing-box (official release, ./sing-box-package.nix)
+# ─────────────────────────────────────────────────────────────────────────────
+# Every Mac gets the CLI. Work Macs (no Surge) also run it as a root
+# LaunchDaemon: a mixed SOCKS/HTTP inbound on 127.0.0.1 that sets the system
+# proxy (needs root on macOS), an `Exit` selector (direct / EasyTier exits) and
+# the Clash API web panel on 127.0.0.1:9090.
+#
+# The config holds the exit key and the panel secret, so it is NOT rendered
+# here (it would land in the world-readable /nix/store):
+# .chezmoiscripts/run_after_25_sing-box.sh writes it from gopass to
+# /etc/sing-box/config.json (root:wheel 0600). Until then the daemon refuses
+# to start and launchd retries every ThrottleInterval.
+{ pkgs, ... }:
+let
+  sing-box = import ./sing-box-package.nix { inherit pkgs; };
+{{- if .work }}
+  configFile = "/etc/sing-box/config.json";
+  logFile = "/var/log/sing-box.log";
+{{- end }}
+in
+{
+  environment.systemPackages = [ sing-box ];
+{{- if .work }}
+
+  launchd.daemons.sing-box = {
+    script = ''
+      set -eu
+      if [ "$(/usr/bin/stat -f '%u %Lp' "${configFile}" 2>/dev/null)" != "0 600" ]; then
+        echo "sing-box: ${configFile} must exist, be owned by root and mode 0600; refusing to start" >&2
+        exit 1
+      fi
+      /bin/mkdir -p /var/lib/sing-box
+      exec ${sing-box}/bin/sing-box run -c "${configFile}" -D /var/lib/sing-box
+    '';
+    serviceConfig = {
+      RunAtLoad = true;
+      KeepAlive = true;
+      ThrottleInterval = 30;
+      StandardOutPath = logFile;
+      StandardErrorPath = logFile;
+    };
+  };
+
+  # Rotate the daemon log at 10 MiB, keeping 5 compressed generations.
+  environment.etc."newsyslog.d/sing-box.conf".text = ''
+    # logfilename        [owner:group]  mode count size(KB) when flags
+    ${logFile}  root:wheel     640  5     10240    *    JN
+  '';
+{{- end }}
+}
