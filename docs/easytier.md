@@ -35,6 +35,11 @@ can be hole-punched (both ends drop unsolicited inbound IPv6 UDP). Macs pass
 punching) to the physical NIC, so a TUN owning the default route (sing-box) never
 carries them — the same way Tailscale's own
 WireGuard traffic bypasses its exit-node routes.
+It is not airtight under the sing-box TUN: some hole-punching UDP to peers'
+port 11010 still entered the TUN, and once `exitRoutes` pinned the JAIST range
+(which holds gpuserver's and nas's public addresses) to gpuserver, EasyTier
+carried itself. sing-box therefore routes the `easytier-core` process, and the
+peer and STUN ports, `direct` ahead of every other rule.
 The bastion keeps TCP + UDP for discovery and fallback relay.
 
 ## Exit nodes

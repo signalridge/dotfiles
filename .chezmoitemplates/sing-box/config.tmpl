@@ -33,7 +33,13 @@
        first live member selected; a failed member loses its history and the
        next one takes over. Existing connections (long mirror downloads) are
        never interrupted by a switch. */ -}}
-{{- $rules := list (dict "action" "sniff") (dict "ip_is_private" true "outbound" "direct") (dict "ip_cidr" (list $r.easytier.network "100.64.0.0/10") "outbound" "direct") -}}
+{{- /* EasyTier's own packets must never ride an exit: the exits are carried by
+       EasyTier, and the peers' public addresses can fall inside an exit route
+       (the JAIST range holds gpuserver and nas), which looped hole-punching
+       UDP to 11010 back into the mesh. --bind-device misses some of those
+       sockets, so match the process, and the peer/STUN ports as a fallback. */ -}}
+{{- $etPorts := prepend $r.easytier.bastion.stunPorts $r.easytier.bastion.peerPort -}}
+{{- $rules := list (dict "action" "sniff") (dict "process_name" (list "easytier-core") "outbound" "direct") (dict "port" $etPorts "outbound" "direct") (dict "ip_is_private" true "outbound" "direct") (dict "ip_cidr" (list $r.easytier.network "100.64.0.0/10") "outbound" "direct") -}}
 {{- range $r.singBox.exitRoutes -}}
 {{-   $members := list -}}
 {{-   range .exits -}}
