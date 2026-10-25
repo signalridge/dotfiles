@@ -160,8 +160,11 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   link-local and multicast stay off the TUN (`singBox.tunExcludeAddress`). The
   bastion's public IPv4 deliberately is not: EasyTier's STUN to it must take
   the same path as the hole punching (through sing-box), or the ports never
-  match and the peers stay relayed. The cost is that SSH to the bastion drops
-  whenever sing-box restarts (config changes only).
+  match and the peers stay relayed. Inside sing-box that address always routes
+  `Direct` (script 25 adds it from gopass), because the bastion refuses
+  connections to itself, so SSH to it works under every `Egress`. The cost is
+  that SSH to the bastion drops whenever sing-box restarts (config changes
+  only).
   EasyTier's own traffic bypasses it via `--bind-device`. Because sing-box binds
   its outbounds to the default NIC under a TUN, the daemon injects EasyTier's
   utun (dynamic unit number) as `bind_interface` into the exit outbounds at

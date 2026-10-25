@@ -61,7 +61,11 @@
        UDP to 11010 back into the mesh. --bind-device misses some of those
        sockets, so match the process, and the peer/STUN ports as a fallback. */ -}}
 {{- $etPorts := prepend $r.easytier.bastion.stunPorts $r.easytier.bastion.peerPort -}}
-{{- $rules := list (dict "action" "sniff") (dict "process_name" (list "easytier-core") "outbound" $direct) (dict "port" $etPorts "outbound" $direct) (dict "ip_is_private" true "outbound" $direct) (dict "ip_cidr" (list $r.easytier.network "100.64.0.0/10") "outbound" $direct) -}}
+{{- /* "directCidr": more destinations that always go Direct, whatever Egress
+       says; the Mac script adds the bastion's own address here (SSH to it,
+       EasyTier's TCP link), since the bastion refuses connections to itself
+       and no other exit should carry them either. */ -}}
+{{- $rules := list (dict "action" "sniff") (dict "process_name" (list "easytier-core") "outbound" $direct) (dict "port" $etPorts "outbound" $direct) (dict "ip_is_private" true "outbound" $direct) (dict "ip_cidr" (concat (list $r.easytier.network "100.64.0.0/10") (dig "directCidr" (list) .)) "outbound" $direct) -}}
 {{- /* Exit routes (singBox.exitRoutes): one urltest group per entry, members in
        priority order, then the same exits through the bastion, so the route
        holds on networks that block the mesh. The 50 ms tolerance keeps the
