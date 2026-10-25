@@ -126,13 +126,13 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 
   Clash API and zashboard panel at
   `http://127.0.0.1:9090/ui` (secret: `gopass show -o sing-box/clash-api-secret`).
-  `singBox.exitRoutes` pins destinations to mesh exits whatever `Egress` says:
-  one `selector` per entry, picked by hand in the panel (remembered across
+  `singBox.exitRoutes` lets destinations be pinned to mesh exits: one
+  `selector` per entry, picked by hand in the panel (remembered across
   restarts), matched by sniffed domain or by address (so rsync/FTP match
-  too). The first exit is the default and the machine's own exit means
-  `Direct`; the same exits chained through the bastion follow, for networks
-  that block the mesh, and last `Egress` (unpinned: the same route as
-  everything else, `Direct` by default, e.g. on campus). It is not a `urltest`: the bastion detour is only
+  too). `Egress` comes first and is the default, so nothing is pinned until
+  picked; then the exits (the machine's own exit means `Direct`), then the
+  same exits chained through the bastion, for networks that block the mesh.
+  It is not a `urltest`: the bastion detour is only
   ~30-35 ms slower than the mesh link, so latency kept picking it, and
   sing-box has no priority fallback group. When p2p fails EasyTier itself
   relays through the bastion. Switching never cuts existing connections. Today the `jaist` route covers `jaist.ac.jp`, the JAIST address
