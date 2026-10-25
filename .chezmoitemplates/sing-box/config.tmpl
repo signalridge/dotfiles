@@ -69,7 +69,9 @@
 {{- /* Exit routes (singBox.exitRoutes): one selector per entry, picked by hand
        in the panel and remembered across restarts (cache_file). Members are
        the exits in order (the first is the default), then the same exits
-       through the bastion for networks that block the mesh. Not a urltest:
+       through the bastion for networks that block the mesh, and last `Egress`
+       (unpinned: the same route as everything else, e.g. Direct on campus).
+       Not a urltest:
        the bastion detour is only ~30-35 ms slower than the mesh link (84 vs
        118 ms on 2026-10-25), so latency picks kept landing on it (taken at
        start while EasyTier was still punching through, then held by the
@@ -94,7 +96,7 @@
 {{-     $members = append $members (ternary $direct . (eq . $self)) -}}
 {{-     if hasKey $chained . -}}{{- $twins = append $twins (index $chained .) -}}{{- end -}}
 {{-   end -}}
-{{-   $outbounds = append $outbounds (dict "type" "selector" "tag" .tag "outbounds" (concat $members $twins) "default" (first $members) "interrupt_exist_connections" false) -}}
+{{-   $outbounds = append $outbounds (dict "type" "selector" "tag" .tag "outbounds" (concat $members $twins (list "Egress")) "default" (first $members) "interrupt_exist_connections" false) -}}
 {{-   if hasKey . "exceptKeyword" -}}{{- $rules = append $rules (dict "domain_keyword" .exceptKeyword "outbound" "Egress") -}}{{- end -}}
 {{-   $match := dict "outbound" .tag -}}
 {{-   if hasKey . "domainSuffix" -}}{{- $_ := set $match "domain_suffix" .domainSuffix -}}{{- end -}}

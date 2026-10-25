@@ -131,7 +131,8 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   restarts), matched by sniffed domain or by address (so rsync/FTP match
   too). The first exit is the default and the machine's own exit means
   `Direct`; the same exits chained through the bastion follow, for networks
-  that block the mesh. It is not a `urltest`: the bastion detour is only
+  that block the mesh, and last `Egress` (unpinned: the same route as
+  everything else, `Direct` by default, e.g. on campus). It is not a `urltest`: the bastion detour is only
   ~30-35 ms slower than the mesh link, so latency kept picking it, and
   sing-box has no priority fallback group. When p2p fails EasyTier itself
   relays through the bastion. Switching never cuts existing connections. Today the `jaist` route covers `jaist.ac.jp`, the JAIST address

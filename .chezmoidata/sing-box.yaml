@@ -26,7 +26,7 @@ singBox:
   # Destinations pinned to mesh exits whatever `Egress` says, through a
   # selector picked by hand in the panel: `exits` in order (the first is the
   # default; an exit that is this machine itself means direct), then each
-  # through the bastion. Match by domain (sniffed SNI/Host) and by address, so rsync/FTP to
+  # through the bastion, and last Egress (the same route as everything else). Match by domain (sniffed SNI/Host) and by address, so rsync/FTP to
   # a mirror match too.
   # Remote rule-sets: SagerNet/sing-geosite builds of v2fly's community domain
   # lists; {tag} is the rule-set name. sing-box fetches and caches them.
