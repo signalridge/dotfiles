@@ -20,7 +20,7 @@
 {{- end -}}
 {{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Exit" "default" "direct" "outbounds" $tags) -}}
 {{- $inbounds := list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" false) -}}
-{{- if .tun -}}
+{{- if dig "tun" false . -}}
 {{-   $inbounds = append $inbounds (dict
         "type" "tun" "tag" "tun-in"
         "address" (list "172.19.0.1/30" "fdfe:dcba:9876::1/126")
