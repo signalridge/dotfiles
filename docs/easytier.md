@@ -376,3 +376,8 @@ Status: `sudo docker exec easytier easytier-cli peer`.
   them); remove the `gpuserver`/`nas` proxies and the `Exit` group
   from Surge; `gopass rm easytier/exit-ss-password`.
 - gopass: `gopass rm -r easytier`.
+- sing-box: `gopass rm sing-box/clash-api-secret` (every mode then falls back to
+  CLI only; `chezmoi apply` stops rendering the config, LaunchAgent and unit —
+  delete `~/.config/sing-box`, `~/.local/state/sing-box`, and on Linux run
+  `systemctl --user disable --now sing-box` first). To drop it entirely, revert
+  the sing-box commits (data, templates, nix modules, versions, aqua entry).
