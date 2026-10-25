@@ -376,7 +376,7 @@ default.
 
 Claude Code and Codex run on native OAuth only (Anthropic and OpenAI). The
 startup defaults live in `.chezmoidata/claude.yaml` and
-`dot_codex/modify_config.toml.tmpl`; switch models at runtime with `/model`.
+`dot_codex/modify_private_config.toml.tmpl`; switch models at runtime with `/model`.
 The third-party provider layer (`claude-manage`/`claude-with`/`claude-token`
 and the Codex equivalents) was removed on 2026-10-14; Pi keeps its own
 third-party providers below.

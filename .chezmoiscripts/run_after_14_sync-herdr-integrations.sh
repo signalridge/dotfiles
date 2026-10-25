@@ -28,7 +28,7 @@ install_integration() {
 
 install_integration "codex"
 
-# Codex hooks are managed inline in dot_codex/modify_config.toml.tmpl. Herdr also
+# Codex hooks are managed inline in dot_codex/modify_private_config.toml.tmpl. Herdr also
 # writes a legacy hooks.json; remove it only when every command belongs to Herdr.
 # Refuse to discard unrelated user hooks or malformed JSON.
 codex_hooks="$HOME/.codex/hooks.json"

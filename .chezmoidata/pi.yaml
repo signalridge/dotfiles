@@ -357,7 +357,7 @@ pi:
         # THE TOP OF THE LADDER: `high` on both machines, via `$highModel` in
         # dot_pi/agent/subagents.json.tmpl. The Pi parent and default/medium
         # tier use sol/high. Also the Codex CLI's primary model in
-        # dot_codex/modify_config.toml.tmpl; that independent policy is unchanged.
+        # dot_codex/modify_private_config.toml.tmpl; that independent policy is unchanged.
         #
         # DIRECTLY TESTED 2026-10-11 at medium reasoning through the same Pi
         # Codex OAuth adapter and padding as Sol: 921,065 input accepted (OK,

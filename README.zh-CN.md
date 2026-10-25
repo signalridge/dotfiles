@@ -360,7 +360,7 @@ worktree 和 branch switching。`AICOMMIT_PROVIDER` 可取 `claude`、`codex`、
 ### Claude 与 Codex 模型
 
 Claude Code 与 Codex 只使用原生 OAuth（Anthropic、OpenAI）。启动默认值在
-`.chezmoidata/claude.yaml` 与 `dot_codex/modify_config.toml.tmpl`；运行时用
+`.chezmoidata/claude.yaml` 与 `dot_codex/modify_private_config.toml.tmpl`；运行时用
 `/model` 切换。第三方 provider 层（`claude-manage`/`claude-with`/`claude-token`
 及 Codex 对应工具）已于 2026-10-14 移除；Pi 仍保留下文的第三方 provider。
 

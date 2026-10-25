@@ -369,7 +369,7 @@ repository では Git worktree を使いますが、この chezmoi source 内で
 ### Claude/Codex のモデル
 
 Claude Code と Codex は native OAuth（Anthropic、OpenAI）のみを使います。起動時の
-既定値は `.chezmoidata/claude.yaml` と `dot_codex/modify_config.toml.tmpl` にあり、
+既定値は `.chezmoidata/claude.yaml` と `dot_codex/modify_private_config.toml.tmpl` にあり、
 実行中は `/model` で切り替えます。サードパーティ provider 層
 （`claude-manage`/`claude-with`/`claude-token` と Codex 側の同等ツール）は
 2026-10-14 に削除しました。Pi は下記のサードパーティ provider を引き続き持ちます。
