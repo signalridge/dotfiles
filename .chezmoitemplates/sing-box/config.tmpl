@@ -8,7 +8,8 @@
        excludes private/overlay ranges; the exit outbounds then get
        bind_interface injected at start (nix-config/modules/sing-box.nix).
        Mixed SOCKS5/HTTP inbound on 127.0.0.1; private/overlay destinations go
-       direct, everything else through the `Exit` selector (default direct)
+       direct, singBox.exitRoutes destinations through their pinned exits,
+       everything else through the `Exit` selector (default direct)
        over the EasyTier exits, minus this machine's own exit; Clash API + web
        panel on 127.0.0.1. Values from .chezmoidata/{sing-box,easytier}.yaml. */ -}}
 {{- $r := .root -}}
@@ -27,6 +28,21 @@
 {{-   $outbounds = append $outbounds $edge -}}
 {{- end -}}
 {{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Exit" "default" "direct" "outbounds" $tags) -}}
+{{- /* Exit routes (singBox.exitRoutes): one urltest group per entry, members in
+       priority order. A tolerance far above any real latency gap keeps the
+       first live member selected; a failed member loses its history and the
+       next one takes over. Existing connections (long mirror downloads) are
+       never interrupted by a switch. */ -}}
+{{- $rules := list (dict "action" "sniff") (dict "ip_is_private" true "outbound" "direct") (dict "ip_cidr" (list $r.easytier.network "100.64.0.0/10") "outbound" "direct") -}}
+{{- range $r.singBox.exitRoutes -}}
+{{-   $members := list -}}
+{{-   range .exits -}}
+{{-     if not (hasKey $r.easytier.exits .) -}}{{ fail (printf "singBox.exitRoutes: %q is not in easytier.exits" .) }}{{- end -}}
+{{-     $members = append $members (ternary "direct" . (eq . $self)) -}}
+{{-   end -}}
+{{-   $outbounds = append $outbounds (dict "type" "urltest" "tag" .tag "outbounds" $members "tolerance" 10000 "interrupt_exist_connections" false) -}}
+{{-   $rules = append $rules (dict "domain_suffix" .domainSuffix "ip_cidr" .ipCidr "outbound" .tag) -}}
+{{- end -}}
 {{- $inbounds := list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" false) -}}
 {{- if dig "tun" false . -}}
 {{- /* The TUN's IPv4 /30 must stay outside tunExcludeAddress: excluding it
@@ -47,9 +63,7 @@
       "inbounds" $inbounds
       "outbounds" $outbounds
       "route" (dict
-        "rules" (list
-          (dict "ip_is_private" true "outbound" "direct")
-          (dict "ip_cidr" (list $r.easytier.network "100.64.0.0/10") "outbound" "direct"))
+        "rules" $rules
         "final" "Exit"
         "default_domain_resolver" "local"
         "auto_detect_interface" true)

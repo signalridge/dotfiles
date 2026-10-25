@@ -109,6 +109,12 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   every entry of `easytier.exits` except the machine's own, and `edge` when
   gopass `sing-box/edge-outbound` exists. Clash API and metacubexd panel at
   `http://127.0.0.1:9090/ui` (secret: `gopass show -o sing-box/clash-api-secret`).
+  `singBox.exitRoutes` pins destinations to mesh exits whatever `Exit` says:
+  one `urltest` group per entry, matched by sniffed domain or by address (so
+  rsync/FTP match too). Members are in priority order; a huge tolerance keeps the
+  first live one, a failure moves to the next, the machine's own exit means
+  `direct`, and switches never cut existing connections. Today:
+  `jaist.ac.jp` → `gpuserver`, then `nas`.
   Secrets: gopass `easytier/exit-ss-password`, `sing-box/clash-api-secret`;
   without them the mode falls back to CLI only.
 - Macs (`system`), like a Tailscale exit node: a TUN with `auto_route` carries
