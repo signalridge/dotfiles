@@ -5,7 +5,7 @@
 {{-   $sha256 = .versions.singBoxDarwinArm64Sha256 -}}
 {{- end -}}
 # sing-box from the official release tarball (macOS), used by ./sing-box.nix
-# for the CLI on every Mac and the work Mac's root daemon. Version and digests:
+# for the CLI and the LaunchAgent on every Mac. Version and digests:
 # .chezmoidata/versions.yaml, bumped by the update-versions workflow from
 # GitHub's release-asset digests (upstream ships no checksum file).
 { pkgs }:

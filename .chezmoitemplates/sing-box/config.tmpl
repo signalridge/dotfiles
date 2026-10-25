@@ -1,5 +1,6 @@
 {{- /* sing-box client config, shared by every platform (docs/easytier.md).
-       Called with (dict "root" $ "password" … "secret" … "systemProxy" bool).
+       Called with (dict "root" $ "password" … "secret" …). Never touches the
+       system proxy: apps opt in (browser extension, `proxy-on`).
        Mixed SOCKS5/HTTP inbound on 127.0.0.1; private/overlay destinations go
        direct, everything else through the `Exit` selector (default direct)
        over the EasyTier exits, minus this machine's own exit; Clash API + web
@@ -18,7 +19,7 @@
 {{- $config := dict
       "log" (dict "level" "info" "timestamp" true)
       "dns" (dict "servers" (list (dict "type" "local" "tag" "local")))
-      "inbounds" (list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" .systemProxy))
+      "inbounds" (list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" false))
       "outbounds" $outbounds
       "route" (dict
         "rules" (list

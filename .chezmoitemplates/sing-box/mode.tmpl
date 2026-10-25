@@ -1,14 +1,14 @@
 {{- /* How sing-box runs on this machine (docs/easytier.md "sing-box"):
-       system  work Mac: root LaunchDaemon, owns the system proxy, always on
-       agent   other Macs: LaunchAgent loaded but started on demand (Surge stays
-               the default proxy), no system proxy
+       agent   every Mac: LaunchAgent, no system proxy (apps opt in via a
+               browser proxy extension or `proxy-on`); started at login on work
+               Macs, on demand elsewhere (Surge stays the default there)
        service headless Linux: systemd --user unit, always on
        ""      anything else: CLI only
        Every mode but "" also needs gopass easytier/exit-ss-password and
        sing-box/clash-api-secret; without them it degrades to "". */ -}}
 {{- $mode := "" -}}
 {{- if eq .chezmoi.os "darwin" -}}
-{{-   $mode = ternary "system" "agent" .work -}}
+{{-   $mode = "agent" -}}
 {{- else if and (eq .chezmoi.os "linux") .headless -}}
 {{-   $mode = "service" -}}
 {{- end -}}

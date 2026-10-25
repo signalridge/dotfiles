@@ -1160,3 +1160,24 @@ mcp-reap() {
         return 1
     fi
 }
+
+# ─────────────────────────────────────────────────────────────
+# sing-box proxy (127.0.0.1:7890; exit picked in its Exit selector,
+# panel http://127.0.0.1:9090/ui). Nothing uses it unless opted in:
+# the browser via a proxy extension, a shell via proxy-on.
+# ─────────────────────────────────────────────────────────────
+
+# Route this shell's CLI traffic through sing-box.
+proxy-on() {
+    local url="http://127.0.0.1:7890"
+    export http_proxy="$url" https_proxy="$url" all_proxy="socks5h://127.0.0.1:7890"
+    export HTTP_PROXY="$http_proxy" HTTPS_PROXY="$https_proxy" ALL_PROXY="$all_proxy"
+    export no_proxy="localhost,127.0.0.1,::1,10.144.144.0/24,100.64.0.0/10,.local"
+    export NO_PROXY="$no_proxy"
+    echo "proxy on: $url"
+}
+
+proxy-off() {
+    unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY no_proxy NO_PROXY
+    echo "proxy off"
+}

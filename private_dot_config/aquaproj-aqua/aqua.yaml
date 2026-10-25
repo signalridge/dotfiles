@@ -36,7 +36,7 @@ packages:
     registry: third-party
   # sing-box CLI on Linux: the replacement for gost's ad-hoc SOCKS/HTTP servers,
   # TCP/UDP forwards and proxy chains. macOS gets it from nix-config/modules/
-  # sing-box.nix instead (the work Mac's root daemon runs that same build).
+  # sing-box.nix instead (its LaunchAgent runs that build).
   - name: SagerNet/sing-box@v1.14.3
     registry: third-party
   # ----- standard registry -----

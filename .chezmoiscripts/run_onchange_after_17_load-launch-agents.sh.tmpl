@@ -94,10 +94,14 @@ remove_launch_agent "com.signalridge.cliproxyapi"
 reload_launch_agent "com.signalridge.cliproxyapi"
 {{ end -}}
 {{ if eq (includeTemplate "sing-box/mode.tmpl" .) "agent" -}}
-# sing-box: Surge stays the default here, so load without starting (bootout
-# above stops a running instance; start it again by hand after a config change).
 mkdir -p "${HOME}/.local/state/sing-box"
+{{-   if .work }}
+reload_launch_agent "com.signalridge.sing-box"
+{{-   else }}
+# Surge stays the default here, so load without starting (bootout above stops a
+# running instance; start it again by hand after a config change).
 reload_launch_agent "com.signalridge.sing-box" on-demand
+{{-   end }}
 {{ else -}}
 remove_launch_agent "com.signalridge.sing-box"
 {{ end -}}

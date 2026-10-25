@@ -101,9 +101,8 @@ Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 .config/systemd/user/ss-exit.service
 {{- end }}
 
-# sing-box: user-level config only where it runs as a LaunchAgent / systemd
-# --user unit (.chezmoitemplates/sing-box/mode.tmpl; the work Mac's root daemon
-# gets /etc/sing-box/config.json from run_after_25 instead).
+# sing-box: config, LaunchAgent and systemd --user unit only where it runs
+# (.chezmoitemplates/sing-box/mode.tmpl).
 {{- $sbMode := includeTemplate "sing-box/mode.tmpl" . }}
 {{- if not (or (eq $sbMode "agent") (eq $sbMode "service")) }}
 .config/sing-box/

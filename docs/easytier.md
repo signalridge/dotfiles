@@ -54,7 +54,7 @@ separate 0600 env file.
 - Clients: Surge on the home Mac (`ss` proxies `gpuserver`, `nas`,
   `encrypt-method=2022-blake3-aes-256-gcm`, `udp-relay=true`; group
   `Exit = select, DIRECT, …`; mesh/LAN/peer CIDRs `DIRECT`, then `FINAL,Exit`);
-  sing-box on work Macs (see "Work Mac" below).
+  sing-box everywhere else (see "sing-box" below).
 - Not used, and why: EasyTier's `--socks5` takes only a port and listens on all
   interfaces without authentication; gost's Shadowsocks UDP (`ssu`) rejects
   Shadowsocks 2022 UDP from Surge (`cipher: message authentication failed`).
@@ -97,7 +97,7 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 
 | Machine        | Mode      | Runs as                                                      | Default           |
 | -------------- | --------- | ------------------------------------------------------------ | ----------------- |
-| work Mac       | `system`  | root LaunchDaemon `org.nixos.sing-box`, sets system proxy    | always on         |
+| work Mac       | `agent`   | LaunchAgent `com.signalridge.sing-box`                       | started at login  |
 | other Macs     | `agent`   | LaunchAgent `com.signalridge.sing-box` (Surge stays default) | started on demand |
 | headless Linux | `service` | systemd --user `sing-box.service`                            | always on         |
 | other Linux    | —         | CLI only                                                     | —                 |
@@ -108,10 +108,13 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   metacubexd panel at `http://127.0.0.1:9090/ui` (secret: `gopass show -o
 sing-box/clash-api-secret`). Secrets: gopass `easytier/exit-ss-password`,
   `sing-box/clash-api-secret`; without them the mode falls back to CLI only.
-- `system`: `.chezmoiscripts/run_after_25_sing-box.sh.tmpl` fills the secrets in
-  with jq at run time, runs `sing-box check` and writes
-  `/etc/sing-box/config.json` (root:wheel 0600). Log `/var/log/sing-box.log`.
-- `agent` / `service`: chezmoi renders `~/.config/sing-box/config.json` (0600).
+- No root and **no system proxy** anywhere: a crashed or stopped sing-box must
+  not take the machine offline, and work networks bring their own PAC/MDM/VPN
+  proxy settings. Apps opt in: the browser through a proxy extension (e.g.
+  ZeroOmega → `127.0.0.1:7890`), a shell through `proxy-on` / `proxy-off`
+  (`dot_custom/functions.sh`; mesh, Tailscale and local ranges in `no_proxy`).
+- chezmoi renders `~/.config/sing-box/config.json` (0600). Logs:
+  `~/Library/Logs/sing-box.launchd.log` (Mac), `journalctl --user -u sing-box`.
   Mac on demand: `launchctl kickstart gui/$(id -u)/com.signalridge.sing-box`,
   stop with `launchctl kill TERM gui/$(id -u)/com.signalridge.sing-box`;
   Linux panel via `ssh -L 9090:127.0.0.1:9090 <host>`.
