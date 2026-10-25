@@ -25,7 +25,7 @@ singBox:
   webUiUrl: https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip
   # Destinations pinned to mesh exits whatever `Egress` says. `exits` is in
   # priority order: the first live one starts, a failure moves on, and a member
-  # more than 50 ms faster wins back (an exit that is this machine itself means
+  # more than 20 ms faster wins back (an exit that is this machine itself means
   # direct). Match by domain (sniffed SNI/Host) and by address, so rsync/FTP to
   # a mirror match too.
   # Remote rule-sets: SagerNet/sing-geosite builds of v2fly's community domain

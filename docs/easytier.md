@@ -129,10 +129,10 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   `singBox.exitRoutes` pins destinations to mesh exits whatever `Egress` says:
   one `urltest` group per entry, matched by sniffed domain or by address (so
   rsync/FTP match too). Members are in priority order: the first live one
-  starts, a failure moves to the next, and a 50 ms tolerance ignores jitter
+  starts, a failure moves to the next, and a 20 ms tolerance ignores jitter
   between near-equal members yet hands back from a chained fallback once the
-  mesh link is direct again (a huge tolerance left JAIST on the bastion detour
-  after every boot). The machine's own exit means `Direct`, and switches never
+  mesh link is direct again (the detour is only ~30-35 ms slower, so a larger
+  tolerance left JAIST on it after every restart). The machine's own exit means `Direct`, and switches never
   cut existing connections. The same exits chained
   through the bastion follow as fallbacks, so the route holds where the mesh is
   blocked. Today the `jaist` route covers `jaist.ac.jp`, the JAIST address

@@ -68,12 +68,13 @@
 {{- $rules := list (dict "action" "sniff") (dict "process_name" (list "easytier-core") "outbound" $direct) (dict "port" $etPorts "outbound" $direct) (dict "ip_is_private" true "outbound" $direct) (dict "ip_cidr" (concat (list $r.easytier.network "100.64.0.0/10") (dig "directCidr" (list) .)) "outbound" $direct) -}}
 {{- /* Exit routes (singBox.exitRoutes): one urltest group per entry, members in
        priority order, then the same exits through the bastion, so the route
-       holds on networks that block the mesh. The 50 ms tolerance keeps the
-       current member against jitter and near-equal peers (gpuserver vs nas),
-       yet hands back from a chained fallback (>=100 ms) once the mesh link is
-       direct again (tens of ms): a huge tolerance stuck JAIST on "gpuserver via
-       bastion" after every boot, taken while EasyTier was still punching
-       through. A failed member loses its history and the next one takes over.
+       holds on networks that block the mesh. The 20 ms tolerance keeps the
+       current member against jitter and near-equal peers (gpuserver vs nas,
+       ~2 ms apart), yet hands back from a chained fallback once the mesh link
+       is direct again: the bastion detour costs only ~30-35 ms more (measured
+       2026-10-25: 84 vs 118 ms), so 50 ms (and before it 10 s) stuck JAIST on
+       "gpuserver via bastion", taken at start while EasyTier was still
+       punching through. A failed member loses its history and the next one takes over.
        Existing connections (long mirror downloads) are never interrupted by a
        switch. */ -}}
 {{- /* Destinations match by sniffed domain (domainSuffix), by address (ipCidr)
@@ -94,7 +95,7 @@
 {{-     $members = append $members (ternary $direct . (eq . $self)) -}}
 {{-     if hasKey $chained . -}}{{- $twins = append $twins (index $chained .) -}}{{- end -}}
 {{-   end -}}
-{{-   $outbounds = append $outbounds (dict "type" "urltest" "tag" .tag "outbounds" (concat $members $twins) "tolerance" 50 "interrupt_exist_connections" false) -}}
+{{-   $outbounds = append $outbounds (dict "type" "urltest" "tag" .tag "outbounds" (concat $members $twins) "tolerance" 20 "interrupt_exist_connections" false) -}}
 {{-   if hasKey . "exceptKeyword" -}}{{- $rules = append $rules (dict "domain_keyword" .exceptKeyword "outbound" "Egress") -}}{{- end -}}
 {{-   $match := dict "outbound" .tag -}}
 {{-   if hasKey . "domainSuffix" -}}{{- $_ := set $match "domain_suffix" .domainSuffix -}}{{- end -}}
