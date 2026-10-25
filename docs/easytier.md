@@ -213,17 +213,14 @@ page, whereas its Fortinet, GlobalProtect
 and Pulse clients already turn SAML into a browser challenge.
 
 The config holds no credentials and sing-box never restarts for a login. An
-endpoint sits in `auth-pending`; `openconnect-login [ENDPOINT]`
-(`dot_local/bin`) reads the challenge from sing-box's API service (gRPC on
-`127.0.0.1:9091`, secret `sing-box/clash-api-secret`, `buf curl` from aqua),
-opens the single sign-on page in an `agent-browser` window (a throwaway
-profile, never your own browser's data), waits for you to log in, reads back
-what the VPN wants (F5, Fortinet, Pulse: the session cookie; GlobalProtect: the
-`saml-username` / `prelogin-cookie` response headers) and submits it over the
-API. The session lives only in sing-box's memory. Form logins and loopback
-callbacks (AnyConnect) are handed to `sing-box api openconnect auth`.
-`openconnect-login status` / `cancel` wrap the same API. A sing-box restart
-(config change) drops the session; log in again.
+endpoint sits in `auth-pending` until `openconnect-login [ENDPOINT]`
+(`dot_local/bin`): it opens the VPN's login page in your default browser and
+hands the terminal to `sing-box api openconnect auth` (sing-box's API service,
+gRPC on `127.0.0.1:9091`, secret `sing-box/clash-api-secret`), which prints
+the steps and asks for the session cookie (`MRHSession` for F5) that you copy
+from the browser's developer tools once you are logged in. The session lives
+only in sing-box's memory. `openconnect-login status` / `cancel` wrap the same
+API. A sing-box restart (config change) drops the session; log in again.
 
 ## Installed replacement tools
 

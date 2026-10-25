@@ -1,174 +1,43 @@
 #!/usr/bin/env bash
-# Log in to a sing-box OpenConnect VPN endpoint through its browser single
-# sign-on (sing-box 1.14 API service, docs/easytier.md "OpenConnect VPN").
+# Log in to a sing-box OpenConnect VPN endpoint (docs/easytier.md "OpenConnect
+# VPN"). The endpoint in the sing-box config holds no credentials and waits in
+# auth-pending; this opens the VPN's login page in the default browser and
+# hands the terminal to `sing-box api openconnect auth`, which prints the steps
+# and asks for the session cookie (F5: MRHSession) read from the browser's
+# developer tools after the single sign-on. The session then lives only in
+# sing-box's memory: nothing on disk, no sing-box restart.
 #
-# The endpoint in the sing-box config holds no credentials and waits in
-# auth-pending. This opens the login page in a browser window (agent-browser,
-# a throwaway profile: your own browser's data is never touched), lets you log
-# in, reads back what the VPN wants (response headers for GlobalProtect, the
-# session cookie for F5/Fortinet/Pulse) and submits it to sing-box over the
-# API. The session then lives only in sing-box's memory: nothing is written to
-# disk and sing-box never restarts for a login. Form logins and loopback
-# callbacks (AnyConnect) are handed to `sing-box api openconnect auth`, which
-# handles them itself. Nothing secret is printed.
+#   openconnect-login [login] [ENDPOINT]   ENDPOINT optional when only one exists
+#   openconnect-login status
+#   openconnect-login cancel [ENDPOINT]
 #
-#   openconnect-login [login] [ENDPOINT]   complete the login (ENDPOINT optional
-#                                          when only one is configured)
-#   openconnect-login status               state of every OpenConnect endpoint
-#   openconnect-login cancel [ENDPOINT]    drop a pending challenge
-#
-# Secret: gopass sing-box/clash-api-secret (shared with the Clash API); the
-# API URL defaults to the loopback port from .chezmoidata/sing-box.yaml. Talks
-# gRPC with `buf curl` (aqua: bufbuild/buf).
+# Secret: gopass sing-box/clash-api-secret (shared with the Clash API); API URL
+# from .chezmoidata/sing-box.yaml, overridable with BOX_API_URL.
 
 set -euo pipefail
 
-die() {
-    echo "openconnect-login: $*" >&2
-    exit 1
-}
-
-for cmd in agent-browser buf gopass jq sing-box; do
-    command -v "$cmd" >/dev/null 2>&1 || die "$cmd not found"
+for cmd in gopass sing-box; do
+    command -v "$cmd" >/dev/null 2>&1 || { echo "openconnect-login: $cmd not found" >&2; exit 1; }
 done
-
 export BOX_API_URL="${BOX_API_URL:-http://127.0.0.1:{{ .singBox.apiPort }}}"
-BOX_API_SECRET="$(gopass show -o sing-box/clash-api-secret 2>/dev/null)" || die "gopass sing-box/clash-api-secret unavailable"
+BOX_API_SECRET="$(gopass show -o sing-box/clash-api-secret 2>/dev/null)" ||
+    { echo "openconnect-login: gopass sing-box/clash-api-secret unavailable" >&2; exit 1; }
 export BOX_API_SECRET
-session="openconnect-login"
 
-# One API call: `buf curl` over gRPC with server reflection. The bearer header
-# (and the request body, after a blank line) go in on stdin, so the secret
-# never appears in argv. METHOD [BODY] [TIMEOUT]
-grpc() {
-    local method="$1" body="${2:-}" timeout="${3:-10s}"
-    {
-        printf 'authorization: Bearer %s\n' "$BOX_API_SECRET"
-        [[ -n "$body" ]] && printf '\n%s\n' "$body"
-    } | buf curl --timeout "$timeout" --protocol grpc --http2-prior-knowledge \
-        --reflect --reflect-header '*' -H @- ${body:+-d @-} \
-        "$BOX_API_URL/daemon.StartedService/$method"
-}
-
-# First message of the (endless) status stream, as one JSON object; the
-# timeout ends the stream, which is expected.
-status_json() {
-    grpc SubscribeOpenConnectStatus "" 4s 2>/dev/null | jq -c 'select(.endpoints)' | head -n 1 || true
-}
-
-endpoint_json() {
-    jq -c --arg t "${1:-}" '
-      [.endpoints[] | select($t == "" or .endpointTag == $t)]
-      | if length == 1 then .[0]
-        elif length == 0 then error("no such OpenConnect endpoint")
-        else error("several endpoints; name one: " + (map(.endpointTag) | join(", "))) end' <<<"$2"
-}
-
-close_browser() {
-    agent-browser --session "$session" close >/dev/null 2>&1 || true
-}
-
-# Response headers the VPN asked for, from the page the browser ended on.
-collect_headers() {
-    agent-browser --session "$session" network requests --type document --json 2>/dev/null |
-        jq -c --argjson names "$1" '
-          [(.data.requests // .data // [])[]
-           | select(.responseHeaders != null)
-           | {finalURL: .url,
-              headers: [.responseHeaders | to_entries[]
-                        | select((.key | ascii_downcase) as $k | $names | index($k))
-                        | {name: (.key | ascii_downcase), values: [.value]}]}
-           | select(.headers | length > 0)]
-          | last // empty'
-}
-
-# The cookies the VPN asked for, once every one of them exists.
-collect_cookies() {
-    agent-browser --session "$session" cookies get --json 2>/dev/null |
-        jq -c --argjson names "$1" --arg final "$2" '
-          [(.data.cookies // [])[] | select(.name as $n | $names | index($n)) | {name, value}]
-          | if length == ($names | length) then {finalURL: $final, cookies: .} else empty end'
-}
-
-login() {
-    local st ep tag state challenge id url final names result kind
-    st="$(status_json)"
-    [[ -n "$st" ]] || die "no OpenConnect endpoint, or the API at $BOX_API_URL is unreachable"
-    ep="$(endpoint_json "${1:-}" "$st")"
-    tag="$(jq -r .endpointTag <<<"$ep")"
-    state="$(jq -r .state <<<"$ep")"
-    case "$state" in
-    connected)
-        echo "$tag: already connected"
-        return 0
-        ;;
-    auth-pending) ;;
-    *) die "$tag is $state: $(jq -r '.error // .stateText // ""' <<<"$ep")" ;;
-    esac
-    challenge="$(jq -c .authChallenge <<<"$ep")"
-    id="$(jq -r .id <<<"$challenge")"
-    # Forms (prompts) and loopback callbacks: sing-box's own client does these.
-    if jq -e '.form != null or ((.browser.callbackURLPrefixes // []) | length > 0)' <<<"$challenge" >/dev/null; then
-        exec sing-box api openconnect auth --endpoint "$tag"
-    fi
-    url="$(jq -r '.browser.url // ""' <<<"$challenge")"
-    [[ -n "$url" ]] || die "$tag: unsupported challenge"
-    final="$(jq -r '.browser.finalURL // ""' <<<"$challenge")"
-    if jq -e '(.browser.headerNames // []) | length > 0' <<<"$challenge" >/dev/null; then
-        kind=headers
-        names="$(jq -c '[.browser.headerNames[] | ascii_downcase]' <<<"$challenge")"
-    else
-        kind=cookies
-        names="$(jq -c '.browser.cookieNames // []' <<<"$challenge")"
-    fi
-    trap close_browser EXIT
-    agent-browser --session "$session" open "$url" --headed >/dev/null
-    echo "$tag: log in in the browser window ($(jq -r '.message // "single sign-on"' <<<"$challenge")); waiting up to 5 minutes..."
-    result=""
-    for _ in $(seq 1 150); do
-        sleep 2
-        if [[ "$kind" == headers ]]; then
-            result="$(collect_headers "$names")"
-        else
-            result="$(collect_cookies "$names" "$final")"
-        fi
-        [[ -n "$result" ]] && break
-    done
-    [[ -n "$result" ]] || die "$tag: timed out waiting for the login"
-    grpc SubmitOpenConnectAuthResponse "$(jq -cn --arg tag "$tag" --arg id "$id" --argjson browser "$result" \
-        '{endpointTag: $tag, challengeID: $id, browser: $browser}')" >/dev/null
-    close_browser
-    trap - EXIT
-    echo "$tag: submitted $(jq -r "(.$kind | length)" <<<"$result") $kind; connecting..."
-    for _ in $(seq 1 30); do
-        sleep 1
-        state="$(status_json | jq -r --arg t "$tag" '.endpoints[] | select(.endpointTag == $t) | .state')"
-        case "$state" in
-        connected)
-            echo "$tag: connected"
-            return 0
-            ;;
-        error) die "$tag: $(status_json | jq -r --arg t "$tag" '.endpoints[] | select(.endpointTag == $t) | .error')" ;;
-        esac
-    done
-    die "$tag: still $state after 30 s; see openconnect-login status"
-}
+endpoint_flag() { [[ -n "${1:-}" ]] && printf -- '--endpoint\n%s\n' "$1"; }
 
 case "${1:-login}" in
-status)
-    exec sing-box api openconnect status
-    ;;
-cancel)
-    st="$(status_json)"
-    [[ -n "$st" ]] || die "API at $BOX_API_URL is unreachable"
-    ep="$(endpoint_json "${2:-}" "$st")"
-    grpc CancelOpenConnectAuthChallenge "$(jq -c '{endpointTag: .endpointTag, challengeID: .authChallenge.id}' <<<"$ep")" >/dev/null
-    echo "$(jq -r .endpointTag <<<"$ep"): challenge cancelled"
-    ;;
-login)
-    login "${2:-}"
-    ;;
-*)
-    login "$1"
-    ;;
+status) exec sing-box api openconnect status ;;
+cancel) exec sing-box api openconnect cancel $(endpoint_flag "${2:-}") ;;
+login) shift ;;
 esac
+# The endpoint's server is the login page (singBox.openconnect); open it before
+# the prompt so the browser is ready when sing-box prints the steps.
+{{- range .singBox.openconnect }}
+{{- if eq .flavor "f5" }}
+if [[ -z "${1:-}" || "${1:-}" == {{ .tag | quote }} ]]; then
+    open "https://{{ .server }}/" 2>/dev/null || true
+fi
+{{- end }}
+{{- end }}
+exec sing-box api openconnect auth $(endpoint_flag "${1:-}")

@@ -84,7 +84,6 @@ packages:
   - name: junegunn/fzf@v0.74.5
   - name: gopasspw/gopass@v1.17.4
   - name: cli/cli@v2.103.2
-  - name: bufbuild/buf@v1.75.0 # `buf curl`: sing-box API (gRPC) client for openconnect-login
   - name: dlvhdr/gh-dash@v4.26.2
   - name: x-motemen/ghq@v1.11.2
   - name: gitlab.com/gitlab-org/cli@v1.99.0 # glab
