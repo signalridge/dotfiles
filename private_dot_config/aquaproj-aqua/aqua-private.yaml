@@ -1,0 +1,12 @@
+# Imported by aqua.yaml on every machine except work ones (.chezmoiignore):
+# a work machine only consumes the EasyTier exits, through sing-box.
+packages:
+  # Shadowsocks 2022 server of the EasyTier exits (ssserver, ss-exit.service).
+  - name: shadowsocks/shadowsocks-rust@v1.25.0
+    registry: third-party
+  # Hysteria2 (apernet/hysteria v2.x; client and server in one binary).
+  - name: apernet/hysteria@app/v2.13.0
+    registry: third-party
+  # TCP/UDP port relay (replaces socat).
+  - name: zhboner/realm@v2.9.6
+    registry: third-party

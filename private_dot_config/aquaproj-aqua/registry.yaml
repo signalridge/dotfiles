@@ -212,6 +212,26 @@ packages:
       - darwin
       - linux/amd64
       - linux/arm64
+  # Not in the standard registry, and releases ship no checksum file, so the
+  # pin in aqua-private.yaml is the only control. Archives hold a bare `realm`;
+  # Linux uses the static musl build.
+  - type: github_release
+    repo_owner: zhboner
+    repo_name: realm
+    description: Fast TCP/UDP port relay
+    asset: "realm-{{.Arch}}-{{.OS}}.tar.gz"
+    format: tar.gz
+    files:
+      - name: realm
+    replacements:
+      amd64: x86_64
+      arm64: aarch64
+      darwin: apple-darwin
+      linux: unknown-linux-musl
+    supported_envs:
+      - darwin
+      - linux/amd64
+      - linux/arm64
   # Not in the standard registry. Releases ship no checksum file (only the
   # GitHub asset digests, which aqua cannot consume), so there is no checksum
   # block; the pin in aqua.yaml is the only control.

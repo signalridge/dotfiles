@@ -133,6 +133,12 @@ Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 Library/LaunchAgents/com.signalridge.cliproxyapi.plist
 {{- end }}
 
+# Work machines only consume the EasyTier exits: no relay/server tools
+# (aqua.yaml imports this file by glob, so skipping it installs nothing).
+{{- if .work }}
+.config/aquaproj-aqua/aqua-private.yaml
+{{- end }}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Pi coding agent runtime/secret state — Pi writes these into ~/.pi/agent at
 # runtime; never version-control them (settings.json/models.json/extensions are

@@ -31,28 +31,21 @@ packages:
   # CDN — keep this at a CDN-present version (binaries/<ver>/manifest.json resolves).
   - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@2.3.0
     registry: third-party
-  # Shadowsocks for the EasyTier exits (ssserver) and ad-hoc clients (sslocal, ssurl).
-  - name: shadowsocks/shadowsocks-rust@v1.25.0
-    registry: third-party
   # sing-box CLI on Linux: the replacement for gost's ad-hoc SOCKS/HTTP servers,
   # TCP/UDP forwards and proxy chains. macOS gets it from nix-config/modules/
   # sing-box.nix instead (its LaunchAgent runs that build).
   - name: SagerNet/sing-box@v1.14.3
     registry: third-party
+  # Relay / server side of the EasyTier exits (shadowsocks-rust, Hysteria2,
+  # realm). Work machines only consume the exits, so .chezmoiignore skips this
+  # file there and the glob matches nothing: no package, no shim.
+  - import: aqua-private*.yaml
   # ----- standard registry -----
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
   - name: google-antigravity/antigravity-cli@1.4.5
   - name: nektos/act@v0.2.89
-  - name: apernet/hysteria@app/v2.13.0
-    registry: third-party
-  # gost replacements (docs/easytier.md): Xray (Reality/XHTTP and other
-  # camouflage transports), wstunnel (TCP/UDP over WebSocket/HTTP2), frp
-  # (frpc/frps reverse proxy). The rest come from nix (.chezmoidata/nix.yaml).
-  - name: XTLS/Xray-core@v26.10.21
-  - name: erebe/wstunnel@v11.1.0
-  - name: fatedier/frp@v0.71.1
   - name: FiloSottile/age@v1.3.2
   - name: asciinema/asciinema@v3.2.1
   - name: atuinsh/atuin@v18.24.2

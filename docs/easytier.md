@@ -67,21 +67,24 @@ separate 0600 env file.
 
 ### gost features and their replacements
 
-gost was removed from aqua. Its features map to these tools when needed:
+gost was removed from aqua. Its features map to these tools. Only sing-box,
+shadowsocks-rust, Hysteria2 and realm are installed (none of the last three
+on work machines, which only consume the exits); the rest is one
+`nix run nixpkgs#<name>` away:
 
 | gost feature                         | Use instead                                                                         |
 | ------------------------------------ | ----------------------------------------------------------------------------------- |
 | Shadowsocks / proxy server           | shadowsocks-rust `ssserver`; sing-box `socks`/`http`/`mixed` inbounds               |
 | Local protocol conversion            | Surge, sing-box, `sslocal`                                                          |
 | Multi-hop chains with node selection | sing-box `detour` + `selector`/`urltest`; Surge `underlying-proxy`                  |
-| Reverse tunnels / NAT traversal      | EasyTier, Tailscale; frp or rathole for hostname-based ingress                      |
+| Reverse tunnels / NAT traversal      | EasyTier, Tailscale                                                                 |
 | L3 tunnel (TUN)                      | EasyTier, Tailscale                                                                 |
-| TCP/UDP port forwarding (any target) | sing-box `direct` inbound with an override target; `socat`                          |
+| TCP/UDP port forwarding (any target) | `realm`; sing-box `direct` inbound with an override target                          |
 | KCP transport                        | EasyTier `--enable-kcp-proxy` / `--enable-quic-proxy` (on); Hysteria2 for lossy WAN |
-| fake-TCP (UDP disguised as TCP)      | EasyTier `faketcp://` listener (experimental); `phantun` (Linux)                    |
-| ICMP tunnel                          | `pingtunnel`                                                                        |
-| WebSocket / TLS / QUIC camouflage    | sing-box, Xray (Reality), Hysteria2, bastion v2ray + Caddy; `wstunnel`              |
-| DNS forwarder                        | sing-box `dns`; `dnsproxy`                                                          |
+| fake-TCP (UDP disguised as TCP)      | EasyTier `faketcp://` listener (experimental)                                       |
+| ICMP tunnel                          | none installed (`nix run nixpkgs#pingtunnel`)                                       |
+| WebSocket / TLS / QUIC camouflage    | sing-box (VLESS Reality, AnyTLS, WS), Hysteria2, bastion v2ray + Caddy              |
+| DNS forwarder                        | sing-box `dns`                                                                      |
 | Rate limiting                        | `tc` (Linux), `pf` (macOS)                                                          |
 | Per-connection logs                  | sing-box connections API, Surge Dashboard, `ssserver -v`                            |
 | Prometheus metrics                   | node_exporter (host level)                                                          |
@@ -142,9 +145,10 @@ edge-import` converts the device profile the edge host issues (Surge format:
 
 ## Installed replacement tools
 
-aqua: `sing-box` (Linux), `xray`, `wstunnel`, `frpc`/`frps`, `hysteria`,
-`ssserver`/`sslocal`. nix (`.chezmoidata/nix.yaml`): `socat`, `pingtunnel`,
-`dnsproxy`, `sslh`, and `phantun_client`/`phantun_server` on Linux.
+aqua: `sing-box` (Linux; Macs run the nix build from
+`nix-config/modules/sing-box.nix`). `aqua-private.yaml`, skipped on work
+machines (consumers only): `ssserver`/`sslocal` (shadowsocks-rust),
+`hysteria` (Hysteria2), `realm`.
 
 ## Credentials
 

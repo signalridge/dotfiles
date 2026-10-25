@@ -39,7 +39,7 @@ jobs:
           "${installer_path}" -v "${aqua_version}"
           echo "${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin" >> "$GITHUB_PATH"
 
-      - name: Update private_dot_config/aquaproj-aqua/aqua.yaml
+      - name: Update private_dot_config/aquaproj-aqua/aqua{,-private}.yaml
         env:
           AQUA_GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
@@ -48,12 +48,13 @@ jobs:
           # `-p` updates packages only, so a package whose upstream renames its
           # release assets (difftastic 0.71.0) resolves against a stale registry
           # entry and 404s at install time on every machine.
+          # Also updates the imported aqua-private.yaml.
           AQUA_CONFIG=private_dot_config/aquaproj-aqua/aqua.yaml aqua update
 
       - name: Check for changes
         id: changes
         run: |
-          if git diff --quiet private_dot_config/aquaproj-aqua/aqua.yaml; then
+          if git diff --quiet private_dot_config/aquaproj-aqua/aqua.yaml private_dot_config/aquaproj-aqua/aqua-private.yaml; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -71,6 +72,7 @@ jobs:
           token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           add-paths: |
             private_dot_config/aquaproj-aqua/aqua.yaml
+            private_dot_config/aquaproj-aqua/aqua-private.yaml
           commit-message: "chore(aqua): update pinned packages"
           title: "chore(aqua): update pinned packages (${{ steps.date.outputs.date }})"
           branch: update-aqua-packages

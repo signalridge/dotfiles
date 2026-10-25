@@ -5,6 +5,7 @@ set -euo pipefail
 # Hash all source files that affect aqua resolution/approval. Target files are
 # still stale while run_onchange scripts are rendered.
 # aqua config: {{ include "private_dot_config/aquaproj-aqua/aqua.yaml" | sha256sum }}
+# aqua private: {{ if not .work }}{{ include "private_dot_config/aquaproj-aqua/aqua-private.yaml" | sha256sum }}{{ end }}
 # aqua policy: {{ include "private_dot_config/aquaproj-aqua/aqua-policy.yaml" | sha256sum }}
 # aqua registry: {{ include "private_dot_config/aquaproj-aqua/registry.yaml" | sha256sum }}
 # weekly trigger: {{ output "date" "+%G-%V" | trim }}
