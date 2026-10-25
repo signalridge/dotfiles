@@ -1,6 +1,6 @@
 {{- /* How sing-box runs on this machine (docs/easytier.md "sing-box"):
        system  every Mac: root LaunchDaemon with a TUN (auto_route), like a
-               Tailscale exit node; always on, `Exit Node` defaults to Direct
+               Tailscale exit node; always on, `Egress` defaults to Direct
        service headless Linux: systemd --user unit, always on
        ""      anything else: CLI only
        Every mode but "" also needs gopass easytier/exit-ss-password and

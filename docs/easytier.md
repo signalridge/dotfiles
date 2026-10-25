@@ -44,7 +44,7 @@ The bastion keeps TCP + UDP for discovery and fallback relay.
 
 ## Exit nodes
 
-Members pick an internet egress **locally** (the sing-box `Exit Node` selector);
+Members pick an internet egress **locally** (the sing-box `Egress` selector);
 nothing restarts and no root is needed to switch. Exits run
 **shadowsocks-rust** (`ssserver`, Shadowsocks 2022 `2022-blake3-aes-256-gcm`,
 TCP + UDP) on their **virtual IP only**. Its ACL accepts only clients in
@@ -111,7 +111,7 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 
 - Config: mixed SOCKS5/HTTP inbound `127.0.0.1:7890`; private/overlay
   destinations `Direct`, everything else via the panel groups:
-  - `Exit Node`, like a Tailscale exit node (whose network this machine uses):
+  - `Egress`, like a Tailscale exit node (whose network this machine uses):
     `Direct` (default), every entry of `easytier.exits` except the machine's
     own, and, when gopass `sing-box/bastion-outbounds` exists, `bastion` plus
     `<exit> via bastion` for each mesh exit (Shadowsocks to the exit, tunnelled
@@ -126,7 +126,7 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 
   Clash API and zashboard panel at
   `http://127.0.0.1:9090/ui` (secret: `gopass show -o sing-box/clash-api-secret`).
-  `singBox.exitRoutes` pins destinations to mesh exits whatever `Exit Node` says:
+  `singBox.exitRoutes` pins destinations to mesh exits whatever `Egress` says:
   one `urltest` group per entry, matched by sniffed domain or by address (so
   rsync/FTP match too). Members are in priority order; a huge tolerance keeps the
   first live one, a failure moves to the next, the machine's own exit means
@@ -138,7 +138,7 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   without them the mode falls back to CLI only.
 
 - Macs (`system`), like a Tailscale exit node: a TUN with `auto_route` carries
-  every app's traffic; `Exit Node` defaults to `Direct`, so nothing changes until an
+  every app's traffic; `Egress` defaults to `Direct`, so nothing changes until an
   exit is picked. It never sets the system proxy and leaves system DNS alone
   (`dns_mode: disabled`); LAN/company/VPN ranges, the mesh, Tailscale,
   link-local and multicast stay off the TUN (`singBox.tunExcludeAddress`), and
@@ -165,7 +165,7 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   `sing-box/bastion-outbounds`, then `chezmoi apply`. Re-run after the bastion
   changes ports or rotates the device's credentials.
 - Switch exits in the panel or by API (the group name is URL-encoded):
-  `curl -X PUT -H "Authorization: Bearer $secret" -d '{"name":"nas"}' "http://127.0.0.1:9090/proxies/$(jq -rn '"Exit Node"|@uri')"`
+  `curl -X PUT -H "Authorization: Bearer $secret" -d '{"name":"nas"}' "http://127.0.0.1:9090/proxies/$(jq -rn '"Egress"|@uri')"`
   (the choice persists in the cache file).
 - On a Mac, AdGuard must run in Automatic proxy mode: its Network Extension
   mode blocks QUIC (Hysteria2) and takes over SSH.
