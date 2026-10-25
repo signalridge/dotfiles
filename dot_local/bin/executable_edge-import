@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
-# Import a bastion proxy client into gopass as a sing-box outbound.
+# Import an edge client profile into gopass as a sing-box outbound.
 #
-# The bastion's vps-client issues each device a Surge-format profile
-# (/etc/vps-proxy/clients/<name>.conf): a `vmess` proxy over WebSocket + TLS
-# with a client certificate (Caddy mTLS) kept as PKCS#12 in [Keystore]. This
-# converts that profile into one sing-box vmess outbound (tag "bastion", client
-# certificate as PEM) and stores it as gopass sing-box/bastion-outbound, which
-# the sing-box config template (.chezmoitemplates/sing-box/config.tmpl) adds to
-# the Exit selector on every machine. Nothing secret is printed.
+# The edge host issues each device a Surge-format profile
+# (/etc/vps-proxy/clients/<name>.conf): a vmess endpoint over WebSocket + TLS
+# with a client certificate (mTLS) kept as PKCS#12 in [Keystore]. This
+# converts it into one sing-box outbound (tag "edge", client certificate as
+# PEM) stored as gopass sing-box/edge-outbound, which the sing-box config
+# template (.chezmoitemplates/sing-box/config.tmpl) adds to the Exit selector on
+# every machine. Nothing secret is printed.
 #
 # Usage:
-#   ssh bastion cat /etc/vps-proxy/clients/<name>.conf | sing-box-import-bastion
-#   sing-box-import-bastion <surge-profile.conf>
+#   ssh <edge-host> cat /etc/vps-proxy/clients/<name>.conf | edge-import
+#   edge-import <profile.conf>
 # Stored as one line of JSON (`gopass show -o` returns the first line only).
-# Then `chezmoi apply` (and on a work/home Mac the 25_sing-box script) to roll
-# it out. Re-run after `vps-client rotate <name>` on the bastion.
+# Then `chezmoi apply` (and on a Mac the 25_sing-box script) to roll it out.
+# Re-run after the edge host rotates the device's credentials.
 
 set -euo pipefail
 
 die() {
-    echo "sing-box-import-bastion: $*" >&2
+    echo "edge-import: $*" >&2
     exit 1
 }
 
@@ -52,7 +52,7 @@ fields() {
 field() { printf '%s\n' "$1" | awk -F '\t' -v k="$2" '$1 == k { print $2; exit }'; }
 
 proxy="$(section Proxy | awk '/=[ \t]*vmess[ \t]*,/ { print; exit }')"
-[[ -n "$proxy" ]] || die "no vmess proxy in [Proxy]"
+[[ -n "$proxy" ]] || die "no vmess entry in [Proxy]"
 # name = vmess, host, port, key=value...
 host="$(printf '%s\n' "$proxy" | awk -F ',' '{ gsub(/[ \t]/, "", $2); print $2 }')"
 port="$(printf '%s\n' "$proxy" | awk -F ',' '{ gsub(/[ \t]/, "", $3); print $3 }')"
@@ -63,7 +63,7 @@ ws_headers="$(field "$kv" ws-headers)"
 sni="$(field "$kv" sni)"
 cert_id="$(field "$kv" client-cert)"
 [[ -n "$host" && "$port" =~ ^[0-9]+$ && -n "$uuid" && -n "$ws_path" && -n "$cert_id" ]] ||
-    die "vmess proxy lacks host, port, username, ws-path or client-cert"
+    die "vmess entry lacks host, port, username, ws-path or client-cert"
 [[ "$(field "$kv" tls)" == true && "$(field "$kv" ws)" == true ]] || die "expected ws=true and tls=true"
 
 keystore="$(section Keystore | awk -v id="$cert_id" 'index($0, id) == 1 { sub(/^[^=]*=/, ""); print; exit }')"
@@ -98,7 +98,7 @@ jq -cn \
     --arg host "$host" --argjson port "$port" --arg uuid "$uuid" \
     --arg path "$ws_path" --argjson headers "$headers" --arg sni "${sni:-$host}" \
     --rawfile cert "$tmp/cert" --rawfile key "$tmp/key" '{
-      type: "vmess", tag: "bastion",
+      type: "vmess", tag: "edge",
       server: $host, server_port: $port,
       uuid: $uuid, security: "auto", alter_id: 0,
       transport: {type: "ws", path: $path, headers: $headers},
@@ -109,5 +109,5 @@ jq -cn \
       }
     }' >"$tmp/outbound.json"
 
-gopass insert -f -m sing-box/bastion-outbound <"$tmp/outbound.json" >/dev/null
-echo "Stored gopass sing-box/bastion-outbound (vmess ws+tls, client certificate); run chezmoi apply to roll it out."
+gopass insert -f -m sing-box/edge-outbound <"$tmp/outbound.json" >/dev/null
+echo "Stored gopass sing-box/edge-outbound (vmess ws+tls, client certificate); run chezmoi apply to roll it out."

@@ -10,7 +10,7 @@ set -euo pipefail
 # run time rather than rendered into the store or $HOME:
 #   easytier/exit-ss-password    Shadowsocks 2022 key of the EasyTier exits
 #   sing-box/clash-api-secret    Bearer secret of the web panel / Clash API
-#   sing-box/bastion-outbound    optional bastion outbound (sing-box-import-bastion)
+#   sing-box/edge-outbound       optional edge outbound (edge-import)
 # Runs on every apply; sudo only when the rendered config changed (tracked by
 # hash, since the file is root-only) or the daemon is not running.
 #
@@ -35,20 +35,20 @@ if ! ss_password="$(gopass show -o easytier/exit-ss-password 2>/dev/null)" ||
     echo "    Skipped (gopass easytier/exit-ss-password or sing-box/clash-api-secret unavailable)"
     exit 0
 fi
-# Optional bastion outbound (sing-box-import-bastion); "null" when absent.
-bastion="$(gopass show -o sing-box/bastion-outbound 2>/dev/null || echo null)"
-jq -e 'type == "object" or . == null' <<<"$bastion" >/dev/null || bastion=null
+# Optional edge outbound (edge-import); "null" when absent.
+edge="$(gopass show -o sing-box/edge-outbound 2>/dev/null || echo null)"
+jq -e 'type == "object" or . == null' <<<"$edge" >/dev/null || edge=null
 
 # Structure from .chezmoitemplates/sing-box/config.tmpl (shared with the
 # LaunchAgent / systemd variants); the two secrets are placeholders here and are
 # filled in by jq at run time so they never enter the rendered script.
 render_config() {
-    jq --arg password "$ss_password" --arg secret "$secret" --argjson bastion "$bastion" '
+    jq --arg password "$ss_password" --arg secret "$secret" --argjson edge "$edge" '
       walk(if . == "__EXIT_SS_PASSWORD__" then $password
            elif . == "__CLASH_API_SECRET__" then $secret
-           elif . == "__BASTION_OUTBOUND__" then $bastion else . end)' <<'JSON'
-{{- $hasBastion := stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/sing-box/bastion-outbound.age") }}
-{{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" "__EXIT_SS_PASSWORD__" "secret" "__CLASH_API_SECRET__" "tun" true "bastion" (ternary "__BASTION_OUTBOUND__" "" (not (not $hasBastion)))) }}
+           elif . == "__EDGE_OUTBOUND__" then $edge else . end)' <<'JSON'
+{{- $hasEdge := stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/sing-box/edge-outbound.age") }}
+{{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" "__EXIT_SS_PASSWORD__" "secret" "__CLASH_API_SECRET__" "tun" true "edge" (ternary "__EDGE_OUTBOUND__" "" (not (not $hasEdge)))) }}
 JSON
 }
 

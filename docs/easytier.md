@@ -106,8 +106,8 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 
 - Config: mixed SOCKS5/HTTP inbound `127.0.0.1:7890`; private/overlay
   destinations direct, everything else via selector `Exit`: `direct` (default),
-  every entry of `easytier.exits` except the machine's own, and `bastion` when
-  gopass `sing-box/bastion-outbound` exists. Clash API and metacubexd panel at
+  every entry of `easytier.exits` except the machine's own, and `edge` when
+  gopass `sing-box/edge-outbound` exists. Clash API and metacubexd panel at
   `http://127.0.0.1:9090/ui` (secret: `gopass show -o sing-box/clash-api-secret`).
   Secrets: gopass `easytier/exit-ss-password`, `sing-box/clash-api-secret`;
   without them the mode falls back to CLI only.
@@ -130,12 +130,12 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   `~/.config/sing-box/config.json` (0600); a shell opts in with `proxy-on` /
   `proxy-off` (`dot_custom/functions.sh`). Logs `journalctl --user -u sing-box`,
   panel via `ssh -L 9090:127.0.0.1:9090 <host>`.
-- Bastion outbound: `ssh bastion cat /etc/vps-proxy/clients/<name>.conf |
-sing-box-import-bastion` converts the Surge-format profile that `vps-client`
-  issues (vmess + WebSocket + TLS + PKCS#12 client certificate for Caddy mTLS)
-  into one sing-box outbound and stores it in gopass. Re-run after
-  `vps-client rotate <name>`. The entry is a complete outbound object, so a
-  different protocol later only means a different gopass value.
+- Edge outbound: `ssh <edge-host> cat /etc/vps-proxy/clients/<name>.conf |
+edge-import` converts the device profile the edge host issues (Surge format:
+  vmess + WebSocket + TLS + PKCS#12 client certificate) into one sing-box
+  outbound, tag `edge`, stored as gopass `sing-box/edge-outbound`. Re-run after
+  the device's credentials are rotated. The entry is a complete outbound
+  object, so a different protocol later only means a different gopass value.
 - Switch exits in the panel or by API:
   `curl -X PUT -H "Authorization: Bearer $secret" -d '{"name":"nas"}' http://127.0.0.1:9090/proxies/Exit`
   (the choice persists in the cache file).
