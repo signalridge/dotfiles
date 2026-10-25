@@ -1162,7 +1162,7 @@ mcp-reap() {
 }
 
 # ─────────────────────────────────────────────────────────────
-# sing-box proxy (127.0.0.1:7890; exit picked in its Egress selector,
+# sing-box proxy (127.0.0.1:7890; exit picked in its Exit Node selector,
 # panel http://127.0.0.1:9090/ui). Nothing uses it unless opted in:
 # the browser via a proxy extension, a shell via proxy-on.
 # ─────────────────────────────────────────────────────────────

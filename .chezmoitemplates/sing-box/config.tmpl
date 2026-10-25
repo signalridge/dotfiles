@@ -4,7 +4,7 @@
        ["bastion" <list of outbounds, or the placeholder string
        "__BASTION_OUTBOUNDS__" spliced in later>]).
        Panel groups (names are what the web panel shows):
-         Egress   like a Tailscale exit node: whose network this machine uses.
+         Exit Node     like a Tailscale exit node: whose network this machine uses.
                   Direct (default), every EasyTier exit except this machine,
                   bastion, and each exit chained through bastion (for networks
                   that only let the bastion through).
@@ -18,7 +18,7 @@
        ranges; the mesh exit outbounds then get bind_interface injected at start
        (nix-config/modules/sing-box.nix). Mixed SOCKS5/HTTP inbound on
        127.0.0.1; private/overlay destinations go Direct, singBox.exitRoutes
-       destinations through their pinned exits, everything else through Egress;
+       destinations through their pinned exits, everything else through Exit Node;
        Clash API + web panel on 127.0.0.1. Values from
        .chezmoidata/{sing-box,easytier}.yaml. */ -}}
 {{- $r := .root -}}
@@ -55,7 +55,7 @@
 {{-     $outbounds = append $outbounds (dict "type" "shadowsocks" "tag" $tag "server" (index $r.easytier.exits .) "server_port" $r.easytier.exitProxy.port "method" $r.easytier.exitProxy.method "password" $.password "detour" "bastion") -}}
 {{-   end -}}
 {{- end -}}
-{{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Egress" "default" $direct "outbounds" $exits) -}}
+{{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Exit Node" "default" $direct "outbounds" $exits) -}}
 {{- /* EasyTier's own packets must never ride an exit: the exits are carried by
        EasyTier, and the peers' public addresses can fall inside an exit route
        (the JAIST range holds gpuserver and nas), which looped hole-punching
@@ -101,7 +101,7 @@
       "outbounds" $outbounds
       "route" (dict
         "rules" $rules
-        "final" "Egress"
+        "final" "Exit Node"
         "default_domain_resolver" "local"
         "auto_detect_interface" true)
       "experimental" (dict

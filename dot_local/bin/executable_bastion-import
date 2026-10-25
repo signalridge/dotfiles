@@ -6,7 +6,7 @@
 # web panel shows (Reality, Hysteria2, AnyTLS) and stores them as gopass
 # sing-box/bastion-outbounds, which the sing-box config template
 # (.chezmoitemplates/sing-box/config.tmpl) turns into the `bastion` group and the
-# `Egress` options on every machine. Nothing secret is printed.
+# `Exit Node` options on every machine. Nothing secret is printed.
 #
 # Usage:
 #   ssh bastion vps-client export <device> | bastion-import
