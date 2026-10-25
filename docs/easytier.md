@@ -117,8 +117,10 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
     `<exit> via bastion` for each mesh exit (Shadowsocks to the exit, tunnelled
     through the bastion, which relays over its EasyTier address
     `10.144.144.254`; for networks that only let the bastion through).
-  - `bastion`: how the bastion is reached: `Auto` (urltest) or `Reality`
-    (VLESS Reality Vision), `Hysteria2`, `AnyTLS`. The chained exits follow it.
+  - `bastion`: how the bastion is reached, picked by hand: `Reality` (default,
+    VLESS Reality Vision), `Hysteria2` or `AnyTLS`; no automatic switching, so
+    change it here if a network blocks the current one. The chained exits
+    follow it.
   - GLOBAL in the panel is a Clash display artefact: sing-box only offers rule
     mode, so it does nothing.
 
