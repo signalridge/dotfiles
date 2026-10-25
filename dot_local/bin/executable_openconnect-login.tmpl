@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Log in to a sing-box OpenConnect VPN endpoint (docs/easytier.md "OpenConnect
+# VPN"). The endpoint in the sing-box config holds no credentials and waits in
+# auth-pending; this opens the VPN's login page in the default browser and
+# hands the terminal to `sing-box api openconnect auth`, which prints the steps
+# and asks for the session cookies (F5: MRHSession and F5_ST) read from the
+# browser's developer tools after the single sign-on. The session then lives only in
+# sing-box's memory: nothing on disk, no sing-box restart.
+#
+#   openconnect-login [login] [ENDPOINT]   ENDPOINT optional when only one exists
+#   openconnect-login status
+#   openconnect-login cancel [ENDPOINT]
+#
+# Secret: gopass sing-box/clash-api-secret (shared with the Clash API); API URL
+# from .chezmoidata/sing-box.yaml, overridable with BOX_API_URL.
+
+set -euo pipefail
+
+for cmd in gopass sing-box; do
+    command -v "$cmd" >/dev/null 2>&1 || { echo "openconnect-login: $cmd not found" >&2; exit 1; }
+done
+export BOX_API_URL="${BOX_API_URL:-http://127.0.0.1:{{ .singBox.apiPort }}}"
+BOX_API_SECRET="$(gopass show -o sing-box/clash-api-secret 2>/dev/null)" ||
+    { echo "openconnect-login: gopass sing-box/clash-api-secret unavailable" >&2; exit 1; }
+export BOX_API_SECRET
+
+case "${1:-login}" in
+status) exec sing-box api openconnect status ;;
+cancel)
+    args=()
+    [[ -n "${2:-}" ]] && args=(--endpoint "$2")
+    exec sing-box api openconnect cancel "${args[@]}"
+    ;;
+login) shift ;;
+esac
+args=()
+[[ -n "${1:-}" ]] && args=(--endpoint "$1")
+# The endpoint's server is the login page (singBox.openconnect); open it before
+# the prompt so the browser is ready when sing-box prints the steps.
+{{- range .singBox.openconnect }}
+{{- if eq .flavor "f5" }}
+if [[ -z "${1:-}" || "${1:-}" == {{ .tag | quote }} ]]; then
+    open "https://{{ .server }}/" 2>/dev/null || true
+fi
+{{- end }}
+{{- end }}
+exec sing-box api openconnect auth "${args[@]}"

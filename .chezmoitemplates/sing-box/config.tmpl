@@ -5,8 +5,10 @@
        Panel groups (names are what the web panel shows):
          Egress   like a Tailscale exit node: whose network this machine uses.
                   Direct (default), every EasyTier exit except this machine,
-                  bastion, and each exit chained through bastion (for networks
-                  that only let the bastion through).
+                  bastion, each exit chained through bastion (for networks
+                  that only let the bastion through) and, on Macs, each
+                  OpenConnect VPN endpoint (singBox.openconnect; logged in at
+                  run time by openconnect-login, see below).
          bastion  how to reach the bastion: Reality (default), Hysteria2 or
                   AnyTLS, picked by hand (no automatic switching).
                   "bastion" (gopass sing-box/bastion-outbounds, bastion-import)
@@ -54,6 +56,26 @@
 {{-     $outbounds = append $outbounds (dict "type" "shadowsocks" "tag" $tag "server" (index $r.easytier.exits .) "server_port" $r.easytier.exitProxy.port "method" $r.easytier.exitProxy.method "password" $.password "detour" "bastion") -}}
 {{-   end -}}
 {{- end -}}
+{{- /* OpenConnect VPN endpoints (singBox.openconnect), on Macs that are not
+       work machines: sing-box's own client for the network's VPN (JAIST, F5
+       SAML through the signalridge/sing-box-patches build). The config
+       carries no credentials: the endpoint waits in auth-pending until
+       openconnect-login completes the browser single sign-on through the API
+       service below, and the session lives only in sing-box's memory. Each
+       endpoint is an Egress option and a hand-picked option of the exit
+       routes it names (`routes`), after their bastion chains. */ -}}
+{{- $endpoints := list -}}
+{{- $vpnRoutes := dict -}}
+{{- if and (dig "tun" false .) (not (dig "work" false $r)) -}}
+{{-   range (dig "openconnect" (list) $r.singBox) -}}
+{{-     $vpn := . -}}
+{{-     $endpoints = append $endpoints (dict "type" "openconnect" "tag" $vpn.tag "server" $vpn.server "flavor" $vpn.flavor) -}}
+{{-     $exits = append $exits $vpn.tag -}}
+{{-     range (dig "routes" (list) $vpn) -}}
+{{-       $_ := set $vpnRoutes . (append (dig . (list) $vpnRoutes) $vpn.tag) -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
 {{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Egress" "default" $direct "outbounds" $exits) -}}
 {{- /* EasyTier's own packets must never ride an exit: the exits are carried by
        EasyTier, and the peers' public addresses can fall inside an exit route
@@ -70,9 +92,9 @@
        across restarts (cache_file). Members are the exits in priority order
        (the first is the default), then `Egress` (the same route as everything
        else), then the same exits through the bastion for networks that block
-       the mesh. On Macs the LaunchDaemon (nix-config/modules/sing-box.nix)
+       the mesh, then the VPN endpoints naming the route. On Macs the LaunchDaemon (nix-config/modules/sing-box.nix)
        keeps each route on the first exit that answers, else `Egress`, and
-       leaves a route set by hand to a bastion chain alone.
+       leaves a route set by hand to a bastion chain or a VPN alone.
        Not a urltest:
        the bastion detour is only ~30-35 ms slower than the mesh link (84 vs
        118 ms on 2026-10-25), so latency picks kept landing on it (taken at
@@ -88,7 +110,10 @@
        under ~/.local/share/sing-box/rule-set (.chezmoiexternal.toml), and a
        boot without network still comes up. exceptKeyword names domains
        bundled in those lists that must not take the route; they fall through
-       to Egress like anything else, so a broad keyword costs nothing. */ -}}
+       to Egress like anything else, so a broad keyword costs nothing.
+       exceptDirect (domain, optionally ipCidr) goes Direct instead: the
+       network's own VPN gateway and login pages, which must be reached from
+       this machine's own address, not from the exit. */ -}}
 {{- $ruleSets := dict -}}
 {{- range $r.singBox.exitRoutes -}}
 {{-   $members := list -}}
@@ -98,7 +123,13 @@
 {{-     $members = append $members (ternary $direct . (eq . $self)) -}}
 {{-     if hasKey $chained . -}}{{- $twins = append $twins (index $chained .) -}}{{- end -}}
 {{-   end -}}
-{{-   $outbounds = append $outbounds (dict "type" "selector" "tag" .tag "outbounds" (concat $members (list "Egress") $twins) "default" (first $members) "interrupt_exist_connections" false) -}}
+{{-   $outbounds = append $outbounds (dict "type" "selector" "tag" .tag "outbounds" (concat $members (list "Egress") $twins (dig .tag (list) $vpnRoutes)) "default" (first $members) "interrupt_exist_connections" false) -}}
+{{-   if hasKey . "exceptDirect" -}}
+{{-     $except := dict "outbound" $direct -}}
+{{-     if hasKey .exceptDirect "domain" -}}{{- $_ := set $except "domain" .exceptDirect.domain -}}{{- end -}}
+{{-     if hasKey .exceptDirect "ipCidr" -}}{{- $_ := set $except "ip_cidr" .exceptDirect.ipCidr -}}{{- end -}}
+{{-     $rules = append $rules $except -}}
+{{-   end -}}
 {{-   if hasKey . "exceptKeyword" -}}{{- $rules = append $rules (dict "domain_keyword" .exceptKeyword "outbound" "Egress") -}}{{- end -}}
 {{-   $match := dict "outbound" .tag -}}
 {{-   if hasKey . "domainSuffix" -}}{{- $_ := set $match "domain_suffix" .domainSuffix -}}{{- end -}}
@@ -182,5 +213,11 @@
 {{-   $_ := set $route "rule_set" (values $ruleSets) -}}
 {{-   $_ := set $route "default_http_client" "rule-sets" -}}
 {{-   $_ := set $config "http_clients" (list (dict "tag" "rule-sets")) -}}
+{{- end -}}
+{{- if gt (len $endpoints) 0 -}}
+{{-   $_ := set $config "endpoints" $endpoints -}}
+{{- /* API service (gRPC on loopback): the OpenConnect auth challenges that
+       openconnect-login answers. Same bearer secret as the Clash API. */ -}}
+{{-   $_ := set $config "services" (list (dict "type" "api" "tag" "api" "listen" "127.0.0.1" "listen_port" $r.singBox.apiPort "secret" .secret "dashboard" false)) -}}
 {{- end -}}
 {{- toPrettyJson $config -}}

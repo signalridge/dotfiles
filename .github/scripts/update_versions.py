@@ -31,6 +31,7 @@ ENV_BY_KEY = {
     "easytierLinuxAmd64Sha256": "U_EASYTIER_LINUX_AMD64_SHA256",
     "easytierLinuxArm64Sha256": "U_EASYTIER_LINUX_ARM64_SHA256",
     "singBox": "U_SING_BOX",
+    "singBoxPatch": "U_SING_BOX_PATCH",
     "singBoxDarwinAmd64Sha256": "U_SING_BOX_DARWIN_AMD64_SHA256",
     "singBoxDarwinArm64Sha256": "U_SING_BOX_DARWIN_ARM64_SHA256",
     "cursorAgentVersion": "U_CURSOR_AGENT_VERSION",

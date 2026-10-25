@@ -4,23 +4,26 @@
 {{-   $arch = "arm64" -}}
 {{-   $sha256 = .versions.singBoxDarwinArm64Sha256 -}}
 {{- end -}}
-# sing-box from the official release tarball (macOS), used by ./sing-box.nix
-# for the CLI and the LaunchAgent on every Mac. Version and digests:
+# sing-box from the signalridge/sing-box-patches release tarball (macOS):
+# upstream's release plus patches to its dependencies (F5 SAML login for the
+# OpenConnect endpoint), laid out like upstream's. Used by ./sing-box.nix for
+# the CLI and the LaunchDaemon on every Mac. Version, patch level and digests:
 # .chezmoidata/versions.yaml, bumped by the update-versions workflow from
-# GitHub's release-asset digests (upstream ships no checksum file).
+# GitHub's release-asset digests.
 { pkgs }:
 let
   version = "{{ .versions.singBox }}";
+  tag = "v${version}-{{ .versions.singBoxPatch }}";
 in
 pkgs.stdenvNoCC.mkDerivation {
   pname = "sing-box";
   inherit version;
   src = pkgs.fetchurl {
-    url = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-darwin-{{ $arch }}.tar.gz";
+    url = "https://github.com/signalridge/sing-box-patches/releases/download/${tag}/sing-box-${version}-darwin-{{ $arch }}.tar.gz";
     sha256 = "{{ $sha256 }}";
   };
   sourceRoot = "sing-box-${version}-darwin-{{ $arch }}";
-  # Upstream binary untouched (ad-hoc signed; stripping would break it).
+  # Release binary untouched (stripping would break its ad-hoc signature).
   dontConfigure = true;
   dontBuild = true;
   dontFixup = true;

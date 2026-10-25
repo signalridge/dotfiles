@@ -20,9 +20,12 @@ versions:
   easytierDarwinArm64Sha256: 4be1882d1aa36d31c1d6ba0596f2cf8a097e371f8da124212324b2e0f8df7e4b
   easytierLinuxAmd64Sha256: 61b659eaedba658fa66fe47d17e1426cdd77e5d02fa15fed447bb4357c09dfd6
   easytierLinuxArm64Sha256: f533ec25a7ea714e09f645615012200278058525795cc3bb690ff011aec1a70f
+  # sing-box from signalridge/sing-box-patches (tag v<singBox>-<singBoxPatch>):
+  # upstream plus the F5 SAML login for the JAIST VPN.
   singBox: 1.14.4
-  singBoxDarwinAmd64Sha256: eae86b9b033bba50b7c44ab719e4bfac0aca05efd28483390ed3aa510f32db25
-  singBoxDarwinArm64Sha256: 0d8c7f5ed5d587b0f1a5e9772a708ec3bfa4ac4c9329604b01d8d9c2ba406838
+  singBoxPatch: p2
+  singBoxDarwinAmd64Sha256: 7c7ba1dbd87c9545e77e02c842edd34ba980909a0a6e09c9775b7a755f5a57ac
+  singBoxDarwinArm64Sha256: fd91db428fd081ad4b3320c13a1aa258429bf087bc789db964d2ed20e539280a
   azureFunctionsVersion: 4.12.0
   azureFunctionsBuildId: "281211"
   azureFunctionsOsxArm64Sha256: 85786c1ffc3a60073a5379f3a18986dbf9397830e0af8fbc59f73cdb7b20473e

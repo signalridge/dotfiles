@@ -113,8 +113,9 @@ Not used: kcptun (upstream repository gone in 2026), udp2raw and ptunnel-ng
 
 ## sing-box (every machine)
 
-Every machine has sing-box (macOS: nix package from the official release,
-`nix-config/modules/sing-box{,-package}.nix.tmpl`; Linux: aqua). How it runs is
+Every machine has sing-box (macOS: nix package from the
+signalridge/sing-box-patches release, see "OpenConnect VPN" below,
+`nix-config/modules/sing-box{,-package}.nix.tmpl`; Linux: aqua, upstream). How it runs is
 decided by `.chezmoitemplates/sing-box/mode.tmpl`, and all variants share one
 config template, `.chezmoitemplates/sing-box/config.tmpl`:
 
@@ -214,6 +215,33 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   (the choice persists in the cache file).
 - On a Mac, AdGuard must run in Automatic proxy mode: its Network Extension
   mode blocks QUIC (Hysteria2) and takes over SSH.
+
+## OpenConnect VPN (sing-box's own client)
+
+`singBox.openconnect` (`.chezmoidata/sing-box.yaml`) adds sing-box 1.14
+OpenConnect endpoints on Macs that are not work machines. Each endpoint is an
+`Egress` option and a hand-picked option of the exit routes it names
+(`routes`), listed after their bastion chains; the LaunchDaemon's failover
+never picks it and leaves it alone once you do. The target is JAIST's official
+F5 BIG-IP (`vpn.jaist.ac.jp`, `flavor: f5`, JAIST-SSO behind it). Upstream
+`sing-openconnect` only knows F5's native logon form and stops at `unexpected
+first F5 HTML form ID` on the SAML page, so Macs run the
+[signalridge/sing-box-patches](https://github.com/signalridge/sing-box-patches)
+build (`nix-config/modules/sing-box-package.nix`, tag
+`v<singBox>-<singBoxPatch>` in `.chezmoidata/versions.yaml`, bumped by the
+update-versions workflow), which turns that page into a browser challenge.
+
+The config holds no credentials and sing-box never restarts for a login. An
+endpoint sits in `auth-pending` until `openconnect-login [ENDPOINT]`
+(`dot_local/bin`): it opens the VPN's login page in your default browser and
+hands the terminal to `sing-box api openconnect auth` (sing-box's API service,
+gRPC on `127.0.0.1:9091`, secret `sing-box/clash-api-secret`), which prints
+the steps and asks for the `MRHSession` and `F5_ST` cookies that you copy from
+the browser's developer tools once you are logged in. The gateway and
+JAIST-SSO go Direct (`exceptDirect`), not through the campus exit. The session
+lives only in sing-box's memory; when it expires or the gateway refuses it,
+the endpoint asks again. `openconnect-login status` / `cancel` wrap the same
+API. A sing-box restart (config change) drops the session; log in again.
 
 ## Installed replacement tools
 
