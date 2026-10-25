@@ -98,38 +98,44 @@ Every machine has sing-box (macOS: nix package from the official release,
 decided by `.chezmoitemplates/sing-box/mode.tmpl`, and all variants share one
 config template, `.chezmoitemplates/sing-box/config.tmpl`:
 
-| Machine        | Mode      | Runs as                                                      | Default           |
-| -------------- | --------- | ------------------------------------------------------------ | ----------------- |
-| work Mac       | `system`  | root LaunchDaemon `org.nixos.sing-box` with a TUN            | always on         |
-| other Macs     | `agent`   | LaunchAgent `com.signalridge.sing-box` (Surge stays default) | started on demand |
-| headless Linux | `service` | systemd --user `sing-box.service`                            | always on         |
-| other Linux    | —         | CLI only                                                     | —                 |
+| Machine        | Mode      | Runs as                                           | Default   |
+| -------------- | --------- | ------------------------------------------------- | --------- |
+| every Mac      | `system`  | root LaunchDaemon `org.nixos.sing-box` with a TUN | always on |
+| headless Linux | `service` | systemd --user `sing-box.service`                 | always on |
+| other Linux    | —         | CLI only                                          | —         |
 
 - Config: mixed SOCKS5/HTTP inbound `127.0.0.1:7890`; private/overlay
-  destinations direct, everything else via selector `Exit` (`direct` default
-  plus every entry of `easytier.exits` except the machine's own); Clash API and
-  metacubexd panel at `http://127.0.0.1:9090/ui` (secret: `gopass show -o
-sing-box/clash-api-secret`). Secrets: gopass `easytier/exit-ss-password`,
-  `sing-box/clash-api-secret`; without them the mode falls back to CLI only.
-- Work Mac (`system`), like a Tailscale exit node: a TUN with `auto_route`
-  carries every app's traffic; `Exit` defaults to `direct`, so nothing changes
-  until an exit is picked. It never sets the system proxy and leaves system DNS
-  alone (`dns_mode: disabled`); LAN/company/VPN ranges, the mesh, Tailscale,
+  destinations direct, everything else via selector `Exit`: `direct` (default),
+  every entry of `easytier.exits` except the machine's own, and `bastion` when
+  gopass `sing-box/bastion-outbound` exists. Clash API and metacubexd panel at
+  `http://127.0.0.1:9090/ui` (secret: `gopass show -o sing-box/clash-api-secret`).
+  Secrets: gopass `easytier/exit-ss-password`, `sing-box/clash-api-secret`;
+  without them the mode falls back to CLI only.
+- Macs (`system`), like a Tailscale exit node: a TUN with `auto_route` carries
+  every app's traffic; `Exit` defaults to `direct`, so nothing changes until an
+  exit is picked. It never sets the system proxy and leaves system DNS alone
+  (`dns_mode: disabled`); LAN/company/VPN ranges, the mesh, Tailscale,
   link-local and multicast stay off the TUN (`singBox.tunExcludeAddress`).
   EasyTier's own traffic bypasses it via `--bind-device`. Because sing-box binds
   its outbounds to the default NIC under a TUN, the daemon injects EasyTier's
   utun (dynamic unit number) as `bind_interface` into the exit outbounds at
-  start and restarts when it changes. Config: `.chezmoiscripts/run_after_25_sing-box.sh.tmpl`
-  fills the gopass secrets in with jq at run time, runs `sing-box check` and
-  writes `/etc/sing-box/config.json` (root:wheel 0600). Log `/var/log/sing-box.log`.
-- Elsewhere no TUN and no system proxy: Surge already plays that role on the
-  home Mac; a shell opts in with `proxy-on` / `proxy-off`
-  (`dot_custom/functions.sh`; mesh, Tailscale and local ranges in `no_proxy`).
-- `agent` / `service`: chezmoi renders `~/.config/sing-box/config.json` (0600). Logs:
-  `~/Library/Logs/sing-box.launchd.log` (Mac), `journalctl --user -u sing-box`.
-  Mac on demand: `launchctl kickstart gui/$(id -u)/com.signalridge.sing-box`,
-  stop with `launchctl kill TERM gui/$(id -u)/com.signalridge.sing-box`;
-  Linux panel via `ssh -L 9090:127.0.0.1:9090 <host>`.
+  start and restarts when it changes. A root daemon is also exempt from macOS
+  Local Network privacy, which makes a user-launched sing-box fail to reach the
+  LAN DNS server (`write: broken pipe`). Config:
+  `.chezmoiscripts/run_after_25_sing-box.sh.tmpl` fills the gopass secrets in
+  with jq at run time, runs `sing-box check` and writes
+  `/etc/sing-box/config.json` (root:wheel 0600). Log `/var/log/sing-box.log`.
+  Only one TUN may own the default route, so Surge Enhanced Mode must be off.
+- Headless Linux (`service`): no TUN; chezmoi renders
+  `~/.config/sing-box/config.json` (0600); a shell opts in with `proxy-on` /
+  `proxy-off` (`dot_custom/functions.sh`). Logs `journalctl --user -u sing-box`,
+  panel via `ssh -L 9090:127.0.0.1:9090 <host>`.
+- Bastion outbound: `ssh bastion cat /etc/vps-proxy/clients/<name>.conf |
+sing-box-import-bastion` converts the Surge-format profile that `vps-client`
+  issues (vmess + WebSocket + TLS + PKCS#12 client certificate for Caddy mTLS)
+  into one sing-box outbound and stores it in gopass. Re-run after
+  `vps-client rotate <name>`. The entry is a complete outbound object, so a
+  different protocol later only means a different gopass value.
 - Switch exits in the panel or by API:
   `curl -X PUT -H "Authorization: Bearer $secret" -d '{"name":"nas"}' http://127.0.0.1:9090/proxies/Exit`
   (the choice persists in the cache file).
@@ -387,8 +393,9 @@ Status: `sudo docker exec easytier easytier-cli peer`.
   them); remove the `gpuserver`/`nas` proxies and the `Exit` group
   from Surge; `gopass rm easytier/exit-ss-password`.
 - gopass: `gopass rm -r easytier`.
-- sing-box: `gopass rm sing-box/clash-api-secret` (every mode then falls back to
-  CLI only; `chezmoi apply` stops rendering the config, LaunchAgent and unit —
-  delete `~/.config/sing-box`, `~/.local/state/sing-box`, and on Linux run
-  `systemctl --user disable --now sing-box` first). To drop it entirely, revert
-  the sing-box commits (data, templates, nix modules, versions, aqua entry).
+- sing-box: `gopass rm -r sing-box` (every mode then falls back to CLI only).
+  Mac: `chezmoi apply ~/.chezmoiscripts/02_init.sh` drops the daemon; then
+  `sudo rm -r /etc/sing-box /var/lib/sing-box /var/run/sing-box`. Linux:
+  `systemctl --user disable --now sing-box`, delete `~/.config/sing-box`,
+  `~/.local/state/sing-box`. To drop it entirely, revert the sing-box commits
+  (data, templates, nix modules, versions, aqua entry, import script).

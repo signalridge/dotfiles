@@ -2,11 +2,11 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # sing-box (official release, ./sing-box-package.nix)
 # ─────────────────────────────────────────────────────────────────────────────
-# The CLI on every Mac. Other Macs run it from the per-user LaunchAgent
-# com.signalridge.sing-box (on demand). Work Macs (mode "system",
-# .chezmoitemplates/sing-box/mode.tmpl) run it here as a root LaunchDaemon with
-# a TUN, like a Tailscale exit node: every app's traffic, `Exit` defaults to
-# direct, system proxy and DNS untouched.
+# Every Mac (mode "system", .chezmoitemplates/sing-box/mode.tmpl) runs it here
+# as a root LaunchDaemon with a TUN, like a Tailscale exit node: every app's
+# traffic, `Exit` defaults to direct, system proxy and DNS untouched. (A root
+# daemon is also exempt from macOS Local Network privacy, which blocks a
+# user-launched sing-box from reaching the LAN DNS server.)
 #
 # The config holds the exit key and the panel secret, so it is NOT rendered
 # here (it would land in the world-readable /nix/store):

@@ -1,5 +1,8 @@
 {{- /* sing-box client config, shared by every platform (docs/easytier.md).
-       Called with (dict "root" $ "password" … "secret" … ["tun" true]). Never
+       Called with (dict "root" $ "password" … "secret" … ["tun" true]
+       ["bastion" <outbound object, or a placeholder string replaced later>]).
+       "bastion" (gopass sing-box/bastion-outbound, from
+       sing-box-import-bastion) joins the Exit selector as tag "bastion". Never
        sets the system proxy. With "tun": a TUN inbound with auto_route (every
        app, like a Tailscale exit node) that leaves system DNS alone and
        excludes private/overlay ranges; the exit outbounds then get
@@ -17,6 +20,11 @@
 {{-     $tags = append $tags $name -}}
 {{-     $outbounds = append $outbounds (dict "type" "shadowsocks" "tag" $name "server" $ip "server_port" $r.easytier.exitProxy.port "method" $r.easytier.exitProxy.method "password" $.password) -}}
 {{-   end -}}
+{{- end -}}
+{{- $bastion := dig "bastion" "" . -}}
+{{- if $bastion -}}
+{{-   $tags = append $tags "bastion" -}}
+{{-   $outbounds = append $outbounds $bastion -}}
 {{- end -}}
 {{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Exit" "default" "direct" "outbounds" $tags) -}}
 {{- $inbounds := list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" false) -}}
