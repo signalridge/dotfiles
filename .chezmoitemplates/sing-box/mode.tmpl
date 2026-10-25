@@ -10,7 +10,7 @@
 {{- $mode := "" -}}
 {{- if eq .chezmoi.os "darwin" -}}
 {{-   $mode = ternary "system" "agent" .work -}}
-{{- else if and (eq .chezmoi.os "linux") .headless -}}
+{{- else if and (eq .chezmoi.os "linux") (dig "headless" false .) -}}
 {{-   $mode = "service" -}}
 {{- end -}}
 {{- $store := joinPath .chezmoi.homeDir ".local/share/gopass/stores/root" -}}
