@@ -215,7 +215,7 @@ and Pulse clients already turn SAML into a browser challenge.
 The config holds no credentials and sing-box never restarts for a login. An
 endpoint sits in `auth-pending`; `openconnect-login [ENDPOINT]`
 (`dot_local/bin`) reads the challenge from sing-box's API service (gRPC on
-`127.0.0.1:9091`, secret `sing-box/clash-api-secret`, `grpcurl` from aqua),
+`127.0.0.1:9091`, secret `sing-box/clash-api-secret`, `buf curl` from aqua),
 opens the single sign-on page in an `agent-browser` window (a throwaway
 profile, never your own browser's data), waits for you to log in, reads back
 what the VPN wants (F5, Fortinet, Pulse: the session cookie; GlobalProtect: the

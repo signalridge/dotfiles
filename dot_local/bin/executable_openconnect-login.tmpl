@@ -18,7 +18,8 @@
 #   openconnect-login cancel [ENDPOINT]    drop a pending challenge
 #
 # Secret: gopass sing-box/clash-api-secret (shared with the Clash API); the
-# API URL defaults to the loopback port from .chezmoidata/sing-box.yaml.
+# API URL defaults to the loopback port from .chezmoidata/sing-box.yaml. Talks
+# gRPC with `buf curl` (aqua: bufbuild/buf).
 
 set -euo pipefail
 
@@ -27,26 +28,32 @@ die() {
     exit 1
 }
 
-for cmd in agent-browser gopass grpcurl jq sing-box; do
+for cmd in agent-browser buf gopass jq sing-box; do
     command -v "$cmd" >/dev/null 2>&1 || die "$cmd not found"
 done
 
 export BOX_API_URL="${BOX_API_URL:-http://127.0.0.1:{{ .singBox.apiPort }}}"
 BOX_API_SECRET="$(gopass show -o sing-box/clash-api-secret 2>/dev/null)" || die "gopass sing-box/clash-api-secret unavailable"
 export BOX_API_SECRET
-addr="${BOX_API_URL#http://}"
 session="openconnect-login"
 
-# grpcurl expands ${BOX_API_SECRET} itself, so the secret never appears in
-# argv. Single quotes are deliberate.
+# One API call: `buf curl` over gRPC with server reflection. The bearer header
+# (and the request body, after a blank line) go in on stdin, so the secret
+# never appears in argv. METHOD [BODY] [TIMEOUT]
 grpc() {
-    grpcurl -plaintext -expand-headers -H 'authorization: Bearer ${BOX_API_SECRET}' "$@"
+    local method="$1" body="${2:-}" timeout="${3:-10s}"
+    {
+        printf 'authorization: Bearer %s\n' "$BOX_API_SECRET"
+        [[ -n "$body" ]] && printf '\n%s\n' "$body"
+    } | buf curl --timeout "$timeout" --protocol grpc --http2-prior-knowledge \
+        --reflect --reflect-header '*' -H @- ${body:+-d @-} \
+        "$BOX_API_URL/daemon.StartedService/$method"
 }
 
-# First message of the status stream, as one JSON object.
+# First message of the (endless) status stream, as one JSON object; the
+# timeout ends the stream, which is expected.
 status_json() {
-    grpc -max-time 5 "$addr" daemon.StartedService/SubscribeOpenConnectStatus 2>/dev/null |
-        jq -c 'select(.endpoints)' | head -n 1 || true
+    grpc SubscribeOpenConnectStatus "" 4s 2>/dev/null | jq -c 'select(.endpoints)' | head -n 1 || true
 }
 
 endpoint_json() {
@@ -128,9 +135,8 @@ login() {
         [[ -n "$result" ]] && break
     done
     [[ -n "$result" ]] || die "$tag: timed out waiting for the login"
-    jq -n --arg tag "$tag" --arg id "$id" --argjson browser "$result" \
-        '{endpointTag: $tag, challengeID: $id, browser: $browser}' |
-        grpc -d @ "$addr" daemon.StartedService/SubmitOpenConnectAuthResponse >/dev/null
+    grpc SubmitOpenConnectAuthResponse "$(jq -cn --arg tag "$tag" --arg id "$id" --argjson browser "$result" \
+        '{endpointTag: $tag, challengeID: $id, browser: $browser}')" >/dev/null
     close_browser
     trap - EXIT
     echo "$tag: submitted $(jq -r "(.$kind | length)" <<<"$result") $kind; connecting..."
@@ -156,8 +162,7 @@ cancel)
     st="$(status_json)"
     [[ -n "$st" ]] || die "API at $BOX_API_URL is unreachable"
     ep="$(endpoint_json "${2:-}" "$st")"
-    jq -c '{endpointTag: .endpointTag, challengeID: .authChallenge.id}' <<<"$ep" |
-        grpc -d @ "$addr" daemon.StartedService/CancelOpenConnectAuthChallenge >/dev/null
+    grpc CancelOpenConnectAuthChallenge "$(jq -c '{endpointTag: .endpointTag, challengeID: .authChallenge.id}' <<<"$ep")" >/dev/null
     echo "$(jq -r .endpointTag <<<"$ep"): challenge cancelled"
     ;;
 login)
