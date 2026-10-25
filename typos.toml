@@ -15,3 +15,5 @@ noice = "noice"
 tre = "tre"
 # `gost` is a real binary (go-gost/gost, GO Simple Tunnel), not a typo for "ghost".
 gost = "gost"
+# `-passin` is an openssl option (pass phrase source), not "passing".
+passin = "passin"
