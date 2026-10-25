@@ -16,7 +16,7 @@ set -euo pipefail
 # hash, since the file is root-only) or the daemon is not running.
 #
 # Like a Tailscale exit node: a TUN with auto_route carries every app's traffic
-# (no system proxy, system DNS untouched); the `出口` selector defaults to
+# (no system proxy, system DNS untouched); the `Exit Node` selector defaults to
 # direct. Pick the exit in the panel: http://127.0.0.1:{{ .singBox.clashApiPort }}/ui (secret above).
 
 echo ":: [25] sing-box"

@@ -4,7 +4,7 @@
 # EasyTier exit for other mesh members: shadowsocks-rust (Shadowsocks 2022, TCP +
 # UDP) on this node's virtual IP only; client and destination ACL in
 # ~/.config/ss-exit/acl.list, key in ~/.config/ss-exit/env (from gopass).
-# Clients select it in the sing-box `出口` selector. Loaded by run_onchange_after_19.
+# Clients select it in the sing-box `Exit Node` selector. Loaded by run_onchange_after_19.
 # Rendered only on Linux exits (`easytierExit` in the chezmoi data).
 [Unit]
 Description=EasyTier exit (Shadowsocks 2022 on {{ $ip }}:{{ .easytier.exitProxy.port }})
