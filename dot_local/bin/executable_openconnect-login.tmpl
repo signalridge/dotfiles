@@ -24,13 +24,17 @@ BOX_API_SECRET="$(gopass show -o sing-box/clash-api-secret 2>/dev/null)" ||
     { echo "openconnect-login: gopass sing-box/clash-api-secret unavailable" >&2; exit 1; }
 export BOX_API_SECRET
 
-endpoint_flag() { [[ -n "${1:-}" ]] && printf -- '--endpoint\n%s\n' "$1"; }
-
 case "${1:-login}" in
 status) exec sing-box api openconnect status ;;
-cancel) exec sing-box api openconnect cancel $(endpoint_flag "${2:-}") ;;
+cancel)
+    args=()
+    [[ -n "${2:-}" ]] && args=(--endpoint "$2")
+    exec sing-box api openconnect cancel "${args[@]}"
+    ;;
 login) shift ;;
 esac
+args=()
+[[ -n "${1:-}" ]] && args=(--endpoint "$1")
 # The endpoint's server is the login page (singBox.openconnect); open it before
 # the prompt so the browser is ready when sing-box prints the steps.
 {{- range .singBox.openconnect }}
@@ -40,4 +44,4 @@ if [[ -z "${1:-}" || "${1:-}" == {{ .tag | quote }} ]]; then
 fi
 {{- end }}
 {{- end }}
-exec sing-box api openconnect auth $(endpoint_flag "${1:-}")
+exec sing-box api openconnect auth "${args[@]}"
