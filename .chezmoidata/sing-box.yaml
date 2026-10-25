@@ -18,8 +18,11 @@ singBox:
     - fe80::/10
     - ff00::/8
   clashApiPort: 9090 # web panel at http://127.0.0.1:9090/ui
-  # metacubexd (Clash API web UI), fetched by sing-box on first start.
-  webUiUrl: https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip
+  # zashboard (Clash API web UI). sing-box fetches it only while the ui
+  # directory is missing (/var/lib/sing-box/ui on Macs,
+  # ~/.local/state/sing-box/ui on Linux): delete it and restart sing-box to
+  # pick up a new release.
+  webUiUrl: https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip
   # Destinations pinned to mesh exits whatever `Exit` says. `exits` is in
   # priority order: the first live one wins and the group only moves on when it
   # fails (an exit that is this machine itself means direct). Match by domain
@@ -28,4 +31,4 @@ singBox:
     - tag: jaist # JAIST mirror (ftp.jaist.ac.jp)
       exits: [gpuserver, nas]
       domainSuffix: [jaist.ac.jp]
-      ipCidr: [150.65.0.0/16, 2001:df0:2ed::/48] # JPNIC/APNIC: JAIST FRONTNET
+      ipCidr: [150.65.0.0/16, "2001:df0:2ed::/48"] # JPNIC/APNIC: JAIST FRONTNET

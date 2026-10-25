@@ -107,7 +107,7 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 - Config: mixed SOCKS5/HTTP inbound `127.0.0.1:7890`; private/overlay
   destinations direct, everything else via selector `Exit`: `direct` (default),
   every entry of `easytier.exits` except the machine's own, and `edge` when
-  gopass `sing-box/edge-outbound` exists. Clash API and metacubexd panel at
+  gopass `sing-box/edge-outbound` exists. Clash API and zashboard panel at
   `http://127.0.0.1:9090/ui` (secret: `gopass show -o sing-box/clash-api-secret`).
   `singBox.exitRoutes` pins destinations to mesh exits whatever `Exit` says:
   one `urltest` group per entry, matched by sniffed domain or by address (so
