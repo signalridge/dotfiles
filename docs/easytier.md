@@ -46,7 +46,7 @@ separate 0600 env file.
 | gpuserver1 | `10.144.144.3:1080` | this repo: `exitNode: true` → systemd --user `ss-exit.service`, `~/.config/ss-exit/{config.json,acl.list,env}` |
 | nas        | `10.144.144.2:1080` | container `ss-exit` in the NAS compose below; `ss-exit.{json,acl,env}` (0600, env written from gopass)         |
 
-- Clients: Surge on the home Mac (`ss` proxies `gpuserver-exit`, `nas-exit`,
+- Clients: Surge on the home Mac (`ss` proxies `gpuserver`, `nas`,
   `encrypt-method=2022-blake3-aes-256-gcm`, `udp-relay=true`; group
   `Exit = select, DIRECT, …`; mesh/LAN/peer CIDRs `DIRECT`, then `FINAL,Exit`);
   sing-box `selector` elsewhere.
@@ -319,6 +319,6 @@ Status: `sudo docker exec easytier easytier-cli peer`.
   `sudo docker image rm easytier/easytier:v2.6.4 ghcr.io/shadowsocks/ssserver-rust:v1.25.0`, delete the directory.
 - Exits: on gpuserver1 run `systemctl --user disable --now ss-exit` and drop
   `exitNode: true` (the unit and `~/.config/ss-exit` then stop rendering; delete
-  them); remove the `gpuserver-exit`/`nas-exit` proxies and the `Exit` group
+  them); remove the `gpuserver`/`nas` proxies and the `Exit` group
   from Surge; `gopass rm easytier/exit-ss-password`.
 - gopass: `gopass rm -r easytier`.
