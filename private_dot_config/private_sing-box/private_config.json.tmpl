@@ -1,0 +1,7 @@
+{{- $mode := includeTemplate "sing-box/mode.tmpl" . -}}
+{{- if or (eq $mode "agent") (eq $mode "service") -}}
+{{- $password := output "gopass" "show" "-o" "easytier/exit-ss-password" | trim -}}
+{{- $secret := output "gopass" "show" "-o" "sing-box/clash-api-secret" | trim -}}
+{{- if not (and $password $secret) }}{{ fail "missing gopass easytier/exit-ss-password or sing-box/clash-api-secret" }}{{ end -}}
+{{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" $password "secret" $secret "systemProxy" false) }}
+{{- end }}

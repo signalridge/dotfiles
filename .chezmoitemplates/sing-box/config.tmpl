@@ -1,0 +1,38 @@
+{{- /* sing-box client config, shared by every platform (docs/easytier.md).
+       Called with (dict "root" $ "password" … "secret" … "systemProxy" bool).
+       Mixed SOCKS5/HTTP inbound on 127.0.0.1; private/overlay destinations go
+       direct, everything else through the `Exit` selector (default direct)
+       over the EasyTier exits, minus this machine's own exit; Clash API + web
+       panel on 127.0.0.1. Values from .chezmoidata/{sing-box,easytier}.yaml. */ -}}
+{{- $r := .root -}}
+{{- $self := (includeTemplate "easytier/role.tmpl" $r | fromJson).exit -}}
+{{- $tags := list "direct" -}}
+{{- $outbounds := list (dict "type" "direct" "tag" "direct") -}}
+{{- range $name, $ip := $r.easytier.exits -}}
+{{-   if ne $name $self -}}
+{{-     $tags = append $tags $name -}}
+{{-     $outbounds = append $outbounds (dict "type" "shadowsocks" "tag" $name "server" $ip "server_port" $r.easytier.exitProxy.port "method" $r.easytier.exitProxy.method "password" $.password) -}}
+{{-   end -}}
+{{- end -}}
+{{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Exit" "default" "direct" "outbounds" $tags) -}}
+{{- $config := dict
+      "log" (dict "level" "info" "timestamp" true)
+      "dns" (dict "servers" (list (dict "type" "local" "tag" "local")))
+      "inbounds" (list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" .systemProxy))
+      "outbounds" $outbounds
+      "route" (dict
+        "rules" (list
+          (dict "ip_is_private" true "outbound" "direct")
+          (dict "ip_cidr" (list $r.easytier.network "100.64.0.0/10") "outbound" "direct"))
+        "final" "Exit"
+        "default_domain_resolver" "local"
+        "auto_detect_interface" true)
+      "experimental" (dict
+        "cache_file" (dict "enabled" true)
+        "clash_api" (dict
+          "external_controller" (printf "127.0.0.1:%v" $r.singBox.clashApiPort)
+          "external_ui" "ui"
+          "external_ui_download_url" $r.singBox.webUiUrl
+          "external_ui_download_detour" "direct"
+          "secret" .secret)) -}}
+{{- toPrettyJson $config -}}

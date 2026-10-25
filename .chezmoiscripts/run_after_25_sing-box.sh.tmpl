@@ -1,9 +1,9 @@
-{{- if and (eq .chezmoi.os "darwin") .work -}}
+{{- if eq (includeTemplate "sing-box/mode.tmpl" .) "system" -}}
 #!/bin/bash
 
 set -euo pipefail
 
-# sing-box on work Macs (no Surge): writes /etc/sing-box/config.json
+# sing-box on work Macs (mode "system", .chezmoitemplates/sing-box/mode.tmpl): writes /etc/sing-box/config.json
 # (root:wheel 0600) for the LaunchDaemon from nix-config/modules/sing-box.nix,
 # then restarts it. The config embeds two gopass values, so it is built here at
 # run time rather than rendered into the store or $HOME:
@@ -33,49 +33,15 @@ if ! ss_password="$(gopass show -o easytier/exit-ss-password 2>/dev/null)" ||
     exit 0
 fi
 
-# Exits (name -> virtual IP) from .chezmoidata/easytier.yaml; routing:
-#   private/overlay destinations -> direct (company LAN, EasyTier, loopback)
-#   everything else              -> the `Exit` selector (default: direct)
+# Structure from .chezmoitemplates/sing-box/config.tmpl (shared with the
+# LaunchAgent / systemd variants); the two secrets are placeholders here and are
+# filled in by jq at run time so they never enter the rendered script.
 render_config() {
-    jq -n --arg password "$ss_password" --arg secret "$secret" '
-    {
-      log: {level: "info", timestamp: true},
-      dns: {servers: [{type: "local", tag: "local"}]},
-      inbounds: [{
-        type: "mixed", tag: "mixed-in",
-        listen: "127.0.0.1", listen_port: {{ .singBox.mixedPort }},
-        set_system_proxy: true
-      }],
-      outbounds: [
-        {type: "selector", tag: "Exit", default: "direct",
-         outbounds: ["direct"{{ range $name, $_ := .easytier.exits }}, "{{ $name }}"{{ end }}]},
-        {type: "direct", tag: "direct"}
-{{- range $name, $ip := .easytier.exits }},
-        {type: "shadowsocks", tag: "{{ $name }}",
-         server: "{{ $ip }}", server_port: {{ $.easytier.exitProxy.port }},
-         method: "{{ $.easytier.exitProxy.method }}", password: $password}
-{{- end }}
-      ],
-      route: {
-        rules: [
-          {ip_is_private: true, outbound: "direct"},
-          {ip_cidr: ["{{ .easytier.network }}", "100.64.0.0/10"], outbound: "direct"}
-        ],
-        final: "Exit",
-        default_domain_resolver: "local",
-        auto_detect_interface: true
-      },
-      experimental: {
-        cache_file: {enabled: true},
-        clash_api: {
-          external_controller: "127.0.0.1:{{ .singBox.clashApiPort }}",
-          external_ui: "ui",
-          external_ui_download_url: "{{ .singBox.webUiUrl }}",
-          external_ui_download_detour: "direct",
-          secret: $secret
-        }
-      }
-    }'
+    jq --arg password "$ss_password" --arg secret "$secret" '
+      walk(if . == "__EXIT_SS_PASSWORD__" then $password
+           elif . == "__CLASH_API_SECRET__" then $secret else . end)' <<'JSON'
+{{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" "__EXIT_SS_PASSWORD__" "secret" "__CLASH_API_SECRET__" "systemProxy" true) }}
+JSON
 }
 
 config="$(render_config)"

@@ -11,6 +11,8 @@ set -euo pipefail
 # ss-exit config sha256: {{ includeTemplate "private_dot_config/private_ss-exit/config.json.tmpl" . | sha256sum }}
 # ss-exit acl    sha256: {{ includeTemplate "private_dot_config/private_ss-exit/acl.list.tmpl" . | sha256sum }}
 # ss-exit env    sha256: {{ includeTemplate "private_dot_config/private_ss-exit/private_env.tmpl" . | sha256sum }}
+# sing-box unit   sha256: {{ includeTemplate "private_dot_config/systemd/user/sing-box.service.tmpl" . | sha256sum }}
+# sing-box config sha256: {{ includeTemplate "private_dot_config/private_sing-box/private_config.json.tmpl" . | sha256sum }}
 {{ if eq .chezmoi.os "linux" -}}
 echo ":: [19] (re)loading systemd --user MCP units"
 
@@ -51,6 +53,13 @@ if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/ss-exit.service" ]]; th
     systemctl --user daemon-reload
     systemctl --user enable --now ss-exit.service
     systemctl --user try-restart ss-exit.service || true
+fi
+
+# sing-box proxy client: present only on headless Linux with the gopass keys.
+if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/sing-box.service" ]]; then
+    systemctl --user daemon-reload
+    systemctl --user enable --now sing-box.service
+    systemctl --user try-restart sing-box.service || true
 fi
 
 echo "    enabled mcp-reaper.timer"
