@@ -1181,3 +1181,40 @@ proxy-off() {
     unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY no_proxy NO_PROXY
     echo "proxy off"
 }
+
+# macOS only: point every enabled network service's system proxy (HTTP, HTTPS,
+# SOCKS) at sing-box, for apps that ignore proxy env vars. Opt-in and reverted
+# by sysproxy-off; needs sudo. If sing-box is down while this is on, proxied
+# apps lose network, so turn it off before stopping sing-box.
+_sysproxy_services() {
+    networksetup -listallnetworkservices | tail -n +2 | grep -v '^\*'
+}
+
+sysproxy-on() {
+    [[ "$(uname)" == Darwin ]] || {
+        echo "sysproxy-on: macOS only" >&2
+        return 1
+    }
+    local svc
+    while IFS= read -r svc; do
+        sudo networksetup -setwebproxy "$svc" 127.0.0.1 7890
+        sudo networksetup -setsecurewebproxy "$svc" 127.0.0.1 7890
+        sudo networksetup -setsocksfirewallproxy "$svc" 127.0.0.1 7890
+        sudo networksetup -setproxybypassdomains "$svc" localhost 127.0.0.1 ::1 '*.local' 10.144.144.0/24 100.64.0.0/10 169.254.0.0/16 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+    done < <(_sysproxy_services)
+    echo "system proxy on: 127.0.0.1:7890"
+}
+
+sysproxy-off() {
+    [[ "$(uname)" == Darwin ]] || {
+        echo "sysproxy-off: macOS only" >&2
+        return 1
+    }
+    local svc
+    while IFS= read -r svc; do
+        sudo networksetup -setwebproxystate "$svc" off
+        sudo networksetup -setsecurewebproxystate "$svc" off
+        sudo networksetup -setsocksfirewallproxystate "$svc" off
+    done < <(_sysproxy_services)
+    echo "system proxy off"
+}

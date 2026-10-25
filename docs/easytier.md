@@ -113,6 +113,9 @@ sing-box/clash-api-secret`). Secrets: gopass `easytier/exit-ss-password`,
   proxy settings. Apps opt in: the browser through a proxy extension (e.g.
   ZeroOmega → `127.0.0.1:7890`), a shell through `proxy-on` / `proxy-off`
   (`dot_custom/functions.sh`; mesh, Tailscale and local ranges in `no_proxy`).
+  For apps that ignore both, `sysproxy-on` / `sysproxy-off` (macOS, sudo) set
+  and clear the system proxy on every network service — opt-in, never
+  automatic.
 - chezmoi renders `~/.config/sing-box/config.json` (0600). Logs:
   `~/Library/Logs/sing-box.launchd.log` (Mac), `journalctl --user -u sing-box`.
   Mac on demand: `launchctl kickstart gui/$(id -u)/com.signalridge.sing-box`,
