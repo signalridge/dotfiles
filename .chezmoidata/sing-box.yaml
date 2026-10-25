@@ -18,6 +18,18 @@ singBox:
     - fe80::/10
     - ff00::/8
   clashApiPort: 9090 # web panel at http://127.0.0.1:9090/ui
+  apiPort: 9091 # sing-box API service (gRPC, loopback): openconnect-login, `sing-box api …`
+  # OpenConnect VPN endpoints (sing-box's own client), on Macs that are not
+  # work machines. No credentials here: openconnect-login completes the browser
+  # single sign-on through the API at run time. `routes` names the exitRoutes
+  # that fall back to the VPN last. Empty until sing-openconnect learns F5's
+  # SAML login (vpn.jaist.ac.jp is F5 BIG-IP behind JAIST-SSO; today its F5
+  # client stops at "unexpected first F5 HTML form ID"):
+  #   - tag: JAIST VPN
+  #     server: vpn.jaist.ac.jp
+  #     flavor: f5
+  #     routes: [jaist]
+  openconnect: []
   # zashboard (Clash API web UI). sing-box fetches it only while the ui
   # directory is missing (/var/lib/sing-box/ui on Macs,
   # ~/.local/state/sing-box/ui on Linux): delete it and restart sing-box to

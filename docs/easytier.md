@@ -199,6 +199,32 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 - On a Mac, AdGuard must run in Automatic proxy mode: its Network Extension
   mode blocks QUIC (Hysteria2) and takes over SSH.
 
+## OpenConnect VPN (sing-box's own client)
+
+`singBox.openconnect` (`.chezmoidata/sing-box.yaml`) adds sing-box 1.14
+OpenConnect endpoints on Macs that are not work machines. Each endpoint is an
+`Egress` option and the last member of the exit routes it names (`routes`), so
+it is only a backup: when the mesh and the bastion are both out of reach, the
+JAIST route still works through it. The target is JAIST's official F5 BIG-IP
+(`vpn.jaist.ac.jp`, `flavor: f5`, JAIST-SSO behind it). The list is empty
+until `sing-openconnect` learns F5's SAML login: its F5 client only knows F5's
+native logon form and stops at `unexpected first F5 HTML form ID` on the SAML
+page, whereas its Fortinet, GlobalProtect
+and Pulse clients already turn SAML into a browser challenge.
+
+The config holds no credentials and sing-box never restarts for a login. An
+endpoint sits in `auth-pending`; `openconnect-login [ENDPOINT]`
+(`dot_local/bin`) reads the challenge from sing-box's API service (gRPC on
+`127.0.0.1:9091`, secret `sing-box/clash-api-secret`, `grpcurl` from aqua),
+opens the single sign-on page in an `agent-browser` window (a throwaway
+profile, never your own browser's data), waits for you to log in, reads back
+what the VPN wants (F5, Fortinet, Pulse: the session cookie; GlobalProtect: the
+`saml-username` / `prelogin-cookie` response headers) and submits it over the
+API. The session lives only in sing-box's memory. Form logins and loopback
+callbacks (AnyConnect) are handed to `sing-box api openconnect auth`.
+`openconnect-login status` / `cancel` wrap the same API. A sing-box restart
+(config change) drops the session; log in again.
+
 ## Installed replacement tools
 
 aqua: `sing-box` (Linux; Macs run the nix build from
