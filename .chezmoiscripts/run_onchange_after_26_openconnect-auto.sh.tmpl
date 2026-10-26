@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# config: {{ includeTemplate "private_dot_config/private_sing-box/openconnect-auto.json.tmpl" . | sha256sum }}
+# macOS: {{ includeTemplate "private_Library/LaunchAgents/com.signalridge.openconnect-auto.plist.tmpl" . | sha256sum }}
+# Linux: {{ includeTemplate "private_dot_config/systemd/user/openconnect-auto.service.tmpl" . | sha256sum }}
+# wrapper: {{ include "dot_local/bin/executable_openconnect-auto" | sha256sum }}
+# package: {{ includeTemplate "nix-config/flake.lock.tmpl" . | sha256sum }}
+# tools: {{ includeTemplate "private_dot_config/mise/config.toml.tmpl" . | sha256sum }}
+{{ if eq .chezmoi.os "darwin" -}}
+domain="user/$(id -u)"
+if launchctl print "gui/$(id -u)" >/dev/null 2>&1; then domain="gui/$(id -u)"; fi
+label="com.signalridge.openconnect-auto"
+launchctl bootout "${domain}/${label}" 2>/dev/null || true
+rm -f "$HOME/.local/lib/openconnect-auto/main.ts" "$HOME/.local/lib/openconnect-auto/rpc.ts"
+rmdir "$HOME/.local/lib/openconnect-auto" 2>/dev/null || true
+{{ if eq (includeTemplate "sing-box/auto-auth.tmpl" .) "true" -}}
+(umask 077; mkdir -p "$HOME/Library/Logs"; touch "$HOME/Library/Logs/openconnect-auto.log")
+chmod 600 "$HOME/Library/Logs/openconnect-auto.log"
+launchctl bootstrap "$domain" "$HOME/Library/LaunchAgents/${label}.plist"
+launchctl enable "${domain}/${label}"
+echo ":: [26] VPN authentication watcher enabled"
+{{ else -}}
+rm -f "$HOME/Library/LaunchAgents/${label}.plist"
+{{ end -}}
+{{ else if eq .chezmoi.os "linux" -}}
+if ! command -v systemctl >/dev/null || ! systemctl --user show-environment >/dev/null 2>&1; then exit 0; fi
+rm -f "$HOME/.local/lib/openconnect-auto/main.ts" "$HOME/.local/lib/openconnect-auto/rpc.ts"
+rmdir "$HOME/.local/lib/openconnect-auto" 2>/dev/null || true
+systemctl --user daemon-reload
+{{ if eq (includeTemplate "sing-box/auto-auth.tmpl" .) "true" -}}
+systemctl --user enable --now openconnect-auto.service
+systemctl --user restart openconnect-auto.service
+echo ":: [26] VPN authentication watcher enabled"
+{{ else -}}
+systemctl --user disable --now openconnect-auto.service 2>/dev/null || true
+rm -f "$HOME/.config/systemd/user/openconnect-auto.service"
+{{ end -}}
+{{ end -}}

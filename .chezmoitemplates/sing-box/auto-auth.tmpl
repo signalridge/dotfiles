@@ -1,0 +1,10 @@
+{{- /* Enable the user-owned authenticator only where all four credentials
+       exist. Reading/decrypting them happens only when the VPN is selected. */ -}}
+{{- $enabled := and (not .work) (ne (includeTemplate "sing-box/mode.tmpl" .) "") -}}
+{{- $store := joinPath .chezmoi.homeDir ".local/share/gopass/stores/root" -}}
+{{- range list "jaist/sso/username" "jaist/sso/password" "jaist/cert/p12" "jaist/cert/password" -}}
+{{-   if not (stat (joinPath $store (printf "%s.age" .))) -}}
+{{-     $enabled = false -}}
+{{-   end -}}
+{{- end -}}
+{{- $enabled -}}

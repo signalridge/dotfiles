@@ -1,0 +1,19 @@
+{{- if eq (includeTemplate "sing-box/auto-auth.tmpl" .) "true" -}}
+[Unit]
+Description=Authenticate the selected sing-box VPN using a client certificate
+After=sing-box.service
+
+[Service]
+Environment=PATH=%h/.local/bin:%h/.local/share/aquaproj-aqua/bin:%h/.nix-profile/bin:/usr/bin:/bin
+Environment=AQUA_GLOBAL_CONFIG=%h/.config/aquaproj-aqua/aqua.yaml
+Environment=AQUA_POLICY_CONFIG=%h/.config/aquaproj-aqua/aqua-policy.yaml
+ExecStart=%h/.local/bin/openconnect-auto watch
+Restart=on-failure
+RestartSec=60s
+NoNewPrivileges=yes
+PrivateTmp=yes
+UMask=0077
+
+[Install]
+WantedBy=default.target
+{{- end }}

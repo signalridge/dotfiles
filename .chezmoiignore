@@ -105,8 +105,17 @@ Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 # (.chezmoitemplates/sing-box/mode.tmpl); Macs use /etc/sing-box (script 25).
 {{- $sbMode := includeTemplate "sing-box/mode.tmpl" . }}
 {{- if ne $sbMode "service" }}
-.config/sing-box/
+.config/sing-box/config.json
 .config/systemd/user/sing-box.service
+{{- end }}
+{{- if or .work (eq $sbMode "") }}
+.config/sing-box/openconnect-auto.json
+.local/bin/openconnect-auto
+.local/bin/openconnect-login
+{{- end }}
+{{- if ne (includeTemplate "sing-box/auto-auth.tmpl" .) "true" }}
+.config/systemd/user/openconnect-auto.service
+Library/LaunchAgents/com.signalridge.openconnect-auto.plist
 {{- end }}
 
 # ─────────────────────────────────────────────────────────────────────────────

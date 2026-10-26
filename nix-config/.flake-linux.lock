@@ -53,7 +53,28 @@
       "inputs": {
         "flake-utils": "flake-utils",
         "flakey-profile": "flakey-profile",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "signalridge-nur": "signalridge-nur"
+      }
+    },
+    "signalridge-nur": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793009033,
+        "narHash": "sha256-lzfnxIdlIkOv9nuzwkpjFqJ84jilcX86jTtiIoWLrA8=",
+        "owner": "signalridge",
+        "repo": "nur-packages",
+        "rev": "cc3c8866e183541cdd23b17a7547078bfd2c93ed",
+        "type": "github"
+      },
+      "original": {
+        "owner": "signalridge",
+        "repo": "nur-packages",
+        "type": "github"
       }
     },
     "systems": {

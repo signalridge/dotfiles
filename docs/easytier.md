@@ -113,9 +113,9 @@ Not used: kcptun (upstream repository gone in 2026), udp2raw and ptunnel-ng
 
 ## sing-box (every machine)
 
-Every machine has sing-box (macOS: the patched nix package from the
-`signalridge-nur` flake input, see "OpenConnect VPN" below,
-`nix-config/modules/sing-box.nix.tmpl`; Linux: aqua, upstream). How it runs is
+Every machine has sing-box. Macs and non-work headless Linux use the patched
+Nix package from `signalridge-nur`; other Linux machines use upstream via aqua.
+See "OpenConnect VPN" below and `nix-config/modules/sing-box.nix.tmpl`. How it runs is
 decided by `.chezmoitemplates/sing-box/mode.tmpl`, and all variants share one
 config template, `.chezmoitemplates/sing-box/config.tmpl`:
 
@@ -219,35 +219,55 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 ## OpenConnect VPN (sing-box's own client)
 
 `singBox.openconnect` (`.chezmoidata/sing-box.yaml`) adds sing-box 1.14
-OpenConnect endpoints on Macs that are not work machines. Each endpoint is an
+OpenConnect endpoints on non-work Macs and headless Linux. Each endpoint is an
 `Egress` option and a hand-picked option of the exit routes it names
 (`routes`), listed after their bastion chains; the LaunchDaemon's failover
 never picks it and leaves it alone once you do. The target is JAIST's official
 F5 BIG-IP (`vpn.jaist.ac.jp`, `flavor: f5`, JAIST-SSO behind it). Upstream
 `sing-openconnect` only knows F5's native logon form and stops at `unexpected
-first F5 HTML form ID` on the SAML page, so Macs run the
+first F5 HTML form ID` on the SAML page, so these machines run the
 [signalridge/sing-box-patches](https://github.com/signalridge/sing-box-patches)
 build, which turns that page into a browser challenge. It comes from the
 `signalridge-nur` flake input (signalridge/nur-packages, built from source,
-pinned in `nix-config/.flake-darwin.lock`; bump with
+pinned in the platform's `nix-config/.flake-*.lock`; bump with
 `nix flake update signalridge-nur`).
 
-The config holds no credentials and sing-box never restarts for a login. An
-endpoint sits in `auth-pending` until `openconnect-login [ENDPOINT]`
-(`dot_local/bin`): it opens the VPN's login page in your default browser and
-hands the terminal to `sing-box api openconnect auth` (sing-box's API service,
-gRPC on `127.0.0.1:9091`, secret `sing-box/clash-api-secret`), which prints
-the steps and asks for the `MRHSession` and `F5_ST` cookies that you copy from
-the browser's developer tools once you are logged in. The gateway and
-JAIST-SSO go Direct (`exceptDirect`), not through the campus exit. The session
-lives only in sing-box's memory; when it expires or the gateway refuses it,
-the endpoint asks again. `openconnect-login status` / `cancel` wrap the same
-API. A sing-box restart (config change) drops the session; log in again.
+The config holds no credentials and sing-box never restarts for a login.
+On machines with all four gopass entries below, `openconnect-auto` runs as the
+user (a macOS LaunchAgent or Linux user service). When `Egress` or the endpoint's
+named route selects the VPN and it needs authentication, the helper completes
+password and client-certificate SSO, follows the SAML forms and submits the
+gateway cookies through sing-box's local API. An existing VPN session is reused;
+an expired session is renewed while the VPN remains selected. No browser is needed.
+
+- `jaist/sso/username`: the SSO account name, including its student prefix.
+- `jaist/sso/password`: the SSO password.
+- `jaist/cert/p12`: the PKCS#12 certificate stored as a binary gopass entry.
+- `jaist/cert/password`: the PKCS#12 export password.
+
+`@signalridge/jaist-vpn-auth` is pinned in mise. The NUR package
+`sing-box-openconnect-auth` supplies the Shell adapter, Buf and jq; dotfiles only
+declare its parameters, credential commands and user service. The adapter reads
+gopass through stdout pipes, supplies credential JSON on descriptor 3, and submits
+the gateway session through sing-box's loopback API. The authentication packages
+remain independent of sing-box. Certificates, passwords and cookies stay in
+memory, outside environment variables, command-line values and temporary files.
+Only the certificate IdP receives the certificate. Authentication hosts and their
+DNS go Direct so login still works when the selected tunnel is not connected.
+
+`openconnect-login status` shows connection and pause state. Rejected credentials
+or an unsupported authentication flow pause automatic login persistently; after
+fixing the cause, run `openconnect-login` to resume. Concurrent manual and automatic
+logins share a process lock. Network failures use a bounded backoff. The helper
+never changes selectors. `openconnect-login cancel` pauses automatic login;
+`openconnect-login --method totp` or `--method email-otp` uses an interactive local
+or SSH terminal for the second factor. Headless certificate login uses the same
+package and requires the user's gopass store to be unlockable without a GUI.
 
 ## Installed replacement tools
 
-aqua: `sing-box` (Linux; Macs run the nix build from
-`nix-config/modules/sing-box.nix`). `aqua-private.yaml`, skipped on work
+aqua: `sing-box` for Linux CLI use; non-work headless services and Macs use the
+Nix build. `aqua-private.yaml`, skipped on work
 machines (consumers only): `ssserver`/`sslocal` (shadowsocks-rust),
 `hysteria` (Hysteria2), `realm`.
 

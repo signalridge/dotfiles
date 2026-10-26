@@ -56,17 +56,17 @@
 {{-     $outbounds = append $outbounds (dict "type" "shadowsocks" "tag" $tag "server" (index $r.easytier.exits .) "server_port" $r.easytier.exitProxy.port "method" $r.easytier.exitProxy.method "password" $.password "detour" "bastion") -}}
 {{-   end -}}
 {{- end -}}
-{{- /* OpenConnect VPN endpoints (singBox.openconnect), on Macs that are not
-       work machines: sing-box's own client for the network's VPN (JAIST, F5
+{{- /* OpenConnect VPN endpoints on non-work Macs and headless Linux:
+       sing-box's own client for the network's VPN (JAIST, F5
        SAML through the signalridge/sing-box-patches build). The config
        carries no credentials: the endpoint waits in auth-pending until
-       openconnect-login completes the browser single sign-on through the API
+       openconnect-auto (or openconnect-login) completes single sign-on through the API
        service below, and the session lives only in sing-box's memory. Each
        endpoint is an Egress option and a hand-picked option of the exit
        routes it names (`routes`), after their bastion chains. */ -}}
 {{- $endpoints := list -}}
 {{- $vpnRoutes := dict -}}
-{{- if and (dig "tun" false .) (not (dig "work" false $r)) -}}
+{{- if and (not (dig "work" false $r)) (or (dig "tun" false .) (eq (includeTemplate "sing-box/mode.tmpl" $r) "service")) -}}
 {{-   range (dig "openconnect" (list) $r.singBox) -}}
 {{-     $vpn := . -}}
 {{-     $endpoints = append $endpoints (dict "type" "openconnect" "tag" $vpn.tag "server" $vpn.server "flavor" $vpn.flavor) -}}
@@ -148,6 +148,10 @@
        local server only serves sing-box itself. */ -}}
 {{- $dns := dict "servers" (list (dict "type" "local" "tag" "local")) -}}
 {{- $resolver := "local" -}}
+{{- $directDomains := list -}}
+{{- range $r.singBox.exitRoutes -}}
+{{-   $directDomains = concat $directDomains (dig "exceptDirect" "domain" (list) .) -}}
+{{- end -}}
 {{- if dig "tun" false . -}}
 {{- /* The TUN's IPv4 /30 must stay outside tunExcludeAddress: excluding it
        (172.16.0.0/12 once held 172.19.0.1/30) routes the stack's own peer
@@ -181,6 +185,11 @@
           (dict "domain" (list "captive.apple.com" "connectivitycheck.gstatic.com" "www.msftconnecttest.com" "detectportal.firefox.com" "nmcheck.gnome.org") "action" "route" "server" "lan")
           (dict "query_type" (list "PTR") "action" "route" "server" "lan"))
         "final" "remote" -}}
+{{- /* Authentication must resolve before the chosen VPN has a session.
+       The default DoH transport uses Egress, which may be that pending VPN. */ -}}
+{{-   if gt (len $directDomains) 0 -}}
+{{-     $_ := set $dns "rules" (prepend $dns.rules (dict "domain" (uniq $directDomains) "action" "route" "server" "lan")) -}}
+{{-   end -}}
 {{-   $resolver = "lan" -}}
 {{- end -}}
 {{- $route := dict
@@ -217,7 +226,7 @@
 {{- if gt (len $endpoints) 0 -}}
 {{-   $_ := set $config "endpoints" $endpoints -}}
 {{- /* API service (gRPC on loopback): the OpenConnect auth challenges that
-       openconnect-login answers. Same bearer secret as the Clash API. */ -}}
+       the authenticator answers. Same bearer secret as the Clash API. */ -}}
 {{-   $_ := set $config "services" (list (dict "type" "api" "tag" "api" "listen" "127.0.0.1" "listen_port" $r.singBox.apiPort "secret" .secret "dashboard" false)) -}}
 {{- end -}}
 {{- toPrettyJson $config -}}

@@ -1,0 +1,16 @@
+{{- if and (not .work) (ne (includeTemplate "sing-box/mode.tmpl" .) "") -}}
+{{- $vpn := first .singBox.openconnect -}}
+{{- $gateway := printf "https://%s/" $vpn.server -}}
+{{- $show := list "gopass" "show" "--nosync" "--nofuzzysearch" "--password" -}}
+{{- $auth := dict -}}
+{{- range list "certificate" "totp" "email-otp" -}}
+{{-   $_ := set $auth . (list "jaist-vpn-auth" "--method" . "--url" $gateway "--credentials-fd" "3" "--session-json") -}}
+{{- end -}}
+{{- $credentials := list
+  (dict "path" (list "username") "command" (append $show "jaist/sso/username"))
+  (dict "path" (list "password") "command" (append $show "jaist/sso/password"))
+  (dict "path" (list "certificate" "pfxBase64") "methods" (list "certificate") "encoding" "gopass-base64" "command" (list "gopass" "show" "--nosync" "--nofuzzysearch" "--noparsing" "--unsafe" "jaist/cert/p12"))
+  (dict "path" (list "certificate" "passphrase") "methods" (list "certificate") "command" (append $show "jaist/cert/password"))
+-}}
+{{ dict "endpoint" $vpn.tag "apiURL" (printf "http://127.0.0.1:%v" .singBox.apiPort) "gateway" $gateway "selectors" (concat (list "Egress") $vpn.routes) "apiSecretCommand" (append $show "sing-box/clash-api-secret") "authCommands" $auth "credentials" $credentials | toPrettyJson }}
+{{- end -}}

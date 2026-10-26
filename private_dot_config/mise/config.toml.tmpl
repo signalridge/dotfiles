@@ -21,6 +21,11 @@ node = "lts"
 # settings.npm.package_manager below, becomes the installer for all `npm:` CLIs.
 bun = "latest"
 
+{{ if not .work -}}
+# JAIST gateway authentication; openconnect-auto supplies credentials over a pipe.
+"npm:@signalridge/jaist-vpn-auth" = "0.1.2"
+{{ end -}}
+
 # Terraform (replaces tenv)
 terraform = "latest"
 

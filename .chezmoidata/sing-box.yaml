@@ -19,9 +19,9 @@ singBox:
     - ff00::/8
   clashApiPort: 9090 # web panel at http://127.0.0.1:9090/ui
   apiPort: 9091 # sing-box API service (gRPC, loopback): openconnect-login, `sing-box api …`
-  # OpenConnect VPN endpoints (sing-box's own client), on Macs that are not
-  # work machines. No credentials here: openconnect-login completes the browser
-  # single sign-on through the API at run time. `routes` names the exitRoutes
+  # OpenConnect VPN endpoints on non-work Macs and headless Linux.
+  # No credentials here: openconnect-auto completes certificate SSO through
+  # the API when a selector uses the endpoint. `routes` names the exitRoutes
   # that offer the VPN as a hand-picked option. vpn.jaist.ac.jp is F5 BIG-IP
   # behind JAIST-SSO (SAML), which needs the patched sing-box
   # (signalridge-nur input, nix-config/flake.nix).
@@ -77,4 +77,10 @@ singBox:
       # session to an address the tunnel never comes from. The tunnel itself is
       # dialled by sing-box and never passes these rules.
       exceptDirect:
-        domain: [vpn.jaist.ac.jp, vpn4.jaist.ac.jp, auth.jaist.ac.jp]
+        domain:
+          [
+            vpn.jaist.ac.jp,
+            vpn4.jaist.ac.jp,
+            auth.jaist.ac.jp,
+            auth-cert.jaist.ac.jp,
+          ]

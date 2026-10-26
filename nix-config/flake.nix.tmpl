@@ -9,6 +9,12 @@
     # Cross-platform package management
     flakey-profile.url = "github:lf-/flakey-profile";
 
+    # Patched OpenConnect client on macOS and headless Linux.
+    signalridge-nur = {
+      url = "github:signalridge/nur-packages";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
 {{- if eq .platform "darwin" }}
 
     # macOS only
@@ -33,12 +39,6 @@
       url = "github:homebrew/homebrew-bundle";
       flake = false;
     };
-    # sing-box with the F5 SAML patches (signalridge/sing-box-patches),
-    # built from source; bump with `nix flake update signalridge-nur`.
-    signalridge-nur = {
-      url = "github:signalridge/nur-packages";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
 {{- end }}
   };
 
@@ -48,6 +48,7 @@
       nixpkgs,
       flake-utils,
       flakey-profile,
+      signalridge-nur,
 {{- if eq .platform "darwin" }}
       nix-darwin,
       mac-app-util,
@@ -55,7 +56,6 @@
       homebrew-core,
       homebrew-cask,
       homebrew-bundle,
-      signalridge-nur,
 {{- end }}
       ...
     }:
@@ -75,10 +75,15 @@
         inherit system;
         config.allowUnfree = true;
       };
+      sing-box = signalridge-nur.packages.${system}.sing-box;
+      sing-box-openconnect-auth = signalridge-nur.packages.${system}.sing-box-openconnect-auth;
 
       # flakey-profile for user packages (cross-platform)
       myProfile = import ./modules/profile.nix {
         inherit pkgs flakey-profile;
+{{- if and (not .work) (ne (includeTemplate "sing-box/mode.tmpl" .) "") }}
+        extraPackages = [ sing-box-openconnect-auth{{ if eq .platform "linux" }} sing-box{{ end }} ];
+{{- end }}
       };
 {{- if eq .platform "darwin" }}
 
@@ -122,6 +127,7 @@
       # Usage: nix run .#<hostname>.switch
       # ─────────────────────────────────────────────────────────────────────────
       packages.${system} = {
+        inherit sing-box sing-box-openconnect-auth;
         ${hostname} = myProfile;
         # Official EasyTier release binaries; Linux EasyTier nodes run this store
         # path from a systemd unit (.chezmoiscripts/run_after_24_easytier-node.sh).

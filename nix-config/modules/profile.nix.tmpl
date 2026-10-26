@@ -1,6 +1,7 @@
 {
   pkgs,
   flakey-profile,
+  extraPackages ? [ ],
   ...
 }:
 flakey-profile.lib.mkProfile {
@@ -19,5 +20,5 @@ flakey-profile.lib.mkProfile {
     {{ . }}
     {{- end }}
     {{- end }}
-  ];
+  ] ++ extraPackages;
 }

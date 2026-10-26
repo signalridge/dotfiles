@@ -100,6 +100,10 @@ jobs:
           done
       - name: Check flake
         run: nix flake check --no-build "$WORKDIR"
+      - name: Check packaged OpenConnect adapter
+        run: |
+          package=$(nix build --no-link --print-out-paths "$WORKDIR#sing-box-openconnect-auth")
+          "$package/bin/sing-box-openconnect-auth" --help
       - uses: DeterminateSystems/flake-checker-action@786422608c7bded2bbc9741ad9f91356842bf520 # v14
         with:
           flake-lock-path: ${{ env.WORKDIR }}/flake.lock

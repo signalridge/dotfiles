@@ -11,10 +11,10 @@ After=network-online.target
 [Service]
 Environment=AQUA_GLOBAL_CONFIG=%h/.config/aquaproj-aqua/aqua.yaml
 Environment=AQUA_POLICY_CONFIG=%h/.config/aquaproj-aqua/aqua-policy.yaml
-# sing-box is an aqua-proxy shim, which needs `aqua` itself on PATH.
+# Work hosts use aqua; other headless hosts use the patched Nix package.
 Environment=PATH=%h/.local/share/aquaproj-aqua/bin:/usr/local/bin:/usr/bin:/bin
 ExecStartPre=/bin/mkdir -p %h/.local/state/sing-box
-ExecStart=%h/.local/share/aquaproj-aqua/bin/sing-box run -c %h/.config/sing-box/config.json -D %h/.local/state/sing-box
+ExecStart=%h/{{ if .work }}.local/share/aquaproj-aqua{{ else }}.nix-profile{{ end }}/bin/sing-box run -c %h/.config/sing-box/config.json -D %h/.local/state/sing-box
 Restart=always
 RestartSec=10s
 NoNewPrivileges=yes
