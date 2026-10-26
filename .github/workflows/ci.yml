@@ -104,6 +104,10 @@ jobs:
         run: |
           package=$(nix build --no-link --print-out-paths "$WORKDIR#sing-box-openconnect-auth")
           "$package/bin/sing-box-openconnect-auth" --help
+      - name: Check VPN fallback templates
+        run: |
+          nixpkgs_rev=$(awk '$1 == "nixpkgsBootstrapRev:" { print $2 }' .chezmoidata/versions.yaml)
+          nix shell "github:NixOS/nixpkgs/$nixpkgs_rev#jq" --command bash .github/tests/sing-box-fallback.sh "$PLATFORM"
       - uses: DeterminateSystems/flake-checker-action@786422608c7bded2bbc9741ad9f91356842bf520 # v14
         with:
           flake-lock-path: ${{ env.WORKDIR }}/flake.lock

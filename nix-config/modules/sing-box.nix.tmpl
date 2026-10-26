@@ -109,12 +109,12 @@ in
       # Exit routes (selectors listing Egress, .chezmoitemplates/sing-box/config.tmpl):
       # the members before Egress are mesh exits in priority order. Keep each
       # route on the first that answers a delay test through the Clash API,
-      # else Egress; one set by hand to a bastion chain is left alone. The
-      # bearer secret goes to curl from a 0600 file, never on its command line.
+      # else Egress; one set by hand to a bastion chain is left alone. VPN
+      # automatic subgroups and their parents belong to the user authenticator.
+      # The bearer secret goes to curl from a 0600 file, never on its command line.
       api="http://$(${jq} -r '.experimental.clash_api.external_controller' "${configFile}")"
       ${jq} -r '"Authorization: Bearer " + .experimental.clash_api.secret' "${configFile}" >"${runDir}/api-header"
-      routes="$(${jq} -c '.outbounds[] | select(.type == "selector" and .tag != "Egress" and (.outbounds | index("Egress")))
-        | {tag, auto: .outbounds[:(.outbounds | index("Egress"))]}' "${configFile}")"
+      routes="$(${jq} -c '{{ include ".chezmoitemplates/sing-box/failover-routes.jq" }}' "${configFile}")"
       probe="$(${jq} -rn '"https://www.gstatic.com/generate_204" | @uri')"
       uri() { ${jq} -rn --arg s "$1" '$s | @uri'; }
       api() { /usr/bin/curl -sf --max-time 5 -H @"${runDir}/api-header" "$@"; }

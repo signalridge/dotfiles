@@ -6,7 +6,7 @@
          Egress   like a Tailscale exit node: whose network this machine uses.
                   Direct (default), every EasyTier exit except this machine,
                   bastion, each exit chained through bastion (for networks
-                  that only let the bastion through) and, on Macs, each
+                  that only let the bastion through) and, on supported hosts, each
                   OpenConnect VPN endpoint (singBox.openconnect; logged in at
                   run time by openconnect-login, see below).
          bastion  how to reach the bastion: Reality (default), Hysteria2 or
@@ -66,6 +66,7 @@
        routes it names (`routes`), after their bastion chains. */ -}}
 {{- $endpoints := list -}}
 {{- $vpnRoutes := dict -}}
+{{- $autoVpnRoutes := dict -}}
 {{- if and (not (dig "work" false $r)) (or (dig "tun" false .) (eq (includeTemplate "sing-box/mode.tmpl" $r) "service")) -}}
 {{-   range (dig "openconnect" (list) $r.singBox) -}}
 {{-     $vpn := . -}}
@@ -73,6 +74,9 @@
 {{-     $exits = append $exits $vpn.tag -}}
 {{-     range (dig "routes" (list) $vpn) -}}
 {{-       $_ := set $vpnRoutes . (append (dig . (list) $vpnRoutes) $vpn.tag) -}}
+{{-       if and (dig "fallback" false $vpn) (eq (includeTemplate "sing-box/auto-auth.tmpl" $r) "true") -}}
+{{-         $_ := set $autoVpnRoutes . (append (dig . (list) $autoVpnRoutes) $vpn.tag) -}}
+{{-       end -}}
 {{-     end -}}
 {{-   end -}}
 {{- end -}}
@@ -92,16 +96,12 @@
        across restarts (cache_file). Members are the exits in priority order
        (the first is the default), then `Egress` (the same route as everything
        else), then the same exits through the bastion for networks that block
-       the mesh, then the VPN endpoints naming the route. On Macs the LaunchDaemon (nix-config/modules/sing-box.nix)
-       keeps each route on the first exit that answers, else `Egress`, and
-       leaves a route set by hand to a bastion chain or a VPN alone.
-       Not a urltest:
-       the bastion detour is only ~30-35 ms slower than the mesh link (84 vs
-       118 ms on 2026-10-25), so latency picks kept landing on it (taken at
-       start while EasyTier was still punching through, then held by the
-       tolerance), and sing-box has no priority fallback group. When p2p
-       fails, EasyTier itself relays through the bastion. Switching never cuts
-       existing connections (long mirror downloads). */ -}}
+       the mesh, then the VPN endpoints naming the route. Routes with automatic
+       VPN authentication also have an `auto` subgroup: mesh exits, VPN, Egress.
+       The cross-platform Shell authenticator owns that subgroup; direct choices
+       in the parent remain manual. Other Mac routes use the LaunchDaemon's
+       mesh failover. Fixed priorities avoid selecting a detour for its latency.
+       Switching preserves existing connections. */ -}}
 {{- /* Destinations match by sniffed domain (domainSuffix), by address (ipCidr)
        and by remote rule-sets (ruleSets: SagerNet/sing-geosite builds of
        v2fly's community lists; sing-box refreshes them weekly and caches them
@@ -123,7 +123,15 @@
 {{-     $members = append $members (ternary $direct . (eq . $self)) -}}
 {{-     if hasKey $chained . -}}{{- $twins = append $twins (index $chained .) -}}{{- end -}}
 {{-   end -}}
-{{-   $outbounds = append $outbounds (dict "type" "selector" "tag" .tag "outbounds" (concat $members (list "Egress") $twins (dig .tag (list) $vpnRoutes)) "default" (first $members) "interrupt_exist_connections" false) -}}
+{{-   $default := first $members -}}
+{{-   $choices := concat $members (list "Egress") $twins (dig .tag (list) $vpnRoutes) -}}
+{{-   if hasKey $autoVpnRoutes .tag -}}
+{{-     $automatic := printf "%s auto" .tag -}}
+{{-     $outbounds = append $outbounds (dict "type" "selector" "tag" $automatic "outbounds" (concat $members (index $autoVpnRoutes .tag) (list "Egress")) "default" $default "interrupt_exist_connections" false) -}}
+{{-     $choices = concat (list $automatic) $members (dig .tag (list) $vpnRoutes) (list "Egress") $twins -}}
+{{-     $default = $automatic -}}
+{{-   end -}}
+{{-   $outbounds = append $outbounds (dict "type" "selector" "tag" .tag "outbounds" $choices "default" $default "interrupt_exist_connections" false) -}}
 {{-   if hasKey . "exceptDirect" -}}
 {{-     $except := dict "outbound" $direct -}}
 {{-     if hasKey .exceptDirect "domain" -}}{{- $_ := set $except "domain" .exceptDirect.domain -}}{{- end -}}

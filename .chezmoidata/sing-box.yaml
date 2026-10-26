@@ -22,7 +22,8 @@ singBox:
   # OpenConnect VPN endpoints on non-work Macs and headless Linux.
   # No credentials here: openconnect-auto completes certificate SSO through
   # the API when a selector uses the endpoint. `routes` names the exitRoutes
-  # that offer the VPN as a hand-picked option. vpn.jaist.ac.jp is F5 BIG-IP
+  # that offer the VPN; `fallback` also adds it after the mesh exits in their
+  # automatic subgroup. vpn.jaist.ac.jp is F5 BIG-IP
   # behind JAIST-SSO (SAML), which needs the patched sing-box
   # (signalridge-nur input, nix-config/flake.nix).
   openconnect:
@@ -30,6 +31,7 @@ singBox:
       server: vpn.jaist.ac.jp
       flavor: f5
       routes: [jaist]
+      fallback: true # after the route's mesh exits, before Egress
   # zashboard (Clash API web UI). sing-box fetches it only while the ui
   # directory is missing (/var/lib/sing-box/ui on Macs,
   # ~/.local/state/sing-box/ui on Linux): delete it and restart sing-box to
@@ -46,6 +48,7 @@ singBox:
   exitRoutes:
     - tag: jaist # reach these from the JAIST network
       exits: [gpuserver, nas]
+      probeURL: https://www.jaist.ac.jp/
       domainSuffix: [jaist.ac.jp] # incl. the ftp.jaist.ac.jp mirror
       ipCidr: [150.65.0.0/16, "2001:df0:2ed::/48"] # JPNIC/APNIC: JAIST FRONTNET
       # Academic publishers and databases (IEEE, ACM, Springer, Elsevier, Wiley,

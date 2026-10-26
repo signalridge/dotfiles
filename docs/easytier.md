@@ -220,9 +220,12 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 
 `singBox.openconnect` (`.chezmoidata/sing-box.yaml`) adds sing-box 1.14
 OpenConnect endpoints on non-work Macs and headless Linux. Each endpoint is an
-`Egress` option and a hand-picked option of the exit routes it names
-(`routes`), listed after their bastion chains; the LaunchDaemon's failover
-never picks it and leaves it alone once you do. The target is JAIST's official
+`Egress` option and a manual option of the exit routes it names (`routes`).
+With `fallback: true` and complete credentials, the route defaults to an automatic
+subgroup. `jaist auto` uses `gpuserver`, then `nas`, then `JAIST VPN`, then
+`Egress`. The user-owned Shell service manages this subgroup on macOS and headless
+Linux; the Mac LaunchDaemon skips it and its parent. Explicit choices in the
+parent remain manual. The target is JAIST's official
 F5 BIG-IP (`vpn.jaist.ac.jp`, `flavor: f5`, JAIST-SSO behind it). Upstream
 `sing-openconnect` only knows F5's native logon form and stops at `unexpected
 first F5 HTML form ID` on the SAML page, so these machines run the
@@ -258,11 +261,19 @@ DNS go Direct so login still works when the selected tunnel is not connected.
 `openconnect-login status` shows connection and pause state. Rejected credentials
 or an unsupported authentication flow pause automatic login persistently; after
 fixing the cause, run `openconnect-login` to resume. Concurrent manual and automatic
-logins share a process lock. Network failures use a bounded backoff. The helper
-never changes selectors. `openconnect-login cancel` pauses automatic login;
+logins share a process lock. Network failures use a bounded backoff.
+`openconnect-login cancel` pauses automatic login;
 `openconnect-login --method totp` or `--method email-otp` uses an interactive local
 or SSH terminal for the second factor. Headless certificate login uses the same
 package and requires the user's gopass store to be unlockable without a GUI.
+
+Automatic fallback probes preferred exits every 30 seconds using the route's
+`probeURL`. When both mesh exits fail it selects the VPN before logging in, with
+a four-minute authentication grace period. Failed authentication or an unusable
+VPN returns the subgroup to `Egress` for a five-minute cooldown. Preferred exits
+can recover during the cooldown or a persistent authentication pause. Manual login
+clears the pause and cooldown. Existing mesh/Egress choices migrate to the automatic
+subgroup once; VPN and bastion choices are preserved.
 
 ## Installed replacement tools
 

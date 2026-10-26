@@ -12,5 +12,16 @@
   (dict "path" (list "certificate" "pfxBase64") "methods" (list "certificate") "encoding" "gopass-base64" "command" (list "gopass" "show" "--nosync" "--nofuzzysearch" "--noparsing" "--unsafe" "jaist/cert/p12"))
   (dict "path" (list "certificate" "passphrase") "methods" (list "certificate") "command" (append $show "jaist/cert/password"))
 -}}
-{{ dict "endpoint" $vpn.tag "apiURL" (printf "http://127.0.0.1:%v" .singBox.apiPort) "gateway" $gateway "selectors" (concat (list "Egress") $vpn.routes) "apiSecretCommand" (append $show "sing-box/clash-api-secret") "authCommands" $auth "credentials" $credentials | toPrettyJson }}
+{{- $fallbacks := list -}}
+{{- $self := (includeTemplate "easytier/role.tmpl" . | fromJson).exit -}}
+{{- if and (dig "fallback" false $vpn) (eq (includeTemplate "sing-box/auto-auth.tmpl" .) "true") -}}
+{{-   range .singBox.exitRoutes -}}
+{{-     if has .tag $vpn.routes -}}
+{{-       $preferred := list -}}
+{{-       range .exits -}}{{- $preferred = append $preferred (ternary "Direct" . (eq . $self)) -}}{{- end -}}
+{{-       $fallbacks = append $fallbacks (dict "selector" (printf "%s auto" .tag) "parent" .tag "preferred" $preferred "fallback" "Egress" "probeURL" (dig "probeURL" "https://www.gstatic.com/generate_204" .)) -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+{{ dict "endpoint" $vpn.tag "apiURL" (printf "http://127.0.0.1:%v" .singBox.apiPort) "clashAPIURL" (printf "http://127.0.0.1:%v" .singBox.clashApiPort) "gateway" $gateway "selectors" (concat (list "Egress") $vpn.routes) "apiSecretCommand" (append $show "sing-box/clash-api-secret") "authCommands" $auth "credentials" $credentials "fallbacks" $fallbacks | toPrettyJson }}
 {{- end -}}

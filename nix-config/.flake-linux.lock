@@ -64,11 +64,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793009033,
-        "narHash": "sha256-lzfnxIdlIkOv9nuzwkpjFqJ84jilcX86jTtiIoWLrA8=",
+        "lastModified": 1793012992,
+        "narHash": "sha256-20wQnHqG8CK8GnlT129PdveFwvwFIoUmn3V94TdZkMM=",
         "owner": "signalridge",
         "repo": "nur-packages",
-        "rev": "cc3c8866e183541cdd23b17a7547078bfd2c93ed",
+        "rev": "a9ad8960cd3a4a02803004a9f320221a427ec4c6",
         "type": "github"
       },
       "original": {
