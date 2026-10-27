@@ -43,7 +43,6 @@ homebrew:
       - slack
       - slidepilot
       - stats
-      - tailscale-app
       - tolaria
       - typeless
       - google-chrome
@@ -62,6 +61,7 @@ homebrew:
       - notion-calendar
       - setapp
       - soundsource
+      - tailscale-app
       - telegram
       - zoom
   masApps:
