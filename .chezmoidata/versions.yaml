@@ -48,10 +48,10 @@ versions:
   cloudflareSkillsRev: 86505e44f87d801aa1864a3c4109e9a8ae5c409f
   vercelLabsAgentSkillsRev: 063bee94c3f4df8453406c830b0a7df0f2860278
   vercelLabsNextSkillsRev: c522619e45aa3492fd2bfc916b308b275eff7798
-  vercelLabsAgentBrowserRev: 04ba5264dade678062c3cdcce0f4f293e748249f
+  vercelLabsAgentBrowserRev: edb40f1878864f90e14f6c11e26fdafd3fecc8dc
   supabaseAgentSkillsRev: c9be0e931b7930f7d02126d04774d904c381e7d7
-  expoSkillsRev: d5caf7fdf8b4854351f05841a7e315ac87ad7d24
-  microsoftSkillsRev: 2130750147dee0311215099ddf36647ba1e0f006
+  expoSkillsRev: 8a0dc4fa57ae345923c357e1451cbcd8b6f2a7db
+  microsoftSkillsRev: 1a63e5f771987a9a13e9f0571823dc1e80741583
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 18dcb447f090667171ff23666a05d6d387e2aa73
   dailyDevSkillsRev: f26eebc917e80d6ca6f37e0fabb04bc755c510bc
