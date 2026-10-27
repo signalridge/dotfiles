@@ -80,7 +80,7 @@
 {{-     end -}}
 {{-   end -}}
 {{- end -}}
-{{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Egress" "default" $direct "outbounds" $exits) -}}
+{{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Egress" "default" $direct "outbounds" $exits "interrupt_exist_connections" false) -}}
 {{- /* EasyTier's own packets must never ride an exit: the exits are carried by
        EasyTier, and the peers' public addresses can fall inside an exit route
        (the JAIST range holds gpuserver and nas), which looped hole-punching
@@ -97,9 +97,9 @@
        (the first is the default), then `Egress` (the same route as everything
        else), then the same exits through the bastion for networks that block
        the mesh, then the VPN endpoints naming the route. Routes with automatic
-       VPN authentication also have an `auto` subgroup: mesh exits, VPN, Egress.
-       The cross-platform Shell authenticator owns that subgroup; direct choices
-       in the parent remain manual. Other Mac routes use the LaunchDaemon's
+       VPN fallback list mesh exits, VPN and Egress in priority order. The
+       cross-platform Shell authenticator switches that selector directly,
+       and the panel shows its actual selection. Other Mac routes use the LaunchDaemon's
        mesh failover. Fixed priorities avoid selecting a detour for its latency.
        Switching preserves existing connections. */ -}}
 {{- /* Destinations match by sniffed domain (domainSuffix), by address (ipCidr)
@@ -126,10 +126,7 @@
 {{-   $default := first $members -}}
 {{-   $choices := concat $members (list "Egress") $twins (dig .tag (list) $vpnRoutes) -}}
 {{-   if hasKey $autoVpnRoutes .tag -}}
-{{-     $automatic := printf "%s auto" .tag -}}
-{{-     $outbounds = append $outbounds (dict "type" "selector" "tag" $automatic "outbounds" (concat $members (index $autoVpnRoutes .tag) (list "Egress")) "default" $default "interrupt_exist_connections" false) -}}
-{{-     $choices = concat (list $automatic) $members (dig .tag (list) $vpnRoutes) (list "Egress") $twins -}}
-{{-     $default = $automatic -}}
+{{-     $choices = concat $members (dig .tag (list) $vpnRoutes) (list "Egress") $twins -}}
 {{-   end -}}
 {{-   $outbounds = append $outbounds (dict "type" "selector" "tag" .tag "outbounds" $choices "default" $default "interrupt_exist_connections" false) -}}
 {{-   if hasKey . "exceptDirect" -}}

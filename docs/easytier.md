@@ -221,11 +221,12 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
 `singBox.openconnect` (`.chezmoidata/sing-box.yaml`) adds sing-box 1.14
 OpenConnect endpoints on non-work Macs and headless Linux. Each endpoint is an
 `Egress` option and a manual option of the exit routes it names (`routes`).
-With `fallback: true` and complete credentials, the route defaults to an automatic
-subgroup. `jaist auto` uses `gpuserver`, then `nas`, then `JAIST VPN`, then
-`Egress`. The user-owned Shell service manages this subgroup on macOS and headless
-Linux; the Mac LaunchDaemon skips it and its parent. Explicit choices in the
-parent remain manual. The target is JAIST's official
+With `fallback: true` and complete credentials, the existing `jaist` selector uses
+`gpuserver`, then `nas`, then `JAIST VPN`, then `Egress`. The user-owned Shell
+service changes this selector directly on macOS and headless Linux, and the panel
+shows the actual selected outbound. The Mac LaunchDaemon skips this managed route.
+A VPN or bastion chain selected manually is left alone; a VPN selected by the
+controller can return to a preferred mesh exit when it recovers. The target is JAIST's official
 F5 BIG-IP (`vpn.jaist.ac.jp`, `flavor: f5`, JAIST-SSO behind it). Upstream
 `sing-openconnect` only knows F5's native logon form and stops at `unexpected
 first F5 HTML form ID` on the SAML page, so these machines run the
@@ -270,10 +271,17 @@ package and requires the user's gopass store to be unlockable without a GUI.
 Automatic fallback probes preferred exits every 30 seconds using the route's
 `probeURL`. When both mesh exits fail it selects the VPN before logging in, with
 a four-minute authentication grace period. Failed authentication or an unusable
-VPN returns the subgroup to `Egress` for a five-minute cooldown. Preferred exits
+VPN returns the selector to `Egress` for a five-minute cooldown. Preferred exits
 can recover during the cooldown or a persistent authentication pause. Manual login
-clears the pause and cooldown. Existing mesh/Egress choices migrate to the automatic
-subgroup once; VPN and bastion choices are preserved.
+clears the pause and cooldown. Mesh/Egress choices remain in the automatic range.
+zashboard reads the current selection when its page regains focus or is refreshed;
+an already open page does not receive a live selector update from the backend.
+
+To preserve SSH and streaming requests when switching nodes in zashboard, disable
+its browser-local setting "切换节点时自动断开连接" (Auto disconnect on node switch).
+The selectors keep existing connections on their original outbound; new
+connections use the new selection. An old connection still fails if its original
+exit itself becomes unavailable.
 
 ## Installed replacement tools
 

@@ -19,7 +19,7 @@
 {{-     if has .tag $vpn.routes -}}
 {{-       $preferred := list -}}
 {{-       range .exits -}}{{- $preferred = append $preferred (ternary "Direct" . (eq . $self)) -}}{{- end -}}
-{{-       $fallbacks = append $fallbacks (dict "selector" (printf "%s auto" .tag) "parent" .tag "preferred" $preferred "fallback" "Egress" "probeURL" (dig "probeURL" "https://www.gstatic.com/generate_204" .)) -}}
+{{-       $fallbacks = append $fallbacks (dict "selector" .tag "preferred" $preferred "fallback" "Egress" "probeURL" (dig "probeURL" "https://www.gstatic.com/generate_204" .)) -}}
 {{-     end -}}
 {{-   end -}}
 {{- end -}}

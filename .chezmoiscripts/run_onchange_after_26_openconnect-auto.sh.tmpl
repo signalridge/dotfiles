@@ -16,8 +16,14 @@ rmdir "$HOME/.local/lib/openconnect-auto" 2>/dev/null || true
 {{ if eq (includeTemplate "sing-box/auto-auth.tmpl" .) "true" -}}
 (umask 077; mkdir -p "$HOME/Library/Logs"; touch "$HOME/Library/Logs/openconnect-auto.log")
 chmod 600 "$HOME/Library/Logs/openconnect-auto.log"
-launchctl bootstrap "$domain" "$HOME/Library/LaunchAgents/${label}.plist"
 launchctl enable "${domain}/${label}"
+for attempt in 1 2 3 4 5; do
+    if launchctl bootstrap "$domain" "$HOME/Library/LaunchAgents/${label}.plist" 2>/dev/null; then break; fi
+    if [[ "$attempt" == 5 ]]; then
+        launchctl bootstrap "$domain" "$HOME/Library/LaunchAgents/${label}.plist"
+    fi
+    sleep 1
+done
 echo ":: [26] VPN authentication watcher enabled"
 {{ else -}}
 rm -f "$HOME/Library/LaunchAgents/${label}.plist"

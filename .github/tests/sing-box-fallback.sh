@@ -11,11 +11,12 @@ render_config() {
     chezmoi execute-template --source . "$prefix{{ includeTemplate \"sing-box/config.tmpl\" (dict \"root\" \$ctx \"password\" (printf \"%s=\" (repeat 43 \"A\")) \"secret\" \"fixture-api\" \"tun\" (eq \$ctx.chezmoi.os \"darwin\")) }}" >"$temporary/config.json"
 }
 render_config
-jq -e '.outbounds[] | select(.tag == "jaist auto") | .outbounds == ["gpuserver","nas","JAIST VPN","Egress"]' "$temporary/config.json" >/dev/null
-jq -e '.outbounds[] | select(.tag == "jaist") | .default == "jaist auto" and (.outbounds | index("JAIST VPN")) < (.outbounds | index("Egress"))' "$temporary/config.json" >/dev/null
+jq -e '[.outbounds[] | select(.tag == "jaist auto")] | length == 0' "$temporary/config.json" >/dev/null
+jq -e '.outbounds[] | select(.tag == "jaist") | .default == "gpuserver" and .outbounds == ["gpuserver","nas","JAIST VPN","Egress"] and .interrupt_exist_connections == false' "$temporary/config.json" >/dev/null
+jq -e '.outbounds[] | select(.tag == "Egress") | .interrupt_exist_connections == false' "$temporary/config.json" >/dev/null
 test -z "$(jq -c -f .chezmoitemplates/sing-box/failover-routes.jq "$temporary/config.json")"
 chezmoi execute-template --source . "$prefix{{ includeTemplate \"private_dot_config/private_sing-box/openconnect-auto.json.tmpl\" \$ctx }}" >"$temporary/auth.json"
-jq -e '.fallbacks == [{parent:"jaist",selector:"jaist auto",preferred:["gpuserver","nas"],fallback:"Egress",probeURL:"https://www.jaist.ac.jp/"}]' "$temporary/auth.json" >/dev/null
+jq -e '.fallbacks == [{selector:"jaist",preferred:["gpuserver","nas"],fallback:"Egress",probeURL:"https://www.jaist.ac.jp/"}]' "$temporary/auth.json" >/dev/null
 printf 'ok - %s: priority, manual choices and single ownership of failover\n' "$platform"
 rm "$store/jaist/cert/p12.age"
 render_config

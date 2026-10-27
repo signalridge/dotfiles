@@ -23,7 +23,7 @@ singBox:
   # No credentials here: openconnect-auto completes certificate SSO through
   # the API when a selector uses the endpoint. `routes` names the exitRoutes
   # that offer the VPN; `fallback` also adds it after the mesh exits in their
-  # automatic subgroup. vpn.jaist.ac.jp is F5 BIG-IP
+  # existing selector. vpn.jaist.ac.jp is F5 BIG-IP
   # behind JAIST-SSO (SAML), which needs the patched sing-box
   # (signalridge-nur input, nix-config/flake.nix).
   openconnect:
