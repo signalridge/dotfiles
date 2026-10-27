@@ -22,14 +22,14 @@ packages:
   - name: ogulcancelik/herdr@v0.9.5
     registry: third-party
   # CLIProxyAPI for OpenAI-compatible clients; official release with checksums.txt verification.
-  - name: router-for-me/CLIProxyAPI@v8.0.43
+  - name: router-for-me/CLIProxyAPI@v8.0.44
     registry: third-party
   # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
   # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
   # Moonshot's CDN (self-contained Node-SEA, no Node runtime). NOTE: the CDN's
   # `latest` can lag GitHub tags, so `aqua up` may propose a version not yet on the
   # CDN — keep this at a CDN-present version (binaries/<ver>/manifest.json resolves).
-  - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@2.3.2
+  - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@2.3.3
     registry: third-party
   # sing-box CLI on Linux: the replacement for gost's ad-hoc SOCKS/HTTP servers,
   # TCP/UDP forwards and proxy chains. macOS gets it from nix-config/modules/
@@ -57,14 +57,14 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.310
+  - name: anthropics/claude-code@v2.1.311
   - name: openai/codex@rust-v0.164.0
   - name: direnv/direnv@v2.38.2
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.10.19
+  - name: jdx/mise@v2026.10.20
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -83,7 +83,7 @@ packages:
   - name: sharkdp/fd@v10.5.0
   - name: junegunn/fzf@v0.74.5
   - name: gopasspw/gopass@v1.17.4
-  - name: cli/cli@v2.103.2
+  - name: cli/cli@v2.103.3
   - name: dlvhdr/gh-dash@v4.26.2
   - name: x-motemen/ghq@v1.11.2
   - name: gitlab.com/gitlab-org/cli@v1.99.0 # glab
@@ -122,7 +122,7 @@ packages:
   - name: koalaman/shellcheck@v0.11.0
   - name: mvdan/sh@v3.14.1
   - name: rhysd/actionlint@v1.7.12
-  - name: astral-sh/ruff@0.17.2
+  - name: astral-sh/ruff@0.17.3
   - name: astral-sh/ty@0.0.92
   - name: j178/prek@v0.5.7
   - name: golang.org/x/tools/gopls@v0.24.0
