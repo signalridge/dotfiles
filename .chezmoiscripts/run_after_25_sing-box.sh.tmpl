@@ -12,6 +12,8 @@ set -euo pipefail
 #   sing-box/clash-api-secret    Bearer secret of the web panel / Clash API
 #   sing-box/bastion-outbounds   optional bastion outbounds (bastion-import)
 #   easytier/bastion-host        the bastion's public IPv4, dialled by its outbounds
+#   sing-box/ssh-tunnel          optional, work Macs: `ssh -D` outbound (JSON)
+#   sing-box/ssh-tunnel-key      its private key (stored with `gopass cat`)
 # Runs on every apply; sudo only when the rendered config changed (tracked by
 # hash, since the file is root-only) or the daemon is not running.
 #
@@ -51,22 +53,44 @@ jq -e 'type == "array" and (length == 0 or (map(.tag) | sort) == ["AnyTLS", "Hys
 # the bastion refuses connections to itself, so it must never ride Egress.
 bastion_ip="$(gopass show -o easytier/bastion-host 2>/dev/null || true)"
 [[ "$bastion_ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || bastion_ip=""
+# Optional SSH tunnel on work Macs (singBox.sshTunnelPort, `ssh -D` without
+# ssh): the outbound as one-line JSON (tag, server, server_port, user,
+# host_key) and its private key. `gopass cat` inserts from stdin unless it is
+# closed. Both reach jq through its environment, never its command line.
+ssh_tunnel=""
+ssh_tunnel_key=""
+{{- $store := joinPath .chezmoi.homeDir ".local/share/gopass/stores/root" }}
+{{- $hasTunnel := and (dig "work" false .) (stat (joinPath $store "sing-box/ssh-tunnel.age")) (stat (joinPath $store "sing-box/ssh-tunnel-key.age")) }}
+{{- if $hasTunnel }}
+if ! ssh_tunnel="$(gopass show -o sing-box/ssh-tunnel 2>/dev/null)" ||
+    ! ssh_tunnel_key="$(gopass cat sing-box/ssh-tunnel-key </dev/null 2>/dev/null)"; then
+    echo "    gopass sing-box/ssh-tunnel or sing-box/ssh-tunnel-key unreadable" >&2
+    exit 1
+fi
+jq -e 'type == "object" and (.tag | type == "string") and (.server | type == "string") and (.host_key | type == "array" and length > 0)' \
+    <<<"$ssh_tunnel" >/dev/null || { echo "    gopass sing-box/ssh-tunnel is malformed" >&2; exit 1; }
+{{- end }}
 
 # Structure from .chezmoitemplates/sing-box/config.tmpl (shared with the
 # LaunchAgent / systemd variants); the secrets, the bastion outbounds and its
 # address are placeholders here and are filled in by jq at run time so they
 # never enter the rendered script.
 render_config() {
-    jq --arg password "$ss_password" --arg secret "$secret" \
+    SSH_TUNNEL="$ssh_tunnel" SSH_TUNNEL_KEY="$ssh_tunnel_key" jq --arg password "$ss_password" --arg secret "$secret" \
         --argjson bastion_outbounds "$bastion_outbounds" --arg bastion_ip "$bastion_ip" '
       walk(if . == "__EXIT_SS_PASSWORD__" then $password
            elif . == "__CLASH_API_SECRET__" then $secret else . end)
       | .outbounds |= map(if . == "__BASTION_OUTBOUNDS__" then $bastion_outbounds[] else . end)
+      | if (env.SSH_TUNNEL // "") == "" then . else
+          ((env.SSH_TUNNEL | fromjson) + {type: "ssh", private_key: env.SSH_TUNNEL_KEY}) as $tunnel
+          | .outbounds |= map(if . == "__SSH_TUNNEL__" then $tunnel else . end)
+          | (.route.rules[] | select(.outbound == "__SSH_TUNNEL__") | .outbound) = $tunnel.tag
+        end
       | (.outbounds[] | select($bastion_ip != "" and (.tag | IN("Reality", "Hysteria2", "AnyTLS"))) | .server) = $bastion_ip
       | (.route.rules[] | select(.ip_cidr != null and (.ip_cidr | index("__BASTION_DIRECT__")) != null) | .ip_cidr) |=
           (map(select(. != "__BASTION_DIRECT__")) + (if $bastion_ip == "" then [] else [$bastion_ip + "/32"] end))' <<'JSON'
 {{- $hasBastion := stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/sing-box/bastion-outbounds.age") }}
-{{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" "__EXIT_SS_PASSWORD__" "secret" "__CLASH_API_SECRET__" "tun" true "directCidr" (list "__BASTION_DIRECT__") "bastion" (ternary "__BASTION_OUTBOUNDS__" "" (not (not $hasBastion)))) }}
+{{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" "__EXIT_SS_PASSWORD__" "secret" "__CLASH_API_SECRET__" "tun" true "directCidr" (list "__BASTION_DIRECT__") "bastion" (ternary "__BASTION_OUTBOUNDS__" "" (not (not $hasBastion))) "sshTunnel" (not (not $hasTunnel))) }}
 JSON
 }
 

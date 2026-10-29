@@ -1,7 +1,7 @@
 {{- /* sing-box client config, shared by every platform (docs/easytier.md).
        Called with (dict "root" $ "password" … "secret" … ["tun" true]
        ["bastion" <list of outbounds, or the placeholder string
-       "__BASTION_OUTBOUNDS__" spliced in later>]).
+       "__BASTION_OUTBOUNDS__" spliced in later>] ["sshTunnel" true]).
        Panel groups (names are what the web panel shows):
          Egress   like a Tailscale exit node: whose network this machine uses.
                   Direct (default), every EasyTier exit except this machine,
@@ -148,6 +148,15 @@
 {{-   $rules = append $rules $match -}}
 {{- end -}}
 {{- $inbounds := list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" false) -}}
+{{- if dig "sshTunnel" false . -}}
+{{- /* `ssh -D` on singBox.sshTunnelPort (work Macs): its traffic always takes
+       the ssh outbound, ahead of the private-range rules, since reaching hosts
+       behind that SSH server is the point. "__SSH_TUNNEL__" stands for the
+       outbound and its tag, both spliced in from gopass by the Mac script. */ -}}
+{{-   $inbounds = append $inbounds (dict "type" "socks" "tag" "ssh-tunnel-in" "listen" "127.0.0.1" "listen_port" $r.singBox.sshTunnelPort) -}}
+{{-   $outbounds = append $outbounds "__SSH_TUNNEL__" -}}
+{{-   $rules = concat (list (first $rules) (dict "inbound" (list "ssh-tunnel-in") "outbound" "__SSH_TUNNEL__")) (rest $rules) -}}
+{{- end -}}
 {{- /* DNS. Without a TUN (headless Linux, apps opt in via proxy-on) apps hand
        the proxy domain names, so they resolve at the exit already and the
        local server only serves sing-box itself. */ -}}

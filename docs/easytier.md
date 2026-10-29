@@ -210,6 +210,16 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   `Reality`, `Hysteria2`, `AnyTLS` and stores it as gopass
   `sing-box/bastion-outbounds`, then `chezmoi apply`. Re-run after the bastion
   changes ports or rotates the device's credentials.
+- SSH tunnel (work Macs): `ssh -D` without ssh. A SOCKS5 inbound on
+  `127.0.0.1:10000` (`singBox.sshTunnelPort`) whose traffic always leaves
+  through an `ssh` outbound, ahead of the private-range rules, so hosts behind
+  the SSH server are reachable too; sing-box reconnects by itself, and like
+  `ssh -D` it carries no UDP. The outbound (`tag`, `server`, `server_port`,
+  `user`, pinned `host_key`) is one-line JSON in gopass `sing-box/ssh-tunnel`,
+  its private key `sing-box/ssh-tunnel-key` (`gopass cat
+sing-box/ssh-tunnel-key < key`; read it with stdin closed, or `gopass cat`
+  inserts instead); neither is in this repo. Without both the inbound is left
+  out.
 - Switch exits in the panel or by API (the group name is URL-encoded):
   `curl -X PUT -H "Authorization: Bearer $secret" -d '{"name":"nas"}' "http://127.0.0.1:9090/proxies/$(jq -rn '"Egress"|@uri')"`
   (the choice persists in the cache file).

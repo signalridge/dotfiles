@@ -3,6 +3,11 @@
 # gopass.
 singBox:
   mixedPort: 7890 # SOCKS5 + HTTP on 127.0.0.1 (proxy-on, apps without TUN)
+  # Work Macs: `ssh -D` without ssh, a SOCKS5 inbound on 127.0.0.1 whose
+  # traffic leaves through an ssh outbound. The outbound (tag, server, port,
+  # user, pinned host keys) and its private key stay in gopass, out of this
+  # public repo (script 25, docs/easytier.md).
+  sshTunnelPort: 10000
   # Kept off the work Mac's TUN: LAN, company and VPN ranges, the EasyTier mesh
   # and Tailscale, link-local and multicast.
   tunExcludeAddress:
