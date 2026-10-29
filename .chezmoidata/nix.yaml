@@ -73,7 +73,6 @@ nix:
     work:
       - mariadb
       - postgresql
-      - redis
     private: []
 # ─────────────────────────────────────────────────────────────────────────────
 # Hammerspoon configuration (macOS only)
