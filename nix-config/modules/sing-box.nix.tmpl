@@ -106,6 +106,16 @@ in
       dns_ok() {
         /usr/bin/dig +time=2 +tries=1 +short @"${tunDns}" captive.apple.com A 2>/dev/null | /usr/bin/grep -q .
       }
+      # The same probe straight at the primary interface's DHCP resolver. When
+      # that answers but dns_ok does not, sing-box's dhcp transport is stuck: a
+      # fetch that fails once (e.g. mid network switch) is cached as lastError
+      # and every later query fails without a retry until the next interface
+      # change. Only a restart clears it.
+      lan_dns_ok() {
+        primary="$(printf 'show State:/Network/Global/IPv4\n' | /usr/sbin/scutil | /usr/bin/awk '/PrimaryInterface/ { print $3 }')"
+        lan="$(/usr/sbin/ipconfig getoption "$primary" domain_name_server 2>/dev/null)"
+        [ -n "$lan" ] && /usr/bin/dig +time=2 +tries=1 +short @"$lan" captive.apple.com A 2>/dev/null | /usr/bin/grep -q .
+      }
       # Exit routes (selectors listing Egress, .chezmoitemplates/sing-box/config.tmpl):
       # the members before Egress are mesh exits in priority order. Keep each
       # route on the first that answers a delay test through the Clash API,
@@ -160,6 +170,13 @@ in
           done | /usr/bin/grep -q x && dns_apply
         else
           misses=$((misses + 1))
+          if [ "$misses" -ge 2 ] && lan_dns_ok; then
+            echo "sing-box: LAN resolver answers but sing-box's dhcp DNS does not; restarting" >&2
+            dns_restore
+            kill "$pid" 2>/dev/null || true
+            wait "$pid" || true
+            exit 0
+          fi
           [ "$misses" -ge 2 ] && [ -f "${dnsBackup}" ] && dns_restore
         fi
         exit_failover || true
