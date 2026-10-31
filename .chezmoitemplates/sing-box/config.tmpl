@@ -129,6 +129,15 @@
 {{-     $choices = concat $members (dig .tag (list) $vpnRoutes) (list "Egress") $twins -}}
 {{-   end -}}
 {{-   $outbounds = append $outbounds (dict "type" "selector" "tag" .tag "outbounds" $choices "default" $default "interrupt_exist_connections" false) -}}
+{{- /* exceptVpn (domain): the route's own exits, but never its VPN, since the
+       VPN logs in through them. A separate "<tag> login" selector without the
+       VPN endpoints, under the LaunchDaemon's mesh failover like any other
+       route, so with the mesh exits down they reach Egress. */ -}}
+{{-   if hasKey . "exceptVpn" -}}
+{{-     $login := printf "%s login" .tag -}}
+{{-     $outbounds = append $outbounds (dict "type" "selector" "tag" $login "outbounds" (concat $members (list "Egress") $twins) "default" $default "interrupt_exist_connections" false) -}}
+{{-     $rules = append $rules (dict "domain" .exceptVpn.domain "outbound" $login) -}}
+{{-   end -}}
 {{-   if hasKey . "exceptDirect" -}}
 {{-     $except := dict "outbound" $direct -}}
 {{-     if hasKey .exceptDirect "domain" -}}{{- $_ := set $except "domain" .exceptDirect.domain -}}{{- end -}}
@@ -164,7 +173,7 @@
 {{- $resolver := "local" -}}
 {{- $directDomains := list -}}
 {{- range $r.singBox.exitRoutes -}}
-{{-   $directDomains = concat $directDomains (dig "exceptDirect" "domain" (list) .) -}}
+{{-   $directDomains = concat $directDomains (dig "exceptDirect" "domain" (list) .) (dig "exceptVpn" "domain" (list) .) -}}
 {{- end -}}
 {{- if dig "tun" false . -}}
 {{- /* The TUN's IPv4 /30 must stay outside tunExcludeAddress: excluding it
