@@ -129,7 +129,7 @@ README 按当前实际源文件组织：
 | `11`  | `run_after_11_sync-claude-integration-plugins.sh`          | Claude Code 和 `jq` 存在时添加官方 marketplaces，并安装 Claude Slack 与 Notion workspace plugin。                                                            |
 | `12`  | `run_after_12_sync-claude-mcp.sh.tmpl`                     | 对齐仓库拥有的 Claude user MCP 条目，并将 `context7`、`tavily`、`deepwiki` 设为 always loaded；不会删除其他用户条目，但会明确删除旧名称 `arxiv-mcp-server`。 |
 | `13`  | `run_after_13_sync-codex-connector-plugins.sh`             | 尝试安装 `slack@openai-curated`；当前 Codex marketplace 不提供时跳过。                                                                                       |
-| `14`  | `run_after_14_sync-herdr-integrations.sh`                  | 安装/更新 Claude 与 Codex 的 Herdr integration；删除 Herdr 自带的 Pi integration，因为仓库自己的 `pi-herdr-state` 才是权威实现。                             |
+| `14`  | `run_after_14_sync-herdr-integrations.sh`                  | 安装/更新 Herdr 自带的 Claude、Codex 与 Pi integration。                                                                                                     |
 | `15`  | `run_after_15_cursor-agent.sh.tmpl`                        | macOS/Linux；下载带 checksum 校验的固定版本 Cursor Agent，并在 `~/.local/bin` 创建 `agent`、`cursor-agent` 链接。                                            |
 | `16`  | `run_onchange_after_16_azure-functions-core-tools.sh.tmpl` | 仅 work 机器；从 Microsoft 固定的 Azure CDN archive 安装 `func`，不用 Homebrew 或 npm。                                                                      |
 | `17`  | `run_onchange_after_17_load-launch-agents.sh.tmpl`         | 仅非 headless macOS；重载 qmk-hid-host 和 MCP reaper LaunchAgent，并移除旧的本地 Context7 agent。                                                            |
@@ -423,8 +423,8 @@ command 位于 `~/.harnesses/commands/core/commit.md`，并被 symlink 到
   `notion-workspace-plugin@notion-plugin-marketplace`。
 - Codex 尝试添加 `slack@openai-curated`；当前 marketplace 不提供时跳过。
 - Herdr 从 `.chezmoidata/herdr.yaml` 安装七个固定 plugin，并安装 Claude/Codex
-  lifecycle integration。Herdr 自带的 Pi integration 会被明确删除，仓库自己的
-  `pi-herdr-state` 才是 reporter。
+  与 Pi lifecycle integration。已退役的 `pi-herdr-state` 会被删除，Herdr 自带的
+  Pi integration 是唯一 reporter。
 
 各 harness 的 MCP 声明并不完全相同：
 

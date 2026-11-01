@@ -132,7 +132,7 @@ after apply and perform their own guards or cadence checks.
 | `11`  | `run_after_11_sync-claude-integration-plugins.sh`          | If Claude Code and `jq` exist, adds the official marketplaces and installs Claude Slack plus the Notion workspace plugin.                                                                                                    |
 | `12`  | `run_after_12_sync-claude-mcp.sh.tmpl`                     | Reconciles the repository-owned Claude user MCP entries and marks `context7`, `tavily`, and `deepwiki` as always loaded. Other user-added entries are not removed; the legacy name `arxiv-mcp-server` is explicitly removed. |
 | `13`  | `run_after_13_sync-codex-connector-plugins.sh`             | Attempts to install `slack@openai-curated`; if the current Codex marketplace does not expose it, the script skips it.                                                                                                        |
-| `14`  | `run_after_14_sync-herdr-integrations.sh`                  | Installs/updates Herdr integrations for Claude and Codex. It removes Herdr's bundled Pi integration because the repository-owned `pi-herdr-state` package is authoritative.                                                  |
+| `14`  | `run_after_14_sync-herdr-integrations.sh`                  | Installs/updates Herdr's bundled integrations for Claude, Codex, and Pi.                                                                                                                                                     |
 | `15`  | `run_after_15_cursor-agent.sh.tmpl`                        | macOS/Linux; downloads a pinned, checksum-verified Cursor Agent archive and links `agent` and `cursor-agent` into `~/.local/bin`.                                                                                            |
 | `16`  | `run_onchange_after_16_azure-functions-core-tools.sh.tmpl` | Work machines only; installs `func` from Microsoft's pinned Azure CDN archive, not Homebrew or npm.                                                                                                                          |
 | `17`  | `run_onchange_after_17_load-launch-agents.sh.tmpl`         | Non-headless macOS only; reloads the managed qmk-hid-host and MCP reaper LaunchAgents and removes the old local Context7 agent.                                                                                              |
@@ -448,8 +448,8 @@ The official plugin/connectors are separate from the shared skill library:
 - Codex attempts to add `slack@openai-curated` and skips it when unavailable in
   the current marketplace.
 - Herdr installs seven pinned plugins from `.chezmoidata/herdr.yaml` and
-  installs its Claude/Codex lifecycle integrations. The bundled Pi integration
-  is explicitly removed; `pi-herdr-state` is the repository-owned reporter.
+  installs its bundled Claude/Codex/Pi lifecycle integrations. The retired
+  `pi-herdr-state` package is removed so herdr's Pi integration is the only reporter.
 
 MCP declarations are intentionally not identical in every harness:
 

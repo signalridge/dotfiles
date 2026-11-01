@@ -173,7 +173,6 @@ pi:
     - pi-background
     - pi-worktree
     # Environment bridges
-    - pi-herdr-state
     - pi-gpt-fast
     - pi-agent-guidance
     # Input, chrome, and session UI

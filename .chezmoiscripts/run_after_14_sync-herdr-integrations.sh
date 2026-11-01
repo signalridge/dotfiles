@@ -66,9 +66,7 @@ fi
 
 install_integration "claude"
 
-# pi: do NOT install Herdr's bundled integration. The repository-owned
-# pi-herdr-state package is loaded directly by Pi and remains the only reporter;
-# keeping the bundled hook absent prevents duplicate lifecycle updates.
-if herdr integration uninstall pi >/dev/null 2>&1; then
-    echo "    Integration uninstalled: pi (repository package is authoritative)"
-fi
+# pi: Herdr's bundled integration is the only reporter for the herdr:pi
+# source. The retired @signalridge/pi-herdr-state package is removed by
+# run_after_19_remove-legacy-pi-sources.sh so the two never report together.
+install_integration "pi"

@@ -51,6 +51,7 @@ legacy_npm_packages=(
     "@narumitw/pi-goal"
     "@narumitw/pi-statusline"
     "pi-input-history"
+    "@signalridge/pi-herdr-state"
 )
 
 # Remove the declarations as well as the installed directories. Pi's Bun-backed
@@ -105,7 +106,8 @@ for package_path in \
     "$npm_dir/@quintinshaw/pi-dynamic-workflows" \
     "$npm_dir/@narumitw/pi-goal" \
     "$npm_dir/@narumitw/pi-statusline" \
-    "$npm_dir/pi-input-history"; do
+    "$npm_dir/pi-input-history" \
+    "$npm_dir/@signalridge/pi-herdr-state"; do
     if [[ -e "$package_path" ]]; then
         rm -rf -- "$package_path"
         removed=$((removed + 1))

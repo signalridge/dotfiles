@@ -130,7 +130,7 @@ README は現在のソースファイルに対応しています。
 | `11`   | `run_after_11_sync-claude-integration-plugins.sh`          | Claude Code と `jq` があれば公式 marketplace を登録し、Claude Slack と Notion workspace plugin をインストールします。                                                      |
 | `12`   | `run_after_12_sync-claude-mcp.sh.tmpl`                     | 管理対象の Claude user MCP を同期し、`context7`/`tavily`/`deepwiki` を常時ロードにします。他のユーザー項目は削除しませんが、旧名 `arxiv-mcp-server` は明示的に削除します。 |
 | `13`   | `run_after_13_sync-codex-connector-plugins.sh`             | `slack@openai-curated` の導入を試みます。現在の marketplace にない場合はスキップします。                                                                                   |
-| `14`   | `run_after_14_sync-herdr-integrations.sh`                  | Claude と Codex の Herdr integration をインストール/更新します。Herdr 付属の Pi integration は削除し、リポジトリの `pi-herdr-state` を使います。                           |
+| `14`   | `run_after_14_sync-herdr-integrations.sh`                  | Herdr 付属の Claude・Codex・Pi integration をインストール/更新します。                                                                                                     |
 | `15`   | `run_after_15_cursor-agent.sh.tmpl`                        | macOS/Linux。checksum 検証済みの固定 Cursor Agent archive を取得し、`~/.local/bin` に `agent` と `cursor-agent` をリンクします。                                           |
 | `16`   | `run_onchange_after_16_azure-functions-core-tools.sh.tmpl` | work マシンのみ。Homebrew/npm ではなく Microsoft の固定 Azure CDN archive から `func` を導入します。                                                                       |
 | `17`   | `run_onchange_after_17_load-launch-agents.sh.tmpl`         | 非 headless macOS のみ。qmk-hid-host/MCP reaper LaunchAgent を再ロードし、古いローカル Context7 agent を削除します。                                                       |
@@ -438,8 +438,8 @@ Official plugin/connector と共有 skill library は別の仕組みです。
 - Codex は `slack@openai-curated` の追加を試み、現在の marketplace にない場合は
   スキップします。
 - Herdr は `.chezmoidata/herdr.yaml` の七つの固定 plugin と Claude/Codex lifecycle
-  integration を導入します。付属 Pi integration は明示的に削除し、
-  `pi-herdr-state` を使います。
+  integration と付属 Pi integration を導入します。退役した `pi-herdr-state` は
+  削除し、付属 Pi integration だけが reporter です。
 
 MCP 宣言は harness ごとに同じではありません。
 
