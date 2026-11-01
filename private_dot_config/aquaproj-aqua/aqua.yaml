@@ -45,7 +45,7 @@ packages:
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
   - name: google-antigravity/antigravity-cli@1.4.12
-  - name: nektos/act@v0.2.92
+  - name: nektos/act@v0.2.94
   - name: FiloSottile/age@v1.3.2
   - name: asciinema/asciinema@v3.2.1
   - name: atuinsh/atuin@v18.24.4
@@ -64,7 +64,7 @@ packages:
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.10.24
+  - name: jdx/mise@v2026.10.25
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -102,7 +102,7 @@ packages:
   - name: tree-sitter/tree-sitter@v0.27.1
   - name: jj-vcs/jj@v0.46.0
   - name: rclone/rclone@v1.75.2
-  - name: o2sh/onefetch@3.1.0
+  - name: o2sh/onefetch@3.2.0
   - name: ip7z/7zip@26.05
   - name: ouch-org/ouch@0.8.3
     registry: third-party
