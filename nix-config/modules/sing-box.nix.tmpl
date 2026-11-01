@@ -102,9 +102,10 @@ in
         /usr/bin/dscacheutil -flushcache; /usr/bin/killall -HUP mDNSResponder 2>/dev/null || true
       }
       # Probe a name sing-box answers from the LAN resolver, so the check tests
-      # sing-box itself, not whichever exit is selected.
+      # sing-box itself, not whichever exit is selected. Match an address, not
+      # any output: dig +short prints its timeout error on stdout.
       dns_ok() {
-        /usr/bin/dig +time=2 +tries=1 +short @"${tunDns}" captive.apple.com A 2>/dev/null | /usr/bin/grep -q .
+        /usr/bin/dig +time=2 +tries=1 +short @"${tunDns}" captive.apple.com A 2>/dev/null | /usr/bin/grep -Eq '^[0-9]+(\.[0-9]+){3}$'
       }
       # The same probe straight at the primary interface's DHCP resolver. When
       # that answers but dns_ok does not, sing-box's dhcp transport is stuck: a
@@ -114,7 +115,7 @@ in
       lan_dns_ok() {
         primary="$(printf 'show State:/Network/Global/IPv4\n' | /usr/sbin/scutil | /usr/bin/awk '/PrimaryInterface/ { print $3 }')"
         lan="$(/usr/sbin/ipconfig getoption "$primary" domain_name_server 2>/dev/null)"
-        [ -n "$lan" ] && /usr/bin/dig +time=2 +tries=1 +short @"$lan" captive.apple.com A 2>/dev/null | /usr/bin/grep -q .
+        [ -n "$lan" ] && /usr/bin/dig +time=2 +tries=1 +short @"$lan" captive.apple.com A 2>/dev/null | /usr/bin/grep -Eq '^[0-9]+(\.[0-9]+){3}$'
       }
       # Exit routes (selectors listing Egress, .chezmoitemplates/sing-box/config.tmpl):
       # the members before Egress are mesh exits in priority order. Keep each
