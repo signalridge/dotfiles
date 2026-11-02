@@ -9,7 +9,7 @@ registries:
     #     codex-*.zst, so Code Mode failed closed after host became default.
     #   v4.566.0 - Wilfred/difftastic 0.71.0 renamed its assets to
     #     difft-<version>-<arch>-<os>.tar.gz; older refs 404 on install.
-    ref: v4.579.0
+    ref: v4.581.0
   - name: third-party
     type: local
     path: registry.yaml
@@ -22,7 +22,7 @@ packages:
   - name: ogulcancelik/herdr@v0.9.5
     registry: third-party
   # CLIProxyAPI for OpenAI-compatible clients; official release with checksums.txt verification.
-  - name: router-for-me/CLIProxyAPI@v8.0.48
+  - name: router-for-me/CLIProxyAPI@v8.0.51
     registry: third-party
   # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
   # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
@@ -68,7 +68,7 @@ packages:
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
-  - name: bootandy/dust@v1.2.6
+  - name: bootandy/dust@v1.2.7
   - name: dandavison/delta@0.20.1
   - name: Wilfred/difftastic@0.72.0
   # Darwin uses Cargo for eza. Track crates.io releases directly: GitHub tag
@@ -89,7 +89,7 @@ packages:
   - name: gitlab.com/gitlab-org/cli@v1.99.0 # glab
   - name: git-lfs/git-lfs@v3.8.1
   - name: charmbracelet/glow@v3.0.0
-  - name: carapace-sh/carapace-bin@v1.8.1
+  - name: carapace-sh/carapace-bin@v1.8.2
   - name: jqlang/jq@jq-1.8.2
   - name: ynqa/jnv@v0.7.1
   - name: tldr-pages/tlrc@v1.13.1
