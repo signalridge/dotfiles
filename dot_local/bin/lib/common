@@ -2,7 +2,7 @@
 # Common Shell Library for Local Bin Scripts
 # Shared functions, colors, and utilities
 #
-# Usage: source "$(dirname "$0")/common-lib"
+# Usage: source "$(dirname "$0")/lib/common"
 
 # ===== Color Constants =====
 RED='\033[0;31m'
@@ -188,18 +188,6 @@ gopass_show_secret() {
     return 1
 }
 
-gopass_has_secret() {
-    local secret_path="$1"
-    local timeout_sec="${2:-3}"
-    gopass_exec_with_timeout "$timeout_sec" list -f "$secret_path" >/dev/null 2>&1
-}
-
-gopass_list_prefix() {
-    local prefix="$1"
-    local timeout_sec="${2:-3}"
-    gopass_exec_with_timeout "$timeout_sec" list -f "$prefix"
-}
-
 # ===== Command Validation =====
 
 # Check if required commands are available
@@ -301,71 +289,5 @@ get_file_mtime() {
         stat -f%m "$file"  # macOS/BSD
     else
         stat -c%Y "$file"  # Linux/GNU
-    fi
-}
-
-# Get file modification time in human-readable format (cross-platform)
-# Usage: get_file_mtime_human /path/to/file
-get_file_mtime_human() {
-    local file="$1"
-    if stat -f%Sm "$file" &>/dev/null 2>&1; then
-        stat -f%Sm -t "%Y-%m-%d %H:%M:%S" "$file"  # macOS/BSD
-    else
-        stat -c%y "$file" | cut -d. -f1  # Linux/GNU
-    fi
-}
-
-# Get file permissions in symbolic format (cross-platform)
-# Usage: get_file_perms /path/to/file
-get_file_perms() {
-    local file="$1"
-    if stat -f%Sp "$file" &>/dev/null 2>&1; then
-        stat -f%Sp "$file"  # macOS/BSD
-    else
-        stat -c%A "$file"   # Linux/GNU
-    fi
-}
-
-# ===== FZF Utilities =====
-
-# Run FZF with standard defaults
-# Usage: fzf_with_defaults [additional fzf options]
-fzf_with_defaults() {
-    fzf --ansi --height=50% --border=rounded "$@"
-}
-
-# ===== JSON Utilities =====
-
-# Safely query JSON file with default fallback
-# Usage: jq_get file.json ".path.to.field" "default_value"
-jq_get() {
-    local file="$1"
-    local query="$2"
-    local default="${3:-}"
-
-    [[ ! -f "$file" ]] && { echo "$default"; return; }
-
-    local result
-    result=$(jq -r "$query // empty" "$file" 2>/dev/null)
-    [[ -z "$result" ]] && echo "$default" || echo "$result"
-}
-
-# Update JSON file atomically
-# Usage: jq_update file.json '.field = "value"'
-jq_update() {
-    local file="$1"
-    local query="$2"
-
-    [[ ! -f "$file" ]] && { log_error "JSON file not found: $file"; return 1; }
-
-    local tmp
-    tmp=$(mktemp) || { log_error "Failed to create temp file"; return 1; }
-
-    if jq "$query" "$file" > "$tmp" 2>/dev/null; then
-        mv "$tmp" "$file"
-    else
-        rm -f "$tmp"
-        log_error "JSON update failed"
-        return 1
     fi
 }

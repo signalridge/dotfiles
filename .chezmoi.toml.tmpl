@@ -77,11 +77,6 @@ encryption = "age"
 {{-   fail (printf "gitEmail is unset and there is no TTY to prompt.\n%s" $nonInteractiveHelp) -}}
 {{- end -}}
 
-{{- $osID := .chezmoi.os -}}
-{{- if (and (eq .chezmoi.os "linux") (hasKey .chezmoi.osRelease "id")) -}}
-{{-   $osID = printf "%s-%s" .chezmoi.os .chezmoi.osRelease.id -}}
-{{- end -}}
-
 {{/* detect GitHub codespaces, VSCode remote containers, Docker containers, Multipass VMs, and Vagrant boxes */}}
 {{- if or (env "CODESPACES") (env "REMOTE_CONTAINERS_IPC") (eq .chezmoi.username "root" "ubuntu" "vagrant" "vscode") -}}
 {{-   $headless = true -}}
@@ -200,7 +195,6 @@ headless = {{ $headless }}
 useEncryption = {{ $useEncryption }}
 installMasApps = {{ $installMasApps }}
 homeWifiSSIDs = {{ $homeWifiSSIDs | quote }}
-osid = {{ $osID | quote }}
 timezone = {{ $timezone | quote }}
 gopassRepository = {{ $gopassRepository | quote }}
 keysRepository = {{ $keysRepository | quote }}

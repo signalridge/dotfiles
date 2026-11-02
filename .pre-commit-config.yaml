@@ -83,6 +83,3 @@ repos:
         language: system
         pass_filenames: false
         entry: gitleaks git --pre-commit --config .gitleaks.toml --redact --staged --verbose
-      #####################################
-ci:
-  autoupdate_schedule: weekly

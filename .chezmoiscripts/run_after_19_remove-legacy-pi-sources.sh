@@ -41,7 +41,6 @@ remove_package_dir "$legacy_extension_dir/tmux-state" "pi-ext-tmux-state"
 
 # Remove exact package installs that would otherwise leave a second copy
 # discoverable in Pi's global package directory.
-# installed directories.
 legacy_npm_root="$agent_dir/npm"
 legacy_npm_manifest="$legacy_npm_root/package.json"
 legacy_npm_lock="$legacy_npm_root/bun.lock"

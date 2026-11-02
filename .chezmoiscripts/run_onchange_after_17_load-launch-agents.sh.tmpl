@@ -77,7 +77,6 @@ remove_launch_agent() {
 echo ":: [17] (re)loading macOS LaunchAgents"
 mkdir -p "${HOME}/Library/Logs"
 
-remove_launch_agent "com.signalridge.mcp-context7"
 reload_launch_agent "com.signalridge.qmk-hid-host"
 reload_launch_agent "com.signalridge.mcp-reaper"
 {{ if .work -}}
