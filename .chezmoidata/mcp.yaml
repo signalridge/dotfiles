@@ -1,0 +1,54 @@
+# Repository-owned MCP servers, declared once for every harness.
+#
+# Rendered by:
+#   claude  .chezmoiscripts/run_after_12_sync-claude-mcp.sh.tmpl (`claude mcp` CLI)
+#   codex   dot_codex/modify_private_config.toml.tmpl ([mcp_servers.*])
+#   pi      dot_pi/agent/mcp.json.tmpl (adapter overrides: dot_pi/agent/mcp-adapter.json.tmpl)
+#   kimi    dot_kimi-code/mcp.json.tmpl
+#   cursor  dot_cursor/mcp.json.tmpl
+#
+# Each entry has either `url` (remote, Streamable HTTP) or `command` + `args`
+# (stdio). A `command` starting with `~/` is expanded to the home directory at
+# render time. No server needs an `env` block: secrets are fetched by the
+# ~/.local/bin/mcp-* wrappers themselves, never written into a config file.
+#
+# Per-harness selection: `only` limits an entry to the listed harnesses,
+# `exclude` drops it from them. List order is the rendered order.
+# `claude.alwaysLoad` pins the server so Claude Code never defers its tools
+# behind ToolSearch; the rest stay deferrable (rarely used).
+mcp:
+  servers:
+    # Codex only: Claude gets Notion from its official plugin
+    # (run_after_11_sync-claude-integration-plugins.sh); the other harnesses do
+    # not declare it.
+    - name: notion
+      url: https://mcp.notion.com/mcp
+      only: [codex]
+    # Official hosted Context7 MCP endpoint. The old local HTTP daemon used
+    # @upstash/context7-mcp@2.1.1 and can fail repeated Streamable HTTP handshakes.
+    - name: context7
+      url: https://mcp.context7.com/mcp
+      claude:
+        alwaysLoad: true
+    # Pi excludes Tavily: web search and content extraction there go through the
+    # pi-web-access extension (`web_search` / `fetch_content`, see
+    # dot_pi/agent/APPEND_SYSTEM.md), which already routes to Tavily via
+    # dot_pi/web-search.json.tmpl.
+    - name: tavily
+      command: ~/.local/bin/mcp-tavily
+      args: []
+      exclude: [pi]
+      claude:
+        alwaysLoad: true
+    - name: deepwiki
+      url: https://mcp.deepwiki.com/mcp
+      claude:
+        alwaysLoad: true
+    - name: gitmcp
+      url: https://gitmcp.io/docs
+    - name: markitdown
+      command: uvx
+      args: [markitdown-mcp]
+    - name: arxiv
+      command: uv
+      args: [tool, run, arxiv-mcp-server]

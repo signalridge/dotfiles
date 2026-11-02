@@ -3,29 +3,29 @@
   harnesses (claude/codex/pi): remote servers use "url"; stdio servers reuse the
   shared ~/.local/bin/mcp-* wrappers or uvx/uv. Cursor has no per-server lazy
   lifecycle, so that pi-only field is omitted here. Managed by chezmoi.
+  The server list lives in .chezmoidata/mcp.yaml (harness key "cursor").
 */ -}}
+{{- $harness := "cursor" -}}
+{{- $servers := list -}}
+{{- range .mcp.servers -}}
+{{-   $on := true -}}
+{{-   if hasKey . "only" -}}{{- $on = has $harness .only -}}{{- end -}}
+{{-   if hasKey . "exclude" -}}{{- if has $harness .exclude -}}{{- $on = false -}}{{- end -}}{{- end -}}
+{{-   if $on -}}{{- $servers = append $servers . -}}{{- end -}}
+{{- end -}}
 {
   "mcpServers": {
-    "context7": {
-      "url": "https://mcp.context7.com/mcp"
-    },
-    "tavily": {
-      "command": "{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily",
-      "args": []
-    },
-    "deepwiki": {
-      "url": "https://mcp.deepwiki.com/mcp"
-    },
-    "gitmcp": {
-      "url": "https://gitmcp.io/docs"
-    },
-    "markitdown": {
-      "command": "uvx",
-      "args": ["markitdown-mcp"]
-    },
-    "arxiv": {
-      "command": "uv",
-      "args": ["tool", "run", "arxiv-mcp-server"]
-    }
+{{- range $i, $s := $servers }}
+    {{ $s.name | toJson }}: {
+{{-   if hasKey $s "url" }}
+      "url": {{ $s.url | toJson }}
+{{-   else }}
+{{-     $cmd := $s.command -}}
+{{-     if hasPrefix "~/" $cmd -}}{{- $cmd = printf "%s/%s" $.chezmoi.homeDir (trimPrefix "~/" $cmd) -}}{{- end }}
+      "command": {{ $cmd | toJson }},
+      "args": [{{ range $j, $a := $s.args }}{{ if $j }}, {{ end }}{{ $a | toJson }}{{ end }}]
+{{-   end }}
+    }{{ if lt (add1 $i) (len $servers) }},{{ end }}
+{{- end }}
   }
 }

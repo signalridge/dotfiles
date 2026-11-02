@@ -16,19 +16,14 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
        private/high-effort profile by default, matching Claude's template. */ -}}
 {{- $work := false -}}
 {{- if hasKey . "work" -}}{{- $work = .work -}}{{- end -}}
-{{- /* Codex has independent defaults: private -> gpt-6-astra/medium,
-       work -> gpt-5.6-luna/max. Pi now defaults to gpt-6.1-sol/high on both
-       machines; changing Pi's context metadata does not change Codex's model.
-       Native OpenAI OAuth only: the third-party provider blocks and the
-       codex-manage/codex-with/codex-token tooling were removed on 2026-10-14
-       (their gopass keys were already gone). */ -}}
+{{- /* Codex model/effort defaults are independent of Pi's (those live in
+       dot_pi/agent/subagents.json.tmpl and .chezmoidata/pi.yaml). Native
+       OpenAI OAuth only; no third-party provider blocks. */ -}}
 {{- $model := ternary "gpt-5.6-luna" "gpt-6-astra" $work -}}
 {{- $subagentModel := $model -}}
 {{- $effort := ternary "max" "medium" $work -}}
-{{- /* Subagents run the parent's rung, mirroring Pi where the parent IS the
-       `medium` tier every unqualified spawn lands on. It used to be pinned to
-       `max` unconditionally, which made a Codex subagent dearer than the
-       session that spawned it. */ -}}
+{{- /* Subagents run the parent's model and rung, so a subagent is never
+       dearer than the session that spawned it. */ -}}
 {{- $subagentEffort := $effort -}}
 
 # =============================================================================
@@ -45,13 +40,9 @@ approval_policy = "never"
 # config.toml equivalent of --dangerously-bypass-approvals-and-sandbox.
 sandbox_mode = "danger-full-access"
 
-# Removed 2026-09-06: `disable_response_storage` and
-# `windows_wsl_setup_acknowledged` are no longer in the schema this file's
-# `#:schema` line points at, whose root is `additionalProperties: false`, so
-# both were emitting fields the published contract rejects. Codex itself
-# tolerated them; an editor validating against the schema does not. Neither has
-# a replacement key -- response storage is now governed by the account, and the
-# WSL acknowledgement is meaningless on this Darwin-only machine anyway.
+# Do not add `disable_response_storage` / `windows_wsl_setup_acknowledged`: Codex
+# tolerates them, but the #:schema above (root additionalProperties:false)
+# rejects them, and neither has a replacement key.
 
 # Suppress unstable feature warnings
 suppress_unstable_features_warning = true
@@ -153,47 +144,30 @@ status_line_use_colors = true
 # =============================================================================
 
 [[hooks.SessionStart]]
-hooks = [
-  { type = "command", command = "bash '{{ .chezmoi.homeDir }}/.codex/herdr-agent-state.sh' session", timeout = 10 },
-  { type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1 },
-]
-
-[[hooks.UserPromptSubmit]]
-hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex busy", timeout = 1 }]
-
-[[hooks.Stop]]
-hooks = [{ type = "command", command = "{{ .chezmoi.homeDir }}/.local/bin/tmux-ai-agent-state codex idle", timeout = 1 }]
+hooks = [{ type = "command", command = "bash '{{ .chezmoi.homeDir }}/.codex/herdr-agent-state.sh' session", timeout = 10 }]
 
 # =============================================================================
 # MCP Servers
 # =============================================================================
-
-[mcp_servers.notion]
-url = "https://mcp.notion.com/mcp"
-
-[mcp_servers.context7]
-# Official hosted Context7 MCP endpoint. The old local HTTP daemon used
-# @upstash/context7-mcp@2.1.1 and can fail repeated Streamable HTTP handshakes.
-url = "https://mcp.context7.com/mcp"
-
-[mcp_servers.tavily]
-command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-tavily"
-args = []
-
-[mcp_servers.gitmcp]
-url = "https://gitmcp.io/docs"
-
-[mcp_servers.deepwiki]
-url = "https://mcp.deepwiki.com/mcp"
-
-[mcp_servers.markitdown]
-command = "uvx"
-args = ["markitdown-mcp"]
-
-[mcp_servers.arxiv]
-command = "uv"
-args = ["tool", "run", "arxiv-mcp-server"]
-
+{{/* Server list: .chezmoidata/mcp.yaml (harness key "codex"). No left trim:
+     the newline above separates the banner from the first table. */ -}}
+{{- $harness := "codex" -}}
+{{- range .mcp.servers -}}
+{{-   $on := true -}}
+{{-   if hasKey . "only" -}}{{- $on = has $harness .only -}}{{- end -}}
+{{-   if hasKey . "exclude" -}}{{- if has $harness .exclude -}}{{- $on = false -}}{{- end -}}{{- end -}}
+{{-   if $on }}
+[mcp_servers.{{ .name }}]
+{{-     if hasKey . "url" }}
+url = {{ .url | toJson }}
+{{-     else }}
+{{-       $cmd := .command -}}
+{{-       if hasPrefix "~/" $cmd -}}{{- $cmd = printf "%s/%s" $.chezmoi.homeDir (trimPrefix "~/" $cmd) -}}{{- end }}
+command = {{ $cmd | toJson }}
+args = [{{ range $j, $a := .args }}{{ if $j }}, {{ end }}{{ $a | toJson }}{{ end }}]
+{{-     end }}
+{{    end -}}
+{{- end }}
 # =============================================================================
 # Profiles
 # =============================================================================
