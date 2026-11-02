@@ -52,8 +52,8 @@ subreddit's rules before submitting.
 
 The publish gate (`social-post`) and the Reddit helper (`reddit-submit`) are bundled in
 this skill under `scripts/` — there is no `~/.local/bin` dependency. Dry-run is the
-default; `--yes` actually sends. Credentials come from gopass at send time (see
-`docs/social-publishing.md`).
+default and needs no credentials; `--yes` actually sends. Both helpers start with
+`set +x`: never trace them (`bash -x`) on a real send, it would echo every secret.
 
 ```bash
 SKILL=~/.harnesses/skills/social/oss-x-post   # this skill's installed path
@@ -64,6 +64,37 @@ bash "$SKILL/scripts/social-post" devto   --file tmp/launch/devto.md
 bash "$SKILL/scripts/social-post" reddit  --subreddit rust --title "<title>" --file tmp/launch/reddit-rust.md
 # add --yes to each, only after the user approves the dry-run
 ```
+
+Length checks count code points (`wc -m`), so the X figure is `(approx)`: X weighs
+most emojis as 2 and every URL as 23. The platform is the final arbiter.
+
+## Credentials (gopass)
+
+Read at send time; an already-exported env var wins over gopass. Never print,
+paste, or commit the values.
+
+| Platform | gopass paths                                                                                         |
+| -------- | ---------------------------------------------------------------------------------------------------- |
+| X        | `social/twitter/{consumer_key,consumer_secret,access_token_key,access_token_secret}` (OAuth 1.0a)    |
+| Bluesky  | `social/bluesky/{identifier,password}` (app password; optional `host`)                               |
+| dev.to   | `social/devto/api_key`                                                                               |
+| Reddit   | `social/reddit/{client_id,refresh_token}` (+ `client_secret` for script apps, optional `user_agent`) |
+
+Getting tokens: **X** — developer-portal app, OAuth 1.0a user context with write;
+copy consumer key/secret + access token key/secret, and set an API spending limit.
+**Bluesky** — Settings → App Passwords (identifier = your handle). **dev.to** —
+Settings → Extensions → DEV API keys. **Reddit** — create an app, then bootstrap
+the refresh token as below. Ephemeral tokens (Reddit 1-hour access token, Bluesky
+session JWT) are minted in memory and never stored.
+
+Token hygiene: the scripts only **read** gopass, so store only static secrets.
+Never store a rotating token — avoid X OAuth 2.0 (single-use refresh tokens); use
+OAuth 1.0a. Reddit's `permanent` refresh token does not rotate: bootstrap it with
+`reddit-submit auth-url --client-id <id>` then
+`exchange-code --client-id <id> --code-file <file>` (or `REDDIT_AUTH_CODE`;
+`--code` on the command line is rejected), which writes the response to a
+mode-600 tempfile and prints how to pipe the token into gopass; `rm` the file afterwards and never `cat` it. A leaked Reddit token
+means revoking the app, not just rotating the client secret.
 
 ## Prepare-only platforms (no API — never auto-post)
 

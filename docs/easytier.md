@@ -1,6 +1,6 @@
 # EasyTier mesh
 
-A private EasyTier network evaluated alongside Tailscale. All nodes share one
+A private EasyTier network. All nodes share one
 network name/secret. Membership is by role, never by hostname
 (`.chezmoitemplates/easytier/role.tmpl`): **every Mac** joins as a client with a
 DHCP-assigned virtual IP (nix-darwin LaunchDaemon), and a **Linux machine**
@@ -19,9 +19,12 @@ as placeholders.
 | every Mac  | client                             | DHCP (in /24)   | this repo: nix-darwin LaunchDaemon (see below) |
 | gpuserver1 | member, exit `gpuserver`           | 10.144.144.3/24 | this repo: systemd unit (see below)            |
 
-All nodes run v2.6.4 (`easytier-core 2.6.4-8428a89d`); the binaries are
-byte-identical to the official GitHub release assets (bastion zip, NAS image
-`easytier/easytier:v2.6.4@sha256:91d6732e…`, Mac zip via `fetchurl`). Public
+All nodes run the same EasyTier release, pinned as `easytier` in
+`.chezmoidata/versions.yaml` (bumped by the `update-versions` workflow); the
+hand-deployed bastion and NAS are updated to match by hand (currently 2.6.4,
+`easytier-core 2.6.4-8428a89d`; NAS image digest in the compose below). The binaries are the
+official GitHub release assets (bastion zip, NAS image by digest, Mac zip via
+`fetchurl`). Public
 shared nodes (`-e`) are never used; STUN uses the bastion's own endpoints
 `<bastion-ip>:38478-38480` (`stun-binding`, a small Python service on the
 bastion). The same STUN endpoints and the bastion's `hysteria-realm`
@@ -81,35 +84,15 @@ separate 0600 env file.
 - Exit roles are set per machine (`easytierExit` in its local chezmoi data;
   the NAS is listed in `exits` but deployed by hand), never inferred from
   `headless`: an exit relays other machines' traffic from its own IP.
+- EasyTier transport extras: KCP/QUIC proxy (`--enable-kcp-proxy` /
+  `--enable-quic-proxy`, on); an experimental `faketcp://` listener exists.
 
-### Proxy tools by feature
+### Not installed
 
-Only sing-box,
-shadowsocks-rust, Hysteria2 and realm are installed (none of the last three
-on work machines, which only consume the exits); the rest is one
-`nix run nixpkgs#<name>` away:
-
-| Feature                              | Tool                                                                                |
-| ------------------------------------ | ----------------------------------------------------------------------------------- |
-| Shadowsocks / proxy server           | shadowsocks-rust `ssserver`; sing-box `socks`/`http`/`mixed` inbounds               |
-| Local protocol conversion            | sing-box, `sslocal`                                                                 |
-| Multi-hop chains with node selection | sing-box `detour` + `selector`/`urltest`                                            |
-| Reverse tunnels / NAT traversal      | EasyTier, Tailscale                                                                 |
-| L3 tunnel (TUN)                      | EasyTier, Tailscale                                                                 |
-| TCP/UDP port forwarding (any target) | `realm`; sing-box `direct` inbound with an override target                          |
-| KCP transport                        | EasyTier `--enable-kcp-proxy` / `--enable-quic-proxy` (on); Hysteria2 for lossy WAN |
-| fake-TCP (UDP disguised as TCP)      | EasyTier `faketcp://` listener (experimental)                                       |
-| ICMP tunnel                          | none installed (`nix run nixpkgs#pingtunnel`)                                       |
-| WebSocket / TLS / QUIC camouflage    | sing-box (VLESS Reality, AnyTLS, Hysteria2), bastion sing-box + Caddy decoy         |
-| DNS forwarder                        | sing-box `dns`                                                                      |
-| Rate limiting                        | `tc` (Linux), `pf` (macOS)                                                          |
-| Per-connection logs                  | sing-box connections API, `ssserver -v`                                             |
-| Prometheus metrics                   | node_exporter (host level)                                                          |
-
-Ad hoc, gost itself is still one command away: `nix run nixpkgs#gost`.
-
-Not used: kcptun (upstream repository gone in 2026), udp2raw and ptunnel-ng
-(unmaintained, no macOS builds), rathole (no release since 2023).
+Ad hoc tools are one `nix run nixpkgs#<name>` away (e.g. `nix run nixpkgs#gost`,
+`nix run nixpkgs#pingtunnel` for an ICMP tunnel). Not used: kcptun (upstream
+repository gone), udp2raw and ptunnel-ng (unmaintained, no macOS builds),
+rathole (no release since 2023).
 
 ## sing-box (every machine)
 
@@ -152,7 +135,7 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   is left alone until set back. It is not a `urltest`: the bastion detour is only
   ~30-35 ms slower than the mesh link, so latency kept picking it, and
   sing-box has no priority fallback group. When p2p fails EasyTier itself
-  relays through the bastion. Switching never cuts existing connections. Today the `jaist` route covers `jaist.ac.jp`, the JAIST address
+  relays through the bastion. Switching never cuts existing connections. The `jaist` route covers `jaist.ac.jp`, the JAIST address
   ranges and the academic publishers/databases of the community rule-set
   `geosite-category-scholar-!cn` (IEEE, ACM, Springer, Elsevier, Wiley, Nature,
   JSTOR, Scopus, J-STAGE, CiNii and their CDNs; `!cn` = outside China), so
@@ -160,7 +143,7 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   `gpuserver`, `nas`, `gpuserver via bastion`, `nas via bastion`. The shadow
   libraries bundled in that list (Z-Library, Sci-Hub, LibGen mirrors) are
   excluded by keyword (`exceptKeyword`) and take the normal `Egress`. Remote
-  rule-sets refresh weekly inside sing-box; `.chezmoiexternal.toml` keeps a
+  rule-sets refresh weekly inside sing-box; `.chezmoiexternal.toml.tmpl` keeps a
   local copy under `~/.local/share/sing-box/rule-set/` as `initial_path`, so
   sing-box still starts with no network.
   Secrets: gopass `easytier/exit-ss-password`, `sing-box/clash-api-secret`;
@@ -293,7 +276,7 @@ The selectors keep existing connections on their original outbound; new
 connections use the new selection. An old connection still fails if its original
 exit itself becomes unavailable.
 
-## Installed replacement tools
+## Installed tools
 
 aqua: `sing-box` for Linux CLI use; non-work headless services and Macs use the
 Nix build. `aqua-private.yaml`, skipped on work
@@ -308,7 +291,7 @@ Generated with gopass and never stored in this repository:
 - Every node reads them from a root-only env file as
   `ET_NETWORK_NAME` / `ET_NETWORK_SECRET` (never on a command line):
   - Mac: `/etc/easytier/easytier.env` (root:wheel 0600), written by
-    `.chezmoiscripts/run_after_24_easytier-node.sh`
+    `.chezmoiscripts/run_after_24_easytier-node.sh.tmpl`
   - Linux nodes: `/etc/easytier/easytier.env` (root:root 0600), same script
   - bastion: `/etc/easytier/easytier.env` (root:root 0600, dir 0700)
   - NAS: `/volume1/docker/easytier/easytier.env` (0600, dir 0700 with the
@@ -347,8 +330,8 @@ chezmoi apply ~/.chezmoiscripts/24_easytier-node.sh   # each repo-managed node (
 
 - Needs a multi-user nix (root-owned `/nix/store`), `/dev/net/tun`, and sudo
   for the user running `chezmoi apply`; no Docker.
-- `run_after_24_easytier-node.sh` builds the flake output `easytier`
-  (`nix-config/modules/easytier-package.nix`, out-link
+- `run_after_24_easytier-node.sh.tmpl` builds the flake output `easytier`
+  (`nix-config/modules/easytier-package.nix.tmpl`, out-link
   `~/.local/state/easytier/easytier` as the GC root), renders
   `/etc/systemd/system/easytier.service` with `ExecStart` pointing at that
   store path, writes the env file, and restarts the unit — sudo only when the
@@ -361,8 +344,9 @@ chezmoi apply ~/.chezmoiscripts/24_easytier-node.sh   # each repo-managed node (
 
 ## bastion
 
-Binaries: `/opt/easytier/2.6.4/{easytier-core,easytier-cli}` from
-`easytier-linux-x86_64-v2.6.4.zip`, `/opt/easytier/current` → `2.6.4`,
+Binaries: `/opt/easytier/<version>/{easytier-core,easytier-cli}` from
+`easytier-linux-x86_64-v<version>.zip` (`<version>` = `easytier` in
+`.chezmoidata/versions.yaml`), `/opt/easytier/current` → `<version>`,
 `/usr/local/bin/easytier-cli` → current. System user `easytier` (nologin).
 
 `/etc/systemd/system/easytier.service`:
@@ -436,8 +420,10 @@ right after `udp dport {{38478,38479,38480}} accept`, applied with
   udp dport 11010 accept
 ```
 
-Backup of the pre-change script: `/usr/local/sbin/vps-firewall.bak-20261024160103-pre-easytier`;
-ruleset snapshots: `/root/vps_guard.{pre,post}-easytier.nft`.
+Keep a backup of the pre-change script next to it
+(`/usr/local/sbin/vps-firewall.bak-<timestamp>-pre-easytier`; the current
+pre-EasyTier one is `vps-firewall.bak-20261024160103-pre-easytier`) and ruleset
+snapshots (`/root/vps_guard.{pre,post}-easytier.nft`).
 
 ## NAS (Synology DSM 7.4.1)
 
@@ -451,7 +437,8 @@ only `/usr/local/bin/docker` via passwordless sudo. Nothing is shared with the
 name: easytier
 services:
   easytier:
-    # v2.6.4 index digest; easytier-core inside == official linux-x86_64 zip.
+    # 2.6.4 index digest; easytier-core inside == official linux-x86_64 zip.
+    # Bump by hand on redeploy.
     image: easytier/easytier:v2.6.4@sha256:91d6732ea5ff71542fdb99333d2ee7b168e973443114db84db061e452427d91e
     container_name: easytier
     restart: unless-stopped
@@ -536,7 +523,7 @@ Status: `sudo docker exec easytier easytier-cli peer`.
   `cp -p /usr/local/sbin/vps-firewall.bak-20261024160103-pre-easytier /usr/local/sbin/vps-firewall`
   then `vps-firewall --check && vps-firewall`.
 - NAS: `cd /volume1/docker/easytier && sudo docker compose down`,
-  `sudo docker image rm easytier/easytier:v2.6.4 ghcr.io/shadowsocks/ssserver-rust:v1.25.0`, delete the directory.
+  `sudo docker image rm easytier/easytier:v<version> ghcr.io/shadowsocks/ssserver-rust:v1.25.0`, delete the directory.
 - Exits: on gpuserver1 run `systemctl --user disable --now ss-exit` and drop
   `easytierExit` from its chezmoi.toml (the unit and `~/.config/ss-exit` then stop rendering; delete
   them); `gopass rm easytier/exit-ss-password`.

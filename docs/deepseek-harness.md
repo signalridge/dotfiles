@@ -41,11 +41,9 @@ The proxy must be running and its OAuth account must be valid. No DeepSeek API
 key or paid OpenAI API key is needed for this default route. Subscription limits
 and upstream model availability still apply.
 
-The CPA Responses route accepts about 922K input tokens, so the managed input
-window is **921,000**. `maxTokens: 128000` matches native output metadata for
-dsh's completion reservation. Since `supportsMaxOutputTokens: false` omits the
-request parameter, this is **not** an enforced 128K output cap, nor proof that
-the account can produce that many output tokens.
+The context window and `maxTokens` values are measured, not spec figures; the
+rationale is in the comments beside them in `dot_dsh/cordis.patch.yml`
+(`maxTokens` is a reservation, not an enforced output cap).
 
 `dsh-with` reads `claude/cliproxy/private/api_key` from gopass on launch and
 passes it only in the child process environment as `CLIPROXY_API_KEY`. The
