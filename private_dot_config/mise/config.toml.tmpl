@@ -8,13 +8,10 @@
 # not the Node runtime itself.
 #
 # `lts`, NOT `latest`, and that is not a stale pin: `lts` already tracks the
-# newest LTS release and moves on its own (24.20.0 today), so "keep node at the
-# latest version" and "stay on LTS" are the same instruction. `latest` would
-# mean something different — Node Current, 26.x, which gets no long-term
-# support. Briefly set to `latest` on 2026-09-06 and reverted the same day.
-# The version floor was never the question (pi needs >= 22.19 and every major
-# here clears it); the exposure on a brand-new major is a native module with no
+# newest LTS release on its own, while `latest` means Node Current (no
+# long-term support). The risk on a brand-new major is a native module with no
 # prebuild, which bun will not rebuild because it skips postinstall by default.
+# (pi needs >= 22.19; any LTS clears it.)
 node = "lts"
 
 # Bun — runs MCP servers via `bunx` (see ~/.local/bin/mcp-*) and, via
@@ -29,9 +26,8 @@ bun = "latest"
 # Terraform (replaces tenv)
 terraform = "latest"
 
-# Python (for tools that need it). 3.12 -> 3.14 on 2026-09-06. The major.minor
-# pin is deliberate — a Python major moves faster than the pipx tools below —
-# and 3.14 is the newest release line, so this IS latest. Bumping the line
+# Python (for tools that need it). The major.minor pin is deliberate — a
+# Python release line moves faster than the pipx tools below. Bumping the line
 # rebuilds the other `pipx:` entry venvs (poetry, pre-commit, posting,
 # ai-research-skills); mac-cleanup uses its own supported Python below.
 # Re-run `mise install` and check those binaries after any change here.
@@ -112,7 +108,7 @@ lua = "5.4"
 # (browser-based UI iteration). Bin is `impeccable`; pure-JS deps + NO postinstall,
 # so bun needs no `--trust` here. This entry installs ONLY the CLI. The `/impeccable`
 # skill is NOT deployed globally: `impeccable install --global` was intentionally removed
-# (2026-07-13) — pi double-reads ~/.pi/agent/skills + ~/.agents/skills so the global
+# — pi double-reads ~/.pi/agent/skills + ~/.agents/skills so the global
 # fan-out collides, and a machine-wide skill in every harness is unwanted. Install per-repo
 # on demand instead: `impeccable install --project --no-hooks` in the target UI project
 # (`impeccable update`/`check` to refresh it there). Deliberately NOT a chezmoi external/

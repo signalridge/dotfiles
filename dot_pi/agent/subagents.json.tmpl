@@ -1,93 +1,41 @@
 {{- /*
   ~/.pi/agent/subagents.json — pi-subagents runtime policy.
 
-  agentTiers is the catalogue of named model profiles. Agent files do not pin a
-  profile; the host may pass a catalogue key on an Agent call for explicit routing.
-  If omitted, agentTiers.defaultTier applies (medium). The host cannot pass model
-  or thinking directly.
+  agentTiers is the subagent model policy and the ONE tier table; other files
+  point here instead of restating rungs (agent frontmatter and
+  workflows/settings.json.tmpl name tier keys only). Identical on both machines
+  (no `.work` branch); the rungs are the variables just below:
+    low    = $lowModel / $lowThink        search, navigation, read-heavy work
+    medium = $mediumModel / $mediumThink  implementation, review, verification
+    high   = $highModel / $highThink      architecture, high-risk review
 
-  The ordinary Agent catalogue is the single model-policy source. It keeps its
-  user-facing `low | medium | high` keys with identical rungs on both machines:
-    low = gpt-6.1-sol/low, medium = gpt-6.1-sol/high, high = gpt-6-astra/medium
+  Resolution: resolveAgentTier() is the only resolver. A call (or an agent's
+  frontmatter `tier:`, e.g. Explore's `low`) names a key from this catalogue;
+  a call naming none takes agentTiers.defaultTier (medium), and the shipped
+  fallback is also `medium`. The host cannot pass model or thinking directly.
+  Keep the low/medium/high names: the built-in workflows and ad-hoc scripts
+  resolve against them. The shipped `fast` profile is gone; nothing may name it.
 
-  There is no machine offset or `.work` branch in this policy.
+  The parent session is emitted separately by modify_settings.json.tmpl and is
+  this catalogue's `medium` row verbatim, so an interactive turn and a spawn
+  that names no tier cost the same. Keep the two in lockstep, and do not collapse the rungs back to one
+  model/effort without an explicit policy change.
 
-  The parent session is the medium/default baseline and is emitted separately by
-  modify_settings.json.tmpl: gpt-6.1-sol/high on both machines. That is
-  this catalogue's `medium` row verbatim, and it is meant to stay that way, so
-  that an interactive turn and a spawn that names no tier cost the same. Keep
-  the two in lockstep whenever either moves, and do not collapse the rungs back
-  to one model/effort without an explicit policy change.
+  Workflows: pi-workflows names a *strength*, and its `strengths` table in
+  workflows/settings.json.tmpl maps each one onto a key from THIS catalogue
+  (identity mapping here). No `workflow` key may appear in this file. To price
+  workflow work separately, add a profile here and point a strength at it;
+  do not edit a rung the rest of the catalogue shares. The built-in quality
+  helpers request `low` (verify, judgePanel) and `medium` (completenessCheck);
+  a requested tier outranks defaultTier.
 
-  Protocol v4 (pi-subagents >= 1.9.0 with pi-workflows >= 1.5.0) removed the
-  separate `small | medium | large` workflow vocabulary and the layer that mapped
-  it: a managed workflow spawn names a key from THIS catalogue and
-  resolveAgentTier() is the only resolver. Per-call `model`/`thinking` are now
-  rejected by the validator, and the retired `workflow` settings key must not be
-  reintroduced — `agentTiers.defaultTier` below replaces `workflow.defaultTier`.
-  The two packages move together: pi-workflows declares `pi-subagents >= 1.9.0`
-  and fails its startup handshake against an older peer.
+  Before changing a pin, check availability and thinkingLevelMap with
+  `pi --list-models`. Do not infer per-task cost from historical measurements.
 
-  pi-workflows >= 1.6.0 has a `strengths` setting of its own, mapping a workflow
-  strength onto a key from THIS catalogue. It is not a reintroduction of that
-  layer and must not become one: what v4 deleted carried its own model and
-  thinking values, so a workflow spawn was resolved by a second resolver against
-  a second policy, whereas `strengths` carries only keys from here.
-  resolveAgentTier() stays the only resolver and this catalogue the only model
-  policy. Nothing about it belongs in this file — the vocabulary is pi-workflows'
-  business, the models are this machine's — and no `workflow` key may reappear
-  here. This machine defines no strengths, so each one runs on the profile of the
-  same name below and the built-in workflows resolve `low` and `medium` exactly
-  as any other spawn does. That also means workflow fan-outs share these rungs
-  with every ordinary spawn: pricing workflow work separately would mean adding
-  a profile here and pointing a strength at it from pi-workflows, not editing a
-  rung the rest of the catalogue uses.
-
-  One shift in 1.6.0 to be aware of when reading costs off this file: the
-  `verify` and `judgePanel` quality helpers now request `low` where they used to
-  name no tier and fall through to `medium`. `completenessCheck` requests
-  `medium`, which is where it already landed. A tier a call requests outranks
-  defaultTier, so those three no longer follow it.
-
-  low/medium/high are also the profile names pi-subagents ships (all inheriting
-  the parent model), so the built-in workflows and the ad-hoc script resolve
-  against real profiles here instead of being dropped to the default. The shipped
-  `fast` profile is gone; nothing here or in dot_pi/agent/agents/ may name it. A
-  managed call that names no tier falls back to `medium` — the shipped fallback,
-  which is separate from `defaultTier` though both resolve here to the same
-  profile, which is also the rung the parent runs.
-
-  The concrete provider/model references belong to this user-owned chezmoi
-  policy, not the public extension package. Pi's Codex registry currently offers
-  low and high on gpt-6.1-sol and medium on gpt-6-astra; verify availability and
-  thinkingLevelMap with `pi --list-models` / the registry before changing pins.
-  The parent and every unqualified spawn use sol/high. Workflow strengths map
-  to these same profiles; no separate workflow model policy is needed.
-
-  Do not infer per-task cost from historical luna or astra measurements: the
-  gpt-6.1-sol low/high rungs have not been measured here.
-
-  maxConcurrent is 40, and what that number governs is about to widen. Through
-  pi-subagents 1.9.x it bounds direct Agent fan-out only: pi-workflows has no way
-  to read it, so a workflow run applies a package-level cap of its own — the core
-  count minus two, at most 16 — and a fan-out there stays narrow no matter what
-  this says, leaving the rest of the pool idle.
-
-  From pi-subagents 1.10.0 with pi-workflows 1.7.0 the two stop being separate
-  numbers. A workflow requests this value by name over the ping handshake and
-  uses it as both its default width and its ceiling, so this key becomes the one
-  place that sizes every background agent on the machine — direct Agent fan-out
-  and workflow fan-out alike — and 40 is what a workflow run will actually
-  dispatch at. Raising it raises both; there is no longer a separate workflow cap
-  to raise instead, which is the point: one setting, one fleet.
-
-  Keep it at or below 64. pi-workflows clamps to 64 of its own as a runaway-script
-  guard, so a larger value here would widen direct Agent fan-out while workflows
-  silently stopped at 64 — two numbers diverging with nothing to say so. At 40 the
-  clamp does not bite and this file is exact.
-
-  Neither tier names nor model/effort values branch on machine data, so
-  workflows/settings.json.tmpl maps onto both machines unchanged.
+  maxConcurrent sizes every background agent on the machine: direct Agent
+  fan-out, and workflow fan-out (pi-workflows reads it over the ping handshake
+  as both default width and ceiling). Keep it <= 64: pi-workflows clamps at 64,
+  so a larger value would silently diverge between the two.
 */ -}}
 {{- $highModel := "gpt-6-astra" -}}
 {{- $highThink := "medium" -}}

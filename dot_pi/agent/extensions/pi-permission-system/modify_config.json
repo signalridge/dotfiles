@@ -5,17 +5,14 @@
 # future version adds). The `permission` tree is taken wholesale from the
 # managed block, so a rule deleted here is deleted on the next apply.
 #
-# WHY modify_ AND NOT A PLAIN FILE. Until 2026-09-06 this was a static managed
-# file, so every apply replaced the live one -- including `yoloMode`, which the
-# extension writes at runtime and which the user turns on deliberately. The
-# target had already drifted (`chezmoi status` read MM) and the next apply would
-# have silently switched YOLO back off. Same trap as ~/.claude/settings.json;
+# WHY modify_ AND NOT A PLAIN FILE: the extension writes runtime keys here
+# (e.g. `yoloMode`, which the user toggles deliberately), and a static managed
+# file would reset them on every apply. Same trap as ~/.claude/settings.json;
 # see dot_claude/modify_settings.json.tmpl.
 #
-# WHY `permission` IS REPLACED RATHER THAN MERGED. jq's `*` unions objects, so
-# omitting a rule would not remove it -- the six git deny rules dropped below
-# would have survived in the live file forever. Assigning `.permission` from the
-# managed document is what makes this file authoritative over the policy.
+# WHY `permission` IS REPLACED RATHER THAN MERGED: jq's `*` unions objects, so
+# a rule omitted here would survive in the live file forever. Assigning
+# `.permission` from the managed document makes this file authoritative.
 set -euo pipefail
 
 EXISTING="$(cat)"

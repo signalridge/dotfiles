@@ -11,63 +11,36 @@ pi:
 
   # ===== Startup defaults -> ~/.pi/agent/settings.json =====
   defaults:
-    # Signalridge Ridgeline: a deep, low-noise surface with violet interaction
-    # focus, cyan information, and semantic green/amber/red state colors. The
-    # rounded input editor and startup card consume these same Pi theme tokens;
-    # no extension carries a second hard-coded palette. Dracula and Aurora remain
-    # available from `/settings` for rollback.
+    # Signalridge Ridgeline; the input editor and startup card consume the same
+    # Pi theme tokens (no second hard-coded palette). Dracula/Aurora remain in
+    # `/settings` for rollback.
     theme: signalridge-ridgeline
-    # Silence Pi's own startup header and [Section] resource listing so the
-    # pi-welcome card is the whole opening screen. Keeping both showed two
-    # unrelated designs stacked to roughly forty-five lines. The card carries
-    # the pieces worth keeping — the key hints, and counts of context files,
-    # skills, prompts, commands and tools derived from Pi's public API — and
-    # diagnostics (resource collisions, extension load errors) are still shown
-    # while quiet, so nothing actionable is hidden. Set false to get Pi's own
-    # block back above the card.
+    # Silence Pi's own startup header and resource listing so the pi-welcome
+    # card (key hints + resource counts) is the whole opening screen.
+    # Diagnostics (resource collisions, extension load errors) still show while
+    # quiet. Set false to get Pi's own block back above the card.
     quietStartup: true
-    # The parent and subagent policies use the native openai-codex route, but
-    # share the same three semantic tiers on work and private machines. Since
-    # pi-subagents 1.9.0 / pi-workflows 1.5.0 (protocol v4) there is ONE tier
-    # vocabulary: `low | medium | high`, the keys of agentTiers.profiles in
-    # dot_pi/agent/subagents.json.tmpl. The workflow-only `small | medium | large`
-    # labels and the layer that mapped them are gone; a managed workflow spawn
-    # names an Agent tier key directly.
+    # Native openai-codex route: Codex OAuth in ~/.pi/agent/auth.json, no apiKey.
+    # The parent model + effort are emitted by dot_pi/agent/modify_settings.json.tmpl
+    # (where settings.json is assembled) and equal the `medium` tier. The tier
+    # table lives in dot_pi/agent/subagents.json.tmpl, the single source of truth.
     #
-    #   both machines: low = gpt-6.1-sol/low, medium = gpt-6.1-sol/high,
-    #                  high = gpt-6-astra/medium
-    #
-    # The parent startup setting matches the medium/default tier exactly:
-    # gpt-6.1-sol/high on both machines. Keep both Pi templates in step so an
-    # interactive turn and an unqualified spawn use the same rung.
-    #
-    # The route is native Codex OAuth in ~/.pi/agent/auth.json; the openai-codex
-    # block emits no apiKey. Sol and Astra's 921,000 contextWindow overrides
-    # are directly verified on Codex OAuth (2026-10-11). See modelOverrides
-    # below; request acceptance is not a recall-quality benchmark.
-    #
-    # opencode-go, Kimi Code and the DIRECT DeepSeek platform all stay configured
-    # and are one `/model` switch away. They differ in billing (flat allowance vs
-    # per-token) and in key (`pi/opencode/api_key` vs `pi/deepseek/api_key`);
+    # opencode-go, Kimi Code and the DIRECT DeepSeek platform stay configured, one
+    # `/model` switch away. They differ in billing (flat allowance vs per-token)
+    # and key (`pi/opencode/api_key` vs `pi/deepseek/api_key`);
     # `deepseek/deepseek-flash` is the native direct-route fallback ID.
     defaultProvider: openai-codex
-    # The parent model + effort are still emitted from
-    # dot_pi/agent/modify_settings.json.tmpl rather than from here, because that is
-    # where settings.json is assembled. Both machines resolve to gpt-6.1-sol
-    # at high. This is the `medium` tier verbatim, where an unqualified
-    # spawn lands.
     # Native compaction: contextTokens > contextWindow - reserveTokens.
     # Reserves are MODEL-SPECIFIC, not a global 130K floor. The 16K baseline
     # keeps a 128K model such as Codex Spark usable (trigger 111,616 instead of
-    # -2,000). Known larger windows get explicit budgets below.
+    # -2,000). Known larger windows get explicit budgets below:
     # Sol/Astra: measured 921K input window, 130K reserve -> trigger 791K.
-    # Flash/Qwen Coder/Kimi K3: catalog 1M window, 130K reserve -> trigger 870K;
-    # these 1M backend input walls have not been directly probed here.
-    # Smaller custom models reserve their output budget plus about 16K for
-    # new input/tool data, rather than inheriting 130K from a different model.
-    # Pi 1.1.0 also checks projected context between tool batches and clamps
-    # ordinary output budgets to remaining context; a large catalog output cap
-    # alone does not establish an overflow. Codex requests omit max_output_tokens.
+    # Flash/Qwen Coder/Kimi K3: catalog 1M window, 130K reserve -> trigger 870K
+    # (these 1M input walls are unprobed). Smaller custom models reserve their
+    # output budget plus ~16K for new input/tool data.
+    # Pi checks projected context between tool batches and clamps ordinary output
+    # to remaining context, so a large catalog output cap alone is not an
+    # overflow. Codex requests omit max_output_tokens.
     # A running pi picks up new windows/reserves only after a restart (`pi -c`):
     # /reload misses model metadata, /model misses compaction settings.
     compaction:
@@ -122,14 +95,10 @@ pi:
       maxAgentDelayMs: 4000
       provider:
         maxRetryDelayMs: 4000
-  # ===== Pi packages -> ~/.pi/agent/settings.json packages =====
-  # Pi installs missing packages from this settings field when it resolves
-  # resources. Keep third-party packages explicit here instead of using a
-  # dedicated chezmoi installer script.
-  # ===== External Pi packages -> ~/.pi/agent/settings.json =====
-  # Infrastructure owned by the runtime environment rather than by
-  # signalridge/pi-extensions. Signalridge packages are listed separately below
-  # and rendered with the `npm:@signalridge/` prefix.
+  # ===== External Pi packages -> ~/.pi/agent/settings.json packages =====
+  # Pi installs missing packages from this field itself (no chezmoi installer).
+  # Third-party infrastructure only; Signalridge packages are listed below and
+  # rendered with the `npm:@signalridge/` prefix.
   packages:
     - npm:pi-mcp-adapter
     - npm:pi-web-access
@@ -213,104 +182,39 @@ pi:
   # Pick a model at runtime with /model.
   customProviders:
     opencode-go: # BUILT-IN provider — this entry ONLY supplies the API key + 1 patch.
-      # The per-allowance FALLBACK route since 2026-08-20; it was the startup
-      # default until then. Reach it as `opencode-go/deepseek-v4-flash`.
+      # Per-allowance FALLBACK route: `opencode-go/deepseek-v4-flash`.
       #
-      # Pi SHIPS opencode-go natively (pi-ai dist/providers/data/opencode-go.json,
-      # 19 models). Do NOT re-declare its catalogue here. The Go gateway speaks
-      # THREE protocols on the same host and pi's built-in already records the
-      # right one per model:
-      #   openai-completions  https://opencode.ai/zen/go/v1   deepseek-v4-{flash,pro},
-      #                       glm-5.{1,2,3}, kimi-k{3,2.7-code,2.6}, mimo-v2.5{,-pro},
-      #                       minimax-m2.7, qwen3.6-plus, hy3
+      # Pi SHIPS opencode-go natively (pi-ai dist/providers/data/opencode-go.json)
+      # and already records the right protocol per model; do NOT re-declare its
+      # catalogue. The Go gateway speaks THREE protocols on one host:
+      #   openai-completions  https://opencode.ai/zen/go/v1   (most chat models)
       #   openai-responses    https://opencode.ai/zen/go/v1   gpt-5.6-luna, grok-4.5
       #   anthropic-messages  https://opencode.ai/zen/go      minimax-m3,
       #                       qwen3.{7-max,7-plus,8-max}      <- NOTE: no /v1
-      # All three paths verified live (POST returns a semantic error, not 404;
-      # /messages needs x-api-key rather than Bearer, which pi handles per api type).
       #
-      # WHY key-only matters: `applyModelsJson` (pi-coding-agent
-      # dist/core/provider-composer.js:96) does
-      #   baseUrl: config.baseUrl ?? model.baseUrl
-      # over EVERY built-in model, so a provider-level `base_url` here would
-      # overwrite the anthropic models' `/zen/go` with `/zen/go/v1` and produce
-      # `/zen/go/v1/v1/messages`. A provider-level `api` collapses all three
-      # protocols the same way, and a `models:` list upserts over the built-ins
-      # with whatever this file guesses. An earlier revision of this block did
-      # exactly that — 25 models from models.dev, one base_url, one api — which is
-      # wrong for the 6 non-chat-completions models. models.dev only carries a
-      # PROVIDER-level `npm: @ai-sdk/openai-compatible` (the majority protocol),
-      # never a per-model one, so it cannot be the source for this.
-      # A config carrying only `apiKey` is explicitly legal (same function,
-      # lines 86-95) and leaves baseUrl/api/compat/models untouched.
-      #
-      # The built-in metadata is also better than anything derivable here:
-      # deepseek-v4-flash already carries thinkingLevelMap `max: max` (so the pin
-      # is not silently downgraded — see the direct provider below for what that
-      # bug looks like) plus a fuller compat block (supportsStore,
-      # supportsDeveloperRole, maxTokensField, requiresReasoningContentOn-
-      # AssistantMessages, thinkingFormat), and its cost fields are the Go
-      # allowance-draw rates, not models.dev's per-token list price. Its name even
-      # records the plan's "(2x usage)" multiplier.
-      #
-      # Not in pi's built-in but advertised by GET /zen/go/v1/models: glm-5,
-      # kimi-k2.5, qwen3.5-plus, mimo-v2-pro, mimo-v2-omni, hy3-preview — plus
-      # minimax-m2.5, which opencode's docs table lists and pi omits. Left out on
-      # purpose: adding them needs a per-model `api`/`baseUrl` guess, and the two
-      # sources already disagree on protocol for minimax-m2.7 and qwen3.6-plus.
+      # WHY key-only: pi's provider-composer applies `config.baseUrl ?? model.baseUrl`
+      # (and likewise `api`) over EVERY built-in model, so a provider-level
+      # `base_url`/`api` here would collapse the three protocols (anthropic would
+      # hit `/zen/go/v1/v1/messages`), and a `models:` list upserts guesses over
+      # better built-in metadata (thinkingLevelMap `max: max`, fuller compat, Go
+      # allowance-draw cost). models.dev has no per-model protocol field, so it
+      # cannot be the source. An `apiKey`-only config is legal and touches nothing.
       #
       # Docs: https://opencode.ai/docs/zen/  Keys: https://opencode.ai/auth
-      # Two workspace-level gates were hit while configuring this, both since
-      # cleared — recorded because they present as config errors and are not:
-      #   CreditsError  every model, until the workspace has a payment method
-      #                 (/workspace/<id>/billing)
-      #   RegionError   deepseek-v4-{flash,pro} only, until "models hosted in
-      #                 China" is opted into (/workspace/<id>/go). A SEPARATE
-      #                 switch that paying does not clear — opencode serves US
-      #                 hosts by default, but DeepSeek V4's latest build is
-      #                 China-only, so consent is required. Browser only; there is
-      #                 no API path to opt in.
-      # Verified 2026-08-17 after clearing both: all 19 built-in models answer on
-      # their own protocol, and a deepseek-v4-flash call at reasoning_effort=max
-      # returned reasoning_content with 92 reasoning_tokens.
+      # Workspace gates that look like config errors but are not (browser-only
+      # opt-ins under https://opencode.ai/workspace/<id>/, no API path):
+      #   CreditsError     every model, until the workspace has a payment method
+      #   RegionError      deepseek-v4-*, until "models hosted in China" is opted
+      #                    in (separate from billing)
+      #   403 DataPolicyError  models that retain prompts for training (muse-spark*)
       gopass: pi/opencode/api_key
-      # NO `models:` KEY, ON PURPOSE. Everything on this gateway worth reaching is
-      # already built in.
+      # NO `models:` KEY, ON PURPOSE: everything worth reaching is built in, and
+      # the gateway ids pi omits are models.dev `status: deprecated`. History
+      # (gateway audits, muse-spark-1.2 retirement): git log -S'muse-spark-1.2'.
       #
-      # Audited 2026-08-19 against `GET /zen/go/v1/models` and models.dev, and
-      # re-probed 2026-08-20 (27 ids). The gateway ids pi omits — glm-5,
-      # kimi-k2.5, mimo-v2-pro, mimo-v2-omni, qwen3.5-plus, minimax-m2.5 — all
-      # carry models.dev `status: deprecated` and are deliberately left out. That
-      # also retires an older note here about a minimax-m2.7 / qwen3.6-plus
-      # "protocol disagreement": both ids answer 200 on /v1/chat/completions AND
-      # /v1/messages, so the gateway multiplexes and the built-in's
-      # openai-completions choice is not a conflict.
-      #
-      # This block used to add ONE hand-written model, `muse-spark-1.2` — the
-      # startup default from 2026-08-19. THE GATEWAY RETIRED IT. As of 2026-08-20
-      # it is absent from /v1/models and a call returns
-      #   401 ModelError: "Model muse-spark-1.2 is not supported"
-      # while the identical request answers 200 for `muse-spark-1.2-contributor`
-      # and `gpt-5.6-luna` on the same key. The contributor variant is the
-      # survivor and pi ships it built in, so nothing needs re-declaring; the
-      # entry was deleted (git has it) and the default moved to
-      # openai-codex/gpt-5.6-luna.
-      #
-      # Deleted with it, but worth keeping: the DATA-POLICY GATE. It is a THIRD
-      # workspace opt-in, distinct from the CreditsError and RegionError above,
-      # and unlike them it trades data for access — the muse-spark models retain
-      # prompts and code for training. Until a workspace opts in (browser only,
-      # no API path, https://opencode.ai/workspace/<workspace-id>/go) every call
-      # to one returns
-      #   403 DataPolicyError: "This model collects data used to improve its
-      #   quality and requires explicit opt in"
-      # This workspace opted in on 2026-08-19. Expect the 403 on any other.
-      #
-      # If a model is ever re-added here, `api` and `baseUrl` are MANDATORY, not
-      # polish: for an id absent from the built-ins, provider-composer.js:102
-      # falls back to `defaults = models[0]` — the first model of the base list,
-      # whose protocol is unrelated — and modelFromJson reads ONLY api and
-      # baseUrl from `defaults`, resetting everything else to hardcoded values
+      # If a model is ever re-added here, `api` and `baseUrl` are MANDATORY: for an
+      # id absent from the built-ins, provider-composer falls back to models[0]'s
+      # unrelated protocol and resets everything else to hardcoded values
       # (contextWindow 128000, maxTokens 16384, reasoning false, zero cost).
       modelOverrides:
         # Intentional output policy: keep Flash at 128K rather than its native
@@ -325,164 +229,78 @@ pi:
       # with a matching id would replace the built-in model wholesale — not
       # what we want here).
       #
-      # Pi's catalog default is not this OAuth endpoint's measured input wall.
-      # It accepts about 922K input tokens (larger requests fail with "Your input
-      # exceeds the context window"). 921K is a conservative accepted-input
-      # pin, not an exact server maximum or a copied public API total window.
-      # With reserveTokens 130K, it gives a 791K compaction trigger and preserves
-      # headroom instead of placing the trigger almost at the ~922K input wall.
+      # contextWindow is pinned to this OAuth endpoint's MEASURED INPUT ceiling,
+      # not the catalog/spec total window: ~921K input is accepted, ~922K fails
+      # with "Your input exceeds the context window". 921000 is a conservative
+      # accepted-input pin (a synthetic acceptance probe, not a recall benchmark).
+      # With reserveTokens 130K it gives a 791K compaction trigger; pinning the
+      # larger spec would put the trigger past the wall and collapse headroom.
       # Larger contexts can use more subscription quota; do not treat API price
       # multipliers or Pi's cost estimates as this OAuth account's billing.
-      #
-      # Historical 2026-08-20 input probes, kept distinct from today's models:
-      #   gpt-5.6-luna: accepted 921,030; rejected 930,000 and up.
-      #   gpt-5.6-sol/terra: accepted 898,071; rejected 950,000 and up.
-      # On 2026-10-11, Sol and Terra independently accepted 921,065, so their
-      # matching pins no longer rely on Luna's limit or family arithmetic.
       # Verify runtime metadata with `pi --list-models`, not comments alone.
+      # Probe history: git log -S'921,065'.
       auth: builtin
       modelOverrides:
-        # Current startup default and low/medium tiers. Directly tested on
-        # 2026-10-11 through Pi 1.1.0's native Codex OAuth Responses adapter,
-        # high reasoning, SSE, no input truncation or max_output_tokens field.
-        # Accepted: 921,065 input tokens, output OK (5 tokens).
-        # Rejected: 922,000 single-token padding repetitions plus the same
-        # 65-token framing (approximately 922,065 input); also 930,000 repeats.
-        # Synthetic request acceptance, not a long-context recall benchmark.
+        # Startup default and low/medium tiers (see subagents.json.tmpl).
         # Retain catalog output/thinking/pricing metadata and builtin auth.
         gpt-6.1-sol: { contextWindow: 921000 }
-        # Legacy /model option; bracketed tightest of the three gpt-5.6 probes.
+        # Legacy /model option.
         gpt-5.6-luna: { contextWindow: 921000 }
-        # THE TOP OF THE LADDER: `high` on both machines, via `$highModel` in
-        # dot_pi/agent/subagents.json.tmpl. The Pi parent and default/medium
-        # tier use sol/high. Also the Codex CLI's primary model in
-        # dot_codex/modify_private_config.toml.tmpl; that independent policy is unchanged.
-        #
-        # DIRECTLY TESTED 2026-10-11 at medium reasoning through the same Pi
-        # Codex OAuth adapter and padding as Sol: 921,065 input accepted (OK,
-        # 5 output tokens), approximately 922,065 rejected. Keep the 921K pin;
-        # it no longer depends on another model's limits or API arithmetic.
-        #
+        # High tier, and the Codex CLI's primary model in
+        # dot_codex/modify_private_config.toml.tmpl (an independent policy).
         # Dropping this entry is not neutral: astra would fall back to the
         # catalog's 272,000 and the high tier would begin compacting at
         # 272,000 - 130,000 = 142,000 instead of 791,000.
-        #
-        # COST — the UNIT PRICE is higher, the MEASURED BILL is lower. Do not
-        # confuse the two: catalog price is $10/$50/$1 per M input/output/
-        # cacheRead against sol's $5/$30/$0.5, and $20/$75/$2 against sol's
-        # $10/$45/$1 above the 272,000 premium line, but astra spends far fewer
-        # tokens on the same task and that dominates the product. Measured per
-        # task at api.codexradar.com/api/v1/intelligence-efficiency (2026-09-06):
-        #   rung          $/task  tokens     IQ     where it runs
-        #   astra/xhigh    4.12     1.93M  112.5    nothing, since 2026-09-07
-        #   astra/high     2.84     1.32M  104.1    nothing
-        #   astra/medium      ?         ?      ?    both high (current)
-        #   luna/max       0.53    17.86M  100.9    historical
-        #   luna/xhigh     0.33    10.92M   87.5    historical
-        #   sol/xhigh      5.25     7.58M  100.0    what private high used to be
-        # astra/medium is deliberately blank: it arrived on 2026-09-07 and has not
-        # been measured. Do not interpolate it from astra/high — the whole point
-        # of these rows is that the token count moves far more than the unit price
-        # does. All that is known is that it lands under $2.84.
-        # On 2026-09-06 `high` got both cheaper and better (~4x fewer tokens, ~21%
-        # less money, +12.5 IQ, 5.7 min faster) while `medium` got ~5.4x dearer
-        # for +3.2 IQ — and `medium` is both `defaultTier` AND the parent's own
-        # rung, so that multiple landed on interactive turns too. On this machine
-        # the DEFAULT rung drives the bill, not the top one; that is the reverse
-        # of the 2026-09-02 audit, where `high` was 93.5% of spend. 2026-09-07
-        # then slid every astra tier down one rung, which walks part of that back:
-        # private `high` returned to $2.84 and private `medium` dropped below it.
-        # Later both machines used luna/max for medium and luna/xhigh for low;
-        # they now use sol/high and sol/low, respectively. Re-measure the current
-        # rungs rather than extrapolating from historical results.
-        # The astra-vs-sol half of that also UNDERSTATES astra: the source prices
-        # sol flat at $4/$20/$0.4 with no long-context band, while the
-        # 09-01..09-02 audit put 84% of sol's spend in the >272,000 premium tier
-        # this repo's own catalog does bill for. Sample sizes are lopsided (astra
-        # is new: 72 runs vs 336), so treat the direction as solid and the
-        # magnitude as provisional.
+        # COST: astra's unit price is higher than sol's, but it spends far fewer
+        # tokens per task and that dominates the bill. Re-measure current rungs
+        # (api.codexradar.com intelligence-efficiency) rather than extrapolating
+        # from past figures; those are in git log -S'codexradar'.
         gpt-6-astra: { contextWindow: 921000 }
-        # Legacy /model options. Both gpt-5.6-sol and gpt-5.6-terra directly
-        # accepted 921,065 input tokens on 2026-10-11 at high reasoning (OK).
-        # Their 921K pins no longer depend on a different model's input wall.
-        # Exact upper limits were not retested; retain this accepted lower bound.
+        # Legacy /model options (gpt-5.6-terra below); same accepted-input pin.
         gpt-5.6-sol: { contextWindow: 921000 }
-        # THINKING LADDER — exactly ONE repair is needed here, and only here.
-        # Audited 2026-08-19 across every model in ~/.pi/agent/models-store.json.
-        # pi ALREADY handles ladder mismatches by itself and needs no help in the
-        # general case: getSupportedThinkingLevels treats a `null` value — and, for
-        # xhigh/max only, an ABSENT key — as "this model does not offer that rung",
-        # then clampThinkingLevel walks up and, failing that, down to the nearest
-        # rung the model does offer (pi-ai/dist/models.js). So `max` on a model
-        # topping out at xhigh is sent as xhigh with no config at all. Verified by
-        # deleting keys and re-running: opencode-go/deepseek-v4-flash answers at
-        # :minimal, :medium, :xhigh and :max although its map nulls minimal and
-        # medium and has no xhigh key whatsoever. Do NOT hand-write full ladders
-        # to "fix" maps that look sparse — sparse is the intended encoding.
-        #
+        # THINKING LADDER — pi clamps by itself: getSupportedThinkingLevels treats
+        # a `null` value (and, for xhigh/max only, an ABSENT key) as "rung not
+        # offered", and clampThinkingLevel walks to the nearest offered rung. Do NOT
+        # hand-write full ladders to "fix" maps that look sparse — sparse is the
+        # intended encoding.
         # gpt-5.4-mini is the one real defect: models.dev gives it a genuine `max`
-        # rung (low|medium|high|xhigh|max), but its shipped map is
-        # `{xhigh: xhigh, minimal: low}` with no max key, so pi classifies max as
-        # unsupported and clamps it DOWN to xhigh. The model's top rung is
-        # therefore unreachable — the opposite of the clamp being harmless. Its
-        # three siblings (gpt-5.3-codex-spark, gpt-5.4, gpt-5.5) really do stop at
-        # xhigh per models.dev, so their identical-looking maps are correct and
-        # deliberately left alone.
+        # rung, but its shipped map has no max key, so max clamps DOWN to xhigh and
+        # the top rung is unreachable. Its siblings (gpt-5.3-codex-spark, gpt-5.4,
+        # gpt-5.5) really stop at xhigh, so their maps are correct as shipped.
         gpt-5.4-mini:
           thinkingLevelMap: { max: max }
         gpt-5.6-terra: { contextWindow: 921000 }
     deepseek: # BUILT-IN provider — this entry ONLY supplies the API key + 1 patch.
       # DeepSeek's own platform (api.deepseek.com), the per-token FALLBACK to the
       # same models the opencode Go subscription above resells. Reach it as
-      # `deepseek/deepseek-flash` in Pi 1.1.0's catalog. Historically a live
-      # request returned `content` + `reasoning_content` and accepted
-      # `reasoning_effort=max`.
+      # `deepseek/deepseek-flash`.
       #
-      # Pi's built-in registry NOW CARRIES V4 (pi-ai
-      # dist/providers/data/deepseek.json: deepseek-flash and deepseek-v4-pro,
-      # both 1M/384K, both with thinkingLevelMap `max: max`), so the hand-pinned
-      # model list this block used to carry is gone. That list was written when
-      # the registry lacked V4 and it had drifted into a defect: its
-      # thinkingLevelMap flattened every rung INCLUDING `max` to provider `high`,
-      # on the stated grounds that "DeepSeek V4 currently exposes one reasoning
-      # mode". V4 has a real low|high|max ladder — models.dev's
-      # reasoning_options.effort, DeepSeek's own pi integration doc (which routes
-      # xhigh -> max), and the built-in registry all say so — so a session pinned
-      # to max was being sent at high, silently. Deleting the block fixes it at
-      # the source and picks up the built-in's fuller compat as a bonus.
-      # Re-pinning models here would also re-clobber that metadata: `models:`
-      # entries upsert over the built-ins (provider-composer.js:101).
+      # Pi's built-in registry carries V4 (pi-ai dist/providers/data/deepseek.json)
+      # with its real low|high|max ladder (thinkingLevelMap `max: max`), so there
+      # is no `models:` list here: entries upsert over the built-ins and would
+      # clobber that metadata. A former hand-pinned list flattened every rung,
+      # `max` included, to `high` — silently. History: git log -S'one reasoning mode'.
       gopass: pi/deepseek/api_key
       modelOverrides:
-        # Same intentional output policy as the opencode-go copy. The native
-        # direct-route ID is deepseek-flash; the old deepseek-v4-flash key matched
-        # no model in Pi 1.1.0 and silently left its 384K output cap unchanged.
+        # Same intentional output policy as the opencode-go copy. The direct-route
+        # ID is deepseek-flash; a deepseek-v4-flash key here matches no model and
+        # silently leaves the 384K output cap unchanged.
         deepseek-flash: { maxTokens: 128000 }
     kimi: # Kimi Code (Moonshot subscription) — OpenAI-compatible route
-      # Pi DOES ship a built-in `kimi-coding` provider, but it is STALE and this
-      # entry deliberately does not touch it: the built-in carries only k2p7 /
-      # kimi-for-coding / kimi-k2-thinking, all at contextWindow 262144, and it
-      # speaks the Anthropic protocol (api: anthropic-messages, baseUrl
-      # https://api.kimi.com/coding). The current lineup is k3 / k3-256k /
-      # kimi-for-coding / kimi-for-coding-highspeed. A separate provider name
-      # keeps Pi's built-in metadata intact — per the warning above, reusing a
-      # built-in model ID would overwrite its thinking levels and pricing.
-      # OpenAI protocol chosen per user (2026-08-09) and corroborated live: the
-      # Anthropic route (/coding/v1/messages) rejects this key with a hard
-      # authentication_error, while the OpenAI route accepts it and fails only on
-      # membership verification. Same provider name + base_url as the codex
-      # `[model_providers.kimi]` block, so the two harnesses agree.
+      # Pi's built-in `kimi-coding` provider is STALE (k2-era models at 262144,
+      # Anthropic protocol) and deliberately left untouched; a separate provider
+      # name keeps its metadata intact — per the warning above, reusing a built-in
+      # model ID would overwrite its thinking levels and pricing.
+      # OpenAI protocol because the Anthropic route (/coding/v1/messages) rejects
+      # this key with authentication_error. Same provider name + base_url as the
+      # codex `[model_providers.kimi]` block, so the two harnesses agree.
       # Docs: https://www.kimi.com/code/docs/en/kimi-code/models.html
       # Keys: www.kimi.com/code/console (max 5, each shown once at creation).
       base_url: https://api.kimi.com/coding/v1
       api: openai-completions
-      # Was codex/kimi/private/api_key until 2026-08-17. The old per-harness
-      # split (claude/* vs codex/*) is gone along with those gopass trees; keys
-      # are now namespaced by SERVICE under pi/. This one is Kimi CODE — the
-      # subscription behind https://api.kimi.com/coding/v1 — and is NOT the same
-      # secret as the Moonshot platform key that aichat uses
-      # (https://api.moonshot.ai/v1, now pi/moonshot/api_key). Two services, two
-      # keys; do not collapse them.
+      # Kimi CODE key (the subscription behind https://api.kimi.com/coding/v1),
+      # NOT the Moonshot platform key aichat uses (pi/moonshot/api_key). Two
+      # services, two keys; do not collapse them.
       # A missing key is not fatal: private_models.json.tmpl silently SKIPS the
       # provider, so `chezmoi apply` still succeeds and kimi just does not appear
       # in `pi --list-models` until the secret exists.

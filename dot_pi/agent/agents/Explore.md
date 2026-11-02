@@ -8,10 +8,9 @@ skills: false
 disallowed_tools: hypa_shell
 prompt_mode: replace
 inherit_context: false
-# Read-only search must not run on the default rung. Without this key a spawn
-# falls through to agentTiers.defaultTier (gpt-6.1-sol/high) for grepping.
-# `low` is gpt-6.1-sol/low on both machines; workflows/settings.json.tmpl maps
-# its low strength to this tier too.
+# Read-only search must not run on the default rung: without this key a spawn
+# falls through to agentTiers.defaultTier. Rungs live in subagents.json.tmpl;
+# workflows/settings.json.tmpl maps its `low` strength to this tier too.
 tier: low
 ---
 

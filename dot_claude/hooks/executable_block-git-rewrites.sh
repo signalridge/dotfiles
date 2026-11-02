@@ -38,13 +38,9 @@ matches() {
 # assignments skipped. grep works line by line, so `^` already covers a newline
 # separator.
 #
-# WHY (added 2026-09-06). Every rule below used to grep the raw command TEXT, so
-# merely MENTIONING one tripped it -- writing a test that asserts on the string
-# "git worktree *", grepping a config for it, or echoing it in a message. That is
-# not hypothetical: it blocked this repository's own permission-policy test, and
-# it is the third instance of the same family of defect found in one day (the
-# other two were the global `Bash(git:*)` deny rules and the global
-# pi-permission-system git bans).
+# WHY: matching the raw command TEXT tripped on mere MENTIONS -- a test
+# asserting on the string "git worktree *", grepping a config for it, or
+# echoing it in a message.
 #
 # THE TRADE IS DELIBERATE. A git call hidden inside a quoted string that some
 # other program then executes -- `bash -c '...'`, a heredoc piped to a shell --
