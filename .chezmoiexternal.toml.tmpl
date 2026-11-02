@@ -3,23 +3,6 @@
 # Run `chezmoi -R apply` to force refresh
 
 # ==============================================================================
-# TPM (Tmux Plugin Manager)
-# After chezmoi apply, run `prefix + I` in tmux to install plugins
-#
-# Uses `type = "archive"` (anonymous HTTPS tarball download) instead of
-# `type = "git-repo"` to keep cold-start independent of git/SSH/insteadOf
-# rewrites. The commit and archive checksum are pinned in versions.yaml; tpm
-# itself almost never changes, so losing `git pull` ergonomics is a non-issue.
-# ==============================================================================
-[".config/tmux/plugins/tpm"]
-    type = "archive"
-    url = "https://github.com/tmux-plugins/tpm/archive/{{ .versions.tpmRev }}.tar.gz"
-    checksum.sha256 = "{{ .versions.tpmSha256 }}"
-    exact = true
-    stripComponents = 1
-    refreshPeriod = "168h"
-
-# ==============================================================================
 # Shared AI Tools Plugins
 # Shared AI skill library lives at ~/.harnesses/skills/ outside Codex auto-discovery
 # Agents and commands remain in ~/.claude/ (Claude Code specific)
@@ -43,7 +26,6 @@
   "architecture-patterns" "backend"
   "async-python-patterns" "python"
   "auth-implementation-patterns" "security"
-  "aws-serverless" "cloud"
   "bash-defensive-patterns" "shell"
   "bats-testing-patterns" "shell"
   "bazel-build-optimization" "devtools"
@@ -94,7 +76,6 @@
   "next-cache-components" "typescript"
   "next-upgrade" "typescript"
   "openapi-spec-generation" "dev-docs"
-  "oss-x-post" "social"
   "pdf" "documents"
   "pptx" "documents"
   "projection-patterns" "backend"
@@ -119,7 +100,6 @@
   "react-native-architecture" "typescript"
   "react-state-management" "typescript"
   "reddit" "social"
-  "remotion" "media"
   "rust-development-playbook" "rust"
   "rust-testing" "rust"
   "saga-orchestration" "backend"
@@ -496,7 +476,7 @@
 # getsentry/skills — skill-scanner only (rest duplicate existing tooling):
 #   commit                       -> local core command
 #   create-pr/iterate-pr         -> harness-native workflows
-#   find-bugs/code-simplifier    -> Claude /code-review + /simplify, slipway review
+#   find-bugs/code-simplifier    -> Claude /code-review + /simplify
 # ------------------------------------------------------------------------------
 {{- $getsentrySkills := list
   "skill-scanner"
@@ -513,7 +493,7 @@
 {{- end }}
 
 # ------------------------------------------------------------------------------
-# trailofbits/skills utility set (security/SAST/review skills delegated to slipway)
+# trailofbits/skills utility set (only the skills listed below are vendored)
 # ------------------------------------------------------------------------------
 [".harnesses/skills/{{ index $cat "sharp-edges" }}/sharp-edges"]
     type = "archive"

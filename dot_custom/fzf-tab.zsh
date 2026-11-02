@@ -6,10 +6,6 @@
 # Docs: https://github.com/Aloxaf/fzf-tab
 # ─────────────────────────────────────────────────────────────
 
-# Use tmux popup for completion (requires tmux 3.2+)
-zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
-zstyle ':fzf-tab:*' popup-min-size 80 20
-
 # Keybindings
 zstyle ':fzf-tab:*' fzf-bindings 'tab:accept'       # Tab accepts selection
 zstyle ':fzf-tab:*' accept-line enter               # Enter accepts and runs

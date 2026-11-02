@@ -125,9 +125,6 @@ jobs:
             cursor_agent_linux_x64_sha256=$(curl_sha256 "${cursor_base_url}/linux/x64/agent-cli-package.tar.gz")
           fi
 
-          tpm_rev=$(gh api repos/tmux-plugins/tpm/commits/master -q '.sha')
-          tpm_sha256=$(curl_sha256 "https://github.com/tmux-plugins/tpm/archive/${tpm_rev}.tar.gz")
-
           claude_wshobson_agents_rev=$(gh api repos/wshobson/agents/commits/main -q '.sha')
           claude_wshobson_agents_sha256=$(curl_sha256 "https://github.com/wshobson/agents/archive/${claude_wshobson_agents_rev}.tar.gz")
           claude_anthropics_skills_rev=$(gh api repos/anthropics/skills/commits/main -q '.sha')
@@ -189,8 +186,6 @@ jobs:
             echo "cursor_agent_darwin_x64_sha256=$cursor_agent_darwin_x64_sha256"
             echo "cursor_agent_linux_arm64_sha256=$cursor_agent_linux_arm64_sha256"
             echo "cursor_agent_linux_x64_sha256=$cursor_agent_linux_x64_sha256"
-            echo "tpm_rev=$tpm_rev"
-            echo "tpm_sha256=$tpm_sha256"
             echo "claude_wshobson_agents_rev=$claude_wshobson_agents_rev"
             echo "claude_wshobson_agents_sha256=$claude_wshobson_agents_sha256"
             echo "claude_anthropics_skills_rev=$claude_anthropics_skills_rev"
@@ -253,8 +248,6 @@ jobs:
           U_CURSOR_AGENT_DARWIN_X64_SHA256: ${{ steps.versions.outputs.cursor_agent_darwin_x64_sha256 }}
           U_CURSOR_AGENT_LINUX_ARM64_SHA256: ${{ steps.versions.outputs.cursor_agent_linux_arm64_sha256 }}
           U_CURSOR_AGENT_LINUX_X64_SHA256: ${{ steps.versions.outputs.cursor_agent_linux_x64_sha256 }}
-          U_TPM_REV: ${{ steps.versions.outputs.tpm_rev }}
-          U_TPM_SHA256: ${{ steps.versions.outputs.tpm_sha256 }}
           U_CLAUDE_WSHOBSON_AGENTS_REV: ${{ steps.versions.outputs.claude_wshobson_agents_rev }}
           U_CLAUDE_WSHOBSON_AGENTS_SHA256: ${{ steps.versions.outputs.claude_wshobson_agents_sha256 }}
           U_CLAUDE_ANTHROPICS_SKILLS_REV: ${{ steps.versions.outputs.claude_anthropics_skills_rev }}
@@ -340,8 +333,6 @@ jobs:
             | Cursor Agent darwin-x64 sha256 | `${{ steps.versions.outputs.cursor_agent_darwin_x64_sha256 }}` |
             | Cursor Agent linux-arm64 sha256 | `${{ steps.versions.outputs.cursor_agent_linux_arm64_sha256 }}` |
             | Cursor Agent linux-x64 sha256 | `${{ steps.versions.outputs.cursor_agent_linux_x64_sha256 }}` |
-            | tmux-plugins/tpm | `${{ steps.versions.outputs.tpm_rev }}` |
-            | tmux-plugins/tpm sha256 | `${{ steps.versions.outputs.tpm_sha256 }}` |
             | openai/skills | `${{ steps.versions.outputs.openai_skills_rev }}` |
             | huggingface/skills | `${{ steps.versions.outputs.huggingface_skills_rev }}` |
             | getsentry/skills | `${{ steps.versions.outputs.getsentry_skills_rev }}` |

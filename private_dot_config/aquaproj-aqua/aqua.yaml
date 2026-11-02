@@ -112,7 +112,6 @@ packages:
   - name: chmln/sd@v1.1.0
   - name: ducaale/xh@v0.26.3
   - name: watchexec/watchexec@v2.8.0
-  - name: joshmedeski/sesh@v2.34.0
   - name: starship/starship@v1.27.0
   - name: JohnnyMorganz/StyLua@v2.6.0
   - name: Kampfkarren/selene@0.32.0

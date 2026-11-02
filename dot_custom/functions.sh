@@ -34,7 +34,6 @@ bindkey '^[^[[B' _cd_back
 # Features:
 #   - Fuzzy search through all ghq-managed repos
 #   - Preview with eza tree + README + git branch
-#   - Auto-rename tmux session
 #   - Ctrl+O: open in VS Code
 #   - Ctrl+E: open in editor
 #   - Ctrl+Y: copy path to clipboard
@@ -71,10 +70,6 @@ dev() {
     )
     if [[ -n "$repo" ]]; then
         cd "$(ghq root)/$repo" || return 1
-        # Rename tmux session if inside tmux
-        if [[ -n "$TMUX" ]]; then
-            tmux rename-session "${repo##*/}"
-        fi
     fi
 }
 
@@ -537,8 +532,12 @@ backup_dev_env() {
 # restore_vscode_ext - Restore VS Code extensions from backup
 # Usage: restore_vscode_ext [backup_file]
 restore_vscode_ext() {
-    local backup_file="${1:-$(chezmoi source-path)/backups/vscode-extensions.txt}"
-    if [[ -f "$backup_file" ]]; then
+    local backup_file="$1"
+    if [[ -z "$backup_file" ]]; then
+        # Default to the newest dated file backup_dev_env wrote.
+        backup_file=$(ls -1 "$(chezmoi source-path)"/backups/vscode-extensions.*.txt 2>/dev/null | tail -n 1)
+    fi
+    if [[ -n "$backup_file" && -f "$backup_file" ]]; then
         echo "Restoring VS Code extensions from $backup_file..."
         xargs -L 1 code --install-extension <"$backup_file"
     else
@@ -546,7 +545,6 @@ restore_vscode_ext() {
         return 1
     fi
 }
-
 # ─────────────────────────────────────────────────────────────
 # Git Utilities
 # Note: Some of these also exist as git aliases, but shell functions
@@ -1000,106 +998,6 @@ ccp() {
     else
         echo "Claude Code not installed"
         return 1
-    fi
-}
-
-# ─────────────────────────────────────────────────────────────
-# ccnew / ccdone — claude + worktree + dedicated tmux session
-# ─────────────────────────────────────────────────────────────
-# One branch == one worktree == one tmux session. Builds on the wt-*
-# helpers above; see `wt-new --help` for the underlying semantics.
-
-_cc_session_name() {
-    local repo="$1" branch="$2"
-    # Disambiguate across same-named repos under different owners (common in
-    # ghq layouts: ~/ghq/github.com/acme/slipway vs .../signalridge/slipway).
-    # Use owner-basename(repo)-branch, then collapse tmux-unsafe chars.
-    local owner base
-    base="$(basename "$repo")"
-    owner="$(basename "$(dirname "$repo")")"
-    printf '%s' "${owner}-${base}-${branch}" | tr './: ' '----'
-}
-
-# Usage: ccnew <branch> [base-ref]
-ccnew() {
-    local branch="${1:-}"
-    local base="${2:-}"
-
-    if [[ -z "$branch" ]]; then
-        echo "Usage: ccnew <branch> [base-ref]"
-        return 1
-    fi
-    if ! command -v claude >/dev/null 2>&1; then
-        echo "Claude Code not installed"
-        return 1
-    fi
-
-    local repo
-    repo="$(_wt_repo_root)" || {
-        echo "Not in a git repository"
-        return 1
-    }
-
-    wt-new "$branch" "$base" || return 1
-
-    local target="$PWD"
-    local session
-    session="$(_cc_session_name "$repo" "$branch")"
-
-    if ! command -v tmux >/dev/null 2>&1; then
-        claude
-        return $?
-    fi
-
-    if ! tmux has-session -t "$session" 2>/dev/null; then
-        tmux new-session -d -s "$session" -c "$target"
-        tmux send-keys -t "$session" 'claude' C-m
-    fi
-
-    if [[ -n "${TMUX:-}" ]]; then
-        tmux switch-client -t "$session"
-    else
-        tmux attach-session -t "$session"
-    fi
-}
-
-# Usage: ccdone <branch> [--force]
-ccdone() {
-    if [[ -z "${1:-}" ]]; then
-        echo "Usage: ccdone <branch> [--force]"
-        return 1
-    fi
-
-    local branch="$1"
-    shift
-
-    local repo
-    repo="$(_wt_repo_root)" || {
-        echo "Not in a git repository"
-        return 1
-    }
-
-    local session
-    session="$(_cc_session_name "$repo" "$branch")"
-
-    # Refuse upfront if we'd need to kill the session we're attached to —
-    # otherwise the user gets bounced out of their shell mid-command.
-    if [[ -n "${TMUX:-}" ]] && command -v tmux >/dev/null 2>&1 &&
-        tmux has-session -t "$session" 2>/dev/null &&
-        [[ "$(tmux display-message -p '#S')" == "$session" ]]; then
-        echo "Refusing to kill the session you're attached to: $session"
-        echo "Detach first (prefix + d) then re-run ccdone."
-        return 1
-    fi
-
-    # Remove the worktree FIRST. A dirty/untracked worktree makes
-    # `git worktree remove` fail — we don't want to have torn down the
-    # claude session before discovering that, or the user loses their
-    # running agent for nothing.
-    wt-rm "$branch" "$@" || return $?
-
-    if command -v tmux >/dev/null 2>&1 && tmux has-session -t "$session" 2>/dev/null; then
-        tmux kill-session -t "$session"
     fi
 }
 

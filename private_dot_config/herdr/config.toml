@@ -80,7 +80,7 @@ type = "pane"
 command = "lazygit"
 description = "lazygit overlay"
 
-# sessionizer — fuzzy project picker (≈ sesh)
+# sessionizer — fuzzy project picker
 [[keys.command]]
 key = "prefix+f"
 type = "shell"

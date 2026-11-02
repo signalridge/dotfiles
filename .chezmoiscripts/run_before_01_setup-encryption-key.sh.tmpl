@@ -178,7 +178,7 @@ require_cmd() {
 # flakey-profile installs packages in a representation the modern `nix profile`
 # command does not track, so a bare `nix profile add` against the default profile
 # rewrites its manifest and silently drops every flakey-installed package
-# (tmux, wget, ...). Installing here, and prepending its bin to PATH, keeps these
+# (wget, git, ...). Installing here, and prepending its bin to PATH, keeps these
 # bootstrap tools available without ever touching the flakey-managed profile.
 BOOTSTRAP_PROFILE="${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/dotfiles-bootstrap"
 NIXPKGS_BOOTSTRAP_REV="{{ .versions.nixpkgsBootstrapRev }}"

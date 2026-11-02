@@ -31,26 +31,21 @@ nix:
       # falls through to `nix profile add` against this profile. flakey-profile installs
       # packages in a representation the modern `nix profile` command does not track, so
       # any bare `nix profile add` here rewrites the manifest from scratch and silently
-      # drops every flakey-installed package (tmux, wget, ...). See age_command_wrapper.sh.
+      # drops every flakey-installed package (wget, git, ...). See age_command_wrapper.sh.
       - age
       - aria2
       - btop # Native Darwin build; upstream releases only ship Linux binaries.
       - git
       - certbot
       - dasel
-      - dust
       - ffmpeg
       - ghostscript # gs - PDF/PostScript processor (Snacks.image dependency)
-      - hyperfine
       - lnav # aqua registry currently mismatches the macOS arm64 release asset
       - mermaid-cli # mmdc - Mermaid diagram renderer (render-markdown.nvim dependency)
       - mosh
       - imagemagick # magick/convert - image processing (Snacks.image dependency)
       - navi
-      - ouch
       - pixi # fast Python/conda package manager
-      # pre-commit: moved to pixi (avoids dotnet-sdk source compilation via nix)
-      # Install: pixi global install pre-commit
       - prettier # JS/TS/JSON/YAML formatter
       - sheldon # shell plugin manager (prefer nix build over aqua binary on macOS)
       - openssh
@@ -59,15 +54,6 @@ nix:
       - sniffnet
       - statix # Nix linter
       - nixfmt
-      - tlrc
-      - |
-        (if stdenv.hostPlatform.isDarwin then
-          tmux.overrideAttrs (old: {
-            configureFlags = (old.configureFlags or []) ++ [ "--enable-jemalloc" ];
-            buildInputs = (old.buildInputs or []) ++ [ jemalloc ];
-          })
-        else
-          tmux)
       - wget
       - zstd
     work:

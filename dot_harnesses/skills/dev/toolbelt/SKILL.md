@@ -117,7 +117,7 @@ are slower, harder to script correctly, and their output is worse to parse.
 
 These take over the terminal and will hang a non-interactive call:
 
-`yazi`, `k9s`, `lazygit`, `lazydocker`, `btop`, `jnv`, `nvim`, `atuin`, `sesh`, `slumber`,
+`yazi`, `k9s`, `lazygit`, `lazydocker`, `btop`, `jnv`, `nvim`, `atuin`, `slumber`,
 `posting`, `gum` (without a piped subcommand), `sniffnet`.
 
 `bat` and `glow` page by default — pass `--paging=never` (bat) or redirect, or just use

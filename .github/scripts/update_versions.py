@@ -35,8 +35,6 @@ ENV_BY_KEY = {
     "cursorAgentDarwinX64Sha256": "U_CURSOR_AGENT_DARWIN_X64_SHA256",
     "cursorAgentLinuxArm64Sha256": "U_CURSOR_AGENT_LINUX_ARM64_SHA256",
     "cursorAgentLinuxX64Sha256": "U_CURSOR_AGENT_LINUX_X64_SHA256",
-    "tpmRev": "U_TPM_REV",
-    "tpmSha256": "U_TPM_SHA256",
     "claudeWshobsonAgentsRev": "U_CLAUDE_WSHOBSON_AGENTS_REV",
     "claudeWshobsonAgentsSha256": "U_CLAUDE_WSHOBSON_AGENTS_SHA256",
     "claudeAnthropicsSkillsRev": "U_CLAUDE_ANTHROPICS_SKILLS_REV",

@@ -4,7 +4,7 @@
 # third-party plugins build and run UNSANDBOXED as the current user.
 herdr:
   plugins:
-    - spec: andrewchng/herdr-sessionizer # fuzzy project/worktree picker (≈ sesh); needs fzf
+    - spec: andrewchng/herdr-sessionizer # fuzzy project/worktree picker; needs fzf
       rev: 9d3ce79d4d532dcf2a8081d8c083810ca97ed1cd
     - spec: rmarganti/herdr-pluck # copy paths/URLs/SHAs from a pane (≈ extrakto); builds via cargo
       rev: 0c9552b8532c68d25f2fe4b277a546326e2e84b1

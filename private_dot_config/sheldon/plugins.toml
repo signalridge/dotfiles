@@ -13,12 +13,6 @@
 shell = "zsh"
 
 [plugins]
-# TMux auto-start (must load early, no defer)
-[plugins.tmux]
-github = "ohmyzsh/ohmyzsh"
-dir = "plugins/tmux"
-use = ["tmux.plugin.zsh"]
-
 [plugins.zsh-defer]
 github = "romkatv/zsh-defer"
 

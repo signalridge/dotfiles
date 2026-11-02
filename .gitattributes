@@ -13,7 +13,6 @@ dot_zprofile.tmpl linguist-language=Shell
 dot_local/bin/executable_*.tmpl linguist-language=Shell
 dot_local/bin/lib/*.tmpl linguist-language=Shell
 dot_local/bin/lib/**/*.tmpl linguist-language=Shell
-private_dot_config/tmux/tmux.conf.tmpl linguist-language=Shell
 
 # Nix
 *.nix linguist-language=Nix
@@ -38,7 +37,6 @@ private_dot_config/tmux/tmux.conf.tmpl linguist-language=Shell
 
 # Other
 Justfile.tmpl linguist-language=Makefile
-private_dot_config/just/dot_justfile.tmpl linguist-language=Makefile
 **/config.tmpl linguist-language=INI
 *.ini.tmpl linguist-language=INI
 private_dot_config/nix/nix.conf linguist-language=INI

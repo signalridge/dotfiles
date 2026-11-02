@@ -8,7 +8,7 @@ AGE_BIN="$HOME/.nix-profile/bin/age"
 # installs packages in a representation the modern `nix profile` command does NOT
 # track, so a bare `nix profile add` against the default profile rewrites its
 # manifest from scratch and silently drops every flakey-installed package
-# (tmux, wget, git, ...). Installing age here instead never touches that profile.
+# (wget, git, ...). Installing age here instead never touches that profile.
 BOOTSTRAP_PROFILE="${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/dotfiles-bootstrap"
 BOOTSTRAP_AGE="$BOOTSTRAP_PROFILE/bin/age"
 
