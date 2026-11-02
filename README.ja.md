@@ -208,7 +208,7 @@ OAuth を使います。[DeepSeek Harness](docs/deepseek-harness.md) を参照�
 - Antigravity：`toolPermission = "always-proceed"`、ターミナルサンドボックスなし
 - Pi：permission パッケージは通常の操作を許可。Git worktree とブランチ切り替えの
   コマンドはこのソースツリー内でのみ拒否
-  （`.pi/extensions/pi-permission-system/config.json`）
+  （ローカルのみ・未追跡の `.pi/extensions/pi-permission-system/config.json`）
 
 Claude の hook は変更したファイルのフォーマットも行います。Git 書き換え hook
 （`dot_claude/hooks/executable_block-git-rewrites.sh`）は一部の不可逆な操作を

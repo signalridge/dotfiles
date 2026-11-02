@@ -205,7 +205,7 @@ before reuse:
 - Antigravity: `toolPermission = "always-proceed"`, no terminal sandbox
 - Pi: the permission package allows normal operations; Git worktree and
   branch-switch commands are denied only inside this source tree
-  (`.pi/extensions/pi-permission-system/config.json`)
+  (local, untracked `.pi/extensions/pi-permission-system/config.json`)
 
 Claude hooks also format changed files. The Git rewrite hook
 (`dot_claude/hooks/executable_block-git-rewrites.sh`) blocks some irreversible

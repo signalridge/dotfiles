@@ -47,8 +47,8 @@ PI_PERMISSION_EOF
 )"
 
 # THE SIX GIT DENY RULES THAT USED TO LIVE IN `bash` ARE GONE FROM THIS GLOBAL
-# FILE, and are now at .pi/extensions/pi-permission-system/config.json inside the
-# chezmoi source repository instead.
+# FILE, and are now in a local, untracked .pi/extensions/pi-permission-system/
+# config.json inside the chezmoi source checkout instead.
 #
 # They were `git worktree`, `git worktree *`, `git switch`, `git switch *`,
 # `git checkout -b *` and `git checkout --orphan *`. The rule they were trying to
@@ -75,8 +75,8 @@ PI_PERMISSION_EOF
 # approximated that as 'everywhere'") and the same remedy: delete the global
 # copy, keep one definition at the scope the rule actually has. pi-permission-
 # system reads `<cwd>/.pi/extensions/pi-permission-system/config.json` and
-# project overrides global, so the definition now lives in the repository it
-# governs. Note that project config is loaded ONLY for a project Pi reports as
+# project overrides global, so the definition now lives (untracked) in the
+# checkout it governs. Note that project config is loaded ONLY for a project Pi reports as
 # trusted; `~/.pi/agent/trust.json` has the chezmoi source tree as trusted.
 if [[ -z "${EXISTING//[[:space:]]/}" ]]; then
     printf '%s\n' "$MANAGED"

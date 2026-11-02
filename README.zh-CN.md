@@ -197,7 +197,7 @@ DeepSeek Harness 通过 `dsh-with` 运行，经本地 CLIProxyAPI 使用 OpenAI 
 - Kimi Code：`default_permission_mode = "yolo"`
 - Antigravity：`toolPermission = "always-proceed"`，无终端沙箱
 - Pi：权限包允许常规操作；Git worktree 和切换分支的命令只在本源码树内被拒绝
-  （`.pi/extensions/pi-permission-system/config.json`）
+  （本地、不入库的 `.pi/extensions/pi-permission-system/config.json`）
 
 Claude 的 hook 还会格式化改动的文件。Git 改写 hook
 （`dot_claude/hooks/executable_block-git-rewrites.sh`）会阻止部分不可逆操作，并在
