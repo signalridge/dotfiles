@@ -3,8 +3,8 @@
 set -euo pipefail
 
 # Install/update Herdr agent lifecycle integrations. Codex hook configuration is
-# kept in ~/.codex/config.toml, so remove the standalone hooks.json that Herdr's
-# installer currently creates.
+# kept in ~/.codex/config.toml, so remove only Herdr's duplicate standalone hooks
+# while preserving hooks.json entries installed by other integrations (e.g. Rex).
 
 echo ":: [14] Syncing Herdr agent integrations"
 
@@ -28,40 +28,60 @@ install_integration() {
 
 install_integration "codex"
 
-# Codex hooks are managed inline in dot_codex/modify_private_config.toml.tmpl. Herdr also
-# writes a legacy hooks.json; remove it only when every command belongs to Herdr.
-# Refuse to discard unrelated user hooks or malformed JSON.
+# Codex hooks are managed inline in dot_codex/modify_private_config.toml.tmpl.
+# Herdr also writes a legacy hooks.json, which may contain other integrations.
+# Remove only recognized Herdr hooks; refuse to rewrite malformed configuration.
 codex_hooks="$HOME/.codex/hooks.json"
 if [[ -f "$codex_hooks" ]]; then
     if ! command -v jq >/dev/null 2>&1; then
         echo "    Error: jq is required to verify $codex_hooks before removal" >&2
         exit 1
     fi
+    # Use a sibling temporary file so replacement is atomic and failed validation
+    # leaves the original untouched. mktemp keeps hook configuration private.
+    hooks_tmp="$(mktemp "${codex_hooks}.XXXXXX")"
+    trap 'rm -f "$hooks_tmp"' EXIT
     # Herdr emits session, working, and idle lifecycle commands here.
     herdr_command_prefix="bash '$HOME/.codex/herdr-agent-state.sh'"
-    if ! jq -e --arg prefix "$herdr_command_prefix" '
-        (keys == ["hooks"])
-        and (.hooks | type == "object" and length > 0)
-        and all(.hooks | to_entries[];
-            (.value | type == "array" and length > 0)
-            and all(.value[];
-                type == "object"
-                and (.hooks | type == "array" and length > 0)
-                and all(.hooks[];
+    if ! jq -s --arg prefix "$herdr_command_prefix" '
+        def is_herdr:
+            (keys == ["command", "timeout", "type"])
+            and .type == "command"
+            and .timeout == 10
+            and (.command == ($prefix + " session")
+              or .command == ($prefix + " working")
+              or .command == ($prefix + " idle"));
+        if length != 1 then error("expected one JSON document") else .[0] end
+        | if (type == "object"
+            and (.hooks | type == "object")
+            and all(.hooks[];
+                type == "array" and all(.[];
                     type == "object"
-                    and .type == "command"
-                    and .timeout == 10
-                    and (.command == ($prefix + " session")
-                      or .command == ($prefix + " working")
-                      or .command == ($prefix + " idle"))
+                    and (.hooks | type == "array" and all(.[]; type == "object"))
                 )
-            )
+            )) then . else error("invalid hooks configuration") end
+        | .hooks |= with_entries(
+            if any(.value[].hooks[]; is_herdr) then
+                .value |= map(
+                    if any(.hooks[]; is_herdr) then
+                        .hooks |= map(select(is_herdr | not))
+                        | select(.hooks | length > 0)
+                    else . end
+                )
+                | select(.value | length > 0)
+            else . end
         )
-    ' "$codex_hooks" >/dev/null 2>&1; then
-        echo "    Error: preserving $codex_hooks because it contains non-Herdr hooks or invalid JSON" >&2
+    ' "$codex_hooks" >"$hooks_tmp" 2>/dev/null; then
+        echo "    Error: preserving $codex_hooks because it contains invalid JSON or an invalid hooks structure" >&2
         exit 1
     fi
-    rm -f "$codex_hooks"
+    if jq -e 'keys == ["hooks"] and .hooks == {}' "$hooks_tmp" >/dev/null; then
+        rm -f "$codex_hooks"
+    elif ! jq -se '.[0] == .[1]' "$codex_hooks" "$hooks_tmp" >/dev/null; then
+        mv -f "$hooks_tmp" "$codex_hooks"
+    fi
+    rm -f "$hooks_tmp"
+    trap - EXIT
 fi
 
 install_integration "claude"
