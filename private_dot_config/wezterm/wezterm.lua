@@ -160,11 +160,11 @@ config.window_frame = {
   active_titlebar_bg = "#282a36",
   inactive_titlebar_bg = "#282a36",
 }
--- These merge on top of `color_scheme` rather than replacing it, so only the tab
--- bar is overridden here. `background` is deliberately absent: it is documented
--- as applying only to the retro bar, so setting it while use_fancy_tab_bar is
--- true would be dead config that reads as if it were doing something.
+-- Keep unstyled application text near-white; inherit background and ANSI colors
+-- from the selected scheme. These overrides also style the tab strip.
+-- tab_bar.background is omitted because the fancy bar uses window_frame instead.
 config.colors = {
+  foreground = "#f4f5f8",
   tab_bar = {
     inactive_tab_edge = "#44475a",
     active_tab = { bg_color = "#44475a", fg_color = "#f8f8f2", intensity = "Bold" },
