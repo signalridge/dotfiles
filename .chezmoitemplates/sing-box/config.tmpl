@@ -1,14 +1,15 @@
 {{- /* sing-box client config, shared by every platform (docs/easytier.md).
        Called with (dict "root" $ "password" … "secret" … ["tun" true]
        ["bastion" <list of outbounds, or the placeholder string
-       "__BASTION_OUTBOUNDS__" spliced in later>] ["sshTunnel" true]).
+       "__BASTION_OUTBOUNDS__" spliced in later>] ["sshExit" true]).
        Panel groups (names are what the web panel shows):
          Egress   like a Tailscale exit node: whose network this machine uses.
                   Direct (default), every EasyTier exit except this machine,
                   bastion, each exit chained through bastion (for networks
                   that only let the bastion through) and, on supported hosts, each
                   OpenConnect VPN endpoint (singBox.openconnect; logged in at
-                  run time by openconnect-login, see below).
+                  run time by openconnect-login, see below). Work Macs also
+                  offer the optional SSH exit from gopass.
          bastion  how to reach the bastion: Reality (default), Hysteria2 or
                   AnyTLS, picked by hand (no automatic switching).
                   "bastion" (gopass sing-box/bastion-outbounds, bastion-import)
@@ -23,6 +24,7 @@
        Clash API + web panel on 127.0.0.1. Values from
        .chezmoidata/{sing-box,easytier}.yaml. */ -}}
 {{- $r := .root -}}
+{{- $sshExit := and (dig "work" false $r) (dig "sshExit" false .) -}}
 {{- $self := (includeTemplate "easytier/role.tmpl" $r | fromJson).exit -}}
 {{- $direct := "Direct" -}}
 {{- $outbounds := list (dict "type" "direct" "tag" $direct) -}}
@@ -80,6 +82,12 @@
 {{-     end -}}
 {{-   end -}}
 {{- end -}}
+{{- if $sshExit -}}
+{{- /* The outbound and selector member share a placeholder, replaced with
+       the SSH outbound and its tag from gopass by the Mac script. */ -}}
+{{-   $exits = append $exits "__SSH_TUNNEL__" -}}
+{{-   $outbounds = append $outbounds "__SSH_TUNNEL__" -}}
+{{- end -}}
 {{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Egress" "default" $direct "outbounds" $exits "interrupt_exist_connections" false) -}}
 {{- /* EasyTier's own packets must never ride an exit: the exits are carried by
        EasyTier, and the peers' public addresses can fall inside an exit route
@@ -92,6 +100,14 @@
        EasyTier's TCP link), since the bastion refuses connections to itself
        and no other exit should carry them either. */ -}}
 {{- $rules := list (dict "action" "sniff") (dict "process_name" (list "easytier-core") "outbound" $direct) (dict "port" $etPorts "outbound" $direct) (dict "ip_is_private" true "outbound" $direct) (dict "ip_cidr" (concat (list $r.easytier.network "100.64.0.0/10") (dig "directCidr" (list) .)) "outbound" $direct) -}}
+{{- if $sshExit -}}
+{{- /* The Mac daemon follows Egress with the company Clash mode. Reject before
+       sniffing so TUN clients receive an immediate error and can fall back to
+       IPv4/TCP, including clients with cached AAAA/HTTPS records. */ -}}
+{{-   $rules = concat (list
+        (dict "clash_mode" "company" "ip_version" 6 "action" "reject" "no_drop" true)
+        (dict "clash_mode" "company" "network" "udp" "port" 443 "action" "reject" "no_drop" true)) $rules -}}
+{{- end -}}
 {{- /* Exit routes (singBox.exitRoutes): one selector per entry, remembered
        across restarts (cache_file). Members are the exits in priority order
        (the first is the default), then `Egress` (the same route as everything
@@ -157,15 +173,6 @@
 {{-   $rules = append $rules $match -}}
 {{- end -}}
 {{- $inbounds := list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" false) -}}
-{{- if dig "sshTunnel" false . -}}
-{{- /* `ssh -D` on singBox.sshTunnelPort (work Macs): its traffic always takes
-       the ssh outbound, ahead of the private-range rules, since reaching hosts
-       behind that SSH server is the point. "__SSH_TUNNEL__" stands for the
-       outbound and its tag, both spliced in from gopass by the Mac script. */ -}}
-{{-   $inbounds = append $inbounds (dict "type" "socks" "tag" "ssh-tunnel-in" "listen" "127.0.0.1" "listen_port" $r.singBox.sshTunnelPort) -}}
-{{-   $outbounds = append $outbounds "__SSH_TUNNEL__" -}}
-{{-   $rules = concat (list (first $rules) (dict "inbound" (list "ssh-tunnel-in") "outbound" "__SSH_TUNNEL__")) (rest $rules) -}}
-{{- end -}}
 {{- /* DNS. Without a TUN (headless Linux, apps opt in via proxy-on) apps hand
        the proxy domain names, so they resolve at the exit already and the
        local server only serves sing-box itself. */ -}}
@@ -212,6 +219,11 @@
        The default DoH transport uses Egress, which may be that pending VPN. */ -}}
 {{-   if gt (len $directDomains) 0 -}}
 {{-     $_ := set $dns "rules" (prepend $dns.rules (dict "domain" (uniq $directDomains) "action" "route" "server" "lan")) -}}
+{{-   end -}}
+{{-   if $sshExit -}}
+{{- /* Empty AAAA and HTTPS/SVCB responses avoid IPv6 and HTTP/3 hints only
+       while company is selected. Changing Clash mode clears the DNS cache. */ -}}
+{{-     $_ := set $dns "rules" (append $dns.rules (dict "clash_mode" "company" "query_type" (list "AAAA" "HTTPS" "SVCB") "action" "predefined" "rcode" "NOERROR")) -}}
 {{-   end -}}
 {{-   $resolver = "lan" -}}
 {{- end -}}

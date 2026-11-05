@@ -193,16 +193,27 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   `Reality`, `Hysteria2`, `AnyTLS` and stores it as gopass
   `sing-box/bastion-outbounds`, then `chezmoi apply`. Re-run after the bastion
   changes ports or rotates the device's credentials.
-- SSH tunnel (work Macs): `ssh -D` without ssh. A SOCKS5 inbound on
-  `127.0.0.1:10000` (`singBox.sshTunnelPort`) whose traffic always leaves
-  through an `ssh` outbound, ahead of the private-range rules, so hosts behind
-  the SSH server are reachable too; sing-box reconnects by itself, and like
-  `ssh -D` it carries no UDP. The outbound (`tag`, `server`, `server_port`,
+- SSH exit (work Macs): an optional `ssh` outbound named `company` in the
+  `Egress` selector (overrides the `tag` in gopass). Select it to send normal TUN and
+  mixed-proxy traffic through the SSH server; existing private/overlay bypasses
+  and pinned destination routes still apply. There is no separate SOCKS listener.
+  sing-box reconnects by itself; like `ssh -D`, the exit carries no UDP.
+  On these work Macs the LaunchDaemon follows the `Egress` selection every
+  second: `company` enables IPv4/TCP compatibility rules via Clash mode,
+  suppressing AAAA and HTTPS/SVCB hints and rejecting IPv6 and UDP/443 before
+  sniffing so browsers can fall back. Other exits restore `Rule` mode and retain
+  IPv6/UDP support. Mode changes clear sing-box's DNS cache and the daemon flushes
+  the macOS DNS cache. LAN DNS exceptions and ranges excluded from the TUN still
+  apply. Do not change Clash mode manually on these Macs; the daemon manages it.
+  Run `chezmoi apply` to update both parts: script 02 rebuilds the LaunchDaemon
+  when its module changes, and script 25 installs the proxy config. Updating
+  only script 25 is insufficient for this compatibility handling.
+  The outbound (`tag`, `server`, `server_port`,
   `user`, pinned `host_key`) is one-line JSON in gopass `sing-box/ssh-tunnel`,
   its private key `sing-box/ssh-tunnel-key` (`gopass cat
 sing-box/ssh-tunnel-key < key`; read it with stdin closed, or `gopass cat`
-  inserts instead); neither is in this repo. Without both the inbound is left
-  out.
+  inserts instead); neither is in this repo. Without both the SSH exit is left
+  out of `Egress`.
 - Switch exits in the panel or by API (the group name is URL-encoded):
   `curl -X PUT -H "Authorization: Bearer $secret" -d '{"name":"nas"}' "http://127.0.0.1:9090/proxies/$(jq -rn '"Egress"|@uri')"`
   (the choice persists in the cache file).
