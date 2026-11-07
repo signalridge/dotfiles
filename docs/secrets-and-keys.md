@@ -53,8 +53,7 @@ easytier/..., sing-box/..., jaist/... # network stack (docs/easytier.md)
 social/<platform>/...                # oss-x-post skill publishing helpers
 ```
 
-`claude/cliproxy` is only a storage path, not a Claude provider;
-see [DeepSeek Harness](deepseek-harness.md). Store only static secrets: the
+`claude/cliproxy` is only a storage path, not a Claude provider. Store only static secrets: the
 templates and helpers read gopass and never write rotating tokens back.
 
 ## keys-manage

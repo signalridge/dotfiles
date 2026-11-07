@@ -146,8 +146,7 @@ Skill 安装到 `~/.harnesses/skills/<category>/<skill>/`，来源是固定版�
 `./.codex/skills` 和 `./.cursor/skills`
 （`--list`、`--active`、`--category <name>`、`--sync`、`--clear`）。
 
-DeepSeek Harness 通过 `dsh-with` 运行，经本地 CLIProxyAPI 使用 OpenAI OAuth；
-见 [DeepSeek Harness](docs/deepseek-harness.md)。
+DeepSeek Harness 通过 `dsh-with` 运行，经本地 CLIProxyAPI 使用 OpenAI OAuth。
 
 ### AI 执行姿态
 
@@ -175,7 +174,6 @@ Claude 的 hook 还会格式化改动的文件。Git 改写 hook
 
 - [Secrets 与密钥](docs/secrets-and-keys.md)：gopass、keys-manage、新设备设置
 - [EasyTier mesh](docs/easytier.md)：EasyTier、sing-box、JAIST VPN、bastion 与 NAS
-- [DeepSeek Harness](docs/deepseek-harness.md)：`dsh-with` 与 CLIProxyAPI
 - [WezTerm 图标](tools/wezterm-icon/README.md)
 - [安全策略](SECURITY.md)
 

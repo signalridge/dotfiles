@@ -152,7 +152,7 @@ globally; run `skill-activate` in a project to symlink a selection into
 `./.claude/skills`, `./.codex/skills` and `./.cursor/skills` (`--list`, `--active`, `--category <name>`, `--sync`, `--clear`).
 
 DeepSeek Harness runs through `dsh-with`, which uses OpenAI OAuth via a local
-CLIProxyAPI; see [DeepSeek Harness](docs/deepseek-harness.md).
+CLIProxyAPI.
 
 ### AI execution posture
 
@@ -183,7 +183,6 @@ mutation.
 
 - [Secrets and Keys](docs/secrets-and-keys.md): gopass, keys-manage, new-device setup
 - [EasyTier mesh](docs/easytier.md): EasyTier, sing-box, JAIST VPN, bastion and NAS
-- [DeepSeek Harness](docs/deepseek-harness.md): `dsh-with` and CLIProxyAPI
 - [WezTerm icon](tools/wezterm-icon/README.md)
 - [Security policy](SECURITY.md)
 

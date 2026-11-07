@@ -156,7 +156,7 @@ Skill は `~/.harnesses/skills/<category>/<skill>/` に置かれ、ソースは�
 （`--list`、`--active`、`--category <name>`、`--sync`、`--clear`）。
 
 DeepSeek Harness は `dsh-with` で起動し、ローカルの CLIProxyAPI 経由で OpenAI
-OAuth を使います。[DeepSeek Harness](docs/deepseek-harness.md) を参照。
+OAuth を使います。
 
 ### AI 実行ポリシー
 
@@ -188,7 +188,6 @@ Claude の hook は変更したファイルのフォーマットも行います�
 
 - [Secrets と鍵](docs/secrets-and-keys.md)：gopass、keys-manage、新しいデバイスのセットアップ
 - [EasyTier mesh](docs/easytier.md)：EasyTier、sing-box、JAIST VPN、bastion、NAS
-- [DeepSeek Harness](docs/deepseek-harness.md)：`dsh-with` と CLIProxyAPI
 - [WezTerm アイコン](tools/wezterm-icon/README.md)
 - [セキュリティポリシー](SECURITY.md)
 
