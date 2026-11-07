@@ -100,15 +100,6 @@ encryption = "age"
 {{-   $installMasApps = promptBoolOnce . "installMasApps" "Install Mac App Store apps (requires Apple ID login)" -}}
 {{- end -}}
 
-{{/* macOS specific: home WiFi SSIDs for auto-volume (comma-separated) */}}
-{{- $homeWifiSSIDs := "" -}}
-{{- if hasKey . "homeWifiSSIDs" -}}
-{{-   $homeWifiSSIDs = .homeWifiSSIDs -}}
-{{- end -}}
-{{- if and (eq .chezmoi.os "darwin") (stdinIsATTY) -}}
-{{-   $homeWifiSSIDs = promptStringOnce . "homeWifiSSIDs" "Home WiFi SSIDs for auto-volume (comma-separated, e.g. Home-5G,Home-2.4G)" -}}
-{{- end -}}
-
 {{/* gopass password store repository (HTTPS; auth via gh credential helper).
      Required when encryption is enabled — no guessed default, so a wrong repo
      name (e.g. an assumed "passwords.git") can never be written silently in a
@@ -194,7 +185,6 @@ private = {{ $private }}
 headless = {{ $headless }}
 useEncryption = {{ $useEncryption }}
 installMasApps = {{ $installMasApps }}
-homeWifiSSIDs = {{ $homeWifiSSIDs | quote }}
 timezone = {{ $timezone | quote }}
 gopassRepository = {{ $gopassRepository | quote }}
 keysRepository = {{ $keysRepository | quote }}

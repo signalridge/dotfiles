@@ -37,7 +37,6 @@ jobs:
           platform = "linux"
           work = false
           private = true
-          homeWifiSSIDs = ""
           timezone = "UTC"
           gitUsername = "ci"
           gitEmail = "ci@test.com"

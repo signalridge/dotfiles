@@ -87,7 +87,7 @@ chezmoi init --apply \
 | `hostname`                           | 非工作机上提示；工作机使用系统主机名。                                           |
 | `gitUsername`、`gitEmail`            | 缺失时提示；没有身份默认值。                                                     |
 | `headless`                           | 在 TTY 上提示；否则使用已存数据或基于 OS 的回退值。                              |
-| `installMasApps`、`homeWifiSSIDs`    | macOS TTY 提示（MAS 安装；Hammerspoon 音量监视用的家庭 SSID）。                  |
+| `installMasApps`                     | macOS TTY 提示（Mac App Store 安装）。                                           |
 | `timezone`                           | 自动检测；否则提示，最终回退为 `Etc/UTC`。                                       |
 | `keysRepository`、`gopassRepository` | 仅在启用加密时提示。                                                             |
 | `easytierExit`                       | 从不提示；在要充当 EasyTier 出口的 Linux 机器上手动设置。                        |

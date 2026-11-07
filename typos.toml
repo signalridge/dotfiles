@@ -1,6 +1,5 @@
 [files]
 extend-exclude = [
-  "private_dot_config/hammerspoon/Spoons/**",
   "private_dot_config/nvim/lazy-lock.json",
   "private_dot_ssh/**",
   # .terminal profiles are plists whose NSFont/NSColor values are base64 blobs;

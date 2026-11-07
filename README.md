@@ -88,7 +88,7 @@ All prompts and derived values live in `.chezmoi.toml.tmpl`.
 | `hostname`                           | Prompted on non-work machines; work machines use the system hostname.                       |
 | `gitUsername`, `gitEmail`            | Prompted when absent; there is no identity default.                                         |
 | `headless`                           | Prompted on a TTY; otherwise stored data or an OS-based fallback.                           |
-| `installMasApps`, `homeWifiSSIDs`    | macOS TTY prompts (MAS installs; home SSIDs for the Hammerspoon volume watcher).            |
+| `installMasApps`                     | macOS TTY prompt (Mac App Store installs).                                                  |
 | `timezone`                           | Auto-detected; otherwise prompted, falling back to `Etc/UTC`.                               |
 | `keysRepository`, `gopassRepository` | Prompted only with encryption enabled.                                                      |
 | `easytierExit`                       | Never prompted; set by hand on a Linux machine that should act as an EasyTier exit.         |

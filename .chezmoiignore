@@ -58,7 +58,6 @@ Library/
 .config/karabiner/
 .config/wezterm/
 .config/terminal/
-.config/hammerspoon/
 {{- else }}
 # Linux-only: systemd --user units have no meaning on macOS (launchd is used
 # there via Library/LaunchAgents). Exclude the script and units from the macOS
@@ -80,7 +79,6 @@ Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 .config/karabiner/
 .config/wezterm/
 .config/terminal/
-.config/hammerspoon/
 {{- end }}
 
 # ─────────────────────────────────────────────────────────────────────────────

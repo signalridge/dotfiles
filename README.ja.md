@@ -83,17 +83,17 @@ chezmoi init --apply \
 
 すべてのプロンプトと導出値は `.chezmoi.toml.tmpl` にあります。
 
-| データ                               | 要求・使用されるタイミング                                                           |
-| ------------------------------------ | ------------------------------------------------------------------------------------ |
-| `work`                               | 必須。TTY でプロンプト表示。`private` の導出に使用。                                 |
-| `useEncryption`                      | `DOTFILES_USE_ENCRYPTION` がなければ必須。鍵の復元、gopass、`~/.ssh/*` を制御。      |
-| `hostname`                           | 仕事用以外のマシンでプロンプト表示。仕事用マシンはシステムのホスト名を使用。         |
-| `gitUsername`、`gitEmail`            | 未設定ならプロンプト表示。身元のデフォルト値はありません。                           |
-| `headless`                           | TTY でプロンプト表示。それ以外は保存済みデータか OS ベースのフォールバック。         |
-| `installMasApps`、`homeWifiSSIDs`    | macOS の TTY プロンプト（MAS のインストール、Hammerspoon の音量監視用の自宅 SSID）。 |
-| `timezone`                           | 自動検出。できなければプロンプト表示し、最終的に `Etc/UTC` にフォールバック。        |
-| `keysRepository`、`gopassRepository` | 暗号化が有効なときだけプロンプト表示。                                               |
-| `easytierExit`                       | プロンプトなし。EasyTier の出口にする Linux マシンで手動設定します。                 |
+| データ                               | 要求・使用されるタイミング                                                      |
+| ------------------------------------ | ------------------------------------------------------------------------------- |
+| `work`                               | 必須。TTY でプロンプト表示。`private` の導出に使用。                            |
+| `useEncryption`                      | `DOTFILES_USE_ENCRYPTION` がなければ必須。鍵の復元、gopass、`~/.ssh/*` を制御。 |
+| `hostname`                           | 仕事用以外のマシンでプロンプト表示。仕事用マシンはシステムのホスト名を使用。    |
+| `gitUsername`、`gitEmail`            | 未設定ならプロンプト表示。身元のデフォルト値はありません。                      |
+| `headless`                           | TTY でプロンプト表示。それ以外は保存済みデータか OS ベースのフォールバック。    |
+| `installMasApps`                     | macOS の TTY プロンプト（Mac App Store のインストール）。                       |
+| `timezone`                           | 自動検出。できなければプロンプト表示し、最終的に `Etc/UTC` にフォールバック。   |
+| `keysRepository`、`gopassRepository` | 暗号化が有効なときだけプロンプト表示。                                          |
+| `easytierExit`                       | プロンプトなし。EasyTier の出口にする Linux マシンで手動設定します。            |
 
 ## Bootstrap フロー
 

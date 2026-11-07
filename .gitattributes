@@ -50,4 +50,3 @@ private_dot_config/git/message linguist-documentation
 dot_claude/commands/symlink_core.tmpl linguist-generated
 private_dot_config/nvim/lazy-lock.json linguist-generated
 nix-config/flake.lock.tmpl linguist-generated
-private_dot_config/hammerspoon/Spoons/** linguist-vendored
