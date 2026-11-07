@@ -37,17 +37,17 @@
   as both default width and ceiling). Keep it <= 64: pi-workflows clamps at 64,
   so a larger value would silently diverge between the two.
 */ -}}
-{{- $highModel := "gpt-6-astra" -}}
-{{- $highThink := "medium" -}}
-{{- $mediumModel := "gpt-6.1-sol" -}}
-{{- $mediumThink := "high" -}}
-{{- $lowModel := "gpt-6.1-sol" -}}
+{{- $highModel := "gpt-6.1-terra" -}}
+{{- $highThink := "max" -}}
+{{- $mediumModel := "gpt-6.1-terra" -}}
+{{- $mediumThink := "xhigh" -}}
+{{- $lowModel := "gpt-6.1-terra" -}}
 {{- $lowThink := "low" -}}
 {
   "maxConcurrent": 40,
   "defaultMaxTurns": 640,
   "defaultMaxToolCalls": 1024,
-  "defaultMaxTokens": 3000000,
+  "defaultMaxTokens": 1000000,
   "graceTurns": 8,
   "defaultJoinMode": "smart",
   "schedulingEnabled": true,

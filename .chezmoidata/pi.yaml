@@ -34,7 +34,11 @@ pi:
     # Reserves are MODEL-SPECIFIC, not a global 130K floor. The 16K baseline
     # keeps a 128K model such as Codex Spark usable (trigger 111,616 instead of
     # -2,000). Known larger windows get explicit budgets below:
-    # Sol/Astra: measured 921K input window, 130K reserve -> trigger 791K.
+    # Terra/Sol/Astra/Luna: measured 921K input window, 320K reserve -> trigger
+    # 601K. The reserve is deliberately larger than output headroom: requests near
+    # the wall prefill hundreds of thousands of uncached tokens per turn, single
+    # responses then hit the backend's 15-minute stream cap ("terminated"), and a
+    # compaction from ~790K takes ~10 minutes. Compacting earlier keeps turns fast.
     # Flash/Qwen Coder/Kimi K3: catalog 1M window, 130K reserve -> trigger 870K
     # (these 1M input walls are unprobed). Smaller custom models reserve their
     # output budget plus ~16K for new input/tool data.
@@ -48,9 +52,10 @@ pi:
       reserveTokens: 16384
       keepRecentTokens: 16000
       modelOverrides:
-        openai-codex/gpt-6.1-sol: { reserveTokens: 130000 }
-        openai-codex/gpt-6-astra: { reserveTokens: 130000 }
-        openai-codex/gpt-5.6-luna: { reserveTokens: 130000 }
+        openai-codex/gpt-6.1-terra: { reserveTokens: 320000 }
+        openai-codex/gpt-6.1-sol: { reserveTokens: 320000 }
+        openai-codex/gpt-6-astra: { reserveTokens: 320000 }
+        openai-codex/gpt-5.6-luna: { reserveTokens: 320000 }
         openai-codex/gpt-5.6-sol: { reserveTokens: 130000 }
         openai-codex/gpt-5.6-terra: { reserveTokens: 130000 }
         opencode-go/deepseek-v4-flash: { reserveTokens: 130000 }
@@ -233,7 +238,7 @@ pi:
       # not the catalog/spec total window: ~921K input is accepted, ~922K fails
       # with "Your input exceeds the context window". 921000 is a conservative
       # accepted-input pin (a synthetic acceptance probe, not a recall benchmark).
-      # With reserveTokens 130K it gives a 791K compaction trigger; pinning the
+      # With reserveTokens 320K it gives a 601K compaction trigger; pinning the
       # larger spec would put the trigger past the wall and collapse headroom.
       # Larger contexts can use more subscription quota; do not treat API price
       # multipliers or Pi's cost estimates as this OAuth account's billing.
@@ -241,16 +246,20 @@ pi:
       # Probe history: git log -S'921,065'.
       auth: builtin
       modelOverrides:
-        # Startup default and low/medium tiers (see subagents.json.tmpl).
+        # Startup default and all three tiers (see subagents.json.tmpl).
+        # Catalog says 500K; probed 2026-11-08: 919,332 input ACCEPTED,
+        # ~925.8K rejected (context_length_exceeded) — same ~922K wall as sol.
         # Retain catalog output/thinking/pricing metadata and builtin auth.
+        gpt-6.1-terra: { contextWindow: 921000 }
+        # Legacy /model option.
         gpt-6.1-sol: { contextWindow: 921000 }
         # Legacy /model option.
         gpt-5.6-luna: { contextWindow: 921000 }
-        # High tier, and the Codex CLI's primary model in
+        # Former high tier, and the Codex CLI's primary model in
         # dot_codex/modify_private_config.toml.tmpl (an independent policy).
         # Dropping this entry is not neutral: astra would fall back to the
         # catalog's 272,000 and the high tier would begin compacting at
-        # 272,000 - 130,000 = 142,000 instead of 791,000.
+        # a negative trigger (272,000 - 320,000) instead of 601,000.
         # COST: astra's unit price is higher than sol's, but it spends far fewer
         # tokens per task and that dominates the bill. Re-measure current rungs
         # (api.codexradar.com intelligence-efficiency) rather than extrapolating
