@@ -42,6 +42,14 @@ file_path=$(echo "$input" | jq -r '.tool_input.file_path // .tool_input.path // 
 [[ -f "$file_path" ]] || exit 0
 
 case "$file_path" in
+*.py)
+    # Prefer ruff directly, then the uvx fallback.
+    if run_optional ruff format "$file_path"; then
+        run_optional ruff check --fix "$file_path" || true
+    elif run_optional uvx ruff format "$file_path"; then
+        run_optional uvx ruff check --fix "$file_path" || true
+    fi
+    ;;
 *.nix)
     run_optional nixfmt "$file_path" || run_optional alejandra "$file_path" || true
     ;;

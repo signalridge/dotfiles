@@ -44,7 +44,6 @@ backups/
 
 # Node modules (created by prettier cache)
 node_modules/
-backup/
 
 # Python bytecode and tool caches
 .ruff_cache/

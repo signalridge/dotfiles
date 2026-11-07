@@ -82,11 +82,3 @@ export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 # carapace can bridge existing shell completion specs for tools without native
 # carapace completers.
 export CARAPACE_BRIDGES="${CARAPACE_BRIDGES:-zsh,fish,bash,inshellisense}"
-{{- if eq .chezmoi.os "darwin" }}
-
-# ─────────────────────────────────────────────────────────────
-# Hammerspoon configuration directory (macOS only)
-# Use ~/.config/hammerspoon instead of default ~/.hammerspoon
-# ─────────────────────────────────────────────────────────────
-export HS_CONFIG_DIR="$HOME/.config/hammerspoon"
-{{- end }}

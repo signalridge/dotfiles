@@ -46,7 +46,7 @@
 | 全新 Nix bootstrap | 固定的安装器资源覆盖 `aarch64-darwin`、`aarch64-linux` 和 `x86_64-linux`；全新的 `x86_64-darwin` 安装会被拒绝。 |
 | `work`             | 加入 `work` 包集合（Nix，macOS 上还有 Homebrew），并设置 `private = false`；工作机不安装中继/出口工具。         |
 | `private`          | 由 `not work` 推导，选择 `private` 包集合。                                                                     |
-| `headless`         | 跳过 GUI dotfiles 和 GUI 脚本 `09`、`17`、`22`。它不是包开关：macOS 上 nix-darwin/Homebrew 模块仍会渲染。       |
+| `headless`         | 跳过 GUI dotfiles 和 GUI 脚本 `09`、`17`、`21`。它不是包开关：macOS 上 nix-darwin/Homebrew 模块仍会渲染。       |
 | Mac App Store      | 仅当 `installMasApps = true` 时安装 MAS 条目。                                                                  |
 
 ## 快速开始
@@ -66,7 +66,7 @@ sh /tmp/init.sh
 `./init.sh`。`init.sh` 还支持 `--repo` 和 `--depth`（或
 `DOTFILES_REPO`/`DOTFILES_REF`/`DOTFILES_DEPTH`）以及
 `DOTFILES_USE_ENCRYPTION=true|false`；详情见 `sh init.sh --help`。bootstrap 只走
-HTTPS，并拒绝 `--ssh`。
+HTTPS。
 
 直接调用 chezmoi 时预先选择 profile：
 
@@ -90,7 +90,7 @@ chezmoi init --apply \
 | `headless`                           | 在 TTY 上提示；否则使用已存数据或基于 OS 的回退值。                              |
 | `installMasApps`、`homeWifiSSIDs`    | macOS TTY 提示（MAS 安装；Hammerspoon 音量监视用的家庭 SSID）。                  |
 | `timezone`                           | 自动检测；否则提示，最终回退为 `Etc/UTC`。                                       |
-| `keysRepository`、`gopassRepository` | 仅在启用加密时提示。见 [Secrets 与密钥](docs/secrets-and-keys.md)。              |
+| `keysRepository`、`gopassRepository` | 仅在启用加密时提示。                                                             |
 | `easytierExit`                       | 从不提示；在要充当 EasyTier 出口的 Linux 机器上手动设置。                        |
 
 ## Bootstrap 流程
@@ -121,11 +121,11 @@ nix-darwin 和 Git 相关 recipe。在源码目录中运行 `pre-commit run --al
 ## 网络栈
 
 - **EasyTier**：每台 Mac 都以客户端身份加入私有 mesh；Linux 机器只有在其本地数据
-  设置了 `easytierExit` 时才作为出口加入（`.chezmoidata/easytier.yaml`，脚本 `24`）。
+  设置了 `easytierExit` 时才作为出口加入（`.chezmoidata/easytier.yaml`，脚本 `23`）。
 - **sing-box**：每台机器都有客户端（Mac 上为 TUN，headless Linux 上为用户服务）；
-  由 `Egress` 选择器挑选出口（`.chezmoidata/sing-box.yaml`，脚本 `25`）。
+  由 `Egress` 选择器挑选出口（`.chezmoidata/sing-box.yaml`，脚本 `24`）。
 - **JAIST VPN**：补丁版 sing-box 中的 OpenConnect 端点，配合
-  `openconnect-auto`/`openconnect-login`（脚本 `26`，仅非工作机）。
+  `openconnect-auto`/`openconnect-login`（脚本 `25`，仅非工作机）。
 - **bastion**：手动部署的中继和 STUN 服务器；`bastion-import` 把它的 sing-box
   outbound 存入 gopass。
 
@@ -165,14 +165,13 @@ Claude 的 hook 还会格式化改动的文件。Git 改写 hook
 
 - chezmoi 使用 `age` 加密（`.chezmoitemplates/shell/age_command_wrapper.sh`），
   身份为 `~/.ssh/main` 与 `~/.ssh/main.pub`。
-- API key 和服务凭据存放在 gopass；密钥文件由 `keys-manage` 备份。两者都在
-  [Secrets 与密钥](docs/secrets-and-keys.md) 中说明。
+- API key 和服务凭据存放在 gopass；密钥文件由 `keys-manage` 备份。gopass 的结构写在
+  `private_dot_config/gopass/config.tmpl` 中。
 - GitHub 访问走 HTTPS + `gh` credential helper，不使用 `insteadOf` 改写。
 - 漏洞报告与敏感区域：[SECURITY.md](SECURITY.md)。
 
 ## 文档
 
-- [Secrets 与密钥](docs/secrets-and-keys.md)：gopass、keys-manage、新设备设置
 - [EasyTier mesh](docs/easytier.md)：EasyTier、sing-box、JAIST VPN、bastion 与 NAS
 - [WezTerm 图标](tools/wezterm-icon/README.md)
 - [安全策略](SECURITY.md)

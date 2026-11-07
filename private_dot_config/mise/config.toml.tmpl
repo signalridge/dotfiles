@@ -102,8 +102,7 @@ lua = "5.4"
 # deterministic UI anti-pattern detector (`impeccable detect <path>`), and Live Mode
 # (browser-based UI iteration). Bin is `impeccable`; pure-JS deps + NO postinstall,
 # so bun needs no `--trust` here. This entry installs ONLY the CLI. The `/impeccable`
-# skill is NOT deployed globally: `impeccable install --global` was intentionally removed
-# — a machine-wide skill in every harness is unwanted. Install per-repo
+# skill is NOT deployed globally (a machine-wide skill in every harness is unwanted). Install per-repo
 # on demand instead: `impeccable install --project --no-hooks` in the target UI project
 # (`impeccable update`/`check` to refresh it there). Deliberately NOT a chezmoi external/
 # `~/.harnesses` entry either — installing two ways would double-write the skill dir.

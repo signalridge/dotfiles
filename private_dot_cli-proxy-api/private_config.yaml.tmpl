@@ -1,4 +1,4 @@
-{{- /* The inbound client key is shared with dsh-with; its legacy claude/ prefix
+{{- /* The inbound client key is shared with dsh-with; its claude/ gopass prefix
        is only a storage path, not a Claude Code integration.
        Fail rendering if it is missing; do not start an unauthenticated proxy. */ -}}
 {{- $apiKey := output "gopass" "show" "--password" "claude/cliproxy/private/api_key" | trim -}}

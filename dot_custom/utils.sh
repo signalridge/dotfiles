@@ -11,7 +11,6 @@ print_success() { printf "\033[32m✔ %s\033[0m\n" "$1"; }
 print_error() { printf "\033[31m✖ %s\033[0m\n" "$1"; }
 print_warning() { printf "\033[33m! %s\033[0m\n" "$1"; }
 print_info() { printf "\033[34mℹ %s\033[0m\n" "$1"; }
-print_step() { printf "\033[35m→ %s\033[0m\n" "$1"; }
 
 # ─────────────────────────────────────────────────────────────
 # Command Utilities
@@ -19,23 +18,8 @@ print_step() { printf "\033[35m→ %s\033[0m\n" "$1"; }
 # Check if command exists
 cmd_exists() { command -v "$1" &>/dev/null; }
 
-# Get current OS
-get_os() {
-    case "$(uname -s)" in
-    Darwin) echo "macos" ;;
-    Linux) echo "linux" ;;
-    *) echo "unknown" ;;
-    esac
-}
-
 # Check if running on macOS
 is_macos() { [[ "$(uname -s)" == "Darwin" ]]; }
-
-# Check if running on Linux
-is_linux() { [[ "$(uname -s)" == "Linux" ]]; }
-
-# Check if inside git repository
-is_git_repo() { git rev-parse --is-inside-work-tree &>/dev/null; }
 
 # ─────────────────────────────────────────────────────────────
 # File Utilities

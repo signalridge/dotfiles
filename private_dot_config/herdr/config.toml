@@ -3,8 +3,7 @@
 # NOTE: herdr also writes this file (UI theme picker, `herdr config reset-keys`);
 #       in-app changes are overwritten on the next `chezmoi apply`.
 #
-# Tuned to mirror the user's tmux setup. Prefix stays ctrl+b (== tmux C-b).
-# Most herdr default keys are already tmux-like, so only additions/overrides are set.
+# Prefix is ctrl+b; only additions/overrides to herdr's defaults are set.
 
 onboarding = false
 
@@ -13,7 +12,7 @@ name = "dracula"                       # matches the terminal's Dracula scheme
 
 [terminal]
 shell_mode = "login"                   # login shells pick up full env
-new_cwd = "follow"                     # new panes/tabs inherit cwd (tmux: new-window -c "#{pane_current_path}")
+new_cwd = "follow"                     # new panes/tabs inherit cwd
 
 [update]
 channel = "stable"                     # version is pinned by aqua — do NOT use `herdr update`
@@ -22,12 +21,12 @@ channel = "stable"                     # version is pinned by aqua — do NOT us
 prompt_new_tab_name = false            # new tab = no naming prompt
 show_agent_labels_on_pane_borders = true
 confirm_close = true
-mouse_scroll_lines = 3                 # == tmux @scroll-speed-num-lines-per-scroll '3'
+mouse_scroll_lines = 3
 sidebar_width = 28
-accent = "#bd93f9"                     # Dracula purple (== tmux pane-active-border)
+accent = "#bd93f9"                     # Dracula purple
 
 [ui.toast]
-delivery = "system"                    # macOS notification on agent done / needs-input (replaces tmux-notify)
+delivery = "system"                    # macOS notification on agent done / needs-input
 delay_seconds = 5
 
 [ui.toast.clipboard]
@@ -48,18 +47,18 @@ resume_agents_on_restore = true        # restore agent conversations after a ser
 manage_ssh_config = true               # keepalive-managed ssh for `herdr --remote`
 
 [experimental]
-kitty_graphics = true                  # in-terminal image rendering (≈ tmux allow-passthrough)
-allow_nested = true                    # allow herdr inside a herdr pane (nested sessions, ≈ tmux-suspend use case)
+kitty_graphics = true                  # in-terminal image rendering
+allow_nested = true                    # allow herdr inside a herdr pane (nested sessions)
 switch_ascii_input_source_in_prefix = true   # CJK IME: prefix commands register while a Chinese IME is active (macOS)
 reveal_hidden_cursor_for_cjk_ime = true       # keep the IME candidate window tracking the cursor inside agent TUIs
 cjk_ime_agents = ["claude", "codex"]          # apply the IME cursor reveal only to these agents
 # pane_history intentionally left false — it persists pane SCREEN CONTENTS (incl. secrets) to disk.
 
 [advanced]
-scrollback_limit_bytes = 50000000      # ~50 MiB per pane (≈ tmux history-limit 50000)
+scrollback_limit_bytes = 50000000      # ~50 MiB per pane
 
 # ── Keybindings ───────────────────────────────────────────────────────────────
-# Prefix = ctrl+b (== tmux). herdr DEFAULTS already match tmux for: new_tab (prefix+c),
+# Prefix = ctrl+b. herdr defaults already cover: new_tab (prefix+c),
 # focus_pane h/j/k/l (prefix+h/j/k/l), split_vertical (prefix+v), split_horizontal
 # (prefix+minus), zoom (prefix+z), close_pane (prefix+x), switch_tab (prefix+1..9),
 # edit_scrollback (prefix+e). Only the additions below are set.
@@ -67,12 +66,12 @@ scrollback_limit_bytes = 50000000      # ~50 MiB per pane (≈ tmux history-limi
 prefix = "ctrl+b"
 focus_agent = "prefix+alt+1..9"        # jump to agent pane N
 switch_workspace = "prefix+shift+1..9" # jump to workspace N
-last_pane = "prefix+semicolon"         # back-and-forth (tmux prefix+;)
+last_pane = "prefix+semicolon"         # back-and-forth
 previous_workspace = "prefix+comma"
 next_workspace = "prefix+period"
 
 # ── Plugin & tool keybinds (type="shell" runs the plugin CLI; type="pane" opens an overlay) ──
-# lazygit popup (tmux prefix+g; prefix+g is herdr 'goto', so use prefix+alt+g)
+# lazygit popup (prefix+g is herdr 'goto', so use prefix+alt+g)
 [[keys.command]]
 key = "prefix+alt+g"
 type = "pane"

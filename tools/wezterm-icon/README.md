@@ -42,5 +42,5 @@ swiftc -O wezterm-icon.swift -o wezterm-icon
 ```
 
 The third argument is the contrast level (0-3). Build the iconset from the two
-images, run `iconutil -c icns`, and commit the result as `WezTerm.icns`; script `22`
+images, run `iconutil -c icns`, and commit the result as `WezTerm.icns`; script `21`
 re-applies it on the next apply via a hash comparison.

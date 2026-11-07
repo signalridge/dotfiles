@@ -126,12 +126,6 @@ to_home_rel_path() {
     printf '%s\n' "$path"
 }
 
-to_home_abs_path() {
-    local rel
-    rel=$(to_home_rel_path "$1") || return 1
-    printf '%s/%s\n' "$HOME" "$rel"
-}
-
 # Reject restore targets whose existing parent path resolves outside HOME.
 # A missing suffix is safe after lexical traversal checks; the deepest existing
 # parent is what determines whether a symlink escapes the restore boundary.
@@ -1443,20 +1437,6 @@ ensure_local_dir() {
     log_success "Local directory ready: $REPO_DIR"
     echo ""
     log_note "Run 'keys-manage init' before backing up to initialize git repository"
-}
-
-# Ensure repository is initialized and change to repo directory
-# Consolidates the common pattern: init_repo_if_needed + cd
-require_repo_and_cd() {
-    init_repo_if_needed || {
-        log_error "Failed to initialize repository"
-        return 1
-    }
-
-    cd "$REPO_DIR" || {
-        log_error "Failed to change directory to $REPO_DIR"
-        return 1
-    }
 }
 
 # ===== OpenSSL Encryption =====

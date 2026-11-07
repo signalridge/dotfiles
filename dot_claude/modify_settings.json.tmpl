@@ -124,7 +124,6 @@ EXISTING="$(cat)"
       "PreToolUse" (list (dict "matcher" "Bash" "hooks" (list
         (dict "type" "command" "command" "$HOME/.claude/hooks/block-git-rewrites.sh" "timeout" 5))))
       "PostToolUse" (list (dict "matcher" "Write|Edit|MultiEdit" "hooks" (list
-        (dict "type" "command" "command" "$HOME/.claude/hooks/format-python.sh" "timeout" 10)
         (dict "type" "command" "command" "$HOME/.claude/hooks/format-code.sh" "timeout" 10))))
 -}}
 
@@ -190,13 +189,7 @@ if command -v jq >/dev/null 2>&1 && printf '%s' "$EXISTING" | jq -e . >/dev/null
     # native Anthropic OAuth, and jq's recursive object merge would otherwise
     # keep a stale proxy URL, model override or context window left in the file
     # by earlier third-party provider tooling or by hand.
-    # Retired tmux-ai-agent-state hooks are stripped from EXISTING: the merge
-    # replaces a managed event's array, but an event MANAGED no longer declares
-    # (SessionEnd/Stop) would otherwise keep them forever. Only those entries go;
-    # any other hook added by hand survives.
-    jq -s '.[0] * (.[1] | (if .hooks then .hooks |= (with_entries(.value |= map(select(
-        ([.hooks[]?.command | strings] | any(test("tmux-ai-agent-state"))) | not)))
-      | with_entries(select(.value | length > 0))) else . end) | .env |= del(
+    jq -s '.[0] * (.[1] | .env |= del(
         .ANTHROPIC_BASE_URL, .ANTHROPIC_MODEL, .ANTHROPIC_SMALL_FAST_MODEL,
         .ANTHROPIC_DEFAULT_HAIKU_MODEL, .ANTHROPIC_DEFAULT_SONNET_MODEL,
         .ANTHROPIC_DEFAULT_OPUS_MODEL, .CLAUDE_CODE_SUBAGENT_MODEL,

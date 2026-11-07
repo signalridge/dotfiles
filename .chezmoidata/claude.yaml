@@ -2,8 +2,7 @@ claude:
   # Claude Code startup defaults -> env in dot_claude/modify_settings.json.tmpl
   # Docs: https://docs.anthropic.com/zh-CN/docs/claude-code/settings
   #
-  # Native Anthropic OAuth only (the third-party provider/account layer was
-  # removed; see git log -S'claude-manage'). Switch models at runtime with `/model`.
+  # Native Anthropic OAuth only. Switch models at runtime with `/model`.
 
   # Opus 5.5 on the 1M-context beta (`[1m]` suffix); renders env.ANTHROPIC_MODEL.
   # Verify a new ID first with `claude -p --model '<id>'` against the live account.

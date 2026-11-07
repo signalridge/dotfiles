@@ -146,4 +146,4 @@ Library/LaunchAgents/com.signalridge.cliproxyapi.plist
 # ─────────────────────────────────────────────────────────────────────────────
 # Ignored directories
 # ─────────────────────────────────────────────────────────────────────────────
-backup/
+backups/

@@ -47,7 +47,7 @@
 | 新規 Nix bootstrap | 固定インストーラーは `aarch64-darwin`、`aarch64-linux`、`x86_64-linux` に対応。新規の `x86_64-darwin` インストールは拒否されます。                             |
 | `work`             | `work` パッケージセット（Nix、macOS では Homebrew も）を追加し、`private = false` に設定。仕事用マシンには中継/出口ツールを入れません。                        |
 | `private`          | `not work` から導出され、`private` パッケージセットを選択します。                                                                                              |
-| `headless`         | GUI の dotfiles と GUI スクリプト `09`、`17`、`22` をスキップ。パッケージのスイッチではなく、macOS では nix-darwin/Homebrew モジュールは引き続き描画されます。 |
+| `headless`         | GUI の dotfiles と GUI スクリプト `09`、`17`、`21` をスキップ。パッケージのスイッチではなく、macOS では nix-darwin/Homebrew モジュールは引き続き描画されます。 |
 | Mac App Store      | `installMasApps = true` のときだけ MAS のエントリをインストールします。                                                                                        |
 
 ## クイックスタート
@@ -69,7 +69,7 @@ sh /tmp/init.sh
 実行します。`init.sh` は `--repo` と `--depth`（または
 `DOTFILES_REPO`/`DOTFILES_REF`/`DOTFILES_DEPTH`）、
 `DOTFILES_USE_ENCRYPTION=true|false` にも対応します。詳細は `sh init.sh --help`
-を参照してください。bootstrap は HTTPS のみで、`--ssh` は拒否されます。
+を参照してください。bootstrap は HTTPS のみです。
 
 chezmoi を直接呼び出すときに profile を事前に選ぶ例：
 
@@ -84,17 +84,17 @@ chezmoi init --apply \
 
 すべてのプロンプトと導出値は `.chezmoi.toml.tmpl` にあります。
 
-| データ                               | 要求・使用されるタイミング                                                              |
-| ------------------------------------ | --------------------------------------------------------------------------------------- |
-| `work`                               | 必須。TTY でプロンプト表示。`private` の導出に使用。                                    |
-| `useEncryption`                      | `DOTFILES_USE_ENCRYPTION` がなければ必須。鍵の復元、gopass、`~/.ssh/*` を制御。         |
-| `hostname`                           | 仕事用以外のマシンでプロンプト表示。仕事用マシンはシステムのホスト名を使用。            |
-| `gitUsername`、`gitEmail`            | 未設定ならプロンプト表示。身元のデフォルト値はありません。                              |
-| `headless`                           | TTY でプロンプト表示。それ以外は保存済みデータか OS ベースのフォールバック。            |
-| `installMasApps`、`homeWifiSSIDs`    | macOS の TTY プロンプト（MAS のインストール、Hammerspoon の音量監視用の自宅 SSID）。    |
-| `timezone`                           | 自動検出。できなければプロンプト表示し、最終的に `Etc/UTC` にフォールバック。           |
-| `keysRepository`、`gopassRepository` | 暗号化が有効なときだけプロンプト表示。[Secrets と鍵](docs/secrets-and-keys.md) を参照。 |
-| `easytierExit`                       | プロンプトなし。EasyTier の出口にする Linux マシンで手動設定します。                    |
+| データ                               | 要求・使用されるタイミング                                                           |
+| ------------------------------------ | ------------------------------------------------------------------------------------ |
+| `work`                               | 必須。TTY でプロンプト表示。`private` の導出に使用。                                 |
+| `useEncryption`                      | `DOTFILES_USE_ENCRYPTION` がなければ必須。鍵の復元、gopass、`~/.ssh/*` を制御。      |
+| `hostname`                           | 仕事用以外のマシンでプロンプト表示。仕事用マシンはシステムのホスト名を使用。         |
+| `gitUsername`、`gitEmail`            | 未設定ならプロンプト表示。身元のデフォルト値はありません。                           |
+| `headless`                           | TTY でプロンプト表示。それ以外は保存済みデータか OS ベースのフォールバック。         |
+| `installMasApps`、`homeWifiSSIDs`    | macOS の TTY プロンプト（MAS のインストール、Hammerspoon の音量監視用の自宅 SSID）。 |
+| `timezone`                           | 自動検出。できなければプロンプト表示し、最終的に `Etc/UTC` にフォールバック。        |
+| `keysRepository`、`gopassRepository` | 暗号化が有効なときだけプロンプト表示。                                               |
+| `easytierExit`                       | プロンプトなし。EasyTier の出口にする Linux マシンで手動設定します。                 |
 
 ## Bootstrap フロー
 
@@ -127,12 +127,12 @@ nix-darwin、Git のレシピを確認できます。ソースディレクトリ
 
 - **EasyTier**：すべての Mac がクライアントとしてプライベート mesh に参加します。
   Linux マシンはローカルデータで `easytierExit` を設定したときだけ出口として参加
-  します（`.chezmoidata/easytier.yaml`、スクリプト `24`）。
+  します（`.chezmoidata/easytier.yaml`、スクリプト `23`）。
 - **sing-box**：すべてのマシンにクライアントがあり（Mac では TUN、headless Linux
   ではユーザーサービス）、`Egress` セレクターで出口を選びます
-  （`.chezmoidata/sing-box.yaml`、スクリプト `25`）。
+  （`.chezmoidata/sing-box.yaml`、スクリプト `24`）。
 - **JAIST VPN**：パッチ版 sing-box の OpenConnect エンドポイントと
-  `openconnect-auto`/`openconnect-login`（スクリプト `26`、仕事用以外のマシンのみ）。
+  `openconnect-auto`/`openconnect-login`（スクリプト `25`、仕事用以外のマシンのみ）。
 - **bastion**：手動でデプロイした中継兼 STUN サーバー。`bastion-import` がその
   sing-box outbound を gopass に保存します。
 
@@ -178,15 +178,13 @@ Claude の hook は変更したファイルのフォーマットも行います�
 - chezmoi は `age` で暗号化します（`.chezmoitemplates/shell/age_command_wrapper.sh`）。
   鍵は `~/.ssh/main` と `~/.ssh/main.pub` です。
 - API キーとサービスの認証情報は gopass に、鍵ファイルのバックアップは
-  `keys-manage` にあります。どちらも [Secrets と鍵](docs/secrets-and-keys.md) で
-  説明しています。
+  `keys-manage` にあります。gopass の構成は `private_dot_config/gopass/config.tmpl` に記載。
 - GitHub へのアクセスは HTTPS + `gh` credential helper で、`insteadOf` による
   書き換えは使いません。
 - 脆弱性の報告と注意すべき領域：[SECURITY.md](SECURITY.md)。
 
 ## ドキュメント
 
-- [Secrets と鍵](docs/secrets-and-keys.md)：gopass、keys-manage、新しいデバイスのセットアップ
 - [EasyTier mesh](docs/easytier.md)：EasyTier、sing-box、JAIST VPN、bastion、NAS
 - [WezTerm アイコン](tools/wezterm-icon/README.md)
 - [セキュリティポリシー](SECURITY.md)

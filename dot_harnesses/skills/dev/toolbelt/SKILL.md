@@ -77,7 +77,6 @@ are slower, harder to script correctly, and their output is worse to parse.
 - `hyperfine` — statistical benchmarking (warmup, multiple runs, comparison).
 - `mise` / `aqua` — toolchain + binary version management.
 - `treefmt` — one-shot multi-language formatter (config in `treefmt.toml`).
-- `prek` — fast pre-commit runner (`prek run --files ...`).
 
 ## Quality & lint
 

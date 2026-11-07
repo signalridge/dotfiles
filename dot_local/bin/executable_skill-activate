@@ -43,11 +43,6 @@ if [ "${1:-}" = "__rows" ] || [ "${1:-}" = "__toggle" ] || [ "${1:-}" = "__toggl
 else
   while [ $# -gt 0 ]; do
     case "$1" in
-    project) ;;
-    user)
-      echo "skill-activate: user scope was removed; run from the target project directory instead" >&2
-      exit 2
-      ;;
     --active) mode="active" ;;
     --list) mode="list" ;;
     --sync) mode="sync" ;;

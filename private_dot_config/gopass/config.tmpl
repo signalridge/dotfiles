@@ -1,5 +1,13 @@
 # gopass configuration file
 # Managed by chezmoi - do not edit manually
+#
+# Store layout (static secrets only; nothing writes rotating tokens back):
+#   pi/<service>/api_key             aichat (pi/ is only a storage prefix)
+#   tavily/api_key                   ~/.local/bin/mcp-tavily
+#   claude/cliproxy/private/api_key  CLIProxyAPI inbound client key (dsh-with)
+#   keys-manage/password             optional keys-manage backup password
+#   easytier/, sing-box/, jaist/     network stack
+#   social/<platform>/               oss-x-post skill publishing helpers
 {{- $gopassRepository := .gopassRepository -}}
 {{- if hasPrefix "git@github.com:" $gopassRepository -}}
 {{-   $gopassRepository = printf "https://github.com/%s" (trimPrefix "git@github.com:" $gopassRepository) -}}

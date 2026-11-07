@@ -26,7 +26,7 @@ packages:
     registry: third-party
   # sing-box CLI on Linux: the replacement for gost's ad-hoc SOCKS/HTTP servers,
   # TCP/UDP forwards and proxy chains. macOS gets it from nix-config/modules/
-  # sing-box.nix instead (its LaunchAgent runs that build).
+  # sing-box.nix instead (its LaunchDaemon runs that build).
   - name: SagerNet/sing-box@v1.14.4
     registry: third-party
   # Relay / server side of the EasyTier exits (shadowsocks-rust, Hysteria2,
@@ -39,7 +39,6 @@ packages:
   # profiles (PATH + alias purging) outside chezmoi's control.
   - name: google-antigravity/antigravity-cli@1.5.2
   - name: nektos/act@v0.2.97
-  - name: FiloSottile/age@v1.3.2
   - name: asciinema/asciinema@v3.2.1
   - name: atuinsh/atuin@v18.24.5
   - name: axodotdev/cargo-dist@v0.34.0 # `dist` — was a live-only cargo install
@@ -116,7 +115,6 @@ packages:
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.17.4
   - name: astral-sh/ty@0.0.99
-  - name: j178/prek@v0.5.10
   - name: golang.org/x/tools/gopls@v0.24.0
   - name: golangci/golangci-lint@v2.15.0
   - name: goreleaser/goreleaser@v2.20.0

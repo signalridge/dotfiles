@@ -47,7 +47,7 @@ setup, not a starter template. The layers are:
 | Fresh Nix bootstrap | Pinned installer assets for `aarch64-darwin`, `aarch64-linux` and `x86_64-linux`; a fresh `x86_64-darwin` install is rejected.                 |
 | `work`              | Adds the `work` package sets (Nix, and Homebrew on macOS) and sets `private = false`; work machines get no relay/exit tools.                   |
 | `private`           | Derived as `not work`; selects the `private` package sets.                                                                                     |
-| `headless`          | Skips GUI dotfiles and the GUI scripts `09`, `17` and `22`. It is not a package switch: on macOS the nix-darwin/Homebrew module still renders. |
+| `headless`          | Skips GUI dotfiles and the GUI scripts `09`, `17` and `21`. It is not a package switch: on macOS the nix-darwin/Homebrew module still renders. |
 | Mac App Store       | MAS entries are installed only when `installMasApps = true`.                                                                                   |
 
 ## Quick Start
@@ -67,7 +67,7 @@ a TTY. To pin a ref, download `init.sh` from that ref and pass `--ref <ref>`; fr
 a local clone, run `./init.sh` in the checkout you want. `init.sh` also takes
 `--repo` and `--depth` (or `DOTFILES_REPO`/`DOTFILES_REF`/`DOTFILES_DEPTH`) and
 `DOTFILES_USE_ENCRYPTION=true|false`; run `sh init.sh --help` for details. The
-bootstrap is HTTPS-only and rejects `--ssh`.
+bootstrap is HTTPS-only.
 
 To preselect a profile when invoking chezmoi directly:
 
@@ -91,7 +91,7 @@ All prompts and derived values live in `.chezmoi.toml.tmpl`.
 | `headless`                           | Prompted on a TTY; otherwise stored data or an OS-based fallback.                           |
 | `installMasApps`, `homeWifiSSIDs`    | macOS TTY prompts (MAS installs; home SSIDs for the Hammerspoon volume watcher).            |
 | `timezone`                           | Auto-detected; otherwise prompted, falling back to `Etc/UTC`.                               |
-| `keysRepository`, `gopassRepository` | Prompted only with encryption enabled. See [Secrets and Keys](docs/secrets-and-keys.md).    |
+| `keysRepository`, `gopassRepository` | Prompted only with encryption enabled.                                                      |
 | `easytierExit`                       | Never prompted; set by hand on a Linux machine that should act as an EasyTier exit.         |
 
 ## Bootstrap Flow
@@ -126,11 +126,11 @@ Where things are declared:
 
 - **EasyTier**: every Mac joins the private mesh as a client; a Linux machine
   joins as an exit only when its local data sets `easytierExit`
-  (`.chezmoidata/easytier.yaml`, script `24`).
+  (`.chezmoidata/easytier.yaml`, script `23`).
 - **sing-box**: client on every machine (TUN on Macs, user service on headless
-  Linux); its `Egress` selector picks an exit (`.chezmoidata/sing-box.yaml`, script `25`).
+  Linux); its `Egress` selector picks an exit (`.chezmoidata/sing-box.yaml`, script `24`).
 - **JAIST VPN**: an OpenConnect endpoint in the patched sing-box with
-  `openconnect-auto`/`openconnect-login` (script `26`, non-work machines).
+  `openconnect-auto`/`openconnect-login` (script `25`, non-work machines).
 - **bastion**: a hand-deployed relay and STUN server; `bastion-import` stores its
   sing-box outbounds in gopass.
 
@@ -174,14 +174,13 @@ mutation.
 - chezmoi encrypts with `age` (`.chezmoitemplates/shell/age_command_wrapper.sh`),
   using `~/.ssh/main` and `~/.ssh/main.pub`.
 - API keys and service credentials live in gopass; key files are backed up with
-  `keys-manage`. Both are covered in [Secrets and Keys](docs/secrets-and-keys.md).
+  `keys-manage`; the gopass layout is listed in `private_dot_config/gopass/config.tmpl`.
 - GitHub access is HTTPS through the `gh` credential helper, with no `insteadOf`
   rewrites.
 - Vulnerability reporting and sensitive areas: [SECURITY.md](SECURITY.md).
 
 ## Documentation
 
-- [Secrets and Keys](docs/secrets-and-keys.md): gopass, keys-manage, new-device setup
 - [EasyTier mesh](docs/easytier.md): EasyTier, sing-box, JAIST VPN, bastion and NAS
 - [WezTerm icon](tools/wezterm-icon/README.md)
 - [Security policy](SECURITY.md)

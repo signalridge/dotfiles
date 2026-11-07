@@ -96,10 +96,6 @@ while [ $# -gt 0 ]; do
             exit 2
         }
         ;;
-    --ssh)
-        echo "error: --ssh is no longer supported (HTTPS-only bootstrap). Auth flows through the gh credential helper." >&2
-        exit 2
-        ;;
     --)
         shift
         break

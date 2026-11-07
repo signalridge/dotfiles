@@ -8,11 +8,9 @@
 *.sh linguist-language=Shell
 *.sh.tmpl linguist-language=Shell
 dot_zshrc linguist-language=Shell
-dot_zshenv.tmpl linguist-language=Shell
+dot_zshenv linguist-language=Shell
 dot_zprofile.tmpl linguist-language=Shell
 dot_local/bin/executable_*.tmpl linguist-language=Shell
-dot_local/bin/lib/*.tmpl linguist-language=Shell
-dot_local/bin/lib/**/*.tmpl linguist-language=Shell
 
 # Nix
 *.nix linguist-language=Nix
@@ -40,7 +38,7 @@ Justfile.tmpl linguist-language=Makefile
 **/config.tmpl linguist-language=INI
 *.ini.tmpl linguist-language=INI
 private_dot_config/nix/nix.conf linguist-language=INI
-dot_gitconfig.tmpl linguist-language=INI
+dot_gitconfig linguist-language=INI
 private_dot_config/bat/config linguist-language=Shell
 private_dot_config/git/ignore linguist-language=Git-Ignore
 private_dot_config/git/message linguist-documentation
@@ -50,8 +48,6 @@ private_dot_config/git/message linguist-documentation
 *.md.tmpl linguist-documentation
 *.lock linguist-generated
 dot_claude/commands/symlink_core.tmpl linguist-generated
-dot_claude/symlink_skills.tmpl linguist-generated
-dot_codex/symlink_skills.tmpl linguist-generated
 private_dot_config/nvim/lazy-lock.json linguist-generated
 nix-config/flake.lock.tmpl linguist-generated
 private_dot_config/hammerspoon/Spoons/** linguist-vendored

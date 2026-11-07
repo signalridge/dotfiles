@@ -242,14 +242,14 @@ _aicommit_subject() {
 # ─────────────────────────────────────────────────────────────
 # aicommit - Generate commit message with AI CLI
 # Usage: aicommit [--dry-run|-n] [provider] [type]
-# Providers: codex (default), claude, auto
+# Providers: claude (default), codex, auto
 # Type: optional prefix override (wip, feat, fix, chore, etc.)
 # Config: AICOMMIT_PROVIDER env var
 # Note: For context-aware commits in Claude Code, use /commit command
 # ─────────────────────────────────────────────────────────────
 aicommit() {
     local dry_run=false
-    local provider="${AICOMMIT_PROVIDER:-codex}"
+    local provider="${AICOMMIT_PROVIDER:-claude}"
     local type_override=""
 
     # Parse arguments
@@ -562,20 +562,6 @@ git-root() {
         echo "Not in a git repository"
         return 1
     fi
-}
-
-# git-undo - Undo last commit (keep changes staged)
-# Usage: git-undo
-git-undo() {
-    git reset --soft HEAD~1
-    echo "Last commit undone. Changes are staged."
-}
-
-# git-branches - Show branches sorted by last commit date
-# Usage: git-branches
-git-branches() {
-    git for-each-ref --sort=-committerdate refs/heads/ \
-        --format='%(color:blue)%(committerdate:relative)%(color:reset) %(color:green)%(refname:short)%(color:reset) %(color:yellow)%(authorname)%(color:reset)'
 }
 
 # git-cleanup - Delete merged branches

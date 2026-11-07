@@ -38,9 +38,8 @@ config.color_scheme = "Dracula (Official)"
 -- Hiragino ships only W3 (Light) and W6 (DemiBold), hence the weights below.
 --
 -- These lists are named rather than inlined because font_rules needs them too: a
--- font_rules entry does NOT inherit config.font's fallback list, so the
--- `wezterm.font(...)` form that used to be down there silently dropped PingFang
--- SC and left bold/italic CJK to whatever wezterm turned up on its own.
+-- font_rules entry does NOT inherit config.font's fallback list; a bare
+-- `wezterm.font(...)` there would drop PingFang SC for bold/italic CJK.
 local body_faces = {
   { family = "CaskaydiaCove NFM", weight = "DemiBold" },
   { family = "PingFang SC", weight = "Medium" },
