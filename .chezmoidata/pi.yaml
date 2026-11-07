@@ -255,8 +255,7 @@ pi:
         gpt-6.1-sol: { contextWindow: 921000 }
         # Legacy /model option.
         gpt-5.6-luna: { contextWindow: 921000 }
-        # Former high tier, and the Codex CLI's primary model in
-        # dot_codex/modify_private_config.toml.tmpl (an independent policy).
+        # Former high tier and former Codex CLI primary; now a /model option.
         # Dropping this entry is not neutral: astra would fall back to the
         # catalog's 272,000 and the high tier would begin compacting at
         # a negative trigger (272,000 - 320,000) instead of 601,000.

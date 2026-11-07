@@ -12,16 +12,13 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 # Run: chezmoi edit ~/.codex/config.toml
 {{/* No left trim marker: with `{{-` the blank line above was swallowed and the
      next banner rendered onto the end of the "# Run:" comment. */ -}}
-{{- /* work may be absent when rendered in tests or headless mode; use the
-       private/high-effort profile by default, matching Claude's template. */ -}}
-{{- $work := false -}}
-{{- if hasKey . "work" -}}{{- $work = .work -}}{{- end -}}
-{{- /* Codex model/effort defaults are independent of Pi's (those live in
-       dot_pi/agent/subagents.json.tmpl and .chezmoidata/pi.yaml). Native
-       OpenAI OAuth only; no third-party provider blocks. */ -}}
-{{- $model := ternary "gpt-5.6-luna" "gpt-6-astra" $work -}}
+{{- /* Codex default mirrors Pi's parent / `medium` tier (gpt-6.1-terra xhigh,
+       dot_pi/agent/modify_settings.json.tmpl + subagents.json.tmpl), same on
+       both machines. Keep them in lockstep by hand. Native OpenAI OAuth only;
+       no third-party provider blocks. */ -}}
+{{- $model := "gpt-6.1-terra" -}}
 {{- $subagentModel := $model -}}
-{{- $effort := ternary "max" "medium" $work -}}
+{{- $effort := "xhigh" -}}
 {{- /* Subagents run the parent's model and rung, so a subagent is never
        dearer than the session that spawned it. */ -}}
 {{- $subagentEffort := $effort -}}
@@ -30,7 +27,7 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 # Core Settings
 # =============================================================================
 
-# Native primary model: work -> gpt-5.6-luna, private -> gpt-6-astra
+# Native primary model (mirrors Pi's default): gpt-6.1-terra
 model = "{{ $model }}"
 
 # Approval policy: untrusted | on-failure | on-request | never
@@ -52,7 +49,7 @@ suppress_unstable_features_warning = true
 # =============================================================================
 
 # Reasoning effort: none | minimal | low | medium | high | xhigh | max
-# Primary effort: work -> max, private -> medium (independent of Pi).
+# Primary effort: xhigh (mirrors Pi's default).
 model_reasoning_effort = "{{ $effort }}"
 
 
