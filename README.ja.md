@@ -31,8 +31,7 @@
 - Nix：クロスプラットフォームのユーザー profile、macOS では `nix-darwin`
 - Homebrew と Mac App Store：macOS アプリケーション
 - `aqua` でバージョン固定の CLI を、`mise` でランタイムと残りのツールを管理
-- Claude Code、Codex CLI、Cursor Agent CLI、Antigravity CLI、
-  DeepSeek Harness の設定
+- Claude Code、Codex CLI、Cursor Agent CLI、Antigravity CLI の設定
 - プライベートネットワーク層：EasyTier mesh、sing-box クライアント、JAIST VPN
 
 > このリポジトリには、緩い AI 実行モードや個人マシン向けのアプリケーションを含む
@@ -152,9 +151,6 @@ Skill は `~/.harnesses/skills/<category>/<skill>/` に置かれ、ソースは�
 選んだ skill が `./.claude/skills`、`./.codex/skills`、`./.cursor/skills` に
 シンボリックリンクされます
 （`--list`、`--active`、`--category <name>`、`--sync`、`--clear`）。
-
-DeepSeek Harness は `dsh-with` で起動し、ローカルの CLIProxyAPI 経由で OpenAI
-OAuth を使います。
 
 ### AI 実行ポリシー
 

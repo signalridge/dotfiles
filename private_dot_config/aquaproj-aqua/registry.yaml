@@ -58,29 +58,6 @@ packages:
       - darwin
       - linux
   - type: github_release
-    repo_owner: router-for-me
-    repo_name: CLIProxyAPI
-    description: Local OAuth gateway for Claude Code
-    asset: "CLIProxyAPI_{{trimV .Version}}_{{.OS}}_{{.Arch}}.tar.gz"
-    format: tar.gz
-    files:
-      - name: cliproxyapi
-        src: cli-proxy-api
-    replacements:
-      arm64: aarch64
-    checksum:
-      type: github_release
-      asset: checksums.txt
-      algorithm: sha256
-    supported_envs:
-      - darwin/arm64
-      - darwin/amd64
-      - linux/arm64
-      - linux/amd64
-  # ouch's releases carry Cosign bundles, but its standard-registry entry still
-  # expects GitHub Artifact Attestations after the release workflow switched to
-  # cosign. Keep verification enabled through the published bundle instead.
-  - type: github_release
     repo_owner: ouch-org
     repo_name: ouch
     description: Painless compression and decompression in the terminal

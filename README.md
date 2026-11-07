@@ -31,8 +31,7 @@ setup, not a starter template. The layers are:
 - Nix for the cross-platform user profile and, on macOS, `nix-darwin`
 - Homebrew and the Mac App Store for macOS applications
 - `aqua` for pinned CLI releases, `mise` for runtimes and the remaining tools
-- configuration for Claude Code, Codex CLI, Cursor Agent CLI, Antigravity CLI
-  and DeepSeek Harness
+- configuration for Claude Code, Codex CLI, Cursor Agent CLI and Antigravity CLI
 - a private network layer: EasyTier mesh, sing-box client, JAIST VPN
 
 > This repository contains personal defaults, including permissive AI execution
@@ -148,9 +147,6 @@ Skills land in `~/.harnesses/skills/<category>/<skill>/`, from pinned archives
 (`.chezmoiexternal.toml.tmpl`) and `dot_harnesses/`. Nothing is activated
 globally; run `skill-activate` in a project to symlink a selection into
 `./.claude/skills`, `./.codex/skills` and `./.cursor/skills` (`--list`, `--active`, `--category <name>`, `--sync`, `--clear`).
-
-DeepSeek Harness runs through `dsh-with`, which uses OpenAI OAuth via a local
-CLIProxyAPI.
 
 ### AI execution posture
 

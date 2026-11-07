@@ -21,9 +21,6 @@ packages:
     registry: third-party
   - name: ogulcancelik/herdr@v0.9.5
     registry: third-party
-  # CLIProxyAPI for OpenAI-compatible clients; official release with checksums.txt verification.
-  - name: router-for-me/CLIProxyAPI@v8.0.58
-    registry: third-party
   # sing-box CLI on Linux: the replacement for gost's ad-hoc SOCKS/HTTP servers,
   # TCP/UDP forwards and proxy chains. macOS gets it from nix-config/modules/
   # sing-box.nix instead (its LaunchDaemon runs that build).
