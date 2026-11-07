@@ -31,7 +31,7 @@
 - Nix：クロスプラットフォームのユーザー profile、macOS では `nix-darwin`
 - Homebrew と Mac App Store：macOS アプリケーション
 - `aqua` でバージョン固定の CLI を、`mise` でランタイムと残りのツールを管理
-- Claude Code、Codex CLI、Pi、Cursor Agent CLI、Kimi Code、Antigravity CLI、
+- Claude Code、Codex CLI、Cursor Agent CLI、Antigravity CLI、
   DeepSeek Harness の設定
 - プライベートネットワーク層：EasyTier mesh、sing-box クライアント、JAIST VPN
 
@@ -96,43 +96,6 @@ chezmoi init --apply \
 | `keysRepository`、`gopassRepository` | 暗号化が有効なときだけプロンプト表示。[Secrets と鍵](docs/secrets-and-keys.md) を参照。 |
 | `easytierExit`                       | プロンプトなし。EasyTier の出口にする Linux マシンで手動設定します。                    |
 
-## リポジトリ構成
-
-```text
-.
-├── .chezmoi.toml.tmpl          # first-run prompts and derived data
-├── .chezmoiignore              # OS / headless / work / encryption exclusions
-├── .chezmoidata/               # package, harness, MCP, network and version data
-│                               # (nix, homebrew, claude, pi, mcp, herdr, easytier, sing-box, versions, ...)
-├── .chezmoitemplates/
-│   ├── shell/                  # age wrapper, Nix env sourcing
-│   ├── easytier/               # mesh role of this machine
-│   ├── sing-box/               # run mode, shared client config, failover
-│   └── agent-instructions.md   # global instructions for Claude, Codex and Kimi Code
-├── .chezmoiexternal.toml.tmpl  # pinned skill archives and sing-box rule-sets
-├── .chezmoiscripts/            # numbered bootstrap and maintenance scripts
-├── init.sh                     # HTTPS-only bootstrap entry point
-├── Justfile.tmpl               # rendered to ~/Justfile
-├── nix-config/                 # flake, nix-darwin/profile modules, per-OS locks
-├── dot_zshenv, dot_zshrc, ...  # zsh entry points (dot_gitconfig is a stub)
-├── dot_custom/                 # exports, aliases, functions, fzf-tab (~/.custom)
-├── dot_claude/                 # Claude settings, hooks, statusline, commands
-├── dot_codex/                  # Codex config and prompts
-├── dot_pi/                     # Pi settings, models, agents, MCP, themes, extensions
-├── dot_cursor/, dot_kimi-code/, dot_gemini/  # Cursor, Kimi Code, Antigravity CLI
-├── dot_dsh/                    # DeepSeek Harness overrides (~/.dsh)
-├── dot_harnesses/              # repo-authored skills and the shared /commit command
-├── dot_local/bin/              # keys, skill, MCP, dsh and network helpers
-├── private_dot_cli-proxy-api/  # CLIProxyAPI config (~/.cli-proxy-api)
-├── private_dot_config/         # editor, terminal, desktop, tool and service config
-│   ├── private_sing-box/       # sing-box user config (headless Linux), openconnect-auto
-│   └── private_ss-exit/        # Shadowsocks exit on Linux EasyTier exits
-├── private_dot_ssh/            # age-encrypted SSH client config
-├── private_Library/            # macOS LaunchAgents
-├── docs/                       # operational guides
-└── tools/wezterm-icon/         # offline generator for the WezTerm icon
-```
-
 ## Bootstrap フロー
 
 `chezmoi init` 以降の処理はすべて `.chezmoiscripts/` の番号付きスクリプトが
@@ -177,20 +140,19 @@ nix-darwin、Git のレシピを確認できます。ソースディレクトリ
 
 ## AI Harness
 
-Claude Code、Codex CLI、Pi、Cursor Agent CLI、Kimi Code、Antigravity CLI、aichat
-は `dot_*` と `private_dot_config/` で設定します。Claude、Codex、Kimi Code は
+Claude Code、Codex CLI、Cursor Agent CLI、Antigravity CLI、aichat
+は `dot_*` と `private_dot_config/` で設定します。Claude と Codex は
 `.chezmoitemplates/agent-instructions.md` から描画される共通のグローバル指示を
 使います。Claude Code と Codex はネイティブ OAuth を使い、起動時のモデルは
-`.chezmoidata/claude.yaml` と `dot_codex/modify_private_config.toml.tmpl` で、
-Pi の provider と tier は `.chezmoidata/pi.yaml` と
-`dot_pi/agent/subagents.json.tmpl` で設定します。MCP サーバーの一覧は
+`.chezmoidata/claude.yaml` と `dot_codex/modify_private_config.toml.tmpl` で
+設定します。MCP サーバーの一覧は
 `.chezmoidata/mcp.yaml` にあります。エージェントの状態表示は Herdr が担います。
 
 Skill は `~/.harnesses/skills/<category>/<skill>/` に置かれ、ソースはバージョン
 固定のアーカイブ（`.chezmoiexternal.toml.tmpl`）と `dot_harnesses/` です。
 グローバルには何も有効化されません。プロジェクトで `skill-activate` を実行すると、
-選んだ skill が `./.claude/skills`、`./.codex/skills`、`./.pi/skills`、
-`./.cursor/skills`、`./.kimi-code/skills` にシンボリックリンクされます
+選んだ skill が `./.claude/skills`、`./.codex/skills`、`./.cursor/skills` に
+シンボリックリンクされます
 （`--list`、`--active`、`--category <name>`、`--sync`、`--clear`）。
 
 DeepSeek Harness は `dsh-with` で起動し、ローカルの CLIProxyAPI 経由で OpenAI
@@ -204,11 +166,7 @@ OAuth を使います。[DeepSeek Harness](docs/deepseek-harness.md) を参照�
 - Claude：`bypassPermissions`、Bash の deny ルールと Git 書き換え hook を併用
 - Codex：`approval_policy = "never"` と `sandbox_mode = "danger-full-access"`
 - Cursor：`approvalMode = "unrestricted"`
-- Kimi Code：`default_permission_mode = "yolo"`
 - Antigravity：`toolPermission = "always-proceed"`、ターミナルサンドボックスなし
-- Pi：permission パッケージは通常の操作を許可。Git worktree とブランチ切り替えの
-  コマンドはこのソースツリー内でのみ拒否
-  （ローカルのみ・未追跡の `.pi/extensions/pi-permission-system/config.json`）
 
 Claude の hook は変更したファイルのフォーマットも行います。Git 書き換え hook
 （`dot_claude/hooks/executable_block-git-rewrites.sh`）は一部の不可逆な操作を
@@ -245,8 +203,7 @@ CI（`.github/workflows/`）は pre-commit、Nix flake のチェック、セキ�
   [Homebrew](https://brew.sh/)、[aqua](https://aquaproj.github.io/)、
   [mise](https://mise.jdx.dev/)：パッケージとツールの管理
 - [Claude Code](https://www.anthropic.com/claude-code)、[Codex](https://openai.com/index/introducing-codex/)、
-  [Pi](https://github.com/earendil-works/pi)、[Cursor](https://cursor.com/)、
-  [Kimi Code](https://www.kimi.com/code)、[Herdr](https://github.com/ogulcancelik/herdr)：
+  [Cursor](https://cursor.com/)、[Herdr](https://github.com/ogulcancelik/herdr)：
   管理対象の AI/エージェントツール
 - [EasyTier](https://github.com/EasyTier/EasyTier) と
   [sing-box](https://github.com/SagerNet/sing-box)：ネットワーク層

@@ -17,7 +17,7 @@ run_sync() {
     bash "$repo_root/.chezmoiscripts/run_after_14_sync-herdr-integrations.sh" >"$temporary/output" 2>&1
 }
 assert_integrations() {
-    printf '%s\n' 'integration install codex' 'integration install claude' 'integration install pi' >"$temporary/expected-installs"
+    printf '%s\n' 'integration install codex' 'integration install claude' >"$temporary/expected-installs"
     cmp "$temporary/expected-installs" "$HERDR_TEST_LOG"
 }
 

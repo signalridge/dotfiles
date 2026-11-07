@@ -8,7 +8,7 @@
 # binaries from /nix/store (nix-config/modules/easytier-package.nix.tmpl):
 #   macOS: nix-config/modules/easytier.nix.tmpl (nix-darwin root LaunchDaemon)
 #   Linux: systemd unit rendered and installed by the node script
-#   both:  .chezmoiscripts/run_after_24_easytier-node.sh.tmpl (credentials from
+#   both:  .chezmoiscripts/run_after_23_easytier-node.sh.tmpl (credentials from
 #          gopass; sudo only when something changed)
 #
 # Credentials and the bastion address are NOT here: gopass easytier/network-name,

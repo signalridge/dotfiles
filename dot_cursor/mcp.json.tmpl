@@ -1,8 +1,7 @@
 {{- /*
   ~/.cursor/mcp.json — MCP servers for Cursor. Same functional set as the CLI
-  harnesses (claude/codex/pi): remote servers use "url"; stdio servers reuse the
-  shared ~/.local/bin/mcp-* wrappers or uvx/uv. Cursor has no per-server lazy
-  lifecycle, so that pi-only field is omitted here. Managed by chezmoi.
+  harnesses (claude/codex): remote servers use "url"; stdio servers reuse the
+  shared ~/.local/bin/mcp-* wrappers or uvx/uv. Managed by chezmoi.
   The server list lives in .chezmoidata/mcp.yaml (harness key "cursor").
 */ -}}
 {{- $harness := "cursor" -}}

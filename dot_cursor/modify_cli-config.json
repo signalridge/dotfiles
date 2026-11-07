@@ -5,7 +5,7 @@
 # privacyCache, showSandboxIntro, ...). Managed keys (permissions, approvalMode,
 # editor.vimMode, display) always win on re-apply.
 #
-# Mirrors the Codex (modify_config.toml) / pi (modify_settings.json) pattern:
+# Mirrors the Codex (modify_private_config.toml) pattern:
 # the shared MCP set lives in ~/.cursor/mcp.json; this file owns the CLI posture.
 # Posture: unrestricted/yolo — Cursor's persistent equivalent of --yolo.
 # The managed allow list is intentionally broad and the deny list is empty;

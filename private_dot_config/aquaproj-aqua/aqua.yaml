@@ -24,13 +24,6 @@ packages:
   # CLIProxyAPI for OpenAI-compatible clients; official release with checksums.txt verification.
   - name: router-for-me/CLIProxyAPI@v8.0.58
     registry: third-party
-  # Kimi Code CLI (K3). version_prefix in registry.yaml maps this semver onto the
-  # `@moonshot-ai/kimi-code@<ver>` git tag; the binary itself is fetched from
-  # Moonshot's CDN (self-contained Node-SEA, no Node runtime). NOTE: the CDN's
-  # `latest` can lag GitHub tags, so `aqua up` may propose a version not yet on the
-  # CDN — keep this at a CDN-present version (binaries/<ver>/manifest.json resolves).
-  - name: MoonshotAI/kimi-code@@moonshot-ai/kimi-code@2.5.2
-    registry: third-party
   # sing-box CLI on Linux: the replacement for gost's ad-hoc SOCKS/HTTP servers,
   # TCP/UDP forwards and proxy chains. macOS gets it from nix-config/modules/
   # sing-box.nix instead (its LaunchAgent runs that build).

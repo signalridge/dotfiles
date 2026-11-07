@@ -3,8 +3,6 @@
 # Rendered by:
 #   claude  .chezmoiscripts/run_after_12_sync-claude-mcp.sh.tmpl (`claude mcp` CLI)
 #   codex   dot_codex/modify_private_config.toml.tmpl ([mcp_servers.*])
-#   pi      dot_pi/agent/mcp.json.tmpl (adapter overrides: dot_pi/agent/mcp-adapter.json.tmpl)
-#   kimi    dot_kimi-code/mcp.json.tmpl
 #   cursor  dot_cursor/mcp.json.tmpl
 #
 # Each entry has either `url` (remote, Streamable HTTP) or `command` + `args`
@@ -30,14 +28,9 @@ mcp:
       url: https://mcp.context7.com/mcp
       claude:
         alwaysLoad: true
-    # Pi excludes Tavily: web search and content extraction there go through the
-    # pi-web-access extension (`web_search` / `fetch_content`, see
-    # dot_pi/agent/APPEND_SYSTEM.md), which already routes to Tavily via
-    # dot_pi/web-search.json.tmpl.
     - name: tavily
       command: ~/.local/bin/mcp-tavily
       args: []
-      exclude: [pi]
       claude:
         alwaysLoad: true
     - name: deepwiki

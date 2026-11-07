@@ -70,32 +70,3 @@ export SLUMBER_CONFIG_PATH="${SLUMBER_CONFIG_PATH:-${XDG_CONFIG_HOME}/slumber/co
 # can't launch a browser. Point it at the installed Google Chrome (no-op elsewhere).
 [[ -z "${PUPPETEER_EXECUTABLE_PATH:-}" && -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]] \
     && export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-
-# Pi presentation: the repository-owned extensions follow the active Ridgeline
-# theme. These defaults are user-overridable without changing the managed files.
-export PI_STATUSLINE_PRESET="${PI_STATUSLINE_PRESET:-classic}"
-export PI_INPUT_PREFIX="${PI_INPUT_PREFIX:-›}"
-export PI_TAB_STATUS_STYLE="${PI_TAB_STATUS_STYLE:-ridgeline}"
-
-# Keep the managed hypa shim on PATH; pi-hypa can qualify its resolved path in
-# rewritten bash commands. HYPA_BIN is an optional native fast path, not a promise
-# that the package for this shell's architecture is actually installed.
-# Retire only a missing managed default inherited from an older architecture;
-# preserve explicit custom overrides outside the managed npm package tree.
-case "${HYPA_BIN:-}" in
-"$HOME/.pi/agent/npm/node_modules/@hypabolic/hypa-"*/bin/hypa)
-    [[ -x "$HYPA_BIN" ]] || unset HYPA_BIN
-    ;;
-esac
-if [[ -z "${HYPA_BIN:-}" ]]; then
-    hypa_platform_package=""
-    case "${OSTYPE:-}:${MACHTYPE:-}" in
-    darwin*:arm64*|darwin*:aarch64*) hypa_platform_package="hypa-darwin-arm64" ;;
-    darwin*:x86_64*) hypa_platform_package="hypa-darwin-x64" ;;
-    linux*:arm64*|linux*:aarch64*) hypa_platform_package="hypa-linux-arm64" ;;
-    linux*:x86_64*) hypa_platform_package="hypa-linux-x64" ;;
-    esac
-    if [[ -n "$hypa_platform_package" && -x "$HOME/.pi/agent/npm/node_modules/@hypabolic/$hypa_platform_package/bin/hypa" ]]; then
-        export HYPA_BIN="$HOME/.pi/agent/npm/node_modules/@hypabolic/$hypa_platform_package/bin/hypa"
-    fi
-fi

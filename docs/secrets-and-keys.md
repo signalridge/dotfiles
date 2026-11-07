@@ -45,7 +45,7 @@ Claude Code and Codex use native OAuth (`claude /login`, `codex login`) and need
 no entry. Other paths are service-scoped:
 
 ```text
-pi/<service>/api_key                 # Pi custom providers and aichat
+pi/<service>/api_key                 # aichat (legacy prefix from the retired Pi harness)
 tavily/api_key                       # ~/.local/bin/mcp-tavily
 claude/cliproxy/private/api_key      # CLIProxyAPI inbound client key (dsh-with)
 keys-manage/password                 # optional keys-manage backup password
@@ -53,8 +53,7 @@ easytier/..., sing-box/..., jaist/... # network stack (docs/easytier.md)
 social/<platform>/...                # oss-x-post skill publishing helpers
 ```
 
-Keep the Kimi Code key (`pi/kimi`) separate from the Moonshot platform key
-(`pi/moonshot`). `claude/cliproxy` is only a storage path, not a Claude provider;
+`claude/cliproxy` is only a storage path, not a Claude provider;
 see [DeepSeek Harness](deepseek-harness.md). Store only static secrets: the
 templates and helpers read gopass and never write rotating tokens back.
 

@@ -1,6 +1,6 @@
 # Project Constitution — chezmoi dotfiles (`~/.local/share/chezmoi`)
 
-These are **inviolable** rules for ANY agent (Claude Code, Codex, pi, etc.) working
+These are **inviolable** rules for ANY agent (Claude Code, Codex, Cursor, etc.) working
 in this repository. They **override** default behaviors, convenience, and general
 instincts. When anything conflicts with this file, **this file wins**. The same
 constitution is mirrored in the companion top-level agent-instruction file; keep both byte-identical.

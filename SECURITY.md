@@ -43,8 +43,8 @@ The most sensitive areas in this repository include:
 - encrypted/private material handling (`*.age`, key restore flow)
 - network credentials for sing-box and EasyTier (gopass `sing-box/*`,
   `easytier/*`, `jaist/*`), rendered at apply time by
-  `.chezmoiscripts/run_after_24_easytier-node.sh.tmpl`,
-  `.chezmoiscripts/run_after_25_sing-box.sh.tmpl` and the templates under
+  `.chezmoiscripts/run_after_23_easytier-node.sh.tmpl`,
+  `.chezmoiscripts/run_after_24_sing-box.sh.tmpl` and the templates under
   `.chezmoitemplates/{easytier,sing-box}/`; addresses and secrets never belong
   in this public repository
 - CI automation and workflow permissions under `.github/workflows/`

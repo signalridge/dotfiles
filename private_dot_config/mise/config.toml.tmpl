@@ -11,7 +11,6 @@
 # newest LTS release on its own, while `latest` means Node Current (no
 # long-term support). The risk on a brand-new major is a native module with no
 # prebuild, which bun will not rebuild because it skips postinstall by default.
-# (pi needs >= 22.19; any LTS clears it.)
 node = "lts"
 
 # Bun — runs MCP servers via `bunx` (see ~/.local/bin/mcp-*) and, via
@@ -73,10 +72,6 @@ lua = "5.4"
 "pipx:mac-cleanup" = { version = "latest", uvx_args = "--python 3.13" }
 {{ end -}}
 
-# Pi coding agent (earendil-works). Binary is `pi`. Requires node >=22.19,
-# satisfied by `node = "lts"` above. Auth/config under ~/.pi/agent (chezmoi-managed).
-"npm:@earendil-works/pi-coding-agent" = "latest"
-
 # DeepSeek Harness (developer preview). Pin the tested release: upstream warns
 # of breaking changes, so upgrade explicitly rather than through `mise up`.
 # `dsh-with web` reuses OpenAI OAuth via the existing local CLIProxyAPI.
@@ -108,8 +103,7 @@ lua = "5.4"
 # (browser-based UI iteration). Bin is `impeccable`; pure-JS deps + NO postinstall,
 # so bun needs no `--trust` here. This entry installs ONLY the CLI. The `/impeccable`
 # skill is NOT deployed globally: `impeccable install --global` was intentionally removed
-# — pi double-reads ~/.pi/agent/skills + ~/.agents/skills so the global
-# fan-out collides, and a machine-wide skill in every harness is unwanted. Install per-repo
+# — a machine-wide skill in every harness is unwanted. Install per-repo
 # on demand instead: `impeccable install --project --no-hooks` in the target UI project
 # (`impeccable update`/`check` to refresh it there). Deliberately NOT a chezmoi external/
 # `~/.harnesses` entry either — installing two ways would double-write the skill dir.

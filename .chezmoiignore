@@ -50,8 +50,8 @@ nix-config/modules/sing-box.nix
 .chezmoiscripts/09_install-paperlib.sh
 .chezmoiscripts/10_update_homebrew_packages.sh
 .chezmoiscripts/17_load-launch-agents.sh
-.chezmoiscripts/21_terminal-profile.sh
-.chezmoiscripts/22_wezterm-icon.sh
+.chezmoiscripts/20_terminal-profile.sh
+.chezmoiscripts/21_wezterm-icon.sh
 
 # macOS-only GUI apps (target paths)
 Library/
@@ -75,7 +75,7 @@ Library/
 # GUI apps (not needed on headless servers)
 .chezmoiscripts/09_install-paperlib.sh
 .chezmoiscripts/17_load-launch-agents.sh
-.chezmoiscripts/22_wezterm-icon.sh
+.chezmoiscripts/21_wezterm-icon.sh
 Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 .config/aerospace/
 .config/karabiner/
@@ -97,7 +97,7 @@ Library/LaunchAgents/com.signalridge.qmk-hid-host.plist
 {{- end }}
 
 # sing-box: user-level config and systemd --user unit only on headless Linux
-# (.chezmoitemplates/sing-box/mode.tmpl); Macs use /etc/sing-box (script 25).
+# (.chezmoitemplates/sing-box/mode.tmpl); Macs use /etc/sing-box (script 24).
 {{- $sbMode := includeTemplate "sing-box/mode.tmpl" . }}
 {{- if ne $sbMode "service" }}
 .config/sing-box/config.json
@@ -142,23 +142,6 @@ Library/LaunchAgents/com.signalridge.cliproxyapi.plist
 {{- if .work }}
 .config/aquaproj-aqua/aqua-private.yaml
 {{- end }}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Pi coding agent runtime/secret state — Pi writes these into ~/.pi/agent at
-# runtime; never version-control them (settings.json/models.json/extensions are
-# managed via dot_pi/, everything below is owned by Pi or the user).
-# ─────────────────────────────────────────────────────────────────────────────
-.pi/agent/auth.json
-.pi/agent/sessions/
-.pi/agent/trust.json
-# keybindings.json is intentionally MANAGED (dot_pi/agent/keybindings.json): it
-# holds our declarative key remaps (e.g. app.session.rename -> shift+r, freeing
-# Ctrl+R for the @signalridge/pi-input-history popup). Pi only reads it unless you
-# edit keys via its TUI, in which case `chezmoi diff` surfaces the drift.
-.pi/agent/npm/
-.pi/agent/git/
-.pi/agent/logs/
-.pi/agent/extensions/*/node_modules/
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Ignored directories

@@ -11,7 +11,7 @@ set -euo pipefail
 # changes when that happens, so run_onchange would never fire. The work here is
 # a hash comparison, so the no-op path is cheap.
 
-echo ":: [22] WezTerm icon"
+echo ":: [21] WezTerm icon"
 
 APP="/Applications/WezTerm.app"
 ICON="${XDG_CONFIG_HOME:-$HOME/.config}/wezterm/WezTerm.icns"

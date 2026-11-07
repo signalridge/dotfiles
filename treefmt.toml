@@ -19,5 +19,5 @@ command = "prettier"
 options = ["--write"]
 includes = ["*.md", "*.json", "*.yaml", "*.yml"]
 # modify_* are chezmoi modify_ scripts (bash), even when their target is .json
-# (e.g. ~/.pi/agent/settings.json) — never format them as their target type.
+# (e.g. ~/.claude/settings.json) — never format them as their target type.
 excludes = ["CLAUDE.md", "modify_*", "**/modify_*"]

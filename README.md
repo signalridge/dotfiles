@@ -31,8 +31,8 @@ setup, not a starter template. The layers are:
 - Nix for the cross-platform user profile and, on macOS, `nix-darwin`
 - Homebrew and the Mac App Store for macOS applications
 - `aqua` for pinned CLI releases, `mise` for runtimes and the remaining tools
-- configuration for Claude Code, Codex CLI, Pi, Cursor Agent CLI, Kimi Code,
-  Antigravity CLI and DeepSeek Harness
+- configuration for Claude Code, Codex CLI, Cursor Agent CLI, Antigravity CLI
+  and DeepSeek Harness
 - a private network layer: EasyTier mesh, sing-box client, JAIST VPN
 
 > This repository contains personal defaults, including permissive AI execution
@@ -94,43 +94,6 @@ All prompts and derived values live in `.chezmoi.toml.tmpl`.
 | `keysRepository`, `gopassRepository` | Prompted only with encryption enabled. See [Secrets and Keys](docs/secrets-and-keys.md).    |
 | `easytierExit`                       | Never prompted; set by hand on a Linux machine that should act as an EasyTier exit.         |
 
-## Repository Map
-
-```text
-.
-├── .chezmoi.toml.tmpl          # first-run prompts and derived data
-├── .chezmoiignore              # OS / headless / work / encryption exclusions
-├── .chezmoidata/               # package, harness, MCP, network and version data
-│                               # (nix, homebrew, claude, pi, mcp, herdr, easytier, sing-box, versions, ...)
-├── .chezmoitemplates/
-│   ├── shell/                  # age wrapper, Nix env sourcing
-│   ├── easytier/               # mesh role of this machine
-│   ├── sing-box/               # run mode, shared client config, failover
-│   └── agent-instructions.md   # global instructions for Claude, Codex and Kimi Code
-├── .chezmoiexternal.toml.tmpl  # pinned skill archives and sing-box rule-sets
-├── .chezmoiscripts/            # numbered bootstrap and maintenance scripts
-├── init.sh                     # HTTPS-only bootstrap entry point
-├── Justfile.tmpl               # rendered to ~/Justfile
-├── nix-config/                 # flake, nix-darwin/profile modules, per-OS locks
-├── dot_zshenv, dot_zshrc, ...  # zsh entry points (dot_gitconfig is a stub)
-├── dot_custom/                 # exports, aliases, functions, fzf-tab (~/.custom)
-├── dot_claude/                 # Claude settings, hooks, statusline, commands
-├── dot_codex/                  # Codex config and prompts
-├── dot_pi/                     # Pi settings, models, agents, MCP, themes, extensions
-├── dot_cursor/, dot_kimi-code/, dot_gemini/  # Cursor, Kimi Code, Antigravity CLI
-├── dot_dsh/                    # DeepSeek Harness overrides (~/.dsh)
-├── dot_harnesses/              # repo-authored skills and the shared /commit command
-├── dot_local/bin/              # keys, skill, MCP, dsh and network helpers
-├── private_dot_cli-proxy-api/  # CLIProxyAPI config (~/.cli-proxy-api)
-├── private_dot_config/         # editor, terminal, desktop, tool and service config
-│   ├── private_sing-box/       # sing-box user config (headless Linux), openconnect-auto
-│   └── private_ss-exit/        # Shadowsocks exit on Linux EasyTier exits
-├── private_dot_ssh/            # age-encrypted SSH client config
-├── private_Library/            # macOS LaunchAgents
-├── docs/                       # operational guides
-└── tools/wezterm-icon/         # offline generator for the WezTerm icon
-```
-
 ## Bootstrap Flow
 
 Everything after `chezmoi init` is driven by numbered scripts in
@@ -175,20 +138,18 @@ Details, credentials and the hand-deployed nodes: [EasyTier mesh](docs/easytier.
 
 ## AI Harnesses
 
-Claude Code, Codex CLI, Pi, Cursor Agent CLI, Kimi Code, Antigravity CLI and
-aichat are configured from `dot_*` and `private_dot_config/`; Claude, Codex and Kimi Code share
+Claude Code, Codex CLI, Cursor Agent CLI, Antigravity CLI and aichat are
+configured from `dot_*` and `private_dot_config/`; Claude and Codex share
 global instructions rendered from `.chezmoitemplates/agent-instructions.md`.
 Claude Code and Codex use native OAuth; startup models are set in
-`.chezmoidata/claude.yaml` and `dot_codex/modify_private_config.toml.tmpl`, and
-Pi's providers and tiers in `.chezmoidata/pi.yaml` and
-`dot_pi/agent/subagents.json.tmpl`. The MCP server list lives in
+`.chezmoidata/claude.yaml` and `dot_codex/modify_private_config.toml.tmpl`.
+The MCP server list lives in
 `.chezmoidata/mcp.yaml`. Herdr provides the agent status layer.
 
 Skills land in `~/.harnesses/skills/<category>/<skill>/`, from pinned archives
 (`.chezmoiexternal.toml.tmpl`) and `dot_harnesses/`. Nothing is activated
 globally; run `skill-activate` in a project to symlink a selection into
-`./.claude/skills`, `./.codex/skills`, `./.pi/skills`, `./.cursor/skills` and
-`./.kimi-code/skills` (`--list`, `--active`, `--category <name>`, `--sync`, `--clear`).
+`./.claude/skills`, `./.codex/skills` and `./.cursor/skills` (`--list`, `--active`, `--category <name>`, `--sync`, `--clear`).
 
 DeepSeek Harness runs through `dsh-with`, which uses OpenAI OAuth via a local
 CLIProxyAPI; see [DeepSeek Harness](docs/deepseek-harness.md).
@@ -201,11 +162,7 @@ before reuse:
 - Claude: `bypassPermissions` with Bash deny rules and a Git rewrite hook
 - Codex: `approval_policy = "never"` and `sandbox_mode = "danger-full-access"`
 - Cursor: `approvalMode = "unrestricted"`
-- Kimi Code: `default_permission_mode = "yolo"`
 - Antigravity: `toolPermission = "always-proceed"`, no terminal sandbox
-- Pi: the permission package allows normal operations; Git worktree and
-  branch-switch commands are denied only inside this source tree
-  (local, untracked `.pi/extensions/pi-permission-system/config.json`)
 
 Claude hooks also format changed files. The Git rewrite hook
 (`dot_claude/hooks/executable_block-git-rewrites.sh`) blocks some irreversible
@@ -242,8 +199,7 @@ and a daily scheduler opens dependency-update PRs.
   [Homebrew](https://brew.sh/), [aqua](https://aquaproj.github.io/), and
   [mise](https://mise.jdx.dev/) for package/tool management
 - [Claude Code](https://www.anthropic.com/claude-code), [Codex](https://openai.com/index/introducing-codex/),
-  [Pi](https://github.com/earendil-works/pi), [Cursor](https://cursor.com/),
-  [Kimi Code](https://www.kimi.com/code), and [Herdr](https://github.com/ogulcancelik/herdr)
+  [Cursor](https://cursor.com/), and [Herdr](https://github.com/ogulcancelik/herdr)
   for the managed AI/agent tools
 - [EasyTier](https://github.com/EasyTier/EasyTier) and
   [sing-box](https://github.com/SagerNet/sing-box) for the network layer

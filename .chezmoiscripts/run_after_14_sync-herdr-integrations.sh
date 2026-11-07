@@ -85,8 +85,3 @@ if [[ -f "$codex_hooks" ]]; then
 fi
 
 install_integration "claude"
-
-# pi: Herdr's bundled integration is the only reporter for the herdr:pi
-# source. The retired @signalridge/pi-herdr-state package is removed by
-# run_after_19_remove-legacy-pi-sources.sh so the two never report together.
-install_integration "pi"

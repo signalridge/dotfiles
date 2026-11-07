@@ -31,7 +31,7 @@
 - Nix：跨平台用户 profile，macOS 上还有 `nix-darwin`
 - Homebrew 与 Mac App Store：macOS 应用
 - `aqua` 管理固定版本的 CLI，`mise` 管理运行时与其余工具
-- Claude Code、Codex CLI、Pi、Cursor Agent CLI、Kimi Code、Antigravity CLI
+- Claude Code、Codex CLI、Cursor Agent CLI、Antigravity CLI
   与 DeepSeek Harness 的配置
 - 私有网络层：EasyTier mesh、sing-box 客户端、JAIST VPN
 
@@ -93,43 +93,6 @@ chezmoi init --apply \
 | `keysRepository`、`gopassRepository` | 仅在启用加密时提示。见 [Secrets 与密钥](docs/secrets-and-keys.md)。              |
 | `easytierExit`                       | 从不提示；在要充当 EasyTier 出口的 Linux 机器上手动设置。                        |
 
-## 仓库结构
-
-```text
-.
-├── .chezmoi.toml.tmpl          # first-run prompts and derived data
-├── .chezmoiignore              # OS / headless / work / encryption exclusions
-├── .chezmoidata/               # package, harness, MCP, network and version data
-│                               # (nix, homebrew, claude, pi, mcp, herdr, easytier, sing-box, versions, ...)
-├── .chezmoitemplates/
-│   ├── shell/                  # age wrapper, Nix env sourcing
-│   ├── easytier/               # mesh role of this machine
-│   ├── sing-box/               # run mode, shared client config, failover
-│   └── agent-instructions.md   # global instructions for Claude, Codex and Kimi Code
-├── .chezmoiexternal.toml.tmpl  # pinned skill archives and sing-box rule-sets
-├── .chezmoiscripts/            # numbered bootstrap and maintenance scripts
-├── init.sh                     # HTTPS-only bootstrap entry point
-├── Justfile.tmpl               # rendered to ~/Justfile
-├── nix-config/                 # flake, nix-darwin/profile modules, per-OS locks
-├── dot_zshenv, dot_zshrc, ...  # zsh entry points (dot_gitconfig is a stub)
-├── dot_custom/                 # exports, aliases, functions, fzf-tab (~/.custom)
-├── dot_claude/                 # Claude settings, hooks, statusline, commands
-├── dot_codex/                  # Codex config and prompts
-├── dot_pi/                     # Pi settings, models, agents, MCP, themes, extensions
-├── dot_cursor/, dot_kimi-code/, dot_gemini/  # Cursor, Kimi Code, Antigravity CLI
-├── dot_dsh/                    # DeepSeek Harness overrides (~/.dsh)
-├── dot_harnesses/              # repo-authored skills and the shared /commit command
-├── dot_local/bin/              # keys, skill, MCP, dsh and network helpers
-├── private_dot_cli-proxy-api/  # CLIProxyAPI config (~/.cli-proxy-api)
-├── private_dot_config/         # editor, terminal, desktop, tool and service config
-│   ├── private_sing-box/       # sing-box user config (headless Linux), openconnect-auto
-│   └── private_ss-exit/        # Shadowsocks exit on Linux EasyTier exits
-├── private_dot_ssh/            # age-encrypted SSH client config
-├── private_Library/            # macOS LaunchAgents
-├── docs/                       # operational guides
-└── tools/wezterm-icon/         # offline generator for the WezTerm icon
-```
-
 ## Bootstrap 流程
 
 `chezmoi init` 之后的一切都由 `.chezmoiscripts/` 中的编号脚本驱动——执行顺序
@@ -170,18 +133,17 @@ nix-darwin 和 Git 相关 recipe。在源码目录中运行 `pre-commit run --al
 
 ## AI Harness
 
-Claude Code、Codex CLI、Pi、Cursor Agent CLI、Kimi Code、Antigravity CLI 和
-aichat 都由 `dot_*` 和 `private_dot_config/` 配置；Claude、Codex 和 Kimi Code 共用由
+Claude Code、Codex CLI、Cursor Agent CLI、Antigravity CLI 和
+aichat 都由 `dot_*` 和 `private_dot_config/` 配置；Claude 和 Codex 共用由
 `.chezmoitemplates/agent-instructions.md` 渲染的全局指令。Claude Code 和 Codex
 使用原生 OAuth；启动模型在 `.chezmoidata/claude.yaml` 和
-`dot_codex/modify_private_config.toml.tmpl` 中设置，Pi 的 provider 和 tier 在
-`.chezmoidata/pi.yaml` 和 `dot_pi/agent/subagents.json.tmpl` 中。MCP 服务器列表
+`dot_codex/modify_private_config.toml.tmpl` 中设置。MCP 服务器列表
 位于 `.chezmoidata/mcp.yaml`。Herdr 负责 agent 状态层。
 
 Skill 安装到 `~/.harnesses/skills/<category>/<skill>/`，来源是固定版本的归档
 （`.chezmoiexternal.toml.tmpl`）和 `dot_harnesses/`。默认不全局启用；在项目中运行
 `skill-activate`，把选中的 skill 以符号链接放入 `./.claude/skills`、
-`./.codex/skills`、`./.pi/skills`、`./.cursor/skills` 和 `./.kimi-code/skills`
+`./.codex/skills` 和 `./.cursor/skills`
 （`--list`、`--active`、`--category <name>`、`--sync`、`--clear`）。
 
 DeepSeek Harness 通过 `dsh-with` 运行，经本地 CLIProxyAPI 使用 OpenAI OAuth；
@@ -194,10 +156,7 @@ DeepSeek Harness 通过 `dsh-with` 运行，经本地 CLIProxyAPI 使用 OpenAI 
 - Claude：`bypassPermissions`，配合 Bash deny 规则和 Git 改写 hook
 - Codex：`approval_policy = "never"` 与 `sandbox_mode = "danger-full-access"`
 - Cursor：`approvalMode = "unrestricted"`
-- Kimi Code：`default_permission_mode = "yolo"`
 - Antigravity：`toolPermission = "always-proceed"`，无终端沙箱
-- Pi：权限包允许常规操作；Git worktree 和切换分支的命令只在本源码树内被拒绝
-  （本地、不入库的 `.pi/extensions/pi-permission-system/config.json`）
 
 Claude 的 hook 还会格式化改动的文件。Git 改写 hook
 （`dot_claude/hooks/executable_block-git-rewrites.sh`）会阻止部分不可逆操作，并在
@@ -231,8 +190,7 @@ CI（`.github/workflows/`）运行 pre-commit、Nix flake 检查和安全扫描�
   [Homebrew](https://brew.sh/)、[aqua](https://aquaproj.github.io/) 与
   [mise](https://mise.jdx.dev/)：包与工具管理
 - [Claude Code](https://www.anthropic.com/claude-code)、[Codex](https://openai.com/index/introducing-codex/)、
-  [Pi](https://github.com/earendil-works/pi)、[Cursor](https://cursor.com/)、
-  [Kimi Code](https://www.kimi.com/code) 与 [Herdr](https://github.com/ogulcancelik/herdr)：
+  [Cursor](https://cursor.com/) 与 [Herdr](https://github.com/ogulcancelik/herdr)：
   受管理的 AI/agent 工具
 - [EasyTier](https://github.com/EasyTier/EasyTier) 与
   [sing-box](https://github.com/SagerNet/sing-box)：网络层

@@ -39,7 +39,6 @@ enabled = true                         # audible cue when a background agent cha
 [ui.sound.agents]                      # scope notifications to the agents you actually run
 claude = "on"
 codex = "on"
-pi = "on"
 droid = "off"
 
 [session]
@@ -53,7 +52,7 @@ kitty_graphics = true                  # in-terminal image rendering (≈ tmux a
 allow_nested = true                    # allow herdr inside a herdr pane (nested sessions, ≈ tmux-suspend use case)
 switch_ascii_input_source_in_prefix = true   # CJK IME: prefix commands register while a Chinese IME is active (macOS)
 reveal_hidden_cursor_for_cjk_ime = true       # keep the IME candidate window tracking the cursor inside agent TUIs
-cjk_ime_agents = ["pi", "claude", "codex"]    # apply the IME cursor reveal only to these agents
+cjk_ime_agents = ["claude", "codex"]          # apply the IME cursor reveal only to these agents
 # pane_history intentionally left false — it persists pane SCREEN CONTENTS (incl. secrets) to disk.
 
 [advanced]

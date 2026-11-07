@@ -22,7 +22,7 @@ set -euo pipefail
 # out on the next apply. On a fresh machine where gopass or nix is not ready
 # yet it skips, and a later apply finishes the job.
 
-echo ":: [24] EasyTier node"
+echo ":: [23] EasyTier node"
 
 ENV_DIR="/etc/easytier"
 ENV_FILE="${ENV_DIR}/easytier.env"
@@ -86,7 +86,7 @@ fi
 
 render_unit() {
     cat <<EOF
-# Managed by chezmoi (.chezmoiscripts/run_after_24_easytier-node.sh); edits are overwritten.
+# Managed by chezmoi (.chezmoiscripts/run_after_23_easytier-node.sh); edits are overwritten.
 [Unit]
 Description=EasyTier exit {{ $et.exit }} ({{ $et.ip }})
 Documentation=https://easytier.cn/en/guide/network/configurations.html

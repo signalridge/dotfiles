@@ -12,10 +12,8 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 # Run: chezmoi edit ~/.codex/config.toml
 {{/* No left trim marker: with `{{-` the blank line above was swallowed and the
      next banner rendered onto the end of the "# Run:" comment. */ -}}
-{{- /* Codex default mirrors Pi's parent / `medium` tier (gpt-6.1-terra xhigh,
-       dot_pi/agent/modify_settings.json.tmpl + subagents.json.tmpl), same on
-       both machines. Keep them in lockstep by hand. Native OpenAI OAuth only;
-       no third-party provider blocks. */ -}}
+{{- /* Codex default: gpt-6.1-terra at xhigh, same on both machines. Native
+       OpenAI OAuth only; no third-party provider blocks. */ -}}
 {{- $model := "gpt-6.1-terra" -}}
 {{- $subagentModel := $model -}}
 {{- $effort := "xhigh" -}}
@@ -27,7 +25,7 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 # Core Settings
 # =============================================================================
 
-# Native primary model (mirrors Pi's default): gpt-6.1-terra
+# Native primary model: gpt-6.1-terra
 model = "{{ $model }}"
 
 # Approval policy: untrusted | on-failure | on-request | never
@@ -49,7 +47,7 @@ suppress_unstable_features_warning = true
 # =============================================================================
 
 # Reasoning effort: none | minimal | low | medium | high | xhigh | max
-# Primary effort: xhigh (mirrors Pi's default).
+# Primary effort: xhigh.
 model_reasoning_effort = "{{ $effort }}"
 
 

@@ -5,7 +5,7 @@ set -euo pipefail
 # Upgrade mise-managed tools on a 7-day cadence.
 #
 # Script 07 is the install half and is a `run_onchange` — it fires only when the
-# mise/aqua config hash changes. A tool requested as "latest" (pi, ccusage,
+# mise/aqua config hash changes. A tool requested as "latest" (ccusage,
 # agent-browser, impeccable, ...) is therefore resolved once at first install and
 # then never moves again, however far upstream drifts. This script is the missing
 # half: `mise up` re-resolves those requests and upgrades what is installed.
@@ -16,15 +16,11 @@ set -euo pipefail
 # the configured request untouched and only changes what lives under mise's
 # install dir, so there is no chezmoi conflict.
 #
-# ORDERING: this runs after script 20 (pi extensions), so a pi CLI upgrade lands
-# one apply ahead of the extension reconcile that follows it. Both steps are
-# idempotent and weekly, so the lag is self-healing and costs nothing.
-#
 # CADENCE: 7-day interval, same idiom as script 10 (Homebrew). The timestamp is
 # advanced only after a successful upgrade, so a failure is retried on the next
 # apply instead of being suppressed for another week.
 
-echo ":: [23] Upgrading mise tools"
+echo ":: [22] Upgrading mise tools"
 
 state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/chezmoi"
 state_file="$state_dir/mise-up-last-success"
@@ -53,7 +49,7 @@ cd "$HOME"
 # non-interactive shell has neither mise nor its tool bins on PATH. Resolve the
 # real binary from the aqua bin dir, then inject the tool bin dirs via `mise env`
 # (not `activate`, which needs a shell hook that never fires here) — same idiom as
-# scripts 07 and 20.
+# script 07.
 aqua_bin_dir="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
 if [[ -d "$aqua_bin_dir" ]]; then
     export PATH="$aqua_bin_dir:$PATH"

@@ -3,7 +3,7 @@
 Replacement icon for `/Applications/WezTerm.app` on macOS 26 (Tahoe).
 
 - Artwork: `../../private_dot_config/wezterm/WezTerm.icns` (deployed to `~/.config/wezterm/`)
-- Applied by: `../../.chezmoiscripts/run_after_22_wezterm-icon.sh` (Finder custom icon via JXA)
+- Applied by: `../../.chezmoiscripts/run_after_21_wezterm-icon.sh` (Finder custom icon via JXA)
 - Generator: `wezterm-icon.swift` (offline only; nothing runs it during apply)
 
 ## Why

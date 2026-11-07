@@ -3,11 +3,6 @@
 .codex
 .serena/
 
-# pi project state. In this checkout .pi/ also holds local-only, repo-scoped
-# safety policies (pi-permission-system denies git worktree/switch here, and
-# subagents.json sets worktreeIsolation:false); they are deliberately untracked.
-.pi/
-
 # macOS
 .DS_Store
 .AppleDouble

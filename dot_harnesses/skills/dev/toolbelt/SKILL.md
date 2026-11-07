@@ -125,6 +125,6 @@ These take over the terminal and will hang a non-interactive call:
 
 ## AI agent tooling
 
-`claude`, `codex`, `kimi`, `pi`, `aichat`, `agent-browser` (browser automation for agents),
+`claude`, `codex`, `aichat`, `agent-browser` (browser automation for agents),
 `impeccable` (frontend UI anti-pattern detector, project-scoped), `hyperframes` (HTML→MP4),
 `ccusage` (token usage analysis), `herdr` (terminal/session manager).

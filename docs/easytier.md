@@ -170,7 +170,7 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   bastion's public IPv4 deliberately is not: EasyTier's STUN to it must take
   the same path as the hole punching (through sing-box), or the ports never
   match and the peers stay relayed. Inside sing-box that address always routes
-  `Direct` (script 25 adds it from gopass), because the bastion refuses
+  `Direct` (script 24 adds it from gopass), because the bastion refuses
   connections to itself, so SSH to it works under every `Egress`. The cost is
   that SSH to the bastion drops whenever sing-box restarts (config changes
   only).
@@ -180,7 +180,7 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   start and restarts when it changes. A root daemon is also exempt from macOS
   Local Network privacy, which makes a user-launched sing-box fail to reach the
   LAN DNS server (`write: broken pipe`). Config:
-  `.chezmoiscripts/run_after_25_sing-box.sh.tmpl` fills the gopass secrets in
+  `.chezmoiscripts/run_after_24_sing-box.sh.tmpl` fills the gopass secrets in
   with jq at run time, runs `sing-box check` and writes
   `/etc/sing-box/config.json` (root:wheel 0600). Log `/var/log/sing-box.log`.
   Only one TUN may own the default route, so no other TUN proxy runs beside it.
@@ -206,8 +206,8 @@ config template, `.chezmoitemplates/sing-box/config.tmpl`:
   the macOS DNS cache. LAN DNS exceptions and ranges excluded from the TUN still
   apply. Do not change Clash mode manually on these Macs; the daemon manages it.
   Run `chezmoi apply` to update both parts: script 02 rebuilds the LaunchDaemon
-  when its module changes, and script 25 installs the proxy config. Updating
-  only script 25 is insufficient for this compatibility handling.
+  when its module changes, and script 24 installs the proxy config. Updating
+  only script 24 is insufficient for this compatibility handling.
   The outbound (`tag`, `server`, `server_port`,
   `user`, pinned `host_key`) is one-line JSON in gopass `sing-box/ssh-tunnel`,
   its private key `sing-box/ssh-tunnel-key` (`gopass cat
@@ -302,7 +302,7 @@ Generated with gopass and never stored in this repository:
 - Every node reads them from a root-only env file as
   `ET_NETWORK_NAME` / `ET_NETWORK_SECRET` (never on a command line):
   - Mac: `/etc/easytier/easytier.env` (root:wheel 0600), written by
-    `.chezmoiscripts/run_after_24_easytier-node.sh.tmpl`
+    `.chezmoiscripts/run_after_23_easytier-node.sh.tmpl`
   - Linux nodes: `/etc/easytier/easytier.env` (root:root 0600), same script
   - bastion: `/etc/easytier/easytier.env` (root:root 0600, dir 0700)
   - NAS: `/volume1/docker/easytier/easytier.env` (0600, dir 0700 with the
@@ -316,7 +316,7 @@ render() { printf 'ET_NETWORK_NAME=%s\nET_NETWORK_SECRET=%s\n' \
 render | ssh bastion 'umask 077; cat >/etc/easytier/easytier.env && systemctl restart easytier'
 render | ssh nas 'umask 077; cat >/volume1/docker/easytier/easytier.env \
   && cd /volume1/docker/easytier && sudo docker compose up -d --force-recreate'
-chezmoi apply ~/.chezmoiscripts/24_easytier-node.sh   # each repo-managed node (sudo on Mac)
+chezmoi apply ~/.chezmoiscripts/23_easytier-node.sh   # each repo-managed node (sudo on Mac)
 ```
 
 ## Mac (this repo)
@@ -330,7 +330,7 @@ chezmoi apply ~/.chezmoiscripts/24_easytier-node.sh   # each repo-managed node (
   nixpkgs package) and runs `org.nixos.easytier` as root (TUN needs root).
   `easytier-cli` is on PATH from the same build. Logs: `/var/log/easytier.log`
   (rotated by newsyslog).
-- Apply: `chezmoi apply ~/.chezmoiscripts/02_init.sh ~/.chezmoiscripts/24_easytier-node.sh`
+- Apply: `chezmoi apply ~/.chezmoiscripts/02_init.sh ~/.chezmoiscripts/23_easytier-node.sh`
   (02 runs `darwin-rebuild switch` when the module hash changes).
 - Status: `easytier-cli peer`, `easytier-cli route`, `easytier-cli node`.
 - easytier-core adds the `10.144.144.0/24 → utunN` route once and never
@@ -341,7 +341,7 @@ chezmoi apply ~/.chezmoiscripts/24_easytier-node.sh   # each repo-managed node (
 
 - Needs a multi-user nix (root-owned `/nix/store`), `/dev/net/tun`, and sudo
   for the user running `chezmoi apply`; no Docker.
-- `run_after_24_easytier-node.sh.tmpl` builds the flake output `easytier`
+- `run_after_23_easytier-node.sh.tmpl` builds the flake output `easytier`
   (`nix-config/modules/easytier-package.nix.tmpl`, out-link
   `~/.local/state/easytier/easytier` as the GC root), renders
   `/etc/systemd/system/easytier.service` with `ExecStart` pointing at that
@@ -349,7 +349,7 @@ chezmoi apply ~/.chezmoiscripts/24_easytier-node.sh   # each repo-managed node (
   unit, the credentials or the running state changed. The unit runs as a
   `DynamicUser` with only `CAP_NET_ADMIN`/`CAP_NET_RAW` and `/dev/net/tun`.
 - Apply on such a host (the script must run after `~/nix-config` is written):
-  `chezmoi apply ~/nix-config && chezmoi apply ~/.chezmoiscripts/24_easytier-node.sh`.
+  `chezmoi apply ~/nix-config && chezmoi apply ~/.chezmoiscripts/23_easytier-node.sh`.
   A full `chezmoi apply` orders this correctly by itself.
 - Status: `~/.local/state/easytier/easytier/bin/easytier-cli peer`, `systemctl status easytier`.
 

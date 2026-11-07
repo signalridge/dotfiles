@@ -1,9 +1,8 @@
-{{- /* Shared global agent instructions. Rendered by dot_claude/CLAUDE.md.tmpl,
-       dot_codex/AGENTS.md.tmpl and dot_kimi-code/AGENTS.md.tmpl via
-       {{ template "agent-instructions.md" dict "harness" "<claude|codex|kimi>" }}.
-Pi's dot_pi/agent/APPEND_SYSTEM.md is maintained separately. */ -}}
+{{- /* Shared global agent instructions. Rendered by dot_claude/CLAUDE.md.tmpl
+       and dot_codex/AGENTS.md.tmpl via
+       {{ template "agent-instructions.md" dict "harness" "<claude|codex>" }}. */ -}}
 {{- $h := .harness -}}
-# {{ get (dict "claude" "Claude Code" "codex" "Codex CLI" "kimi" "Kimi Code CLI") $h }} Global Instructions
+# {{ get (dict "claude" "Claude Code" "codex" "Codex CLI") $h }} Global Instructions
 
 Pragmatic engineering: clarity, correctness, minimal change. Prefer repo conventions, solve root causes, verify before declaring done, state assumptions/risks briefly.
 
@@ -13,13 +12,6 @@ Repo-native first; defaults advisory (`uv/ruff`, `nix`, `aqua/mise`, `gh/ghq`); 
 
 ## Tool integration routing
 
-{{ if eq $h "kimi" -}}
-MCP servers are configured in `~/.kimi-code/mcp.json`.
-The managed `~/.kimi-code/config.toml` keeps Kimi in YOLO mode and disables
-Kimi's optional plan mode; use OAuth or environment-backed credentials, never
-plaintext API keys in the TOML file.
-
-{{ end -}}
 - Docs/API -> Context7
 - Web/news -> Tavily
 {{ if eq $h "claude" -}}
@@ -36,14 +28,8 @@ plaintext API keys in the TOML file.
 {{ else if eq $h "codex" -}}
 - Team chat -> Slack official app connector/plugin/API
 {{ end -}}
-{{ if ne $h "kimi" -}}
 - Notes/knowledge base -> Notion official MCP/plugin
-{{ end }}
-{{ if eq $h "kimi" -}}
-Built-in `moonshot_search` / `moonshot_fetch` cover quick lookups; prefer Tavily for
-multi-step research and Context7 for library docs.
 
-{{ end -}}
 User preference overrides; fall back when unavailable; no sensitive data in queries.
 
 ## Local CLI toolbelt
