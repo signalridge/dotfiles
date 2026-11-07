@@ -134,8 +134,6 @@ Where things are declared:
 - **bastion**: a hand-deployed relay and STUN server; `bastion-import` stores its
   sing-box outbounds in gopass.
 
-Details, credentials and the hand-deployed nodes: [EasyTier mesh](docs/easytier.md).
-
 ## AI Harnesses
 
 Claude Code, Codex CLI, Cursor Agent CLI, Antigravity CLI and aichat are
@@ -181,7 +179,6 @@ mutation.
 
 ## Documentation
 
-- [EasyTier mesh](docs/easytier.md): EasyTier, sing-box, JAIST VPN, bastion and NAS
 - [WezTerm icon](tools/wezterm-icon/README.md)
 - [Security policy](SECURITY.md)
 

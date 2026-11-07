@@ -1,5 +1,5 @@
-# sing-box client on every machine (.chezmoitemplates/sing-box/{mode,config}.tmpl,
-# docs/easytier.md). Exits come from .chezmoidata/easytier.yaml; secrets from
+# sing-box client on every machine (.chezmoitemplates/sing-box/{mode,config}.tmpl).
+# Exits come from .chezmoidata/easytier.yaml; secrets from
 # gopass.
 singBox:
   mixedPort: 7890 # SOCKS5 + HTTP on 127.0.0.1 (proxy-on, apps without TUN)

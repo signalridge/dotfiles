@@ -26,7 +26,6 @@ result-*
 # .pre-commit-config.yaml, nix-config/.flake-*.lock, ...) need no entry here:
 # chezmoi never treats a source name that starts with "." as a target.
 init.sh
-docs/
 node_modules/
 tools/
 selene.toml

@@ -129,8 +129,6 @@ nix-darwin 和 Git 相关 recipe。在源码目录中运行 `pre-commit run --al
 - **bastion**：手动部署的中继和 STUN 服务器；`bastion-import` 把它的 sing-box
   outbound 存入 gopass。
 
-细节、凭据和手动部署的节点见 [EasyTier mesh](docs/easytier.md)。
-
 ## AI Harness
 
 Claude Code、Codex CLI、Cursor Agent CLI、Antigravity CLI 和
@@ -172,7 +170,6 @@ Claude 的 hook 还会格式化改动的文件。Git 改写 hook
 
 ## 文档
 
-- [EasyTier mesh](docs/easytier.md)：EasyTier、sing-box、JAIST VPN、bastion 与 NAS
 - [WezTerm 图标](tools/wezterm-icon/README.md)
 - [安全策略](SECURITY.md)
 

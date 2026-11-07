@@ -136,8 +136,6 @@ nix-darwin、Git のレシピを確認できます。ソースディレクトリ
 - **bastion**：手動でデプロイした中継兼 STUN サーバー。`bastion-import` がその
   sing-box outbound を gopass に保存します。
 
-詳細、認証情報、手動デプロイのノードは [EasyTier mesh](docs/easytier.md) を参照。
-
 ## AI Harness
 
 Claude Code、Codex CLI、Cursor Agent CLI、Antigravity CLI、aichat
@@ -185,7 +183,6 @@ Claude の hook は変更したファイルのフォーマットも行います�
 
 ## ドキュメント
 
-- [EasyTier mesh](docs/easytier.md)：EasyTier、sing-box、JAIST VPN、bastion、NAS
 - [WezTerm アイコン](tools/wezterm-icon/README.md)
 - [セキュリティポリシー](SECURITY.md)
 

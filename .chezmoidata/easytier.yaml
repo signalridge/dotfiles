@@ -48,4 +48,4 @@ easytier:
   # DHCP clients may take any other free address in the network.
   exits:
     gpuserver: 10.144.144.3 # easytierExit = "gpuserver" in gpuserver1's chezmoi.toml
-    nas: 10.144.144.2 # Docker on the NAS, deployed outside this repo (docs/easytier.md)
+    nas: 10.144.144.2 # Docker on the NAS, deployed outside this repo
