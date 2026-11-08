@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # skill-activate — a live on/off panel for curating which library skills are
-# active for Claude, Codex, and Cursor in the current directory.
+# active for Claude, Cursor, and every `.agents/skills` reader (Codex, pi, Kimi,
+# mare) in the current directory.
 # Tab/Space flips one skill on/off in place (the ● updates live). Ctrl-A flips
 # every skill in the highlighted row's category; Enter leaves.
 # Toggling is fast — the library is scanned ONCE up front and the panel just
@@ -12,7 +13,11 @@
 # so the panel groups by the folder directly — no sidecar mapping file.
 #
 # Active set (flat symlinks into the shared library):
-#   current directory: ./.claude/skills/ + ./.codex/skills/ + ./.cursor/skills/
+#   current directory: ./.claude/skills/ + ./.agents/skills/ + ./.cursor/skills/
+# `.agents/skills` is the cross-harness project dir: Codex
+# (core-skills/src/loader.rs repo_agents_skill_roots), pi, Kimi and mare all read
+# it. Codex ALSO reads ./.codex/skills, so linking both would show every skill
+# twice there; older ./.codex/skills links are migrated to ./.agents/skills.
 #
 # Usage:
 #   skill-activate                    live on/off panel
@@ -57,7 +62,7 @@ else
       ;;
     --clear) mode="clear" ;;
     -h | --help)
-      sed -n '3,24p' "$0" | sed 's/^#//; s/^ //'
+      sed -n '3,29p' "$0" | sed 's/^#//; s/^ //'
       exit 0
       ;;
     *)
@@ -70,14 +75,16 @@ else
 fi
 
 claude_dir="$PWD/.claude/skills"
-codex_dir="$PWD/.codex/skills"
+agents_dir="$PWD/.agents/skills"
 cursor_dir="$PWD/.cursor/skills"
+# Legacy per-project Codex dir: no longer written (Codex reads .agents/skills).
+legacy_codex_dir="$PWD/.codex/skills"
 # All harness skill dirs in the current project. A skill is symlinked into every
-# one so Claude, Codex, and Cursor CLI (shared SKILL.md format) see the same
-# set. Cursor CLI reads ./.cursor/skills natively and follows symlinked skill
-# folders (verified).
-active_dirs=("$claude_dir" "$codex_dir" "$cursor_dir")
-target_label="Claude + Codex + Cursor current dir"
+# one so Claude, the .agents/skills readers, and Cursor CLI (shared SKILL.md
+# format) see the same set. Cursor CLI reads ./.cursor/skills natively and
+# follows symlinked skill folders (verified).
+active_dirs=("$claude_dir" "$agents_dir" "$cursor_dir")
+target_label="Claude + .agents + Cursor current dir"
 
 [ -d "$library" ] || {
   echo "skill-activate: library not found: $library" >&2
@@ -134,6 +141,33 @@ deactivate_skill() {
   for d in "${active_dirs[@]}"; do
     rm -f "$d/$name"
   done
+}
+
+# Move library links left in the legacy ./.codex/skills into the active dirs,
+# then drop the legacy dir if that left it empty. Only links whose literal,
+# traversal-free target is under the library are touched.
+migrate_legacy_codex() {
+  [ -d "$legacy_codex_dir" ] && [ ! -L "$legacy_codex_dir" ] || return 0
+  local link link_target relative_target moved=0
+  while IFS= read -r -d '' link; do
+    link_target=$(readlink "$link") || continue
+    case "$link_target" in
+      "$library"/*) ;;
+      *) continue ;;
+    esac
+    relative_target=${link_target#"$library"/}
+    case "/$relative_target/" in
+      *'/../'* | *'/./'* | *'//'*) continue ;;
+    esac
+    activate_skill "${link##*/}" "$link_target"
+    rm -f "$link"
+    moved=$((moved + 1))
+  done < <(find "$legacy_codex_dir" -mindepth 1 -maxdepth 1 -type l -print0 2>/dev/null)
+  rmdir "$legacy_codex_dir" 2>/dev/null || true
+  if [ "$moved" -gt 0 ]; then
+    echo "skill-activate: moved $moved link(s) from ./.codex/skills to ./.agents/skills" >&2
+  fi
+  return 0
 }
 
 skill_dir_for_name() {
@@ -276,6 +310,7 @@ list)
 sync)
   for d in "${active_dirs[@]}"; do require_real_dir "$d"; done
   mkdir -p "${active_dirs[@]}"
+  migrate_legacy_codex
   n=$(sync_active_pairs "$idx")
   hs=${claude_dir/#$HOME/\~}
   echo "current dir: synced $n partial skill(s) ($target_label) in $hs"
@@ -284,6 +319,7 @@ sync)
 category)
   for d in "${active_dirs[@]}"; do require_real_dir "$d"; done
   mkdir -p "${active_dirs[@]}"
+  migrate_legacy_codex
   if ! set_category_state "$category_name" "$idx" on; then
     echo "skill-activate: category not found: $category_name" >&2
     exit 1
@@ -298,7 +334,7 @@ clear)
   # Remove every link whose literal, traversal-free target is below the
   # canonical library root. Scanning the discovery dirs (rather than only the
   # current index) also removes links to skills deleted or renamed upstream.
-  for d in "${active_dirs[@]}"; do
+  for d in "${active_dirs[@]}" "$legacy_codex_dir"; do
     while IFS= read -r -d '' link; do
       link_target=$(readlink "$link") || continue
       case "$link_target" in
@@ -323,6 +359,7 @@ command -v fzf >/dev/null 2>&1 || {
 }
 for d in "${active_dirs[@]}"; do require_real_dir "$d"; done
 mkdir -p "${active_dirs[@]}"
+migrate_legacy_codex
 self=$(command -v "$0" 2>/dev/null || true)
 [ -x "$self" ] || self="$0"
 hs=${claude_dir/#$HOME/\~}

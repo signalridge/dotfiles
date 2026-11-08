@@ -148,7 +148,7 @@ Claude Code、Codex CLI、Cursor Agent CLI、Antigravity CLI
 Skill は `~/.harnesses/skills/<category>/<skill>/` に置かれ、ソースはバージョン
 固定のアーカイブ（`.chezmoiexternal.toml.tmpl`）と `dot_harnesses/` です。
 グローバルには何も有効化されません。プロジェクトで `skill-activate` を実行すると、
-選んだ skill が `./.claude/skills`、`./.codex/skills`、`./.cursor/skills` に
+選んだ skill が `./.claude/skills`、`./.agents/skills`（Codex・pi・Kimi・mare 共通）、`./.cursor/skills` に
 シンボリックリンクされます
 （`--list`、`--active`、`--category <name>`、`--sync`、`--clear`）。
 

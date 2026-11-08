@@ -146,7 +146,7 @@ The MCP server list lives in
 Skills land in `~/.harnesses/skills/<category>/<skill>/`, from pinned archives
 (`.chezmoiexternal.toml.tmpl`) and `dot_harnesses/`. Nothing is activated
 globally; run `skill-activate` in a project to symlink a selection into
-`./.claude/skills`, `./.codex/skills` and `./.cursor/skills` (`--list`, `--active`, `--category <name>`, `--sync`, `--clear`).
+`./.claude/skills`, `./.agents/skills` (shared by Codex, pi, Kimi and mare) and `./.cursor/skills` (`--list`, `--active`, `--category <name>`, `--sync`, `--clear`).
 
 ### AI execution posture
 

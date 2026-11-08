@@ -140,7 +140,7 @@ Claude Code、Codex CLI、Cursor Agent CLI 和 Antigravity CLI
 Skill 安装到 `~/.harnesses/skills/<category>/<skill>/`，来源是固定版本的归档
 （`.chezmoiexternal.toml.tmpl`）和 `dot_harnesses/`。默认不全局启用；在项目中运行
 `skill-activate`，把选中的 skill 以符号链接放入 `./.claude/skills`、
-`./.codex/skills` 和 `./.cursor/skills`
+`./.agents/skills`（Codex、pi、Kimi、mare 通用）和 `./.cursor/skills`
 （`--list`、`--active`、`--category <name>`、`--sync`、`--clear`）。
 
 ### AI 执行姿态

@@ -4,7 +4,7 @@
 # directories, not leftover whole-dir symlinks to the shared ~/.harnesses/skills
 # library. `skill-activate` intentionally does not manage these user-level dirs;
 # it only writes per-project symlinks under the current directory's
-# ./.claude/skills, ./.codex/skills, and ./.cursor/skills.
+# ./.claude/skills, ./.agents/skills, and ./.cursor/skills.
 
 set -euo pipefail
 
