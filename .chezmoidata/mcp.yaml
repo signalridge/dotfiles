@@ -39,9 +39,14 @@ mcp:
         alwaysLoad: true
     - name: gitmcp
       url: https://gitmcp.io/docs
+    # Shared local servers: one process each (LaunchAgent / systemd --user unit
+    # running ~/.local/bin/mcp-serve on the port in `local` below) instead of a
+    # stdio copy per session. arxiv is mounted under /mcp/ (trailing slash).
     - name: markitdown
-      command: uvx
-      args: [markitdown-mcp]
+      url: http://127.0.0.1:47310/mcp
     - name: arxiv
-      command: uv
-      args: [tool, run, arxiv-mcp-server]
+      url: http://127.0.0.1:47311/mcp/
+  # Ports of the shared local servers; keep in sync with the URLs above.
+  local:
+    markitdown: 47310
+    arxiv: 47311

@@ -1,0 +1,16 @@
+# One shared arxiv MCP server over Streamable HTTP on 127.0.0.1 (port and URL in
+# .chezmoidata/mcp.yaml) instead of a stdio copy per session. Loaded by
+# run_onchange_after_19; Linux analog of com.signalridge.mcp-arxiv.plist.
+[Unit]
+Description=Shared arxiv MCP server (Streamable HTTP)
+After=network-online.target
+
+[Service]
+ExecStart=/bin/bash %h/.local/bin/mcp-serve arxiv {{ .mcp.local.arxiv }}
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+Restart=always
+RestartSec=10s
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target

@@ -7,6 +7,9 @@ set -euo pipefail
 # Re-runs whenever any unit file changes (hashes below).
 # reaper.service  sha256: {{ include "private_dot_config/systemd/user/mcp-reaper.service" | sha256sum }}
 # reaper.timer    sha256: {{ include "private_dot_config/systemd/user/mcp-reaper.timer" | sha256sum }}
+# markitdown unit sha256: {{ includeTemplate "private_dot_config/systemd/user/mcp-markitdown.service.tmpl" . | sha256sum }}
+# arxiv unit      sha256: {{ includeTemplate "private_dot_config/systemd/user/mcp-arxiv.service.tmpl" . | sha256sum }}
+# mcp-serve       sha256: {{ include "dot_local/bin/executable_mcp-serve" | sha256sum }}
 # ss-exit unit   sha256: {{ includeTemplate "private_dot_config/systemd/user/ss-exit.service.tmpl" . | sha256sum }}
 # ss-exit config sha256: {{ includeTemplate "private_dot_config/private_ss-exit/config.json.tmpl" . | sha256sum }}
 # ss-exit acl    sha256: {{ includeTemplate "private_dot_config/private_ss-exit/acl.list.tmpl" . | sha256sum }}
@@ -42,6 +45,12 @@ systemctl --user daemon-reload
 systemctl --user enable --now mcp-reaper.timer
 systemctl --user try-restart mcp-reaper.timer || true
 
+# Shared MCP servers (Streamable HTTP on 127.0.0.1, see .chezmoidata/mcp.yaml).
+for unit in mcp-markitdown.service mcp-arxiv.service; do
+    systemctl --user enable --now "$unit"
+    systemctl --user try-restart "$unit" || true
+done
+
 # EasyTier exit (shadowsocks-rust): present only on Linux exits (`easytierExit`).
 if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/ss-exit.service" ]]; then
     systemctl --user enable --now ss-exit.service
@@ -54,5 +63,5 @@ if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/sing-box.service" ]]; t
     systemctl --user try-restart sing-box.service || true
 fi
 
-echo "    enabled mcp-reaper.timer"
+echo "    enabled mcp-reaper.timer, mcp-markitdown, mcp-arxiv"
 {{ end -}}

@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# mcp-serve — run one shared MCP server over Streamable HTTP on 127.0.0.1.
+#
+# stdio MCP servers are spawned once per harness session (17 sessions → 17
+# copies, each uv launcher also holding the uv cache lock). These servers run
+# once instead, as a LaunchAgent (macOS) or systemd --user unit (Linux), and
+# every harness connects to the URL declared in .chezmoidata/mcp.yaml.
+#
+# Usage: mcp-serve <markitdown|arxiv> <port>
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$SCRIPT_DIR/lib/common"
+
+name="${1:?usage: mcp-serve <markitdown|arxiv> <port>}"
+port="${2:?usage: mcp-serve <markitdown|arxiv> <port>}"
+
+# launchd/systemd give a bare PATH: uv lives behind aqua-managed mise. The mise
+# shims resolve through the aqua proxy and fail outside a shell, so inject the
+# real tool bin dirs via `mise env` (same idiom as run_after_22_mise-up.sh).
+require_cmd aqua mise
+eval "$(mise env -s bash)"
+require_cmd uv uvx
+
+case "$name" in
+markitdown)
+    exec uvx markitdown-mcp --http --host 127.0.0.1 --port "$port"
+    ;;
+arxiv)
+    # Served under /mcp/ (Starlette mount); the URL keeps the trailing slash.
+    TRANSPORT=http HOST=127.0.0.1 PORT="$port" exec uv tool run arxiv-mcp-server
+    ;;
+*)
+    log_error "unknown MCP server: $name"
+    exit 2
+    ;;
+esac
