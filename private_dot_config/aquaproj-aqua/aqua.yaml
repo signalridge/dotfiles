@@ -9,7 +9,7 @@ registries:
     #     codex-*.zst, so Code Mode failed closed after host became default.
     #   v4.566.0 - Wilfred/difftastic 0.71.0 renamed its assets to
     #     difft-<version>-<arch>-<os>.tar.gz; older refs 404 on install.
-    ref: v4.582.0
+    ref: v4.583.0
   - name: third-party
     type: local
     path: registry.yaml
@@ -34,7 +34,7 @@ packages:
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
-  - name: google-antigravity/antigravity-cli@1.5.2
+  - name: google-antigravity/antigravity-cli@1.5.3
   - name: nektos/act@v0.2.97
   - name: asciinema/asciinema@v3.2.1
   - name: atuinsh/atuin@v18.24.5
@@ -53,7 +53,7 @@ packages:
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.11.3
+  - name: jdx/mise@v2026.11.4
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -69,8 +69,8 @@ packages:
   # per-architecture assets. Use the local override until upstream catches up.
   - name: fastfetch-cli/fastfetch@2.71.0
     registry: third-party
-  - name: sharkdp/fd@v10.5.1
-  - name: junegunn/fzf@v0.74.5
+  - name: sharkdp/fd@v10.5.2
+  - name: junegunn/fzf@v0.75.0
   - name: gopasspw/gopass@v1.17.4
   - name: cli/cli@v2.103.3
   - name: dlvhdr/gh-dash@v4.26.2
@@ -84,15 +84,15 @@ packages:
   - name: tldr-pages/tlrc@v1.13.1
   - name: ast-grep/ast-grep@0.51.1
   - name: casey/just@1.59.0
-  - name: jesseduffield/lazygit@v0.66.2
+  - name: jesseduffield/lazygit@v0.66.3
   - name: jesseduffield/lazydocker@v0.25.2
   - name: neovim/neovim@v0.12.6
   - name: LuaLS/lua-language-server@3.19.2
-  - name: tree-sitter/tree-sitter@v0.27.1
+  - name: tree-sitter/tree-sitter@v0.27.2
   - name: jj-vcs/jj@v0.47.1
   - name: rclone/rclone@v1.76.0
   - name: o2sh/onefetch@3.2.0
-  - name: ip7z/7zip@26.05
+  - name: ip7z/7zip@26.06
   - name: ouch-org/ouch@0.8.3
     registry: third-party
   - name: Nukesor/pueue/pueue@v4.0.4
