@@ -987,35 +987,6 @@ ccp() {
     fi
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# aichat shell integration
-# ─────────────────────────────────────────────────────────────────────────────
-# `?` invokes aichat for a one-shot question (`? why does tar -xzf fail...`).
-# Alt-e runs the current prompt buffer through `aichat -e` to translate
-# natural language into a shell command in place:
-#     find all files larger than 1G under /var<Alt-e>
-if command -v aichat >/dev/null 2>&1; then
-    # Function (not alias) so it works inside $(), eval, etc. and isn't
-    # shadowed by zsh's `?` glob metacharacter in non-command positions.
-    # Defined via eval because shellcheck/shfmt (bash parsers) reject the
-    # quoted-name function syntax even though zsh accepts it.
-    eval "'?'() { aichat \"\$@\"; }"
-
-    _aichat_zsh_widget() {
-        [[ -z "$BUFFER" ]] && return
-        local out
-        out="$(aichat -e "$BUFFER" 2>/dev/null)"
-        if [[ -n "$out" ]]; then
-            BUFFER="$out"
-            # shellcheck disable=SC2034  # CURSOR is used by zle
-            CURSOR=${#BUFFER}
-            zle reset-prompt
-        fi
-    }
-    zle -N _aichat_zsh_widget
-    bindkey '\ee' _aichat_zsh_widget
-fi
-
 # ─────────────────────────────────────────────────────────────
 # Claude Code MCP process hygiene
 # A LaunchAgent (com.signalridge.mcp-reaper) reaps orphaned MCP

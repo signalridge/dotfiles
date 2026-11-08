@@ -137,7 +137,7 @@ nix-darwin、Git のレシピを確認できます。ソースディレクトリ
 
 ## AI Harness
 
-Claude Code、Codex CLI、Cursor Agent CLI、Antigravity CLI、aichat
+Claude Code、Codex CLI、Cursor Agent CLI、Antigravity CLI
 は `dot_*` と `private_dot_config/` で設定します。Claude と Codex は
 `.chezmoitemplates/agent-instructions.md` から描画される共通のグローバル指示を
 使います。Claude Code と Codex はネイティブ OAuth を使い、起動時のモデルは

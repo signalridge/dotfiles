@@ -135,7 +135,7 @@ Where things are declared:
 
 ## AI Harnesses
 
-Claude Code, Codex CLI, Cursor Agent CLI, Antigravity CLI and aichat are
+Claude Code, Codex CLI, Cursor Agent CLI, and Antigravity CLI are
 configured from `dot_*` and `private_dot_config/`; Claude and Codex share
 global instructions rendered from `.chezmoitemplates/agent-instructions.md`.
 Claude Code and Codex use native OAuth; startup models are set in

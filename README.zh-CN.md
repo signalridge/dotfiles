@@ -130,8 +130,8 @@ nix-darwin 和 Git 相关 recipe。在源码目录中运行 `pre-commit run --al
 
 ## AI Harness
 
-Claude Code、Codex CLI、Cursor Agent CLI、Antigravity CLI 和
-aichat 都由 `dot_*` 和 `private_dot_config/` 配置；Claude 和 Codex 共用由
+Claude Code、Codex CLI、Cursor Agent CLI 和 Antigravity CLI
+都由 `dot_*` 和 `private_dot_config/` 配置；Claude 和 Codex 共用由
 `.chezmoitemplates/agent-instructions.md` 渲染的全局指令。Claude Code 和 Codex
 使用原生 OAuth；启动模型在 `.chezmoidata/claude.yaml` 和
 `dot_codex/modify_private_config.toml.tmpl` 中设置。MCP 服务器列表
