@@ -7,7 +7,7 @@ versions:
   nixInstallerAarch64LinuxSha256: bc18d8d8ca12f95d219b5978201e15d0049b2e9d8b7c49593f26503c87172145
   nixInstallerX8664LinuxSha256: 22ed14ee1b24d100d388f1fc245e3062bd5982433d159cffa6dec34c0eb15dab
   nixVersion: v3.24.2
-  nixpkgsBootstrapRev: 6dadaf4375be35033e1c84395adbd53ff5fded96
+  nixpkgsBootstrapRev: 4fe25e12eb9f4c744966dd3de5a05246cf098601
   aquaInstaller: v4.1.1
   aquaInstallerSha256: c0acde4802a1edd8b8201fd4cc1f0e52700cd4feb875f9c9793381b5b0ca2065
   aquaVersion: v2.66.1
@@ -37,8 +37,8 @@ versions:
   claudeAnthropicsSkillsSha256: 3783fe4e778029522bf3da866948353cc0c86204a6139c812907f5aebdaf78ef
   claudeBaoyuSkillsRev: ca703c2d7c2c4399a1dc0cf82224f8551e05a96d
   phurynPmSkillsRev: 2a12295a7717569baa7be181b4cfebe3ca38a6bb
-  uiUxProMaxSkillRev: b7d5353e0130feb8c5574ef1251f8a1db1873ccb
-  uiUxProMaxSkillSha256: bfca801947c5d4ca2b92181387f670d5769ff5ae0f3e4be6ca9a19a778f128e5
+  uiUxProMaxSkillRev: 4f2dbb67e64969a9a30ab00742f2d55d66ddec2b
+  uiUxProMaxSkillSha256: a7563a4b2019a1035d8af1aaf804074cdd00224174a067e1d0616fadad87a643
   openaiSkillsRev: 49f948faa9258a0c61caceaf225e179651397431
   huggingfaceSkillsRev: 25910b3d0ba31a2ba102f901cdc9e008c278a69c
   getsentrySkillsRev: e94f22214528d69899d09c627b3315ddc3544816
@@ -46,14 +46,14 @@ versions:
   cloudflareSkillsRev: 6eb6c781aa9b6438e0c7307bd102788a75fe1a6d
   vercelLabsAgentSkillsRev: 1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62
   vercelLabsNextSkillsRev: c522619e45aa3492fd2bfc916b308b275eff7798
-  vercelLabsAgentBrowserRev: d44f6989bf5e9a9a1c6dd6d97175f8c33b138eca
+  vercelLabsAgentBrowserRev: 4b0e9f01fa8d214d39bbfe5391257640634fb9a0
   supabaseAgentSkillsRev: c9be0e931b7930f7d02126d04774d904c381e7d7
   expoSkillsRev: a9e5bd3fa00b4e61f632e43f85da73aee1942582
   microsoftSkillsRev: 0696600436a9669184ce47e8d8b2ceac62e4bfac
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 18dcb447f090667171ff23666a05d6d387e2aa73
-  dailyDevSkillsRev: d460e36791add43defbae300173d52e670b9c165
-  opcSkillsRev: febd071a873968a7d4214dbff0dfc7908b5cd453
+  dailyDevSkillsRev: d8d1c3670cae911a16abdd9fb332da33fd32360a
+  opcSkillsRev: b55bcc5a89833f42cda8cb25d90875a0fb152789
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: bb1d43d98a3f8ab639a0042f90d0ec524e39a477
