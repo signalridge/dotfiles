@@ -41,12 +41,10 @@ packages:
   - name: axodotdev/cargo-dist@v0.34.0 # `dist` — was a live-only cargo install
   - name: EmbarkStudios/cargo-deny@0.20.2 # `cargo deny check` (licenses, advisories, duplicates)
   - name: nextest-rs/nextest/cargo-nextest@cargo-nextest-0.9.151 # was a live-only cargo install
-  # Shared Rust compile cache, enabled globally by dot_cargo/config.toml (build.rustc-wrapper).
-  # Tagged 'bootstrap' so it exists before any cargo build: with the wrapper set, cargo fails
-  # outright when sccache is missing, including aqua's own cargo-built packages (eza).
+  # Shared Rust compile cache, opt-in per shell (RUSTC_WRAPPER=sccache). Not set globally:
+  # on 2026-11-09 the global build.rustc-wrapper hung parallel cargo/clippy builds (server idle,
+  # requests queued) under very high load; re-enable only after reproducing with SCCACHE_LOG.
   - name: mozilla/sccache@v0.19.0
-    tags:
-      - bootstrap
   - name: sharkdp/bat@v0.26.1
   - name: eth-p/bat-extras@v2024.08.24
     # aqua update can downgrade to v20200408 due semver ordering;
