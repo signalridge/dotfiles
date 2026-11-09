@@ -1,0 +1,5 @@
+# Global cargo config. sccache shares compiled crates across projects and target dirs
+# (installed by aqua with the 'bootstrap' tag, see private_dot_config/aquaproj-aqua/aqua.yaml).
+# Override per shell with RUSTC_WRAPPER= (empty) if sccache misbehaves.
+[build]
+rustc-wrapper = "sccache"
