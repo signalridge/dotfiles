@@ -6,7 +6,9 @@ set -euo pipefail
 # run_onchange: re-runs only when the embedded list below changes.
 # Plugins (hash trigger):
 {{- range .herdr.plugins }}
+{{- if or (not (index . "os")) (eq (index . "os") $.chezmoi.os) }}
 #   - {{ .spec }}@{{ .rev }}
+{{- end }}
 {{- end }}
 
 echo ":: [18] Installing herdr plugins"
@@ -56,7 +58,9 @@ install_plugin() {
 }
 
 {{ range .herdr.plugins -}}
+{{ if or (not (index . "os")) (eq (index . "os") $.chezmoi.os) -}}
 install_plugin "{{ .spec }}" "{{ .rev }}"
+{{ end -}}
 {{ end }}
 if ((failed_plugins > 0)); then
     echo "    Error: ${failed_plugins} herdr plugin(s) failed to install; retry on next apply" >&2

@@ -1,0 +1,5 @@
+#!/bin/sh
+# Herdr installs plugins into versioned directories; resolve the active one.
+plugin_root=$(jq -r '.[] | select(.plugin_id == "luke.herdr-magpie" and .enabled == true) | .plugin_root' "$HOME/.config/herdr/plugins.json" 2>/dev/null)
+[ -n "$plugin_root" ] && [ -f "$plugin_root/statusline.sh" ] || exit 0
+exec sh "$plugin_root/statusline.sh"

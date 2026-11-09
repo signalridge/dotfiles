@@ -53,6 +53,7 @@ nix-config/modules/sing-box.nix
 .chezmoiscripts/21_wezterm-icon.sh
 
 # macOS-only GUI apps (target paths)
+.local/bin/magpie
 Library/
 .config/aerospace/
 .config/karabiner/

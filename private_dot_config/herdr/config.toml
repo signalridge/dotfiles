@@ -24,6 +24,15 @@ confirm_close = true
 mouse_scroll_lines = 3
 sidebar_width = 28
 accent = "#bd93f9"                     # Dracula purple
+tab_bar_right = [
+  { type = "command", command = "$HOME/.local/bin/herdr-magpie-status", interval_seconds = 10, timeout_seconds = 3 },
+]
+
+[ui.sidebar.agents]
+rows = [["state_icon", "machine", "workspace", "tab"], ["agent", { token = "$mp_model", dim = true }, { token = "$mp_cost", fg = "#50fa7b" }]]
+
+[ui.sidebar.spaces]
+rows = [["state_icon", "workspace"], ["branch", "git_status"], [{ token = "$mp_cost", fg = "#50fa7b" }]]
 
 [ui.toast]
 delivery = "system"                    # macOS notification on agent done / needs-input
@@ -71,6 +80,13 @@ previous_workspace = "prefix+comma"
 next_workspace = "prefix+period"
 
 # ── Plugin & tool keybinds (type="shell" runs the plugin CLI; type="pane" opens an overlay) ──
+# Magpie usage and gateway panel
+[[keys.command]]
+key = "prefix+alt+m"
+type = "shell"
+command = "herdr plugin action invoke panel --plugin luke.herdr-magpie"
+description = "Magpie: usage panel"
+
 # lazygit popup (prefix+g is herdr 'goto', so use prefix+alt+g)
 [[keys.command]]
 key = "prefix+alt+g"

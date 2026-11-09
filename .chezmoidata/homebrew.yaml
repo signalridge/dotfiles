@@ -19,6 +19,8 @@ homebrew:
   casks:
     shared:
       - codex-app # OpenAI Codex desktop app for managing coding agents
+      - herdr-app # Desktop workspace for terminals and coding agents
+      - magpie # Model gateway and TUI for coding agents
       - displaylink # USB dock/adapter multi-monitor driver; needs reboot + manual Screen Recording grant
       - dockdoor
       - drawio # draw.io Desktop; provides the `drawio` CLI that backs the drawio-skill (diagram gen/export)
