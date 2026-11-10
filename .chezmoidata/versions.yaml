@@ -46,14 +46,14 @@ versions:
   cloudflareSkillsRev: 6eb6c781aa9b6438e0c7307bd102788a75fe1a6d
   vercelLabsAgentSkillsRev: 1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62
   vercelLabsNextSkillsRev: c522619e45aa3492fd2bfc916b308b275eff7798
-  vercelLabsAgentBrowserRev: 4b0e9f01fa8d214d39bbfe5391257640634fb9a0
+  vercelLabsAgentBrowserRev: e7519957b9067c541825afa21a792fbe1f483047
   supabaseAgentSkillsRev: c9be0e931b7930f7d02126d04774d904c381e7d7
   expoSkillsRev: a9e5bd3fa00b4e61f632e43f85da73aee1942582
-  microsoftSkillsRev: 0696600436a9669184ce47e8d8b2ceac62e4bfac
+  microsoftSkillsRev: 18e05b845d43e869b5701d796abce6e9a49e57db
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 18dcb447f090667171ff23666a05d6d387e2aa73
-  dailyDevSkillsRev: 14bd013a2f3b5bee0d53fd16bf76006f333ebaa6
-  opcSkillsRev: 38ff3f821645354a3f92e847e7829cb35e25e509
+  dailyDevSkillsRev: cd59991c3e18ea9364407c1895c4481915c5dbe2
+  opcSkillsRev: 361a78335b0582ac3054712344793b2635cea7bb
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: d68d80aec298e1b74b37c2a472c002b5217248b3
@@ -62,7 +62,7 @@ versions:
   dpearsonSwiftSkillsRev: 8d90fd121a263355a4fb44fd082af1416a5c1c2a
   effectiveTypescriptRev: d754db2077d71ae1e2b57bf50ae7bc565067a2e0
   bobmatnycMpmSkillsRev: 718070a7d622921b01687799a1f9613f36c6f615
-  humanizerEnRev: 0ef9fe5bc3572734fd3ae6c448fe00a30cd5dcf0
+  humanizerEnRev: b48c832f0f809c1b5658edbb838c2521b72f2413
   humanizerJaRev: 1b850cfe8529f7836025b2edd15b3d64447f8fb6
   quAiWeiRev: 1d32e803f091ec90808a69683ebf49e8a970a5e7
   drawioSkillRev: 89ff88cb27cd876d9085071d4f73c2502d0492e4
