@@ -11,6 +11,16 @@ render_config() {
     chezmoi execute-template --source . "$prefix{{ includeTemplate \"sing-box/config.tmpl\" (dict \"root\" \$ctx \"password\" (printf \"%s=\" (repeat 43 \"A\")) \"secret\" \"fixture-api\" \"tun\" (eq \$ctx.chezmoi.os \"darwin\")) }}" >"$temporary/config.json"
 }
 render_config
+if [ "$platform" = darwin ]; then
+    jq -e '
+      ([.dns.rules[] | select(.clash_mode == "direct-ipv4" and .domain_suffix == ["jaist.ac.jp"] and .action == "route" and .server == "remote")] | length) == 1 and
+      ([.dns.rules[] | select(.clash_mode == "direct-ipv4" and .rule_set == ["geosite-category-scholar-!cn"] and .action == "route")] | length) == 1 and
+      ([.dns.rules[] | select(.clash_mode == "direct-ipv4" and .action == "predefined" and .domain_keyword == null and .query_type == ["AAAA", "HTTPS", "SVCB"])] | length) == 1 and
+      (.route.rules[-1] | .clash_mode == "direct-ipv4" and .ip_version == 6 and .action == "reject")
+    ' "$temporary/config.json" >/dev/null
+else
+    jq -e '[.dns.rules[]?, .route.rules[] | select(.clash_mode == "direct-ipv4")] | length == 0' "$temporary/config.json" >/dev/null
+fi
 jq -e '[.outbounds[] | select(.tag == "jaist auto")] | length == 0' "$temporary/config.json" >/dev/null
 jq -e '.outbounds[] | select(.tag == "jaist") | .default == "gpuserver" and .outbounds == ["gpuserver","nas","JAIST VPN","Egress"] and .interrupt_exist_connections == false' "$temporary/config.json" >/dev/null
 jq -e '.outbounds[] | select(.tag == "Egress") | .interrupt_exist_connections == false' "$temporary/config.json" >/dev/null

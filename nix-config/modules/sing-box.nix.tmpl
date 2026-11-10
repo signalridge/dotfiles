@@ -1,6 +1,4 @@
 {{- $mode := includeTemplate "sing-box/mode.tmpl" . -}}
-{{- $store := joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/sing-box" -}}
-{{- $sshExit := and (dig "work" false .) (stat (joinPath $store "ssh-tunnel.age")) (stat (joinPath $store "ssh-tunnel-key.age")) -}}
 # ─────────────────────────────────────────────────────────────────────────────
 # sing-box (signalridge-nur flake input: upstream + F5 SAML patches)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -131,9 +129,7 @@ in
       probe="$(${jq} -rn '"https://www.gstatic.com/generate_204" | @uri')"
       uri() { ${jq} -rn --arg s "$1" '$s | @uri'; }
       api() { /usr/bin/curl -sf --max-time 5 -H @"${runDir}/api-header" "$@"; }
-{{- if $sshExit }}
 {{ include ".chezmoitemplates/sing-box/company-compat.sh" | indent 6 }}
-{{- end }}
       exit_failover() {
         printf '%s\n' "$routes" | while IFS= read -r route; do
           [ -n "$route" ] || continue
@@ -156,9 +152,9 @@ in
 
       ${sing-box}/bin/sing-box run -c "${runDir}/config.json" -D /var/lib/sing-box &
       pid=$!
-{{- if $sshExit }}
       # Follow panel changes independently of the slower DNS/mesh health loop.
-      # Only company enables the IPv4/TCP rules; other Egress choices use Rule.
+      # Company uses its IPv4/TCP rules. Direct uses IPv4 when the physical
+      # network's IPv6 probe fails; other Egress choices retain Rule mode.
       (
         while kill -0 "$pid" 2>/dev/null; do
           company_compat "$api" "${jq}" || true
@@ -167,9 +163,6 @@ in
       ) &
       compat_pid=$!
       trap 'kill "$compat_pid" 2>/dev/null || true; dns_restore; kill "$pid" 2>/dev/null; wait "$pid"; exit 0' TERM INT
-{{- else }}
-      trap 'dns_restore; kill "$pid" 2>/dev/null; wait "$pid"; exit 0' TERM INT
-{{- end }}
       for _ in 1 2 3 4 5 6 7 8 9 10; do dns_ok && break; sleep 1; done
       if dns_ok; then dns_apply; else echo "sing-box: TUN DNS not answering; system DNS left alone" >&2; fi
       misses=0
@@ -200,10 +193,8 @@ in
         fi
         exit_failover || true
       done
-{{- if $sshExit }}
       kill "$compat_pid" 2>/dev/null || true
       wait "$compat_pid" 2>/dev/null || true
-{{- end }}
       dns_restore
       wait "$pid"
     '';

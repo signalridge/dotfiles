@@ -172,6 +172,12 @@
 {{-   end -}}
 {{-   $rules = append $rules $match -}}
 {{- end -}}
+{{- /* Fail IPv6 attempts that fall through to Direct quickly when the Mac's
+       physical network has no working IPv6. Keep explicitly routed destinations
+       above this rule so their exits can continue to use IPv6. */ -}}
+{{- if and (dig "tun" false .) (eq $r.chezmoi.os "darwin") -}}
+{{-   $rules = append $rules (dict "clash_mode" "direct-ipv4" "ip_version" 6 "action" "reject" "no_drop" true) -}}
+{{- end -}}
 {{- $inbounds := list (dict "type" "mixed" "tag" "mixed-in" "listen" "127.0.0.1" "listen_port" $r.singBox.mixedPort "set_system_proxy" false) -}}
 {{- /* DNS. Without a TUN (headless Linux, apps opt in via proxy-on) apps hand
        the proxy domain names, so they resolve at the exit already and the
@@ -219,6 +225,22 @@
        The default DoH transport uses Egress, which may be that pending VPN. */ -}}
 {{-   if gt (len $directDomains) 0 -}}
 {{-     $_ := set $dns "rules" (prepend $dns.rules (dict "domain" (uniq $directDomains) "action" "route" "server" "lan")) -}}
+{{-   end -}}
+{{-   if eq $r.chezmoi.os "darwin" -}}
+{{- /* Preserve DNS for destinations with their own exit. Exceptions that
+       explicitly fall through to Egress must instead use the Direct fallback. */ -}}
+{{-     range $r.singBox.exitRoutes -}}
+{{-       if hasKey . "exceptKeyword" -}}
+{{-         $_ := set $dns "rules" (append $dns.rules (dict "clash_mode" "direct-ipv4" "domain_keyword" .exceptKeyword "query_type" (list "AAAA" "HTTPS" "SVCB") "action" "predefined" "rcode" "NOERROR")) -}}
+{{-       end -}}
+{{-       if hasKey . "domainSuffix" -}}
+{{-         $_ := set $dns "rules" (append $dns.rules (dict "clash_mode" "direct-ipv4" "domain_suffix" .domainSuffix "query_type" (list "AAAA" "HTTPS" "SVCB") "action" "route" "server" "remote")) -}}
+{{-       end -}}
+{{-       if hasKey . "ruleSets" -}}
+{{-         $_ := set $dns "rules" (append $dns.rules (dict "clash_mode" "direct-ipv4" "rule_set" .ruleSets "query_type" (list "AAAA" "HTTPS" "SVCB") "action" "route" "server" "remote")) -}}
+{{-       end -}}
+{{-     end -}}
+{{-     $_ := set $dns "rules" (append $dns.rules (dict "clash_mode" "direct-ipv4" "query_type" (list "AAAA" "HTTPS" "SVCB") "action" "predefined" "rcode" "NOERROR")) -}}
 {{-   end -}}
 {{-   if $sshExit -}}
 {{- /* Empty AAAA and HTTPS/SVCB responses avoid IPv6 and HTTP/3 hints only
