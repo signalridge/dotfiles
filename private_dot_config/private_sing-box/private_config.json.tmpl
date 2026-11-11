@@ -1,11 +1,11 @@
 {{- $mode := includeTemplate "sing-box/mode.tmpl" . -}}
 {{- if eq $mode "service" -}}
-{{- $password := output "gopass" "show" "-o" "easytier/exit-ss-password" | trim -}}
-{{- $secret := output "gopass" "show" "-o" "sing-box/clash-api-secret" | trim -}}
+{{- $password := output (includeTemplate "gopass/command.tmpl" .) "show" "-o" "easytier/exit-ss-password" | trim -}}
+{{- $secret := output (includeTemplate "gopass/command.tmpl" .) "show" "-o" "sing-box/clash-api-secret" | trim -}}
 {{- if not (and $password $secret) }}{{ fail "missing gopass easytier/exit-ss-password or sing-box/clash-api-secret" }}{{ end -}}
 {{- $bastion := "" -}}
 {{- if stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/sing-box/bastion-outbounds.age") -}}
-{{-   $bastion = output "gopass" "show" "-o" "sing-box/bastion-outbounds" | trim | fromJson -}}
+{{-   $bastion = output (includeTemplate "gopass/command.tmpl" .) "show" "-o" "sing-box/bastion-outbounds" | trim | fromJson -}}
 {{- end }}
 {{ includeTemplate "sing-box/config.tmpl" (dict "root" . "password" $password "secret" $secret "bastion" $bastion) }}
 {{- end }}

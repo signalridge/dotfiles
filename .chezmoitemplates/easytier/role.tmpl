@@ -28,7 +28,7 @@
 {{- $_ := set $role "bastion" "" -}}
 {{- if $role.member -}}
 {{-   if stat (joinPath .chezmoi.homeDir ".local/share/gopass/stores/root/easytier/bastion-host.age") -}}
-{{-     $_ := set $role "bastion" (output "gopass" "show" "-o" "easytier/bastion-host" | trim) -}}
+{{-     $_ := set $role "bastion" (output (includeTemplate "gopass/command.tmpl" .) "show" "-o" "easytier/bastion-host" | trim) -}}
 {{-   else -}}
 {{-     $role = dict "member" false "exit" "" "name" "" "ip" "" "bastion" "" -}}
 {{-   end -}}

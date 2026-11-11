@@ -105,6 +105,11 @@ chezmoi init --apply \
 され、`run_after_*` は apply のたびに実行され、それぞれ独自のガードや実行間隔を
 持ちます。マシンごとの条件はスクリプト自体と `.chezmoiignore` にあります。
 
+新しいマシンでは `read-source-state.pre` フック（`.bootstrap/pre-source-state.sh`）が、
+chezmoi がソース状態を読む前に Nix のインストール、鍵の復元、gopass のクローンを
+済ませるため、`.chezmoiignore` とテンプレートは最初からストアを参照でき、apply は
+1 回で済みます。準備済みのマシンではこのフックは何もしません。
+
 ## 日常運用
 
 `~/Justfile` は `Justfile.tmpl` から描画されます。`just --list` で chezmoi、Nix、

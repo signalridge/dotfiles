@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# gopass for render-time template calls (.chezmoitemplates/gopass/command.tmpl).
+# chezmoi's environment is whatever shell started it: on a fresh machine, or
+# from a plain bash/ssh session, aqua's gopass is off PATH, and its shim fails
+# without AQUA_GLOBAL_CONFIG (aqua code 004); a template cannot set that for
+# `output`. Use aqua's gopass with its config exported, else the copy
+# .bootstrap/setup-gopass-store.sh installs into the isolated bootstrap profile.
+set -euo pipefail
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=SCRIPTDIR/../.chezmoitemplates/shell/source_aqua_env.sh
+. "$here/../.chezmoitemplates/shell/source_aqua_env.sh"
+if command -v gopass >/dev/null 2>&1; then
+    exec gopass "$@"
+fi
+bootstrap="${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/dotfiles-bootstrap/bin/gopass"
+if [[ -x "$bootstrap" ]]; then
+    exec "$bootstrap" "$@"
+fi
+echo "gopass not found (aqua or the bootstrap profile); run chezmoi apply" >&2
+exit 127

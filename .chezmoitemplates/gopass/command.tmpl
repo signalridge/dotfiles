@@ -1,0 +1,3 @@
+{{- /* The gopass to run from render-time `output` calls: a wrapper that finds
+       it regardless of the PATH chezmoi was started with (see .bootstrap/gopass). */ -}}
+{{- joinPath .chezmoi.sourceDir ".bootstrap/gopass" -}}

@@ -101,6 +101,10 @@ gopass 和 mise，之后是 AI 集成、服务和网络栈。`run_onchange_*` �
 变化时重新运行；`run_after_*` 脚本每次 apply 都会运行，并自带守卫或执行周期。
 按机器区分的条件写在脚本本身和 `.chezmoiignore` 中。
 
+全新机器上，`read-source-state.pre` 钩子（`.bootstrap/pre-source-state.sh`）会在 chezmoi
+读取源状态之前先完成 Nix 安装、密钥恢复和 gopass 克隆，因此 `.chezmoiignore` 和模板
+第一次就能看到密码库，一次 apply 即可完成；机器就绪后该钩子不做任何事。
+
 ## 日常操作
 
 `~/Justfile` 由 `Justfile.tmpl` 渲染；运行 `just --list` 查看 chezmoi、Nix、
