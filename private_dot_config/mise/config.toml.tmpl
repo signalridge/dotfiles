@@ -64,6 +64,20 @@ go = "latest"
 # Rust
 rust = "latest"
 
+# mbx (mr-boxington, jdx): a shared Cargo compile cache across checkouts and
+# worktrees with one compiler-permit pool, so parallel builds neither
+# recompile the same crates nor oversubscribe the CPU. Enabled globally on
+# purpose (2026-11-12, after a mare trial: a second checkout built in 56 s
+# instead of 111 s; three concurrent clippy runs finished without hanging).
+# Activation is mbx's own Cargo shim, put first on PATH by [env] below. mise's
+# native `mr_boxington = true` rust option does NOT work here: mise is
+# installed via aqua, so its cargo command-wrapper symlinks to aqua-proxy,
+# which dispatches on argv[0] and runs the real cargo, bypassing mbx.
+# One-time per machine: `mbx setup` (installs the shim). Escape hatch for one
+# command: MBX_DISABLE=1 cargo ...; if plain Cargo then fails with a
+# not-writable error in a target dir mbx filled, run `mbx clean`.
+"mr-boxington" = "latest"
+
 # Lua 5.4 runtime (replaces nix lua5_4)
 lua = "5.4"
 
@@ -135,4 +149,13 @@ package_manager = "bun"
 
 [env]
 # Add local bin to PATH
-_.path = ["./node_modules/.bin", "./bin"]
+_.path = [
+  # mbx Cargo shim first, ahead of ~/.cargo/bin (see the mr-boxington entry)
+{{- if eq .chezmoi.os "darwin" }}
+  "{{ .chezmoi.homeDir }}/Library/Application Support/mbx/bin",
+{{- else }}
+  "{{ .chezmoi.homeDir }}/.local/share/mbx/bin",
+{{- end }}
+  "./node_modules/.bin",
+  "./bin",
+]
