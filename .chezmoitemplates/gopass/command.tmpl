@@ -1,15 +1,3 @@
-{{- /* The gopass binary for render-time `output` calls. chezmoi's PATH is fixed
-       when it starts, so on a fresh machine (no ~/.zshenv yet) aqua's gopass is
-       either off PATH or an aqua shim that fails without AQUA_GLOBAL_CONFIG
-       (code 004). Fall back to the copy .bootstrap/setup-gopass-store.sh installs
-       into the isolated bootstrap profile before the source state is read. */ -}}
-{{- $cmd := lookPath "gopass" -}}
-{{- if and $cmd (contains "aquaproj-aqua" $cmd) (not (env "AQUA_GLOBAL_CONFIG")) -}}
-{{-   $cmd = "" -}}
-{{- end -}}
-{{- if not $cmd -}}
-{{-   $state := env "XDG_STATE_HOME" | default (joinPath .chezmoi.homeDir ".local/state") -}}
-{{-   $bootstrap := joinPath $state "nix/profiles/dotfiles-bootstrap/bin/gopass" -}}
-{{-   $cmd = ternary $bootstrap "gopass" (not (not (stat $bootstrap))) -}}
-{{- end -}}
-{{- $cmd -}}
+{{- /* The gopass to run from render-time `output` calls: a wrapper that finds
+       it regardless of the PATH chezmoi was started with (see .bootstrap/gopass). */ -}}
+{{- joinPath .chezmoi.sourceDir ".bootstrap/gopass" -}}
