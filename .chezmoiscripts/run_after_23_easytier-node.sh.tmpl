@@ -37,6 +37,7 @@ UNIT="/etc/systemd/system/easytier.service"
 GCROOT="${XDG_STATE_HOME:-$HOME/.local/state}/easytier/easytier"
 {{- end }}
 
+{{ include ".chezmoitemplates/shell/source_aqua_env.sh" }}
 if ! command -v gopass >/dev/null 2>&1; then
     echo "    Skipped (gopass not installed)"
     exit 0

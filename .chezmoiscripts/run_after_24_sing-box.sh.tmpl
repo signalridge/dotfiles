@@ -29,6 +29,7 @@ LABEL="org.nixos.sing-box"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/chezmoi"
 STATE="${STATE_DIR}/sing-box-config.sha256"
 
+{{ include ".chezmoitemplates/shell/source_aqua_env.sh" }}
 if ! command -v gopass >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
     echo "    Skipped (gopass or jq not installed)"
     exit 0
