@@ -25,7 +25,10 @@ gopass_repo="${3:-}"
 
 store_dir="$HOME/.local/share/gopass/stores/root"
 gopass_config="${XDG_CONFIG_HOME:-$HOME/.config}/gopass/config"
-if [[ -f "$HOME/.ssh/main" && -d "$store_dir/.git" && -f "$gopass_config" ]]; then
+# Ready = key + cloned store + a gopass config that names the key (a clone
+# interrupted before setup-gopass-store.sh set the age identity is not ready).
+if [[ -f "$HOME/.ssh/main" && -d "$store_dir/.git" && -f "$gopass_config" ]] &&
+    grep -q '^[[:space:]]*ssh-key-path' "$gopass_config"; then
     exit 0
 fi
 

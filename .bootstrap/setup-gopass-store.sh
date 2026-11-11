@@ -22,7 +22,6 @@ ssh://git@github.com/*) repo="https://github.com/${repo#ssh://git@github.com/}" 
 esac
 
 store_dir="$HOME/.local/share/gopass/stores/root"
-config="${XDG_CONFIG_HOME:-$HOME/.config}/gopass/config"
 # Same isolated profile as .bootstrap/restore-keys.sh; templates fall back to it
 # (.chezmoitemplates/gopass/command.tmpl) until aqua's gopass is usable.
 bootstrap_profile="${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/dotfiles-bootstrap"
@@ -71,28 +70,20 @@ if ! gopass_works; then
     }
 fi
 
-# chezmoi writes the full ~/.config/gopass/config (private_dot_config/gopass/
-# config.tmpl), but not before it has read the source state. Seed the fields
-# gopass needs to find and decrypt the store; the managed file replaces it.
-if [[ ! -f "$config" ]]; then
-    mkdir -p "$(dirname "$config")"
-    (
-        umask 077
-        cat >"$config" <<EOF
-# Seeded by .bootstrap/setup-gopass-store.sh; replaced by chezmoi on apply.
-[mounts]
-	crypto = age
-	path = ${store_dir}
-
-[mounts.root]
-	source_url = ${repo}
-
-[age]
-	ssh-key-path = ${HOME}/.ssh/main
-	sshkeys = true
-EOF
-    )
-fi
+# gopass must decrypt with ~/.ssh/main (age, SSH key). chezmoi writes the full
+# ~/.config/gopass/config (private_dot_config/gopass/config.tmpl), but not before
+# it has read the source state, and `gopass clone` rewrites the file keeping only
+# the mount path ("no identities specified"). Set the two age keys explicitly,
+# only when they differ, so a chezmoi-managed config is left untouched.
+ensure_age_identity() {
+    local key_path="$HOME/.ssh/main"
+    if [[ "$(gopass config age.ssh-key-path 2>/dev/null || true)" != "$key_path" ]]; then
+        gopass config age.ssh-key-path "$key_path" >/dev/null
+    fi
+    if [[ "$(gopass config age.sshkeys 2>/dev/null || true)" != "true" ]]; then
+        gopass config age.sshkeys true >/dev/null
+    fi
+}
 
 verify_store() {
     local first_password
@@ -110,6 +101,7 @@ verify_store() {
 }
 
 if [[ -d "$store_dir/.git" ]]; then
+    ensure_age_identity
     verify_store || exit 1
     echo "✓ gopass store already exists and is readable"
     exit 0
@@ -162,6 +154,8 @@ gopass clone --check-keys=false "$repo"
 echo ""
 echo "✓ gopass password store cloned successfully"
 echo ""
+
+ensure_age_identity
 
 # Verify the clone before allowing run_onchange to record success.
 echo "Verifying decryption..."
