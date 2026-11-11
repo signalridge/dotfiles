@@ -218,6 +218,14 @@ command = "{{ .chezmoi.sourceDir }}/.chezmoitemplates/shell/age_command_wrapper.
 identity = "~/.ssh/main"
 recipientsFile = "~/.ssh/main.pub"
 
+[scriptEnv]
+# Every chezmoi script runs with aqua's config exported. On a fresh machine
+# ~/.zshenv has not been sourced yet, and aqua shims fail without it (code 004:
+# "command is not found"), which aborted the first apply in scripts 06, 11 and 18.
+# Same paths as dot_zshenv.
+AQUA_GLOBAL_CONFIG = "{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua.yaml"
+AQUA_POLICY_CONFIG = "{{ .chezmoi.homeDir }}/.config/aquaproj-aqua/aqua-policy.yaml"
+
 [hooks.read-source-state.pre]
 # Restore keys and clone the gopass store BEFORE chezmoi reads the source state
 # (.chezmoiignore and some templates depend on them), so a fresh machine needs
