@@ -193,6 +193,10 @@ jjSigningKey = {{ $jjSigningKey | quote }}
 # EasyTier exit role (.chezmoidata/easytier.yaml exits); set by hand, never prompted.
 easytierExit = {{ .easytierExit | quote }}
 {{- end }}
+{{- if hasKey . "easytierMember" }}
+# EasyTier member role (.chezmoidata/easytier.yaml members); set by hand, never prompted.
+easytierMember = {{ .easytierMember | quote }}
+{{- end }}
 
 [edit]
 command = "code"

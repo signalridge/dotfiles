@@ -4,8 +4,8 @@
 
 set -euo pipefail
 
-# EasyTier node: every Mac (DHCP client) and Linux exits that set
-# `easytierExit` (.chezmoitemplates/easytier/role.tmpl). Both platforms
+# EasyTier node: every Mac (DHCP client) and Linux machines that set
+# `easytierExit` or `easytierMember` (.chezmoitemplates/easytier/role.tmpl). Both platforms
 # run the official release binaries from the root-owned, immutable /nix/store
 # (nix-config/modules/easytier-package.nix) as a root-managed service that reads
 # /etc/easytier/easytier.env (root-only 0600); the credentials' source of truth
@@ -88,7 +88,7 @@ render_unit() {
     cat <<EOF
 # Managed by chezmoi (.chezmoiscripts/run_after_23_easytier-node.sh); edits are overwritten.
 [Unit]
-Description=EasyTier exit {{ $et.exit }} ({{ $et.ip }})
+Description=EasyTier {{ if $et.exit }}exit{{ else }}member{{ end }} {{ $et.name }} ({{ $et.ip }})
 Documentation=https://easytier.cn/en/guide/network/configurations.html
 After=network-online.target
 Wants=network-online.target

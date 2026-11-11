@@ -2,7 +2,8 @@
 # Membership is by role, never by hostname (.chezmoitemplates/easytier/role.tmpl):
 #   every Mac      -> client, virtual IP assigned by EasyTier DHCP (--dhcp)
 #   Linux machine  -> exit, only when its own chezmoi config data sets
-#                     `easytierExit = "<name in exits>"` (fixed IP below)
+#                     `easytierExit = "<name in exits>"` (fixed IP below), or
+#                     plain member with `easytierMember = "<name in members>"`
 #   anything else  -> not a member, renders nothing.
 # Both platforms run the official release
 # binaries from /nix/store (nix-config/modules/easytier-package.nix.tmpl):
@@ -53,3 +54,9 @@ easytier:
     # system units easytier.service + ss-exit.service (same flags/ACL as
     # gpuserver's rendered ones, binaries under /opt, secrets in /etc/{easytier,ss-exit}).
     pve: 10.144.144.4
+  # Plain members with a fixed virtual IP and no exit proxy (Linux machines
+  # whose chezmoi data sets `easytierMember = "<name>"`, or hand-deployed
+  # nodes). Not offered in sing-box's Egress.
+  members:
+    arch: 10.144.144.5 # Arch dev VM on pve (easytierMember = "arch")
+    win: 10.144.144.6 # Windows 11 test VM on pve, deployed outside this repo

@@ -91,6 +91,7 @@ chezmoi init --apply \
 | `timezone`                           | 自动检测；否则提示，最终回退为 `Etc/UTC`。                                       |
 | `keysRepository`、`gopassRepository` | 仅在启用加密时提示。                                                             |
 | `easytierExit`                       | 从不提示；在要充当 EasyTier 出口的 Linux 机器上手动设置。                        |
+| `easytierMember`                     | 从不提示；在以固定 IP 加入 EasyTier、但不作为出口的 Linux 机器上手动设置。       |
 
 ## Bootstrap 流程
 
@@ -120,7 +121,8 @@ nix-darwin 和 Git 相关 recipe。在源码目录中运行 `pre-commit run --al
 ## 网络栈
 
 - **EasyTier**：每台 Mac 都以客户端身份加入私有 mesh；Linux 机器只有在其本地数据
-  设置了 `easytierExit` 时才作为出口加入（`.chezmoidata/easytier.yaml`，脚本 `23`）。
+  设置了 `easytierExit`（作为出口）或 `easytierMember`（固定 IP、不作出口）时才加入
+  （`.chezmoidata/easytier.yaml`，脚本 `23`）。
 - **sing-box**：每台机器都有客户端（Mac 上为 TUN，headless Linux 上为用户服务）；
   由 `Egress` 选择器挑选出口（`.chezmoidata/sing-box.yaml`，脚本 `24`）。
 - **JAIST VPN**：补丁版 sing-box 中的 OpenConnect 端点，配合

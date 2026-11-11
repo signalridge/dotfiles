@@ -81,17 +81,18 @@ chezmoi init --apply \
 
 All prompts and derived values live in `.chezmoi.toml.tmpl`.
 
-| Data                                 | When it is requested or used                                                                |
-| ------------------------------------ | ------------------------------------------------------------------------------------------- |
-| `work`                               | Required; prompted on a TTY. Derives `private`.                                             |
-| `useEncryption`                      | Required unless `DOTFILES_USE_ENCRYPTION` is set. Gates key restore, gopass and `~/.ssh/*`. |
-| `hostname`                           | Prompted on non-work machines; work machines use the system hostname.                       |
-| `gitUsername`, `gitEmail`            | Prompted when absent; there is no identity default.                                         |
-| `headless`                           | Prompted on a TTY; otherwise stored data or an OS-based fallback.                           |
-| `installMasApps`                     | macOS TTY prompt (Mac App Store installs).                                                  |
-| `timezone`                           | Auto-detected; otherwise prompted, falling back to `Etc/UTC`.                               |
-| `keysRepository`, `gopassRepository` | Prompted only with encryption enabled.                                                      |
-| `easytierExit`                       | Never prompted; set by hand on a Linux machine that should act as an EasyTier exit.         |
+| Data                                 | When it is requested or used                                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `work`                               | Required; prompted on a TTY. Derives `private`.                                                         |
+| `useEncryption`                      | Required unless `DOTFILES_USE_ENCRYPTION` is set. Gates key restore, gopass and `~/.ssh/*`.             |
+| `hostname`                           | Prompted on non-work machines; work machines use the system hostname.                                   |
+| `gitUsername`, `gitEmail`            | Prompted when absent; there is no identity default.                                                     |
+| `headless`                           | Prompted on a TTY; otherwise stored data or an OS-based fallback.                                       |
+| `installMasApps`                     | macOS TTY prompt (Mac App Store installs).                                                              |
+| `timezone`                           | Auto-detected; otherwise prompted, falling back to `Etc/UTC`.                                           |
+| `keysRepository`, `gopassRepository` | Prompted only with encryption enabled.                                                                  |
+| `easytierExit`                       | Never prompted; set by hand on a Linux machine that should act as an EasyTier exit.                     |
+| `easytierMember`                     | Never prompted; set by hand on a Linux machine that joins EasyTier at a fixed IP without being an exit. |
 
 ## Bootstrap Flow
 
@@ -124,8 +125,8 @@ Where things are declared:
 ## Network Stack
 
 - **EasyTier**: every Mac joins the private mesh as a client; a Linux machine
-  joins as an exit only when its local data sets `easytierExit`
-  (`.chezmoidata/easytier.yaml`, script `23`).
+  joins only when its local data sets `easytierExit` (as an exit) or
+  `easytierMember` (fixed IP, no exit) (`.chezmoidata/easytier.yaml`, script `23`).
 - **sing-box**: client on every machine (TUN on Macs, user service on headless
   Linux); its `Egress` selector picks an exit (`.chezmoidata/sing-box.yaml`, script `24`).
 - **JAIST VPN**: an OpenConnect endpoint in the patched sing-box with

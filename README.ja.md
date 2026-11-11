@@ -83,17 +83,18 @@ chezmoi init --apply \
 
 すべてのプロンプトと導出値は `.chezmoi.toml.tmpl` にあります。
 
-| データ                               | 要求・使用されるタイミング                                                      |
-| ------------------------------------ | ------------------------------------------------------------------------------- |
-| `work`                               | 必須。TTY でプロンプト表示。`private` の導出に使用。                            |
-| `useEncryption`                      | `DOTFILES_USE_ENCRYPTION` がなければ必須。鍵の復元、gopass、`~/.ssh/*` を制御。 |
-| `hostname`                           | 仕事用以外のマシンでプロンプト表示。仕事用マシンはシステムのホスト名を使用。    |
-| `gitUsername`、`gitEmail`            | 未設定ならプロンプト表示。身元のデフォルト値はありません。                      |
-| `headless`                           | TTY でプロンプト表示。それ以外は保存済みデータか OS ベースのフォールバック。    |
-| `installMasApps`                     | macOS の TTY プロンプト（Mac App Store のインストール）。                       |
-| `timezone`                           | 自動検出。できなければプロンプト表示し、最終的に `Etc/UTC` にフォールバック。   |
-| `keysRepository`、`gopassRepository` | 暗号化が有効なときだけプロンプト表示。                                          |
-| `easytierExit`                       | プロンプトなし。EasyTier の出口にする Linux マシンで手動設定します。            |
+| データ                               | 要求・使用されるタイミング                                                              |
+| ------------------------------------ | --------------------------------------------------------------------------------------- |
+| `work`                               | 必須。TTY でプロンプト表示。`private` の導出に使用。                                    |
+| `useEncryption`                      | `DOTFILES_USE_ENCRYPTION` がなければ必須。鍵の復元、gopass、`~/.ssh/*` を制御。         |
+| `hostname`                           | 仕事用以外のマシンでプロンプト表示。仕事用マシンはシステムのホスト名を使用。            |
+| `gitUsername`、`gitEmail`            | 未設定ならプロンプト表示。身元のデフォルト値はありません。                              |
+| `headless`                           | TTY でプロンプト表示。それ以外は保存済みデータか OS ベースのフォールバック。            |
+| `installMasApps`                     | macOS の TTY プロンプト（Mac App Store のインストール）。                               |
+| `timezone`                           | 自動検出。できなければプロンプト表示し、最終的に `Etc/UTC` にフォールバック。           |
+| `keysRepository`、`gopassRepository` | 暗号化が有効なときだけプロンプト表示。                                                  |
+| `easytierExit`                       | プロンプトなし。EasyTier の出口にする Linux マシンで手動設定します。                    |
+| `easytierMember`                     | プロンプトなし。出口にせず固定 IP で EasyTier に参加する Linux マシンで手動設定します。 |
 
 ## Bootstrap フロー
 
@@ -125,8 +126,8 @@ nix-darwin、Git のレシピを確認できます。ソースディレクトリ
 ## ネットワークスタック
 
 - **EasyTier**：すべての Mac がクライアントとしてプライベート mesh に参加します。
-  Linux マシンはローカルデータで `easytierExit` を設定したときだけ出口として参加
-  します（`.chezmoidata/easytier.yaml`、スクリプト `23`）。
+  Linux マシンはローカルデータで `easytierExit`（出口）または `easytierMember`
+  （固定 IP、出口なし）を設定したときだけ参加します（`.chezmoidata/easytier.yaml`、スクリプト `23`）。
 - **sing-box**：すべてのマシンにクライアントがあり（Mac では TUN、headless Linux
   ではユーザーサービス）、`Egress` セレクターで出口を選びます
   （`.chezmoidata/sing-box.yaml`、スクリプト `24`）。
