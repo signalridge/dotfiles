@@ -1,0 +1,8 @@
+{{- /* create_: seeded once, never overwritten. On headless Linux there is no
+       keyring, so `gh auth login` stores oauth_token in this file; a managed
+       (overwriting) template erased it on every apply ("token is invalid"). */ -}}
+github.com:
+  git_protocol: https
+  users:
+    {{ .gitUsername }}:
+  user: {{ .gitUsername }}
