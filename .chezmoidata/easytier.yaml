@@ -49,3 +49,7 @@ easytier:
   exits:
     gpuserver: 10.144.144.3 # easytierExit = "gpuserver" in gpuserver1's chezmoi.toml
     nas: 10.144.144.2 # Docker on the NAS, deployed outside this repo
+    # Proxmox VE host at home, deployed outside this repo: hand-installed
+    # system units easytier.service + ss-exit.service (same flags/ACL as
+    # gpuserver's rendered ones, binaries under /opt, secrets in /etc/{easytier,ss-exit}).
+    pve: 10.144.144.4
