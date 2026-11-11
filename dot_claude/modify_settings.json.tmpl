@@ -203,8 +203,16 @@ if command -v jq >/dev/null 2>&1 && printf '%s' "$EXISTING" | jq -e . >/dev/null
         <(printf '%s' "$FALLBACK") \
         <(printf '%s' "$EXISTING") \
         <(printf '%s' "$MANAGED")
-else
+elif command -v jq >/dev/null 2>&1; then
     jq -s '.[0] * .[1]' \
         <(printf '%s' "$FALLBACK") \
         <(printf '%s' "$MANAGED")
+elif [[ -n "$EXISTING" ]]; then
+    # No jq yet (fresh bootstrap: it arrives with the Nix/aqua scripts that run
+    # after the files): leave the file as it is; the next apply merges it.
+    printf '%s' "$EXISTING"
+else
+    # No jq and no file: MANAGED alone. FALLBACK is the bottom layer of every
+    # later merge, so the next apply (with jq) still seeds its keys.
+    printf '%s\n' "$MANAGED"
 fi
