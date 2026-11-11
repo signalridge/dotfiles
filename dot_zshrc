@@ -14,6 +14,16 @@ if [[ "$OSTYPE" == linux* ]] && [[ -z "$SSH_AUTH_SOCK" ]]; then
 fi
 
 source "$HOME/.custom/exports.sh"
+
+# Completion system, needed before eval.sh (carapace and fzf-tab call compdef).
+# nix-darwin's /etc/zshrc and Debian/Ubuntu's /etc/zsh/zshrc already run
+# compinit; Arch's /etc/zsh does not ("command not found: compdef").
+if (( ! $+functions[compdef] )); then
+    autoload -Uz compinit bashcompinit
+    compinit -i
+    bashcompinit
+fi
+
 source "$HOME/.custom/eval.sh"
 source "$HOME/.custom/fzf-tab.zsh"
 source "$HOME/.custom/alias.sh"
