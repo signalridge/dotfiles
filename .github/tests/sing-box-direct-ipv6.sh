@@ -14,14 +14,15 @@ flushes=0
 
 api() {
     case "$*" in
-        */proxies/Egress) jq -cn --arg now "$mock_selected" '{now: $now}' ;;
-        */configs)
-            if [ "$1" = -X ]; then
-                printf '%s\n' "$6" >"$temporary/patch"
-            else
-                jq -cn --arg mode "$mock_mode" '{mode: $mode}'
-            fi ;;
-        *) return 1 ;;
+    */proxies/Egress) jq -cn --arg now "$mock_selected" '{now: $now}' ;;
+    */configs)
+        if [ "$1" = -X ]; then
+            printf '%s\n' "$6" >"$temporary/patch"
+        else
+            jq -cn --arg mode "$mock_mode" '{mode: $mode}'
+        fi
+        ;;
+    *) return 1 ;;
     esac
 }
 direct_network_signature() { printf '%s' "$mock_signature"; }
@@ -36,7 +37,10 @@ check() {
         mock_mode=$(jq -er .mode "$temporary/patch")
         patches=$((patches + 1))
     fi
-    [ "$mock_mode" = "$expected" ] || { printf 'expected %s, got %s\n' "$expected" "$mock_mode" >&2; exit 1; }
+    [ "$mock_mode" = "$expected" ] || {
+        printf 'expected %s, got %s\n' "$expected" "$mock_mode" >&2
+        exit 1
+    }
 }
 
 check direct-ipv4
@@ -52,9 +56,11 @@ ipv6=1
 mock_signature=wifi-b
 check Rule
 ipv6=0
+# shellcheck disable=SC2154 # direct_ipv6_next is set by the sourced company-compat.sh
 SECONDS=$((direct_ipv6_next + 1))
 check direct-ipv4
 ipv6=1
+# shellcheck disable=SC2154 # direct_ipv6_next is set by the sourced company-compat.sh
 SECONDS=$((direct_ipv6_next + 1))
 check Rule
 printf 'ok - Direct IPv6 fallback, network changes, recovery and other exits\n'
