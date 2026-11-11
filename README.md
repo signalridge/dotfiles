@@ -104,6 +104,11 @@ their rendered content changes; `run_after_*` scripts run on every apply and kee
 their own guards or cadence. Per-machine conditions are in the scripts and in
 `.chezmoiignore`.
 
+On a fresh machine the `read-source-state.pre` hook (`.bootstrap/pre-source-state.sh`)
+runs the Nix install, key restore and gopass clone first, before chezmoi reads the
+source state, so `.chezmoiignore` and the templates already see the store and one
+apply is enough; once a machine is ready the hook is a no-op.
+
 ## Daily Operations
 
 `~/Justfile` is rendered from `Justfile.tmpl`; run `just --list` for the chezmoi,

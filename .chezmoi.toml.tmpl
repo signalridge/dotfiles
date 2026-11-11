@@ -217,3 +217,10 @@ args = [
 command = "{{ .chezmoi.sourceDir }}/.chezmoitemplates/shell/age_command_wrapper.sh"
 identity = "~/.ssh/main"
 recipientsFile = "~/.ssh/main.pub"
+
+[hooks.read-source-state.pre]
+# Restore keys and clone the gopass store BEFORE chezmoi reads the source state
+# (.chezmoiignore and some templates depend on them), so a fresh machine needs
+# a single apply. A three-file-test no-op once ready; see the script header.
+command = "{{ .chezmoi.sourceDir }}/.bootstrap/pre-source-state.sh"
+args = [{{ $useEncryption | toString | quote }}, {{ $keysRepository | quote }}, {{ $gopassRepository | quote }}]
