@@ -34,6 +34,13 @@ rm -f "$HOME/.local/lib/openconnect-auto/main.ts" "$HOME/.local/lib/openconnect-
 rmdir "$HOME/.local/lib/openconnect-auto" 2>/dev/null || true
 systemctl --user daemon-reload
 {{ if eq (includeTemplate "sing-box/auto-auth.tmpl" .) "true" -}}
+# First bootstrap: files are chosen before script 06 clones the gopass store,
+# but this script is rendered after it, so the unit may not exist until the
+# next apply (which reruns this script, as the unit hash above changes).
+if [[ ! -f "$HOME/.config/systemd/user/openconnect-auto.service" ]]; then
+    echo ":: [25] openconnect-auto.service not written yet; run chezmoi apply again"
+    exit 0
+fi
 systemctl --user enable --now openconnect-auto.service
 systemctl --user restart openconnect-auto.service
 echo ":: [25] VPN authentication watcher enabled"
