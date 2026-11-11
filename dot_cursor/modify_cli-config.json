@@ -66,7 +66,7 @@ elif command -v jq >/dev/null 2>&1; then
 elif [[ -n "$EXISTING" ]]; then
     # No jq yet (fresh bootstrap: it arrives with the Nix/aqua scripts that run
     # after the files): leave the file as it is; the next apply merges it.
-    printf '%s' "$EXISTING"
+    printf '%s\n' "$EXISTING"
 else
     # No jq and no file: the required-field seed alone, so the file is valid;
     # the next apply (with jq) layers MANAGED on top.
