@@ -63,6 +63,7 @@ homebrew:
       - setapp
       - soundsource
       - tailscale-app
+      - windows-app # Microsoft RDP client for the pve Windows VM (~/.config/rdp/win.rdp)
       - telegram
       - zoom
   masApps:

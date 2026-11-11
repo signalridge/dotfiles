@@ -70,6 +70,10 @@ Library/
 # ─────────────────────────────────────────────────────────────────────────────
 # Headless/server exclusions (no GUI)
 # ─────────────────────────────────────────────────────────────────────────────
+{{- if or .work (ne .chezmoi.os "darwin") }}
+# RDP connection to the pve Windows VM (windows-app cask, private Macs only).
+.config/rdp/
+{{- end }}
 {{- if .headless }}
 # GUI apps (not needed on headless servers)
 .chezmoiscripts/09_install-paperlib.sh
