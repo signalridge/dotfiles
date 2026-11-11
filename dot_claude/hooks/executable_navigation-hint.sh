@@ -44,9 +44,13 @@ should_skip() {
     local rule_id="$1"
     local marker="$DEDUP_DIR/$rule_id"
     if [[ -f "$marker" ]]; then
-        # Cross-platform stat: try BSD first, then GNU
+        # Cross-platform stat: GNU first, then BSD. Not the other way round: GNU
+        # `stat -f` means --file-system, so `stat -f %m` prints a multi-line
+        # "  File: ..." block before failing on the "%m" operand, and that text
+        # ended up in $mtime ("File: unbound variable" under set -u on Linux).
         local mtime
-        mtime=$(stat -f %m "$marker" 2>/dev/null || stat -c %Y "$marker" 2>/dev/null || echo 0)
+        mtime=$(stat -c %Y "$marker" 2>/dev/null || stat -f %m "$marker" 2>/dev/null || echo 0)
+        [[ "$mtime" =~ ^[0-9]+$ ]] || mtime=0
         local now
         now=$(date +%s)
         local age=$((now - mtime))
