@@ -303,6 +303,16 @@ nix_installed_version() {
 # --- Main ---
 
 main() {
+    # Nix may be installed but off PATH: chezmoi keeps the environment of the
+    # shell it was started from, which can predate the install (e.g. when the
+    # read-source-state hook installed Nix earlier in the same command).
+    # Without this the installer reran only to report "already completed".
+    if ! command -v nix >/dev/null 2>&1 &&
+        [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+        # shellcheck disable=SC1091
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    fi
+
     if command -v nix >/dev/null 2>&1; then
         info "nix already installed"
 
