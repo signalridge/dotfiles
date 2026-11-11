@@ -13,6 +13,9 @@
 set -euo pipefail
 
 EXISTING="$(cat)"
+# Find aqua's jq even from a shell that predates ~/.zshenv.
+# shellcheck source=/dev/null
+. "${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/.chezmoitemplates/shell/source_aqua_env.sh"
 
 # Fallbacks only fill the documented required fields when the file is new; they
 # never override anything Cursor already wrote.

@@ -28,6 +28,9 @@
 set -euo pipefail
 
 EXISTING="$(cat)"
+# Find aqua's jq even from a shell that predates ~/.zshenv (fresh machine,
+# or an ssh session opened before the first apply wrote the zsh config).
+{{ include ".chezmoitemplates/shell/source_aqua_env.sh" }}
 {{/* No left trim marker on this first action: every action below trims both
      sides and emits nothing, so a `{{-` here would pull the whole chain onto
      the EXISTING line and glue FALLBACK= to the end of it. A comment must also
