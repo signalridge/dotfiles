@@ -16,6 +16,10 @@ EXISTING="$(cat)"
 # Find aqua's jq even from a shell that predates ~/.zshenv.
 # shellcheck source=/dev/null
 . "${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/.chezmoitemplates/shell/source_aqua_env.sh"
+# First bootstrap: aqua's jq arrives only with script 05, after the files are
+# written, but the read-source-state hook already put one in the bootstrap profile.
+# Test that jq runs: a bare aqua shim is on PATH yet fails without its config.
+jq -n 1 >/dev/null 2>&1 || PATH="${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/dotfiles-bootstrap/bin:$PATH"
 
 # Fallbacks only fill the documented required fields when the file is new; they
 # never override anything Cursor already wrote.

@@ -31,6 +31,10 @@ EXISTING="$(cat)"
 # Find aqua's jq even from a shell that predates ~/.zshenv (fresh machine,
 # or an ssh session opened before the first apply wrote the zsh config).
 {{ include ".chezmoitemplates/shell/source_aqua_env.sh" }}
+# First bootstrap: aqua's jq arrives only with script 05, after the files are
+# written, but the read-source-state hook already put one in the bootstrap profile.
+# Test that jq runs: a bare aqua shim is on PATH yet fails without its config.
+jq -n 1 >/dev/null 2>&1 || PATH="${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/dotfiles-bootstrap/bin:$PATH"
 {{/* No left trim marker on this first action: every action below trims both
      sides and emits nothing, so a `{{-` here would pull the whole chain onto
      the EXISTING line and glue FALLBACK= to the end of it. A comment must also
