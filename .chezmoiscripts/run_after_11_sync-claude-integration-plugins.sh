@@ -7,6 +7,10 @@ set -euo pipefail
 echo ":: [11] Syncing Claude Code integration plugins"
 
 PATH="$HOME/.nix-profile/bin:/opt/homebrew/bin:$HOME/.local/share/aquaproj-aqua/bin:$PATH"
+# aqua shims need AQUA_GLOBAL_CONFIG too (code 004 on a fresh machine, where
+# ~/.zshenv has not been sourced yet).
+# shellcheck source=/dev/null
+. "${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/.chezmoitemplates/shell/source_aqua_env.sh"
 claude_cmd="$(command -v claude 2>/dev/null || true)"
 
 if [[ -z "$claude_cmd" ]]; then

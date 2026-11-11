@@ -7,6 +7,10 @@ set -euo pipefail
 echo ":: [13] Syncing Codex connector plugins"
 
 PATH="$HOME/.nix-profile/bin:/opt/homebrew/bin:$HOME/.local/share/aquaproj-aqua/bin:$PATH"
+# aqua shims need AQUA_GLOBAL_CONFIG too (code 004 on a fresh machine, where
+# ~/.zshenv has not been sourced yet).
+# shellcheck source=/dev/null
+. "${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/.chezmoitemplates/shell/source_aqua_env.sh"
 codex_cmd="$(command -v codex 2>/dev/null || true)"
 
 if [[ -z "$codex_cmd" ]]; then

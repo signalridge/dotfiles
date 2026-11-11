@@ -9,6 +9,8 @@ echo ":: [12] Syncing Claude Code MCP servers"
 
 # Ensure common install locations are discoverable in non-interactive shells.
 PATH="$HOME/.nix-profile/bin:/opt/homebrew/bin:$HOME/.local/share/aquaproj-aqua/bin:$PATH"
+# aqua shims need AQUA_GLOBAL_CONFIG too (code 004 on a fresh machine).
+{{ include ".chezmoitemplates/shell/source_aqua_env.sh" }}
 claude_cmd="$(command -v claude 2>/dev/null || true)"
 
 if [[ -z "$claude_cmd" ]]; then
