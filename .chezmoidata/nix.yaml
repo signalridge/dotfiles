@@ -55,7 +55,11 @@ nix:
       - openssh
       - openssl
       - poppler
-      - sniffnet
+      # sniffnet vendors AWS-LC, but nixpkgs' Cargo hook forces a system copy.
+      - |-
+        (sniffnet.overrideAttrs (old: {
+          preBuild = (old.preBuild or "") + "\nunset AWS_LC_SYS_USE_SYSTEM\n";
+        }))
       - statix # Nix linter
       - nixfmt
       - wget
