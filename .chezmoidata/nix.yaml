@@ -47,7 +47,11 @@ nix:
       - navi
       - pixi # fast Python/conda package manager
       - prettier # JS/TS/JSON/YAML formatter
-      - sheldon # shell plugin manager (prefer nix build over aqua binary on macOS)
+      # nixpkgs' Cargo hook forbids bundled libgit2; sheldon needs the system library.
+      - |-
+        (sheldon.overrideAttrs (old: {
+          buildInputs = (old.buildInputs or [ ]) ++ [ libgit2 ];
+        }))
       - openssh
       - openssl
       - poppler
