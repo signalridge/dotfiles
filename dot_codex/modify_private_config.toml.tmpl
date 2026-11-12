@@ -57,6 +57,12 @@ personality = "pragmatic"
 # Verbosity: low | medium | high
 model_verbosity = "high"
 
+# Context window: gpt-6.1-terra's catalog default is 500K, but the server
+# advertises max_context_window = 872000 (~/.codex/models_cache.json). Codex
+# clamps this override to that max (models-manager model_info.rs). A larger
+# window spends more of the weekly usage per turn once the context is long.
+model_context_window = 872000
+
 # Web search mode: disabled | cached | live
 web_search = "live"
 
