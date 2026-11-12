@@ -22,12 +22,18 @@ jobs:
           nixpkgs_rev=$(awk '$1 == "nixpkgsBootstrapRev:" { print $2 }' .chezmoidata/versions.yaml)
           [[ "$nixpkgs_rev" =~ ^[0-9a-f]{40}$ ]]
           nixpkgs="github:NixOS/nixpkgs/${nixpkgs_rev}"
-          packages=(pre-commit treefmt shfmt shellcheck statix nixfmt stylua selene chezmoi prettier typos gitleaks)
+          packages=(treefmt shfmt shellcheck statix nixfmt stylua selene chezmoi prettier typos gitleaks)
           installables=()
           for package in "${packages[@]}"; do
             installables+=("${nixpkgs}#${package}")
           done
           nix profile install "${installables[@]}"
+          # virtualenv 21.14.12 in the current nixpkgs lacks its packaging
+          # dependency; keep pre-commit on the last working nixpkgs for now.
+          pre_commit_nixpkgs="github:NixOS/nixpkgs/4fe25e12eb9f4c744966dd3de5a05246cf098601"
+          nix profile install "$pre_commit_nixpkgs#pre-commit"
+          virtualenv=$(nix build --no-link --print-out-paths "$pre_commit_nixpkgs#python3Packages.virtualenv")
+          "$virtualenv/bin/virtualenv" "$RUNNER_TEMP/pre-commit-smoke"
       - name: Setup chezmoi
         run: |
           mkdir -p ~/.config/chezmoi
