@@ -2,6 +2,8 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# The test replaces HOME, but the script still needs the real chezmoi source.
+export CHEZMOI_SOURCE_DIR="$repo_root"
 temporary=$(mktemp -d)
 trap 'rm -rf "$temporary"' EXIT
 export HOME="$temporary/home"
