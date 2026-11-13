@@ -86,6 +86,12 @@ lua = "5.4"
 "pipx:mac-cleanup" = { version = "latest", uvx_args = "--python 3.13" }
 {{ end -}}
 
+# papilot: AI LaTeX editor (review the PDF, an agent edits the .tex). Runs a
+# local web UI on 127.0.0.1:7274 (`papilot`, `papilot demo`, `papilot doctor`);
+# state in ~/.papilot. Needs latexmk + synctex (nix texlive) and a signed-in
+# agent (codex / claude). Node >= 22.22 satisfied above.
+"npm:papilot" = "latest"
+
 # AI coding usage analyzers
 "npm:ccusage" = "latest"
 "npm:@ccusage/codex" = "latest"

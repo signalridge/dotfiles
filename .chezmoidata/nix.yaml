@@ -17,6 +17,7 @@ nix:
               ps: with ps; [
                 scheme-basic
                 latexmk
+                synctex # `synctex` CLI: PDF<->source mapping (papilot needs it with latexmk)
                 collection-latexrecommended
                 collection-latexextra
                 collection-fontsrecommended
