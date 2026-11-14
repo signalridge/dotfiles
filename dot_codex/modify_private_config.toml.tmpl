@@ -12,11 +12,13 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 # Run: chezmoi edit ~/.codex/config.toml
 {{/* No left trim marker: with `{{-` the blank line above was swallowed and the
      next banner rendered onto the end of the "# Run:" comment. */ -}}
-{{- /* Codex default: gpt-6.1-terra at xhigh, same on both machines. Native
-       OpenAI OAuth only; no third-party provider blocks. */ -}}
-{{- $model := "gpt-6.1-terra" -}}
+{{- /* Same model and rung on both machines. Native OpenAI OAuth only; no
+       third-party provider blocks. */ -}}
+{{- /* gpt-6.1-sol at low for all work (user choice 2026-11-13 22:40).
+       Strong-model reviews pick their own model on the command line. */ -}}
+{{- $model := "gpt-6.1-sol" -}}
 {{- $subagentModel := $model -}}
-{{- $effort := "xhigh" -}}
+{{- $effort := "low" -}}
 {{- /* Subagents run the parent's model and rung, so a subagent is never
        dearer than the session that spawned it. */ -}}
 {{- $subagentEffort := $effort -}}
@@ -25,7 +27,7 @@ cat <<'CHEZMOI_TEMPLATE_EOF'
 # Core Settings
 # =============================================================================
 
-# Native primary model: gpt-6.1-terra
+# Native primary model: gpt-6.1-sol
 model = "{{ $model }}"
 
 # Approval policy: untrusted | on-failure | on-request | never
@@ -47,7 +49,7 @@ suppress_unstable_features_warning = true
 # =============================================================================
 
 # Reasoning effort: none | minimal | low | medium | high | xhigh | max
-# Primary effort: xhigh.
+# Primary effort: low (all work on sol low).
 model_reasoning_effort = "{{ $effort }}"
 
 
@@ -57,7 +59,7 @@ personality = "pragmatic"
 # Verbosity: low | medium | high
 model_verbosity = "high"
 
-# Context window: gpt-6.1-terra's catalog default is 500K, but the server
+# Context window: the catalog default is smaller, but the server
 # advertises max_context_window = 872000 (~/.codex/models_cache.json). Codex
 # clamps this override to that max (models-manager model_info.rs). A larger
 # window spends more of the weekly usage per turn once the context is long.
