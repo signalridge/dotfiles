@@ -56,6 +56,15 @@ in
           END { if (d == "${meshNet}" && i ~ /^utun/) print i }'
       }
 
+      # Read the lease macOS already acquired instead of broadcasting another
+      # DHCP discovery. sing-box's DHCP transport caches discovery failures.
+      lan_dns_server() {
+        primary="$(printf 'show State:/Network/Global/IPv4\n' | /usr/sbin/scutil | /usr/bin/awk '/PrimaryInterface/ { print $3 }')"
+        [ -n "$primary" ] || return 0
+        /usr/sbin/ipconfig getoption "$primary" domain_name_server 2>/dev/null | /usr/bin/awk '{ print $1; exit }' || true
+      }
+      lan_dns="$(lan_dns_server)"
+
       iface="$(mesh_iface)"
       umask 077
       if [ -n "$iface" ]; then
@@ -67,6 +76,13 @@ in
         /bin/cat "${configFile}" >"${runDir}/config.json.tmp"
       fi
       /bin/mv -f "${runDir}/config.json.tmp" "${runDir}/config.json"
+      if [ -n "$lan_dns" ]; then
+        # TCP also avoids networks that drop or intercept UDP DNS packets.
+        ${jq} --arg server "$lan_dns" \
+          '(.dns.servers[] | select(.tag == "lan" and .type == "dhcp")) |= {type: "tcp", tag: .tag, server: $server}' \
+          "${runDir}/config.json" >"${runDir}/config.json.tmp"
+        /bin/mv -f "${runDir}/config.json.tmp" "${runDir}/config.json"
+      fi
 
       # System DNS. A TUN from a plain process can't install itself as the
       # system resolver (only Network Extension VPNs can), so the physical
@@ -168,8 +184,8 @@ in
       misses=0
       while kill -0 "$pid" 2>/dev/null; do
         sleep 30
-        if [ "$(mesh_iface)" != "$iface" ]; then
-          echo "sing-box: EasyTier interface changed ('$iface' -> '$(mesh_iface)'); restarting" >&2
+        if [ "$(mesh_iface)" != "$iface" ] || [ "$(lan_dns_server)" != "$lan_dns" ]; then
+          echo "sing-box: EasyTier interface or DHCP DNS changed; restarting" >&2
           dns_restore
           kill "$pid" 2>/dev/null || true
           wait "$pid" || true
