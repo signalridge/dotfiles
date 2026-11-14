@@ -17,7 +17,7 @@ antigravity:
     # Subagent tiers (dot_gemini/config/agents/) favor `flash` / `flash_lite`
     # for light work, `inherit` (matching this parent model) for standard work,
     # and reserve `pro` sparingly for genuinely hard tasks.
-    model: "Gemini 4 Hydrogen (High)"
+    model: "Gemini 4 Hydrogen (Medium)"
 
     # Tool approval policy. Four rungs, least to most permissive:
     #   strict              tightest

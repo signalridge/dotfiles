@@ -1,6 +1,6 @@
 ---
 name: subagent-inherit
-description: Parent-matched tier (inherit, defaults to Gemini 4 Hydrogen (High)) for standard implementation work when flash is insufficient.
+description: Parent-matched tier (inherit, defaults to Gemini 4 Hydrogen (Medium)) for standard implementation work when flash is insufficient.
 model: inherit
 ---
 
