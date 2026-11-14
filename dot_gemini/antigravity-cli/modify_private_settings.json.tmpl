@@ -1,23 +1,42 @@
 #!/usr/bin/env bash
-# chezmoi modify_ script: merge the managed keys from .chezmoidata/antigravity.yaml
-# into ~/.gemini/antigravity-cli/settings.json, preserving everything the
-# Antigravity CLI writes there itself (trustedWorkspaces, model, permissions, ...).
-# Managed keys always win on re-apply; unmanaged keys are never touched.
+# chezmoi modify_ script: merge managed keys from .chezmoidata/antigravity.yaml
+# into ~/.gemini/antigravity-cli/settings.json using FALLBACK < EXISTING < MANAGED:
+#   FALLBACK  seeds fresh-machine defaults (e.g. default model) without fighting
+#             runtime `/model` choices.
+#   EXISTING  runtime CLI state (trustedWorkspaces, permissions, `/model`, ...).
+#   MANAGED   managed baseline keys from `antigravity.settings`.
 #
 # `private_` keeps the 0600 mode the CLI creates the file with.
 set -euo pipefail
 
 EXISTING="$(cat)"
-MANAGED="$(cat <<'AGY_SETTINGS_EOF'
+{{ include ".chezmoitemplates/shell/source_aqua_env.sh" }}
+jq -n 1 >/dev/null 2>&1 || PATH="${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/dotfiles-bootstrap/bin:$PATH"
+
+FALLBACK="$(cat <<'AGY_FALLBACK_EOF'
+{{ .antigravity.defaults | toPrettyJson }}
+AGY_FALLBACK_EOF
+)"
+
+MANAGED="$(cat <<'AGY_MANAGED_EOF'
 {{ .antigravity.settings | toPrettyJson }}
-AGY_SETTINGS_EOF
+AGY_MANAGED_EOF
 )"
 
 # Same guard as dot_claude/modify_settings.json.tmpl: on a fresh machine the
 # file does not exist yet (empty stdin), and a half-written one must not take the
 # managed keys down with it.
 if command -v jq >/dev/null 2>&1 && printf '%s' "$EXISTING" | jq -e . >/dev/null 2>&1; then
-    jq -s '.[0] * .[1]' <(printf '%s' "$EXISTING") <(printf '%s' "$MANAGED")
+    jq -s '.[0] * .[1] * .[2]' \
+        <(printf '%s' "$FALLBACK") \
+        <(printf '%s' "$EXISTING") \
+        <(printf '%s' "$MANAGED")
+elif command -v jq >/dev/null 2>&1; then
+    jq -s '.[0] * .[1]' \
+        <(printf '%s' "$FALLBACK") \
+        <(printf '%s' "$MANAGED")
+elif [[ -n "$EXISTING" ]]; then
+    printf '%s\n' "$EXISTING"
 else
-    printf '%s\n' "$MANAGED"
+    printf '%s\n' "$FALLBACK"
 fi

@@ -9,6 +9,11 @@
 # the exact trap already hit with ~/.claude/settings.json. Only the keys listed
 # here are owned; everything else in that file is left alone.
 antigravity:
+  # Seeded on a fresh machine (FALLBACK < EXISTING < MANAGED), so runtime
+  # `/model` switches are preserved across `chezmoi apply`.
+  defaults:
+    model: "Gemini 4 Hydrogen (High)"
+
   settings:
     # Tool approval policy. Four rungs, least to most permissive:
     #   strict              tightest
@@ -27,8 +32,8 @@ antigravity:
     # YOLO baseline: do not add a terminal sandbox layer.
     enableTerminalSandbox: false
 
-    # Deliberately NOT managed here, because the CLI owns them at runtime and a
-    # managed value would fight the UI:
+    # Deliberately NOT in `settings`, because the CLI owns them at runtime and
+    # a managed value would fight the UI:
     #   trustedWorkspaces   appended by the "trust this folder" prompt
-    #   model               set by /model
+    #   model               set by /model (seeded once via `defaults` above)
     #   permissions         the allow/deny rule table edited by /permissions
