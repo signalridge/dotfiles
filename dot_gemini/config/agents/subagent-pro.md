@@ -1,6 +1,6 @@
 ---
 name: subagent-pro
-description: Highest capability subagent tier (pro) for complex architecture design, hard debugging, and deep code review.
+description: Escalation tier (pro). Use sparingly only for hard debugging, complex architecture design, or deep review that genuinely exceeds inherit (Gemini 4 Hydrogen (High)).
 model: pro
 ---
 

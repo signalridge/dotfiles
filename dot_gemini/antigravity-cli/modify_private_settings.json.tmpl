@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 # chezmoi modify_ script: merge managed keys from .chezmoidata/antigravity.yaml
-# into ~/.gemini/antigravity-cli/settings.json using FALLBACK < EXISTING < MANAGED:
-#   FALLBACK  seeds fresh-machine defaults (e.g. default model) without fighting
-#             runtime `/model` choices.
-#   EXISTING  runtime CLI state (trustedWorkspaces, permissions, `/model`, ...).
-#   MANAGED   managed baseline keys from `antigravity.settings`.
+# into ~/.gemini/antigravity-cli/settings.json, preserving runtime CLI state
+# (trustedWorkspaces, permissions, statusLine, ...).
+# Managed keys always win on re-apply; unmanaged keys are never touched.
 #
 # `private_` keeps the 0600 mode the CLI creates the file with.
 set -euo pipefail
@@ -12,11 +10,6 @@ set -euo pipefail
 EXISTING="$(cat)"
 {{ include ".chezmoitemplates/shell/source_aqua_env.sh" }}
 jq -n 1 >/dev/null 2>&1 || PATH="${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/dotfiles-bootstrap/bin:$PATH"
-
-FALLBACK="$(cat <<'AGY_FALLBACK_EOF'
-{{ .antigravity.defaults | toPrettyJson }}
-AGY_FALLBACK_EOF
-)"
 
 MANAGED="$(cat <<'AGY_MANAGED_EOF'
 {{ .antigravity.settings | toPrettyJson }}
@@ -27,16 +20,11 @@ AGY_MANAGED_EOF
 # file does not exist yet (empty stdin), and a half-written one must not take the
 # managed keys down with it.
 if command -v jq >/dev/null 2>&1 && printf '%s' "$EXISTING" | jq -e . >/dev/null 2>&1; then
-    jq -s '.[0] * .[1] * .[2]' \
-        <(printf '%s' "$FALLBACK") \
-        <(printf '%s' "$EXISTING") \
-        <(printf '%s' "$MANAGED")
+    jq -s '.[0] * .[1]' <(printf '%s' "$EXISTING") <(printf '%s' "$MANAGED")
 elif command -v jq >/dev/null 2>&1; then
-    jq -s '.[0] * .[1]' \
-        <(printf '%s' "$FALLBACK") \
-        <(printf '%s' "$MANAGED")
+    printf '%s\n' "$MANAGED"
 elif [[ -n "$EXISTING" ]]; then
     printf '%s\n' "$EXISTING"
 else
-    printf '%s\n' "$FALLBACK"
+    printf '%s\n' "$MANAGED"
 fi

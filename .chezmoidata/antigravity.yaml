@@ -9,12 +9,16 @@
 # the exact trap already hit with ~/.claude/settings.json. Only the keys listed
 # here are owned; everything else in that file is left alone.
 antigravity:
-  # Seeded on a fresh machine (FALLBACK < EXISTING < MANAGED), so runtime
-  # `/model` switches are preserved across `chezmoi apply`.
-  defaults:
+  settings:
+    # Default model: managed so `chezmoi apply` moves existing machines off stale
+    # stored aliases (e.g. "Gemini 3.7 Flash (High)"). Runtime `/model` switches
+    # still work inside a session until the next `chezmoi apply`.
+    #
+    # Subagent tiers (dot_gemini/config/agents/) favor `flash` / `flash_lite`
+    # for light work, `inherit` (matching this parent model) for standard work,
+    # and reserve `pro` sparingly for genuinely hard tasks.
     model: "Gemini 4 Hydrogen (High)"
 
-  settings:
     # Tool approval policy. Four rungs, least to most permissive:
     #   strict              tightest
     #   request-review      approve every tool call individually (CLI default)
@@ -35,5 +39,4 @@ antigravity:
     # Deliberately NOT in `settings`, because the CLI owns them at runtime and
     # a managed value would fight the UI:
     #   trustedWorkspaces   appended by the "trust this folder" prompt
-    #   model               set by /model (seeded once via `defaults` above)
     #   permissions         the allow/deny rule table edited by /permissions

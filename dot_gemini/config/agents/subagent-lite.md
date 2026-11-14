@@ -1,6 +1,6 @@
 ---
 name: subagent-lite
-description: Lightest and fastest subagent tier (flash_lite) for trivial lookups, bulk file scans, or high-volume mechanical tasks.
+description: Lightest tier (flash_lite). Use first for trivial lookups, bulk file scans, grep sweeps, and mechanical summaries.
 model: flash_lite
 ---
 

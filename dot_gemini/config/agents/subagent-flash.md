@@ -1,6 +1,6 @@
 ---
 name: subagent-flash
-description: Fast subagent tier (flash) for codebase exploration, simple edits, and routine verification.
+description: Default fast tier (flash). Use for codebase exploration, simple edits, and routine test/lint verification before reaching for heavier tiers.
 model: flash
 ---
 
