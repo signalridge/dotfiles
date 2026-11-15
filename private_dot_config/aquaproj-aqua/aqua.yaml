@@ -40,6 +40,7 @@ packages:
   - name: atuinsh/atuin@v18.24.8
   - name: axodotdev/cargo-dist@v0.34.0 # `dist` — was a live-only cargo install
   - name: EmbarkStudios/cargo-deny@0.20.2 # `cargo deny check` (licenses, advisories, duplicates)
+  - name: rui314/mold@v3.0.0 # fast linker for Rust builds (used via cargo-slot RUSTFLAGS, not globally)
   - name: nextest-rs/nextest/cargo-nextest@cargo-nextest-0.9.152 # was a live-only cargo install
   - name: sharkdp/bat@v0.26.1
   - name: eth-p/bat-extras@v2024.08.24
