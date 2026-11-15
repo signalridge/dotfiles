@@ -5,7 +5,7 @@ packages:
   - name: shadowsocks/shadowsocks-rust@v1.25.0
     registry: third-party
   # Hysteria2 (apernet/hysteria v2.x; client and server in one binary).
-  - name: apernet/hysteria@app/v2.13.0
+  - name: apernet/hysteria@app/v2.14.0
     registry: third-party
   # TCP/UDP port relay (replaces socat).
   - name: zhboner/realm@v2.9.6

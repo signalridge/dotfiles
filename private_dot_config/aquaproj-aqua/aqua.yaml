@@ -9,7 +9,7 @@ registries:
     #     codex-*.zst, so Code Mode failed closed after host became default.
     #   v4.566.0 - Wilfred/difftastic 0.71.0 renamed its assets to
     #     difft-<version>-<arch>-<os>.tar.gz; older refs 404 on install.
-    ref: v4.585.0
+    ref: v4.586.0
   - name: third-party
     type: local
     path: registry.yaml
@@ -34,7 +34,7 @@ packages:
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
-  - name: google-antigravity/antigravity-cli@1.5.8
+  - name: google-antigravity/antigravity-cli@1.5.9
   - name: nektos/act@v0.2.97
   - name: asciinema/asciinema@v3.2.1
   - name: atuinsh/atuin@v18.24.8
@@ -121,7 +121,7 @@ packages:
   - name: numtide/treefmt@v2.6.0
   - name: XAMPPRocky/tokei@15.0.0
   - name: sharkdp/hyperfine@v2.0.0
-  - name: hatoo/oha@v1.16.0
+  - name: hatoo/oha@v1.17.0
   - name: dalance/procs@v0.14.12
   - name: sharkdp/hexyl@v0.17.0
   - name: mr-karan/doggo@v1.4.2
