@@ -9,7 +9,7 @@ registries:
     #     codex-*.zst, so Code Mode failed closed after host became default.
     #   v4.566.0 - Wilfred/difftastic 0.71.0 renamed its assets to
     #     difft-<version>-<arch>-<os>.tar.gz; older refs 404 on install.
-    ref: v4.586.0
+    ref: v4.587.0
   - name: third-party
     type: local
     path: registry.yaml
@@ -35,7 +35,7 @@ packages:
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
   - name: google-antigravity/antigravity-cli@1.5.9
-  - name: nektos/act@v0.2.97
+  - name: nektos/act@v0.2.98
   - name: asciinema/asciinema@v3.2.1
   - name: atuinsh/atuin@v18.24.8
   - name: axodotdev/cargo-dist@v0.34.0 # `dist` — was a live-only cargo install
@@ -84,7 +84,7 @@ packages:
   - name: jqlang/jq@jq-1.8.2
   - name: ynqa/jnv@v0.7.1
   - name: tldr-pages/tlrc@v1.13.1
-  - name: ast-grep/ast-grep@0.51.2
+  - name: ast-grep/ast-grep@0.51.3
   - name: casey/just@1.59.0
   - name: jesseduffield/lazygit@v0.66.3
   - name: jesseduffield/lazydocker@v0.25.2
