@@ -196,7 +196,7 @@
        dns_mode native has sing-box answer DNS on the TUN's next address
        (198.18.0.2). It does not make that the system resolver for a plain
        process (only Network Extension VPNs can), so the LaunchDaemon points the
-       physical network services at it while it answers
+       physical network services at it if it answers at startup
        (nix-config/modules/sing-box.nix); macOS keeps its per-domain resolvers
        (Tailscale's ts.net, a company VPN's domains, mDNS .local).
        sing-box resolves over DoH through Egress, so lookups leave from the same
