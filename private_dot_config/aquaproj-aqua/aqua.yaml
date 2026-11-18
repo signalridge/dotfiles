@@ -9,7 +9,7 @@ registries:
     #     codex-*.zst, so Code Mode failed closed after host became default.
     #   v4.566.0 - Wilfred/difftastic 0.71.0 renamed its assets to
     #     difft-<version>-<arch>-<os>.tar.gz; older refs 404 on install.
-    ref: v4.588.0
+    ref: v4.589.0
   - name: third-party
     type: local
     path: registry.yaml
@@ -48,8 +48,8 @@ packages:
     # keep a known-good release pinned.
     update:
       enabled: false
-  - name: anthropics/claude-code@v2.1.326
-  - name: openai/codex@rust-v0.169.0
+  - name: anthropics/claude-code@v2.1.327
+  - name: openai/codex@rust-v0.170.0
   - name: direnv/direnv@v2.38.2
   # Tagged 'bootstrap' so the aqua-install step (script 05) can install mise
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
@@ -74,7 +74,7 @@ packages:
   - name: sharkdp/fd@v10.5.2
   - name: junegunn/fzf@v0.75.0
   - name: gopasspw/gopass@v1.17.4
-  - name: cli/cli@v2.104.0
+  - name: cli/cli@v2.105.0
   - name: dlvhdr/gh-dash@v4.26.3
   - name: x-motemen/ghq@v1.12.0
   - name: gitlab.com/gitlab-org/cli@v1.99.0 # glab
@@ -113,7 +113,7 @@ packages:
   - name: mvdan/sh@v3.14.1
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.17.5
-  - name: astral-sh/ty@0.0.104
+  - name: astral-sh/ty@0.0.105
   - name: golang.org/x/tools/gopls@v0.24.0
   - name: golangci/golangci-lint@v2.15.0
   - name: goreleaser/goreleaser@v2.20.2
