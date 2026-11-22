@@ -9,7 +9,7 @@ registries:
     #     codex-*.zst, so Code Mode failed closed after host became default.
     #   v4.566.0 - Wilfred/difftastic 0.71.0 renamed its assets to
     #     difft-<version>-<arch>-<os>.tar.gz; older refs 404 on install.
-    ref: v4.590.0
+    ref: v4.591.0
   - name: third-party
     type: local
     path: registry.yaml
@@ -34,7 +34,7 @@ packages:
   # Google Antigravity CLI (`agy`). Installed via aqua instead of the vendor's
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
-  - name: google-antigravity/antigravity-cli@1.5.13
+  - name: google-antigravity/antigravity-cli@1.5.14
   - name: nektos/act@v0.2.98
   - name: asciinema/asciinema@v3.2.1
   - name: atuinsh/atuin@v18.25.1
@@ -55,7 +55,7 @@ packages:
   # first (`aqua i -t bootstrap`), then use it to put Go/Rust on PATH before
   # the full install — letting source-build backends (cargo/go_install, e.g.
   # eza/tokei/gopls) compile on a fresh machine.
-  - name: jdx/mise@v2026.11.11
+  - name: jdx/mise@v2026.11.12
     tags:
       - bootstrap
   - name: muesli/duf@v0.9.1
@@ -93,7 +93,7 @@ packages:
   - name: tree-sitter/tree-sitter@v0.27.2
   - name: jj-vcs/jj@v0.47.1
   - name: rclone/rclone@v1.76.0
-  - name: o2sh/onefetch@3.2.0
+  - name: o2sh/onefetch@3.3.0
   - name: ip7z/7zip@26.06
   - name: ouch-org/ouch@0.8.3
     registry: third-party
