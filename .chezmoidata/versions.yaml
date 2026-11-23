@@ -8,10 +8,10 @@ versions:
   nixInstallerX8664LinuxSha256: 795f001c671068eabb3e4d321419fbd4f290531f01b3220ca7661061cfcd39ec
   nixVersion: v3.24.3
   nixpkgsBootstrapRev: 93a9ed0a866099a230ed5146a5bb7d16fd5c9b14
-  aquaInstaller: v4.1.1
-  aquaInstallerSha256: c0acde4802a1edd8b8201fd4cc1f0e52700cd4feb875f9c9793381b5b0ca2065
+  aquaInstaller: v4.1.2
+  aquaInstallerSha256: 644692ba00e9bb45906aa39370fb1f2b972046ba6801b2ae348b7380c40e6a4b
   aquaVersion: v2.66.1
-  nixIndexDb: 2026-11-15-095805
+  nixIndexDb: 2026-11-22-102233
   paperlib: 3.1.12
   paperlibAmd64Sha256: 993d05c9bb9c8163f2d308736d2316ebf6db8a23b75133a170e22ea6e125746c
   paperlibArm64Sha256: a49ab642331632719079399c15551a6d0c9b16ca2f50a2ef35c297c3a9835459
@@ -31,14 +31,14 @@ versions:
   cursorAgentDarwinX64Sha256: 16cc7314128243b24d74575cae5f7e1a215656d48115d55084e2d6725ef7c542
   cursorAgentLinuxArm64Sha256: 7b7dd0020fb9a2a9e1e7e3f39e2f9f512d1dd9577174ecda8aa82ac31dbc9565
   cursorAgentLinuxX64Sha256: 7663b1c5d1b56e095ef8e23bef38d66df6cfd665c4873470214e0e411f0f97b3
-  claudeWshobsonAgentsRev: 91ff75307f5668916f3eb77d5ba556266c961376
-  claudeWshobsonAgentsSha256: ff38878fc29bac6f103f9f3ac02da808c2144cc710b66233cf3649b6309e82ff
+  claudeWshobsonAgentsRev: 51b9ae3ac68d9c236549a9b57f5dca7e6c0c168c
+  claudeWshobsonAgentsSha256: d94755dd12c77550e31dd99b243071b8f2dff1d7f270e6a07306947dd11479fe
   claudeAnthropicsSkillsRev: e4bb5d960d87126ff3b3a8af1a104b7db67560ba
   claudeAnthropicsSkillsSha256: 287d5d39770a929db26f35fd13833b53f1ac3db58b96c76602b3487f8f573e19
   claudeBaoyuSkillsRev: bf1ff076e25f8da4a339eb1c8cf03361fea5ea4c
   phurynPmSkillsRev: 9af7bfd0bc47fdad43c2eaa7a43cd13918e7aaef
-  uiUxProMaxSkillRev: 6ec2bb58334ca3014573c4cbd4834ee3a40afd9d
-  uiUxProMaxSkillSha256: ff735d48072dbac692e8a606c9b951f0868289df572953133ca476a50624f264
+  uiUxProMaxSkillRev: 281e4537afb11333ac9947783779aaf314ebfbf2
+  uiUxProMaxSkillSha256: 44f32479c40b2465ebd6c0744143e73f8eb5573de10c9549adb7eafe0bb92c24
   openaiSkillsRev: 49f948faa9258a0c61caceaf225e179651397431
   huggingfaceSkillsRev: 5291c2b9365e06b175dc04817610c778623f4836
   getsentrySkillsRev: a582c51ee29d0f35e6ac321340796f77d43da733
@@ -53,7 +53,7 @@ versions:
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 18dcb447f090667171ff23666a05d6d387e2aa73
   dailyDevSkillsRev: 0992c020d17b388238451e3857b40962f607ff81
-  opcSkillsRev: 542e43db44ce195d681060f631b080350a8b92a5
+  opcSkillsRev: 4a754192294a887865f00a72ad20388da0d5e509
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: d68d80aec298e1b74b37c2a472c002b5217248b3
