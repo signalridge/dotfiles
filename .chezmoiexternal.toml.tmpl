@@ -35,6 +35,7 @@
   "changelog-automation" "dev-docs"
   "cost-optimization" "cloud"
   "cqrs-implementation" "backend"
+  "crafting-effective-readmes" "dev-docs"
   "daily-dev-ask" "social"
   "daily.dev" "social"
   "data-quality-frameworks" "data"
@@ -42,7 +43,9 @@
   "debugging-strategies" "devtools"
   "deployment-pipeline-design" "cicd"
   "distributed-tracing" "observability"
-  "doc-coauthoring" "documents"
+  "doc-coauthoring" "dev-docs"
+  "docs-sync-audit" "dev-docs"
+  "documentation-writer" "dev-docs"
   "docx" "documents"
   "e2e-testing-patterns" "testing"
   "embedding-strategies" "ai-llm"
@@ -57,7 +60,6 @@
   "humanizer-en" "writing"
   "humanizer-ja" "writing"
   "hybrid-cloud-networking" "cloud"
-  "internal-comms" "writing"
   "istio-traffic-management" "cloud"
   "jupyter-notebook" "documents"
   "k8s-manifest-generator" "kubernetes"
@@ -100,6 +102,8 @@
   "react-native-architecture" "typescript"
   "react-state-management" "typescript"
   "reddit" "social"
+  "repo-docs" "dev-docs"
+  "repo-docs-zh" "dev-docs"
   "rust-development-playbook" "rust"
   "rust-testing" "rust"
   "saga-orchestration" "backend"
@@ -129,6 +133,7 @@
   "workers-best-practices" "cloud"
   "workflow-orchestration-patterns" "backend"
   "wrangler" "cloud"
+  "writing-for-agents" "dev-docs"
   "x-create" "social"
   "xlsx" "documents"
   "xurl" "social"
@@ -270,7 +275,6 @@
   "canvas-design"
   "webapp-testing"
   "doc-coauthoring"
-  "internal-comms"
   "brand-guidelines"
   "theme-factory"
   "web-artifacts-builder"
@@ -750,6 +754,60 @@
     stripComponents = 3
     include = ["beautify-github-readme-*/skills/beautify-github-readme/**"]
     refreshPeriod = "168h"
+
+# ------------------------------------------------------------------------------
+# Curated technical documentation suite (dev-docs)
+# - mattpocock/skills (MIT): writing-for-agents (under skills/productivity/)
+# - github/awesome-copilot (MIT): documentation-writer, docs-sync-audit
+# - softaworks/agent-toolkit (MIT): crafting-effective-readmes
+# - YurunChen/repo-docs-skills: repo-docs, repo-docs-zh (kept as siblings so
+#   repo-docs-zh relative references to ../repo-docs/SKILL.md resolve)
+# ------------------------------------------------------------------------------
+[".harnesses/skills/{{ index $cat "writing-for-agents" }}/writing-for-agents"]
+    type = "archive"
+    url = "https://github.com/mattpocock/skills/archive/{{ $.versions.mattpocockSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 4
+    include = ["skills-*/skills/productivity/writing-for-agents/**"]
+    refreshPeriod = "168h"
+
+{{- $awesomeCopilotSkills := list
+  "documentation-writer"
+  "docs-sync-audit"
+}}
+{{- range $skill := $awesomeCopilotSkills }}
+[".harnesses/skills/{{ index $cat $skill }}/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/github/awesome-copilot/archive/{{ $.versions.githubAwesomeCopilotRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["awesome-copilot-*/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+
+{{ end -}}
+
+[".harnesses/skills/{{ index $cat "crafting-effective-readmes" }}/crafting-effective-readmes"]
+    type = "archive"
+    url = "https://github.com/softaworks/agent-toolkit/archive/{{ $.versions.softaworksAgentToolkitRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["agent-toolkit-*/skills/crafting-effective-readmes/**"]
+    refreshPeriod = "168h"
+
+{{- $repoDocsSkills := list
+  "repo-docs"
+  "repo-docs-zh"
+}}
+{{- range $skill := $repoDocsSkills }}
+[".harnesses/skills/{{ index $cat $skill }}/{{ $skill }}"]
+    type = "archive"
+    url = "https://github.com/YurunChen/repo-docs-skills/archive/{{ $.versions.repoDocsSkillsRev }}.tar.gz"
+    exact = true
+    stripComponents = 3
+    include = ["repo-docs-skills-*/skills/{{ $skill }}/**"]
+    refreshPeriod = "168h"
+
+{{ end -}}
 
 # ------------------------------------------------------------------------------
 # signalridge custom skills (managed in dedicated repos)

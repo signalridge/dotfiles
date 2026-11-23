@@ -161,6 +161,10 @@ jobs:
           qu_ai_wei_rev=$(gh api repos/LifelongLazyLearner/qu-ai-wei/commits/main -q '.sha')
           humanizer_ja_rev=$(gh api repos/kgraph57/humanizer-ja/commits/main -q '.sha')
           beautify_github_readme_skill_rev=$(gh api repos/oil-oil/beautify-github-readme/commits/main -q '.sha')
+          mattpocock_skills_rev=$(gh api repos/mattpocock/skills/commits/main -q '.sha')
+          github_awesome_copilot_rev=$(gh api repos/github/awesome-copilot/commits/main -q '.sha')
+          softaworks_agent_toolkit_rev=$(gh api repos/softaworks/agent-toolkit/commits/main -q '.sha')
+          repo_docs_skills_rev=$(gh api repos/YurunChen/repo-docs-skills/commits/main -q '.sha')
 
           {
             echo "nix_installer=$nix_installer"
@@ -222,6 +226,10 @@ jobs:
             echo "qu_ai_wei_rev=$qu_ai_wei_rev"
             echo "humanizer_ja_rev=$humanizer_ja_rev"
             echo "beautify_github_readme_skill_rev=$beautify_github_readme_skill_rev"
+            echo "mattpocock_skills_rev=$mattpocock_skills_rev"
+            echo "github_awesome_copilot_rev=$github_awesome_copilot_rev"
+            echo "softaworks_agent_toolkit_rev=$softaworks_agent_toolkit_rev"
+            echo "repo_docs_skills_rev=$repo_docs_skills_rev"
           } >> "$GITHUB_OUTPUT"
       - name: Update .chezmoidata/versions.yaml
         env:
@@ -283,6 +291,10 @@ jobs:
           U_QU_AI_WEI_REV: ${{ steps.versions.outputs.qu_ai_wei_rev }}
           U_HUMANIZER_JA_REV: ${{ steps.versions.outputs.humanizer_ja_rev }}
           U_BEAUTIFY_GITHUB_README_SKILL_REV: ${{ steps.versions.outputs.beautify_github_readme_skill_rev }}
+          U_MATTPOCOCK_SKILLS_REV: ${{ steps.versions.outputs.mattpocock_skills_rev }}
+          U_GITHUB_AWESOME_COPILOT_REV: ${{ steps.versions.outputs.github_awesome_copilot_rev }}
+          U_SOFTAWORKS_AGENT_TOOLKIT_REV: ${{ steps.versions.outputs.softaworks_agent_toolkit_rev }}
+          U_REPO_DOCS_SKILLS_REV: ${{ steps.versions.outputs.repo_docs_skills_rev }}
         run: python3 .github/scripts/update_versions.py .chezmoidata/versions.yaml
       - name: Check for changes
         id: changes
@@ -361,3 +373,7 @@ jobs:
             | qu-ai-wei | `${{ steps.versions.outputs.qu_ai_wei_rev }}` |
             | humanizer-ja | `${{ steps.versions.outputs.humanizer_ja_rev }}` |
             | oil-oil/beautify-github-readme | `${{ steps.versions.outputs.beautify_github_readme_skill_rev }}` |
+            | mattpocock/skills | `${{ steps.versions.outputs.mattpocock_skills_rev }}` |
+            | github/awesome-copilot | `${{ steps.versions.outputs.github_awesome_copilot_rev }}` |
+            | softaworks/agent-toolkit | `${{ steps.versions.outputs.softaworks_agent_toolkit_rev }}` |
+            | YurunChen/repo-docs-skills | `${{ steps.versions.outputs.repo_docs_skills_rev }}` |

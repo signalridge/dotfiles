@@ -70,6 +70,10 @@ ENV_BY_KEY = {
     "quAiWeiRev": "U_QU_AI_WEI_REV",
     "humanizerJaRev": "U_HUMANIZER_JA_REV",
     "beautifyGithubReadmeSkillRev": "U_BEAUTIFY_GITHUB_README_SKILL_REV",
+    "mattpocockSkillsRev": "U_MATTPOCOCK_SKILLS_REV",
+    "githubAwesomeCopilotRev": "U_GITHUB_AWESOME_COPILOT_REV",
+    "softaworksAgentToolkitRev": "U_SOFTAWORKS_AGENT_TOOLKIT_REV",
+    "repoDocsSkillsRev": "U_REPO_DOCS_SKILLS_REV",
 }
 
 HEX_40_RE = re.compile(r"[0-9a-f]{40}")
