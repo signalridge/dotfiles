@@ -67,6 +67,40 @@ in
     };
   };
 
+  # --bind-device sockets keep the address they bound at start. After a Wi-Fi
+  # rejoin or DHCP change the IPv4 punch sockets go stale: peers reachable only
+  # over IPv4 (gpuserver, pve) drop to relay(2), and --p2p-only members then
+  # time out, while IPv6 peers keep working. EasyTier never rebinds by itself,
+  # so restart it whenever the physical (en*) IPv4 addresses change. The state
+  # file lives in /var/db so a reboot with unchanged addresses restarts nothing.
+  launchd.daemons.easytier-netwatch = {
+    script = ''
+      set -u
+      state=/var/db/easytier-netwatch.state
+      now=$(/sbin/ifconfig -a | /usr/bin/awk '/^[a-z]/ { i = $1 } i ~ /^en/ && $1 == "inet" { print i, $2 }' | /usr/bin/sort)
+      [ -n "$now" ] || exit 0 # offline: keep the last state, restart once back
+      old=$(/bin/cat "$state" 2>/dev/null || true)
+      [ "$now" = "$old" ] && exit 0
+      printf '%s\n' "$now" > "$state"
+      [ -n "$old" ] || exit 0 # first run: record only
+      echo "$(/bin/date '+%F %T') easytier-netwatch: addresses changed, restarting easytier"
+      /bin/launchctl kickstart -k system/org.nixos.easytier
+    '';
+    serviceConfig = {
+      RunAtLoad = true;
+      # Network changes rewrite these; the interval catches a DHCP renewal
+      # that changes the address without touching them.
+      WatchPaths = [
+        "/Library/Preferences/SystemConfiguration"
+        "/var/run/resolv.conf"
+      ];
+      StartInterval = 60;
+      ThrottleInterval = 10;
+      StandardOutPath = logFile;
+      StandardErrorPath = logFile;
+    };
+  };
+
   # Rotate the daemon log at 10 MiB, keeping 5 compressed generations.
   environment.etc."newsyslog.d/easytier.conf".text = ''
     # logfilename        [owner:group]  mode count size(KB) when flags
