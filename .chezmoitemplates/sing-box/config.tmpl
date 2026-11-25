@@ -10,6 +10,16 @@
                   OpenConnect VPN endpoint (singBox.openconnect; logged in at
                   run time by openconnect-login, see below). Work Macs also
                   offer the optional SSH exit from gopass.
+         Mesh     how this machine reaches the EasyTier mesh (10.144.144.0/24):
+                  EasyTier (default: the kernel route, hole-punched p2p) or
+                  bastion (through the bastion's Reality/Hysteria2/AnyTLS
+                  tunnel; the bastion relays to the mesh over its own link, so
+                  nothing EasyTier-shaped leaves this machine). Only present
+                  with a bastion and a TUN. The Mac daemon sets it to bastion
+                  when Egress is bastion or "<exit> via bastion" and to
+                  EasyTier otherwise (nix-config/modules/sing-box.nix.tmpl,
+                  .chezmoitemplates/sing-box/mesh-follow.sh); a hand-picked
+                  value holds until Egress changes.
          bastion  how to reach the bastion: Reality (default), Hysteria2 or
                   AnyTLS, picked by hand (no automatic switching).
                   "bastion" (gopass sing-box/bastion-outbounds, bastion-import)
@@ -89,6 +99,17 @@
 {{-   $outbounds = append $outbounds "__SSH_TUNNEL__" -}}
 {{- end -}}
 {{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Egress" "default" $direct "outbounds" $exits "interrupt_exist_connections" false) -}}
+{{- /* Mesh: the group below carries traffic for the mesh network. "EasyTier"
+       is a plain direct outbound under another name, so the panel says what
+       it means: in that mode no packet for the mesh reaches the TUN (the
+       network is excluded and EasyTier owns the route), and in bastion mode
+       the daemon routes the mesh into the TUN. Switching drops live
+       connections, which belong to the other path. */ -}}
+{{- $meshGroup := and $bastion (dig "tun" false .) -}}
+{{- if $meshGroup -}}
+{{-   $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Mesh" "default" "EasyTier" "outbounds" (list "EasyTier" "bastion") "interrupt_exist_connections" true) -}}
+{{-   $outbounds = append $outbounds (dict "type" "direct" "tag" "EasyTier") -}}
+{{- end -}}
 {{- /* EasyTier's own packets must never ride an exit: the exits are carried by
        EasyTier, and the peers' public addresses can fall inside an exit route
        (the JAIST range holds gpuserver and nas), which looped hole-punching
@@ -99,7 +120,10 @@
        says; the Mac script adds the bastion's own address here (SSH to it,
        EasyTier's TCP link), since the bastion refuses connections to itself
        and no other exit should carry them either. */ -}}
-{{- $rules := list (dict "action" "sniff") (dict "process_name" (list "easytier-core") "outbound" $direct) (dict "port" $etPorts "outbound" $direct) (dict "ip_is_private" true "outbound" $direct) (dict "ip_cidr" (concat (list $r.easytier.network "100.64.0.0/10") (dig "directCidr" (list) .)) "outbound" $direct) -}}
+{{- $rules := list (dict "action" "sniff") (dict "process_name" (list "easytier-core") "outbound" $direct) (dict "port" $etPorts "outbound" $direct) -}}
+{{- /* The mesh rule must precede ip_is_private (the mesh is private space). */ -}}
+{{- if $meshGroup -}}{{- $rules = append $rules (dict "ip_cidr" (list $r.easytier.network) "outbound" "Mesh") -}}{{- end -}}
+{{- $rules = concat $rules (list (dict "ip_is_private" true "outbound" $direct) (dict "ip_cidr" (concat (list $r.easytier.network "100.64.0.0/10") (dig "directCidr" (list) .)) "outbound" $direct)) -}}
 {{- if $sshExit -}}
 {{- /* The Mac daemon follows Egress with the company Clash mode. Reject before
        sniffing so TUN clients receive an immediate error and can fall back to

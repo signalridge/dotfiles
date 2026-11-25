@@ -16,6 +16,9 @@ _: { }
 # path is immutable and root-owned, so the root daemon executes it in place and
 # easytier-cli on PATH is always the same build as the daemon.
 #
+# Pause marker: /var/db/easytier-paused makes the launcher wait instead of
+# starting easytier-core (sing-box's Mesh = bastion; stuck? sudo rm the file).
+#
 # Credentials (ET_NETWORK_NAME / ET_NETWORK_SECRET) are NOT in this repo:
 # .chezmoiscripts/run_after_23_easytier-node.sh writes them from gopass
 # to /etc/easytier/easytier.env (root:wheel 0600). Until that file exists the
@@ -39,6 +42,12 @@ in
       set -a
       . "${envFile}"
       set +a
+
+      # Paused while sing-box carries the mesh through the bastion (Mesh =
+      # bastion, .chezmoitemplates/sing-box/mesh-follow.sh): in a network that
+      # blocks EasyTier, no packet of it may leave. The marker is in /var/db, so
+      # a reboot there stays quiet too; sing-box removes it to resume.
+      while [ -e /var/db/easytier-paused ]; do /bin/sleep 2; done
 
       exec ${easytier}/bin/easytier-core \
         --hostname {{ .hostname }} \

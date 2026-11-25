@@ -10,7 +10,24 @@ prefix="{{- \$ctx := deepCopy . -}}{{- \$_ := set \$ctx.chezmoi \"homeDir\" \"$t
 render_config() {
     chezmoi execute-template --source . "$prefix{{ includeTemplate \"sing-box/config.tmpl\" (dict \"root\" \$ctx \"password\" (printf \"%s=\" (repeat 43 \"A\")) \"secret\" \"fixture-api\" \"tun\" (eq \$ctx.chezmoi.os \"darwin\")) }}" >"$temporary/config.json"
 }
+# Same render with the bastion's outbounds spliced in (placeholder string, as the Mac script does).
+render_config_with_bastion() {
+    chezmoi execute-template --source . "$prefix{{ includeTemplate \"sing-box/config.tmpl\" (dict \"root\" \$ctx \"password\" (printf \"%s=\" (repeat 43 \"A\")) \"secret\" \"fixture-api\" \"tun\" (eq \$ctx.chezmoi.os \"darwin\") \"bastion\" \"__BASTION_OUTBOUNDS__\") }}" >"$temporary/config-bastion.json"
+}
 render_config
+if [ "$platform" = darwin ]; then
+    # The mesh group exists only with a bastion and a TUN; its rule precedes ip_is_private.
+    render_config_with_bastion
+    jq -e '
+      ([.outbounds[] | objects | select(.tag == "Mesh")] | length) == 1 and
+      (.outbounds[] | objects | select(.tag == "Mesh") | .default == "EasyTier" and .outbounds == ["EasyTier","bastion"] and .interrupt_exist_connections == true) and
+      ([.outbounds[] | objects | select(.tag == "EasyTier" and .type == "direct")] | length) == 1 and
+      ([.route.rules[] | select(.outbound == "Mesh")] | length) == 1 and
+      ((.route.rules | map(.outbound == "Mesh") | index(true)) < (.route.rules | map(.ip_is_private == true) | index(true)))
+    ' "$temporary/config-bastion.json" >/dev/null
+    jq -e '[.outbounds[] | objects | select(.tag == "Mesh")] | length == 0' "$temporary/config.json" >/dev/null
+    printf 'ok - darwin: Mesh group only with a bastion, ahead of the private-range rule\n'
+fi
 if [ "$platform" = darwin ]; then
     jq -e '
       ([.dns.rules[] | select(.clash_mode == "direct-ipv4" and .domain_suffix == ["jaist.ac.jp"] and .action == "route" and .server == "remote")] | length) == 1 and
