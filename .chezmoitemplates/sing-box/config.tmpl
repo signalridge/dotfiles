@@ -38,11 +38,18 @@
 {{- $self := (includeTemplate "easytier/role.tmpl" $r | fromJson).exit -}}
 {{- $direct := "Direct" -}}
 {{- $outbounds := list (dict "type" "direct" "tag" $direct) -}}
+{{- /* The Mesh group (see below) exists only with a bastion and a TUN. The
+       mesh exits then dial their server through it, so they follow it: over
+       EasyTier normally, through the bastion when EasyTier is paused. Egress
+       = gpuserver and the jaist routes keep the campus address either way. */ -}}
+{{- $meshGroup := and (dig "bastion" "" .) (dig "tun" false .) -}}
 {{- $mesh := list -}}
 {{- range $name, $ip := $r.easytier.exits -}}
 {{-   if ne $name $self -}}
 {{-     $mesh = append $mesh $name -}}
-{{-     $outbounds = append $outbounds (dict "type" "shadowsocks" "tag" $name "server" $ip "server_port" $r.easytier.exitProxy.port "method" $r.easytier.exitProxy.method "password" $.password) -}}
+{{-     $exit := dict "type" "shadowsocks" "tag" $name "server" $ip "server_port" $r.easytier.exitProxy.port "method" $r.easytier.exitProxy.method "password" $.password -}}
+{{-     if $meshGroup -}}{{- $_ := set $exit "detour" "Mesh" -}}{{- end -}}
+{{-     $outbounds = append $outbounds $exit -}}
 {{-   end -}}
 {{- end -}}
 {{- $exits := prepend $mesh $direct -}}
@@ -99,13 +106,13 @@
 {{-   $outbounds = append $outbounds "__SSH_TUNNEL__" -}}
 {{- end -}}
 {{- $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Egress" "default" $direct "outbounds" $exits "interrupt_exist_connections" false) -}}
-{{- /* Mesh: the group below carries traffic for the mesh network. "EasyTier"
-       is a plain direct outbound under another name, so the panel says what
-       it means: in that mode no packet for the mesh reaches the TUN (the
-       network is excluded and EasyTier owns the route), and in bastion mode
+{{- /* Mesh: the group below carries traffic for the mesh network and the
+       mesh exits' own connections. "EasyTier" is a direct outbound under
+       another name, so the panel says what it means; the daemon binds it to
+       EasyTier's utun. In that mode no packet for the mesh reaches the TUN
+       (the network is excluded and EasyTier owns the route); in bastion mode
        the daemon routes the mesh into the TUN. Switching drops live
        connections, which belong to the other path. */ -}}
-{{- $meshGroup := and $bastion (dig "tun" false .) -}}
 {{- if $meshGroup -}}
 {{-   $outbounds = prepend $outbounds (dict "type" "selector" "tag" "Mesh" "default" "EasyTier" "outbounds" (list "EasyTier" "bastion") "interrupt_exist_connections" true) -}}
 {{-   $outbounds = append $outbounds (dict "type" "direct" "tag" "EasyTier") -}}

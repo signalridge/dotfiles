@@ -16,10 +16,11 @@
 # sing-box binds its outbound sockets to the default NIC (auto_detect_interface,
 # needed under a TUN), which would send the exit connections (EasyTier virtual
 # IPs) out en0. So at start the daemon looks up EasyTier's utun (its unit number
-# is assigned dynamically), injects it as bind_interface into the exit
-# outbounds that dial the mesh themselves (not the ones chained through the
-# bastion, which reach it over the internet), and restarts sing-box whenever
-# that utun changes. The same loop keeps the exit routes (jaist) on their
+# is assigned dynamically), injects it as bind_interface into whatever dials
+# the mesh over EasyTier: the "EasyTier" member of the Mesh group (the mesh
+# exits detour through that group), or, without a Mesh group, the exit
+# outbounds themselves (never the ones chained through the bastion, which
+# reach it over the internet), and restarts sing-box whenever that utun changes. The same loop keeps the exit routes (jaist) on their
 # first live mesh exit, else Egress.
 { pkgs, signalridge-nur, ... }:
 let
@@ -69,7 +70,7 @@ in
       umask 077
       if [ -n "$iface" ]; then
         ${pkgs.jq}/bin/jq --arg i "$iface" \
-          '(.outbounds[] | select(.type == "shadowsocks" and .detour == null)).bind_interface = $i' \
+          '(.outbounds[] | select((.type == "shadowsocks" and .detour == null) or (.type == "direct" and .tag == "EasyTier"))).bind_interface = $i' \
           "${configFile}" >"${runDir}/config.json.tmp"
       else
         echo "sing-box: EasyTier route for ${meshNet} not found; exits unavailable until it appears" >&2

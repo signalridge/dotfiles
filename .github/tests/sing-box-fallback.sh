@@ -26,7 +26,15 @@ if [ "$platform" = darwin ]; then
       ((.route.rules | map(.outbound == "Mesh") | index(true)) < (.route.rules | map(.ip_is_private == true) | index(true)))
     ' "$temporary/config-bastion.json" >/dev/null
     jq -e '[.outbounds[] | objects | select(.tag == "Mesh")] | length == 0' "$temporary/config.json" >/dev/null
-    printf 'ok - darwin: Mesh group only with a bastion, ahead of the private-range rule\n'
+    # The mesh exits follow the Mesh group (campus address kept in bastion mode);
+    # their bastion twins keep their own detour; without a Mesh group, no detour.
+    jq -e '
+      ([.outbounds[] | objects | select(.type == "shadowsocks" and (.tag | test(" via ") | not))] | length) > 0 and
+      all(.outbounds[] | objects | select(.type == "shadowsocks" and (.tag | test(" via ") | not)); .detour == "Mesh") and
+      all(.outbounds[] | objects | select(.type == "shadowsocks" and (.tag | test(" via bastion$"))); .detour == "bastion")
+    ' "$temporary/config-bastion.json" >/dev/null
+    jq -e 'all(.outbounds[] | objects | select(.type == "shadowsocks"); .detour == null)' "$temporary/config.json" >/dev/null
+    printf 'ok - darwin: Mesh group only with a bastion, ahead of the private-range rule; mesh exits detour through it\n'
 fi
 if [ "$platform" = darwin ]; then
     jq -e '
