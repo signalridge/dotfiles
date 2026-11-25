@@ -49,6 +49,8 @@ fi
 jq -e '[.outbounds[] | select(.tag == "jaist auto")] | length == 0' "$temporary/config.json" >/dev/null
 jq -e '.outbounds[] | select(.tag == "jaist") | .default == "gpuserver" and .outbounds == ["gpuserver","nas","JAIST VPN","Egress"] and .interrupt_exist_connections == false' "$temporary/config.json" >/dev/null
 jq -e '.outbounds[] | select(.tag == "Egress") | .interrupt_exist_connections == false' "$temporary/config.json" >/dev/null
+# Rule-set refreshes follow Egress (a bare direct detour is FATAL at start).
+jq -e '.http_clients == [{tag:"rule-sets",detour:"Egress"}] and .route.default_http_client == "rule-sets"' "$temporary/config.json" >/dev/null
 jq -e '.outbounds[] | select(.tag == "jaist login") | .default == "gpuserver" and (.outbounds | index("JAIST VPN") | not) and .outbounds[:3] == ["gpuserver","nas","Egress"]' "$temporary/config.json" >/dev/null
 jq -e '[.route.rules[] | select(.domain == ["auth.jaist.ac.jp","auth-cert.jaist.ac.jp"])] == [{domain:["auth.jaist.ac.jp","auth-cert.jaist.ac.jp"],outbound:"jaist login"}]' "$temporary/config.json" >/dev/null
 test "$(jq -c -f .chezmoitemplates/sing-box/failover-routes.jq "$temporary/config.json")" = '{"tag":"jaist login","auto":["gpuserver","nas"]}'

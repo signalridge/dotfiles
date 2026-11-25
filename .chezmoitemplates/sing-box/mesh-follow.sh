@@ -10,8 +10,10 @@
 #
 # Two separate duties, so a hand-picked Mesh survives:
 #   - Egress CHANGES -> Mesh follows it: bastion and "<exit> via bastion" mean
-#     bastion, anything else means EasyTier. The first look after a start only
-#     records Egress (the selection is remembered across restarts).
+#     bastion, a VPN endpoint (listed in mesh_keep) leaves Mesh as it is (in a
+#     network that blocks EasyTier, resuming it would also expose the bastion's
+#     address), anything else means EasyTier. The first look after a start
+#     only records Egress (the selection is remembered across restarts).
 #   - Mesh decides the machine's state, whoever set it:
 #       bastion   pause EasyTier (marker file; easytier.nix waits on it) and send
 #                 the mesh into the TUN with two /25 routes, which beat
@@ -19,7 +21,7 @@
 #       EasyTier  drop the routes and the marker; the waiting EasyTier starts.
 # The marker lives in /var/db, so a reboot in a blocking network stays quiet.
 # Stuck paused (daemon gone)? `sudo rm /var/db/easytier-paused`.
-# shellcheck disable=SC2154,SC2016 # mesh_net/tun_ip come from the daemon; jq, not the shell, expands $n
+# shellcheck disable=SC2154,SC2016 # mesh_net/tun_ip/mesh_keep come from the daemon; jq, not the shell, expands $n
 mesh_pause_marker=/var/db/easytier-paused
 mesh_applied=
 mesh_last_egress=
@@ -82,6 +84,7 @@ mesh_follow() {
             bastion | *' via bastion') want=bastion ;;
             *) want=EasyTier ;;
             esac
+            if printf '%s\n' "$mesh_keep" | /usr/bin/grep -qxF -- "$egress"; then want="$mesh"; fi
             if [ "$want" != "$mesh" ]; then
                 api -X PUT -H 'Content-Type: application/json' \
                     -d "$("$jq_bin" -cn --arg n "$want" '{name: $n}')" \

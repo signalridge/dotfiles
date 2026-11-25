@@ -304,12 +304,15 @@
           "external_ui_download_detour" $direct
           "secret" .secret)) -}}
 {{- if gt (len $ruleSets) 0 -}}
-{{- /* Rule-set downloads dial directly (plain system path, no detour): sing-box
-       1.14 wants the HTTP client named explicitly and refuses a detour to a
-       bare direct outbound. */ -}}
+{{- /* Rule-set downloads go through Egress like the rest of this machine's
+       traffic: dialled directly they bypass the TUN, and in a network that
+       blocks GitHub (or with Egress = bastion) they never refresh. sing-box
+       1.14 wants the HTTP client named explicitly; it refuses a detour to a
+       bare direct outbound at start (FATAL) but takes the Egress selector.
+       A failed refresh keeps the cached copy (initial_path covers a cold start). */ -}}
 {{-   $_ := set $route "rule_set" (values $ruleSets) -}}
 {{-   $_ := set $route "default_http_client" "rule-sets" -}}
-{{-   $_ := set $config "http_clients" (list (dict "tag" "rule-sets")) -}}
+{{-   $_ := set $config "http_clients" (list (dict "tag" "rule-sets" "detour" "Egress")) -}}
 {{- end -}}
 {{- if gt (len $endpoints) 0 -}}
 {{-   $_ := set $config "endpoints" $endpoints -}}

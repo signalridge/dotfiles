@@ -138,6 +138,9 @@ in
       api() { /usr/bin/curl -sf --max-time 5 -H @"${runDir}/api-header" "$@"; }
 {{ include ".chezmoitemplates/sing-box/company-compat.sh" | indent 6 }}
       mesh_net="${meshNet}"
+      # Egress choices that leave Mesh as it is: the VPN endpoints (a VPN as
+      # Egress says nothing about whether EasyTier may run here).
+      mesh_keep="$(${jq} -r '.endpoints[]? | select(.type == "openconnect") | .tag' "${configFile}")"
       tun_ip=198.18.0.1 # the TUN's own address (config.tmpl)
 {{ include ".chezmoitemplates/sing-box/mesh-follow.sh" | indent 6 }}
       exit_failover() {
@@ -176,8 +179,13 @@ in
       trap 'kill "$compat_pid" 2>/dev/null || true; mesh_routes_del; dns_restore; kill "$pid" 2>/dev/null; wait "$pid"; exit 0' TERM INT
       for _ in 1 2 3 4 5 6 7 8 9 10; do dns_ok && break; sleep 1; done
       if dns_ok; then dns_apply; else echo "sing-box: TUN DNS not answering; system DNS left alone" >&2; fi
+      # Interface/DNS checks every 5 s, so that after Mesh switches back to
+      # EasyTier the exits are rebound within seconds: until then they fail,
+      # and the JAIST authenticator (30 s poll) would move jaist to the VPN and
+      # log it in for nothing. The exit failover still runs every 30 s.
+      tick=0
       while kill -0 "$pid" 2>/dev/null; do
-        sleep 30
+        sleep 5
         # EasyTier paused on purpose (Mesh = bastion): its utun is gone by design.
         if { [ ! -e "$mesh_pause_marker" ] && [ "$(mesh_iface)" != "$iface" ]; } || [ "$(lan_dns_server)" != "$lan_dns" ]; then
           echo "sing-box: EasyTier interface or DHCP DNS changed; restarting" >&2
@@ -186,7 +194,11 @@ in
           wait "$pid" || true
           exit 0
         fi
-        exit_failover || true
+        tick=$((tick + 1))
+        if [ "$tick" -ge 6 ]; then
+          tick=0
+          exit_failover || true
+        fi
       done
       kill "$compat_pid" 2>/dev/null || true
       wait "$compat_pid" 2>/dev/null || true
