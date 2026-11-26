@@ -129,8 +129,8 @@ jobs:
           claude_wshobson_agents_sha256=$(curl_sha256 "https://github.com/wshobson/agents/archive/${claude_wshobson_agents_rev}.tar.gz")
           claude_anthropics_skills_rev=$(gh api repos/anthropics/skills/commits/main -q '.sha')
           claude_anthropics_skills_sha256=$(curl_sha256 "https://github.com/anthropics/skills/archive/${claude_anthropics_skills_rev}.tar.gz")
-          ui_ux_pro_max_skill_rev=$(gh api repos/nextlevelbuilder/ui-ux-pro-max-skill/commits/main -q '.sha')
-          ui_ux_pro_max_skill_sha256=$(curl_sha256 "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/${ui_ux_pro_max_skill_rev}.tar.gz")
+          gemini_demolab_rev=$(gh api repos/google-gemini/demolab/commits/main -q '.sha')
+          gemini_demolab_sha256=$(curl_sha256 "https://github.com/google-gemini/demolab/archive/${gemini_demolab_rev}.tar.gz")
           openai_skills_rev=$(gh api repos/openai/skills/commits/main -q '.sha')
           huggingface_skills_rev=$(gh api repos/huggingface/skills/commits/main -q '.sha')
           getsentry_skills_rev=$(gh api repos/getsentry/skills/commits/main -q '.sha')
@@ -194,8 +194,8 @@ jobs:
             echo "claude_wshobson_agents_sha256=$claude_wshobson_agents_sha256"
             echo "claude_anthropics_skills_rev=$claude_anthropics_skills_rev"
             echo "claude_anthropics_skills_sha256=$claude_anthropics_skills_sha256"
-            echo "ui_ux_pro_max_skill_rev=$ui_ux_pro_max_skill_rev"
-            echo "ui_ux_pro_max_skill_sha256=$ui_ux_pro_max_skill_sha256"
+            echo "gemini_demolab_rev=$gemini_demolab_rev"
+            echo "gemini_demolab_sha256=$gemini_demolab_sha256"
             echo "openai_skills_rev=$openai_skills_rev"
             echo "huggingface_skills_rev=$huggingface_skills_rev"
             echo "getsentry_skills_rev=$getsentry_skills_rev"
@@ -260,8 +260,8 @@ jobs:
           U_CLAUDE_WSHOBSON_AGENTS_SHA256: ${{ steps.versions.outputs.claude_wshobson_agents_sha256 }}
           U_CLAUDE_ANTHROPICS_SKILLS_REV: ${{ steps.versions.outputs.claude_anthropics_skills_rev }}
           U_CLAUDE_ANTHROPICS_SKILLS_SHA256: ${{ steps.versions.outputs.claude_anthropics_skills_sha256 }}
-          U_UI_UX_PRO_MAX_SKILL_REV: ${{ steps.versions.outputs.ui_ux_pro_max_skill_rev }}
-          U_UI_UX_PRO_MAX_SKILL_SHA256: ${{ steps.versions.outputs.ui_ux_pro_max_skill_sha256 }}
+          U_GEMINI_DEMOLAB_REV: ${{ steps.versions.outputs.gemini_demolab_rev }}
+          U_GEMINI_DEMOLAB_SHA256: ${{ steps.versions.outputs.gemini_demolab_sha256 }}
           U_OPENAI_SKILLS_REV: ${{ steps.versions.outputs.openai_skills_rev }}
           U_HUGGINGFACE_SKILLS_REV: ${{ steps.versions.outputs.huggingface_skills_rev }}
           U_GETSENTRY_SKILLS_REV: ${{ steps.versions.outputs.getsentry_skills_rev }}

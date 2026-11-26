@@ -125,7 +125,6 @@
   "terraform-module-library" "cloud"
   "theme-factory" "design"
   "transcribe" "media"
-  "ui-ux-pro-max" "design"
   "vector-index-tuning" "ai-llm"
   "web-artifacts-builder" "design"
   "web-perf" "typescript"
@@ -695,35 +694,16 @@
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
-# nextlevelbuilder/ui-ux-pro-max-skill (skills only)
-# - Shared UI/UX design intelligence skill for Claude + Codex
-# - Keep SKILL.md and runtime assets in ~/.harnesses/skills/
+# google-gemini/demolab (Apache-2.0) — gemini-frontend-design, agy (Antigravity) only
+# - agy discovers global skills under ~/.gemini/config/skills/<name>/SKILL.md
 # ------------------------------------------------------------------------------
-[".harnesses/skills/{{ index $cat "ui-ux-pro-max" }}/ui-ux-pro-max"]
+[".gemini/config/skills/gemini-frontend-design"]
     type = "archive"
-    url = "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/{{ $.versions.uiUxProMaxSkillRev }}.tar.gz"
-    checksum.sha256 = "{{ $.versions.uiUxProMaxSkillSha256 }}"
-    exact = false
-    stripComponents = 4
-    include = ["ui-ux-pro-max-skill-*/.claude/skills/ui-ux-pro-max/SKILL.md"]
-    refreshPeriod = "168h"
-
-[".harnesses/skills/{{ index $cat "ui-ux-pro-max" }}/ui-ux-pro-max/data"]
-    type = "archive"
-    url = "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/{{ $.versions.uiUxProMaxSkillRev }}.tar.gz"
-    checksum.sha256 = "{{ $.versions.uiUxProMaxSkillSha256 }}"
+    url = "https://github.com/google-gemini/demolab/archive/{{ $.versions.geminiDemolabRev }}.tar.gz"
+    checksum.sha256 = "{{ $.versions.geminiDemolabSha256 }}"
     exact = true
-    stripComponents = 4
-    include = ["ui-ux-pro-max-skill-*/src/ui-ux-pro-max/data/**"]
-    refreshPeriod = "168h"
-
-[".harnesses/skills/{{ index $cat "ui-ux-pro-max" }}/ui-ux-pro-max/scripts"]
-    type = "archive"
-    url = "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/archive/{{ $.versions.uiUxProMaxSkillRev }}.tar.gz"
-    checksum.sha256 = "{{ $.versions.uiUxProMaxSkillSha256 }}"
-    exact = true
-    stripComponents = 4
-    include = ["ui-ux-pro-max-skill-*/src/ui-ux-pro-max/scripts/**"]
+    stripComponents = 3
+    include = ["demolab-*/skills/gemini-frontend-design/SKILL.md"]
     refreshPeriod = "168h"
 
 # ------------------------------------------------------------------------------
