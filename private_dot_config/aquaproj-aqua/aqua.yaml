@@ -24,7 +24,7 @@ packages:
   # sing-box CLI on Linux: the replacement for gost's ad-hoc SOCKS/HTTP servers,
   # TCP/UDP forwards and proxy chains. macOS gets it from nix-config/modules/
   # sing-box.nix instead (its LaunchDaemon runs that build).
-  - name: SagerNet/sing-box@v1.14.4
+  - name: SagerNet/sing-box@v1.14.5
     registry: third-party
   # Relay / server side of the EasyTier exits (shadowsocks-rust, Hysteria2,
   # realm). Work machines only consume the exits, so .chezmoiignore skips this
@@ -113,7 +113,7 @@ packages:
   - name: mvdan/sh@v3.14.1
   - name: rhysd/actionlint@v1.7.12
   - name: astral-sh/ruff@0.17.6
-  - name: astral-sh/ty@0.0.111
+  - name: astral-sh/ty@0.0.112
   - name: golang.org/x/tools/gopls@v0.24.0
   - name: golangci/golangci-lint@v2.15.0
   - name: goreleaser/goreleaser@v2.20.3
