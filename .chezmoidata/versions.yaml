@@ -37,8 +37,8 @@ versions:
   claudeAnthropicsSkillsSha256: 287d5d39770a929db26f35fd13833b53f1ac3db58b96c76602b3487f8f573e19
   claudeBaoyuSkillsRev: bf1ff076e25f8da4a339eb1c8cf03361fea5ea4c
   phurynPmSkillsRev: 9af7bfd0bc47fdad43c2eaa7a43cd13918e7aaef
-  geminiDemolabRev: cd0c1f8540c0186ec9592af972a0700fa20909d4
-  geminiDemolabSha256: c3ccb66de6f31a39df3f17dec0eca9b28353d848f05288bd0931c2092d2b206b
+  geminiDemolabRev: 6a5e364114af46a31afd64f833a41e3d83271da6
+  geminiDemolabSha256: ed47261536991521a4f681dee08c898112f53a818bb97f5b7e2993d10e42318e
   openaiSkillsRev: 49f948faa9258a0c61caceaf225e179651397431
   huggingfaceSkillsRev: aafb3adfb80951cc90836cc6fd17bb345aa49eef
   getsentrySkillsRev: a582c51ee29d0f35e6ac321340796f77d43da733
@@ -48,12 +48,12 @@ versions:
   vercelLabsNextSkillsRev: c522619e45aa3492fd2bfc916b308b275eff7798
   vercelLabsAgentBrowserRev: 3f43a2affd9944298104b7bb39d5f241aef85e91
   supabaseAgentSkillsRev: c9be0e931b7930f7d02126d04774d904c381e7d7
-  expoSkillsRev: 335359577cbb61cf4097c14ac88ee2609726c85f
+  expoSkillsRev: 8f2b6c0c65533e695243aa401eaa1cb6f1fe86c2
   microsoftSkillsRev: 47eb3888eb42aef074fcb617931bf6e5934e45d9
   xSkillsRev: 95f4c6e4221f785fbf13b4a365eb44771605c431
   xurlSkillRev: 18dcb447f090667171ff23666a05d6d387e2aa73
-  dailyDevSkillsRev: 0992c020d17b388238451e3857b40962f607ff81
-  opcSkillsRev: 775b56a48c64fb8633261e3d7fe3be48a005bdef
+  dailyDevSkillsRev: 49f816e402a21874b13b989613a6bb5f8e33d070
+  opcSkillsRev: 274fce61584f213a35eec1a0df4d5642c4ebce93
   zigDevelopmentPlaybookSkillRev: 72cab69050cc84793603ea7a9d82de367cdd104c
   rustDevelopmentPlaybookSkillRev: eea186a4c35edecd47058c62b44cf8643fc7cc07
   samberCcSkillsGolangRev: d68d80aec298e1b74b37c2a472c002b5217248b3
@@ -64,10 +64,10 @@ versions:
   bobmatnycMpmSkillsRev: 718070a7d622921b01687799a1f9613f36c6f615
   humanizerEnRev: a32f24407364c74c812b43c15926d638bee1e072
   humanizerJaRev: 1b850cfe8529f7836025b2edd15b3d64447f8fb6
-  quAiWeiRev: ebd0abd1ea5aa2c070db210d5df5e15daa6b92a9
+  quAiWeiRev: 366981d243505eaacd58b233f33501265eb0856b
   drawioSkillRev: 89ff88cb27cd876d9085071d4f73c2502d0492e4
   beautifyGithubReadmeSkillRev: fcdb950f81a9ffa0c2bb47c42ae1636c8bdd92bb
-  mattpocockSkillsRev: 6f7f7831a625f040a8e06a0e7954826b87ce775a
+  mattpocockSkillsRev: bbadaa631c37af594e5a05c9cefacd9956136b18
   githubAwesomeCopilotRev: 93fc8b9ee3ef56b9b5e7261e6ce92d314cb2c1cf
   softaworksAgentToolkitRev: 3027f20f3181758385a1bb8c022d4041dfb4de84
   repoDocsSkillsRev: 52674499dce957deb146fa51363f6e8e42802097
