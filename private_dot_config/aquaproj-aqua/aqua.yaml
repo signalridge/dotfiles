@@ -9,7 +9,7 @@ registries:
     #     codex-*.zst, so Code Mode failed closed after host became default.
     #   v4.566.0 - Wilfred/difftastic 0.71.0 renamed its assets to
     #     difft-<version>-<arch>-<os>.tar.gz; older refs 404 on install.
-    ref: v4.594.0
+    ref: v4.595.0
   - name: third-party
     type: local
     path: registry.yaml
@@ -24,7 +24,7 @@ packages:
   # sing-box CLI on Linux: the replacement for gost's ad-hoc SOCKS/HTTP servers,
   # TCP/UDP forwards and proxy chains. macOS gets it from nix-config/modules/
   # sing-box.nix instead (its LaunchDaemon runs that build).
-  - name: SagerNet/sing-box@v1.14.5
+  - name: SagerNet/sing-box@v1.14.6
     registry: third-party
   # Relay / server side of the EasyTier exits (shadowsocks-rust, Hysteria2,
   # realm). Work machines only consume the exits, so .chezmoiignore skips this
@@ -35,11 +35,11 @@ packages:
   # `curl | bash` installer, which writes ~/.local/bin/agy and rewrites shell
   # profiles (PATH + alias purging) outside chezmoi's control.
   - name: google-antigravity/antigravity-cli@1.5.18
-  - name: nektos/act@v0.2.98
+  - name: nektos/act@v0.2.99
   - name: asciinema/asciinema@v3.2.1
   - name: atuinsh/atuin@v18.25.1
   - name: axodotdev/cargo-dist@v0.34.0 # `dist` — was a live-only cargo install
-  - name: EmbarkStudios/cargo-deny@0.22.1 # `cargo deny check` (licenses, advisories, duplicates)
+  - name: EmbarkStudios/cargo-deny@0.22.2 # `cargo deny check` (licenses, advisories, duplicates)
   - name: rui314/mold@v3.0.0 # fast linker for Rust builds (used via cargo-slot RUSTFLAGS, not globally)
   - name: nextest-rs/nextest/cargo-nextest@cargo-nextest-0.9.152 # was a live-only cargo install
   - name: sharkdp/bat@v0.26.1
