@@ -17,6 +17,8 @@ packages:
   # ----- third-party registry (see registry.yaml) -----
   - name: signalridge/slipway@v1.0.0
     registry: third-party
+  - name: signalridge/mare@v1.0.0
+    registry: third-party
   - name: signalridge/qmk-hid-host@v2026.06.14.1
     registry: third-party
   - name: ogulcancelik/herdr@v0.9.5

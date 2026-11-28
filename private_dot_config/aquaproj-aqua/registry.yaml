@@ -20,6 +20,34 @@ packages:
       - darwin
       - linux
       - windows
+  # Archives hold mare-<version>-<target>/mare plus Lua type stubs (types/,
+  # for editor completion only; not needed at runtime).
+  - type: github_release
+    repo_owner: signalridge
+    repo_name: mare
+    description: Hyperextensible AI coding agent harness — Rust core with hot-reloadable Lua 5.5 plugins, TUI, RPC, and ACP
+    asset: "mare-{{.Version}}-{{.Arch}}-{{.OS}}.{{.Format}}"
+    format: tar.gz
+    files:
+      - name: mare
+        src: "{{.AssetWithoutExt}}/mare"
+    replacements:
+      amd64: x86_64
+      arm64: aarch64
+      darwin: apple-darwin
+      linux: unknown-linux-gnu
+      windows: pc-windows-msvc
+    overrides:
+      - goos: windows
+        format: zip
+    checksum:
+      type: github_release
+      asset: checksums.txt
+      algorithm: sha256
+    supported_envs:
+      - darwin
+      - linux
+      - windows
   - type: github_release
     repo_owner: signalridge
     repo_name: qmk-hid-host
